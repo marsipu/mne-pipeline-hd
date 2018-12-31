@@ -17,7 +17,7 @@ Functions to implement:
 - Group analasys with condition-list(picking file and trial_type)
 - except watershed_bem refurbish the bash commands
 - Condition tags for subject/Grand Average Customizing
-    - Comparative Plots 
+    - Comparative Plots
 - Epoch rejection, when EOG/ECG exceeds certain value
 - Source Estimate with MRI-Slides?
 - Parameters in File und auf Cond/File angepasst (save params?)
@@ -151,7 +151,7 @@ operations_to_apply = dict(
                     populate_data_directory=1, #don't do it in Linux if you're using also Windows!
                     mri_preprocessing=0, # enable to do any of the mri_subject-related functions
                     print_pipeline_analysis=1,
-                    
+
                     # WITHIN SUBJECT
 
                     # sensor space operations
@@ -199,7 +199,7 @@ operations_to_apply = dict(
                     grand_averages_evokeds=0, # sensor space
                     average_morphed_data=0, # source space
 
-#%%
+#%%============================================================================
                     # PLOTTING
 
                     # plotting sensor space (within subject)
@@ -256,7 +256,7 @@ operations_to_apply = dict(
 
                     # plot source space with statistics mask
                     plot_grand_averages_source_estimates_cluster_masked=0,
-                    
+
                     #general statistics
                     corr_ntr=0
                     )
@@ -395,7 +395,7 @@ ECDs = {'ppp3D2_512ER_preC':{'Dip1':[0.1,0.11],
                            'Dip2':[0.19,0.2],
                           'Dip3':[0.515,0.525]}
 }
-            
+
 
 ECD_min = 0.200
 ECD_max = 0.250
@@ -443,80 +443,80 @@ all_reject_channels = {}
 # MRI-Subjects
 #==========================================================================
 if operations_to_apply['mri_preprocessing']:
-    
+
     mri_subjects = suborg.mri_subject_selection(which_mri_subject, all_mri_subjects)
-    
+
     print('Selected MRI-Subjects:')
     for i in mri_subjects:
         print(i)
-            
+
     for mri_subject in mri_subjects:
         print('='*60 + '\n', mri_subject)
-        
+
         #==========================================================================
         # BASH SCRIPTS
         #==========================================================================
         if operations_to_apply['segment_mri']:
             operations.segment_mri(mri_subject, subjects_dir, n_jobs_freesurfer)
-    
+
         if operations_to_apply['apply_watershed']:
             operations.apply_watershed(mri_subject, subjects_dir, overwrite)
-    
+
         if operations_to_apply['make_dense_scalp_surfaces']:
             operations.make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite)
-    
+
         if operations_to_apply['make_source_space']:
             operations.make_source_space(mri_subject, subjects_dir, source_space_method,
                                          overwrite)
-    
+
         if operations_to_apply['make_bem_solutions']:
             operations.make_bem_solutions(mri_subject, subjects_dir)
-    
+
         if operations_to_apply['make_morph_map']:
             operations.make_morph_map(mri_subject, morph_to, subjects_dir)
-    
+
         #==========================================================================
         # Forward Modeling
         #==========================================================================
         if operations_to_apply['setup_source_space']:
             operations.setup_source_space(mri_subject, subjects_dir, source_space_method,
                            overwrite, n_jobs)
-        
+
         #==========================================================================
         # PLOT SOURCE SPACES
         #==========================================================================
-    
+
         if operations_to_apply['plot_source_space']:
             plot.plot_source_space(mri_subject, subjects_dir, source_space_method, save_plots, figures_path)
-        
+
         if operations_to_apply['plot_bem']:
             plot.plot_bem(mri_subject, subjects_dir, source_space_method, figures_path,
                           save_plots)
-            
+
         # close plots
         if close_plots:
             plot.close_all()
 #==========================================================================
 # Subjects
-#==========================================================================    
-for which_file in which_file_list:       
-    print('#'*60 + '\n' + f'Group {which_file} begun') 
+#==========================================================================
+for which_file in which_file_list:
+    print('#'*60 + '\n' + f'Group {which_file} begun')
 
     subjects = suborg.file_selection(which_file, all_subjects)
-    
+
     print('Selected Subjects:')
     for i in subjects:
         print(i)
-    
+
     evoked_data_all = dict(pinprick=[], WU_First=[], WU_Last=[])
-    morphed_data_all = dict(pinprick=[], WU_First=[], WU_Last=[]) 
-    
-        
+    morphed_data_all = dict(pinprick=[], WU_First=[], WU_Last=[])
+
+
     for subject in subjects:
         try:
             name = subject #changed for Kopfklinik-naming-convention
             subject_index = subjects.index(subject)
-            save_dir = join(data_path, subject)   
+            save_dir = join(data_path, subject)
             bad_channels = bad_channels_dict[subject]
             subtomri = sub_to_mri[subject]
             ermsub = erm_dict[subject]
@@ -527,7 +527,7 @@ for which_file in which_file_list:
                 for k in event_id.keys():
                     event_id_list.append(k)
                 print('='*60 + '\n',subject, '= ER-Trial')
-        
+
             elif 'WU' in subject:
                 event_id = {'pinprick':1,
                             'WU_First':13,
@@ -536,7 +536,7 @@ for which_file in which_file_list:
                 for k in event_id.keys():
                     event_id_list.append(k)
                 print('='*60 + '\n',subject, '= WU-Trial')
-                
+
             else:
                 event_id = {'pinprick':1}
                 event_id_list = []
@@ -544,342 +544,342 @@ for which_file in which_file_list:
                     event_id_list.append(k)
                 print('='*60 + '\n',subject, '= other Trial')
 
-            
+
             #==========================================================================
             # POPULATE SUBJECT DIRECTORIES
             #==========================================================================
-        
+
             if operations_to_apply['populate_data_directory']:
                 operations.populate_data_directory(home_path, project_name, data_path,
                                                    figures_path, subjects_dir, subjects)
-        
+
             #==========================================================================
             # FILTER RAW (MAXFILTERED)
             #==========================================================================
-        
+
             if operations_to_apply['filter_raw']:
                 operations.filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
                                       data_path, n_jobs, enable_cuda)
-        
+
             #==========================================================================
             # PRINT INFO
             #==========================================================================
             if operations_to_apply['print_info']:
                 plot.print_info(name, save_dir, save_plots)
-        
+
             if operations_to_apply['plot_sensors']:
                 plot.plot_sensors(name, save_dir)
 
             #==========================================================================
             # FIND EVENTS
             #==========================================================================
-        
+
             if operations_to_apply['find_events']:
                 operations.find_events(name, save_dir, min_duration,
                         adjust_timeline_by_msec,lowpass, highpass, ISIs, overwrite)
-            
+
             if operations_to_apply['find_eog_events']:
                 operations.find_eog_events(name, save_dir, eog_channel, eog_contamination)
-                
+
             #==========================================================================
             # PLOT RAW DATA
             #==========================================================================
-        
+
             if operations_to_apply['plot_raw']:
                 plot.plot_raw(name, save_dir, overwrite, bad_channels)
-        
+
             if operations_to_apply['plot_filtered']:
                 plot.plot_filtered(name, save_dir, lowpass, highpass)
-        
+
             if operations_to_apply['plot_events']:
                 plot.plot_events(name, save_dir,lowpass, highpass, save_plots, figures_path, subject, event_id)
-            
+
             if operations_to_apply['plot_eog_events']:
                 plot.plot_eog_events(name, save_dir)
-                
+
             #==========================================================================
             # EPOCHS
             #==========================================================================
-        
+
             if operations_to_apply['epoch_raw']:
                 operations.epoch_raw(name, save_dir,lowpass, highpass, event_id, tmin,
                                   tmax, baseline, reject, flat, autoreject, overwrite_ar,
                                   bad_channels, decim, n_events, epoch_rejection,
                                   all_reject_channels, reject_eog_epochs, overwrite)
-            
+
             #==========================================================================
             # PLOT POWER SPECTRA
             #==========================================================================
-        
+
             if operations_to_apply['plot_power_spectra']:
                 plot.plot_power_spectra(name, save_dir,lowpass, highpass, subject, save_plots,
                                         figures_path, bad_channels)
-        
+
             if operations_to_apply['plot_power_spectra_epochs']:
                 plot.plot_power_spectra_epochs(name, save_dir,lowpass, highpass, subject, save_plots,
                                         figures_path, bad_channels)
-        
+
             if operations_to_apply['plot_power_spectra_topo']:
                 plot.plot_power_spectra_topo(name, save_dir,lowpass, highpass, subject, save_plots,
                                 figures_path, bad_channels, layout)
-            
+
             #==========================================================================
             # SIGNAL SPACE PROJECTION
             #==========================================================================
             if operations_to_apply['run_ssp_er']:
                 operations.run_ssp_er(name, save_dir,lowpass, highpass, data_path, ermsub, bad_channels,
                                       eog_channel, ecg_channel, overwrite)
-        
+
             if operations_to_apply['apply_ssp_er']:
                 operations.apply_ssp_er(name, save_dir,lowpass, highpass, overwrite)
-        
+
             if operations_to_apply['run_ssp_clm']:
                 operations.run_ssp_clm(name, save_dir,lowpass, highpass, bad_channels, overwrite)
-        
+
             if operations_to_apply['apply_ssp_clm']:
                 operations.apply_ssp_clm(name, save_dir,lowpass, highpass, overwrite)
-        
+
             if operations_to_apply['run_ssp_eog']:
                 operations.run_ssp_eog(name, save_dir,lowpass, highpass, n_jobs, eog_channel,
                                            bad_channels, overwrite)
-        
+
             if operations_to_apply['apply_ssp_eog']:
                 operations.apply_ssp_eog(name, save_dir,lowpass, highpass, overwrite)
-            
+
             if operations_to_apply['run_ssp_ecg']:
                 operations.run_ssp_ecg(name, save_dir,lowpass, highpass, n_jobs, ecg_channel,
                                            bad_channels, overwrite)
-        
+
             if operations_to_apply['apply_ssp_ecg']:
                 operations.apply_ssp_ecg(name, save_dir,lowpass, highpass, overwrite)
-                
+
             if operations_to_apply['plot_ssp']:
                 plot.plot_ssp(name, save_dir,lowpass, highpass, subject, save_plots,
                               figures_path, bad_channels, layout, ermsub)
-        
+
             if operations_to_apply['plot_ssp_eog']:
                 plot.plot_ssp_eog(name, save_dir,lowpass, highpass, subject, save_plots,
                                       figures_path, bad_channels, layout)
-                
+
             if operations_to_apply['plot_ssp_ecg']:
                 plot.plot_ssp_ecg(name, save_dir,lowpass, highpass, subject, save_plots,
                                       figures_path, bad_channels, layout)
             #==========================================================================
             # INDEPENDENT COMPONENT ANALYSIS
             #==========================================================================
-        
+
             if operations_to_apply['run_ica']:
                 operations.run_ica(name, save_dir,lowpass, highpass, eog_channel, ecg_channel,
                                    reject, flat, bad_channels, overwrite, autoreject)
-        
+
             if operations_to_apply['ica_pure']:
                 operations.ica_pure(name, save_dir,lowpass, highpass, overwrite, eog_channel,
                                     ecg_channel, layout, reject, flat, bad_channels, autoreject)
-        
+
             #===========================================================================
             # PLOT COMPONENTS TO BE REMOVED
             #===========================================================================
-        
+
             if operations_to_apply['plot_ica']:
                 plot.plot_ica(name, save_dir,lowpass, highpass, subject, save_plots,
                               figures_path, layout)
-        
+
             if operations_to_apply['plot_ica_sources']:
                 plot.plot_ica_sources(name, save_dir,lowpass, highpass, subject, save_plots,
                               figures_path)
-        
+
             #==========================================================================
             # LOAD NON-ICA'ED EPOCHS AND APPLY ICA
             #==========================================================================
-        
+
             if operations_to_apply['apply_ica']:
                 operations.apply_ica(name, save_dir,lowpass, highpass, overwrite)
-        
+
             #==========================================================================
             # PLOT CLEANED EPOCHS
             #==========================================================================
             if operations_to_apply['plot_epochs']:
                 plot.plot_epochs(name, save_dir,lowpass, highpass, subject, save_plots,
                                        figures_path)
-        
+
             if operations_to_apply['plot_epochs_image']:
                 plot.plot_epochs_image(name, save_dir,lowpass, highpass, subject, save_plots,
                                        figures_path)
-        
+
             if operations_to_apply['plot_epochs_topo']:
                 plot.plot_epochs_topo(name, save_dir,lowpass, highpass, subject, save_plots,
                               figures_path, layout)
-                
+
             #==========================================================================
             # EVOKEDS
             #==========================================================================
-        
+
             if operations_to_apply['get_evokeds']:
                 operations.get_evokeds(name, save_dir,lowpass, highpass, operations_to_apply, ermsub,
                                        detrend, overwrite)
-        
+
             #==========================================================================
             # TIME-FREQUENCY-ANALASYS
             #==========================================================================
-        
+
             if operations_to_apply['TF_Morlet']:
                 operations.TF_Morlet(name, save_dir,lowpass, highpass, TF_Morlet_Freqs, decim, n_jobs)
-        
+
             #==========================================================================
             # NOISE COVARIANCE MATRIX
             #==========================================================================
-        
+
             if operations_to_apply['estimate_noise_covariance']:
                 operations.estimate_noise_covariance(name, save_dir,lowpass, highpass, overwrite, ermsub, data_path, bad_channels, n_jobs, use_calm_cov)
-        
+
             if operations_to_apply['plot_noise_covariance']:
                 plot.plot_noise_covariance(name, save_dir,lowpass, highpass, subject, subtomri, save_plots, figures_path, ermsub, use_calm_cov)
-        
+
             #==========================================================================
             # CO-REGISTRATION
             #==========================================================================
-        
+
             # use mne.gui.coregistration()
-        
+
             if operations_to_apply['plot_transformation']:
                 plot.plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots, figures_path)
-        
+
             #==========================================================================
             # CREATE FORWARD MODEL
             #==========================================================================
-        
+
             if operations_to_apply['create_forward_solution']:
                 operations.create_forward_solution(name, save_dir, subtomri, subject, subjects_dir,
                                                    source_space_method, overwrite, n_jobs, eeg_fwd)
-        
+
             #==========================================================================
             # CREATE INVERSE OPERATOR
             #==========================================================================
-        
+
             if operations_to_apply['create_inverse_operator']:
                 operations.create_inverse_operator(name, save_dir,lowpass, highpass,
                                                 overwrite, ermsub, use_calm_cov, fixed_src)
-        
+
             #==========================================================================
             # SOURCE ESTIMATE MNE
             #==========================================================================
-        
+
             if operations_to_apply['source_estimate']:
                 operations.source_estimate(name, save_dir,lowpass, highpass, method, overwrite)
-        
+
             if operations_to_apply['vector_source_estimate']:
                 operations.vector_source_estimate(name, save_dir,lowpass, highpass, method, overwrite)
-        
+
             if operations_to_apply['ECD_fit']:
                 operations.ECD_fit(name, save_dir,lowpass, highpass, ermsub, subject, subjects_dir,
                                    subtomri, use_calm_cov, ECDs, n_jobs, target_labels,
                                    save_plots, figures_path)
-        
 
-                
+
+
             #==========================================================================
             # PLOT SOURCE ESTIMATES MNE
             #==========================================================================
-        
+
             if operations_to_apply['plot_source_estimates']:
                 plot.plot_source_estimates(name, save_dir,lowpass, highpass,
                                               subtomri, subjects_dir, subject,
                                               method, mne_evoked_time,
                                               save_plots, figures_path)
-        
+
             if operations_to_apply['plot_vector_source_estimates']:
                 plot.plot_vector_source_estimates(name, save_dir,lowpass, highpass,
                                               subtomri, subjects_dir, subject,
                                               method, mne_evoked_time,
                                               save_plots, figures_path)
-            
+
             if operations_to_apply['plot_animated_stc']:
                 plot.plot_animated_stc(name, save_dir,lowpass, highpass, subtomri, subjects_dir, subject,
                           method, mne_evoked_time, stc_animation, tmin, tmax,
                           save_plots, figures_path)
-            
+
             if operations_to_apply['plot_snr']:
                 plot.plot_snr(name, save_dir,lowpass, highpass, save_plots, figures_path)
-                
+
             if operations_to_apply['label_time_course']:
                 plot.label_time_course(name, save_dir,lowpass, highpass, method, source_space_method, subtomri,
                                        subjects_dir, target_labels, figures_path, save_plots)
-        
+
             #==========================================================================
             # PLOT EVOKEDS
             #==========================================================================
-        
+
             if operations_to_apply['plot_evoked_topo']:
                 plot.plot_evoked_topo(name, save_dir,lowpass, highpass, subject, save_plots,
                                       figures_path)
-        
+
             if operations_to_apply['plot_evoked_topomap']:
                 plot.plot_evoked_topomap(name, save_dir,lowpass, highpass, subject, save_plots,
                                          figures_path, layout)
-        
+
             if operations_to_apply['plot_butterfly_evokeds']:
                 plot.plot_butterfly_evokeds(name, save_dir,lowpass, highpass, subject, save_plots, figures_path,
                                             time_unit, ermsub, use_calm_cov)
-        
+
             if operations_to_apply['plot_evoked_field']:
                 plot.plot_evoked_field(name, save_dir,lowpass, highpass, subject, subtomri, subjects_dir,
                                        save_plots, figures_path, mne_evoked_time, n_jobs)
-        
+
             if operations_to_apply['plot_evoked_joint']:
                 plot.plot_evoked_joint(name, save_dir,lowpass, highpass, subject, save_plots,
                                        layout, figures_path, ECDs)
-        
+
             if operations_to_apply['plot_evoked_white']:
                 plot.plot_evoked_white(name, save_dir,lowpass, highpass, subject, save_plots, figures_path,
                                        ermsub, use_calm_cov)
-        
+
             if operations_to_apply['plot_evoked_image']:
                 plot.plot_evoked_image(name, save_dir,lowpass, highpass, subject, save_plots, figures_path)
-            
+
             if operations_to_apply['animate_topomap']:
                 plot.animate_topmap()
-            
+
             #==========================================================================
             # MORPH TO FSAVERAGE
             #==========================================================================
-        
+
             if operations_to_apply['morph_to_fsaverage']:
                 stcs = operations.morph_data_to_fsaverage(name, save_dir,lowpass, highpass,
                                                 subjects_dir, subject, subtomri,
                                                 method,
                                                 overwrite, n_jobs, vertices_to, morph_to)
-        
-        
+
+
             if operations_to_apply['morph_to_fsaverage_precomputed']:
                 stcs = operations.morph_data_to_fsaverage_precomputed(name, save_dir,lowpass, highpass, subjects_dir, subject,
                                                                       subtomri, method, overwrite, n_jobs, morph_to, vertices_to)
-        
+
             #==========================================================================
             # GRAND AVERAGE EVOKEDS (within-subject part)
             #==========================================================================
-        
+
             if operations_to_apply['grand_averages_evokeds']:
                 evoked_data = io.read_evokeds(name, save_dir, lowpass, highpass)
                 for evoked in evoked_data:
                     trial_type = evoked.comment
                     evoked_data_all[trial_type].append(evoked)
-        
+
             #==========================================================================
             # GRAND AVERAGE MORPHED DATA (within-subject part)
             #==========================================================================
-        
+
             if operations_to_apply['average_morphed_data'] or \
                 operations_to_apply['statistics_source_space']:
                 morphed_data = io.read_avg_source_estimates(name, save_dir,lowpass, highpass,
                                                             method)
                 for trial_type in morphed_data:
                     morphed_data_all[trial_type].append(morphed_data[trial_type])
-              
-            
+
+
             # close all plots
             if close_plots:
                 plot.close_all()
-                
+
             if autoreject and operations_to_apply['print_pipeline_analysis']:
                 reject_value_path = join(save_dir, operations.filter_string(lowpass, highpass) \
                                          + '_reject_value.py')
@@ -890,18 +890,18 @@ for which_file in which_file_list:
                             key,value = item.split(':', 1)
                             value = value[:-1]
                             reject[key] = float(value)
-                            
+
                 ar_values.update({name:reject})
-                
+
             #==========================================================================
             # General Statistics
             #==========================================================================
-                    
+
             if operations_to_apply['corr_ntr']:
                 operations.corr_ntr(name, save_dir, lowpass, highpass, bad_channels, event_id,
                                     tmin, tmax, baseline, figures_path, save_plots, autoreject,
                                     overwrite_ar, reject, flat)
-                
+
     #==========================================================================
     # Handling Exceptions
     #==========================================================================
@@ -909,36 +909,36 @@ for which_file in which_file_list:
             print('{}:Probably all Epochs rejected'.format(subject))
             error_list.append('{}:Probably all epochs rejected'.format(subject))
             continue
-            
-            
+
+
     # GOING OUT OF SUBJECT LOOP (FOR AVERAGES)
-    
+
     #==============================================================================
     # GRAND AVERAGES (sensor space and source space)
     #==============================================================================
-    
+
     if operations_to_apply['grand_averages_evokeds']:
         operations.grand_average_evokeds(evoked_data_all, save_dir_averages,
                                         lowpass, highpass, which_file)
-    
+
     if operations_to_apply['average_morphed_data']:
         operations.average_morphed_data(morphed_data_all, method,
                                      save_dir_averages,lowpass, highpass, which_file)
-    
+
     #==============================================================================
     # GRAND AVERAGES PLOTS (sensor space and source space)
     #==============================================================================
-    
+
     if operations_to_apply['plot_grand_averages_evokeds']:
         plot.plot_grand_average_evokeds(name,lowpass, highpass, save_dir_averages,
                                         evoked_data_all, event_id_list,
                                         save_plots, figures_path, which_file)
-    
+
     if operations_to_apply['plot_grand_averages_butterfly_evokeds']:
         plot.plot_grand_averages_butterfly_evokeds(name,lowpass, highpass, save_dir_averages,
                                                    event_id_list, save_plots, figures_path,
                                                    which_file)
-    
+
     if operations_to_apply['plot_grand_averages_source_estimates']:
         plot.plot_grand_averages_source_estimates(name, save_dir_averages,lowpass, highpass,
                                                   subjects_dir, method,
@@ -952,18 +952,18 @@ for which_file in which_file_list:
     #==============================================================================
     # STATISTICS SOURCE SPACE
     #==============================================================================
-    
+
     if operations_to_apply['statistics_source_space']:
         operations.statistics_source_space(morphed_data_all, save_dir_averages,
                                            independent_variable_1,
                                            independent_variable_2,
                                            time_window, n_permutations,lowpass, highpass,
                                            overwrite)
-    
+
     #==============================================================================
     # PLOT GRAND AVERAGES OF SOURCE ESTIMATES WITH STATISTICS CLUSTER MASK
     #==============================================================================
-    
+
     if operations_to_apply['plot_grand_averages_source_estimates_cluster_masked']:
         plot.plot_grand_averages_source_estimates_cluster_masked(
             name, save_dir_averages,lowpass, highpass, subjects_dir, method, time_window,
@@ -975,7 +975,7 @@ for which_file in which_file_list:
 #==============================================================================
 # Create a file from the Pipeline Analysis Console Output
 if operations_to_apply['print_pipeline_analysis']:
-    
+
     pa_path = join(data_path, '_Subject_scripts',
                    str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py')
 
@@ -984,18 +984,18 @@ if operations_to_apply['print_pipeline_analysis']:
                      str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py'),'w')
         print(str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py', 'has been created')
         print('#'*60 + '\n' + 'Pipeline-Output-Analysis:', file=pa_file)
-        
+
     else:
         pa_file = open(join(data_path, '_Subject_scripts',
                      str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py'),'a')
         print(4*'\n' + '#'*60 + '\n' + 'Pipeline-Output-Analysis:', file=pa_file)
-        
+
     now = datetime.now()
     print(f'Executed on {now.date()} at {now.time()}', file=pa_file)
-    
-    print('-'*60 + '\n' + 'Parameters:', file=pa_file)    
+
+    print('-'*60 + '\n' + 'Parameters:', file=pa_file)
     # Get current Parameters from Pipeline_Pinprick.py
-    with open('./Pipeline_Pinprick.py', 'r') as p:  
+    with open('./Pipeline_Pinprick.py', 'r') as p:
         p = list(p)
         for l in p:
             if '#parameters_start\n' == l:
@@ -1005,34 +1005,34 @@ if operations_to_apply['print_pipeline_analysis']:
         for l in p[start:stop]:
             if l!='\n' and '#' not in l:
                 print(l[:-1], file=pa_file)
-                    
+
     print('-'*60 + '\n' + 'Pipeline-Output-Analysis:', file=pa_file)
     for i in error_list:
         print(i, file=pa_file)
-    
-    print('-'*60 + '\n' + 'Percentage of rejected epochs:', file=pa_file)    
+
+    print('-'*60 + '\n' + 'Percentage of rejected epochs:', file=pa_file)
     for i in epoch_rejection:
         print(i, ':', epoch_rejection[i], '%', file=pa_file)
-    
+
     print('-'*60 + '\n' + 'n_events in Epochs', file=pa_file)
     for i in n_events:
         print(i, ':', n_events[i], 'events', file=pa_file)
-    
-    print('-'*60 + '\n' + 'Median ISI in Events', file=pa_file)    
+
+    print('-'*60 + '\n' + 'Median ISI in Events', file=pa_file)
     for i in ISIs:
         print(i,':',ISIs[i], file=pa_file)
-    """ 
-    print('-'*60 + '\n' + 'Epochs contaminated with EOG', file=pa_file)    
+    """
+    print('-'*60 + '\n' + 'Epochs contaminated with EOG', file=pa_file)
     for i in eog_contamination:
         print(i,':',eog_contamination[i], file=pa_file)
     """
     if autoreject:
-        print('-'*60 + '\n' + 'Autoreject-values', file=pa_file)  
+        print('-'*60 + '\n' + 'Autoreject-values', file=pa_file)
         for i in ar_values:
             print(i,':',ar_values[i], file=pa_file)
-    
-    print('-'*60 + '\n' + 'Channels responsible for rejection', file=pa_file)     
+
+    print('-'*60 + '\n' + 'Channels responsible for rejection', file=pa_file)
     for i in all_reject_channels:
         print(i, ':', all_reject_channels[i], '\n', file=pa_file)
-    
+
     pa_file.close()
