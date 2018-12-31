@@ -101,7 +101,7 @@ if 0: # set 1 to run, # add like this:MEG 001,MEG 002,MEG 003,...;
 if 0:
     suborg.add_sub_cond_dict(sub_cond_dict_path)
 
-if 0: # Coregister your Files to your Subjects
+if 1: # Coregister your Files to your Subjects
     mne.gui.coregistration(head_high_res=True, mark_inside=True, subjects_dir=subjects_dir, guess_mri_subject=False)
 
 
