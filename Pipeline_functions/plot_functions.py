@@ -44,9 +44,14 @@ def plot_raw(name, save_dir, overwrite, bad_channels):
     events = io.read_events(name, save_dir)
     raw.info['bads'] = bad_channels
 
-    mne.viz.plot_raw(raw=raw, events=events, n_channels=30, bad_color='red',
+    mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red', events=events,
                     scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-                    title=name, block=True)
+                    title=name)
+    
+    # bad_channels gui not working, block is now indeed blocking but too much
+    """mne.viz.plot_raw(raw=raw, events=events, n_channels=30, bad_color='red',
+                    scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
+                    title=name, block=True)"""
 
 @decor.topline
 def plot_sensors(name, save_dir):
@@ -337,7 +342,7 @@ def plot_evoked_topomap(name, save_dir, lowpass, highpass, subject, save_plots, 
     for evoked in evokeds:
         evoked_figure = mne.viz.plot_evoked_topomap(evoked, times='interactive',
                                                     layout=layout,
-                                                    title=name)
+                                                    title=name +'-' + evoked.comment)
 
         if save_plots:
             save_path = join(figures_path, 'evoked_topomap',

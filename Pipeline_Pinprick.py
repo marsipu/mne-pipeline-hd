@@ -42,7 +42,7 @@ if OS == 'Linux':
     home_path = '/mnt/z/Promotion/' # change this according to needs
 
 if OS == 'Windows':
-    home_path = 'Z:/Promotion/' # change this according to needs
+    home_path = 'D:/Promotion_D_Turbo/' # change this according to needs
 
 #==============================================================================
 # IMPORTS
@@ -62,7 +62,7 @@ from Pipeline_functions import subject_organisation as suborg
 # PATHS
 #%%============================================================================
 
-project_name = 'Pin-Prick-Projekt'
+project_name = 'PP_Maschine'
 data_path = join(home_path, project_name, 'Daten/')
 subjects_dir = join(home_path, 'Freesurfer', 'Output/')
 mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
@@ -100,10 +100,10 @@ if 0: # set 1 to run, # add like this:MEG 001,MEG 002,MEG 003,...;
 
 if 0:
     suborg.add_sub_cond_dict(sub_cond_dict_path)
-
-if 1: # Coregister your Files to your Subjects
+"""
+if 0: # Coregister your Files to your Subjects
     mne.gui.coregistration(head_high_res=True, mark_inside=True, subjects_dir=subjects_dir, guess_mri_subject=False)
-
+"""
 
 #Functions
 all_subjects = suborg.read_subjects(sub_list_path)
@@ -137,7 +137,7 @@ sub_cond_dict = suborg.read_sub_cond_dict(sub_cond_dict_path)
 '46,45,42,65,53,62'
 """
 
-which_file_list = ['46']  # Has to be strings!
+which_file_list = ['12-24']  # Has to be strings!
 
 which_mri_subject = '4,8-10' # Has to be a string!
 
@@ -150,15 +150,15 @@ operations_to_apply = dict(
 
                     populate_data_directory=1, #don't do it in Linux if you're using also Windows!
                     mri_preprocessing=0, # enable to do any of the mri_subject-related functions
-                    print_pipeline_analysis=1,
+                    print_pipeline_analysis=0,
 
                     # WITHIN SUBJECT
 
                     # sensor space operations
-                    filter_raw=0,
-                    find_events=0,
+                    filter_raw=1,
+                    find_events=1,
                     find_eog_events=0,
-                    epoch_raw=0,
+                    epoch_raw=1,
                     run_ssp_er=0, # on Empty-Room-Data
                     apply_ssp_er=0,
                     run_ssp_clm=0, # on 1-Minute-Calm-Data
@@ -170,7 +170,7 @@ operations_to_apply = dict(
                     run_ica=0, # only if EOG/EEG-Channels available, HIGPASS-FILTER RECOMMENDED!!!
                     apply_ica=0,
                     ica_pure=0,
-                    get_evokeds=0,
+                    get_evokeds=1,
                     TF_Morlet=0,
 
                     # source space operations (bash/Linux)
@@ -183,6 +183,7 @@ operations_to_apply = dict(
                     make_bem_solutions=0,
                     make_morph_map=0, #until here all bash scripts!
 
+                    mri_coreg=0,
                     setup_source_space=0,
                     create_forward_solution=0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
                     estimate_noise_covariance=0,
@@ -199,14 +200,14 @@ operations_to_apply = dict(
                     grand_averages_evokeds=0, # sensor space
                     average_morphed_data=0, # source space
 
-#%%============================================================================
+
                     # PLOTTING
 
                     # plotting sensor space (within subject)
                     plot_raw=0,
                     print_info=0,
                     plot_sensors=0,
-                    plot_events=0,
+                    plot_events=1,
                     plot_eog_events=0,
                     plot_filtered=0,
                     plot_power_spectra=0,
@@ -221,8 +222,8 @@ operations_to_apply = dict(
                     plot_epochs_image=0,
                     plot_epochs_topo=0,
                     plot_butterfly_evokeds=1,
-                    plot_evoked_topo=0,
-                    plot_evoked_topomap=0,
+                    plot_evoked_topo=1,
+                    plot_evoked_topomap=1,
                     plot_evoked_field=0,
                     plot_evoked_joint=0,
                     plot_evoked_white=0,
@@ -235,7 +236,7 @@ operations_to_apply = dict(
                     plot_source_space=0,
                     plot_bem=0,
                     plot_noise_covariance=0,
-                    plot_source_estimates=1,
+                    plot_source_estimates=0,
                     # added float() in 2549 surfer\viz.py to avoid error
                     # changed render_window.size to get_size() in mayavi/tools/figure.py
                     plot_animated_stc=0,
@@ -276,15 +277,15 @@ lowpass = 80 # Hz
 highpass = 0 # Hz # at least 1 if to apply ICA
 
 # events
-adjust_timeline_by_msec = -47 #delay to stimulus in ms
+adjust_timeline_by_msec = 0 #delay to stimulus in ms
 
 # epochs
-min_duration = 0.002 # s
+min_duration = 0.005 # s
 time_unit = 's'
 tmin = -1.000 # s
 tmax = 1.000 # s
 baseline = (-0.800, -0.500) # [s]
-autoreject = 0 # set 1 for autoreject
+autoreject = 1 # set 1 for autoreject
 overwrite_ar = 0 # if to calculate new thresholds or to use previously calculated
 reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
@@ -434,7 +435,6 @@ n_jobs_freesurfer = 4 # change according to amount of processors you have
 error_list = []
 epoch_rejection = {}
 n_events = {}
-ISIs = {}
 eog_contamination = {}
 ar_values = {}
 all_reject_channels = {}
@@ -520,31 +520,93 @@ for which_file in which_file_list:
             bad_channels = bad_channels_dict[subject]
             subtomri = sub_to_mri[subject]
             ermsub = erm_dict[subject]
-
-            if 'ER' in subject:
-                event_id = {'pinprick':1}
-                event_id_list = []
-                for k in event_id.keys():
-                    event_id_list.append(k)
-                print('='*60 + '\n',subject, '= ER-Trial')
-
-            elif 'WU' in subject:
-                event_id = {'pinprick':1,
-                            'WU_First':13,
-                            'WU_Last':14}
-                event_id_list = []
-                for k in event_id.keys():
-                    event_id_list.append(k)
-                print('='*60 + '\n',subject, '= WU-Trial')
-
-            else:
-                event_id = {'pinprick':1}
-                event_id_list = []
-                for k in event_id.keys():
-                    event_id_list.append(k)
-                print('='*60 + '\n',subject, '= other Trial')
-
-
+            event_id_list = []
+            
+            # Handle event-id's
+            all_event_ids = {'LBT':1,
+'2':2,
+'3':3,
+'4':4,
+'5':5,
+'6':6,
+'7':7,
+'8':8,
+'9':9,
+'10':10,
+'11':11,
+'12':12,
+'13':13,
+'14':14,
+'15':15,
+'16':16,
+'17':17,
+'18':18,
+'19':19,
+'20':20,
+'21':21,
+'22':22,
+'23':23,
+'24':24,
+'25':25,
+'26':26,
+'27':27,
+'28':28,
+'29':29,
+'30':30,
+'31':31,
+'32':32,
+'33':33,
+'34':34,
+'35':35,
+'36':36,
+'37':37,
+'38':38,
+'39':39,
+'40':40,
+'41':41,
+'42':42,
+'43':43,
+'44':44,
+'45':45,
+'46':46,
+'47':47,
+'48':48,
+'49':49,
+'50':50,
+'51':51,
+'52':52,
+'53':53,
+'54':54,
+'55':55,
+'56':56,
+'57':57,
+'58':58,
+'59':59,
+'60':60,
+'61':61,
+'62':62,
+'63':63}
+            
+            event_id = dict()
+            
+            try:
+                events = io.read_events(name, save_dir)
+            
+            except FileNotFoundError:
+                operations.find_events(name, save_dir, min_duration,
+                        adjust_timeline_by_msec,lowpass, highpass, overwrite)
+                
+                events = io.read_events(name, save_dir)
+                
+            u = np.unique(events[:,2])
+            
+            for t_name, value in all_event_ids.items():
+                if value in u:
+                    event_id.update({t_name:value})
+            
+            # Print Subject Console Header
+            print(60*'='+'\n'+name)
+            
             #==========================================================================
             # POPULATE SUBJECT DIRECTORIES
             #==========================================================================
@@ -576,7 +638,7 @@ for which_file in which_file_list:
 
             if operations_to_apply['find_events']:
                 operations.find_events(name, save_dir, min_duration,
-                        adjust_timeline_by_msec,lowpass, highpass, ISIs, overwrite)
+                        adjust_timeline_by_msec,lowpass, highpass, overwrite)
 
             if operations_to_apply['find_eog_events']:
                 operations.find_eog_events(name, save_dir, eog_channel, eog_contamination)
@@ -740,7 +802,10 @@ for which_file in which_file_list:
             #==========================================================================
 
             # use mne.gui.coregistration()
-
+            
+            if operations_to_apply['mri_coreg']:
+                operations.mri_coreg(name, save_dir, subtomri, subjects_dir)
+            
             if operations_to_apply['plot_transformation']:
                 plot.plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots, figures_path)
 
@@ -749,7 +814,7 @@ for which_file in which_file_list:
             #==========================================================================
 
             if operations_to_apply['create_forward_solution']:
-                operations.create_forward_solution(name, save_dir, subtomri, subject, subjects_dir,
+                operations.create_forward_solution(name, save_dir, subtomri, subjects_dir,
                                                    source_space_method, overwrite, n_jobs, eeg_fwd)
 
             #==========================================================================
@@ -980,8 +1045,7 @@ if operations_to_apply['print_pipeline_analysis']:
                    str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py')
 
     if not isfile(pa_path):
-        pa_file = open(join(data_path, '_Subject_scripts',
-                     str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py'),'w')
+        pa_file = open(pa_path,'w')
         print(str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py', 'has been created')
         print('#'*60 + '\n' + 'Pipeline-Output-Analysis:', file=pa_file)
 
@@ -1018,9 +1082,6 @@ if operations_to_apply['print_pipeline_analysis']:
     for i in n_events:
         print(i, ':', n_events[i], 'events', file=pa_file)
 
-    print('-'*60 + '\n' + 'Median ISI in Events', file=pa_file)
-    for i in ISIs:
-        print(i,':',ISIs[i], file=pa_file)
     """
     print('-'*60 + '\n' + 'Epochs contaminated with EOG', file=pa_file)
     for i in eog_contamination:

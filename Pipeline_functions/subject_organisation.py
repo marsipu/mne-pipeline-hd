@@ -377,11 +377,11 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path):
             print('bad_channels_dict.py not yet created, press assign')
 
     def plot_raw_tk():
-        choice=listbox.get(listbox.curselection())
+        choice = listbox.get(listbox.curselection())
         name = choice
         save_dir = join(data_path, choice)
         raw = io.read_raw(name, save_dir)
-        raw.plot(title=name, bad_color='red', scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), block=True, n_channels=30)
+        raw.plot(title=name, bad_color='red', scalings=dict(mag=1e-12, grad=4e-11, eeg=50e-6, stim=1), n_channels=30)
 
 
     master = t.Tk()
