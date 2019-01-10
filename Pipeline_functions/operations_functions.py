@@ -42,7 +42,102 @@ def filter_string(lowpass, highpass):
 #==============================================================================
 @decor.topline
 def populate_data_directory(home_path, project_name, data_path, figures_path,
-                            subjects_dir, subjects):
+                            subjects_dir, subjects, all_event_ids):
+    
+    print('Chakalaka')
+    ## create MEG and MRI paths
+    for subject in subjects:
+
+        full_path_MEG = join(home_path, project_name, data_path, subject)
+
+        ## create MEG dirs
+        try:
+            makedirs(full_path_MEG)
+            print(full_path_MEG + ' has been created')
+        except OSError as exc:
+            if exc.errno == 17: ## dir already exists
+                pass
+
+    ## also create grand averages path with a statistics folder
+    grand_average_path = join(home_path, project_name, data_path,
+                              'grand_averages/statistics')
+    try:
+        makedirs(grand_average_path)
+        print(grand_average_path + ' has been created')
+    except OSError as exc:
+        if exc.errno == 17: ## dir already exists
+            pass
+
+    ##also create erm(empty_room_measurements)paths
+    erm_path = join(home_path, project_name, data_path,
+                              'empty_room_data')
+    try:
+        makedirs(erm_path)
+        print(erm_path + ' has been created')
+    except OSError as exc:
+        if exc.errno == 17: ## dir already exists
+            pass
+
+    ## also create figures path
+    figure_subfolders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
+                         'power_spectra_raw', 'power_spectra_epochs',
+                         'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
+                         'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
+                         'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
+                         'noise_covariance', 'events', 'label_time_course', 'ECD',
+                         'stcs_movie', 'bem', 'snr', 'statistics']
+    
+    for figure_subfolder in figure_subfolders:
+        full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
+        ## create figure paths
+        try:
+            makedirs(full_path_figures)
+            print(full_path_figures + ' has been created')
+        except OSError as exc:
+            if exc.errno == 17: ## dir already exists
+                pass
+    
+    # create subfolders for event_ids
+    trialed_folders = ['epochs', 'power_spectra_epochs', 'epochs_image', 'epochs_topo', 'evoked_butterfly',
+                     'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
+                     'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
+                     'stcs', 'vec_stcs','stcs_movie', 'snr']   
+    
+    for ev_id in all_event_ids:
+        for tr in trialed_folders:
+            subfolder_path = join(home_path, project_name, figures_path, tr, ev_id)
+            try:
+                makedirs(subfolder_path)
+                print(subfolder_path + ' has been created')
+            except OSError as exc:
+                if exc.errno == 17: ## dir already exists
+                    pass
+    
+    ## also create grand average figures path
+    grand_averages_figures_path = join(home_path, project_name, figures_path,
+                                      'grand_averages')
+    figure_subfolders = ['sensor_space', 'source_space/statistics']
+    for figure_subfolder in figure_subfolders:
+        try:
+            full_path = join(grand_averages_figures_path, figure_subfolder)
+            makedirs(full_path)
+            print(full_path + ' has been created')
+        except OSError as exc:
+            if exc.errno == 17: ## dir already exists
+                pass
+
+    ## also create FreeSurfer path
+    freesurfer_path = join(home_path, project_name, subjects_dir)
+    try:
+        makedirs(freesurfer_path)
+        print(freesurfer_path + ' has been created')
+    except OSError as exc:
+        if exc.errno == 17: ## dir already exists
+            pass
+
+@decor.topline
+def populate_data_directory_small(home_path, project_name, data_path, figures_path,
+                                  subjects_dir, subjects):
 
     ## create MEG and MRI paths
     for subject in subjects:
@@ -85,7 +180,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics']
-
+    
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
         ## create figure paths
@@ -95,7 +190,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
         except OSError as exc:
             if exc.errno == 17: ## dir already exists
                 pass
-
+    
     ## also create grand average figures path
     grand_averages_figures_path = join(home_path, project_name, figures_path,
                                       'grand_averages')
@@ -117,7 +212,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
     except OSError as exc:
         if exc.errno == 17: ## dir already exists
             pass
-
+        
 #==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 #==============================================================================
@@ -173,28 +268,31 @@ def find_events(name, save_dir, min_duration,
 
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
-    
-    if overwrite or not isfile(events_path):
 
-        raw = io.read_filtered(name, save_dir, lowpass, highpass)
+    if overwrite or not isfile(events_path):
+        
+        try:
+            raw = io.read_filtered(name, save_dir, lowpass, highpass)
+        except FileNotFoundError:
+            raw = io.read_raw(name, save_dir)
 
         # By Martin Schulz
         # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg
-        
-        # prepare arrays      
+
+        # prepare arrays
         events = np.ndarray(shape=(0,3), dtype=np.int32)
         evs = list()
         evs_tol = list()
-        
-        
-        # Find events for each stim channel, append sample values to list      
+
+
+        # Find events for each stim channel, append sample values to list
         evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 001'])[:,0])
         evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 002'])[:,0])
         evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 003'])[:,0])
         evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 004'])[:,0])
         evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 005'])[:,0])
         evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 006'])[:,0])
-        
+
         """
         #test events
         evs = [np.array([1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63])*10,
@@ -204,74 +302,72 @@ def find_events(name, save_dir, min_duration,
                np.array([16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63])*10,
                np.array([32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63])*10]
         """
-        
+
         for i in evs:
-            
+
             # delete events in each channel, which are too close too each other (1ms)
             too_close = np.where(np.diff(i)<=1)
             if np.size(too_close)>=1:
                 print(f'Two close events (1ms) at samples {i[too_close] + raw.first_samp}, first deleted')
                 i = np.delete(i,too_close,0)
                 evs[evs.index(i)] = i
-                
+
             # add tolerance to each value
             i_tol = np.ndarray(shape = (0,1), dtype=np.int32)
             for t in i:
                 i_tol = np.append(i_tol, t-1)
                 i_tol = np.append(i_tol, t)
                 i_tol = np.append(i_tol, t+1)
-            
+
             evs_tol.append(i_tol)
-            
-            
+
+
         # Get events from combinated Stim-Channels
         equals = reduce(np.intersect1d, (evs_tol[0], evs_tol[1], evs_tol[2],
                                          evs_tol[3], evs_tol[4], evs_tol[5]))
+        #elimnate duplicated events
         too_close = np.where(np.diff(equals)<=1)
         if np.size(too_close)>=1:
             equals = np.delete(equals,too_close,0)
-            equals -= 1
-                  
+            equals -= 1 # correction, because of shift with deletion
+
         for q in equals:
-            if not q in events:
-                events = np.append(events, [[q,0,63]], axis=0)      
+            if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                events = np.append(events, [[q,0,63]], axis=0)
 
 
         for a,b,c,d,e in combinations(range(6), 5):
             equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c],
-                                             evs_tol[d], evs_tol[e]))        
+                                             evs_tol[d], evs_tol[e]))
             too_close = np.where(np.diff(equals)<=1)
             if np.size(too_close)>=1:
                 equals = np.delete(equals,too_close,0)
                 equals -= 1
-            
-            """# eliminate false assignements
-            np.delete(equals, np.where(equals[:] in events[:,0]))"""
-            
+
             for q in equals:
                 if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
-                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c + 2**d + 2**e)]], axis=0) 
+                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c + 2**d + 2**e)]], axis=0)
 
 
         for a,b,c,d in combinations(range(6), 4):
-            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c], evs_tol[d]))          
+            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c], evs_tol[d]))
             too_close = np.where(np.diff(equals)<=1)
             if np.size(too_close)>=1:
                 equals = np.delete(equals,too_close,0)
                 equals -= 1
-            
+
             for q in equals:
                 if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
-                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c + 2**d)]], axis=0)           
-                    
-                    
+                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c + 2**d)]], axis=0)
+
+
         for a,b,c in combinations(range(6), 3):
             equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c]))
             too_close = np.where(np.diff(equals)<=1)
             if np.size(too_close)>=1:
                 equals = np.delete(equals,too_close,0)
                 equals -= 1
-                
+
             for q in equals:
                 if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
                     events = np.append(events, [[q,0,int(2**a + 2**b + 2**c)]], axis=0)
@@ -283,7 +379,7 @@ def find_events(name, save_dir, min_duration,
             if np.size(too_close)>=1:
                 equals = np.delete(equals,too_close,0)
                 equals -= 1
-                
+
             for q in equals:
                 if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
                     events = np.append(events, [[q,0,int(2**a + 2**b)]], axis=0)
@@ -294,20 +390,19 @@ def find_events(name, save_dir, min_duration,
             for e in evs[i]:
                 if not e in events[:,0] and not e in events[:,0]+1 and not e in events[:,0]-1:
                     events = np.append(events, [[e,0,2**i]], axis=0)
-        
+
         # stackoverflow way of sorting by only one column
         events[events[:,0].argsort()]
-        
+
         # apply latency correction
         events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10**-3 * \
                     raw.info['sfreq']) for ts in events[:, 0]]
 
         ids = np.unique(events[:,2])
         print('unique ID\'s assigned: ',ids)
-        
+
         if np.size(events)>0:
             mne.event.write_events(events_path, events)
-            print('test')
         else:
             print('No events found')
 
@@ -651,7 +746,7 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
                            stim=False, exclude=bad_channels)
 
-            ica = mne.preprocessing.ICA(n_components=25, method='fastica')
+            ica = mne.preprocessing.ICA(n_components=10, method='fastica')
 
             if autoreject:
                 reject_value_path = join(save_dir, filter_string(lowpass, highpass) \
@@ -1043,12 +1138,19 @@ def setup_source_space(mri_subject, subjects_dir, source_space_method, n_jobs,
 
 @decor.topline
 def mri_coreg(name, save_dir, subtomri, subjects_dir):
-    
+
     raw_name = name + '.fif'
     raw_path = join(save_dir, raw_name)
     
-    mne.gui.coregistration(subject=subtomri, inst=raw_path, subjects_dir=subjects_dir, guess_mri_subject=False)
-
+    try:
+        trans = io.read_transformation(save_dir, subtomri)
+        mne.gui.coregistration(subject=subtomri, inst=raw_path, trans=trans,
+                               subjects_dir=subjects_dir, guess_mri_subject=False)
+        
+    except FileNotFoundError:
+        print('No trans-File found')
+        mne.gui.coregistration(subject=subtomri, inst=raw_path,
+                               subjects_dir=subjects_dir, guess_mri_subject=False)        
 @decor.topline
 def create_forward_solution(name, save_dir, subtomri, subjects_dir,
                             source_space_method, overwrite, n_jobs, eeg_fwd):

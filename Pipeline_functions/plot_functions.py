@@ -38,20 +38,21 @@ def print_info(name, save_dir, save_plots):
     print(info)
 
 @decor.topline
-def plot_raw(name, save_dir, overwrite, bad_channels):
+def plot_raw(name, save_dir, overwrite, bad_channels, bad_channels_dict):
 
     raw = io.read_raw(name, save_dir)
-    events = io.read_events(name, save_dir)
     raw.info['bads'] = bad_channels
+    try:
+        events = io.read_events(name, save_dir)
+        mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red', events=events,
+                        scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
+                        title=name)
+    except (FileNotFoundError, AttributeError):
+        mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red',
+                scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
+                title=name)
 
-    mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red', events=events,
-                    scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-                    title=name)
-    
-    # bad_channels gui not working, block is now indeed blocking but too much
-    """mne.viz.plot_raw(raw=raw, events=events, n_channels=30, bad_color='red',
-                    scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-                    title=name, block=True)"""
+    bad_channels_dict[name] = raw.info['bads'] # would be useful, if block worked properly
 
 @decor.topline
 def plot_sensors(name, save_dir):
@@ -87,16 +88,20 @@ def plot_eog_events(name, save_dir):
     eog_epochs.plot(events=comb_events,title=name)
     
 @decor.topline
-def plot_filtered(name, save_dir, lowpass, highpass):
+def plot_filtered(name, save_dir, lowpass, highpass, bad_channels):
 
     raw = io.read_filtered(name, save_dir, lowpass, highpass)
     raw = io.read_raw(name, save_dir)
-    events = io.read_events(name, save_dir)
-    
-    mne.viz.plot_raw(raw=raw, events=events, n_channels=30, bad_color='red',
+    raw.info['bads'] = bad_channels
+    try:
+        events = io.read_events(name, save_dir)
+        mne.viz.plot_raw(raw=raw, events=events, n_channels=30, bad_color='red',
                     scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-                    title=name, block=True)
-
+                    title=name)
+    except FileNotFoundError:
+                mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red',
+                    scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
+                    title=name)
 @decor.topline
 def plot_power_spectra(name, save_dir, lowpass, highpass, subject, save_plots,
                         figures_path, bad_channels):
@@ -126,17 +131,18 @@ def plot_power_spectra_epochs(name, save_dir, lowpass, highpass, subject, save_p
     raw.info['bads'] = bad_channels
     picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=False, ecg=False,
                            exclude='bads')
+    for trial_type in epochs.event_id:
+        
+        psd_figure = epochs[trial_type].plot_psd(fmax=lowpass, picks=picks, n_jobs=-1)
+        plt.title(name)
 
-    psd_figure = epochs.plot_psd(fmax=lowpass, picks=picks, n_jobs=-1)
-    plt.title(name)
-
-    if save_plots:
-        save_path = join(figures_path, 'power_spectra_epochs', name + \
-                             '_psde' + filter_string(lowpass, highpass) + '.jpg')
-        psd_figure.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
+        if save_plots:
+            save_path = join(figures_path, 'power_spectra_epochs', trial_type, name + \
+                                 trial_type + '_psde' + filter_string(lowpass, highpass) + '.jpg')
+            psd_figure.savefig(save_path, dpi=600)
+            print('figure: ' + save_path + ' has been saved')
+        else:
+            print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
 def plot_power_spectra_topo(name, save_dir, lowpass, highpass, subject, save_plots,
@@ -272,7 +278,7 @@ def plot_epochs(name, save_dir, lowpass, highpass, subject, save_plots,
         plt.title(trial_type)
 
         if save_plots:
-            save_path = join(figures_path, 'epochs', name + '_epochs' + \
+            save_path = join(figures_path, 'epochs', trial_type, name + '_epochs' + \
                 filter_string(lowpass, highpass) +  '.jpg')
 
             epochs_image_full.savefig(save_path, dpi=600)
@@ -290,7 +296,7 @@ def plot_epochs_image(name, save_dir, lowpass, highpass, subject, save_plots,
         epochs_image = mne.viz.plot_epochs_image(epochs[trial_type], title=name)
 
         if save_plots:
-            save_path = join(figures_path, 'epochs_image', name + '_epochs_image' + \
+            save_path = join(figures_path, 'epochs_image', trial_type, name + '_epochs_image' + \
             filter_string(lowpass, highpass) +  '.jpg')
 
             epochs_image[0].savefig(save_path, dpi=600)
@@ -309,7 +315,7 @@ def plot_epochs_topo(name, save_dir, lowpass, highpass, subject, save_plots,
         epochs_topo = mne.viz.plot_topo_image_epochs(epochs, title=name, layout=layout)
 
         if save_plots:
-            save_path = join(figures_path, 'epochs_topo', name + '_epochs_topo' + \
+            save_path = join(figures_path, 'epochs_topo', trial_type, name + '_epochs_topo' + \
             filter_string(lowpass, highpass) +  '.jpg')
 
             epochs_topo.savefig(save_path, dpi=600)
@@ -340,12 +346,12 @@ def plot_evoked_topomap(name, save_dir, lowpass, highpass, subject, save_plots, 
     
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
     for evoked in evokeds:
-        evoked_figure = mne.viz.plot_evoked_topomap(evoked, times='interactive',
+        evoked_figure = mne.viz.plot_evoked_topomap(evoked, times='auto',
                                                     layout=layout,
                                                     title=name +'-' + evoked.comment)
 
         if save_plots:
-            save_path = join(figures_path, 'evoked_topomap',
+            save_path = join(figures_path, 'evoked_topomap', evoked.comment,
                              name + '_' + evoked.comment + '_evoked_topomap' + \
                              filter_string(lowpass, highpass) + '.jpg')
             evoked_figure.savefig(save_path, dpi=600)
@@ -373,7 +379,7 @@ def plot_evoked_field(name, save_dir, lowpass, highpass, subject,
             mlab.view(azimuth=180)
 
             if save_plots:
-                save_path = join(figures_path, 'evoked_field',
+                save_path = join(figures_path, 'evoked_field', evoked.comment,
                                      name + '_' + evoked.comment + '_evoked_field' + \
                                      filter_string(lowpass, highpass) + '-' + str(t) + '.jpg')
                 mlab.savefig(save_path)
@@ -406,7 +412,7 @@ def plot_evoked_joint(name, save_dir, lowpass, highpass, subject, save_plots,
                                                topomap_args={'layout':layout})
 
     if save_plots:
-        save_path = join(figures_path, 'evoked_joint',
+        save_path = join(figures_path, 'evoked_joint', evoked.comment,
                          name + '_' + evoked.comment + '_joint' + \
                          filter_string(lowpass, highpass) + '.jpg')
         figure.savefig(save_path, dpi=600)
@@ -436,7 +442,7 @@ def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, subject, save_plot
                              selectable=True, gfp=True, zorder='std')
 
         if save_plots:
-            save_path = join(figures_path, 'evoked_butterfly',
+            save_path = join(figures_path, 'evoked_butterfly', evoked.comment,
                              name + '_' + evoked.comment + '_butterfly' + \
                              filter_string(lowpass, highpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
@@ -464,7 +470,7 @@ def plot_evoked_white(name, save_dir, lowpass, highpass, subject, save_plots, fi
         plt.title(name + ' - ' + evoked.comment, loc='center')
 
         if save_plots:
-            save_path = join(figures_path, 'evoked_white',
+            save_path = join(figures_path, 'evoked_white', evoked.comment,
                              name + '_' + evoked.comment + '_white' + \
                              filter_string(lowpass, highpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
@@ -482,7 +488,7 @@ def plot_evoked_image(name, save_dir, lowpass, highpass, subject, save_plots, fi
         plt.title(name + ' - ' + evoked.comment, loc='center')
 
         if save_plots:
-            save_path = join(figures_path, 'evoked_image',
+            save_path = join(figures_path, 'evoked_image', evoked.comment,
                              name + '_' + evoked.comment + '_image' + \
                              filter_string(lowpass, highpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
@@ -589,7 +595,7 @@ def plot_source_estimates(name, save_dir, lowpass, highpass, subtomri, subjects_
                        figure = mlab.gcf(), height=0.9)
             
             if save_plots:
-                save_path = join(figures_path, 'stcs',
+                save_path = join(figures_path, 'stcs', trial_type,
                                  name + '_' + trial_type + \
                                  filter_string(lowpass, highpass) + str(t) + 'sec.jpg')
                 mlab.savefig(save_path, figure=mlab.gcf())
@@ -613,7 +619,7 @@ def plot_vector_source_estimates(name, save_dir, lowpass, highpass, subtomri, su
                                     views='med', initial_time=mne_evoked_time)
     
         if save_plots:
-            save_path = join(figures_path, 'vec_stcs',
+            save_path = join(figures_path, 'vec_stcs', trial_type,
                              name + '_' + trial_type +\
                              filter_string(lowpass, highpass) + str(mne_evoked_time) + 'sec.jpg')
             mlab.savefig(save_path, figure=mlab.gcf())
@@ -632,7 +638,7 @@ def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
     for trial_type in stcs:
         stc = stcs[trial_type]
         mlab.figure(figure=name + '_' + trial_type + '_movie',size=(1280,720))
-        save_path = join(figures_path, 'stcs_movie', name + '_' + trial_type +\
+        save_path = join(figures_path, 'stcs_movie', trial_type, name + '_' + trial_type +\
 						      filter_string(lowpass, highpass) + '.mp4')
         brain = mne.viz.plot_source_estimates(stc=stc,subject=subtomri, surface='inflated',
                                     subjects_dir=subjects_dir, figure=mlab.gcf(), size=(1280,720),
@@ -687,7 +693,7 @@ def plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path):
         plt.title(name + ' - ' + evoked.comment, loc='center')
 
         if save_plots:
-            save_path = join(figures_path, 'snr',
+            save_path = join(figures_path, 'snr', evoked.comment,
                              name + '_' + evoked.comment + '_snr' + \
                              filter_string(lowpass, highpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
@@ -718,13 +724,13 @@ def label_time_course(name, save_dir, lowpass, highpass, method, source_space_me
             """
             plt.figure()
             plt.plot(1e3 * stc_label.times, stc_label.data.T, 'k', linewidth=0.5)
-            plt.plot(1e3 * stc_label.times, stc_mean.T, 'r', linewidth=3)
+            #plt.plot(1e3 * stc_label.times, stc_mean.T, 'r', linewidth=3)
             plt.xlabel('Time (ms)')
             plt.ylabel('Source amplitude')
             plt.title('{} in : {}'.format(trial_type, label.name))
             plt.show()
             if save_plots:
-                save_path = join(figures_path, 'label_time_course', name + \
+                save_path = join(figures_path, 'label_time_course', trial_type, name + \
                                      filter_string(lowpass, highpass) + '_' + \
                                      trial_type + '_' + label.name + '.jpg')
                 plt.savefig(save_path, dpi=600)

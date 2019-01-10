@@ -11,7 +11,7 @@ import tkinter as t
 
 ## Subjects
 def add_subjects(sub_list_path, home_path, project_name, data_path, figures_path,
-                            subjects_dir):
+                 subjects_dir):
 
     def add_to_list():
         if not isfile(sub_list_path):
@@ -53,7 +53,7 @@ def add_subjects(sub_list_path, home_path, project_name, data_path, figures_path
     def pop_dir():
 
         subjects = read_subjects(sub_list_path)
-        op.populate_data_directory(home_path, project_name, data_path, figures_path,
+        op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
                                    subjects_dir, subjects)
 
     master = t.Tk()
@@ -381,8 +381,17 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path):
         name = choice
         save_dir = join(data_path, choice)
         raw = io.read_raw(name, save_dir)
-        raw.plot(title=name, bad_color='red', scalings=dict(mag=1e-12, grad=4e-11, eeg=50e-6, stim=1), n_channels=30)
-
+        try:
+            bad_channels_dict = read_bad_channels_dict(bad_channels_dict_path)
+            bad_channels = bad_channels_dict[name]
+            raw.info['bads'] = bad_channels
+            raw.plot(title=name, bad_color='red',
+                     scalings=dict(mag=1e-12, grad=4e-11, eeg=50e-6, stim=1),
+                     n_channels=30)
+        except (FileNotFoundError, KeyError):
+            raw.plot(title=name, bad_color='red',
+                     scalings=dict(mag=1e-12, grad=4e-11, eeg=50e-6, stim=1),
+                     n_channels=30)            
 
     master = t.Tk()
 
