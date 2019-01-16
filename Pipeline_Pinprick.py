@@ -23,6 +23,7 @@ Functions to implement:
 - Parameters in File und auf Cond/File angepasst (save params?)
 - name --> subject
 - beamformer
+- raw and other often used containers into Pipeline-Script and given to functions
 """
 
 #==============================================================================
@@ -138,7 +139,7 @@ sub_cond_dict = suborg.read_sub_cond_dict(sub_cond_dict_path)
 '46,45,42,65,53,62'
 """
 
-which_file_list = ['25,30']  # Has to be strings!
+which_file_list = ['14']  # Has to be strings!
 
 which_mri_subject = '4,8-10' # Has to be a string!
 
@@ -170,7 +171,7 @@ operations_to_apply = dict(
                     apply_ssp_ecg=0,
                     run_ica=0, # only if EOG/EEG-Channels available, HIGPASS-FILTER RECOMMENDED!!!
                     apply_ica=0,
-                    ica_pure=0,
+                    ica_pure=1,
                     get_evokeds=0,
                     TF_Morlet=0,
 
@@ -271,7 +272,7 @@ operations_to_apply = dict(
 # should files be overwritten
 overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
-close_plots = True # close plots after one subjects batch
+close_plots = False # close plots after one subjects batch
 
 # raw
 lowpass = 80 # Hz
@@ -286,15 +287,15 @@ time_unit = 's'
 tmin = -1.000 # s
 tmax = 2.000 # s
 baseline = (-0.800, -0.500) # [s]
-autoreject = 0 # set 1 for autoreject
+autoreject = 1 # set 1 for autoreject
 overwrite_ar = 0 # if to calculate new thresholds or to use previously calculated
 reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
-"""all_event_ids = {'LBT':1,'velo1':2,'velo2':4,'offset':6,'start':41}"""
-all_event_ids = {'35':1,'40':2,'45':4,'50':8,'55':16,'60':3,'65':5,
-                 '70':9,'75':17,'80':6,'85':10,'90':18,'95':12}
+all_event_ids = {'LBT':1,'velo1':2,'velo2':4,'offset':6,'start':41}
+"""all_event_ids = {'35':1,'40':2,'45':4,'50':8,'55':16,'60':3,'65':5,
+                 '70':9,'75':17,'80':6,'85':10,'90':18,'95':12}"""
 
 # evokeds
 detrend = False # somehow not working on all data
@@ -603,7 +604,8 @@ for which_file in which_file_list:
 
             if operations_to_apply['ica_pure']:
                 operations.ica_pure(name, save_dir,lowpass, highpass, overwrite, eog_channel,
-                                    ecg_channel, layout, reject, flat, bad_channels, autoreject)
+                                    ecg_channel, layout, reject, flat, bad_channels, autoreject,
+                                    overwrite_ar)
 
             #===========================================================================
             # PLOT COMPONENTS TO BE REMOVED
