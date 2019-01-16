@@ -45,7 +45,10 @@ def filter_string(lowpass, highpass):
 def populate_data_directory(home_path, project_name, data_path, figures_path,
                             subjects_dir, subjects, all_event_ids):
     
+<<<<<<< HEAD
     print('Hawuka')
+=======
+>>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
     ## create MEG and MRI paths
     for subject in subjects:
 
@@ -814,7 +817,8 @@ def apply_ica(name, save_dir, lowpass, highpass, overwrite):
 
 @decor.topline
 def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
-             ecg_channel, layout, reject, flat, bad_channels, autoreject):
+             ecg_channel, layout, reject, flat, bad_channels, autoreject,
+             overwrite_ar):
 
     ica_name = name + filter_string(lowpass, highpass) + '-pure-ica.fif'
     ica_path = join(save_dir, ica_name)
@@ -831,20 +835,36 @@ def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
             reject_value_path = join(save_dir, filter_string(lowpass, highpass) \
                                      + '_reject_value.py')
             print('Rejection with Autoreject')
-            with open(reject_value_path, 'r') as rv:
-                reject = {}
-                for item in rv:
-                    if ':' in item:
-                        key,value = item.split(':', 1)
-                        value = value[:-1]
-                        reject[key] = float(value)
+            if overwrite_ar or not isfile(reject_value_path):
+
+                reject = ar.get_rejection_threshold(raw)
+
+                with open(reject_value_path, 'w') as rv:
+                    for key,value in reject.items():
+                        rv.write(f'{key}:{value}\n')     
+                        
+            else:
+                with open(reject_value_path, 'r') as rv:
+                    reject = {}
+                    for item in rv:
+                        if ':' in item:
+                            key,value = item.split(':', 1)
+                            value = value[:-1]
+                            reject[key] = float(value)
 
             print('Reading Rejection-Threshold from file')
 
         ica.fit(raw, picks, reject=reject, flat=flat, reject_by_annotation=True)
         ica.save(ica_path)
         print(ica)
-
+        
+        
+        ica.plot_components()
+        ica.plot_overlay(raw)
+        ica.plot_properties(raw)
+        ica.plot_sourcesr(raw)
+        
+        """
         eog_epochs = mne.preprocessing.create_eog_epochs(raw, ch_name=eog_channel)
         ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, ch_name=ecg_channel)
         eog_average = eog_epochs.average()
@@ -852,7 +872,7 @@ def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
 
         eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel)
         ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name=ecg_channel)
-
+        
 
         ica.plot_scores(ecg_scores, exclude=ecg_indices, title=name)
         ica.plot_sources(ecg_average, exclude=ecg_indices)
@@ -872,7 +892,7 @@ def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
         except RuntimeError:
             print('No EEG-Electrodes(kind=3)digitized')
             pass
-
+        """
     else:
         print('pure-ica file: '+ ica_path + ' already exists')
 

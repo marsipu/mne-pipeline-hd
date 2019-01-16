@@ -23,7 +23,11 @@ Functions to implement:
 - Parameters in File und auf Cond/File angepasst (save params?)
 - name --> subject
 - beamformer
+<<<<<<< HEAD
 - evoked dict noch notwendig?
+=======
+- raw and other often used containers into Pipeline-Script and given to functions
+>>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
 """
 
 #==============================================================================
@@ -171,8 +175,13 @@ operations_to_apply = dict(
                     apply_ssp_ecg=0,
                     run_ica=0, # only if EOG/EEG-Channels available, HIGPASS-FILTER RECOMMENDED!!!
                     apply_ica=0,
+<<<<<<< HEAD
                     ica_pure=0,
                     get_evokeds=1,
+=======
+                    ica_pure=1,
+                    get_evokeds=0,
+>>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
                     TF_Morlet=0,
 
                     # source space operations (bash/Linux)
@@ -273,7 +282,7 @@ operations_to_apply = dict(
 # should files be overwritten
 overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
-close_plots = True # close plots after one subjects batch
+close_plots = False # close plots after one subjects batch
 
 # raw
 lowpass = 80 # Hz
@@ -288,13 +297,17 @@ time_unit = 's'
 tmin = -1.000 # s
 tmax = 2.000 # s
 baseline = (-0.800, -0.500) # [s]
-autoreject = 0 # set 1 for autoreject
+autoreject = 1 # set 1 for autoreject
 overwrite_ar = 0 # if to calculate new thresholds or to use previously calculated
 reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
+<<<<<<< HEAD
 event_id = {'LBT':1,'velo1':2,'velo2':4,'offset':6,'start':41}
+=======
+all_event_ids = {'LBT':1,'velo1':2,'velo2':4,'offset':6,'start':41}
+>>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
 """all_event_ids = {'35':1,'40':2,'45':4,'50':8,'55':16,'60':3,'65':5,
                  '70':9,'75':17,'80':6,'85':10,'90':18,'95':12}"""
 
@@ -591,12 +604,19 @@ for which_file in which_file_list:
             plot.plot_ssp_eog(name, save_dir,lowpass, highpass, subject, save_plots,
                                   figures_path, bad_channels, layout)
 
+<<<<<<< HEAD
         if operations_to_apply['plot_ssp_ecg']:
             plot.plot_ssp_ecg(name, save_dir,lowpass, highpass, subject, save_plots,
                                   figures_path, bad_channels, layout)
         #==========================================================================
         # INDEPENDENT COMPONENT ANALYSIS
         #==========================================================================
+=======
+            if operations_to_apply['ica_pure']:
+                operations.ica_pure(name, save_dir,lowpass, highpass, overwrite, eog_channel,
+                                    ecg_channel, layout, reject, flat, bad_channels, autoreject,
+                                    overwrite_ar)
+>>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
 
         if operations_to_apply['run_ica']:
             op.run_ica(name, save_dir,lowpass, highpass, eog_channel, ecg_channel,
