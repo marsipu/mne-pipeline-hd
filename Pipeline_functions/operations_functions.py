@@ -44,11 +44,7 @@ def filter_string(lowpass, highpass):
 @decor.topline
 def populate_data_directory(home_path, project_name, data_path, figures_path,
                             subjects_dir, subjects, all_event_ids):
-    
-<<<<<<< HEAD
-    print('Hawuka')
-=======
->>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
+
     ## create MEG and MRI paths
     for subject in subjects:
 
@@ -90,7 +86,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics']
-    
+
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
         ## create figure paths
@@ -100,13 +96,13 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
         except OSError as exc:
             if exc.errno == 17: ## dir already exists
                 pass
-    
+
     # create subfolders for event_ids
     trialed_folders = ['epochs', 'power_spectra_epochs', 'epochs_image', 'epochs_topo', 'evoked_butterfly',
                      'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
                      'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
-                     'stcs', 'vec_stcs','stcs_movie', 'snr']   
-    
+                     'stcs', 'vec_stcs','stcs_movie', 'snr']
+
     for ev_id in all_event_ids:
         for tr in trialed_folders:
             subfolder_path = join(home_path, project_name, figures_path, tr, ev_id)
@@ -116,7 +112,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
             except OSError as exc:
                 if exc.errno == 17: ## dir already exists
                     pass
-    
+
     ## also create grand average figures path
     grand_averages_figures_path = join(home_path, project_name, figures_path,
                                       'grand_averages')
@@ -184,7 +180,7 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics']
-    
+
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
         ## create figure paths
@@ -194,7 +190,7 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
         except OSError as exc:
             if exc.errno == 17: ## dir already exists
                 pass
-    
+
     ## also create grand average figures path
     grand_averages_figures_path = join(home_path, project_name, figures_path,
                                       'grand_averages')
@@ -216,7 +212,7 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
     except OSError as exc:
         if exc.errno == 17: ## dir already exists
             pass
-        
+
 #==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 #==============================================================================
@@ -274,7 +270,7 @@ def find_events(name, save_dir, min_duration,
     events_path = join(save_dir, events_name)
 
     if overwrite or not isfile(events_path):
-        
+
         try:
             raw = io.read_filtered(name, save_dir, lowpass, highpass)
         except FileNotFoundError:
@@ -841,8 +837,8 @@ def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
 
                 with open(reject_value_path, 'w') as rv:
                     for key,value in reject.items():
-                        rv.write(f'{key}:{value}\n')     
-                        
+                        rv.write(f'{key}:{value}\n')
+
             else:
                 with open(reject_value_path, 'r') as rv:
                     reject = {}
@@ -857,13 +853,13 @@ def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
         ica.fit(raw, picks, reject=reject, flat=flat, reject_by_annotation=True)
         ica.save(ica_path)
         print(ica)
-        
-        
+
+
         ica.plot_components()
         ica.plot_overlay(raw)
         ica.plot_properties(raw)
         ica.plot_sourcesr(raw)
-        
+
         """
         eog_epochs = mne.preprocessing.create_eog_epochs(raw, ch_name=eog_channel)
         ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, ch_name=ecg_channel)
@@ -872,7 +868,7 @@ def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
 
         eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel)
         ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name=ecg_channel)
-        
+
 
         ica.plot_scores(ecg_scores, exclude=ecg_indices, title=name)
         ica.plot_sources(ecg_average, exclude=ecg_indices)
@@ -1162,16 +1158,16 @@ def mri_coreg(name, save_dir, subtomri, subjects_dir):
 
     raw_name = name + '.fif'
     raw_path = join(save_dir, raw_name)
-    
+
     try:
         trans = io.read_transformation(save_dir, subtomri)
         mne.gui.coregistration(subject=subtomri, inst=raw_path, trans=trans,
                                subjects_dir=subjects_dir, guess_mri_subject=False)
-        
+
     except FileNotFoundError:
         print('No trans-File found')
         mne.gui.coregistration(subject=subtomri, inst=raw_path,
-                               subjects_dir=subjects_dir, guess_mri_subject=False)        
+                               subjects_dir=subjects_dir, guess_mri_subject=False)
 @decor.topline
 def create_forward_solution(name, save_dir, subtomri, subjects_dir,
                             source_space_method, overwrite, n_jobs, eeg_fwd):
@@ -1610,9 +1606,9 @@ Separate your trials in odd and even. Then calculate the correlation between odd
 for ascending number of trials"""
 @decor.topline
 def avg_corr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub):
-    
+
     info = io.read_info(name, save_dir)
-   
+
     if operations_to_apply['apply_ica'] and operations_to_apply['apply_ssp_er'] \
     and 'EEG 001' in info['ch_names']:
         epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
@@ -1637,16 +1633,16 @@ def avg_corr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub):
         print('Evokeds from (normal) Epochs')
     # Analysis for each trial_type
     t = 0
-    
+
     for trial_type in epochs.event_id:
-        
+
         ep_tr = epochs[trial_type]
         ep_len = (len(ep_tr)//2)*2 # Make sure ep_len is even
         idxs = range(ep_len)
         #select randomly k epochs for t times
 
         for k in range(1, ep_len/2): # Compare k epochs
-            
+
             while t<10: # counter for repetitions
                 t += 1
                 ep_rand = epochs[random.sample(idxs,k*2)]
@@ -1654,9 +1650,9 @@ def avg_corr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub):
                 ep2 = ep_rand[k:]
                 avg1 = ep1.average()
                 avg2 = ep2.average()
-                
-# Beginn und Ende vergleichen, sources als Korrelations-Grundlage         
-    
+
+# Beginn und Ende vergleichen, sources als Korrelations-Grundlage
+
 @decor.topline
 def avg_ntr(name, save_dir, lowpass, highpass, bad_channels, event_id,
              tmin, tmax, baseline, figures_path, save_plots, autoreject,

@@ -23,11 +23,7 @@ Functions to implement:
 - Parameters in File und auf Cond/File angepasst (save params?)
 - name --> subject
 - beamformer
-<<<<<<< HEAD
 - evoked dict noch notwendig?
-=======
-- raw and other often used containers into Pipeline-Script and given to functions
->>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
 """
 
 #==============================================================================
@@ -175,13 +171,8 @@ operations_to_apply = dict(
                     apply_ssp_ecg=0,
                     run_ica=0, # only if EOG/EEG-Channels available, HIGPASS-FILTER RECOMMENDED!!!
                     apply_ica=0,
-<<<<<<< HEAD
-                    ica_pure=0,
-                    get_evokeds=1,
-=======
                     ica_pure=1,
                     get_evokeds=0,
->>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
                     TF_Morlet=0,
 
                     # source space operations (bash/Linux)
@@ -303,11 +294,7 @@ reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
-<<<<<<< HEAD
 event_id = {'LBT':1,'velo1':2,'velo2':4,'offset':6,'start':41}
-=======
-all_event_ids = {'LBT':1,'velo1':2,'velo2':4,'offset':6,'start':41}
->>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
 """all_event_ids = {'35':1,'40':2,'45':4,'50':8,'55':16,'60':3,'65':5,
                  '70':9,'75':17,'80':6,'85':10,'90':18,'95':12}"""
 
@@ -462,31 +449,31 @@ for which_file in which_file_list:
         ermsub = erm_dict[subject]
         event_id_list = []
         """
-        # Handle event-id's            
+        # Handle event-id's
         event_id = dict()
-        
+
         try:
             events = io.read_events(name, save_dir)
-        
+
         except (FileNotFoundError, AttributeError):
             op.find_events(name, save_dir, min_duration,
                     adjust_timeline_by_msec,lowpass, highpass, overwrite)
-            
+
             try:
                 events = io.read_events(name, save_dir)
                 u = np.unique(events[:,2])
-            
+
                 for t_name, value in all_event_ids.items():
                     if value in u:
                         event_id.update({t_name:value})
-                        
+
             except (FileNotFoundError, AttributeError):
                 print('No events in this File')
-            
+
         """
         # Print Subject Console Header
         print(60*'='+'\n'+name)
-        
+
         #==========================================================================
         # POPULATE SUBJECT DIRECTORIES
         #==========================================================================
@@ -604,19 +591,10 @@ for which_file in which_file_list:
             plot.plot_ssp_eog(name, save_dir,lowpass, highpass, subject, save_plots,
                                   figures_path, bad_channels, layout)
 
-<<<<<<< HEAD
-        if operations_to_apply['plot_ssp_ecg']:
-            plot.plot_ssp_ecg(name, save_dir,lowpass, highpass, subject, save_plots,
-                                  figures_path, bad_channels, layout)
-        #==========================================================================
-        # INDEPENDENT COMPONENT ANALYSIS
-        #==========================================================================
-=======
             if operations_to_apply['ica_pure']:
                 operations.ica_pure(name, save_dir,lowpass, highpass, overwrite, eog_channel,
                                     ecg_channel, layout, reject, flat, bad_channels, autoreject,
                                     overwrite_ar)
->>>>>>> 555897f011de3fc4d348eddb87fe81bcd6736607
 
         if operations_to_apply['run_ica']:
             op.run_ica(name, save_dir,lowpass, highpass, eog_channel, ecg_channel,
@@ -701,7 +679,7 @@ for which_file in which_file_list:
 
         if operations_to_apply['animate_topomap']:
             plot.animate_topmap()
-            
+
         #==========================================================================
         # TIME-FREQUENCY-ANALASYS
         #==========================================================================
@@ -724,10 +702,10 @@ for which_file in which_file_list:
         #==========================================================================
 
         # use mne.gui.coregistration()
-        
+
         if operations_to_apply['mri_coreg']:
             op.mri_coreg(name, save_dir, subtomri, subjects_dir)
-        
+
         if operations_to_apply['plot_transformation']:
             plot.plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots, figures_path)
 
