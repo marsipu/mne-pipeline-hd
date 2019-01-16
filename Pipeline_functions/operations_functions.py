@@ -26,6 +26,7 @@ from nilearn.plotting import plot_anat
 from matplotlib import pyplot as plt
 from itertools import combinations
 from functools import reduce
+import random
 
 
 def filter_string(lowpass, highpass):
@@ -44,7 +45,7 @@ def filter_string(lowpass, highpass):
 def populate_data_directory(home_path, project_name, data_path, figures_path,
                             subjects_dir, subjects, all_event_ids):
     
-    print('Chakalaka')
+    print('Hawuka')
     ## create MEG and MRI paths
     for subject in subjects:
 
@@ -392,7 +393,7 @@ def find_events(name, save_dir, min_duration,
                     events = np.append(events, [[e,0,2**i]], axis=0)
 
         # stackoverflow way of sorting by only one column
-        events[events[:,0].argsort()]
+        events = events[events[:,0].argsort()]
 
         # apply latency correction
         events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10**-3 * \
@@ -1588,7 +1589,56 @@ How to really make a correlation analysis:
 Separate your trials in odd and even. Then calculate the correlation between odd and even
 for ascending number of trials"""
 @decor.topline
-def corr_ntr(name, save_dir, lowpass, highpass, bad_channels, event_id,
+def avg_corr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub):
+    
+    info = io.read_info(name, save_dir)
+   
+    if operations_to_apply['apply_ica'] and operations_to_apply['apply_ssp_er'] \
+    and 'EEG 001' in info['ch_names']:
+        epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+        print('Evokeds from ICA-Epochs after applied SSP')
+    elif operations_to_apply['apply_ica'] and 'EEG 001' in info['ch_names']:
+        epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+        print('Evokeds from ICA-Epochs')
+    elif operations_to_apply['apply_ssp_er'] and ermsub!='None':
+        epochs = io.read_ssp_epochs(name, save_dir, lowpass, highpass)
+        print('Evokeds from SSP_ER-Epochs')
+    elif operations_to_apply['apply_ssp_clm']:
+        epochs = io.read_ssp_clm_epochs(name, save_dir, lowpass, highpass)
+        print('Evokeds form SSP_Clm-Epochs')
+    elif operations_to_apply['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
+        epochs = io.read_ssp_eog_epochs(name, save_dir, lowpass, highpass)
+        print('Evokeds from SSP_EOG-Epochs')
+    elif operations_to_apply['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
+        epochs = io.read_ssp_ecg_epochs(name, save_dir, lowpass, highpass)
+        print('Evokeds from SSP_ECG-Epochs')
+    else:
+        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        print('Evokeds from (normal) Epochs')
+    # Analysis for each trial_type
+    t = 0
+    
+    for trial_type in epochs.event_id:
+        
+        ep_tr = epochs[trial_type]
+        ep_len = (len(ep_tr)//2)*2 # Make sure ep_len is even
+        idxs = range(ep_len)
+        #select randomly k epochs for t times
+
+        for k in range(1, ep_len/2): # Compare k epochs
+            
+            while t<10: # counter for repetitions
+                t += 1
+                ep_rand = epochs[random.sample(idxs,k*2)]
+                ep1 = ep_rand[:k]
+                ep2 = ep_rand[k:]
+                avg1 = ep1.average()
+                avg2 = ep2.average()
+                
+# Beginn und Ende vergleichen, sources als Korrelations-Grundlage         
+    
+@decor.topline
+def avg_ntr(name, save_dir, lowpass, highpass, bad_channels, event_id,
              tmin, tmax, baseline, figures_path, save_plots, autoreject,
              overwrite_ar, reject, flat):
 
