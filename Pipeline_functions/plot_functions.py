@@ -18,7 +18,7 @@ from . import io_functions as io
 from . import decorators as decor
 import numpy as np
 from nilearn.plotting import plot_anat
-
+from surfer import Brain
 
 def filter_string(lowpass, highpass):
     
@@ -536,6 +536,7 @@ def plot_source_space(mri_subject, subjects_dir, source_space_method, save_plots
     else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
+
 @decor.topline
 def plot_bem(mri_subject, subjects_dir, source_space_method, figures_path,
              save_plots):
@@ -677,9 +678,8 @@ def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
         anim()
         mlab.show()
         """
-
-
         
+    
 @decor.topline
 def plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path):
     
@@ -702,66 +702,76 @@ def plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path):
             print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
+def plot_labels(subtomri, subjects_dir):
+    
+    brain = Brain(subtomri, hemi='both', surf='smoothwm')
+    
+    labels = mne.read_labels_from_annot(subtomri)
+    
+    for label in labels:
+        brain.add_label(label)
+
+@decor.topline
 def label_time_course(name, save_dir, lowpass, highpass, method, source_space_method, subtomri,
                       subjects_dir, target_labels, figures_path, save_plots):
 
-    """labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir)"""
-    labels = []
+    labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir)
+    """labels = []
     for x in target_labels:
         label_path = join(subjects_dir, 'fsaverage', 'label', x + '.label')
         label = mne.read_label(label_path, subject='fsaverage')
-        labels.append(label)
+        labels.append(label)"""
     stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method)
     src = io.read_source_space(subtomri, subjects_dir, source_space_method)
     for trial_type in stcs:
         stc = stcs[trial_type]
         for label in labels:
-            """if label.name in target_labels:"""
-
-            stc_label = stc.in_label(label)
-            """ check the functions here, andre got his bipolar plot
-            stc_mean = stc.extract_label_time_course(label, src, mode='mean')
-            """
-            plt.figure()
-            plt.plot(1e3 * stc_label.times, stc_label.data.T, 'k', linewidth=0.5)
-            #plt.plot(1e3 * stc_label.times, stc_mean.T, 'r', linewidth=3)
-            plt.xlabel('Time (ms)')
-            plt.ylabel('Source amplitude')
-            plt.title('{} in : {}'.format(trial_type, label.name))
-            plt.show()
-            if save_plots:
-                save_path = join(figures_path, 'label_time_course', trial_type, name + \
-                                     filter_string(lowpass, highpass) + '_' + \
-                                     trial_type + '_' + label.name + '.jpg')
-                plt.savefig(save_path, dpi=600)
-                print('figure: ' + save_path + ' has been saved')
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
+            if label.name in target_labels:
+    
+                stc_label = stc.in_label(label)
+                """ check the functions here, andre got his bipolar plot
+                stc_mean = stc.extract_label_time_course(label, src, mode='mean')
                 """
-                t_min = 0.095
-                t_max = 0.105
-                stc_mean = stc.copy().crop(t_min, t_max).mean()
-                stc_mean_label = stc_mean.in_label(label)
-                data = np.abs(stc_mean_label.data)
-                stc_mean_label.data[data < 0.6 * np.max(data)] = 0.
-
-                func_labels, _ = mne.stc_to_label(stc_mean_label, src=src, smooth=True,
-                                 subjects_dir=subjects_dir, connected=True,
-                                 verbose='error')
-                func_label = func_labels[0]
-                stc_func_label = stc.in_label(func_label)
-                func_mean = stc.extract_label_time_course(func_label, src, mode='mean')[0]
-
                 plt.figure()
-
-                plt.plot(1e3 * stc_label.times, stc_mean, 'k',
-                         label='Anatomical %s' % label)
-
-                plt.plot(1e3 * stc_func_label.times, func_mean, 'b',
-                         label='Functional %s' % label)
-                plt.legend()
+                plt.plot(1e3 * stc_label.times, stc_label.data.T, 'k', linewidth=0.5)
+                #plt.plot(1e3 * stc_label.times, stc_mean.T, 'r', linewidth=3)
+                plt.xlabel('Time (ms)')
+                plt.ylabel('Source amplitude')
+                plt.title('{} in : {}'.format(trial_type, label.name))
                 plt.show()
-                """
+                if save_plots:
+                    save_path = join(figures_path, 'label_time_course', trial_type, name + \
+                                         filter_string(lowpass, highpass) + '_' + \
+                                         trial_type + '_' + label.name + '.jpg')
+                    plt.savefig(save_path, dpi=600)
+                    print('figure: ' + save_path + ' has been saved')
+                else:
+                    print('Not saving plots; set "save_plots" to "True" to save')
+                    """
+                    t_min = 0.095
+                    t_max = 0.105
+                    stc_mean = stc.copy().crop(t_min, t_max).mean()
+                    stc_mean_label = stc_mean.in_label(label)
+                    data = np.abs(stc_mean_label.data)
+                    stc_mean_label.data[data < 0.6 * np.max(data)] = 0.
+    
+                    func_labels, _ = mne.stc_to_label(stc_mean_label, src=src, smooth=True,
+                                     subjects_dir=subjects_dir, connected=True,
+                                     verbose='error')
+                    func_label = func_labels[0]
+                    stc_func_label = stc.in_label(func_label)
+                    func_mean = stc.extract_label_time_course(func_label, src, mode='mean')[0]
+    
+                    plt.figure()
+    
+                    plt.plot(1e3 * stc_label.times, stc_mean, 'k',
+                             label='Anatomical %s' % label)
+    
+                    plt.plot(1e3 * stc_func_label.times, func_mean, 'b',
+                             label='Functional %s' % label)
+                    plt.legend()
+                    plt.show()
+                    """
 
 @decor.topline
 def label_time_course_avg(morphed_data_all, save_dir_averages, lowpass, highpass, method,

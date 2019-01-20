@@ -43,7 +43,7 @@ if OS == 'Linux':
     home_path = '/mnt/z/Promotion/' # change this according to needs
 
 if OS == 'Windows':
-    home_path = 'Z:/Promotion/Pin-Prick-Projekt/' # change this according to needs
+    home_path = 'Z:/Promotion/' # change this according to needs
 
 #==============================================================================
 # IMPORTS
@@ -63,7 +63,7 @@ from pipeline_functions import subject_organisation as suborg
 # PATHS
 #%%============================================================================
 
-project_name = 'PP_Maschine'
+project_name = 'Pin-Prick-Projekt/PP_Maschine'
 data_path = join(home_path, project_name, 'Daten/')
 subjects_dir = join(home_path, 'Freesurfer', 'Output/')
 mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
@@ -160,7 +160,7 @@ operations_to_apply = dict(
                     filter_raw=0,
                     find_events=0,
                     find_eog_events=0,
-                    epoch_raw=1,
+                    epoch_raw=0,
                     run_ssp_er=0, # on Empty-Room-Data
                     apply_ssp_er=0,
                     run_ssp_clm=0, # on 1-Minute-Calm-Data
@@ -171,7 +171,7 @@ operations_to_apply = dict(
                     apply_ssp_ecg=0,
                     run_ica=0, # only if EOG/EEG-Channels available, HIGPASS-FILTER RECOMMENDED!!!
                     apply_ica=0,
-                    ica_pure=1,
+                    ica_pure=0,
                     get_evokeds=0,
                     TF_Morlet=0,
 
@@ -190,7 +190,7 @@ operations_to_apply = dict(
                     create_forward_solution=0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
                     estimate_noise_covariance=0,
                     create_inverse_operator=0,
-                    source_estimate=0,
+                    source_estimate=1,
                     vector_source_estimate=0,
                     ECD_fit=0,
                     morph_to_fsaverage=0,
@@ -244,7 +244,8 @@ operations_to_apply = dict(
                     plot_animated_stc=0,
                     plot_vector_source_estimates=0, # plots in same window as plot_source_estimate
                     plot_snr=0,
-                    label_time_course=0,
+                    plot_labels=0,
+                    label_time_course=1,
                     label_time_course_avg=0,
 
                     # plotting sensor space (between subjects)
@@ -329,7 +330,7 @@ ECDs = {}
 ECD_min = 0.200
 ECD_max = 0.250
 
-target_labels = ['postcentral_hand_lh', 'post_ins_lh']
+target_labels = ['postcentral-lh']
 
 # morph maps
 morph_to='fsaverage'
@@ -481,7 +482,7 @@ for which_file in which_file_list:
         if operations_to_apply['populate_data_directory']:
             op.populate_data_directory(home_path, project_name, data_path,
                                                figures_path, subjects_dir, subjects,
-                                               all_event_ids)
+                                               event_id)
 
         #==========================================================================
         # FILTER RAW (MAXFILTERED)
@@ -591,10 +592,10 @@ for which_file in which_file_list:
             plot.plot_ssp_eog(name, save_dir,lowpass, highpass, subject, save_plots,
                                   figures_path, bad_channels, layout)
 
-            if operations_to_apply['ica_pure']:
-                operations.ica_pure(name, save_dir,lowpass, highpass, overwrite, eog_channel,
-                                    ecg_channel, layout, reject, flat, bad_channels, autoreject,
-                                    overwrite_ar)
+        if operations_to_apply['ica_pure']:
+            op.ica_pure(name, save_dir,lowpass, highpass, overwrite, eog_channel,
+                                ecg_channel, layout, reject, flat, bad_channels, autoreject,
+                                overwrite_ar)
 
         if operations_to_apply['run_ica']:
             op.run_ica(name, save_dir,lowpass, highpass, eog_channel, ecg_channel,
@@ -765,11 +766,12 @@ for which_file in which_file_list:
 
         if operations_to_apply['plot_snr']:
             plot.plot_snr(name, save_dir,lowpass, highpass, save_plots, figures_path)
-
+        if operations_to_apply['plot_labels']:
+            plot.plot_labels(subtomri, subjects_dir)
         if operations_to_apply['label_time_course']:
             plot.label_time_course(name, save_dir,lowpass, highpass, method, source_space_method, subtomri,
                                    subjects_dir, target_labels, figures_path, save_plots)
-
+        
         #==========================================================================
         # MORPH TO FSAVERAGE
         #==========================================================================
@@ -827,7 +829,9 @@ for which_file in which_file_list:
         #==========================================================================
         # General Statistics
         #==========================================================================
-
+        if operations_to_apply['corr_ntr']:
+            op.corr_ntr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub, subtomri)
+            
         if operations_to_apply['avg_ntr']:
             op.avg_ntr(name, save_dir, lowpass, highpass, bad_channels, event_id,
                                 tmin, tmax, baseline, figures_path, save_plots, autoreject,

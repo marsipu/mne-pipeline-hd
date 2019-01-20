@@ -43,7 +43,7 @@ def filter_string(lowpass, highpass):
 #==============================================================================
 @decor.topline
 def populate_data_directory(home_path, project_name, data_path, figures_path,
-                            subjects_dir, subjects, all_event_ids):
+                            subjects_dir, subjects, event_id):
 
     ## create MEG and MRI paths
     for subject in subjects:
@@ -103,7 +103,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                      'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
                      'stcs', 'vec_stcs','stcs_movie', 'snr']
 
-    for ev_id in all_event_ids:
+    for ev_id in event_id:
         for tr in trialed_folders:
             subfolder_path = join(home_path, project_name, figures_path, tr, ev_id)
             try:
@@ -858,7 +858,7 @@ def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
         ica.plot_components()
         ica.plot_overlay(raw)
         ica.plot_properties(raw)
-        ica.plot_sourcesr(raw)
+        ica.plot_sources(raw)
 
         """
         eog_epochs = mne.preprocessing.create_eog_epochs(raw, ch_name=eog_channel)
@@ -1185,8 +1185,6 @@ def create_forward_solution(name, save_dir, subtomri, subjects_dir,
         forward = mne.make_forward_solution(info, trans, source_space, bem,
                                               n_jobs=n_jobs, eeg=eeg_fwd)
 
-        forward = mne.convert_forward_solution(forward, surf_ori=True)
-
         mne.write_forward_solution(forward_path, forward, overwrite)
 
     else:
@@ -1279,7 +1277,7 @@ def create_inverse_operator(name, save_dir, lowpass, highpass, overwrite, ermsub
         forward = io.read_forward(name, save_dir)
 
         inverse_operator = mne.minimum_norm.make_inverse_operator(
-                            info, forward, noise_covariance, fixed=fixed_src)
+                            info, forward, noise_covariance)
 
         mne.minimum_norm.write_inverse_operator(inverse_operator_path,
                                                     inverse_operator)
@@ -1605,7 +1603,8 @@ How to really make a correlation analysis:
 Separate your trials in odd and even. Then calculate the correlation between odd and even
 for ascending number of trials"""
 @decor.topline
-def avg_corr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub):
+def corr_ntr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub,
+             subtomri):
 
     info = io.read_info(name, save_dir)
 
@@ -1632,25 +1631,38 @@ def avg_corr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub):
         epochs = io.read_epochs(name, save_dir, lowpass, highpass)
         print('Evokeds from (normal) Epochs')
     # Analysis for each trial_type
-    t = 0
-
     for trial_type in epochs.event_id:
 
         ep_tr = epochs[trial_type]
-        ep_len = (len(ep_tr)//2)*2 # Make sure ep_len is even
+        ep_len = len(ep_tr)//2*2 # Make sure ep_len is even
         idxs = range(ep_len)
         #select randomly k epochs for t times
 
-        for k in range(1, ep_len/2): # Compare k epochs
+        for k in range(1, int(ep_len/2)): # Compare k epochs
 
-            while t<10: # counter for repetitions
-                t += 1
-                ep_rand = epochs[random.sample(idxs,k*2)]
-                ep1 = ep_rand[:k]
-                ep2 = ep_rand[k:]
-                avg1 = ep1.average()
-                avg2 = ep2.average()
-
+            ep_rand = epochs[random.sample(idxs,k*2)]
+            ep1 = ep_rand[:k]
+            ep2 = ep_rand[k:]
+            avg1 = ep1.average()
+            avg2 = ep2.average()
+            
+            labels = mne.read_labels_from_annot(subtomri)
+            target_labels = ['postcentral-lh']#
+            inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+            
+            for label in labels:
+                if label.name in target_labels:
+                    
+                    stc1 = mne.minimum_norm.apply_inverse(avg1, inv_op, method='dSPM', pick_ori='normal')
+                    stc2 = mne.minimum_norm.apply_inverse(avg2, inv_op, method='dSPM', pick_ori='normal')            
+                    
+                    stc1_label = stc1.in_label(label)
+                    stc2_label = stc2.in_label(label)
+                    
+                    plt.figure()
+                    plt.plot(1e3 * stc1_label.times, stc1_label.data.T, 'r', linewidth=0.5)
+                    plt.plot(1e3 * stc2_label.times, stc2_label.data.T, 'b', linewidth=0.5)
+            
 # Beginn und Ende vergleichen, sources als Korrelations-Grundlage
 
 @decor.topline
