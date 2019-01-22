@@ -139,7 +139,7 @@ sub_cond_dict = suborg.read_sub_cond_dict(sub_cond_dict_path)
 '46,45,42,65,53,62'
 """
 
-which_file_list = ['14']  # Has to be strings!
+which_file_list = ['23']  # Has to be strings!
 
 which_mri_subject = '4,8-10' # Has to be a string!
 
@@ -189,8 +189,8 @@ operations_to_apply = dict(
                     setup_source_space=0,
                     create_forward_solution=0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
                     estimate_noise_covariance=0,
-                    create_inverse_operator=0,
-                    source_estimate=1,
+                    create_inverse_operator=1,
+                    source_estimate=0,
                     vector_source_estimate=0,
                     ECD_fit=0,
                     morph_to_fsaverage=0,
@@ -245,7 +245,7 @@ operations_to_apply = dict(
                     plot_vector_source_estimates=0, # plots in same window as plot_source_estimate
                     plot_snr=0,
                     plot_labels=0,
-                    label_time_course=1,
+                    label_time_course=0,
                     label_time_course_avg=0,
 
                     # plotting sensor space (between subjects)

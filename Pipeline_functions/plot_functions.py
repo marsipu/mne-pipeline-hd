@@ -814,6 +814,38 @@ def label_time_course_avg(morphed_data_all, save_dir_averages, lowpass, highpass
                 else:
                     print('Not saving plots; set "save_plots" to "True" to save')
 
+@decor.topline
+def plot_time_course_test(name, save_dir, lowpass, highpass, subtomri, target_labels):
+    
+    snr = 3.0
+    lambda2 = 1.0 / snr ** 2
+    method = "dSPM"
+    
+    evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+    
+    labels = mne.read_labels_from_annot(subtomri)
+    
+    for label in labels:
+        if label.name in target_labels:
+            label = label
+            
+
+            inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+            
+            src = inv_op['src']
+            
+            # pick_ori has to be normal to plot bipolar time course
+            stc = mne.minimum_norm.apply_inverse(evokeds[0], inv_op, lambda2, method,
+                                                 pick_ori='normal')
+            
+            stc_label = stc.in_label(label)
+            
+            plt.figure()
+            plt.plot(1e3 * stc_label.times, stc_label.data.T, 'k', linewidth=0.5)
+            plt.xlabel('Time (ms)')
+            plt.ylabel('Source amplitude')
+            plt.title('Activations in Label : %s' % label)
+            plt.show()
 
 @decor.topline
 def plot_grand_average_evokeds(name, lowpass, highpass, save_dir_averages,
