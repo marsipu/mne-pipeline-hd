@@ -128,9 +128,9 @@ sub_cond_dict = suborg.read_sub_cond_dict(sub_cond_dict_path)
 '46,45,42,65,53,62'
 """
 
-which_file_list = ['14-42']  # Has to be strings!
+which_file_list = ['30-42']  # Has to be strings!
 
-which_mri_subject = '47' # Has to be a string!
+which_mri_subject = '47-60' # Has to be a string!
 
 #==============================================================================
 # OPERATIONS
@@ -139,17 +139,17 @@ operations_to_apply = dict(
 
                     # OS commands
 
-                    populate_data_directory=1, #don't do it in Linux if you're using also Windows!
-                    mri_preprocessing=0, # enable to do any of the mri_subject-related functions
-                    print_pipeline_analysis=1,
+                    populate_data_directory=0, #don't do it in Linux if you're using also Windows!
+                    mri_preprocessing=1, # enable to do any of the mri_subject-related functions
+                    print_pipeline_analysis=0,
 
                     # WITHIN SUBJECT
 
                     # sensor space operations
-                    filter_raw=1,
-                    find_events=1,
+                    filter_raw=0,
+                    find_events=0,
                     find_eog_events=0,
-                    epoch_raw=1,
+                    epoch_raw=0,
                     run_ssp_er=0, # on Empty-Room-Data
                     apply_ssp_er=0,
                     run_ssp_clm=0, # on 1-Minute-Calm-Data
@@ -161,22 +161,22 @@ operations_to_apply = dict(
                     run_ica=0, # only if EOG/EEG-Channels available, HIGPASS-FILTER RECOMMENDED!!!
                     apply_ica=0,
                     ica_pure=0,
-                    get_evokeds=1,
+                    get_evokeds=0,
                     TF_Morlet=0,
 
                     # source space operations (bash/Linux)
                     import_mri=0,
                     segment_mri=0, # long process (>10 h)
                     Test=0,
-                    apply_watershed=0,
-                    make_dense_scalp_surfaces=0, #until here all bash scripts!
+                    apply_watershed=1,
+                    make_dense_scalp_surfaces=1, #until here all bash scripts!
 
                     mri_coreg=0,
-                    setup_source_space=1,
-                    create_forward_solution=1, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
-                    estimate_noise_covariance=1,
-                    create_inverse_operator=1,
-                    source_estimate=1,
+                    setup_source_space=0,
+                    create_forward_solution=0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
+                    estimate_noise_covariance=0,
+                    create_inverse_operator=0,
+                    source_estimate=0,
                     vector_source_estimate=0,
                     ECD_fit=0,
                     morph_to_fsaverage=0,
@@ -195,7 +195,7 @@ operations_to_apply = dict(
                     plot_raw=0,
                     print_info=0,
                     plot_sensors=0,
-                    plot_events=1,
+                    plot_events=0,
                     plot_eog_events=0,
                     plot_filtered=0,
                     plot_power_spectra=0,
@@ -207,11 +207,11 @@ operations_to_apply = dict(
                     plot_ica=0,
                     plot_ica_sources=0,
                     plot_epochs=0,
-                    plot_epochs_image=1,
+                    plot_epochs_image=0,
                     plot_epochs_topo=0,
-                    plot_butterfly_evokeds=1,
+                    plot_butterfly_evokeds=0,
                     plot_evoked_topo=0,
-                    plot_evoked_topomap=1,
+                    plot_evoked_topomap=0,
                     plot_evoked_field=0,
                     plot_evoked_joint=0,
                     plot_evoked_white=0,
@@ -223,8 +223,8 @@ operations_to_apply = dict(
                     plot_transformation=0,
                     plot_source_space=0,
                     plot_bem=0,
-                    plot_noise_covariance=1,
-                    plot_source_estimates=1,
+                    plot_noise_covariance=0,
+                    plot_source_estimates=0,
                     # added float() in 2549 surfer\viz.py to avoid error
                     # changed render_window.size to get_size() in mayavi/tools/figure.py
                     plot_animated_stc=0,
@@ -248,7 +248,7 @@ operations_to_apply = dict(
                     plot_grand_averages_source_estimates_cluster_masked=0,
 
                     #general statistics
-                    corr_ntr=1,
+                    corr_ntr=0,
                     avg_ntr=0
                     )
 
@@ -258,7 +258,7 @@ operations_to_apply = dict(
 #parameters_start
 #OS
 n_jobs = -1 #number of processor-cores to use, -1 for auto
-enable_cuda = True # Using CUDA on supported graphics card e.g. for filtering
+enable_cuda = False # Using CUDA on supported graphics card e.g. for filtering
                     # cupy and appropriate CUDA-Drivers have to be installed
                     # https://mne-tools.github.io/dev/advanced_setup.html#advanced-setup
                     
@@ -308,7 +308,8 @@ source_space_method = 'ico5'
 
 # source reconstruction
 use_calm_cov = False
-method = 'dSPM'
+method = 'MNE'
+fixed_src = False # if the source is fixed(normal to cortex) or loose
 mne_evoked_time = [0.050, 0.100, 0.200] # s
 stc_animation = [0,0.5] # s
 eeg_fwd = False
@@ -340,7 +341,7 @@ n_permutations = 10000 # specify as integer
 p_threshold = 1e-15 # 1e-15 is the smallest it can get for the way it is coded
 
 # freesurfer and MNE-C commands
-n_jobs_freesurfer = 4 # change according to amount of processors you have
+n_jobs_freesurfer = -1 # change according to amount of processors you have
                         # available
  # supply a method and a spacing/grade
                                   # see mne_setup_source_space --help in bash
@@ -476,7 +477,7 @@ for which_file in which_file_list:
 
         if operations_to_apply['filter_raw']:
             op.filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
-                                  data_path, n_jobs, enable_cuda, bad_channels)
+                                  data_path, n_jobs, enable_cuda)
 
         #==========================================================================
         # PRINT INFO
@@ -706,7 +707,7 @@ for which_file in which_file_list:
 
         if operations_to_apply['create_inverse_operator']:
             op.create_inverse_operator(name, save_dir,lowpass, highpass,
-                                            overwrite, ermsub, use_calm_cov)
+                                            overwrite, ermsub, use_calm_cov, fixed_src)
 
         #==========================================================================
         # SOURCE ESTIMATE MNE

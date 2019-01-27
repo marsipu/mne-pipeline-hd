@@ -24,13 +24,31 @@ Functions to implement:
 - name --> subject
 - beamformer
 - evoked dict noch notwendig?
-- Subjects as Classes?
 """
+
+#==============================================================================
+# Operating System
+#%%============================================================================
+
+OS = 'Windows'
+n_jobs = -1 #number of processor-cores to use, -1 for auto
+enable_cuda = False # Using CUDA on supported graphics card e.g. for filtering
+                    # cupy and appropriate CUDA-Drivers have to be installed
+                    # https://mne-tools.github.io/dev/advanced_setup.html#advanced-setup
+
+#==============================================================================
+# SET HOME PATH
+#%%============================================================================
+if OS == 'Linux':
+    home_path = '/mnt/z/Promotion/' # change this according to needs
+
+if OS == 'Windows':
+    home_path = 'Z:/Promotion/' # change this according to needs
 
 #==============================================================================
 # IMPORTS
 #%%============================================================================
-import sys
+
 from os.path import join, isfile
 from datetime import datetime
 import numpy as np
@@ -40,22 +58,16 @@ from pipeline_functions import io_functions as io
 from pipeline_functions import operations_functions as op
 from pipeline_functions import plot_functions as plot
 from pipeline_functions import subject_organisation as suborg
-from pipeline_functions import utilities as ut
 
 #==============================================================================
 # PATHS
 #%%============================================================================
-if sys.platform == 'win32':
-    home_path = 'Z:/Promotion' # change this according to needs
 
-if sys.platform == 'linux':
-    home_path = '/mnt/z/Promotion' # change this according to needs
-
-project_name = 'Pin-Prick-Projekt/PP_Messungen'
-data_path = join(home_path, project_name, 'Daten')
-subjects_dir = join(home_path, 'Freesurfer/Output')
+project_name = 'Pin-Prick-Projekt'
+data_path = join(home_path, project_name, 'Daten/')
+subjects_dir = join(home_path, 'Freesurfer', 'Output/')
 mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
-save_dir_averages = join(data_path,'grand_averages')
+save_dir_averages = data_path + 'grand_averages/'
 figures_path = join(home_path, project_name, 'Figures/')
 
 
@@ -70,33 +82,32 @@ sub_cond_dict_path = join(data_path, '_Subject_scripts/sub_cond_dict.py')
 #==============================================================================
 # SUBJECT ORGANISATION
 #%%============================================================================
-orig_data_path = join(home_path, 'Messungen_Dateien')
-orig_mri_data_path = join(home_path, 'Freesurfer/Output')
 
 if 0: # set 1 to run
     suborg.add_subjects(sub_list_path, home_path, project_name, data_path,
-                        figures_path, subjects_dir, orig_data_path)
+                        figures_path, subjects_dir)
 
 if 0: # set 1 to run
-    suborg.add_mri_subjects(mri_sub_list_path, data_path)
+    suborg.add_mri_subjects(mri_sub_list_path)
 
 if 0: # set 1 to run
-    suborg.add_sub_dict(sub_dict_path, sub_list_path, data_path)
+    suborg.add_sub_dict(sub_dict_path, sub_list_path)
 
 if 0: #set 1 to run
-    suborg.add_erm_dict(erm_dict_path, sub_list_path, data_path)
+    suborg.add_erm_dict(erm_dict_path, sub_list_path)
 
-predefined_bads = ['MEG 006', 'MEG 026', 'MEG 027', 'MEG 103']
 if 0: # set 1 to run, # add like this:MEG 001,MEG 002,MEG 003,...;
       # for no bad channels don't type anything and assign
-    suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path,
-                                 predefined_bads)
+    suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path)
 
 if 0:
-    suborg.add_sub_cond_dict(sub_cond_dict_path, sub_list_path, data_path)
+    suborg.add_sub_cond_dict(sub_cond_dict_path)
+"""
+if 0: # Coregister your Files to your Subjects
+    mne.gui.coregistration(head_high_res=True, mark_inside=True, subjects_dir=subjects_dir, guess_mri_subject=False)
+"""
 
 #Functions
-
 all_subjects = suborg.read_subjects(sub_list_path)
 all_mri_subjects = suborg.read_mri_subjects(mri_sub_list_path)
 sub_to_mri = suborg.read_sub_dict(sub_dict_path)
@@ -128,9 +139,9 @@ sub_cond_dict = suborg.read_sub_cond_dict(sub_cond_dict_path)
 '46,45,42,65,53,62'
 """
 
-which_file_list = ['14-42']  # Has to be strings!
+which_file_list = ['47-69']  # Has to be strings!
 
-which_mri_subject = '47' # Has to be a string!
+which_mri_subject = '4,8-10' # Has to be a string!
 
 #==============================================================================
 # OPERATIONS
@@ -141,13 +152,13 @@ operations_to_apply = dict(
 
                     populate_data_directory=1, #don't do it in Linux if you're using also Windows!
                     mri_preprocessing=0, # enable to do any of the mri_subject-related functions
-                    print_pipeline_analysis=1,
+                    print_pipeline_analysis=0,
 
                     # WITHIN SUBJECT
 
                     # sensor space operations
                     filter_raw=1,
-                    find_events=1,
+                    find_events=0,
                     find_eog_events=0,
                     epoch_raw=1,
                     run_ssp_er=0, # on Empty-Room-Data
@@ -161,7 +172,7 @@ operations_to_apply = dict(
                     run_ica=0, # only if EOG/EEG-Channels available, HIGPASS-FILTER RECOMMENDED!!!
                     apply_ica=0,
                     ica_pure=0,
-                    get_evokeds=1,
+                    get_evokeds=0,
                     TF_Morlet=0,
 
                     # source space operations (bash/Linux)
@@ -169,14 +180,17 @@ operations_to_apply = dict(
                     segment_mri=0, # long process (>10 h)
                     Test=0,
                     apply_watershed=0,
-                    make_dense_scalp_surfaces=0, #until here all bash scripts!
+                    make_source_space=0,
+                    make_dense_scalp_surfaces=0,
+                    make_bem_solutions=0,
+                    make_morph_map=0, #until here all bash scripts!
 
                     mri_coreg=0,
-                    setup_source_space=1,
+                    setup_source_space=0,
                     create_forward_solution=1, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
                     estimate_noise_covariance=1,
                     create_inverse_operator=1,
-                    source_estimate=1,
+                    source_estimate=0,
                     vector_source_estimate=0,
                     ECD_fit=0,
                     morph_to_fsaverage=0,
@@ -195,7 +209,7 @@ operations_to_apply = dict(
                     plot_raw=0,
                     print_info=0,
                     plot_sensors=0,
-                    plot_events=1,
+                    plot_events=0,
                     plot_eog_events=0,
                     plot_filtered=0,
                     plot_power_spectra=0,
@@ -207,11 +221,11 @@ operations_to_apply = dict(
                     plot_ica=0,
                     plot_ica_sources=0,
                     plot_epochs=0,
-                    plot_epochs_image=1,
+                    plot_epochs_image=0,
                     plot_epochs_topo=0,
-                    plot_butterfly_evokeds=1,
+                    plot_butterfly_evokeds=0,
                     plot_evoked_topo=0,
-                    plot_evoked_topomap=1,
+                    plot_evoked_topomap=0,
                     plot_evoked_field=0,
                     plot_evoked_joint=0,
                     plot_evoked_white=0,
@@ -223,8 +237,8 @@ operations_to_apply = dict(
                     plot_transformation=0,
                     plot_source_space=0,
                     plot_bem=0,
-                    plot_noise_covariance=1,
-                    plot_source_estimates=1,
+                    plot_noise_covariance=0,
+                    plot_source_estimates=0,
                     # added float() in 2549 surfer\viz.py to avoid error
                     # changed render_window.size to get_size() in mayavi/tools/figure.py
                     plot_animated_stc=0,
@@ -256,16 +270,11 @@ operations_to_apply = dict(
 # PARAMETERS
 #%%============================================================================
 #parameters_start
-#OS
-n_jobs = -1 #number of processor-cores to use, -1 for auto
-enable_cuda = True # Using CUDA on supported graphics card e.g. for filtering
-                    # cupy and appropriate CUDA-Drivers have to be installed
-                    # https://mne-tools.github.io/dev/advanced_setup.html#advanced-setup
-                    
+
 # should files be overwritten
 overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
-close_plots = True # close plots after one subjects batch
+close_plots = False # close plots after one subjects batch
 
 # raw
 lowpass = 80 # Hz
@@ -280,13 +289,13 @@ time_unit = 's'
 tmin = -1.000 # s
 tmax = 2.000 # s
 baseline = (-0.800, -0.500) # [s]
-autoreject = 1 # set 1 for autoreject
+autoreject = 0 # set 1 for autoreject
 overwrite_ar = 0 # if to calculate new thresholds or to use previously calculated
 reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
-event_id = {'LBT':1,'mot_start':2,'offset':4,'start':32,'start2':41}
+event_id = {'LBT':1,'velo1':2,'velo2':4,'offset':6,'start':41}
 """all_event_ids = {'35':1,'40':2,'45':4,'50':8,'55':16,'60':3,'65':5,
                  '70':9,'75':17,'80':6,'85':10,'90':18,'95':12}"""
 
@@ -308,7 +317,8 @@ source_space_method = 'ico5'
 
 # source reconstruction
 use_calm_cov = False
-method = 'dSPM'
+method = 'MNE'
+fixed_src = False # if the source is fixed(normal to cortex) or loose
 mne_evoked_time = [0.050, 0.100, 0.200] # s
 stc_animation = [0,0.5] # s
 eeg_fwd = False
@@ -384,6 +394,16 @@ if operations_to_apply['mri_preprocessing']:
         if operations_to_apply['make_dense_scalp_surfaces']:
             op.make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite)
 
+        if operations_to_apply['make_source_space']:
+            op.make_source_space(mri_subject, subjects_dir, source_space_method,
+                                         overwrite)
+
+        if operations_to_apply['make_bem_solutions']:
+            op.make_bem_solutions(mri_subject, subjects_dir)
+
+        if operations_to_apply['make_morph_map']:
+            op.make_morph_map(mri_subject, morph_to, subjects_dir)
+
         #==========================================================================
         # Forward Modeling
         #==========================================================================
@@ -425,13 +445,7 @@ for which_file in which_file_list:
         name = subject #changed for Kopfklinik-naming-convention
         subject_index = subjects.index(subject)
         save_dir = join(data_path, subject)
-        try:
-            bad_channels = bad_channels_dict[subject]
-        except KeyError as k:
-            print(f'No bad channels for {k}')
-            suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path,
-                                         predefined_bads)
-            continue
+        bad_channels = bad_channels_dict[subject]
         subtomri = sub_to_mri[subject]
         ermsub = erm_dict[subject]
         event_id_list = []
@@ -476,7 +490,7 @@ for which_file in which_file_list:
 
         if operations_to_apply['filter_raw']:
             op.filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
-                                  data_path, n_jobs, enable_cuda, bad_channels)
+                                  data_path, n_jobs, enable_cuda)
 
         #==========================================================================
         # PRINT INFO
@@ -586,6 +600,10 @@ for which_file in which_file_list:
         if operations_to_apply['run_ica']:
             op.run_ica(name, save_dir,lowpass, highpass, eog_channel, ecg_channel,
                                reject, flat, bad_channels, overwrite, autoreject)
+
+        if operations_to_apply['ica_pure']:
+            op.ica_pure(name, save_dir,lowpass, highpass, overwrite, eog_channel,
+                                ecg_channel, layout, reject, flat, bad_channels, autoreject)
 
         #===========================================================================
         # PLOT COMPONENTS TO BE REMOVED
@@ -706,7 +724,7 @@ for which_file in which_file_list:
 
         if operations_to_apply['create_inverse_operator']:
             op.create_inverse_operator(name, save_dir,lowpass, highpass,
-                                            overwrite, ermsub, use_calm_cov)
+                                            overwrite, ermsub, use_calm_cov, fixed_src)
 
         #==========================================================================
         # SOURCE ESTIMATE MNE
@@ -796,21 +814,17 @@ for which_file in which_file_list:
             plot.close_all()
 
         if autoreject and operations_to_apply['print_pipeline_analysis']:
-            try:
-                reject_value_path = join(save_dir, op.filter_string(lowpass, highpass) \
-                                         + '_reject_value.py')
-                with open(reject_value_path, 'r') as rv:
-                    reject = {}
-                    for item in rv:
-                        if ':' in item:
-                            key,value = item.split(':', 1)
-                            value = value[:-1]
-                            reject[key] = float(value)
-        
-                ar_values.update({name:reject})
-            except FileNotFoundError:
-                print('Autorejection not applied yet')
-                continue
+            reject_value_path = join(save_dir, op.filter_string(lowpass, highpass) \
+                                     + '_reject_value.py')
+            with open(reject_value_path, 'r') as rv:
+                reject = {}
+                for item in rv:
+                    if ':' in item:
+                        key,value = item.split(':', 1)
+                        value = value[:-1]
+                        reject[key] = float(value)
+
+            ar_values.update({name:reject})
 
         #==========================================================================
         # General Statistics

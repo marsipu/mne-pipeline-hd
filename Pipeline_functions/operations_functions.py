@@ -85,7 +85,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics']
+                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
@@ -135,7 +135,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
         if exc.errno == 17: ## dir already exists
             pass
 
-@decor.topline
+
 def populate_data_directory_small(home_path, project_name, data_path, figures_path,
                                   subjects_dir, subjects):
 
@@ -218,13 +218,12 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
 #==============================================================================
 @decor.topline
 def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
-               data_path, n_jobs, enable_cuda):
+               data_path, n_jobs, enable_cuda, bad_channels):
 
     filter_name = name  + filter_string(lowpass, highpass) + '-raw.fif'
     filter_path = join(save_dir, filter_name)
+    raw = io.read_raw(name, save_dir)
     if overwrite or not isfile(filter_path):
-
-        raw = io.read_raw(name, save_dir)
 
         if enable_cuda: #use cuda for filtering
             n_jobs = 'cuda'
@@ -238,19 +237,19 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
         print('raw file: ' + filter_path + ' already exists')
 
     if ermsub!='None':
-        erm_name = ermsub + '.fif'
+        erm_name = ermsub + '-raw.fif'
         erm_path = join(data_path, 'empty_room_data', erm_name)
         erm_filter_name = ermsub + filter_string(lowpass, highpass) + '-raw.fif'
         erm_filter_path = join(data_path, 'empty_room_data', erm_filter_name)
 
-        if not isfile(erm_filter_path) and ermsub!='None':
+        if not isfile(erm_filter_path):
 
             erm_raw = mne.io.read_raw_fif(erm_path, preload=True)
 
             # Due to channel-deletion sometimes in HPI-Fitting-Process
             ch_list = set(erm_raw.info['ch_names']) & set(raw.info['ch_names'])
             erm_raw.pick_channels(ch_list)
-
+            erm_raw.pick_types(meg=True,exclude=bad_channels)
             erm_raw.filter(highpass, lowpass)
 
             erm_raw.save(erm_filter_path, overwrite=True)
@@ -478,7 +477,7 @@ def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
 
         epochs = mne.Epochs(raw, events, event_id, tmin, tmax, baseline,
                             preload=True, picks=picks, proj=False,
-                            decim=decim, on_missing='warning',reject_by_annotation=True)
+                            decim=decim, on_missing='ignore',reject_by_annotation=True)
 
         if autoreject:
             reject_value_path = join(save_dir, filter_string(lowpass, highpass) \
@@ -1028,7 +1027,9 @@ def segment_mri(mri_subject, subjects_dir, n_jobs_freesurfer):
     run_process_and_write_output(command, subjects_dir)
 
 def apply_watershed(mri_subject, subjects_dir, overwrite):
-
+    
+    #mne.bem.make_watershed_bem(mri_subject, subjects_dir)
+    
     print('Running Watershed algorithm for: ' + mri_subject + \
           ". Output is written to the bem folder " + \
           "of the subject's FreeSurfer folder.\n" + \
@@ -1069,27 +1070,6 @@ def apply_watershed(mri_subject, subjects_dir, overwrite):
                    ]
         run_process_and_write_output(command, subjects_dir)
 
-def make_source_space(mri_subject, subjects_dir, source_space_method, overwrite):
-
-    print('Making source space for ' + \
-          'subject: ' + mri_subject + \
-          ". Output is written to the bem folder" + \
-          " of the subject's FreeSurfer folder.\n" + \
-          'Bash output follows below.\n\n')
-
-    if overwrite:
-        overwrite_string = '--overwrite'
-    else:
-        overwrite_string = ''
-
-    command = ['mne_setup_source_space',
-               '--subject', mri_subject,
-               '--' + source_space_method[0], str(source_space_method[1]),
-               overwrite_string
-               ]
-
-    run_process_and_write_output(command, subjects_dir)
-
 def make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite):
 
     print('Making dense scalp surfacing easing co-registration for ' + \
@@ -1106,35 +1086,6 @@ def make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite):
     command = ['mne_make_scalp_surfaces',
                '--subject', mri_subject,
                overwrite_string]
-
-    run_process_and_write_output(command, subjects_dir)
-
-def make_bem_solutions(mri_subject, subjects_dir):
-
-    print('Writing volume conductor for ' + \
-          'subject: ' + mri_subject + \
-          ". Output is written to the bem folder" + \
-          " of the subject's FreeSurfer folder.\n" + \
-          'Bash output follows below.\n\n')
-
-    command = ['mne_setup_forward_model',
-               '--subject', mri_subject,
-               '--homog',
-               '--surf',
-               '--ico', '4'
-               ]
-
-    run_process_and_write_output(command, subjects_dir)
-
-def make_morph_map(mri_subject, morph_to, subjects_dir):
-    print('Writing morph map for ' + \
-          'subject: ' + mri_subject + \
-          ". Output is written to the Subjects_dir folder" + \
-          'Bash output follows below.\n\n')
-
-    command = ['mne_make_morph_maps',
-    '--from', mri_subject,
-    '--to', morph_to,]
 
     run_process_and_write_output(command, subjects_dir)
 
@@ -1156,18 +1107,15 @@ def setup_source_space(mri_subject, subjects_dir, source_space_method, n_jobs,
 @decor.topline
 def mri_coreg(name, save_dir, subtomri, subjects_dir):
 
-    raw_name = name + '.fif'
+    raw_name = name + '-raw.fif'
     raw_path = join(save_dir, raw_name)
+    #trans-file pre-reading makes an error window
 
-    try:
-        trans = io.read_transformation(save_dir, subtomri)
-        mne.gui.coregistration(subject=subtomri, inst=raw_path, trans=trans,
-                               subjects_dir=subjects_dir, guess_mri_subject=False)
 
-    except FileNotFoundError:
-        print('No trans-File found')
-        mne.gui.coregistration(subject=subtomri, inst=raw_path,
-                               subjects_dir=subjects_dir, guess_mri_subject=False)
+    mne.gui.coregistration(subject=subtomri, inst=raw_path,
+                           subjects_dir=subjects_dir, guess_mri_subject=False)
+
+
 @decor.topline
 def create_forward_solution(name, save_dir, subtomri, subjects_dir,
                             source_space_method, overwrite, n_jobs, eeg_fwd):
@@ -1256,7 +1204,7 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass, overwrite, erms
                   ' already exists')
 
 @decor.topline
-def create_inverse_operator(name, save_dir, lowpass, highpass, overwrite, ermsub, use_calm_cov, fixed_src):
+def create_inverse_operator(name, save_dir, lowpass, highpass, overwrite, ermsub, use_calm_cov):
 
     inverse_operator_name = name + filter_string(lowpass, highpass) +  '-inv.fif'
     inverse_operator_path = join(save_dir, inverse_operator_name)
@@ -1604,7 +1552,7 @@ Separate your trials in odd and even. Then calculate the correlation between odd
 for ascending number of trials"""
 @decor.topline
 def corr_ntr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub,
-             subtomri):
+             subtomri, save_plots, figures_path):
 
     info = io.read_info(name, save_dir)
 
@@ -1631,37 +1579,60 @@ def corr_ntr(name, save_dir, lowpass, highpass, operations_to_apply, ermsub,
         epochs = io.read_epochs(name, save_dir, lowpass, highpass)
         print('Evokeds from (normal) Epochs')
     # Analysis for each trial_type
-    for trial_type in epochs.event_id:
+    labels = mne.read_labels_from_annot(subtomri)
+    target_labels = ['postcentral-lh']
+    ch_labels = []
+    
+    for label in labels:
+        if label.name in target_labels:
+            ch_labels.append(label)
 
-        ep_tr = epochs[trial_type]
+    inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    src = inv_op['src']            
+
+    for l in ch_labels:
+        ep_tr = epochs['LBT']
+        ep_tr.crop(0,0.3)
         ep_len = len(ep_tr)//2*2 # Make sure ep_len is even
         idxs = range(ep_len)
+        
+        y = []
+        x = []
+        
         #select randomly k epochs for t times
 
         for k in range(1, int(ep_len/2)): # Compare k epochs
-
+            
+            print(f'Iteration {k} of {int(ep_len/2)}')
             ep_rand = epochs[random.sample(idxs,k*2)]
             ep1 = ep_rand[:k]
             ep2 = ep_rand[k:]
             avg1 = ep1.average()
             avg2 = ep2.average()
+            x.append(k) 
+                        
+            stc1 = mne.minimum_norm.apply_inverse(avg1, inv_op, method='dSPM', pick_ori='normal')
+            stc2 = mne.minimum_norm.apply_inverse(avg2, inv_op, method='dSPM', pick_ori='normal')
             
-            labels = mne.read_labels_from_annot(subtomri)
-            target_labels = ['postcentral-lh']#
-            inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+            print(f'Label:{l.name}')
+            mean1 = stc1.extract_label_time_course(l, src, mode='pca_flip')
+            mean2 = stc2.extract_label_time_course(l, src, mode='pca_flip')
             
-            for label in labels:
-                if label.name in target_labels:
-                    
-                    stc1 = mne.minimum_norm.apply_inverse(avg1, inv_op, method='dSPM', pick_ori='normal')
-                    stc2 = mne.minimum_norm.apply_inverse(avg2, inv_op, method='dSPM', pick_ori='normal')            
-                    
-                    stc1_label = stc1.in_label(label)
-                    stc2_label = stc2.in_label(label)
-                    
-                    plt.figure()
-                    plt.plot(1e3 * stc1_label.times, stc1_label.data.T, 'r', linewidth=0.5)
-                    plt.plot(1e3 * stc2_label.times, stc2_label.data.T, 'b', linewidth=0.5)
+            coef = np.corrcoef(mean1, mean2)[0,1]
+            y.append(coef)
+        
+        plt.figure()
+        plt.plot(x, y)
+        plt.title(name)
+        
+        if save_plots:
+            save_path = join(figures_path, 'correlation_ntr', name + \
+                                 filter_string(lowpass, highpass) + \
+                                 '_' + l.name + '.jpg')
+            plt.savefig(save_path, dpi=600)
+            print('figure: ' + save_path + ' has been saved')
+        else:
+            print('Not saving plots; set "save_plots" to "True" to save')
             
 # Beginn und Ende vergleichen, sources als Korrelations-Grundlage
 

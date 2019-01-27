@@ -28,17 +28,23 @@ def filter_string(lowpass, highpass):
 #==============================================================================
 def read_info(name, save_dir):
 
-    raw_name = name + '.fif'
+    raw_name = name + '-raw.fif'
     raw_path = join(save_dir, raw_name)
     info = mne.io.read_info(raw_path)
 
     return info
 
 def read_raw(name, save_dir):
-
-    raw_name = name + '.fif'
-    raw_path = join(save_dir, raw_name)
-    raw = mne.io.read_raw_fif(raw_path, preload=True)
+    
+    try:
+        raw_name = name + '-raw.fif'
+        raw_path = join(save_dir, raw_name)
+        raw = mne.io.read_raw_fif(raw_path, preload=True)
+    except FileNotFoundError:
+        raw_name = name + '.fif'
+        raw_path = join(save_dir, raw_name)
+        raw = mne.io.read_raw_fif(raw_path, preload=True)
+        print('Imported Raw without -raw.fif')
 
     return raw
 

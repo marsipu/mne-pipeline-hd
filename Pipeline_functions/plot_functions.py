@@ -64,7 +64,12 @@ def plot_sensors(name, save_dir):
 def plot_events(name, save_dir, lowpass, highpass, save_plots, figures_path, subject, event_id):
 
     events = io.read_events(name, save_dir)
-    events_figure = mne.viz.plot_events(events, sfreq=1000, event_id=event_id)
+    actual_event_id = {}
+    for i in event_id:
+        if event_id[i] in np.unique(events[:,2]):
+            actual_event_id.update({i:event_id[i]})
+    
+    events_figure = mne.viz.plot_events(events, sfreq=1000, event_id=actual_event_id)
     plt.title(name)
 
     if save_plots:
@@ -425,7 +430,7 @@ def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, subject, save_plot
                                 figures_path, time_unit, ermsub, use_calm_cov):
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
-    """
+    
     if use_calm_cov==True:
         noise_covariance = io.read_clm_noise_covariance(name, save_dir, lowpass, highpass)
         print('Noise Covariance from 1-min Calm in raw')
@@ -435,11 +440,12 @@ def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, subject, save_plot
     else:
         noise_covariance = io.read_erm_noise_covariance(name, save_dir, lowpass, highpass)
         print('Noise Covariance from Empty-Room-Data')
-"""
+
     for evoked in evokeds:
         figure = evoked.plot(spatial_colors=True, time_unit=time_unit,
                              window_title=name + ' - ' + evoked.comment,
-                             selectable=True, gfp=True, zorder='std')
+                             selectable=True, gfp=True, zorder='std',
+                             noise_cov=noise_covariance)
 
         if save_plots:
             save_path = join(figures_path, 'evoked_butterfly', evoked.comment,
@@ -712,7 +718,7 @@ def plot_labels(subtomri, subjects_dir):
         brain.add_label(label)
 
 @decor.topline
-def label_time_course(name, save_dir, lowpass, highpass, method, source_space_method, subtomri,
+def label_time_course_old(name, save_dir, lowpass, highpass, method, source_space_method, subtomri,
                       subjects_dir, target_labels, figures_path, save_plots):
 
     labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir)
@@ -815,38 +821,54 @@ def label_time_course_avg(morphed_data_all, save_dir_averages, lowpass, highpass
                     print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
-def plot_time_course_test(name, save_dir, lowpass, highpass, subtomri, target_labels):
+def label_time_course(name, save_dir, lowpass, highpass, subtomri, target_labels,
+                      save_plots, figures_path):
     
     snr = 3.0
     lambda2 = 1.0 / snr ** 2
     method = "dSPM"
     
-    evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+    evoked = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
     
     labels = mne.read_labels_from_annot(subtomri)
     
     for label in labels:
         if label.name in target_labels:
-            label = label
+            l = label
             
 
-            inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
-            
-            src = inv_op['src']
-            
-            # pick_ori has to be normal to plot bipolar time course
-            stc = mne.minimum_norm.apply_inverse(evokeds[0], inv_op, lambda2, method,
-                                                 pick_ori='normal')
-            
-            stc_label = stc.in_label(label)
-            
-            plt.figure()
-            plt.plot(1e3 * stc_label.times, stc_label.data.T, 'k', linewidth=0.5)
-            plt.xlabel('Time (ms)')
-            plt.ylabel('Source amplitude')
-            plt.title('Activations in Label : %s' % label)
-            plt.show()
-
+    inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    
+    src = inv_op['src']
+    
+    # pick_ori has to be normal to plot bipolar time course
+    stc = mne.minimum_norm.apply_inverse(evoked, inv_op, lambda2, method,
+                                         pick_ori='normal')
+    
+    stc_label = stc.in_label(l)
+    mean = stc.extract_label_time_course(l, src, mode='mean')
+    mean_flip = stc.extract_label_time_course(l, src, mode='mean_flip')
+    pca = stc.extract_label_time_course(l, src, mode='pca_flip')
+    
+    plt.figure()
+    plt.plot(1e3 * stc_label.times, stc_label.data.T, 'k', linewidth=0.5)
+    h0, = plt.plot(1e3 * stc_label.times, mean.T, 'r', linewidth=3)
+    h1, = plt.plot(1e3 * stc_label.times, mean_flip.T, 'g', linewidth=3)
+    h2, = plt.plot(1e3 * stc_label.times, pca.T, 'b', linewidth=3)
+    plt.legend([h0, h1, h2], ['mean', 'mean flip', 'PCA flip'])
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Source amplitude')
+    plt.title(f'Activations in Label :{l}-{evoked.comment}')
+    plt.show()
+    
+    if save_plots:
+        save_path = join(figures_path, 'label_time_course', evoked.comment, name + \
+                             filter_string(lowpass, highpass) + '_' + \
+                             evoked.comment + '_' + l.name + '.jpg')
+        plt.savefig(save_path, dpi=600)
+        print('figure: ' + save_path + ' has been saved')
+    else:
+        print('Not saving plots; set "save_plots" to "True" to save')
 @decor.topline
 def plot_grand_average_evokeds(name, lowpass, highpass, save_dir_averages,
                                evoked_data_all, event_id_list,
