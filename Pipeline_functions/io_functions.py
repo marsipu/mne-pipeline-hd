@@ -28,17 +28,23 @@ def filter_string(lowpass, highpass):
 #==============================================================================
 def read_info(name, save_dir):
 
-    raw_name = name + '.fif'
+    raw_name = name + '-raw.fif'
     raw_path = join(save_dir, raw_name)
     info = mne.io.read_info(raw_path)
 
     return info
 
 def read_raw(name, save_dir):
-
-    raw_name = name + '.fif'
-    raw_path = join(save_dir, raw_name)
-    raw = mne.io.read_raw_fif(raw_path, preload=True)
+    
+    try:
+        raw_name = name + '-raw.fif'
+        raw_path = join(save_dir, raw_name)
+        raw = mne.io.read_raw_fif(raw_path, preload=True)
+    except FileNotFoundError:
+        raw_name = name + '.fif'
+        raw_path = join(save_dir, raw_name)
+        raw = mne.io.read_raw_fif(raw_path, preload=True)
+        print('Imported Raw without -raw.fif')
 
     return raw
 
@@ -267,7 +273,7 @@ def read_transformation(save_dir, subtomri):
 def read_bem_solution(subject, subjects_dir):
 
     bem_path = join(subjects_dir, subject, 'bem',
-                    subject + '-5120-bem-sol.fif')
+                    subject + '-bem-sol.fif')
     bem = mne.read_bem_solution(bem_path)
 
     return bem

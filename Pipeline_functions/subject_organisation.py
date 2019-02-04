@@ -2,73 +2,121 @@
 subject_organisation by Martin Schulz
 martin.schulz@stud.uni-heidelberg.de
 """
-
-from os.path import join, isfile
+import os
+import shutil
+from os.path import join, isfile, exists
 from . import io_functions as io
 from . import operations_functions as op
+from . import utilities as ut
 import tkinter as t
 
 
 ## Subjects
 def add_subjects(sub_list_path, home_path, project_name, data_path, figures_path,
-                            subjects_dir):
+                 subjects_dir, orig_data_path, gui=False):
+    
+    subjects = read_subjects(sub_list_path)
+    op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
+                           subjects_dir, subjects)
+    
+    all_files, paths = ut.getallfifFiles(orig_data_path)
+    for f in all_files:
+        fname = f[:-4]
+        fdest = join(data_path, fname, fname + '-raw.fif')
+        ermdest = join(data_path, 'empty_room_data', fname + '-raw.fif')
+        if not fname in subjects:
+            if 'leer' in fname or 'ruhe' in fname:
+                if not isfile(ermdest):
+                    print('-'*60 + '\n' + fname)
+                    print(f'Copying ERM_File from {paths[f]}')
+                    shutil.copy2(paths[f], ermdest)
+                    print(f'Finished Copying to {ermdest}')
+            
+            else:
+                if not isfile(sub_list_path):
+                    print('-'*60 + '\n' + fname)
+                    if not exists(join(data_path, '_Subject_scripts')):
+                        os.makedirs(join(data_path, '_Subject_scripts'))
+                        print(join(data_path, '_Subject_scripts created'))
+                        
+                    with open(sub_list_path, 'w') as sl1:
+                        sl1.write(fname + '\n')
+                    print('sub_list.py created') 
+                    print(f'{fname} was automatically added from {orig_data_path}')
+                    
+                else:
+                    print('-'*60 + '\n' + fname)
+                    with open(sub_list_path, 'a') as sl2:
+                        sl2.write(fname + '\n')
+                print(f'{fname} was automatically added from {orig_data_path}')
+                
+                subjects = read_subjects(sub_list_path)
+                op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
+                                                 subjects_dir, subjects)
+                
+                print(f'Copying File from {paths[f]}...')
+                shutil.copy2(paths[f], fdest)
+                print(f'Finished Copying to {fdest}')
 
-    def add_to_list():
-        if not isfile(sub_list_path):
-            ilist = []
-            ilist.append(e1.get())
-            e1.delete(0,t.END)
-            with open(sub_list_path, 'w') as sl:
-                for listitem in ilist:
-                    sl.write('%s\n' % listitem)
-            print('sub_list.py created')
-
-        else:
-            elist = []
-            elist.append(e1.get())
-            e1.delete(0,t.END)
-            with open(sub_list_path, 'a') as sl:
-                for listitem in elist:
-                    sl.write('%s\n' % listitem)
-
-    def delete_last():
-        with open(sub_list_path, 'r') as dl:
-            dlist = (dl.readlines())
-
-        with open(sub_list_path, 'w') as dl:
-            for listitem in dlist[:-1]:
-                dl.write('%s' % listitem)
-
-    def quittk():
-        master.quit()
-        master.destroy()
-
-    def readl():
-        try:
-            with open(sub_list_path, 'r') as rl:
-                print(rl.read())
-        except FileNotFoundError:
-            print('sub_list.py not yet created, run add_subjects')
-
-    def pop_dir():
-
-        subjects = read_subjects(sub_list_path)
-        op.populate_data_directory(home_path, project_name, data_path, figures_path,
-                                   subjects_dir, subjects)
-
-    master = t.Tk()
-    t.Label(master, text='Subject(Filename without .fif)').grid(row=0, column=0)
-
-    e1 = t.Entry(master)
-    e1.grid(row=0, column=1)
-
-    t.Button(master, text='read', command=readl).grid(row=1, column=0)
-    t.Button(master, text='delete_last', command=delete_last).grid(row=1, column=1)
-    t.Button(master, text='add', command=add_to_list).grid(row=1, column=2)
-    t.Button(master, text='populate_dir', command=pop_dir).grid(row=1, column=3)
-    t.Button(master, text='quit', command=quittk).grid(row=1, column=4)
-
-    t.mainloop()
+    if gui == True:
+        def add_to_list():
+            if not isfile(sub_list_path):
+                if not exists(join(data_path, '_Subject_scripts')):
+                    os.makedirs(join(data_path, '_Subject_scripts'))
+                ilist = []
+                ilist.append(e1.get())
+                e1.delete(0,t.END)
+                with open(sub_list_path, 'w') as sl:
+                    for listitem in ilist:
+                        sl.write('%s\n' % listitem)
+                print('sub_list.py created')
+    
+            else:
+                elist = []
+                elist.append(e1.get())
+                e1.delete(0,t.END)
+                with open(sub_list_path, 'a') as sl:
+                    for listitem in elist:
+                        sl.write('%s\n' % listitem)
+    
+        def delete_last():
+            with open(sub_list_path, 'r') as dl:
+                dlist = (dl.readlines())
+    
+            with open(sub_list_path, 'w') as dl:
+                for listitem in dlist[:-1]:
+                    dl.write('%s' % listitem)
+    
+        def quittk():
+            master.quit()
+            master.destroy()
+    
+        def readl():
+            try:
+                with open(sub_list_path, 'r') as rl:
+                    print(rl.read())
+            except FileNotFoundError:
+                print('sub_list.py not yet created, run add_subjects')
+    
+        def pop_dir():
+    
+            subjects = read_subjects(sub_list_path)
+            op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
+                                       subjects_dir, subjects)
+    
+        master = t.Tk()
+        t.Label(master, text='Subject(Filename without .fif)').grid(row=0, column=0)
+    
+        e1 = t.Entry(master)
+        e1.grid(row=0, column=1)
+    
+        t.Button(master, text='read', command=readl).grid(row=1, column=0)
+        t.Button(master, text='delete_last', command=delete_last).grid(row=1, column=1)
+        t.Button(master, text='add', command=add_to_list).grid(row=1, column=2)
+        t.Button(master, text='populate_dir', command=pop_dir).grid(row=1, column=3)
+        t.Button(master, text='quit', command=quittk).grid(row=1, column=4)
+    
+        t.mainloop()
 
 
 def read_subjects(sub_list_path):
@@ -88,10 +136,12 @@ def read_subjects(sub_list_path):
 
 
 ##MRI-Subjects
-def add_mri_subjects(mri_sub_list_path):
+def add_mri_subjects(mri_sub_list_path, data_path):
 
     def add_to_list():
         if not isfile(mri_sub_list_path):
+            if not exists(join(data_path, '_Subject_scripts')):
+                os.makedirs(join(data_path, '_Subject_scripts'))
             ilist = []
             ilist.append(e1.get())
             e1.delete(0,t.END)
@@ -160,11 +210,13 @@ def read_mri_subjects(mri_sub_list_path):
     return mri_sub_list
 
 ##Subject-Dict
-def add_sub_dict(sub_dict_path, sub_list_path):
+def add_sub_dict(sub_dict_path, sub_list_path, data_path):
 
     def assign_sub():
         choice=listbox.get(listbox.curselection())
         if not isfile(sub_dict_path):
+            if not exists(join(data_path, '_Subject_scripts')):
+                os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
             idict.update({choice:e2.get()})
             e2.delete(0,t.END)
@@ -246,11 +298,13 @@ def read_sub_dict(sub_dict_path):
 
 ## empty_room_data
 
-def add_erm_dict(erm_dict_path, sub_list_path):
+def add_erm_dict(erm_dict_path, sub_list_path, data_path):
 
     def assign_erm():
         choice=listbox.get(listbox.curselection())
         if not isfile(erm_dict_path):
+            if not exists(join(data_path, '_Subject_scripts')):
+                os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
             idict.update({choice:e2.get()})
             e2.delete(0,t.END)
@@ -334,12 +388,15 @@ def read_erm_dict(erm_dict_path):
 
 ## bad_channels_dict
 
-def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path):
+def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path,
+                          predefined_bads):
 
 
     def assign_bad_channels():
         choice=listbox.get(listbox.curselection())
         if not isfile(bad_channels_dict_path):
+            if not exists(join(data_path, '_Subject_scripts')):
+                os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
             idict.update({choice:e2.get()})
             e2.delete(0,t.END)
@@ -377,12 +434,21 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path):
             print('bad_channels_dict.py not yet created, press assign')
 
     def plot_raw_tk():
-        choice=listbox.get(listbox.curselection())
+        choice = listbox.get(listbox.curselection())
         name = choice
         save_dir = join(data_path, choice)
         raw = io.read_raw(name, save_dir)
-        raw.plot(title=name, bad_color='red', scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), block=True, n_channels=30)
-
+        try:
+            bad_channels_dict = read_bad_channels_dict(bad_channels_dict_path)
+            bad_channels = bad_channels_dict[name]
+            raw.info['bads'] = bad_channels
+            raw.plot(title=name, bad_color='red',
+                     scalings=dict(mag=1e-12, grad=4e-11, eeg='auto', stim=1),
+                     n_channels=32)
+        except (FileNotFoundError, KeyError):
+            raw.plot(title=name, bad_color='red',
+                     scalings=dict(mag=1e-12, grad=4e-11, eeg='auto', stim=1),
+                     n_channels=32)            
 
     master = t.Tk()
 
@@ -427,7 +493,7 @@ def read_bad_channels_dict(bad_channels_dict_path):
                     value = value[:-1]
                     value = value.split(',')
                     if '' in value and len(value)==1:
-                        bad_channels_dict[key]=[]
+                        bad_channels_dict[key]=[] # No bad_channels assigned
                     elif '' in value and len(value)!=1:
                         raise ValueError('There is a mistake in the bad_channels_dict value')
                     else:
@@ -444,9 +510,11 @@ def read_bad_channels_dict(bad_channels_dict_path):
 def add_sub_cond_dict(bad_channels_dict_path, sub_list_path, data_path):
 
 
-    def assign_bad_channels():
+    def assign_condition():
         choice=listbox.get(listbox.curselection())
         if not isfile(bad_channels_dict_path):
+            if not exists(join(data_path, '_Subject_scripts')):
+                os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
             idict.update({choice:e2.get()})
             e2.delete(0,t.END)
@@ -517,7 +585,7 @@ def add_sub_cond_dict(bad_channels_dict_path, sub_list_path, data_path):
     t.Button(master, text='read', command=readd).pack()
     t.Button(master, text='delete_last', command=delete_last).pack()
     t.Button(master, text='plot_raw', command=plot_raw_tk).pack()
-    t.Button(master, text='assign', command=assign_bad_channels).pack()
+    t.Button(master, text='assign', command=assign_condition).pack()
     t.Button(master, text='quit', command=quittk).pack()
 
 
@@ -542,7 +610,7 @@ def read_sub_cond_dict(bad_channels_dict_path):
                         bad_channels_dict[key]=value
 
     except FileNotFoundError:
-        print('sub_cond_dict.py not yet created, run add_bad_channels_dict')
+        print('sub_cond_dict.py not yet created, run add_sub_cond_dict')
 
     return bad_channels_dict
 
