@@ -35,7 +35,7 @@ def add_subjects(sub_list_path, home_path, project_name, data_path, figures_path
             else:
                 if not isfile(sub_list_path):
                     print('-'*60 + '\n' + fname)
-                    if not exists(data_path, '_Subject_scripts'):
+                    if not exists(join(data_path, '_Subject_scripts')):
                         os.makedirs(join(data_path, '_Subject_scripts'))
                         print(join(data_path, '_Subject_scripts created'))
                         
@@ -61,7 +61,7 @@ def add_subjects(sub_list_path, home_path, project_name, data_path, figures_path
     if gui == True:
         def add_to_list():
             if not isfile(sub_list_path):
-                if not exists(data_path, '_Subject_scripts'):
+                if not exists(join(data_path, '_Subject_scripts')):
                     os.makedirs(join(data_path, '_Subject_scripts'))
                 ilist = []
                 ilist.append(e1.get())
@@ -140,7 +140,7 @@ def add_mri_subjects(mri_sub_list_path, data_path):
 
     def add_to_list():
         if not isfile(mri_sub_list_path):
-            if not exists(data_path, '_Subject_scripts'):
+            if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
             ilist = []
             ilist.append(e1.get())
@@ -215,7 +215,7 @@ def add_sub_dict(sub_dict_path, sub_list_path, data_path):
     def assign_sub():
         choice=listbox.get(listbox.curselection())
         if not isfile(sub_dict_path):
-            if not exists(data_path, '_Subject_scripts'):
+            if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
             idict.update({choice:e2.get()})
@@ -303,7 +303,7 @@ def add_erm_dict(erm_dict_path, sub_list_path, data_path):
     def assign_erm():
         choice=listbox.get(listbox.curselection())
         if not isfile(erm_dict_path):
-            if not exists(data_path, '_Subject_scripts'):
+            if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
             idict.update({choice:e2.get()})
@@ -395,7 +395,7 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path,
     def assign_bad_channels():
         choice=listbox.get(listbox.curselection())
         if not isfile(bad_channels_dict_path):
-            if not exists(data_path, '_Subject_scripts'):
+            if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
             idict.update({choice:e2.get()})
@@ -443,12 +443,12 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path,
             bad_channels = bad_channels_dict[name]
             raw.info['bads'] = bad_channels
             raw.plot(title=name, bad_color='red',
-                     scalings=dict(mag=1e-12, grad=4e-11, eeg=50e-6, stim=1),
-                     n_channels=30)
+                     scalings=dict(mag=1e-12, grad=4e-11, eeg='auto', stim=1),
+                     n_channels=32)
         except (FileNotFoundError, KeyError):
             raw.plot(title=name, bad_color='red',
-                     scalings=dict(mag=1e-12, grad=4e-11, eeg=50e-6, stim=1),
-                     n_channels=30)            
+                     scalings=dict(mag=1e-12, grad=4e-11, eeg='auto', stim=1),
+                     n_channels=32)            
 
     master = t.Tk()
 
@@ -513,7 +513,7 @@ def add_sub_cond_dict(bad_channels_dict_path, sub_list_path, data_path):
     def assign_condition():
         choice=listbox.get(listbox.curselection())
         if not isfile(bad_channels_dict_path):
-            if not exists(data_path, '_Subject_scripts'):
+            if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
             idict.update({choice:e2.get()})

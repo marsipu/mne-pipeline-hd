@@ -273,7 +273,7 @@ def read_transformation(save_dir, subtomri):
 def read_bem_solution(subject, subjects_dir):
 
     bem_path = join(subjects_dir, subject, 'bem',
-                    subject + '-5120-bem-sol.fif')
+                    subject + '-bem-sol.fif')
     bem = mne.read_bem_solution(bem_path)
 
     return bem

@@ -130,7 +130,7 @@ sub_cond_dict = suborg.read_sub_cond_dict(sub_cond_dict_path)
 
 which_file_list = ['30-42']  # Has to be strings!
 
-which_mri_subject = '47-60' # Has to be a string!
+which_mri_subject = '59' # Has to be a string!
 
 #==============================================================================
 # OPERATIONS
