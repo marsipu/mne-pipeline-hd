@@ -237,7 +237,7 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
 
     else:
         print('raw file: ' + filter_path + ' already exists')
-        print('NO ERM-FILTERING AGAIN, please change settings or delete files for new methods')
+        print('NO OVERWRITE FOR FILTERING, please change settings or delete files for new methods')
 
     if ermsub!='None':
         erm_name = ermsub + '-raw.fif'
@@ -722,7 +722,7 @@ def apply_ssp_ecg(name, save_dir, lowpass, highpass, overwrite):
 @decor.topline
 def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             reject, flat, bad_channels, overwrite, autoreject,
-            save_plots, figures_path, sub_script_path):
+            save_plots, figures_path, sub_script_path, erm_analysis):
     
     ica_comp_file_path = join(sub_script_path, 'ica_components.py')
     info = io.read_info(name, save_dir)
@@ -748,7 +748,7 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
         ica.fit(raw, picks, reject=dict(grad=4000e-13), flat=flat,
                 reject_by_annotation=True)
         
-        if ('EEG 001') in info['ch_names']:            
+        if ('EEG 001') in info['ch_names'] and not erm_analysis:            
             eeg_picks = mne.pick_types(raw.info, meg=True, eeg=True, eog=True,
                            stim=False, exclude=bad_channels)
             
@@ -813,8 +813,8 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             fig2 = ica.plot_properties(raw, ica.exclude,psd_args={'fmax':lowpass})
             fig3 = ica.plot_scores(eog_scores, title=name+'_eog')
             fig4 = ica.plot_scores(ecg_scores, title=name+'_ecg')            
-            fig5 = ica.plot_sources(eog_average,eog_indices,title=name+'_eog')
-            fig6 = ica.plot_sources(ecg_average,ecg_indices,title=name+'_ecg')
+            fig5 = ica.plot_sources(eog_average, eog_indices, title=name+'_eog')
+            fig6 = ica.plot_sources(ecg_average, ecg_indices, title=name+'_ecg')
             fig7 = ica.plot_overlay(epochs.average(), exclude=eog_indices, title=name+'_eog')
             fig8 = ica.plot_overlay(epochs.average(), exclude=ecg_indices, title=name+'_ecg')            
             
@@ -1080,7 +1080,7 @@ def get_evokeds(name, save_dir, lowpass, highpass, operations_to_apply, ermsub,
         and 'EEG 001' in info['ch_names']:
             epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
             print('Evokeds from ICA-Epochs after applied SSP')
-        elif operations_to_apply['apply_ica'] and 'EEG 001' in info['ch_names']:
+        elif operations_to_apply['apply_ica']:
             epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
             print('Evokeds from ICA-Epochs')
         elif operations_to_apply['apply_ssp_er'] and ermsub!='None':

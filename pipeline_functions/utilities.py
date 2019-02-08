@@ -81,7 +81,21 @@ class FunctionChooser(BasicWindow):
         for b in self.functions_buttons:
             if b.isChecked() == True:
                 print(b.text())
-                
+
+def choose_function():
+    
+    def a(b):
+        print(b)
+    
+    functions = [a]
+    app = QApplication(sys.argv)
+    w = FunctionChooser(functions) #operations_to_apply, take the existing dictionary. Less running problems
+    w.show()
+    #app.exec_()
+    #app.aboutToQuit.connect(app.deleteLater)
+    sys.exit(app.exec_()) # Raises Error for SystemExit
+
+               
 def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
                        only_read=False):
 
@@ -138,19 +152,6 @@ def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
     
     return reject
     
-def choose_function():
-    
-    def a(b):
-        print(b)
-    
-    functions = [a]
-    app = QApplication(sys.argv)
-    w = FunctionChooser(functions) #operations_to_apply, take the existing dictionary. Less running problems
-    w.show()
-    #app.exec_()
-    #app.aboutToQuit.connect(app.deleteLater)
-    sys.exit(app.exec_()) # Raises Error for SystemExit
-
 
 def getallfifFiles(dirName):
     # create a list of file and sub directories

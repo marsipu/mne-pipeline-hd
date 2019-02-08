@@ -12,52 +12,76 @@ import tkinter as t
 
 
 ## Subjects
-def add_subjects(sub_list_path, home_path, project_name, data_path, figures_path,
+def add_subjects(sub_list_path, erm_list_path, home_path, project_name, data_path, figures_path,
                  subjects_dir, orig_data_path, gui=False):
     
     subjects = read_subjects(sub_list_path)
+    erm_files = read_erms(erm_list_path)
     op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
                            subjects_dir, subjects)
     
     all_files, paths = ut.getallfifFiles(orig_data_path)
+    
     for f in all_files:
         fname = f[:-4]
         fdest = join(data_path, fname, fname + '-raw.fif')
         ermdest = join(data_path, 'empty_room_data', fname + '-raw.fif')
-        if not fname in subjects:
-            if 'leer' in fname or 'ruhe' in fname:
-                if not isfile(ermdest):
-                    print('-'*60 + '\n' + fname)
-                    print(f'Copying ERM_File from {paths[f]}')
-                    shutil.copy2(paths[f], ermdest)
-                    print(f'Finished Copying to {ermdest}')
-            
-            else:
-                if not isfile(sub_list_path):
-                    print('-'*60 + '\n' + fname)
-                    if not exists(join(data_path, '_Subject_scripts')):
-                        os.makedirs(join(data_path, '_Subject_scripts'))
-                        print(join(data_path, '_Subject_scripts created'))
-                        
-                    with open(sub_list_path, 'w') as sl1:
-                        sl1.write(fname + '\n')
-                    print('sub_list.py created') 
-                    print(f'{fname} was automatically added from {orig_data_path}')
-                    
-                else:
-                    print('-'*60 + '\n' + fname)
-                    with open(sub_list_path, 'a') as sl2:
-                        sl2.write(fname + '\n')
-                print(f'{fname} was automatically added from {orig_data_path}')
-                
-                subjects = read_subjects(sub_list_path)
-                op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
-                                                 subjects_dir, subjects)
-                
-                print(f'Copying File from {paths[f]}...')
-                shutil.copy2(paths[f], fdest)
-                print(f'Finished Copying to {fdest}')
 
+        if 'leer' in fname or 'ruhe' in fname:
+            if not isfile(ermdest):
+                print('-'*60 + '\n' + fname)
+                print(f'Copying ERM_File from {paths[f]}')
+                shutil.copy2(paths[f], ermdest)
+                print(f'Finished Copying to {ermdest}')
+            
+            if not fname in erm_files:
+                if 'motor_leer' in fname:
+                    if not isfile(erm_list_path):
+                        print('-'*60 + '\n' + fname)
+                        if not exists(join(data_path, '_Subject_scripts')):
+                            os.makedirs(join(data_path, '_Subject_scripts'))
+                            print(join(data_path, '_Subject_scripts created'))
+                            
+                        with open(erm_list_path, 'w') as el1:
+                            el1.write(fname + '\n')
+                        print('erm_list.py created') 
+                        print(f'{fname} was automatically added to erm_list from {orig_data_path}')    
+                    else:
+                        print('-'*60 + '\n' + fname)
+                        with open(erm_list_path, 'a') as sl2:
+                            sl2.write(fname + '\n')
+                        print(f'{fname} was automatically added to erm_list from {orig_data_path}')
+        
+        elif not isfile(fdest):
+            subjects = read_subjects(sub_list_path)
+            op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
+                                             subjects_dir, subjects)
+            
+            print(f'Copying File from {paths[f]}...')
+            shutil.copy2(paths[f], fdest)
+            print(f'Finished Copying to {fdest}')
+            
+        elif not fname in subjects:
+            if not isfile(sub_list_path):
+                print('-'*60 + '\n' + fname)
+                if not exists(join(data_path, '_Subject_scripts')):
+                    os.makedirs(join(data_path, '_Subject_scripts'))
+                    print(join(data_path, '_Subject_scripts created'))
+                    
+                with open(sub_list_path, 'w') as sl1:
+                    sl1.write(fname + '\n')
+                print('sub_list.py created') 
+                print(f'{fname} was automatically added to sub_list from {orig_data_path}')
+                
+            else:
+                print('-'*60 + '\n' + fname)
+                with open(sub_list_path, 'a') as sl2:
+                    sl2.write(fname + '\n')
+            print(f'{fname} was automatically added to sub_list from {orig_data_path}')
+
+
+            
+            
     if gui == True:
         def add_to_list():
             if not isfile(sub_list_path):
@@ -134,6 +158,21 @@ def read_subjects(sub_list_path):
 
     return sub_list
 
+
+def read_erms(erm_list_path):
+    
+    erm_list = []
+
+    try:
+        with open(erm_list_path, 'r') as sl:
+            for line in sl:
+                currentPlace = line[:-1]
+                erm_list.append(currentPlace)
+
+    except FileNotFoundError:
+        print('erm_list.py not yet created, add subject')
+
+    return erm_list
 
 ##MRI-Subjects
 def add_mri_subjects(mri_sub_list_path, data_path):
@@ -388,31 +427,59 @@ def read_erm_dict(erm_dict_path):
 
 ## bad_channels_dict
 
-def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path,
-                          predefined_bads):
+def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
+                          erm_list_path, data_path, predefined_bads):
 
-
+    def check():
+        
+        for x in var_dict:
+            n = var_dict[x].get()
+            if n == 1:
+                print(x)
+    
     def assign_bad_channels():
-        choice=listbox.get(listbox.curselection())
+        
+        name = listbox.get(listbox.curselection())
+        b_list = []
+        for x in var_dict:
+            n = var_dict[x].get()
+            if n == 1:
+                b_list.append(x)
+        
         if not isfile(bad_channels_dict_path):
             if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
-            idict = {}
-            idict.update({choice:e2.get()})
-            e2.delete(0,t.END)
-            with open(bad_channels_dict_path, 'w') as sd:
-                for key, value in idict.items():
-                    sd.write('%s:%s\n' % (key, value))
+
+            with open(bad_channels_dict_path, 'w') as bd:
+                bd.write(f'{name}:{b_list}\n')
 
             print('bad_channels_dict.py created')
 
         else:
-            edict = {}
-            edict.update({choice:e2.get()})
-            e2.delete(0,t.END)
-            with open(bad_channels_dict_path, 'a') as sd:
-                for key, value in edict.items():
-                    sd.write('%s:%s\n' % (key, value))
+            b_dict = {}
+            with open(bad_channels_dict_path) as bd:
+                for i in bd:
+                    key,value = i.split(':',1)
+                    value = value[:-1]
+                    value = eval(value)
+                    b_dict.update({key:value})
+                
+            if name in b_dict:
+                if b_dict[name] == b_list:
+                    print(f'Same Bad-Channels as before, nothing changed for {name}')
+                else:
+                    b_dict[name] = b_list
+                    print(f'Bad-Channels changed for {name}')
+                    
+                    with open(bad_channels_dict_path, 'w') as bd:
+                        for k in b_dict:
+                            bd.write(f'{k}:{b_dict[k]}\n')
+        
+            else:
+                with open(bad_channels_dict_path, 'a') as bd:
+                    bd.write(f'{name}:{b_list}\n')
+                    print(f'Bad-Channels added for {name}')
+
 
     def delete_last():
         with open(bad_channels_dict_path, 'r') as dd:
@@ -434,50 +501,106 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path,
             print('bad_channels_dict.py not yet created, press assign')
 
     def plot_raw_tk():
-        choice = listbox.get(listbox.curselection())
-        name = choice
-        save_dir = join(data_path, choice)
+        name = listbox.get(listbox.curselection())
+        
+        if 'leer' in name or 'ruhe' in name:
+            save_dir = join(data_path, 'empty_room_data')
+        else:
+            save_dir = join(data_path, name)
+        
         raw = io.read_raw(name, save_dir)
         try:
             bad_channels_dict = read_bad_channels_dict(bad_channels_dict_path)
             bad_channels = bad_channels_dict[name]
             raw.info['bads'] = bad_channels
-            raw.plot(title=name, bad_color='red',
-                     scalings=dict(mag=1e-12, grad=4e-11, eeg='auto', stim=1),
-                     n_channels=32)
+            try:
+                raw.plot(title=name, bad_color='red',
+                         scalings=dict(mag=1e-12, grad =4e-11, eeg='auto', stim=1),
+                         n_channels=32)
+            except ValueError: #No EEG-Channel
+                raw.plot(title=name, bad_color='red',
+                         scalings=dict(mag=1e-12, grad =4e-11, stim=1),
+                         n_channels=32)
         except (FileNotFoundError, KeyError):
-            raw.plot(title=name, bad_color='red',
-                     scalings=dict(mag=1e-12, grad=4e-11, eeg='auto', stim=1),
-                     n_channels=32)            
+            try:
+                raw.plot(title=name, bad_color='red',
+                         scalings=dict(mag=1e-12, grad =4e-11, eeg='auto', stim=1),
+                         n_channels=32)
+            except ValueError: #No EEG-Channel
+                raw.plot(title=name, bad_color='red',
+                         scalings=dict(mag=1e-12, grad =4e-11, stim=1),
+                         n_channels=32)
 
+    def listselect(evt):
+        w = evt.widget
+        index = int(w.curselection()[0])
+        name = w.get(index)
+
+        #Clear all entries
+        for x in var_dict:
+            var_dict[x].set(0)
+
+        bad_channels_dict = read_bad_channels_dict(bad_channels_dict_path)        
+        try:
+            bad_channels = bad_channels_dict[name]
+            
+            #Check existing bad_channels
+            for bc in bad_channels:
+                number = int(bc[-3:])
+                var_dict[number].set(1)
+                
+        except KeyError:
+            # Set predefined_bads for new
+            for number in predefined_bads:
+                var_dict[number].set(1)
+            print('Set predefinded bads, nothing assigned')
+        
+
+
+               
+    # Create TkinterWidget
     master = t.Tk()
 
-    t.Label(master, text='Assign bad channels to Subject').pack(side=t.TOP)
-
-
-    e2 = t.Entry(master, width=100)
-    e2.pack(side=t.TOP, expand=True)
+    t.Label(master, text='Assign bad channels to Subject').grid(columnspan=12)
 
     scrollbar = t.Scrollbar(master)
-    scrollbar.pack(side=t.LEFT, fill = t.Y)
+    scrollbar.grid(row=2, column=0, rowspan=13, sticky=t.NS)
 
     listbox = t.Listbox(master, height=20, selectmode = 'SINGLE', yscrollcommand = scrollbar.set)
-    listbox.pack(side=t.LEFT, expand=True)
-
+    listbox.grid(row=2, column=1, rowspan=13)
+    
+    listbox.bind('<<ListboxSelect>>', listselect)
+    
     scrollbar.config(command=listbox.yview)
-
-
+    
+    # Add entries for subjects and erm_files
     with open(sub_list_path, 'r') as sl:
         for line in sl:
             currentPlace = line[:-1]
             listbox.insert(t.END, currentPlace)
 
+    with open(erm_list_path, 'r') as el:
+        for line in el:
+            currentPlace = line[:-1]
+            listbox.insert(t.END, currentPlace)
 
-    t.Button(master, text='read', command=readd).pack()
-    t.Button(master, text='delete_last', command=delete_last).pack()
-    t.Button(master, text='plot_raw', command=plot_raw_tk).pack()
-    t.Button(master, text='assign', command=assign_bad_channels).pack()
-    t.Button(master, text='quit', command=quittk).pack()
+    # Add Checkbuttons for each channel
+    var_dict = {} 
+    for x in range(1,123):
+        
+        var = t.IntVar()
+        var_dict.update({x:var})
+        chk = t.Checkbutton(master, text=x, variable=var)
+        r = 2 + (x-1)//10
+        c = 2 + (x-1)%10
+        chk.grid(row=r, column=c)
+
+
+    t.Button(master, text='read', command=readd).grid(row=1, column=2, columnspan=2)
+    t.Button(master, text='delete_last', command=delete_last).grid(row=1, column=4, columnspan=2)
+    t.Button(master, text='plot_raw', command=plot_raw_tk).grid(row=1, column=6, columnspan=2)
+    t.Button(master, text='assign', command=assign_bad_channels).grid(row=1, column=8, columnspan=2)
+    t.Button(master, text='quit', command=quittk).grid(row=1, column=10, columnspan=2)
 
 
     t.mainloop()
@@ -486,18 +609,15 @@ def read_bad_channels_dict(bad_channels_dict_path):
     bad_channels_dict = {}
 
     try:
-        with open(bad_channels_dict_path, 'r') as sd:
-            for item in sd:
+        with open(bad_channels_dict_path, 'r') as bd:
+            for item in bd:
                 if ':' in item:
                     key,value = item.split(':', 1)
                     value = value[:-1]
-                    value = value.split(',')
-                    if '' in value and len(value)==1:
-                        bad_channels_dict[key]=[] # No bad_channels assigned
-                    elif '' in value and len(value)!=1:
-                        raise ValueError('There is a mistake in the bad_channels_dict value')
-                    else:
-                        bad_channels_dict[key]=value
+                    value = eval(value)
+                    for i in value:
+                        value[value.index(i)] = 'MEG %03d' % i
+                    bad_channels_dict[key]=value
 
     except FileNotFoundError:
         print('bad_channels_dict.py not yet created, run add_bad_channels_dict')
