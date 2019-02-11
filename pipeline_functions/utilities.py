@@ -4,98 +4,88 @@ Created on Thu Jan 17 01:00:31 2019
 
 @author: 'Martin Schulz'
 """
-import sys
+
 import os
 from os.path import join, isfile
 import autoreject as ar
-from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton,
-                             QToolTip, QDesktopWidget, QVBoxLayout,
-                             QCheckBox)
-from PyQt5.QtGui import QFont
+import tkinter as t
 
+from pipeline_functions import operations_dict as opd
 
-
-class BasicWindow(QWidget):
-
-    def __init__(self, title, width, height):
-        super().__init__()
-        self.title = title
-        self.width = width
-        self.height = height
-        
-        self.initUI()
-
-    def initUI(self):
-        
-        QToolTip.setFont(QFont('SansSerif', 10))
-        
-        self.setToolTip(f'This is a Window for {self.title}')
-        
-        qbtn = QPushButton('Quit', self)
-        qbtn.setToolTip('Close the Window')
-        qbtn.clicked.connect(QApplication.instance().quit)
-        qbtn.resize(qbtn.sizeHint())
-        qbtn.move(50, 50)
-
-        self.resize(self.width,self.height)
-        self.center()
-        self.setWindowTitle(self.title)
-        self.show()
+class Function_Window:
     
-    def center(self):
+    def __init__(self, master):
+        self.master = master
+        master.title('Choose the functions to be executed')
         
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
+        self.var_dict = {}
+        self.func_dict = {}
+        self.c_path = './pipeline_functions/f_cache/func_cache.py'        
         
-    def closeEvent(self, event):
-        event.accept()
+        self.make_chkbs()
+        self.huga = 12
+        
+    def make_chkbs(self):
 
-class FunctionChooser(BasicWindow):
-    
-    def __init__(self, functions):
+        r_cnt = -1
+        c_cnt = 0
+        r_max = 25
+        for function_group in opd.all_fs:
+            r_cnt += 1
+            label = t.Label(self.master, text=function_group,
+                            bg='blue',fg='white', relief=t.RAISED)
+            label.grid(row=r_cnt, column=c_cnt)
+            r_cnt += 1
+            for function in opd.all_fs[function_group]:
+                var = t.IntVar()
+                self.var_dict.update({function:var})
+                self.func_dict.update({function:0})
+                chk = t.Checkbutton(self.master, text=function, variable=var)
+                chk.grid(row=r_cnt, column=c_cnt, sticky=t.W)
+                r_cnt += 1
+                if r_cnt >= r_max:
+                    c_cnt += 1
+                    r_cnt = 0
+
+        # Preload existing checks
+
+        if isfile(self.c_path):
+            with open(self.c_path, 'r') as fc:
+                self.func_dict = eval(fc.read())
+            for f in self.func_dict:
+                n = self.func_dict[f]
+                self.var_dict[f].set(n)
+
+        bt = t.Button(self.master, text='Start',
+                      command=self.start, bg='green',
+                      activebackground='blue',
+                      fg='white', font=100,
+                      relief=t.RAISED)
+        bt.grid(row=r_cnt, column=c_cnt,
+                rowspan=r_max-r_cnt+1,
+                sticky=t.N+t.S+t.W+t.E)
         
-        title = 'Choose the functions to be executed'
-        width = 500
-        height = 300
-        super().__init__(title, width, height)
+    def start(self):
         
-        self.functions = functions
-        self.functions_buttons = []
-        self.layout = QVBoxLayout()
-        self.make_checkboxes(self.functions)
+        for f in self.var_dict:
+            n = self.var_dict[f].get()
+            self.func_dict[f] = n
         
-        self.rb = QPushButton('Run')
-        self.layout.addWidget(self.rb)
+        with open(self.c_path, 'w') as fc:
+            fc.write(str(self.func_dict))
         
-    def make_checkboxes(self, functions):
-        
-        for function in functions:
-            fname = function.__name__
-            self.functions_buttons.append(QCheckBox(fname))
-            self.layout.addWidget(self.functions_buttons[-1])
-            
-    def run(self):
-        
-        for b in self.functions_buttons:
-            if b.isChecked() == True:
-                print(b.text())
+        self.master.quit()
+        self.master.destroy()       
 
 def choose_function():
-    
-    def a(b):
-        print(b)
-    
-    functions = [a]
-    app = QApplication(sys.argv)
-    w = FunctionChooser(functions) #operations_to_apply, take the existing dictionary. Less running problems
-    w.show()
-    #app.exec_()
-    #app.aboutToQuit.connect(app.deleteLater)
-    sys.exit(app.exec_()) # Raises Error for SystemExit
 
-               
+    master = t.Tk()
+    gui = Function_Window(master)
+    master.mainloop()
+    
+    return gui.func_dict
+
+              
 def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
                        only_read=False):
 

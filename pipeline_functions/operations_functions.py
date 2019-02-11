@@ -30,6 +30,7 @@ from itertools import combinations
 from functools import reduce
 import random
 
+# Naming Conventions
 
 def filter_string(lowpass, highpass):
 

@@ -668,15 +668,15 @@ def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
 
     for trial_type in stcs:
         stc = stcs[trial_type]
-        mlab.figure(figure=name + '_' + trial_type + '_movie',size=(1280,720))
         save_path = join(figures_path, 'stcs_movie', trial_type, name + '_' + trial_type +\
 						      filter_string(lowpass, highpass) + '.mp4')
         brain = mne.viz.plot_source_estimates(stc=stc,subject=subtomri, surface='inflated',
-                                    subjects_dir=subjects_dir, figure=mlab.gcf(), size=(1280,720),
-                                    hemi='lh', views='lat')
+                                    subjects_dir=subjects_dir,
+                                    hemi='both', views=['lat','med'],
+                                    title=name + '_' + trial_type + '_movie')
 
         print('Saving Video')
-        brain.save_movie(save_path, time_dilation=40,
+        brain.save_movie(save_path, time_dilation=20,
                          tmin=stc_animation[0], tmax=stc_animation[1])
         mlab.close()
         """

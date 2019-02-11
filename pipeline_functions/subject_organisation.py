@@ -51,15 +51,6 @@ def add_subjects(sub_list_path, erm_list_path, home_path, project_name, data_pat
                         with open(erm_list_path, 'a') as sl2:
                             sl2.write(fname + '\n')
                         print(f'{fname} was automatically added to erm_list from {orig_data_path}')
-        
-        elif not isfile(fdest):
-            subjects = read_subjects(sub_list_path)
-            op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
-                                             subjects_dir, subjects)
-            
-            print(f'Copying File from {paths[f]}...')
-            shutil.copy2(paths[f], fdest)
-            print(f'Finished Copying to {fdest}')
             
         elif not fname in subjects:
             if not isfile(sub_list_path):
@@ -79,7 +70,14 @@ def add_subjects(sub_list_path, erm_list_path, home_path, project_name, data_pat
                     sl2.write(fname + '\n')
             print(f'{fname} was automatically added to sub_list from {orig_data_path}')
 
-
+            if not isfile(fdest):
+                subjects = read_subjects(sub_list_path)
+                op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
+                                                 subjects_dir, subjects)
+                
+                print(f'Copying File from {paths[f]}...')
+                shutil.copy2(paths[f], fdest)
+                print(f'Finished Copying to {fdest}')
             
             
     if gui == True:
@@ -561,13 +559,13 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
     # Create TkinterWidget
     master = t.Tk()
 
-    t.Label(master, text='Assign bad channels to Subject').grid(columnspan=12)
+    master.title('Assign bad_channels')
 
     scrollbar = t.Scrollbar(master)
-    scrollbar.grid(row=2, column=0, rowspan=13, sticky=t.NS)
+    scrollbar.grid(row=0, column=0, rowspan=14, sticky=t.NS)
 
     listbox = t.Listbox(master, height=20, selectmode = 'SINGLE', yscrollcommand = scrollbar.set)
-    listbox.grid(row=2, column=1, rowspan=13)
+    listbox.grid(row=0, column=1, rowspan=14)
     
     listbox.bind('<<ListboxSelect>>', listselect)
     
@@ -591,16 +589,16 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
         var = t.IntVar()
         var_dict.update({x:var})
         chk = t.Checkbutton(master, text=x, variable=var)
-        r = 2 + (x-1)//10
+        r = 1 + (x-1)//10
         c = 2 + (x-1)%10
         chk.grid(row=r, column=c)
 
 
-    t.Button(master, text='read', command=readd).grid(row=1, column=2, columnspan=2)
-    t.Button(master, text='delete_last', command=delete_last).grid(row=1, column=4, columnspan=2)
-    t.Button(master, text='plot_raw', command=plot_raw_tk).grid(row=1, column=6, columnspan=2)
-    t.Button(master, text='assign', command=assign_bad_channels).grid(row=1, column=8, columnspan=2)
-    t.Button(master, text='quit', command=quittk).grid(row=1, column=10, columnspan=2)
+    t.Button(master, text='read', command=readd).grid(row=0, column=2, columnspan=2)
+    t.Button(master, text='delete_last', command=delete_last).grid(row=0, column=4, columnspan=2)
+    t.Button(master, text='plot_raw', command=plot_raw_tk).grid(row=0, column=6, columnspan=2)
+    t.Button(master, text='assign', command=assign_bad_channels).grid(row=0, column=8, columnspan=2)
+    t.Button(master, text='quit', command=quittk).grid(row=0, column=10, columnspan=2)
 
 
     t.mainloop()
