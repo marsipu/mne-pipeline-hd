@@ -29,6 +29,7 @@ Functions to implement:
 - Rating Analysis
 - Group analysis for a/b
 """
+
 #==============================================================================
 # IMPORTS
 #%%============================================================================
@@ -55,20 +56,8 @@ from pipeline_functions import utilities as ut
         #'1-5'
         #'1-4,7,20-26'
         #'all'
-"""['38,47,55,64',
-   '39,48,56',
-   '42,49,57,65',
-   '43,50,58',
-   '40,51,59,68',
-   '41,52,60',
-   '44,53,61,69',
-   '45,54,62',
-   '46,66']
 
-'46,45,42,65,53,62'
-"""
-
-which_file = '62'  # Has to be strings!
+which_file = '25'  # Has to be strings!
 
 which_mri_subject = 'all' # Has to be a string!
 
@@ -91,7 +80,6 @@ enable_cuda = False # Using CUDA on supported graphics card e.g. for filtering
 # should files be overwritten
 overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
-close_plots = True # close plots after one subjects batch
 
 # raw
 predefined_bads = [6,26,27,103]
@@ -113,8 +101,7 @@ reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
-event_id = {'LBT':1}
-""",'mot_start':2,'offset':4,'start':32}"""
+event_id = {'LBT':1,'mot_start':2,'offset':4,'start':32}
 """all_event_ids = {'35':1,'40':2,'45':4,'50':8,'55':16,'60':3,'65':5,
                  '70':9,'75':17,'80':6,'85':10,'90':18,'95':12}"""
 
@@ -138,7 +125,7 @@ source_space_method = 'ico5'
 use_calm_cov = False
 method = 'dSPM'
 mne_evoked_time = [0.050, 0.100, 0.200] # s
-stc_animation = [0,0.5] # s
+stc_animation = [0,0.01] # s
 eeg_fwd = False
 
 # Dipole-fit
@@ -297,7 +284,7 @@ if exec_ops['mri_preprocessing']:
                           save_plots)
 
         # close plots
-        if close_plots:
+        if exec_ops['close_plots']:
             plot.close_all()
 #==========================================================================
 # Subjects
@@ -326,8 +313,9 @@ for subject in subjects:
         
     else:
         save_dir = join(data_path, name) 
-        subtomri = sub_to_mri[subject]
-        ermsub = erm_dict[subject]
+        
+        subtomri = sub_to_mri[subject[:3]]
+        ermsub = erm_dict[subject[:3]]
         
     try:
         bad_channels = bad_channels_dict[subject]
@@ -706,7 +694,7 @@ for subject in subjects:
 
 
     # close all plots
-    if close_plots:
+    if exec_ops['close_plots']:
         plot.close_all()
 
 

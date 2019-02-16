@@ -225,9 +225,10 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
 
     filter_name = name  + filter_string(lowpass, highpass) + '-raw.fif'
     filter_path = join(save_dir, filter_name)
-    raw = io.read_raw(name, save_dir)
-    if not isfile(filter_path):
 
+    if not isfile(filter_path):
+        
+        raw = io.read_raw(name, save_dir)
         if enable_cuda: #use cuda for filtering
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
@@ -247,7 +248,7 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
         erm_filter_path = join(data_path, 'empty_room_data', erm_filter_name)
 
         if not isfile(erm_filter_path):
-
+            raw = io.read_raw(name, save_dir)
             erm_raw = mne.io.read_raw_fif(erm_path, preload=True)
 
             # Due to channel-deletion sometimes in HPI-Fitting-Process
@@ -758,9 +759,6 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, picks=eeg_picks,
                                                              reject=reject, flat=flat, ch_name=ecg_channel)
             
-            eog_average = eog_epochs.average()
-            ecg_average = ecg_epochs.average()            
-            
             eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel)
             ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name=ecg_channel)
             print('EOG-Components: ', eog_indices)
@@ -814,8 +812,8 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             fig2 = ica.plot_properties(raw, ica.exclude,psd_args={'fmax':lowpass})
             fig3 = ica.plot_scores(eog_scores, title=name+'_eog')
             fig4 = ica.plot_scores(ecg_scores, title=name+'_ecg')            
-            fig5 = ica.plot_sources(eog_average, eog_indices, title=name+'_eog')
-            fig6 = ica.plot_sources(ecg_average, ecg_indices, title=name+'_ecg')
+            fig5 = ica.plot_sources(raw, picks=comp_list[:12], start=60, stop=90, title=name)
+            fig6 = ica.plot_sources(raw, picks=comp_list[12:], start=60, stop=90, title=name)
             fig7 = ica.plot_overlay(epochs.average(), exclude=eog_indices, title=name+'_eog')
             fig8 = ica.plot_overlay(epochs.average(), exclude=ecg_indices, title=name+'_ecg')            
             
@@ -843,12 +841,12 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                 print('figure: ' + save_path + ' has been saved')
 
                 save_path = join(figures_path, 'ica', name + \
-                    '_ica_src_eog' + filter_string(lowpass, highpass) + '.jpg')
+                    '_ica_src' + filter_string(lowpass, highpass) + '_0.jpg')
                 fig5.savefig(save_path, dpi=600)
                 print('figure: ' + save_path + ' has been saved')
 
                 save_path = join(figures_path, 'ica', name + \
-                    '_ica_src_ecg' + filter_string(lowpass, highpass) + '.jpg')
+                    '_ica_src' + filter_string(lowpass, highpass) + '_1.jpg')
                 fig6.savefig(save_path, dpi=600)
                 print('figure: ' + save_path + ' has been saved')
 

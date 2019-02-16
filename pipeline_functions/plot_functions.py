@@ -455,21 +455,10 @@ def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, subject, save_plot
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
-    if use_calm_cov==True:
-        noise_covariance = io.read_clm_noise_covariance(name, save_dir, lowpass, highpass)
-        print('Noise Covariance from 1-min Calm in raw')
-    elif ermsub=='None':
-        noise_covariance = io.read_noise_covariance(name, save_dir, lowpass, highpass)
-        print('Noise Covariance from Epochs')
-    else:
-        noise_covariance = io.read_erm_noise_covariance(name, save_dir, lowpass, highpass)
-        print('Noise Covariance from Empty-Room-Data')
-
     for evoked in evokeds:
         figure = evoked.plot(spatial_colors=True, time_unit=time_unit,
                              window_title=name + ' - ' + evoked.comment,
-                             selectable=True, gfp=True, zorder='std',
-                             noise_cov=noise_covariance)
+                             selectable=True, gfp=True, zorder='std')
 
         if save_plots:
             save_path = join(figures_path, 'evoked_butterfly', evoked.comment,

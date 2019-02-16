@@ -7,6 +7,7 @@ Created on Thu Jan 17 01:00:31 2019
 
 import os
 from os.path import join, isfile
+import sys
 import autoreject as ar
 import tkinter as t
 
@@ -20,18 +21,19 @@ class Function_Window:
         
         self.var_dict = {}
         self.func_dict = {}
-        self.c_path = './pipeline_functions/f_cache/func_cache.py'        
+        self.c_path = './pipeline_functions/func_cache.py'        
         
         self.make_chkbs()
         self.huga = 12
         
     def make_chkbs(self):
-
         r_cnt = -1
         c_cnt = 0
         r_max = 25
         for function_group in opd.all_fs:
             r_cnt += 1
+            if r_cnt > 25:
+                r_cnt = 0
             label = t.Label(self.master, text=function_group,
                             bg='blue',fg='white', relief=t.RAISED)
             label.grid(row=r_cnt, column=c_cnt)
@@ -56,17 +58,39 @@ class Function_Window:
                 n = self.func_dict[f]
                 self.var_dict[f].set(n)
 
-        bt = t.Button(self.master, text='Start',
-                      command=self.start, bg='green',
-                      activebackground='blue',
+        bt_start = t.Button(self.master, text='Start',
+                            command=self.start, bg='green',
+                            activebackground='blue',
+                            fg='white', font=100,
+                            relief=t.RAISED)
+        bt_start.grid(row=int(r_cnt+(r_max-r_cnt)/3), column=c_cnt,
+                      rowspan=int((r_max-r_cnt+1)/3),
+                      sticky=t.N+t.S+t.W+t.E)
+
+        bt_stop = t.Button(self.master, text='Stop',
+                            command=self.stop, bg='red',
+                            activebackground='yellow',
+                            fg='white', font=100,
+                            relief=t.RAISED)
+        bt_stop.grid(row=int(r_cnt+(r_max-r_cnt)*2/3), column=c_cnt,
+                      rowspan=int((r_max-r_cnt+1)/3),
+                      sticky=t.N+t.S+t.W+t.E)
+   
+        bt_clear = t.Button(self.master, text='Clear_all',
+                      command=self.clear_all, bg='magenta',
+                      activebackground='cyan',
                       fg='white', font=100,
                       relief=t.RAISED)
-        bt.grid(row=r_cnt, column=c_cnt,
-                rowspan=r_max-r_cnt+1,
-                sticky=t.N+t.S+t.W+t.E)
         
+        bt_clear.grid(row=r_cnt, column=c_cnt,
+                      rowspan=int((r_max-r_cnt+1)/3),
+                      sticky=t.N+t.S+t.W+t.E)
+
+    def clear_all(self):
+        for x in self.var_dict:
+            self.var_dict[x].set(0)
+            
     def start(self):
-        
         for f in self.var_dict:
             n = self.var_dict[f].get()
             self.func_dict[f] = n
@@ -75,10 +99,15 @@ class Function_Window:
             fc.write(str(self.func_dict))
         
         self.master.quit()
-        self.master.destroy()       
+        self.master.destroy()
+        
+    def stop(self):        
+        self.master.quit()
+        self.master.destroy()  
 
+        sys.exit()       
+    
 def choose_function():
-
     master = t.Tk()
     gui = Function_Window(master)
     master.mainloop()
