@@ -116,6 +116,43 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                 if exc.errno == 17: ## dir already exists
                     pass
 
+    ## also create ERM_Figures path
+    figure_subfolders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
+                         'power_spectra_raw', 'power_spectra_epochs',
+                         'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
+                         'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
+                         'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
+                         'noise_covariance', 'events', 'label_time_course', 'ECD',
+                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr']
+
+    for figure_subfolder in figure_subfolders:
+        full_path_figures = join(home_path, project_name, figures_path,
+                                 'ERM_Figures', figure_subfolder)
+        ## create figure paths
+        try:
+            makedirs(full_path_figures)
+            print(full_path_figures + ' has been created')
+        except OSError as exc:
+            if exc.errno == 17: ## dir already exists
+                pass
+
+    # create subfolders for event_ids (ERM)
+    trialed_folders = ['epochs', 'power_spectra_epochs', 'epochs_image', 'epochs_topo', 'evoked_butterfly',
+                     'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
+                     'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
+                     'stcs', 'vec_stcs','stcs_movie', 'snr']
+
+    for ev_id in event_id:
+        for tr in trialed_folders:
+            subfolder_path = join(home_path, project_name, figures_path,
+                                  'ERM_Figures', tr, ev_id)
+            try:
+                makedirs(subfolder_path)
+                print(subfolder_path + ' has been created')
+            except OSError as exc:
+                if exc.errno == 17: ## dir already exists
+                    pass
+                
     ## also create grand average figures path
     grand_averages_figures_path = join(home_path, project_name, figures_path,
                                       'grand_averages')
@@ -404,6 +441,18 @@ def find_events(name, save_dir, min_duration,
 
         ids = np.unique(events[:,2])
         print('unique ID\'s assigned: ',ids)
+
+
+        # determine the latencies between the events
+        l2_1 = []
+        
+        for x in range(np.size(events, axis=0)):
+            if events[x,2]==2:
+                if events[x+1,2]==1:
+                    l2_1.append(events[x+1,0] - events[x,0])
+
+
+
 
         if np.size(events)>0:
             mne.event.write_events(events_path, events)
@@ -738,11 +787,12 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
         epochs = io.read_epochs(name, save_dir, lowpass, highpass)
         picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
                        stim=False, exclude=bad_channels)
+        
 
-        ica = mne.preprocessing.ICA(n_components=25, method='fastica')
+        ica = mne.preprocessing.ICA(n_components=25, method='fastica', random_state = 8)
 
         if autoreject:
-            ut.autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
+            reject = ut.autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
                                   only_read=True)
 
         print('Rejection Threshold: %s' % reject)
@@ -764,13 +814,17 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             print('EOG-Components: ', eog_indices)
             print('ECG-Components: ', ecg_indices)
 
-            ica.exclude += eog_indices
-            ica.exclude += ecg_indices
+            ica.exclude.extend(eog_indices)
+            ica.exclude.extend(ecg_indices)
             
             ica.save(ica_path)
             
             # Reading and Writing ICA-Components to a .py-file
-            indices = eog_indices + ecg_indices
+            exes = ica.exclude
+            indices = []
+            for i in exes:
+                indices.append(int(i))
+            
             
             if not isfile(ica_comp_file_path):
                 if not exists(sub_script_path):
@@ -809,7 +863,7 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             for c in range(ica.n_components):
                 comp_list.append(c)
             fig1 = ica.plot_components(picks=comp_list, title=name)
-            fig2 = ica.plot_properties(raw, ica.exclude,psd_args={'fmax':lowpass})
+            fig2 = ica.plot_properties(raw, indices, psd_args={'fmax':lowpass})
             fig3 = ica.plot_scores(eog_scores, title=name+'_eog')
             fig4 = ica.plot_scores(ecg_scores, title=name+'_ecg')            
             fig5 = ica.plot_sources(raw, picks=comp_list[:12], start=60, stop=90, title=name)

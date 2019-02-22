@@ -28,6 +28,7 @@ Functions to implement:
 - Subjects as Classes?
 - Rating Analysis
 - Group analysis for a/b
+- plot_evoked_white: Noise update bad_channels in erm according to raw
 """
 
 #==============================================================================
@@ -57,11 +58,13 @@ from pipeline_functions import utilities as ut
         #'1-4,7,20-26'
         #'all'
 
-which_file = '25'  # Has to be strings!
+which_file = '69-71'  # Has to be strings!
 
 which_mri_subject = 'all' # Has to be a string!
 
-which_erm_file = '4'
+which_erm_file = 'all'
+
+which_motor_erm_file = 'all'
 
 #==============================================================================
 # INITIALIZATION GUIS
@@ -82,17 +85,17 @@ overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
 
 # raw
-predefined_bads = [6,26,27,103]
+predefined_bads = [6,7,8,26,79,103]
 lowpass = 80 # Hz
 highpass = 1 # Hz # at least 1 if to apply ICA
 
 # events
-adjust_timeline_by_msec = 0 #delay to stimulus in ms
+adjust_timeline_by_msec = -95 #delay to stimulus in ms
 
 # epochs
 min_duration = 0.005 # s
 time_unit = 's'
-tmin = -1.000 # s
+tmin = -0.500 # s
 tmax = 2.000 # s
 baseline = (-0.500, -0.100) # [s]
 autoreject = 1 # set 1 for autoreject
@@ -102,8 +105,6 @@ flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
 event_id = {'LBT':1,'mot_start':2,'offset':4,'start':32}
-"""all_event_ids = {'35':1,'40':2,'45':4,'50':8,'55':16,'60':3,'65':5,
-                 '70':9,'75':17,'80':6,'85':10,'90':18,'95':12}"""
 
 # evokeds
 detrend = False # somehow not working on all data
@@ -125,7 +126,7 @@ source_space_method = 'ico5'
 use_calm_cov = False
 method = 'dSPM'
 mne_evoked_time = [0.050, 0.100, 0.200] # s
-stc_animation = [0,0.01] # s
+stc_animation = [0,0.5] # s
 eeg_fwd = False
 
 # Dipole-fit
@@ -135,7 +136,8 @@ ECDs = {}
 ECD_min = 0.200
 ECD_max = 0.250
 
-target_labels = ['postcentral-lh']
+target_labels = ['G_postcentral', 'S_postcentral', 'S_circular_insula_sup',
+                 'G_Ins_Ig&S_cent_ins', 'S_circular_insula_inf', 'G&S_cingul-Ant']
 
 # morph maps
 morph_to='fsaverage'
@@ -177,12 +179,16 @@ sub_script_path = join(data_path, '_Subject_scripts')
 subjects_dir = join(home_path, 'Freesurfer/Output')
 mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
 save_dir_averages = join(data_path,'grand_averages')
-figures_path = join(home_path, project_name, 'Figures/')
 
+if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
+    figures_path = join(home_path, project_name, 'Figures/ERM_Figures')    
+else:
+    figures_path = join(home_path, project_name, 'Figures/')
 
 #add subjects, mri_subjects, sub_dict, bad_channels_dict
 sub_list_path = join(sub_script_path, 'sub_list.py')
 erm_list_path = join(sub_script_path, 'erm_list.py')
+motor_erm_list_path = join(sub_script_path, 'motor_erm_list.py')
 mri_sub_list_path = join(sub_script_path, 'mri_sub_list.py')
 sub_dict_path = join(sub_script_path, 'sub_dict.py')
 erm_dict_path = join(sub_script_path, 'erm_dict.py')
@@ -196,8 +202,9 @@ orig_data_path = join(home_path, 'Pin-Prick-Projekt/Messungen_Dateien')
 orig_mri_data_path = join(home_path, 'Freesurfer/Output')
 
 if exec_ops['add_subjects']: # set 1 to run
-    suborg.add_subjects(sub_list_path, erm_list_path, home_path, project_name, data_path,
-                        figures_path, subjects_dir, orig_data_path, gui=False)
+    suborg.add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
+                        home_path, project_name, data_path, figures_path,
+                        subjects_dir, orig_data_path, gui=False)
 
 if exec_ops['add_mri_subjects']: # set 1 to run
     suborg.add_mri_subjects(mri_sub_list_path, data_path)
@@ -210,7 +217,8 @@ if exec_ops['add_erm_dict']: #set 1 to run
 
 if exec_ops['add_bad_channels']:
     suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
-                                 erm_list_path, data_path, predefined_bads)
+                                 erm_list_path, motor_erm_list_path,
+                                 data_path, predefined_bads)
 
 if 0:
     suborg.add_sub_cond_dict(sub_cond_dict_path, sub_list_path, data_path)
@@ -219,7 +227,8 @@ if 0:
 
 all_subjects = suborg.read_subjects(sub_list_path)
 all_mri_subjects = suborg.read_mri_subjects(mri_sub_list_path)
-erm_files = suborg.read_erms(erm_list_path)
+erm_files = suborg.read_subjects(erm_list_path)
+motor_erm_files = suborg.read_subjects(motor_erm_list_path)
 sub_to_mri = suborg.read_sub_dict(sub_dict_path)
 erm_dict = suborg.read_sub_dict(erm_dict_path) # add None if not available
 bad_channels_dict = suborg.read_bad_channels_dict(bad_channels_dict_path)
@@ -293,6 +302,9 @@ if exec_ops['mri_preprocessing']:
 if exec_ops['erm_analysis']:
     subjects = suborg.file_selection(which_erm_file, erm_files)   
 
+if exec_ops['motor_erm_analysis']:
+    subjects = suborg.file_selection(which_motor_erm_file, motor_erm_files)
+
 else:
     subjects = suborg.file_selection(which_file, all_subjects)
 
@@ -308,21 +320,26 @@ for subject in subjects:
     name = subject #changed for Kopfklinik-naming-convention
     subject_index = subjects.index(subject)
     
-    if exec_ops['erm_analysis']:
+    if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
         save_dir = join(data_path, 'empty_room_data')
         
     else:
-        save_dir = join(data_path, name) 
-        
-        subtomri = sub_to_mri[subject[:3]]
-        ermsub = erm_dict[subject[:3]]
-        
+        save_dir = join(data_path, name)       
+
+        if subject[3] == '_':
+            ermsub = erm_dict[subject[:3]]
+            subtomri = sub_to_mri[subject[:3]]  
+        if subject[4] == '_':
+            ermsub = erm_dict[subject[:4]]
+            subtomri = sub_to_mri[subject[:4]]
+            
     try:
         bad_channels = bad_channels_dict[subject]
     except KeyError as k:
         print(f'No bad channels for {k}')
-        suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path, data_path,
-                                     predefined_bads)
+        suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
+                                     erm_list_path, motor_erm_list_path,
+                                     data_path, predefined_bads)
 
     event_id_list = []
     """
@@ -354,11 +371,11 @@ for subject in subjects:
     #==========================================================================
     # POPULATE SUBJECT DIRECTORIES
     #==========================================================================
-    if not exec_ops['erm_analysis']:
+    if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
         if exec_ops['populate_data_directory']:
             op.populate_data_directory(home_path, project_name, data_path,
-                                               figures_path, subjects_dir, subjects,
-                                               event_id)
+                                       figures_path, subjects_dir, subjects,
+                                       event_id)
 
     #==========================================================================
     # FILTER RAW
@@ -562,18 +579,6 @@ for subject in subjects:
     if exec_ops['plot_power_spectra_topo']:
         plot.plot_power_spectra_topo(name, save_dir,lowpass, highpass, subject,
                                      save_plots, figures_path, bad_channels, layout)
-
-    #===========================================================================
-    # PLOT COMPONENTS TO BE REMOVED
-    #===========================================================================
-
-    if exec_ops['plot_ica']:
-        plot.plot_ica(name, save_dir,lowpass, highpass, subject, save_plots,
-                      figures_path, layout)
-
-    if exec_ops['plot_ica_sources']:
-        plot.plot_ica_sources(name, save_dir,lowpass, highpass, subject, save_plots,
-                      figures_path)
 
     #==========================================================================
     # PLOT CLEANED EPOCHS

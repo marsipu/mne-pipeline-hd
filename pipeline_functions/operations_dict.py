@@ -14,6 +14,7 @@ subject_operations = dict(add_subjects = 0,
 basic_operations = dict(populate_data_directory = 0, #don't do it in Linux if you're using also Windows!
                         mri_preprocessing = 0, # enable to do any of the mri_subject-related functions
                         erm_analysis = 0,
+                        motor_erm_analysis = 0,
                         print_pipeline_analysis = 0,
                         close_plots = 0)
 
@@ -74,8 +75,6 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_ssp = 0, #
                           plot_ssp_eog = 0, #EOG-Elektrodes have to be digitized and assigned to type 3
                           plot_ssp_ecg = 0, #ECG-Elektrodes have to be digitized and assigned to type 3
-                          plot_ica = 0,
-                          plot_ica_sources = 0,
                           plot_epochs = 0,
                           plot_epochs_image = 0,
                           plot_epochs_topo = 0,

@@ -19,6 +19,8 @@ from . import decorators as decor
 import numpy as np
 from nilearn.plotting import plot_anat
 from surfer import Brain
+import gc
+import statistics as stat
 
 def filter_string(lowpass, highpass):
 
@@ -108,10 +110,12 @@ def plot_events_diff(name, save_dir, save_plots, figures_path):
             if events[x+1,2]==1:
                 l1.append(events[x+1,0] - events[x,0])
 
+    diff_mean = stat.mean(l1)
+    diff_stdev = stat.stdev(l1)
+
     figure = plt.figure()
     plt.plot(l1)
-    plt.title(name + '_StartMot-LBT')
-
+    plt.title(f'{name}_StartMot-LBT, mean={diff_mean}, stdev={diff_stdev}')
 
     if save_plots:
         save_path = join(figures_path, 'events', name + '_StartMot-LBT.jpg')
@@ -249,51 +253,6 @@ def plot_ssp_ecg(name, save_dir, lowpass, highpass, subject, save_plots,
         print('figure: ' + save_path + ' has been saved')
     else:
         print('Not saving plots; set "save_plots" to "True" to save')
-
-@decor.topline
-def plot_ica(name, save_dir, lowpass, highpass, subject, save_plots, figures_path,
-             layout):
-
-    info = io.read_info(name, save_dir)
-
-    if 'EEG 001' in info['ch_names']:
-
-        ica = io.read_ica(name, save_dir, lowpass, highpass)
-        ica_figure = ica.plot_components(ica.exclude, title=name, layout=layout)
-
-        if save_plots:
-            save_path = join(figures_path, 'ica', name + \
-                '_ica' + filter_string(lowpass, highpass) + '.jpg')
-            ica_figure.savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-    else:
-        print('No EEG-Channels to read EOG/EEG from, manual ICA?')
-        pass
-
-@decor.topline
-def plot_ica_sources(name, save_dir, lowpass, highpass, subject, save_plots, figures_path):
-
-    info = io.read_info(name, save_dir)
-
-    if 'EEG 001' in info['ch_names']:
-
-        ica = io.read_ica(name, save_dir, lowpass, highpass)
-        raw = io.read_raw(name, save_dir)
-
-        ica_figure = mne.viz.plot_ica_sources(ica, raw, title=name)
-
-        if save_plots:
-            save_path = join(figures_path, 'ica', name + \
-                '_ica_src' + filter_string(lowpass, highpass) + 'sources' + '.jpg')
-            ica_figure.savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-    else:
-        print('No EEG-Channels to read EOG/EEG from, manual ICA?')
-        pass
 
 @decor.topline
 def plot_epochs(name, save_dir, lowpass, highpass, subject, save_plots,
@@ -655,48 +614,48 @@ def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
 
     stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method)
 
-    for trial_type in stcs:
-        stc = stcs[trial_type]
-        save_path = join(figures_path, 'stcs_movie', trial_type, name + '_' + trial_type +\
+    stc = stcs['LBT']
+    save_path = join(figures_path, 'stcs_movie', 'LBT', name + '_' + 'LBT' +\
 						      filter_string(lowpass, highpass) + '.mp4')
-        brain = mne.viz.plot_source_estimates(stc=stc,subject=subtomri, surface='inflated',
-                                    subjects_dir=subjects_dir,
-                                    hemi='both', views=['lat','med'],
-                                    title=name + '_' + trial_type + '_movie')
 
-        print('Saving Video')
-        brain.save_movie(save_path, time_dilation=20,
-                         tmin=stc_animation[0], tmax=stc_animation[1])
-        mlab.close()
-        """
-        @mlab.animate(delay=1000)
-        def anim():
-            while 1:
-                for t in range(0, 10):
-                    brain.set_data_time_index(t)
-                    yield
+    brain = mne.viz.plot_source_estimates(stc=stc,subject=subtomri, surface='inflated',
+                                subjects_dir=subjects_dir,
+                                hemi='both', views=['lat','med'],
+                                title=name + '_' + 'LBT' + '_movie')
 
-
-        anim()
-
-
-        @mlab.animate
-        def anim():
-            for x in brain._iter_time()
-
-        anim()
-        mlab.show()
-
-
-        @mlab.animate
-        def anim():
-            for i in range(stc_animation[0], stc_animation[1]):
-                fig.mlab_source.set_data_time_index(i)
+    print('Saving Video')
+    brain.save_movie(save_path, time_dilation=4,
+                     tmin=stc_animation[0], tmax=stc_animation[1], framerate=30)
+    mlab.close()
+    """
+    @mlab.animate(delay=1000)
+    def anim():
+        while 1:
+            for t in range(0, 10):
+                brain.set_data_time_index(t)
                 yield
-             int((tmax-tmin)*1000)
-        anim()
-        mlab.show()
-        """
+
+
+    anim()
+
+
+    @mlab.animate
+    def anim():
+        for x in brain._iter_time()
+
+    anim()
+    mlab.show()
+
+
+    @mlab.animate
+    def anim():
+        for i in range(stc_animation[0], stc_animation[1]):
+            fig.mlab_source.set_data_time_index(i)
+            yield
+         int((tmax-tmin)*1000)
+    anim()
+    mlab.show()
+    """
 
 
 @decor.topline
@@ -843,7 +802,7 @@ def label_time_course(name, save_dir, lowpass, highpass, subtomri, target_labels
 
     evoked = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
 
-    labels = mne.read_labels_from_annot(subtomri)
+    labels = mne.read_labels_from_annot(subtomri, parc='aparc.a2009s')
 
     for label in labels:
         if label.name in target_labels:
@@ -1093,3 +1052,4 @@ def close_all():
 
     plt.close('all')
     mlab.close(all=True)
+    gc.collect()

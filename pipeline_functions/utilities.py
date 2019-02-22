@@ -20,6 +20,7 @@ class Function_Window:
         master.title('Choose the functions to be executed')
         
         self.var_dict = {}
+        self.pre_func_dict = {}
         self.func_dict = {}
         self.c_path = './pipeline_functions/func_cache.py'        
         
@@ -53,7 +54,18 @@ class Function_Window:
 
         if isfile(self.c_path):
             with open(self.c_path, 'r') as fc:
-                self.func_dict = eval(fc.read())
+                # Make sure that cache takes changes from operations_dict
+                self.pre_func_dict = eval(fc.read())
+                del_list = []
+                for k in self.pre_func_dict:
+                    if k not in self.func_dict:
+                        del_list.append(k)
+                if len(del_list)>0:
+                    for d in del_list:
+                        del self.pre_func_dict[d]
+                        print(f'{d} from operations_cache deleted')
+                self.func_dict = self.pre_func_dict
+                        
             for f in self.func_dict:
                 n = self.func_dict[f]
                 self.var_dict[f].set(n)

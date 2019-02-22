@@ -9,33 +9,60 @@ from . import io_functions as io
 from . import operations_functions as op
 from . import utilities as ut
 import tkinter as t
+import re
 
 
 ## Subjects
-def add_subjects(sub_list_path, erm_list_path, home_path, project_name, data_path, figures_path,
+def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
+                 home_path, project_name, data_path, figures_path,
                  subjects_dir, orig_data_path, gui=False):
     
     subjects = read_subjects(sub_list_path)
-    erm_files = read_erms(erm_list_path)
+    erm_files = read_subjects(erm_list_path)
+    motor_erm_files = read_subjects(motor_erm_list_path)
     op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
                            subjects_dir, subjects)
     
     all_files, paths = ut.getallfifFiles(orig_data_path)
     
+    #Regular-Expressions Pattern
+    pattern = r'pp[0-9][0-9]*[a-z]*_[0-9]{0,3}t?_[a,b]$'
+    
     for f in all_files:
         fname = f[:-4]
         fdest = join(data_path, fname, fname + '-raw.fif')
         ermdest = join(data_path, 'empty_room_data', fname + '-raw.fif')
-
-        if 'leer' in fname or 'ruhe' in fname:
+        
+        match = re.match(pattern, fname)
+        
+        # Copy Empty-Room-Files to their directory
+        if 'leer' in fname:
             if not isfile(ermdest):
                 print('-'*60 + '\n' + fname)
                 print(f'Copying ERM_File from {paths[f]}')
                 shutil.copy2(paths[f], ermdest)
                 print(f'Finished Copying to {ermdest}')
-            
-            if not fname in erm_files:
-                if 'motor_leer' in fname:
+            # Organize Motor-ERMs
+            if 'motor_leer' in fname:            
+                if not fname in motor_erm_files:
+                    if not isfile(motor_erm_list_path):
+                        print('-'*60 + '\n' + fname)
+                        if not exists(join(data_path, '_Subject_scripts')):
+                            os.makedirs(join(data_path, '_Subject_scripts'))
+                            print(join(data_path, '_Subject_scripts created'))
+                            
+                        with open(motor_erm_list_path, 'w') as el1:
+                            el1.write(fname + '\n')
+                        print('motor_erm_list.py created') 
+                        print(f'{fname} was automatically added to motor_erm_list from {orig_data_path}')    
+                    else:
+                        print('-'*60 + '\n' + fname)
+                        with open(motor_erm_list_path, 'a') as sl2:
+                            sl2.write(fname + '\n')
+                        print(f'{fname} was automatically added to motor_erm_list from {orig_data_path}')
+            # Organize ERMs
+            else:
+                if not fname in erm_files:
                     if not isfile(erm_list_path):
                         print('-'*60 + '\n' + fname)
                         if not exists(join(data_path, '_Subject_scripts')):
@@ -50,26 +77,30 @@ def add_subjects(sub_list_path, erm_list_path, home_path, project_name, data_pat
                         print('-'*60 + '\n' + fname)
                         with open(erm_list_path, 'a') as sl2:
                             sl2.write(fname + '\n')
-                        print(f'{fname} was automatically added to erm_list from {orig_data_path}')
-            
-        elif not fname in subjects:
-            if not isfile(sub_list_path):
-                print('-'*60 + '\n' + fname)
-                if not exists(join(data_path, '_Subject_scripts')):
-                    os.makedirs(join(data_path, '_Subject_scripts'))
-                    print(join(data_path, '_Subject_scripts created'))
-                    
-                with open(sub_list_path, 'w') as sl1:
-                    sl1.write(fname + '\n')
-                print('sub_list.py created') 
-                print(f'{fname} was automatically added to sub_list from {orig_data_path}')
-                
-            else:
-                print('-'*60 + '\n' + fname)
-                with open(sub_list_path, 'a') as sl2:
-                    sl2.write(fname + '\n')
-            print(f'{fname} was automatically added to sub_list from {orig_data_path}')
+                        print(f'{fname} was automatically added to erm_list from {orig_data_path}')                    
 
+
+        elif match:       
+            # Organize sub_files
+            if not fname in subjects:
+                if not isfile(sub_list_path):
+                    print('-'*60 + '\n' + fname)
+                    if not exists(join(data_path, '_Subject_scripts')):
+                        os.makedirs(join(data_path, '_Subject_scripts'))
+                        print(join(data_path, '_Subject_scripts created'))
+                        
+                    with open(sub_list_path, 'w') as sl1:
+                        sl1.write(fname + '\n')
+                    print('sub_list.py created') 
+                    print(f'{fname} was automatically added to sub_list from {orig_data_path}')
+                    
+                else:
+                    print('-'*60 + '\n' + fname)
+                    with open(sub_list_path, 'a') as sl2:
+                        sl2.write(fname + '\n')
+                print(f'{fname} was automatically added to sub_list from {orig_data_path}')
+    
+            # Copy sub_files to destination
             if not isfile(fdest):
                 subjects = read_subjects(sub_list_path)
                 op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
@@ -77,7 +108,7 @@ def add_subjects(sub_list_path, erm_list_path, home_path, project_name, data_pat
                 
                 print(f'Copying File from {paths[f]}...')
                 shutil.copy2(paths[f], fdest)
-                print(f'Finished Copying to {fdest}')
+                print(f'Finished Copying to {fdest}')    
             
             
     if gui == True:
@@ -152,25 +183,9 @@ def read_subjects(sub_list_path):
                 sub_list.append(currentPlace)
 
     except FileNotFoundError:
-        print('sub_list.py not yet created, add subject')
+        print(f'{sub_list_path} not yet created, add subject')
 
     return sub_list
-
-
-def read_erms(erm_list_path):
-    
-    erm_list = []
-
-    try:
-        with open(erm_list_path, 'r') as sl:
-            for line in sl:
-                currentPlace = line[:-1]
-                erm_list.append(currentPlace)
-
-    except FileNotFoundError:
-        print('erm_list.py not yet created, add subject')
-
-    return erm_list
 
 ##MRI-Subjects
 def add_mri_subjects(mri_sub_list_path, data_path):
@@ -426,7 +441,8 @@ def read_erm_dict(erm_dict_path):
 ## bad_channels_dict
 
 def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
-                          erm_list_path, data_path, predefined_bads):
+                          erm_list_path, motor_erm_list_path,
+                          data_path, predefined_bads):
 
     def check():
         
@@ -438,6 +454,7 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
     def assign_bad_channels():
         
         name = listbox.get(listbox.curselection())
+        listbox.itemconfig(listbox.curselection(), {'bg':'green', 'fg':'white'})
         b_list = []
         for x in var_dict:
             n = var_dict[x].get()
@@ -511,6 +528,7 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
             bad_channels_dict = read_bad_channels_dict(bad_channels_dict_path)
             bad_channels = bad_channels_dict[name]
             raw.info['bads'] = bad_channels
+
             try:
                 raw.plot(title=name, bad_color='red',
                          scalings=dict(mag=1e-12, grad =4e-11, eeg='auto', stim=1),
@@ -520,6 +538,11 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
                          scalings=dict(mag=1e-12, grad =4e-11, stim=1),
                          n_channels=32)
         except (FileNotFoundError, KeyError):
+            predef_bads = []
+            for i in predefined_bads:
+                predef_bads.append('MEG %03d' % i)
+            raw.info['bads'] = predef_bads
+            print('Plot predefined_bads')
             try:
                 raw.plot(title=name, bad_color='red',
                          scalings=dict(mag=1e-12, grad =4e-11, eeg='auto', stim=1),
@@ -570,22 +593,39 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
     listbox.bind('<<ListboxSelect>>', listselect)
     
     scrollbar.config(command=listbox.yview)
-    
+
+    bad_channels_dict = read_bad_channels_dict(bad_channels_dict_path)     
     # Add entries for subjects and erm_files
     with open(sub_list_path, 'r') as sl:
         for line in sl:
             currentPlace = line[:-1]
             listbox.insert(t.END, currentPlace)
-
+            if currentPlace in bad_channels_dict:
+                listbox.itemconfig(listbox.size()-1, {'bg':'green', 'fg':'white'})
+            else:
+                listbox.itemconfig(listbox.size()-1, {'bg':'red', 'fg':'white'})
+                
     with open(erm_list_path, 'r') as el:
         for line in el:
             currentPlace = line[:-1]
             listbox.insert(t.END, currentPlace)
-
+            if currentPlace in bad_channels_dict:
+                listbox.itemconfig(listbox.size()-1, {'bg':'green', 'fg':'white'})
+            else:
+                listbox.itemconfig(listbox.size()-1, {'bg':'red', 'fg':'white'})
+                
+    with open(motor_erm_list_path, 'r') as el:
+        for line in el:
+            currentPlace = line[:-1]
+            listbox.insert(t.END, currentPlace)
+            if currentPlace in bad_channels_dict:
+                listbox.itemconfig(listbox.size()-1, {'bg':'green', 'fg':'white'})
+            else:
+                listbox.itemconfig(listbox.size()-1, {'bg':'red', 'fg':'white'})
+                
     # Add Checkbuttons for each channel
     var_dict = {} 
-    for x in range(1,123):
-        
+    for x in range(1,123):      
         var = t.IntVar()
         var_dict.update({x:var})
         chk = t.Checkbutton(master, text=x, variable=var)
