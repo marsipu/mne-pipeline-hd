@@ -6,7 +6,8 @@ Created on Thu Jan 17 01:00:31 2019
 """
 
 import os
-from os.path import join, isfile
+from os import makedirs
+from os.path import join, isfile, isdir, exists
 import sys
 import autoreject as ar
 import tkinter as t
@@ -183,6 +184,44 @@ def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
     
     return reject
     
+def dict_filehandler(name, values, file_name, sub_script_path,
+                     overwrite=True):
+    
+    file_path = join(sub_script_path, file_name + '.py')
+    
+    if not isfile(file_path):
+        if not exists(sub_script_path):
+            makedirs(sub_script_path)
+            print(sub_script_path + ' created')
+        with open(file_path, 'w') as file:   
+            file.write(f'{name}:{values}\n')
+            print(file_path + ' created')
+    else:
+        file_dict = {}
+        with open(file_path, 'r') as file:
+            for item in file:
+                if ':' in item:
+                    key,value = item.split(':', 1)
+                    value = eval(value)
+                    file_dict[key]=value
+        
+        if name in file_dict:
+            if file_dict[name] == values:
+                print(f'Same values {values} for {name}')
+            if overwrite:
+                prae_values = file_dict[name]
+                file_dict[name] = values
+                print(f'Replacing {prae_values} with {values} for {name}')
+            else:
+                print(f'{name} present in dict, set overwrite=True to overwrite')
+    
+        else:
+            file_dict[name] = values
+            print(f'Adding {values} for {name}')
+        
+        with open(file_path, 'w') as file:
+            for name, values in file_dict.items():
+                file.write(f'{name}:{values}\n')    
 
 def getallfifFiles(dirName):
     # create a list of file and sub directories

@@ -680,15 +680,26 @@ def plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path):
             print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
-def plot_labels(subtomri, subjects_dir):
+def plot_labels(mri_subject, subjects_dir, save_plots, figures_path,
+                parcellation):
 
-    brain = Brain(subtomri, hemi='both', surf='smoothwm')
-
-    labels = mne.read_labels_from_annot(subtomri)
+    brain = Brain(mri_subject, hemi='lh', surf='inflated', views='lat')
+    
+    labels = mne.read_labels_from_annot(mri_subject, parc=parcellation,
+                                        hemi='lh')
 
     for label in labels:
         brain.add_label(label)
+    
+    if save_plots:
+        save_path = join(figures_path, 'labels',
+                         mri_subject + '_' + parc + '.jpg')
+        mlab.savefig(save_path, figure=mlab.gcf())
+        print('figure: ' + save_path + ' has been saved')
 
+    else:
+        print('Not saving plots; set "save_plots" to "True" to save')
+        
 @decor.topline
 def label_time_course_old(name, save_dir, lowpass, highpass, method, source_space_method, subtomri,
                       subjects_dir, target_labels, figures_path, save_plots):
@@ -794,7 +805,7 @@ def label_time_course_avg(morphed_data_all, save_dir_averages, lowpass, highpass
 
 @decor.topline
 def label_time_course(name, save_dir, lowpass, highpass, subtomri, target_labels,
-                      save_plots, figures_path):
+                      save_plots, figures_path, parcellation):
 
     snr = 3.0
     lambda2 = 1.0 / snr ** 2
@@ -802,13 +813,12 @@ def label_time_course(name, save_dir, lowpass, highpass, subtomri, target_labels
 
     evoked = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
 
-    labels = mne.read_labels_from_annot(subtomri, parc='aparc.a2009s')
+    labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
 
     for label in labels:
         if label.name in target_labels:
             l = label
-
-
+            print(l.name)
             inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
 
             src = inv_op['src']

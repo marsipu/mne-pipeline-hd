@@ -29,6 +29,7 @@ Functions to implement:
 - Rating Analysis
 - Group analysis for a/b
 - plot_evoked_white: Noise update bad_channels in erm according to raw
+- implement Phase-Amplitude-Coupling with pactools
 """
 
 #==============================================================================
@@ -37,6 +38,7 @@ Functions to implement:
 import sys
 from os.path import join, isfile
 from datetime import datetime
+import re
 import numpy as np
 import mne
 
@@ -58,7 +60,7 @@ from pipeline_functions import utilities as ut
         #'1-4,7,20-26'
         #'all'
 
-which_file = '69-71'  # Has to be strings!
+which_file = '14-121' # Has to be strings!
 
 which_mri_subject = 'all' # Has to be a string!
 
@@ -85,7 +87,7 @@ overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
 
 # raw
-predefined_bads = [6,7,8,26,79,103]
+predefined_bads = [6,7,8,26,59,60,97]
 lowpass = 80 # Hz
 highpass = 1 # Hz # at least 1 if to apply ICA
 
@@ -128,6 +130,7 @@ method = 'dSPM'
 mne_evoked_time = [0.050, 0.100, 0.200] # s
 stc_animation = [0,0.5] # s
 eeg_fwd = False
+parcellation = 'aparc.a2009s'
 
 # Dipole-fit
 ECDs = {}
@@ -136,8 +139,9 @@ ECDs = {}
 ECD_min = 0.200
 ECD_max = 0.250
 
-target_labels = ['G_postcentral', 'S_postcentral', 'S_circular_insula_sup',
-                 'G_Ins_Ig&S_cent_ins', 'S_circular_insula_inf', 'G&S_cingul-Ant']
+target_labels = ['G_postcentral-lh', 'S_postcentral-lh',
+                 'S_circular_insula_sup-lh', 'G_Ins_lg&S_cent_ins-lh',
+                 'S_circular_insula_inf-lh', 'G&S_cingul-Ant-lh']
 
 # morph maps
 morph_to='fsaverage'
@@ -218,7 +222,8 @@ if exec_ops['add_erm_dict']: #set 1 to run
 if exec_ops['add_bad_channels']:
     suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
                                  erm_list_path, motor_erm_list_path,
-                                 data_path, predefined_bads)
+                                 data_path, predefined_bads,
+                                 sub_script_path)
 
 if 0:
     suborg.add_sub_cond_dict(sub_cond_dict_path, sub_list_path, data_path)
@@ -233,17 +238,6 @@ sub_to_mri = suborg.read_sub_dict(sub_dict_path)
 erm_dict = suborg.read_sub_dict(erm_dict_path) # add None if not available
 bad_channels_dict = suborg.read_bad_channels_dict(bad_channels_dict_path)
 sub_cond_dict = suborg.read_sub_cond_dict(sub_cond_dict_path)
-
-#==============================================================================
-# PROCESSING LOOP
-#%%============================================================================
-# Pipeline Analysis
-error_list = []
-epoch_rejection = {}
-n_events = {}
-eog_contamination = {}
-ar_values = {}
-all_reject_channels = {}
 
 #==========================================================================
 # MRI-Subjects
@@ -291,7 +285,11 @@ if exec_ops['mri_preprocessing']:
         if exec_ops['plot_bem']:
             plot.plot_bem(mri_subject, subjects_dir, source_space_method, figures_path,
                           save_plots)
-
+            
+        if exec_ops['plot_labels']:
+            plot.plot_labels(mri_subject, subjects_dir, save_plots, figures_path,
+                             parcellation)
+            
         # close plots
         if exec_ops['close_plots']:
             plot.close_all()
@@ -325,13 +323,14 @@ for subject in subjects:
         
     else:
         save_dir = join(data_path, name)       
-
-        if subject[3] == '_':
-            ermsub = erm_dict[subject[:3]]
-            subtomri = sub_to_mri[subject[:3]]  
-        if subject[4] == '_':
-            ermsub = erm_dict[subject[:4]]
-            subtomri = sub_to_mri[subject[:4]]
+    
+    pattern = r'pp[0-9]+[a-z]?'
+    
+    match = re.match(pattern, subject)
+    prefix = match.group()
+    
+    ermsub = prefix + '_leer'
+    subtomri = sub_to_mri[prefix]
             
     try:
         bad_channels = bad_channels_dict[subject]
@@ -342,29 +341,7 @@ for subject in subjects:
                                      data_path, predefined_bads)
 
     event_id_list = []
-    """
-    # Handle event-id's
-    event_id = dict()
 
-    try:
-        events = io.read_events(name, save_dir)
-
-    except (FileNotFoundError, AttributeError):
-        op.find_events(name, save_dir, min_duration,
-                adjust_timeline_by_msec,lowpass, highpass, overwrite)
-
-        try:
-            events = io.read_events(name, save_dir)
-            u = np.unique(events[:,2])
-
-            for t_name, value in all_event_ids.items():
-                if value in u:
-                    event_id.update({t_name:value})
-
-        except (FileNotFoundError, AttributeError):
-            print('No events in this File')
-
-    """
     # Print Subject Console Header
     print(60*'='+'\n'+name)
 
@@ -394,7 +371,7 @@ for subject in subjects:
                 adjust_timeline_by_msec,lowpass, highpass, overwrite)
 
     if exec_ops['find_eog_events']:
-        op.find_eog_events(name, save_dir, eog_channel, eog_contamination)
+        op.find_eog_events(name, save_dir, eog_channel)
 
     #==========================================================================
     # EPOCHS
@@ -402,9 +379,8 @@ for subject in subjects:
 
     if exec_ops['epoch_raw']:
         op.epoch_raw(name, save_dir,lowpass, highpass, event_id, tmin,
-                          tmax, baseline, reject, flat, autoreject, overwrite_ar,
-                          sub_script_path, bad_channels, decim, n_events, epoch_rejection,
-                          all_reject_channels, reject_eog_epochs, overwrite)
+                     tmax, baseline, reject, flat, autoreject, overwrite_ar,
+                     reject_eog_epochs, overwrite)
 
     #==========================================================================
     # SIGNAL SPACE PROJECTION
@@ -655,11 +631,11 @@ for subject in subjects:
 
     if exec_ops['plot_snr']:
         plot.plot_snr(name, save_dir,lowpass, highpass, save_plots, figures_path)
-    if exec_ops['plot_labels']:
-        plot.plot_labels(subtomri, subjects_dir)
+
     if exec_ops['label_time_course']:
         plot.label_time_course(name, save_dir, lowpass, highpass, subtomri,
-                               target_labels, save_plots, figures_path)
+                               target_labels, save_plots, figures_path,
+                               parcellation)
     
     #==========================================================================
     # MORPH TO FSAVERAGE
@@ -697,12 +673,6 @@ for subject in subjects:
         for trial_type in morphed_data:
             morphed_data_all[trial_type].append(morphed_data[trial_type])
 
-
-    # close all plots
-    if exec_ops['close_plots']:
-        plot.close_all()
-
-
     #==========================================================================
     # General Statistics
     #==========================================================================
@@ -715,6 +685,9 @@ for subject in subjects:
                             tmin, tmax, baseline, figures_path, save_plots, autoreject,
                             overwrite_ar, reject, flat)
 
+    # close all plots
+    if exec_ops['close_plots']:
+        plot.close_all()
 
 # GOING OUT OF SUBJECT LOOP (FOR AVERAGES)
 
@@ -774,62 +747,3 @@ if exec_ops['plot_grand_averages_source_estimates_cluster_masked']:
         name, save_dir_averages,lowpass, highpass, subjects_dir, method, time_window,
         save_plots, figures_path, independent_variable_1,
         independent_variable_2, mne_evoked_time, p_threshold)
-
-#==============================================================================
-# Print Pipeline Analysis
-#==============================================================================
-# Create a file from the Pipeline Analysis Console Output
-if exec_ops['print_pipeline_analysis']:
-
-    pa_path = join(data_path, '_Subject_scripts',
-                   str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py')
-    
-    if not isfile(pa_path):
-        pa_file = open(pa_path,'w')
-        print(str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py', 'has been created')
-        print('#'*60 + '\n' + 'Pipeline-Output-Analysis:', file=pa_file)
-    
-    else:
-        pa_file = open(join(data_path, '_Subject_scripts',
-                     str(highpass) + '-' + str(lowpass) + 'Hz_' + 'PA.py'),'a')
-        print(4*'\n' + '#'*60 + '\n' + 'Pipeline-Output-Analysis:', file=pa_file)
-    
-    now = datetime.now()
-    print(f'Executed on {now.date()} at {now.time()}', file=pa_file)
-    
-    print('-'*60 + '\n' + 'Parameters:', file=pa_file)
-    # Get current Parameters from Pipeline_Pinprick.py
-    with open('./Pipeline_Pinprick.py', 'r') as p:
-        p = list(p)
-        for l in p:
-            if '#parameters_start\n' == l:
-                start = p.index(l) + 1
-            if '#parameters_stop\n' == l:
-                stop = p.index(l)
-        for l in p[start:stop]:
-            if l!='\n' and l[0]!='#':
-                print(l[:-1], file=pa_file)
-    
-    print('-'*60 + '\n' + 'Pipeline-Output-Analysis:', file=pa_file)
-    for i in error_list:
-        print(i, file=pa_file)
-    
-    print('-'*60 + '\n' + 'Percentage of rejected epochs:', file=pa_file)
-    for i in epoch_rejection:
-        print(i, ':', epoch_rejection[i], '%', file=pa_file)
-    
-    print('-'*60 + '\n' + 'n_events in Epochs', file=pa_file)
-    for i in n_events:
-        print(i, ':', n_events[i], 'events', file=pa_file)
-    
-    """
-    print('-'*60 + '\n' + 'Epochs contaminated with EOG', file=pa_file)
-    for i in eog_contamination:
-        print(i,':',eog_contamination[i], file=pa_file)
-    """
-    
-    print('-'*60 + '\n' + 'Channels responsible for rejection', file=pa_file)
-    for i in all_reject_channels:
-        print(i, ':', all_reject_channels[i], '\n', file=pa_file)
-    
-    pa_file.close()

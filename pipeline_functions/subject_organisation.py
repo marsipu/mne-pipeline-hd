@@ -442,7 +442,8 @@ def read_erm_dict(erm_dict_path):
 
 def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
                           erm_list_path, motor_erm_list_path,
-                          data_path, predefined_bads):
+                          data_path, predefined_bads,
+                          sub_script_path):
 
     def check():
         
@@ -461,6 +462,9 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
             if n == 1:
                 b_list.append(x)
         
+        ut.dict_filehandler(name, b_list, 'bad_channels_dict',
+                            sub_script_path)
+        """
         if not isfile(bad_channels_dict_path):
             if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
@@ -493,7 +497,7 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
             else:
                 with open(bad_channels_dict_path, 'a') as bd:
                     bd.write(f'{name}:{b_list}\n')
-                    print(f'Bad-Channels added for {name}')
+                    print(f'Bad-Channels added for {name}')"""
 
 
     def delete_last():

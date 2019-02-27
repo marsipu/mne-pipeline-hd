@@ -88,7 +88,8 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr']
+                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
+                         'labels']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
@@ -123,7 +124,8 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr']
+                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
+                         'labels']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path,
@@ -219,7 +221,8 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
                          'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics']
+                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
+                         'labels']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
@@ -464,7 +467,7 @@ def find_events(name, save_dir, min_duration,
         print('event file: '+ events_path + ' already exists')
 
 @decor.topline
-def find_eog_events(name, save_dir, eog_channel, eog_contamination):
+def find_eog_events(name, save_dir, eog_channel):
 
     eog_events_name = name + '_eog-eve.fif'
     eog_events_path = join(save_dir, eog_events_name)
@@ -499,7 +502,7 @@ def find_eog_events(name, save_dir, eog_channel, eog_contamination):
 @decor.topline
 def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
               baseline, reject, flat, autoreject, overwrite_ar, sub_script_path, bad_channels, decim,
-              n_events, epoch_rejection, all_reject_channels, reject_eog_epochs, overwrite):
+              reject_eog_epochs, overwrite):
 
     epochs_name = name + filter_string(lowpass, highpass) + '-epo.fif'
     epochs_path = join(save_dir, epochs_name)
@@ -561,7 +564,12 @@ def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
                     reject_channels.append(b)
         c = Counter(reject_channels).most_common()
         all_reject_channels.update({name:c})
-
+        
+        c.insert(0, (len(epochs), epochs.drop_log_stats()))
+        
+        ut.dict_filehandler(name, c, 'reject_channels',
+                            sub_script_path)
+        
     else:
         print('epochs file: '+ epochs_path + ' already exists')
 
@@ -825,38 +833,8 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             for i in exes:
                 indices.append(int(i))
             
-            
-            if not isfile(ica_comp_file_path):
-                if not exists(sub_script_path):
-                    makedirs(sub_script_path)
-                    print(sub_script_path + ' created')
-                with open(ica_comp_file_path, 'w') as ica_f:   
-                    ica_f.write(f'{name}:{indices}\n')
-                    print(ica_comp_file_path + ' created')
-            else:
-                ica_dict = {}
-                with open(ica_comp_file_path, 'r') as ica_f:
-                    for item in ica_f:
-                        if ':' in item:
-                            key,value = item.split(':', 1)
-                            value = eval(value)
-                            ica_dict[key]=value
-                
-                if name in ica_dict:
-                    if ica_dict[name] == indices:
-                        print(f'Same Indices {indices}')
-                    else:
-                        prae_indices = ica_dict[name]
-                        ica_dict[name] = indices
-                        print(f'Replacing {prae_indices} with {indices}')
-
-                else:
-                    ica_dict[name] = indices
-                    print(f'Adding component-indices for {name}')
-                
-                with open(ica_comp_file_path, 'w') as ica_f:
-                    for name, indices in ica_dict.items():
-                        ica_f.write(f'{name}:{indices}\n')
+            ut.dict_filehandler(name, indices, 'ica_components',
+                                sub_script_path, overwrite=False)
            
             # Plot ICA integrated
             comp_list = []
@@ -1405,7 +1383,7 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass, overwrite, erms
             print('noise covariance file: '+ covariance_path + \
                   ' already exists')
 
-    elif ermsub=='None':
+    elif ermsub=='None' or 'leer' in name:
 
         print('Noise Covariance on Epochs')
         covariance_name = name + filter_string(lowpass, highpass) + '-cov.fif'

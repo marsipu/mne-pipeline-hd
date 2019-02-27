@@ -15,7 +15,6 @@ basic_operations = dict(populate_data_directory = 0, #don't do it in Linux if yo
                         mri_preprocessing = 0, # enable to do any of the mri_subject-related functions
                         erm_analysis = 0,
                         motor_erm_analysis = 0,
-                        print_pipeline_analysis = 0,
                         close_plots = 0)
 
 
@@ -51,7 +50,6 @@ source_space_operations = dict(mri_coreg = 0,
 
 mri_subject_operations = dict(import_mri = 0,
                               segment_mri = 0, # long process (>10 h)
-                              Test = 0,
                               apply_watershed = 0,
                               make_dense_scalp_surfaces = 0, #until here all bash scripts!
                               prepare_bem = 0,
