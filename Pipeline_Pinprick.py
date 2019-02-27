@@ -8,7 +8,7 @@ Pipeline for group analysis of MEG data
 Adapted to Sektion Biomagnetismus Kopfklinik
 @author: Martin Schulz
 @email: martin.schulz@stud.uni-heidelberg.de
-@github: 
+@github: marsipu/mne_pipeline_hd
 
 Functions to implement:
 - plot compare evokeds
@@ -16,13 +16,10 @@ Functions to implement:
 - bad epochs handling?
 - Baseline SSP?
 - Group analasys with condition-list(picking file and trial_type)
-- except watershed_bem refurbish the bash commands
 - Condition tags for subject/Grand Average Customizing
     - Comparative Plots
-- Epoch rejection, when EOG/ECG exceeds certain value
 - Source Estimate with MRI-Slides?
 - Parameters in File und auf Cond/File angepasst (save params?)
-- name --> subject
 - beamformer
 - evoked dict noch notwendig?
 - Subjects as Classes?
@@ -30,14 +27,14 @@ Functions to implement:
 - Group analysis for a/b
 - plot_evoked_white: Noise update bad_channels in erm according to raw
 - implement Phase-Amplitude-Coupling with pactools
+- Make Paradimg-compare-plots (4plots in 1figure)
 """
 
 #==============================================================================
 # IMPORTS
 #%%============================================================================
 import sys
-from os.path import join, isfile
-from datetime import datetime
+from os.path import join
 import re
 import numpy as np
 import mne
@@ -60,7 +57,7 @@ from pipeline_functions import utilities as ut
         #'1-4,7,20-26'
         #'all'
 
-which_file = '14-121' # Has to be strings!
+which_file = '62'#'14-105,114-121' # Has to be strings!
 
 which_mri_subject = 'all' # Has to be a string!
 
@@ -106,13 +103,13 @@ reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
-event_id = {'LBT':1,'mot_start':2,'offset':4,'start':32}
+event_id = {'LBT':1,'mot_start':2,'offset':4, 'start':32}
 
 # evokeds
 detrend = False # somehow not working on all data
 
 #TFA
-TF_Morlet_Freqs = np.logspace(*np.log10([6, 35]), num=8)
+TF_Morlet_Freqs = np.arange(5,100,5)
 
 #ICA
 eog_channel = 'EEG 001'
@@ -314,9 +311,8 @@ evoked_data_all = dict(pinprick=[], WU_First=[], WU_Last=[])
 morphed_data_all = dict(pinprick=[], WU_First=[], WU_Last=[])
 
 
-for subject in subjects:
-    name = subject #changed for Kopfklinik-naming-convention
-    subject_index = subjects.index(subject)
+for name in subjects:
+    subject_index = subjects.index(name)
     
     if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
         save_dir = join(data_path, 'empty_room_data')
@@ -326,14 +322,14 @@ for subject in subjects:
     
     pattern = r'pp[0-9]+[a-z]?'
     
-    match = re.match(pattern, subject)
+    match = re.match(pattern, name)
     prefix = match.group()
     
     ermsub = prefix + '_leer'
     subtomri = sub_to_mri[prefix]
             
     try:
-        bad_channels = bad_channels_dict[subject]
+        bad_channels = bad_channels_dict[name]
     except KeyError as k:
         print(f'No bad channels for {k}')
         suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
@@ -378,8 +374,9 @@ for subject in subjects:
     #==========================================================================
 
     if exec_ops['epoch_raw']:
-        op.epoch_raw(name, save_dir,lowpass, highpass, event_id, tmin,
-                     tmax, baseline, reject, flat, autoreject, overwrite_ar,
+        op.epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
+                     baseline, reject, flat, autoreject, overwrite_ar,
+                     sub_script_path, bad_channels, decim,
                      reject_eog_epochs, overwrite)
 
     #==========================================================================
@@ -413,11 +410,11 @@ for subject in subjects:
         op.apply_ssp_ecg(name, save_dir,lowpass, highpass, overwrite)
 
     if exec_ops['plot_ssp']:
-        plot.plot_ssp(name, save_dir,lowpass, highpass, subject, save_plots,
+        plot.plot_ssp(name, save_dir,lowpass, highpass, save_plots,
                       figures_path, bad_channels, layout, ermsub)
 
     if exec_ops['plot_ssp_eog']:
-        plot.plot_ssp_eog(name, save_dir,lowpass, highpass, subject, save_plots,
+        plot.plot_ssp_eog(name, save_dir,lowpass, highpass, save_plots,
                               figures_path, bad_channels, layout)
 
     if exec_ops['ica_pure']:
@@ -447,13 +444,6 @@ for subject in subjects:
                                detrend, overwrite)
 
     #==========================================================================
-    # TIME-FREQUENCY-ANALASYS
-    #==========================================================================
-
-    if exec_ops['TF_Morlet']:
-        op.TF_Morlet(name, save_dir,lowpass, highpass, TF_Morlet_Freqs, decim, n_jobs)
-
-    #==========================================================================
     # NOISE COVARIANCE MATRIX
     #==========================================================================
 
@@ -463,7 +453,7 @@ for subject in subjects:
                                      use_calm_cov)
 
     if exec_ops['plot_noise_covariance']:
-        plot.plot_noise_covariance(name, save_dir,lowpass, highpass, subject,
+        plot.plot_noise_covariance(name, save_dir,lowpass, highpass,
                                    subtomri, save_plots, figures_path, ermsub,
                                    use_calm_cov)
 
@@ -508,7 +498,7 @@ for subject in subjects:
         op.vector_source_estimate(name, save_dir,lowpass, highpass, method, overwrite)
 
     if exec_ops['ECD_fit']:
-        op.ECD_fit(name, save_dir,lowpass, highpass, ermsub, subject, subjects_dir,
+        op.ECD_fit(name, save_dir,lowpass, highpass, ermsub, subjects_dir,
                            subtomri, source_space_method, use_calm_cov, ECDs,
                            n_jobs, target_labels, save_plots, figures_path)
 
@@ -545,30 +535,41 @@ for subject in subjects:
     #==========================================================================
 
     if exec_ops['plot_power_spectra']:
-        plot.plot_power_spectra(name, save_dir,lowpass, highpass, subject,
+        plot.plot_power_spectra(name, save_dir,lowpass, highpass,
                                 save_plots, figures_path, bad_channels)
 
     if exec_ops['plot_power_spectra_epochs']:
-        plot.plot_power_spectra_epochs(name, save_dir,lowpass, highpass, subject,
+        plot.plot_power_spectra_epochs(name, save_dir,lowpass, highpass,
                                        save_plots, figures_path, bad_channels)
 
     if exec_ops['plot_power_spectra_topo']:
-        plot.plot_power_spectra_topo(name, save_dir,lowpass, highpass, subject,
+        plot.plot_power_spectra_topo(name, save_dir,lowpass, highpass,
                                      save_plots, figures_path, bad_channels, layout)
 
+    #==========================================================================
+    # TIME-FREQUENCY-ANALASYS
+    #==========================================================================
+
+    if exec_ops['tf_morlet']:
+        plot.tf_morlet(name, save_dir,lowpass, highpass, tmin, tmax, baseline,
+                       TF_Morlet_Freqs, save_plots, figures_path, n_jobs)
+    
+    if exec_ops['tf_event_dynamics']:
+        plot.tf_event_dynamics(name, save_dir, tmin, tmax, save_plots,
+                                figures_path, n_jobs)     
     #==========================================================================
     # PLOT CLEANED EPOCHS
     #==========================================================================
     if exec_ops['plot_epochs']:
-        plot.plot_epochs(name, save_dir,lowpass, highpass, subject, save_plots,
+        plot.plot_epochs(name, save_dir,lowpass, highpass, save_plots,
                                figures_path)
 
     if exec_ops['plot_epochs_image']:
-        plot.plot_epochs_image(name, save_dir,lowpass, highpass, subject, save_plots,
+        plot.plot_epochs_image(name, save_dir,lowpass, highpass, save_plots,
                                figures_path)
 
     if exec_ops['plot_epochs_topo']:
-        plot.plot_epochs_topo(name, save_dir,lowpass, highpass, subject, save_plots,
+        plot.plot_epochs_topo(name, save_dir,lowpass, highpass, save_plots,
                       figures_path, layout)
 
     #==========================================================================
@@ -576,37 +577,34 @@ for subject in subjects:
     #==========================================================================
 
     if exec_ops['plot_evoked_topo']:
-        plot.plot_evoked_topo(name, save_dir,lowpass, highpass, subject, save_plots,
+        plot.plot_evoked_topo(name, save_dir,lowpass, highpass, save_plots,
                               figures_path)
 
     if exec_ops['plot_evoked_topomap']:
-        plot.plot_evoked_topomap(name, save_dir,lowpass, highpass, subject, save_plots,
+        plot.plot_evoked_topomap(name, save_dir,lowpass, highpass, save_plots,
                                  figures_path, layout)
 
     if exec_ops['plot_butterfly_evokeds']:
-        plot.plot_butterfly_evokeds(name, save_dir,lowpass, highpass, subject,
+        plot.plot_butterfly_evokeds(name, save_dir,lowpass, highpass,
                                     save_plots, figures_path,
                                     time_unit, ermsub, use_calm_cov)
 
     if exec_ops['plot_evoked_field']:
-        plot.plot_evoked_field(name, save_dir,lowpass, highpass, subject, subtomri,
+        plot.plot_evoked_field(name, save_dir,lowpass, highpass, subtomri,
                                subjects_dir, save_plots, figures_path,
                                mne_evoked_time, n_jobs)
 
     if exec_ops['plot_evoked_joint']:
-        plot.plot_evoked_joint(name, save_dir,lowpass, highpass, subject, save_plots,
+        plot.plot_evoked_joint(name, save_dir,lowpass, highpass, save_plots,
                                layout, figures_path, ECDs)
 
     if exec_ops['plot_evoked_white']:
-        plot.plot_evoked_white(name, save_dir,lowpass, highpass, subject,
+        plot.plot_evoked_white(name, save_dir,lowpass, highpass,
                                save_plots, figures_path, ermsub, use_calm_cov)
 
     if exec_ops['plot_evoked_image']:
-        plot.plot_evoked_image(name, save_dir,lowpass, highpass, subject,
+        plot.plot_evoked_image(name, save_dir,lowpass, highpass,
                                save_plots, figures_path)
-
-    if exec_ops['animate_topomap']:
-        plot.animate_topmap()
 
     #==========================================================================
     # PLOT SOURCE ESTIMATES MNE
@@ -614,19 +612,19 @@ for subject in subjects:
 
     if exec_ops['plot_source_estimates']:
         plot.plot_source_estimates(name, save_dir,lowpass, highpass,
-                                      subtomri, subjects_dir, subject,
+                                      subtomri, subjects_dir,
                                       method, mne_evoked_time,
                                       save_plots, figures_path)
 
     if exec_ops['plot_vector_source_estimates']:
         plot.plot_vector_source_estimates(name, save_dir,lowpass, highpass,
-                                      subtomri, subjects_dir, subject,
+                                      subtomri, subjects_dir,
                                       method, mne_evoked_time,
                                       save_plots, figures_path)
 
     if exec_ops['plot_animated_stc']:
         plot.plot_animated_stc(name, save_dir,lowpass, highpass, subtomri,
-                               subjects_dir, subject, method, mne_evoked_time,
+                               subjects_dir, method, mne_evoked_time,
                                stc_animation, tmin, tmax, save_plots, figures_path)
 
     if exec_ops['plot_snr']:
@@ -636,20 +634,32 @@ for subject in subjects:
         plot.label_time_course(name, save_dir, lowpass, highpass, subtomri,
                                target_labels, save_plots, figures_path,
                                parcellation)
+
+    #==========================================================================
+    # TIME-FREQUENCY IN SOURCE SPACE
+    #==========================================================================
     
+    if exec_ops['tf_label_power_phlck']:
+        plot.tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri,
+                                  parcellation, save_plots, figures_path, n_jobs)
+        
+    if exec_ops['source_space_connectivity']:
+        plot.source_space_connectivity(name, save_dir, lowpass, highpass,
+                                       subtomri, subjects_dir, method,
+                                       save_plots, figures_path)
+        
     #==========================================================================
     # MORPH TO FSAVERAGE
     #==========================================================================
 
     if exec_ops['morph_to_fsaverage']:
         stcs = op.morph_data_to_fsaverage(name, save_dir,lowpass, highpass,
-                                        subjects_dir, subject, subtomri,
-                                        method,
+                                        subjects_dir, subtomri, method,
                                         overwrite, n_jobs, vertices_to, morph_to)
 
 
     if exec_ops['morph_to_fsaverage_precomputed']:
-        stcs = op.morph_data_to_fsaverage_precomputed(name, save_dir,lowpass, highpass, subjects_dir, subject,
+        stcs = op.morph_data_to_fsaverage_precomputed(name, save_dir,lowpass, highpass, subjects_dir,
                                                               subtomri, method, overwrite, n_jobs, morph_to, vertices_to)
 
     #==========================================================================
@@ -723,10 +733,6 @@ if exec_ops['plot_grand_averages_source_estimates']:
                                               mne_evoked_time, event_id_list, save_plots,
                                               figures_path, which_file)
 
-if exec_ops['label_time_course_avg']:
-    plot.label_time_course_avg(morphed_data_all, save_dir_averages,lowpass, highpass, method,
-                      which_file, subjects_dir, source_space_method,
-                      target_labels, save_plots, event_id_list, figures_path)
 #==============================================================================
 # STATISTICS SOURCE SPACE
 #==============================================================================

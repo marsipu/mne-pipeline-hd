@@ -33,8 +33,7 @@ sensor_space_operations = dict(filter_raw = 0,
                                run_ica = 0, # HIGPASS-FILTER RECOMMENDED!!!
                                apply_ica = 0,
                                ica_pure = 0,
-                               get_evokeds = 0,
-                               TF_Morlet = 0)
+                               get_evokeds = 0)
 
 
 source_space_operations = dict(mri_coreg = 0,
@@ -70,6 +69,8 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_power_spectra = 0,
                           plot_power_spectra_epochs = 0,
                           plot_power_spectra_topo = 0,
+                          tf_morlet = 0,
+                          tf_event_dynamics = 0,
                           plot_ssp = 0, #
                           plot_ssp_eog = 0, #EOG-Elektrodes have to be digitized and assigned to type 3
                           plot_ssp_ecg = 0, #ECG-Elektrodes have to be digitized and assigned to type 3
@@ -83,7 +84,6 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_evoked_joint = 0,
                           plot_evoked_white = 0,
                           plot_evoked_image = 0,
-                          animate_topomap = 0,
                           corr_ntr = 0,
                           avg_ntr = 0) # in evoked
 
@@ -97,7 +97,8 @@ source_space_plots = dict(plot_transformation = 0,
                           plot_snr = 0,
                           plot_labels = 0,
                           label_time_course = 0,
-                          label_time_course_avg = 0)
+                          tf_label_power_phlck = 0,
+                          source_space_connectivity = 0)
 
 grand_average_plots = dict(
                     # plotting sensor space (between subjects)

@@ -49,9 +49,9 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                             subjects_dir, subjects, event_id):
 
     ## create MEG and MRI paths
-    for subject in subjects:
+    for name in subjects:
 
-        full_path_MEG = join(home_path, project_name, data_path, subject)
+        full_path_MEG = join(home_path, project_name, data_path, name)
 
         ## create MEG dirs
         try:
@@ -89,7 +89,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels']
+                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
@@ -102,10 +102,11 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                 pass
 
     # create subfolders for event_ids
-    trialed_folders = ['epochs', 'power_spectra_epochs', 'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                     'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
-                     'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
-                     'stcs', 'vec_stcs','stcs_movie', 'snr']
+    trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
+                       'epochs_image', 'epochs_topo', 'evoked_butterfly',
+                       'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
+                       'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
+                       'stcs', 'vec_stcs','stcs_movie', 'snr']
 
     for ev_id in event_id:
         for tr in trialed_folders:
@@ -125,7 +126,7 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels']
+                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path,
@@ -139,10 +140,11 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                 pass
 
     # create subfolders for event_ids (ERM)
-    trialed_folders = ['epochs', 'power_spectra_epochs', 'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                     'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
-                     'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
-                     'stcs', 'vec_stcs','stcs_movie', 'snr']
+    trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
+                       'epochs_image', 'epochs_topo', 'evoked_butterfly',
+                       'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
+                       'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
+                       'stcs', 'vec_stcs','stcs_movie', 'snr']
 
     for ev_id in event_id:
         for tr in trialed_folders:
@@ -182,9 +184,9 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
                                   subjects_dir, subjects):
 
     ## create MEG and MRI paths
-    for subject in subjects:
+    for name in subjects:
 
-        full_path_MEG = join(home_path, project_name, data_path, subject)
+        full_path_MEG = join(home_path, project_name, data_path, name)
 
         ## create MEG dirs
         try:
@@ -222,7 +224,7 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels']
+                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
@@ -501,7 +503,8 @@ def find_eog_events(name, save_dir, eog_channel):
 
 @decor.topline
 def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
-              baseline, reject, flat, autoreject, overwrite_ar, sub_script_path, bad_channels, decim,
+              baseline, reject, flat, autoreject, overwrite_ar,
+              sub_script_path, bad_channels, decim,
               reject_eog_epochs, overwrite):
 
     epochs_name = name + filter_string(lowpass, highpass) + '-epo.fif'
@@ -552,9 +555,6 @@ def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
         epochs.drop_bad(reject=reject, flat=flat)
         epochs.save(epochs_path)
 
-        n_events.update({name:len(epochs)})
-        epoch_rejection.update({name:epochs.drop_log_stats()})
-
         reject_channels = []
         log = epochs.drop_log
 
@@ -563,7 +563,6 @@ def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
                 for b in a:
                     reject_channels.append(b)
         c = Counter(reject_channels).most_common()
-        all_reject_channels.update({name:c})
         
         c.insert(0, (len(epochs), epochs.drop_log_stats()))
         
@@ -1160,16 +1159,6 @@ def grand_average_evokeds(evoked_data_all, save_dir_averages, lowpass, highpass,
         mne.evoked.write_evokeds(grand_average_path,
                                  grand_averages[trial_type])
 
-@decor.topline
-def TF_Morlet(name, save_dir, lowpass, highpass, TF_Morlet_Freqs, decim, n_jobs):
-
-    epochs = io.read_epochs(name, save_dir, lowpass, highpass)
-    n_cycles = TF_Morlet_Freqs / 2.
-    power, itc = mne.time_frequency.tfr_morlet(epochs, freqs=TF_Morlet_Freqs, n_cycles=n_cycles)
-
-    power.plot_topo(baseline=(-0.5, 0), mode='logratio', title='Average power')
-    power.plot([82], baseline=(-0.5, 0), mode='logratio', title=power.ch_names[82])
-
 #==============================================================================
 # BASH OPERATIONS
 #==============================================================================
@@ -1193,12 +1182,6 @@ def win_run_process_and_write_output(command, subjects_dir):
                              stderr=subprocess.STDOUT,shell=True,env=environment)
     ## write bash output in python console
     print(process.stdout.decode('utf_8'))
-
-def Test(subject, subjects_dir):
-
-    command = 'echo ' + subject
-
-    win_run_process_and_write_output(command, subjects_dir)
 
 def import_mri(dicom_path, mri_subject, subjects_dir, n_jobs_freesurfer):
     files = listdir(dicom_path)
@@ -1521,7 +1504,7 @@ def vector_source_estimate(name, save_dir, lowpass, highpass, method,
             stcs[stc].save(stc_path)
 
 @decor.topline
-def ECD_fit(name, save_dir, lowpass, highpass, ermsub, subject, subjects_dir,
+def ECD_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
             subtomri, source_space_method, use_calm_cov, ECDs, n_jobs,
             target_labels, save_plots, figures_path):
 
@@ -1615,7 +1598,7 @@ def ECD_fit(name, save_dir, lowpass, highpass, ermsub, subject, subjects_dir,
         pass
 
 @decor.topline
-def morph_data_to_fsaverage(name, save_dir, lowpass, highpass, subjects_dir, subject, subtomri,
+def morph_data_to_fsaverage(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
                             method, overwrite, n_jobs, vertices_to, morph_to):
 
     stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method)
@@ -1647,7 +1630,7 @@ def morph_data_to_fsaverage(name, save_dir, lowpass, highpass, subjects_dir, sub
             stcs_morph[trial_type].save(stc_morph_path)
 
 @decor.topline
-def morph_data_to_fsaverage_precomputed(name, save_dir, lowpass, highpass, subjects_dir, subject, subtomri,
+def morph_data_to_fsaverage_precomputed(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
                             method, overwrite, n_jobs, morph_to, vertices_to):
 
     stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method)
@@ -1707,7 +1690,7 @@ def average_morphed_data(morphed_data_all, method, save_dir_averages, lowpass, h
 def statistics_source_space(morphed_data_all, save_dir_averages,
                             independent_variable_1,
                             independent_variable_2,
-                            time_window, n_permutations,lowpass, highpass, overwrite):
+                            time_window, n_permutations, lowpass, highpass, overwrite):
 
     cluster_name = independent_variable_1 + '_vs_' + independent_variable_2 + \
                     filter_string(lowpass, highpass) + '_time_' + \
