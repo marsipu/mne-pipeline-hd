@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Pipeline for group analysis of MEG data - IO functions
@@ -270,10 +271,10 @@ def read_transformation(save_dir, subtomri):
 
     return trans
 
-def read_bem_solution(subject, subjects_dir):
+def read_bem_solution(mri_subject, subjects_dir):
 
-    bem_path = join(subjects_dir, subject, 'bem',
-                    subject + '-bem-sol.fif')
+    bem_path = join(subjects_dir, mri_subject, 'bem',
+                    mri_subject + '-bem-sol.fif')
     bem = mne.read_bem_solution(bem_path)
 
     return bem

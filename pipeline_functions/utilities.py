@@ -4,84 +4,131 @@ Created on Thu Jan 17 01:00:31 2019
 
 @author: 'Martin Schulz'
 """
-import sys
+
 import os
-from os.path import join, isfile
+from os import makedirs
+from os.path import join, isfile, isdir, exists
+import sys
 import autoreject as ar
-from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton,
-                             QToolTip, QDesktopWidget, QVBoxLayout,
-                             QCheckBox)
-from PyQt5.QtGui import QFont
+import tkinter as t
+import re
 
+from pipeline_functions import operations_dict as opd
 
-
-class BasicWindow(QWidget):
-
-    def __init__(self, title, width, height):
-        super().__init__()
-        self.title = title
-        self.width = width
-        self.height = height
-        
-        self.initUI()
-
-    def initUI(self):
-        
-        QToolTip.setFont(QFont('SansSerif', 10))
-        
-        self.setToolTip(f'This is a Window for {self.title}')
-        
-        qbtn = QPushButton('Quit', self)
-        qbtn.setToolTip('Close the Window')
-        qbtn.clicked.connect(QApplication.instance().quit)
-        qbtn.resize(qbtn.sizeHint())
-        qbtn.move(50, 50)
-
-        self.resize(self.width,self.height)
-        self.center()
-        self.setWindowTitle(self.title)
-        self.show()
+class Function_Window:
     
-    def center(self):
+    def __init__(self, master):
+        self.master = master
+        master.title('Choose the functions to be executed')
         
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
+        self.var_dict = {}
+        self.pre_func_dict = {}
+        self.func_dict = {}
+        self.c_path = './pipeline_functions/func_cache.py'        
         
-    def closeEvent(self, event):
-        event.accept()
+        self.make_chkbs()
+        self.huga = 12
+        
+    def make_chkbs(self):
+        r_cnt = -1
+        c_cnt = 0
+        r_max = 25
+        for function_group in opd.all_fs:
+            r_cnt += 1
+            if r_cnt > 25:
+                r_cnt = 0
+            label = t.Label(self.master, text=function_group,
+                            bg='blue',fg='white', relief=t.RAISED)
+            label.grid(row=r_cnt, column=c_cnt)
+            r_cnt += 1
+            for function in opd.all_fs[function_group]:
+                var = t.IntVar()
+                self.var_dict.update({function:var})
+                self.func_dict.update({function:0})
+                chk = t.Checkbutton(self.master, text=function, variable=var)
+                chk.grid(row=r_cnt, column=c_cnt, sticky=t.W)
+                r_cnt += 1
+                if r_cnt >= r_max:
+                    c_cnt += 1
+                    r_cnt = 0
 
-class FunctionChooser(BasicWindow):
-    
-    def __init__(self, functions):
+        # Preload existing checks
+
+        if isfile(self.c_path):
+            with open(self.c_path, 'r') as fc:
+                # Make sure that cache takes changes from operations_dict
+                self.pre_func_dict = eval(fc.read())
+                del_list = []
+                for k in self.pre_func_dict:
+                    if k not in self.func_dict:
+                        del_list.append(k)
+                if len(del_list)>0:
+                    for d in del_list:
+                        del self.pre_func_dict[d]
+                        print(f'{d} from operations_cache deleted')
+                self.func_dict = self.pre_func_dict
+                        
+            for f in self.func_dict:
+                n = self.func_dict[f]
+                self.var_dict[f].set(n)
+
+        bt_start = t.Button(self.master, text='Start',
+                            command=self.start, bg='green',
+                            activebackground='blue',
+                            fg='white', font=100,
+                            relief=t.RAISED)
+        bt_start.grid(row=int(r_cnt+(r_max-r_cnt)/3), column=c_cnt,
+                      rowspan=int((r_max-r_cnt+1)/3),
+                      sticky=t.N+t.S+t.W+t.E)
+
+        bt_stop = t.Button(self.master, text='Stop',
+                            command=self.stop, bg='red',
+                            activebackground='yellow',
+                            fg='white', font=100,
+                            relief=t.RAISED)
+        bt_stop.grid(row=int(r_cnt+(r_max-r_cnt)*2/3), column=c_cnt,
+                      rowspan=int((r_max-r_cnt+1)/3),
+                      sticky=t.N+t.S+t.W+t.E)
+   
+        bt_clear = t.Button(self.master, text='Clear_all',
+                      command=self.clear_all, bg='magenta',
+                      activebackground='cyan',
+                      fg='white', font=100,
+                      relief=t.RAISED)
         
-        title = 'Choose the functions to be executed'
-        width = 500
-        height = 300
-        super().__init__(title, width, height)
-        
-        self.functions = functions
-        self.functions_buttons = []
-        self.layout = QVBoxLayout()
-        self.make_checkboxes(self.functions)
-        
-        self.rb = QPushButton('Run')
-        self.layout.addWidget(self.rb)
-        
-    def make_checkboxes(self, functions):
-        
-        for function in functions:
-            fname = function.__name__
-            self.functions_buttons.append(QCheckBox(fname))
-            self.layout.addWidget(self.functions_buttons[-1])
+        bt_clear.grid(row=r_cnt, column=c_cnt,
+                      rowspan=int((r_max-r_cnt+1)/3),
+                      sticky=t.N+t.S+t.W+t.E)
+
+    def clear_all(self):
+        for x in self.var_dict:
+            self.var_dict[x].set(0)
             
-    def run(self):
+    def start(self):
+        for f in self.var_dict:
+            n = self.var_dict[f].get()
+            self.func_dict[f] = n
         
-        for b in self.functions_buttons:
-            if b.isChecked() == True:
-                print(b.text())
-                
+        with open(self.c_path, 'w') as fc:
+            fc.write(str(self.func_dict))
+        
+        self.master.quit()
+        self.master.destroy()
+        
+    def stop(self):        
+        self.master.quit()
+        self.master.destroy()  
+
+        sys.exit()       
+    
+def choose_function():
+    master = t.Tk()
+    gui = Function_Window(master)
+    master.mainloop()
+    
+    return gui.func_dict
+
+              
 def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
                        only_read=False):
 
@@ -138,19 +185,102 @@ def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
     
     return reject
     
-def choose_function():
+def dict_filehandler(name, file_name, sub_script_path, values=None,
+                     onlyread=False, overwrite=True):
     
-    def a(b):
-        print(b)
+    file_path = join(sub_script_path, file_name + '.py')
+    file_dict = {}    
     
-    functions = [a]
-    app = QApplication(sys.argv)
-    w = FunctionChooser(functions) #operations_to_apply, take the existing dictionary. Less running problems
-    w.show()
-    #app.exec_()
-    #app.aboutToQuit.connect(app.deleteLater)
-    sys.exit(app.exec_()) # Raises Error for SystemExit
+    if not isfile(file_path):
+        if not exists(sub_script_path):
+            makedirs(sub_script_path)
+            print(sub_script_path + ' created')
+        with open(file_path, 'w') as file:   
+            file.write(f'{name}:{values}\n')
+            print(file_path + ' created')
+    else:
+        with open(file_path, 'r') as file:
+            for item in file:
+                if ':' in item:
+                    key,value = item.split(':', 1)
+                    value = eval(value)
+                    file_dict[key]=value
+        
+        if not onlyread:
+            if name in file_dict:
+                if file_dict[name] == values:
+                    print(f'Same values {values} for {name}')
+                if overwrite:
+                    prae_values = file_dict[name]
+                    file_dict[name] = values
+                    print(f'Replacing {prae_values} with {values} for {name}')
+                else:
+                    print(f'{name} present in dict, set overwrite=True to overwrite')
+        
+            else:
+                file_dict[name] = values
+                print(f'Adding {values} for {name}')
+            
+            with open(file_path, 'w') as file:
+                for name, values in file_dict.items():
+                    file.write(f'{name}:{values}\n')
+    
+    return file_dict
 
+def get_subject_groups(all_subjects):
+    
+    subjects = []
+    
+    ab_dict = {}
+    comp_dict = {}
+    grand_avg_dict = {}
+
+    basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
+    for s in all_subjects:
+        match = re.match(basic_pattern, s)
+        if match:
+            subjects.append(s)
+                
+    for s in subjects:
+        match = re.match(basic_pattern, s)        
+        key = match.group(1) + '_' + match.group(2)
+        if key in ab_dict:
+            ab_dict[key].append(s)
+        else:
+            ab_dict.update({key:[s]})
+            
+    for s in subjects:
+        match = re.match(basic_pattern, s)
+        key = match.group(1) + '_' + match.group(3)
+        if match.group(2)=='16' or match.group(2)=='32':
+            sub_key = 'low'    
+        if match.group(2)=='64' or match.group(2)=='128':
+            sub_key = 'middle'
+        if match.group(2)=='256' or match.group(2)=='512':
+            sub_key = 'high'
+        if match.group(2)=='t':
+            sub_key = 't'
+        if key in comp_dict:
+            comp_dict[key].update({sub_key:s})
+        else:
+            comp_dict.update({key:{sub_key:s}})
+
+    for s in subjects:
+        match = re.match(basic_pattern, s)
+        if match.group(2)=='16' or match.group(2)=='32':
+            key = 'low_' + match.group(3)        
+        if match.group(2)=='64' or match.group(2)=='128':
+            key = 'middle_' + match.group(3)
+        if match.group(2)=='256' or match.group(2)=='512':
+            key = 'high_' + match.group(3)
+        if match.group(2)=='t':
+            key = match.group(2) + '_' + match.group(3)
+        if key in grand_avg_dict:
+            grand_avg_dict[key].append(s)
+        else:
+            grand_avg_dict.update({key:[s]})    
+    
+    return ab_dict, comp_dict, grand_avg_dict
 
 def getallfifFiles(dirName):
     # create a list of file and sub directories
