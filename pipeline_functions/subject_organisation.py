@@ -1,3 +1,4 @@
+
 """
 subject_organisation by Martin Schulz
 martin.schulz@stud.uni-heidelberg.de
@@ -462,43 +463,8 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
             if n == 1:
                 b_list.append(x)
         
-        ut.dict_filehandler(name, b_list, 'bad_channels_dict',
-                            sub_script_path)
-        """
-        if not isfile(bad_channels_dict_path):
-            if not exists(join(data_path, '_Subject_scripts')):
-                os.makedirs(join(data_path, '_Subject_scripts'))
-
-            with open(bad_channels_dict_path, 'w') as bd:
-                bd.write(f'{name}:{b_list}\n')
-
-            print('bad_channels_dict.py created')
-
-        else:
-            b_dict = {}
-            with open(bad_channels_dict_path) as bd:
-                for i in bd:
-                    key,value = i.split(':',1)
-                    value = value[:-1]
-                    value = eval(value)
-                    b_dict.update({key:value})
-                
-            if name in b_dict:
-                if b_dict[name] == b_list:
-                    print(f'Same Bad-Channels as before, nothing changed for {name}')
-                else:
-                    b_dict[name] = b_list
-                    print(f'Bad-Channels changed for {name}')
-                    
-                    with open(bad_channels_dict_path, 'w') as bd:
-                        for k in b_dict:
-                            bd.write(f'{k}:{b_dict[k]}\n')
-        
-            else:
-                with open(bad_channels_dict_path, 'a') as bd:
-                    bd.write(f'{name}:{b_list}\n')
-                    print(f'Bad-Channels added for {name}')"""
-
+        ut.dict_filehandler(name, 'bad_channels_dict',
+                            sub_script_path, values=b_list)
 
     def delete_last():
         with open(bad_channels_dict_path, 'r') as dd:
@@ -665,117 +631,6 @@ def read_bad_channels_dict(bad_channels_dict_path):
         print('bad_channels_dict.py not yet created, run add_bad_channels_dict')
 
     return bad_channels_dict
-
-
-## bad_channels_dict
-
-def add_sub_cond_dict(bad_channels_dict_path, sub_list_path, data_path):
-
-
-    def assign_condition():
-        choice=listbox.get(listbox.curselection())
-        if not isfile(bad_channels_dict_path):
-            if not exists(join(data_path, '_Subject_scripts')):
-                os.makedirs(join(data_path, '_Subject_scripts'))
-            idict = {}
-            idict.update({choice:e2.get()})
-            e2.delete(0,t.END)
-            with open(bad_channels_dict_path, 'w') as sd:
-                for key, value in idict.items():
-                    sd.write('%s:%s\n' % (key, value))
-
-            print('bad_channels_dict.py created')
-
-        else:
-            edict = {}
-            edict.update({choice:e2.get()})
-            e2.delete(0,t.END)
-            with open(bad_channels_dict_path, 'a') as sd:
-                for key, value in edict.items():
-                    sd.write('%s:%s\n' % (key, value))
-
-    def delete_last():
-        with open(bad_channels_dict_path, 'r') as dd:
-            dlist = (dd.readlines())
-
-        with open(bad_channels_dict_path, 'w') as dd:
-            for listitem in dlist[:-1]:
-                dd.write('%s' % listitem)
-
-    def quittk():
-        master.quit()
-        master.destroy()
-
-    def readd():
-        try:
-            with open(bad_channels_dict_path, 'r') as rd:
-                print(rd.read())
-        except FileNotFoundError:
-            print('bad_channels_dict.py not yet created, press assign')
-
-    def plot_raw_tk():
-        choice=listbox.get(listbox.curselection())
-        name = choice
-        save_dir = join(data_path, choice)
-        raw = io.read_raw(name, save_dir)
-        raw.plot(title=name, bad_color='red', scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), block=True, n_channels=30)
-
-
-    master = t.Tk()
-
-    t.Label(master, text='Assign bad channels to Subject').pack(side=t.TOP)
-
-
-    e2 = t.Entry(master, width=100)
-    e2.pack(side=t.TOP, expand=True)
-
-    scrollbar = t.Scrollbar(master)
-    scrollbar.pack(side=t.LEFT, fill = t.Y)
-
-    listbox = t.Listbox(master, height=20, selectmode = 'SINGLE', yscrollcommand = scrollbar.set)
-    listbox.pack(side=t.LEFT, expand=True)
-
-    scrollbar.config(command=listbox.yview)
-
-
-    with open(sub_list_path, 'r') as sl:
-        for line in sl:
-            currentPlace = line[:-1]
-            listbox.insert(t.END, currentPlace)
-
-
-    t.Button(master, text='read', command=readd).pack()
-    t.Button(master, text='delete_last', command=delete_last).pack()
-    t.Button(master, text='plot_raw', command=plot_raw_tk).pack()
-    t.Button(master, text='assign', command=assign_condition).pack()
-    t.Button(master, text='quit', command=quittk).pack()
-
-
-    t.mainloop()
-
-def read_sub_cond_dict(bad_channels_dict_path):
-    bad_channels_dict = {}
-
-    try:
-        with open(bad_channels_dict_path, 'r') as sd:
-            for item in sd:
-                if ':' in item:
-                    key,value = item.split(':', 1)
-                    value = value[:-1]
-                    value = value.split(',')
-                    if '' in value and len(value)==1:
-                        bad_channels_dict[key]=[]
-                        print('for {} no bad_channels assigned'.format(key))
-                    elif '' in value and len(value)!=1:
-                        raise ValueError('There is a mistake in the bad_channels_dict value')
-                    else:
-                        bad_channels_dict[key]=value
-
-    except FileNotFoundError:
-        print('sub_cond_dict.py not yet created, run add_sub_cond_dict')
-
-    return bad_channels_dict
-
 
 def file_selection(which_file, all_subjects):
     # Turn string input into according sub_list-Index

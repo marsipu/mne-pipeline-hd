@@ -11,6 +11,7 @@ from os.path import join, isfile, isdir, exists
 import sys
 import autoreject as ar
 import tkinter as t
+import re
 
 from pipeline_functions import operations_dict as opd
 
@@ -184,10 +185,11 @@ def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
     
     return reject
     
-def dict_filehandler(name, values, file_name, sub_script_path,
-                     overwrite=True):
+def dict_filehandler(name, file_name, sub_script_path, values=None,
+                     onlyread=False, overwrite=True):
     
     file_path = join(sub_script_path, file_name + '.py')
+    file_dict = {}    
     
     if not isfile(file_path):
         if not exists(sub_script_path):
@@ -197,7 +199,6 @@ def dict_filehandler(name, values, file_name, sub_script_path,
             file.write(f'{name}:{values}\n')
             print(file_path + ' created')
     else:
-        file_dict = {}
         with open(file_path, 'r') as file:
             for item in file:
                 if ':' in item:
@@ -205,23 +206,81 @@ def dict_filehandler(name, values, file_name, sub_script_path,
                     value = eval(value)
                     file_dict[key]=value
         
-        if name in file_dict:
-            if file_dict[name] == values:
-                print(f'Same values {values} for {name}')
-            if overwrite:
-                prae_values = file_dict[name]
-                file_dict[name] = values
-                print(f'Replacing {prae_values} with {values} for {name}')
-            else:
-                print(f'{name} present in dict, set overwrite=True to overwrite')
-    
-        else:
-            file_dict[name] = values
-            print(f'Adding {values} for {name}')
+        if not onlyread:
+            if name in file_dict:
+                if file_dict[name] == values:
+                    print(f'Same values {values} for {name}')
+                if overwrite:
+                    prae_values = file_dict[name]
+                    file_dict[name] = values
+                    print(f'Replacing {prae_values} with {values} for {name}')
+                else:
+                    print(f'{name} present in dict, set overwrite=True to overwrite')
         
-        with open(file_path, 'w') as file:
-            for name, values in file_dict.items():
-                file.write(f'{name}:{values}\n')    
+            else:
+                file_dict[name] = values
+                print(f'Adding {values} for {name}')
+            
+            with open(file_path, 'w') as file:
+                for name, values in file_dict.items():
+                    file.write(f'{name}:{values}\n')
+    
+    return file_dict
+
+def get_subject_groups(all_subjects):
+    
+    subjects = []
+    
+    ab_dict = {}
+    comp_dict = {}
+    grand_avg_dict = {}
+
+    basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
+    for s in all_subjects:
+        match = re.match(basic_pattern, s)
+        if match:
+            subjects.append(s)
+                
+    for s in subjects:
+        match = re.match(basic_pattern, s)        
+        key = match.group(1) + '_' + match.group(2)
+        if key in ab_dict:
+            ab_dict[key].append(s)
+        else:
+            ab_dict.update({key:[s]})
+            
+    for s in subjects:
+        match = re.match(basic_pattern, s)
+        key = match.group(1) + '_' + match.group(3)
+        if match.group(2)=='16' or match.group(2)=='32':
+            sub_key = 'low'    
+        if match.group(2)=='64' or match.group(2)=='128':
+            sub_key = 'middle'
+        if match.group(2)=='256' or match.group(2)=='512':
+            sub_key = 'high'
+        if match.group(2)=='t':
+            sub_key = 't'
+        if key in comp_dict:
+            comp_dict[key].update({sub_key:s})
+        else:
+            comp_dict.update({key:{sub_key:s}})
+
+    for s in subjects:
+        match = re.match(basic_pattern, s)
+        if match.group(2)=='16' or match.group(2)=='32':
+            key = 'low_' + match.group(3)        
+        if match.group(2)=='64' or match.group(2)=='128':
+            key = 'middle_' + match.group(3)
+        if match.group(2)=='256' or match.group(2)=='512':
+            key = 'high_' + match.group(3)
+        if match.group(2)=='t':
+            key = match.group(2) + '_' + match.group(3)
+        if key in grand_avg_dict:
+            grand_avg_dict[key].append(s)
+        else:
+            grand_avg_dict.update({key:[s]})    
+    
+    return ab_dict, comp_dict, grand_avg_dict
 
 def getallfifFiles(dirName):
     # create a list of file and sub directories

@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Mon Feb 11 03:11:47 2019
@@ -77,6 +78,7 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_epochs = 0,
                           plot_epochs_image = 0,
                           plot_epochs_topo = 0,
+                          plot_epochs_drop_log = 0,
                           plot_butterfly_evokeds = 0,
                           plot_evoked_topo = 0,
                           plot_evoked_topomap = 0,
@@ -84,8 +86,7 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_evoked_joint = 0,
                           plot_evoked_white = 0,
                           plot_evoked_image = 0,
-                          corr_ntr = 0,
-                          avg_ntr = 0) # in evoked
+                          corr_ntr = 0)
 
 source_space_plots = dict(plot_transformation = 0,
                           plot_source_space = 0,
@@ -97,6 +98,7 @@ source_space_plots = dict(plot_transformation = 0,
                           plot_snr = 0,
                           plot_labels = 0,
                           label_time_course = 0,
+                          cmp_label_time_course = 0,
                           tf_label_power_phlck = 0,
                           source_space_connectivity = 0)
 

@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Pipeline for group analysis of MEG data - plotting functions
@@ -225,7 +226,7 @@ def tf_morlet(name, save_dir, lowpass, highpass, tmin, tmax, baseline,
     fig1 = power.plot(baseline=baseline, mode='logratio', tmin=tmin, tmax=tmax, title=name)
     fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=tmin, tmax=tmax, title=name)    
     fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=tmin, tmax=tmax, title=name)
-    fig4 = itc.plot_topo(title=f'{name} - Inter-Trial coherence', vmin=0., vmax=1., cmap='Reds')
+    fig4 = itc.plot_topo(title=name + '-itc', vmin=0., vmax=1., cmap='Reds')
     
     fig5, axis = plt.subplots(1, 5, figsize=(15,2))
     power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=5, fmax=8,
@@ -244,6 +245,8 @@ def tf_morlet(name, save_dir, lowpass, highpass, tmin, tmax, baseline,
                        baseline=(-0.5, 0), mode='logratio', axes=axis[4],
                        title='High Gamma 60-100 Hz', show=False)
     mne.viz.tight_layout()
+    plt.title(name
+              )
     plt.show()
     
     if save_plots:
@@ -271,7 +274,8 @@ def tf_morlet(name, save_dir, lowpass, highpass, tmin, tmax, baseline,
         print('Not saving plots; set "save_plots" to "True" to save')
         
 @decor.topline
-def tf_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path, n_jobs):
+def tf_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
+                      bad_channels, n_jobs):
     
     iter_freqs = [
     ('Theta', 4, 7),
@@ -298,9 +302,12 @@ def tf_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path, n_jo
                    h_trans_bandwidth=1,  # in each band and skip "auto" option.
                    fir_design='firwin')
         raw.apply_hilbert(n_jobs=n_jobs, envelope=False)
-    
+
+        picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False,
+                               eog=False, ecg=False, exclude=bad_channels)   
+        
         epochs = mne.Epochs(raw, events, event_id, tmin, tmax, baseline=baseline,
-                            reject=dict(grad=4000e-13), preload=True)
+                            picks=picks, reject=dict(grad=4000e-13), preload=True)
         # remove evoked response and get analytic signal (envelope)
         epochs.subtract_evoked()  # for this we need to construct new epochs.
         epochs = mne.EpochsArray(
@@ -460,7 +467,8 @@ def plot_epochs_topo(name, save_dir, lowpass, highpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
-def plot_epochs_drop_log(name, save_dir, lowpass, highpass, save_plots, figures_path):
+def plot_epochs_drop_log(name, save_dir, lowpass, highpass, save_plots,
+                         figures_path):
     
     epochs = io.read_epochs(name, save_dir, lowpass, highpass)
     
@@ -606,8 +614,12 @@ def plot_evoked_white(name, save_dir, lowpass, highpass, save_plots, figures_pat
     else:
         noise_covariance = io.read_erm_noise_covariance(name, save_dir, lowpass, highpass)
         print('Noise Covariance from Empty-Room-Data')
-
+    
     for evoked in evokeds:
+        # Check, if evokeds and noise covariance got the same channels
+        channels = set(evoked.ch_names) & set(noise_covariance.ch_names)
+        evoked.pick_channels(channels)
+        
         figure = mne.viz.plot_evoked_white(evoked, noise_covariance)
         plt.title(name + ' - ' + evoked.comment, loc='center')
 
@@ -870,20 +882,18 @@ def label_time_course(name, save_dir, lowpass, highpass, subtomri, target_labels
     method = "dSPM"
 
     evoked = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
-
+    inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    src = inv_op['src']
+    # pick_ori has to be normal to plot bipolar time course
+    stc = mne.minimum_norm.apply_inverse(evoked, inv_op, lambda2, method,
+                                         pick_ori='normal')    
+    
     labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
 
     for label in labels:
         if label.name in target_labels:
             l = label
             print(l.name)
-            inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
-
-            src = inv_op['src']
-
-            # pick_ori has to be normal to plot bipolar time course
-            stc = mne.minimum_norm.apply_inverse(evoked, inv_op, lambda2, method,
-                                                 pick_ori='normal')
 
             stc_label = stc.in_label(l)
             mean = stc.extract_label_time_course(l, src, mode='mean')
@@ -909,6 +919,13 @@ def label_time_course(name, save_dir, lowpass, highpass, subtomri, target_labels
                 print('figure: ' + save_path + ' has been saved')
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
+
+@decor.topline
+def cmp_label_time_course(name, save_dir, lowpass, highpass):
+    
+    snr = 3.0
+    lambda2 = 1.0 / snr ** 2
+    method = "dSPM"    
 
 @decor.topline
 def tf_label_power(name, save_dir, lowpass, highpass, subtomri, parcellation,
@@ -939,6 +956,7 @@ def tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri, parcellati
     epochs_induced = epochs.copy().subtract_evoked()
     
     plt.close('all')
+    mlab.close(all=True)
             
     for ii, (this_epochs, title) in enumerate(zip([epochs, epochs_induced],
                                                   ['evoked + induced',
@@ -988,6 +1006,7 @@ def tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri, parcellati
 def source_space_connectivity(name, save_dir, lowpass, highpass, subtomri, subjects_dir, method,
                               save_plots, figures_path):
     
+    title = name
     info = io.read_info(name, save_dir)
     epochs = io.read_epochs(name, save_dir, lowpass, highpass)['LBT']
     inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
@@ -1057,7 +1076,7 @@ def source_space_connectivity(name, save_dir, lowpass, highpass, subtomri, subje
                                            node_angles=node_angles, node_colors=label_colors,
                                            title='All-to-All Connectivity')
     if save_plots:
-        save_path = join(figures_path, 'tf_source_space', name + '_tf_srcsp_connect' + \
+        save_path = join(figures_path, 'tf_source_space', title + '_tf_srcsp_connect' + \
                          filter_string(lowpass, highpass) + '.jpg')
         fig.savefig(save_path, face_color='black', dpi=600)
         print('figure: ' + save_path + ' has been saved')

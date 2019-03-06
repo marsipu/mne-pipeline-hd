@@ -21,13 +21,12 @@ Functions to implement:
 - Source Estimate with MRI-Slides?
 - Parameters in File und auf Cond/File angepasst (save params?)
 - beamformer
-- evoked dict noch notwendig?
-- Subjects as Classes?
-- Rating Analysis
 - Group analysis for a/b
-- plot_evoked_white: Noise update bad_channels in erm according to raw
 - implement Phase-Amplitude-Coupling with pactools
 - Make Paradimg-compare-plots (4plots in 1figure)
+- Improve morphe with average brain from subjects?
+- Subject chooser
+- improve run_ica readability
 """
 
 #==============================================================================
@@ -57,9 +56,9 @@ from pipeline_functions import utilities as ut
         #'1-4,7,20-26'
         #'all'
 
-which_file = '62'#'14-105,114-121' # Has to be strings!
+which_file = '92-97' # Has to be strings!
 
-which_mri_subject = 'all' # Has to be a string!
+which_mri_subject = '50' # Has to be a string!
 
 which_erm_file = 'all'
 
@@ -84,7 +83,7 @@ overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
 
 # raw
-predefined_bads = [6,7,8,26,59,60,97]
+predefined_bads = [6,7,8,25,26,27,28,59,60,62,97]
 lowpass = 80 # Hz
 highpass = 1 # Hz # at least 1 if to apply ICA
 
@@ -103,7 +102,7 @@ reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
-event_id = {'LBT':1,'mot_start':2,'offset':4, 'start':32}
+event_id = {'LBT':1, 'offset':4, 'lower_R':5, 'same_R':6, 'higher_R':7}
 
 # evokeds
 detrend = False # somehow not working on all data
@@ -123,6 +122,7 @@ source_space_method = 'ico5'
 
 # source reconstruction
 use_calm_cov = False
+erm_ica = False # Causes sometimes errors
 method = 'dSPM'
 mne_evoked_time = [0.050, 0.100, 0.200] # s
 stc_animation = [0,0.5] # s
@@ -222,11 +222,7 @@ if exec_ops['add_bad_channels']:
                                  data_path, predefined_bads,
                                  sub_script_path)
 
-if 0:
-    suborg.add_sub_cond_dict(sub_cond_dict_path, sub_list_path, data_path)
-
-#Functions
-
+#Subject-Functions
 all_subjects = suborg.read_subjects(sub_list_path)
 all_mri_subjects = suborg.read_mri_subjects(mri_sub_list_path)
 erm_files = suborg.read_subjects(erm_list_path)
@@ -234,7 +230,6 @@ motor_erm_files = suborg.read_subjects(motor_erm_list_path)
 sub_to_mri = suborg.read_sub_dict(sub_dict_path)
 erm_dict = suborg.read_sub_dict(erm_dict_path) # add None if not available
 bad_channels_dict = suborg.read_bad_channels_dict(bad_channels_dict_path)
-sub_cond_dict = suborg.read_sub_cond_dict(sub_cond_dict_path)
 
 #==========================================================================
 # MRI-Subjects
@@ -307,8 +302,8 @@ print('Selected Subjects:')
 for i in subjects:
     print(i)
 
-evoked_data_all = dict(pinprick=[], WU_First=[], WU_Last=[])
-morphed_data_all = dict(pinprick=[], WU_First=[], WU_Last=[])
+evoked_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
+morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
 
 for name in subjects:
@@ -364,7 +359,8 @@ for name in subjects:
 
     if exec_ops['find_events']:
         op.find_events(name, save_dir, min_duration,
-                adjust_timeline_by_msec,lowpass, highpass, overwrite)
+                adjust_timeline_by_msec,lowpass, highpass, overwrite,
+                save_plots, figures_path)
 
     if exec_ops['find_eog_events']:
         op.find_eog_events(name, save_dir, eog_channel)
@@ -433,7 +429,8 @@ for name in subjects:
     #==========================================================================
 
     if exec_ops['apply_ica']:
-        op.apply_ica(name, save_dir,lowpass, highpass, data_path, overwrite)
+        op.apply_ica(name, save_dir,lowpass, highpass, data_path,
+                     overwrite)
 
     #==========================================================================
     # EVOKEDS
@@ -450,7 +447,7 @@ for name in subjects:
     if exec_ops['estimate_noise_covariance']:
         op.estimate_noise_covariance(name, save_dir,lowpass, highpass, overwrite,
                                      ermsub, data_path, bad_channels, n_jobs,
-                                     use_calm_cov)
+                                     use_calm_cov, erm_ica)
 
     if exec_ops['plot_noise_covariance']:
         plot.plot_noise_covariance(name, save_dir,lowpass, highpass,
@@ -556,7 +553,7 @@ for name in subjects:
     
     if exec_ops['tf_event_dynamics']:
         plot.tf_event_dynamics(name, save_dir, tmin, tmax, save_plots,
-                                figures_path, n_jobs)     
+                                figures_path, bad_channels, n_jobs)     
     #==========================================================================
     # PLOT CLEANED EPOCHS
     #==========================================================================
@@ -571,7 +568,10 @@ for name in subjects:
     if exec_ops['plot_epochs_topo']:
         plot.plot_epochs_topo(name, save_dir,lowpass, highpass, save_plots,
                       figures_path, layout)
-
+    
+    if exec_ops['plot_epochs_drop_log']:
+        plot.plot_epochs_drop_log(name, save_dir, lowpass, highpass, save_plots,
+                                  figures_path)
     #==========================================================================
     # PLOT EVOKEDS
     #==========================================================================
@@ -690,16 +690,15 @@ for name in subjects:
         op.corr_ntr(name, save_dir, lowpass, highpass, exec_ops,
                     ermsub, subtomri, save_plots, figures_path)
         
-    if exec_ops['avg_ntr']:
-        op.avg_ntr(name, save_dir, lowpass, highpass, bad_channels, event_id,
-                            tmin, tmax, baseline, figures_path, save_plots, autoreject,
-                            overwrite_ar, reject, flat)
-
     # close all plots
     if exec_ops['close_plots']:
         plot.close_all()
 
-# GOING OUT OF SUBJECT LOOP (FOR AVERAGES)
+# GOING OUT OF SUBJECT LOOP
+
+if exec_ops['cmp_label_time_course']:
+    
+    print('Hubi')
 
 #==============================================================================
 # GRAND AVERAGES (sensor space and source space)

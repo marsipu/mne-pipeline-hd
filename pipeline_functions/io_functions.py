@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Pipeline for group analysis of MEG data - IO functions
