@@ -26,7 +26,7 @@ Functions to implement:
 - Make Paradimg-compare-plots (4plots in 1figure)
 - Improve morphe with average brain from subjects?
 - Subject chooser
-- improve run_ica readability
+- improve run_i-ca readability
 """
 
 #==============================================================================
@@ -56,9 +56,10 @@ from pipeline_functions import utilities as ut
         #'1-4,7,20-26'
         #'all'
 
-which_file = '92-97' # Has to be strings!
+# pp1-pp14 tfr
+which_file = '1-113' # Has to be strings!
 
-which_mri_subject = '50' # Has to be a string!
+which_mri_subject = 'all' # Has to be a string!
 
 which_erm_file = 'all'
 
@@ -83,7 +84,8 @@ overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
 
 # raw
-predefined_bads = [6,7,8,25,26,27,28,59,60,62,97]
+predefined_bads = [6,7,8,17,26,27,79,103]
+eog_digitized = True # Set True, if the last 4 digitized points where EOG
 lowpass = 80 # Hz
 highpass = 1 # Hz # at least 1 if to apply ICA
 
@@ -105,10 +107,16 @@ decim = 1 # downsampling factor
 event_id = {'LBT':1, 'offset':4, 'lower_R':5, 'same_R':6, 'higher_R':7}
 
 # evokeds
+ica_evokeds = True
 detrend = False # somehow not working on all data
 
-#TFA
-TF_Morlet_Freqs = np.arange(5,100,5)
+#Time-Frequency-Analysis
+tfr_freqs = np.arange(5,100,5)
+overwrite_tfr = True
+tfr_method = 'morlet'
+multitaper_bandwith = 4.0
+stockwell_width = 1.0
+
 
 #ICA
 eog_channel = 'EEG 001'
@@ -136,13 +144,17 @@ ECDs = {}
 ECD_min = 0.200
 ECD_max = 0.250
 
-target_labels = ['G_postcentral-lh', 'S_postcentral-lh',
+"""target_labels = {'lh':['G_postcentral-lh', 'S_postcentral-lh',
                  'S_circular_insula_sup-lh', 'G_Ins_lg&S_cent_ins-lh',
-                 'S_circular_insula_inf-lh', 'G&S_cingul-Ant-lh']
+                 'S_circular_insula_inf-lh'],
+                 'rh':['G_postcentral-rh', 'S_postcentral-rh',
+                 'S_circular_insula_sup-rh', 'G_Ins_lg&S_cent_ins-rh',
+                 'S_circular_insula_inf-rh']}"""
 
+target_labels = {'lh':['G_postcentral-lh', 'S_circular_insula_sup-lh'],
+                 'rh':['G_postcentral-rh', 'S_circular_insula_sup-rh']}
 # morph maps
 morph_to='fsaverage'
-vertices_to = [np.arange(10242), np.arange(10242)]
 
 # grand averages
 # empty containers to the put the single subjects data in
@@ -267,6 +279,10 @@ if exec_ops['mri_preprocessing']:
         if exec_ops['prepare_bem']:
             op.prepare_bem(mri_subject, subjects_dir, overwrite)
             
+        if exec_ops['morph_subject']:
+            op.morph_subject(mri_subject, subjects_dir, morph_to,
+                             source_space_method, overwrite)
+            
         #==========================================================================
         # PLOT SOURCE SPACES
         #==========================================================================
@@ -302,7 +318,9 @@ print('Selected Subjects:')
 for i in subjects:
     print(i)
 
-evoked_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
+# Get the dicts according to naming:
+ab_dict, comp_dict, grand_avg_dict = ut.get_subject_groups(subjects)
+
 morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
 
@@ -329,7 +347,8 @@ for name in subjects:
         print(f'No bad channels for {k}')
         suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
                                      erm_list_path, motor_erm_list_path,
-                                     data_path, predefined_bads)
+                                     data_path, predefined_bads,
+                                     sub_script_path)
 
     event_id_list = []
 
@@ -438,7 +457,15 @@ for name in subjects:
 
     if exec_ops['get_evokeds']:
         op.get_evokeds(name, save_dir,lowpass, highpass, exec_ops, ermsub,
-                               detrend, overwrite)
+                       detrend, ica_evokeds, overwrite)
+    
+    #==========================================================================
+    # TIME-FREQUENCY-ANALASYS
+    #==========================================================================
+    
+    if exec_ops['tfr']:
+        op.tfr(name, save_dir, lowpass, highpass, ica_evokeds, tfr_freqs, overwrite_tfr,
+               tfr_method, multitaper_bandwith, stockwell_width, n_jobs)
 
     #==========================================================================
     # NOISE COVARIANCE MATRIX
@@ -447,7 +474,7 @@ for name in subjects:
     if exec_ops['estimate_noise_covariance']:
         op.estimate_noise_covariance(name, save_dir,lowpass, highpass, overwrite,
                                      ermsub, data_path, bad_channels, n_jobs,
-                                     use_calm_cov, erm_ica)
+                                     use_calm_cov, ica_evokeds, erm_ica)
 
     if exec_ops['plot_noise_covariance']:
         plot.plot_noise_covariance(name, save_dir,lowpass, highpass,
@@ -461,7 +488,7 @@ for name in subjects:
     # use mne.gui.coregistration()
 
     if exec_ops['mri_coreg']:
-        op.mri_coreg(name, save_dir, subtomri, subjects_dir)
+        op.mri_coreg(name, save_dir, subtomri, subjects_dir, eog_digitized)
 
     if exec_ops['plot_transformation']:
         plot.plot_transformation(name, save_dir, subtomri, subjects_dir,
@@ -498,10 +525,17 @@ for name in subjects:
         op.ECD_fit(name, save_dir,lowpass, highpass, ermsub, subjects_dir,
                            subtomri, source_space_method, use_calm_cov, ECDs,
                            n_jobs, target_labels, save_plots, figures_path)
-
+    
+    if exec_ops['apply_morph']:
+        stcs = op.apply_morph(name, save_dir, lowpass, highpass,
+                              subjects_dir, subtomri, method,
+                              overwrite, n_jobs, morph_to,
+                              source_space_method, event_id)
+        
     #==========================================================================
     # PRINT INFO
     #==========================================================================
+    
     if exec_ops['print_info']:
         plot.print_info(name, save_dir, save_plots)
 
@@ -544,16 +578,17 @@ for name in subjects:
                                      save_plots, figures_path, bad_channels, layout)
 
     #==========================================================================
-    # TIME-FREQUENCY-ANALASYS
+    # PLOT TIME-FREQUENCY-ANALASYS
     #==========================================================================
-
-    if exec_ops['tf_morlet']:
-        plot.tf_morlet(name, save_dir,lowpass, highpass, tmin, tmax, baseline,
-                       TF_Morlet_Freqs, save_plots, figures_path, n_jobs)
     
-    if exec_ops['tf_event_dynamics']:
-        plot.tf_event_dynamics(name, save_dir, tmin, tmax, save_plots,
-                                figures_path, bad_channels, n_jobs)     
+    if exec_ops['plot_tfr']:
+        plot.plot_tfr(name, save_dir, lowpass, highpass, tmin, tmax, baseline,
+                      tfr_method, save_plots, figures_path)
+    
+    if exec_ops['tfr_event_dynamics']:
+        plot.tfr_event_dynamics(name, save_dir, tmin, tmax, save_plots,
+                                figures_path, bad_channels, n_jobs)
+        
     #==========================================================================
     # PLOT CLEANED EPOCHS
     #==========================================================================
@@ -613,7 +648,7 @@ for name in subjects:
     if exec_ops['plot_source_estimates']:
         plot.plot_source_estimates(name, save_dir,lowpass, highpass,
                                       subtomri, subjects_dir,
-                                      method, mne_evoked_time,
+                                      method, mne_evoked_time, event_id,
                                       save_plots, figures_path)
 
     if exec_ops['plot_vector_source_estimates']:
@@ -625,7 +660,8 @@ for name in subjects:
     if exec_ops['plot_animated_stc']:
         plot.plot_animated_stc(name, save_dir,lowpass, highpass, subtomri,
                                subjects_dir, method, mne_evoked_time,
-                               stc_animation, tmin, tmax, save_plots, figures_path)
+                               stc_animation, tmin, tmax, event_id,
+                               save_plots, figures_path)
 
     if exec_ops['plot_snr']:
         plot.plot_snr(name, save_dir,lowpass, highpass, save_plots, figures_path)
@@ -647,48 +683,13 @@ for name in subjects:
         plot.source_space_connectivity(name, save_dir, lowpass, highpass,
                                        subtomri, subjects_dir, method,
                                        save_plots, figures_path)
-        
-    #==========================================================================
-    # MORPH TO FSAVERAGE
-    #==========================================================================
-
-    if exec_ops['morph_to_fsaverage']:
-        stcs = op.morph_data_to_fsaverage(name, save_dir,lowpass, highpass,
-                                        subjects_dir, subtomri, method,
-                                        overwrite, n_jobs, vertices_to, morph_to)
-
-
-    if exec_ops['morph_to_fsaverage_precomputed']:
-        stcs = op.morph_data_to_fsaverage_precomputed(name, save_dir,lowpass, highpass, subjects_dir,
-                                                              subtomri, method, overwrite, n_jobs, morph_to, vertices_to)
-
-    #==========================================================================
-    # GRAND AVERAGE EVOKEDS (within-subject part)
-    #==========================================================================
-
-    if exec_ops['grand_averages_evokeds']:
-        evoked_data = io.read_evokeds(name, save_dir, lowpass, highpass)
-        for evoked in evoked_data:
-            trial_type = evoked.comment
-            evoked_data_all[trial_type].append(evoked)
-
-    #==========================================================================
-    # GRAND AVERAGE MORPHED DATA (within-subject part)
-    #==========================================================================
-
-    if exec_ops['average_morphed_data'] or \
-        exec_ops['statistics_source_space']:
-        morphed_data = io.read_avg_source_estimates(name, save_dir,lowpass, highpass,
-                                                    method)
-        for trial_type in morphed_data:
-            morphed_data_all[trial_type].append(morphed_data[trial_type])
 
     #==========================================================================
     # General Statistics
     #==========================================================================
     if exec_ops['corr_ntr']:
         op.corr_ntr(name, save_dir, lowpass, highpass, exec_ops,
-                    ermsub, subtomri, save_plots, figures_path)
+                    ermsub, subtomri, ica_evokeds, save_plots, figures_path)
         
     # close all plots
     if exec_ops['close_plots']:
@@ -697,19 +698,23 @@ for name in subjects:
 # GOING OUT OF SUBJECT LOOP
 
 if exec_ops['cmp_label_time_course']:
-    
-    print('Hubi')
+    plot.cmp_label_time_course(data_path, lowpass, highpass, sub_to_mri, comp_dict,
+                               parcellation, target_labels, save_plots, figures_path)
 
 #==============================================================================
 # GRAND AVERAGES (sensor space and source space)
 #==============================================================================
 
-if exec_ops['grand_averages_evokeds']:
-    op.grand_average_evokeds(evoked_data_all, save_dir_averages,
-                                    lowpass, highpass, which_file)
+if exec_ops['grand_avg_evokeds']:
+    op.grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
+                         lowpass, highpass)
 
-if exec_ops['average_morphed_data']:
-    op.average_morphed_data(morphed_data_all, method,
+if exec_ops['grand_avg_tfr']:
+    op.grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
+                     lowpass, highpass, tfr_method)
+
+if exec_ops['grand_avg_morphed']:
+    op.grand_avg_morphed(grand_avg_dict, method,
                                  save_dir_averages,lowpass, highpass, which_file)
 
 #==============================================================================
@@ -717,14 +722,13 @@ if exec_ops['average_morphed_data']:
 #==============================================================================
 
 if exec_ops['plot_grand_averages_evokeds']:
-    plot.plot_grand_average_evokeds(name,lowpass, highpass, save_dir_averages,
-                                    evoked_data_all, event_id_list,
-                                    save_plots, figures_path, which_file)
+    plot.plot_grand_average_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                                    event_id, save_plots, figures_path)
 
 if exec_ops['plot_grand_averages_butterfly_evokeds']:
-    plot.plot_grand_averages_butterfly_evokeds(name,lowpass, highpass, save_dir_averages,
-                                               event_id_list, save_plots, figures_path,
-                                               which_file)
+    plot.plot_grand_averages_butterfly_evokeds(lowpass, highpass, save_dir_averages,
+                                               grand_avg_dict, event_id, save_plots,
+                                               figures_path)
 
 if exec_ops['plot_grand_averages_source_estimates']:
     plot.plot_grand_averages_source_estimates(name, save_dir_averages,lowpass, highpass,

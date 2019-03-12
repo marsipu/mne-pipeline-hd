@@ -34,7 +34,8 @@ sensor_space_operations = dict(filter_raw = 0,
                                run_ica = 0, # HIGPASS-FILTER RECOMMENDED!!!
                                apply_ica = 0,
                                ica_pure = 0,
-                               get_evokeds = 0)
+                               get_evokeds = 0,
+                               tfr = 0)
 
 
 source_space_operations = dict(mri_coreg = 0,
@@ -44,8 +45,7 @@ source_space_operations = dict(mri_coreg = 0,
                                source_estimate = 0,
                                vector_source_estimate = 0,
                                ECD_fit = 0,
-                               morph_to_fsaverage = 0,
-                               morph_to_fsaverage_precomputed = 0) # for slower Computers
+                               apply_morph = 0) # for slower Computers
 
 
 mri_subject_operations = dict(import_mri = 0,
@@ -53,11 +53,13 @@ mri_subject_operations = dict(import_mri = 0,
                               apply_watershed = 0,
                               make_dense_scalp_surfaces = 0, #until here all bash scripts!
                               prepare_bem = 0,
-                              setup_source_space = 0)
+                              setup_source_space = 0,
+                              morph_subject = 0)
 
 
-grand_average_operations = dict(grand_averages_evokeds = 0, # sensor space
-                                average_morphed_data = 0) # source space
+grand_average_operations = dict(grand_avg_evokeds = 0, # sensor space
+                                grand_avg_tfr = 0,
+                                grand_avg_morphed = 0) # source space
 
 
 sensor_space_plots = dict(plot_raw = 0,
@@ -70,8 +72,8 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_power_spectra = 0,
                           plot_power_spectra_epochs = 0,
                           plot_power_spectra_topo = 0,
-                          tf_morlet = 0,
-                          tf_event_dynamics = 0,
+                          plot_tfr = 0,
+                          tfr_event_dynamics = 0,
                           plot_ssp = 0, #
                           plot_ssp_eog = 0, #EOG-Elektrodes have to be digitized and assigned to type 3
                           plot_ssp_ecg = 0, #ECG-Elektrodes have to be digitized and assigned to type 3
