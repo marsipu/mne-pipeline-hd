@@ -37,17 +37,6 @@ sensor_space_operations = dict(filter_raw = 0,
                                get_evokeds = 0,
                                tfr = 0)
 
-
-source_space_operations = dict(mri_coreg = 0,
-                               create_forward_solution = 0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
-                               estimate_noise_covariance = 0,
-                               create_inverse_operator = 0,
-                               source_estimate = 0,
-                               vector_source_estimate = 0,
-                               ECD_fit = 0,
-                               apply_morph = 0) # for slower Computers
-
-
 mri_subject_operations = dict(import_mri = 0,
                               segment_mri = 0, # long process (>10 h)
                               apply_watershed = 0,
@@ -56,10 +45,20 @@ mri_subject_operations = dict(import_mri = 0,
                               setup_source_space = 0,
                               morph_subject = 0)
 
+source_space_operations = dict(mri_coreg = 0,
+                               create_forward_solution = 0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
+                               estimate_noise_covariance = 0,
+                               create_inverse_operator = 0,
+                               source_estimate = 0,
+                               vector_source_estimate = 0,
+                               ECD_fit = 0,
+                               apply_morph = 0,
+                               source_space_connectivity = 0)
 
 grand_average_operations = dict(grand_avg_evokeds = 0, # sensor space
                                 grand_avg_tfr = 0,
-                                grand_avg_morphed = 0) # source space
+                                grand_avg_morphed = 0,
+                                grand_avg_connect = 0) # source space
 
 
 sensor_space_plots = dict(plot_raw = 0,
@@ -102,15 +101,17 @@ source_space_plots = dict(plot_transformation = 0,
                           label_time_course = 0,
                           cmp_label_time_course = 0,
                           tf_label_power_phlck = 0,
-                          source_space_connectivity = 0)
+                          plot_source_space_connectivity = 0)
 
 grand_average_plots = dict(
                     # plotting sensor space (between subjects)
-                    plot_grand_averages_evokeds = 0,
-                    plot_grand_averages_butterfly_evokeds = 0,
+                    plot_grand_avg_evokeds = 0,
+                    plot_grand_avg_tfr = 0,
 
                     # plotting source space (between subjects)
-                    plot_grand_averages_source_estimates = 0,
+                    plot_grand_avg_stc = 0,
+                    plot_grand_avg_stc_anim = 0,
+                    plot_grand_avg_connect = 0,
 
                     # statistics in source space
                     statistics_source_space = 0,
@@ -121,8 +122,8 @@ grand_average_plots = dict(
 all_fs = {'subject_operations':subject_operations,
                  'basic_operations':basic_operations,
                  'sensor_space_operations':sensor_space_operations,
-                 'source_space_operations':source_space_operations,
                  'mri_subject_operations':mri_subject_operations,
+                 'source_space_operations':source_space_operations,
                  'grand_average_operations':grand_average_operations,
                  'sensor_space_plots':sensor_space_plots,
                  'source_space_plots':source_space_plots,

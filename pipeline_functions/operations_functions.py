@@ -29,6 +29,7 @@ from matplotlib import pyplot as plt
 from itertools import combinations
 from functools import reduce
 import random
+import gc
 
 # Naming Conventions
 
@@ -62,14 +63,16 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                 pass
 
     ## also create grand averages path with a statistics folder
-    grand_average_path = join(home_path, project_name, data_path,
-                              'grand_averages/statistics')
-    try:
-        makedirs(grand_average_path)
-        print(grand_average_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
+    ga_folders = ['statistics', 'evoked', 'stc', 'tfr', 'connect']
+    for subfolder in ga_folders:
+        grand_average_path = join(home_path, project_name, data_path,
+                                  'grand_averages', subfolder)
+        try:
+            makedirs(grand_average_path)
+            print(grand_average_path + ' has been created')
+        except OSError as exc:
+            if exc.errno == 17: ## dir already exists
+                pass
 
     ##also create erm(empty_room_measurements)paths
     erm_path = join(home_path, project_name, data_path,
@@ -89,7 +92,11 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
+                         'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
+                         'tf_sensor_space/topo', 'tf_sensor_space/joint',
+                         'tf_sensor_space/oscs','tf_sensor_space/itc',
+                         'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
+                         'epochs_drop_log']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
@@ -104,9 +111,12 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
     # create subfolders for event_ids
     trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
                        'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                       'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
+                       'evoked_field', 'evoked_topomap', 'evoked_image',
                        'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
-                       'stcs', 'vec_stcs','stcs_movie', 'snr']
+                       'stcs', 'vec_stcs','stcs_movie', 'snr',
+                       'tf_sensor_space/plot', 'tf_sensor_space/topo',
+                       'tf_sensor_space/joint', 'tf_sensor_space/oscs',
+                       'tf_sensor_space/itc']
 
     for ev_id in event_id:
         for tr in trialed_folders:
@@ -126,7 +136,11 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
+                         'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
+                         'tf_sensor_space/topo', 'tf_sensor_space/joint',
+                         'tf_sensor_space/oscs','tf_sensor_space/itc',
+                         'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
+                         'epochs_drop_log']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path,
@@ -142,9 +156,12 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
     # create subfolders for event_ids (ERM)
     trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
                        'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                       'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
+                       'evoked_field', 'evoked_topomap', 'evoked_image',
                        'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
-                       'stcs', 'vec_stcs','stcs_movie', 'snr']
+                       'stcs', 'vec_stcs','stcs_movie', 'snr',
+                       'tf_sensor_space/plot', 'tf_sensor_space/topo',
+                       'tf_sensor_space/joint', 'tf_sensor_space/oscs',
+                       'tf_sensor_space/itc']
 
     for ev_id in event_id:
         for tr in trialed_folders:
@@ -160,7 +177,9 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
     ## also create grand average figures path
     grand_averages_figures_path = join(home_path, project_name, figures_path,
                                       'grand_averages')
-    figure_subfolders = ['sensor_space', 'source_space/statistics']
+    figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
+                         'source_space/statistics', 'source_space/stc',
+                         'source_space/connectivity', 'source_space/stc_movie']
     for figure_subfolder in figure_subfolders:
         try:
             full_path = join(grand_averages_figures_path, figure_subfolder)
@@ -197,14 +216,16 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
                 pass
 
     ## also create grand averages path with a statistics folder
-    grand_average_path = join(home_path, project_name, data_path,
-                              'grand_averages/statistics')
-    try:
-        makedirs(grand_average_path)
-        print(grand_average_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
+    ga_folders = ['statistics', 'evoked', 'stc', 'tfr', 'connect']
+    for subfolder in ga_folders:
+        grand_average_path = join(home_path, project_name, data_path,
+                                  'grand_averages', subfolder)
+        try:
+            makedirs(grand_average_path)
+            print(grand_average_path + ' has been created')
+        except OSError as exc:
+            if exc.errno == 17: ## dir already exists
+                pass
 
     ##also create erm(empty_room_measurements)paths
     erm_path = join(home_path, project_name, data_path,
@@ -224,7 +245,11 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
                          'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                          'noise_covariance', 'events', 'label_time_course', 'ECD',
                          'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
+                         'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
+                         'tf_sensor_space/topo', 'tf_sensor_space/joint',
+                         'tf_sensor_space/oscs','tf_sensor_space/itc',
+                         'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
+                         'epochs_drop_log']
 
     for figure_subfolder in figure_subfolders:
         full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
@@ -239,7 +264,9 @@ def populate_data_directory_small(home_path, project_name, data_path, figures_pa
     ## also create grand average figures path
     grand_averages_figures_path = join(home_path, project_name, figures_path,
                                       'grand_averages')
-    figure_subfolders = ['sensor_space', 'source_space/statistics']
+    figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
+                         'source_space/statistics', 'source_space/stc',
+                         'source_space/connectivity', 'source_space/stc_movie']
     for figure_subfolder in figure_subfolders:
         try:
             full_path = join(grand_averages_figures_path, figure_subfolder)
@@ -1279,7 +1306,7 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
                                        interpolate_bads=True,
                                        drop_bads=True)
                 ga.comment = trial
-                ga_path = join(save_dir_averages,
+                ga_path = join(save_dir_averages, 'evoked',
                                           key + '_'  + trial + \
                                           filter_string(lowpass, highpass) + \
                                           '-grand_avg-ave.fif')
@@ -1344,8 +1371,8 @@ def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
         for name in grand_avg_dict[key]:
             save_dir = join(data_path, name)
             print(f'Add {name} to grand_average')
-            powers, itcs = io.read_tfr(name, save_dir, lowpass,
-                                     highpass, tfr_method)
+            powers = io.read_tfr_power(name, save_dir, lowpass,
+                                       highpass, tfr_method)
             for power in powers:
                 if power.nave!=0:
                     if power.comment in trial_dict:
@@ -1358,14 +1385,27 @@ def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
 
         for trial in trial_dict:
             if len(trial_dict[trial])!=0:
+                
+                # Make sure, all have the same number of channels
+                commons = set()
+                for power in trial_dict[trial]:
+                    if len(commons)==0:
+                        for c in power.ch_names:
+                            commons.add(c)
+                    commons = commons & set(power.ch_names)
+                print(f'{trial}:Reducing all n_channels to {len(commons)}')
+                for idx, power in enumerate(trial_dict[trial]):
+                    trial_dict[trial][idx] = power.pick_channels(list(commons))
+                
                 ga = mne.grand_average(trial_dict[trial],
                                        interpolate_bads=True,
                                        drop_bads=True)
-                
-                ga_path = join(save_dir_averages,
+                ga.comment = trial
+                ga_path = join(save_dir_averages, 'tfr',
                                           key + '_'  + trial + \
                                           filter_string(lowpass, highpass) + \
-                                          '-grand_avg-tfr.fif')
+                                          '-grand_avg-tfr.h5')
+                
                 ga.save(ga_path)
 
 #==============================================================================
@@ -1861,48 +1901,156 @@ def apply_morph(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
         else:
             print('morphed source estimates for: '+  stc_morphed_path + \
                   ' already exists')
-"""
+
+@decor.topline
+def source_space_connectivity(name, save_dir, lowpass, highpass,
+                              subtomri, subjects_dir, method,
+                              con_methods, con_fmin, con_fmax,
+                              n_jobs, overwrite):
+
+    info = io.read_info(name, save_dir)
+    epochs = io.read_epochs(name, save_dir, lowpass, highpass)['LBT']
+    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    
+    # Compute inverse solution and for each epoch. By using "return_generator=True"
+    # stcs will be a generator object instead of a list.
+    snr = 1.0  # use lower SNR for single epochs
+    lambda2 = 1.0 / snr ** 2
+    method = "dSPM"  # use dSPM method (could also be MNE or sLORETA)
+    stcs = mne.minimum_norm.apply_inverse_epochs(epochs, inverse_operator, lambda2, method,
+                                pick_ori="normal", return_generator=True)
+    
+    # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
+    labels = mne.read_labels_from_annot(subtomri, parc='aparc',
+                                        subjects_dir=subjects_dir)
+    
+    # Average the source estimates within each label using sign-flips to reduce
+    # signal cancellations, also here we return a generator
+    src = inverse_operator['src']
+    label_ts = mne.extract_label_time_course(stcs, labels, src, mode='mean_flip',
+                                             return_generator=True)
+    
+    sfreq = info['sfreq']  # the sampling frequency
+    con, freqs, times, n_epochs, n_tapers = mne.connectivity.spectral_connectivity(
+        label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
+        fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
+    
+
+    
+    # con is a 3D array, get the connectivity for the first (and only) freq. band
+    # for each con_method
+    con_res = dict()
+    for con_method, c in zip(con_methods, con):
+        con_res[con_method] = c[:, :, 0]    
+
+        # save to .npy file
+        file_name = name + filter_string(lowpass, highpass) + \
+        '_' + str(con_fmin) + '-' + str(con_fmax) + '_' + con_method
+        file_path = join(save_dir, file_name)
+        if overwrite or not isfile(file_path):
+            np.save(file_path, con_res[con_method])
+        else:
+            print('connectivity_measures for for: '+ file_path + \
+                  ' already exists')
 @decor.topline
 def grand_avg_morphed(grand_avg_dict, data_path, method, save_dir_averages,
+                      lowpass, highpass, event_id):
+    # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
+    n_chunks = 8
+    for key in grand_avg_dict:
+        print(f'grand_average for {key}')
+        #divide in chunks to save memory
+        fusion_dict = {}
+        for i in range(0, len(grand_avg_dict[key]), n_chunks):
+            sub_trial_dict = {}
+            ga_chunk = grand_avg_dict[key][i:i+n_chunks]
+            print(ga_chunk)
+            for name in ga_chunk:
+                save_dir = join(data_path, name)
+                print(f'Add {name} to grand_average')
+                stcs = io.read_morphed_source_estimates(name, save_dir, lowpass,
+                                                        highpass, method, event_id)
+                for trial_type in stcs:
+                    if trial_type in sub_trial_dict:
+                        sub_trial_dict[trial_type].append(stcs[trial_type])
+                    else:
+                        sub_trial_dict.update({trial_type:[stcs[trial_type]]})       
+    
+            # Average chunks
+            for trial in sub_trial_dict:
+                if len(sub_trial_dict[trial])!=0:
+                    print(f'grand_average for {trial}-chunk {i}-{i+n_chunks}')
+                    sub_trial_average = sub_trial_dict[trial][0].copy()
+                    n_subjects = len(sub_trial_dict[trial])
+                    
+                    for trial_index in range(1, n_subjects):
+                        sub_trial_average._data += sub_trial_dict[trial][trial_index].data
+                        
+                    sub_trial_average._data /= n_subjects
+                    sub_trial_average.comment = trial
+                    if trial in fusion_dict:
+                        fusion_dict[trial].append(sub_trial_average)
+                    else:
+                        fusion_dict.update({trial:[sub_trial_average]})
+        
+        for trial in fusion_dict:
+            if len(fusion_dict[trial])!=0:
+                print(f'grand_average for {key}-{trial}')
+                trial_average = fusion_dict[trial][0].copy()
+                n_subjects = len(fusion_dict[trial])
+                
+                for trial_index in range(1, n_subjects):
+                    trial_average._data += fusion_dict[trial][trial_index].data
+                    
+                trial_average._data /= n_subjects
+                trial_average.comment = trial
+                ga_path = join(save_dir_averages, 'stc',
+                               key + '_'  + trial + \
+                               filter_string(lowpass, highpass) + \
+                               '-grand_avg')
+                trial_average.save(ga_path)
+        #clear memory
+        gc.collect()
+    
+@decor.topline
+def grand_avg_connect(grand_avg_dict, data_path, con_methods,
+                      con_fmin, con_fmax, save_dir_averages,
                       lowpass, highpass):
     
     for key in grand_avg_dict:
-        trial_dict = {}
+        con_methods_dict = {}
         print(f'grand_average for {key}')
         for name in grand_avg_dict[key]:
             save_dir = join(data_path, name)
             print(f'Add {name} to grand_average')
-            stcs = io.read_morphed_source_estimates(name, save_dir, lowpass,
-                                                    highpass, method, event_id)
-            for trial_type in stcs:
-                if trial_type in trial_dict:
-                    trial_dict[trial_type].append(stcs[trial_type])
-                else:
-                    trial_dict.update({trial_type:[stcs[trial_type]]})       
-    
-        
-        for trial in trial_dict:
-            if len(trial_dict[trial])!=0:
-                
             
-    for trial_type in morphed_data_all:
-        if morphed_data_all[trial_type]!=[]:
-            trial_morphed_data = morphed_data_all[trial_type]
-            trial_average = trial_morphed_data[0].copy()#get copy of first instance
-
-        for trial_index in range(1, n_subjects):
-            trial_average._data += trial_morphed_data[trial_index].data
-
-        trial_average._data /= n_subjects
-        averaged_morphed_data[trial_type] = trial_average
-
-    for trial_type in averaged_morphed_data:
-        stc_path = save_dir_averages  + \
-            trial_type + filter_string(lowpass, highpass) + '_morphed_data_' + method + \
-            '_' + which_file
-        averaged_morphed_data[trial_type].save(stc_path)"""
-
-
+            con_dict = io.read_connect(name, save_dir, lowpass,
+                                       highpass, con_methods,
+                                       con_fmin, con_fmax)
+            
+            for con_method in con_dict:
+                if con_method in con_methods_dict:
+                    con_methods_dict[con_method].append(con_dict[con_method])
+                else:
+                    con_methods_dict.update({con_method:[con_dict[con_method]]})
+        
+        for method in con_methods_dict:
+            if len(con_methods_dict[method])!=0:
+                print(f'grand_average for {key}-{method}')
+                con_list = con_methods_dict[method]
+                n_subjects = len(con_list)
+                average = con_list[0]
+                for idx in range(1, n_subjects):
+                    average += con_list[idx]
+                
+                average /= n_subjects
+                
+                ga_path = join(save_dir_averages, 'connect',
+                               key + '_'  + method + \
+                               filter_string(lowpass, highpass) + \
+                               '-grand_avg_connect')
+                np.save(ga_path, average)
+                
 #==============================================================================
 # STATISTICS
 #==============================================================================
@@ -2000,8 +2148,8 @@ def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
         epochs = io.read_epochs(name, save_dir, lowpass, highpass)
         print('Evokeds from (normal) Epochs')
     # Analysis for each trial_type
-    labels = mne.read_labels_from_annot(subtomri)
-    target_labels = ['postcentral-lh']
+    labels = mne.read_labels_from_annot(subtomri, parc='aparc.a2009s')
+    target_labels = ['S_central-lh']
     ch_labels = []
     
     for label in labels:

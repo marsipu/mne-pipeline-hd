@@ -14,6 +14,7 @@ from __future__ import print_function
 import mne
 from os.path import join
 import pickle
+import numpy as np
 
 def filter_string(lowpass, highpass):
     
@@ -171,28 +172,48 @@ def read_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
     for key in grand_avg_dict:
         trial_dict = {}
         for trial in event_id:
-            ga_path = join(save_dir_averages, key + '_'  + trial + \
+            ga_path = join(save_dir_averages, 'evoked', key + '_'  + trial + \
                            filter_string(lowpass, highpass) + \
                            '-grand_avg-ave.fif')
             evoked = mne.read_evokeds(ga_path)[0]
             trial_dict.update({trial:evoked})
-            print()
         ga_dict.update({key:trial_dict})
+        print(f'Add {key} to ga_dict')
     
     return ga_dict
         
-def read_tfr(name, save_dir, lowpass, highpass, tfr_method):
+def read_tfr_power(name, save_dir, lowpass, highpass, tfr_method):
     
     power_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_pw-tfr.h5'
     power_path = join(save_dir, power_name)
     powers = mne.time_frequency.read_tfrs(power_path)
+        
+    return powers
 
+def read_tfr_itc(name, save_dir, lowpass, highpass, tfr_method):
+    
     itc_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_itc-tfr.h5'
     itc_path = join(save_dir, itc_name)
     itcs = mne.time_frequency.read_tfrs(itc_path)
         
-    return powers, itcs
-    
+    return itcs
+
+def read_grand_avg_tfr(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                       event_id):
+    ga_dict = {}
+    for key in grand_avg_dict:
+        trial_dict = {}
+        for trial in event_id:
+            ga_path = join(save_dir_averages, 'tfr', key + '_'  + trial + \
+                           filter_string(lowpass, highpass) + \
+                           '-grand_avg-tfr.h5')
+            power = mne.time_frequency.read_tfrs(ga_path)[0]
+            trial_dict.update({trial:power})
+        ga_dict.update({key:trial_dict})
+        print(f'Add {key} to ga_dict')
+        
+    return ga_dict
+   
 def read_forward(name, save_dir):
 
     forward_name = name + '-fwd.fif'
@@ -248,7 +269,6 @@ def read_source_estimates(name, save_dir, lowpass, highpass, method,
 
 def read_morphed_source_estimates(name, save_dir, lowpass, highpass, method,
                                   event_id):
-
     stcs = dict()
 
     for trial_type in event_id:
@@ -259,6 +279,51 @@ def read_morphed_source_estimates(name, save_dir, lowpass, highpass, method,
 
     return stcs
 
+def read_connect(name, save_dir, lowpass, highpass, con_methods, con_fmin, con_fmax):
+    con_dict = dict()
+
+    for con_method in con_methods:
+        file_name = name + filter_string(lowpass, highpass) + \
+        '_' + str(con_fmin) + '-' + str(con_fmax) + '_' + con_method + '.npy'
+        file_path = join(save_dir, file_name)
+        
+        con = np.load(file_path)
+        con_dict.update({con_method:con})
+    
+    return con_dict
+
+def read_grand_avg_stcs(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                        event_id):
+    ga_dict = {}
+    for key in grand_avg_dict:
+        trial_dict = {}
+        for trial in event_id:
+            ga_path = join(save_dir_averages, 'stc', key + '_'  + trial + \
+                               filter_string(lowpass, highpass) + \
+                               '-grand_avg')
+            stcs = mne.source_estimate.read_source_estimate(ga_path)
+            trial_dict.update({trial:stcs})
+        ga_dict.update({key:trial_dict})
+        print(f'Add {key} to ga_dict')
+        
+    return ga_dict
+
+def read_grand_avg_connect(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                           con_methods, con_fmin, con_fmax):
+    ga_dict = {}
+    for key in grand_avg_dict:
+        con_methods_dict = {}
+        for con_method in con_methods:
+            ga_path = join(save_dir_averages, 'connect', key + '_'  + con_method + \
+                           filter_string(lowpass, highpass) + \
+                           '-grand_avg_connect.npy')
+            con = np.load(ga_path)
+            con_methods_dict.update({con_method:con})
+        ga_dict.update({key:con_methods_dict})
+        print(f'Add {key} to ga_dict')
+        
+    return ga_dict
+        
 def read_vector_source_estimates(name, save_dir, lowpass, highpass, method):
 
     evokeds = read_evokeds(name, save_dir, lowpass, highpass)

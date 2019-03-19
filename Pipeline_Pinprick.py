@@ -56,10 +56,9 @@ from pipeline_functions import utilities as ut
         #'1-4,7,20-26'
         #'all'
 
-# pp1-pp14 tfr
-which_file = '1-113' # Has to be strings!
+which_file = 'all' # Has to be strings!
 
-which_mri_subject = 'all' # Has to be a string!
+which_mri_subject = '61' # Has to be a string!
 
 which_erm_file = 'all'
 
@@ -84,7 +83,7 @@ overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
 
 # raw
-predefined_bads = [6,7,8,17,26,27,79,103]
+predefined_bads = [6,7,8,26,27,28,79,103,116]
 eog_digitized = True # Set True, if the last 4 digitized points where EOG
 lowpass = 80 # Hz
 highpass = 1 # Hz # at least 1 if to apply ICA
@@ -112,7 +111,7 @@ detrend = False # somehow not working on all data
 
 #Time-Frequency-Analysis
 tfr_freqs = np.arange(5,100,5)
-overwrite_tfr = True
+overwrite_tfr = False
 tfr_method = 'morlet'
 multitaper_bandwith = 4.0
 stockwell_width = 1.0
@@ -132,15 +131,17 @@ source_space_method = 'ico5'
 use_calm_cov = False
 erm_ica = False # Causes sometimes errors
 method = 'dSPM'
-mne_evoked_time = [0.050, 0.100, 0.200] # s
+mne_evoked_time = [0.05, 0.1, 0.15, 0.2] # s
+stc_interactive = False
 stc_animation = [0,0.5] # s
 eeg_fwd = False
 parcellation = 'aparc.a2009s'
+con_methods = ['coh', 'pli', 'wpli2_debiased']
+con_fmin = 30
+con_fmax = 60
 
 # Dipole-fit
 ECDs = {}
-
-
 ECD_min = 0.200
 ECD_max = 0.250
 
@@ -151,14 +152,16 @@ ECD_max = 0.250
                  'S_circular_insula_sup-rh', 'G_Ins_lg&S_cent_ins-rh',
                  'S_circular_insula_inf-rh']}"""
 
-target_labels = {'lh':['G_postcentral-lh', 'S_circular_insula_sup-lh'],
-                 'rh':['G_postcentral-rh', 'S_circular_insula_sup-rh']}
+target_labels = {'lh':['S_central-lh', 'S_postcentral-lh', 'S_circular_insula_sup-lh',
+                       'S_temporal_sup-lh'],
+                 'rh':['S_central-rh', 'S_postcentral-rh', 'S_circular_insula_sup-rh',
+                       'S_temporal_sup-rh']}
 # morph maps
 morph_to='fsaverage'
 
 # grand averages
 # empty containers to the put the single subjects data in
-ga_conditions = ['ER']
+fuse_ab = True
 
 # statistics
 independent_variable_1 = 'standard_3'
@@ -319,7 +322,7 @@ for i in subjects:
     print(i)
 
 # Get the dicts according to naming:
-ab_dict, comp_dict, grand_avg_dict = ut.get_subject_groups(subjects)
+ab_dict, comp_dict, grand_avg_dict = ut.get_subject_groups(subjects, fuse_ab)
 
 morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
@@ -649,7 +652,7 @@ for name in subjects:
         plot.plot_source_estimates(name, save_dir,lowpass, highpass,
                                       subtomri, subjects_dir,
                                       method, mne_evoked_time, event_id,
-                                      save_plots, figures_path)
+                                      stc_interactive, save_plots, figures_path)
 
     if exec_ops['plot_vector_source_estimates']:
         plot.plot_vector_source_estimates(name, save_dir,lowpass, highpass,
@@ -680,9 +683,15 @@ for name in subjects:
                                   parcellation, save_plots, figures_path, n_jobs)
         
     if exec_ops['source_space_connectivity']:
-        plot.source_space_connectivity(name, save_dir, lowpass, highpass,
-                                       subtomri, subjects_dir, method,
-                                       save_plots, figures_path)
+        op.source_space_connectivity(name, save_dir, lowpass, highpass,
+                                     subtomri, subjects_dir, method,
+                                     con_methods, con_fmin, con_fmax,
+                                     n_jobs, overwrite)
+        
+    if exec_ops['plot_source_space_connectivity']:
+        plot.plot_source_space_connectivity(name, save_dir, lowpass, highpass,
+                                   subtomri, subjects_dir, con_methods, con_fmin,
+                                   con_fmax, save_plots, figures_path, n_jobs)
 
     #==========================================================================
     # General Statistics
@@ -714,28 +723,44 @@ if exec_ops['grand_avg_tfr']:
                      lowpass, highpass, tfr_method)
 
 if exec_ops['grand_avg_morphed']:
-    op.grand_avg_morphed(grand_avg_dict, method,
-                                 save_dir_averages,lowpass, highpass, which_file)
+    op.grand_avg_morphed(grand_avg_dict, data_path, method, save_dir_averages,
+                         lowpass, highpass, event_id)
 
+if exec_ops['grand_avg_connect']:
+    op.grand_avg_connect(grand_avg_dict, data_path, con_methods,
+                         con_fmin, con_fmax, save_dir_averages,
+                         lowpass, highpass)
+    
 #==============================================================================
 # GRAND AVERAGES PLOTS (sensor space and source space)
 #==============================================================================
 
-if exec_ops['plot_grand_averages_evokeds']:
-    plot.plot_grand_average_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
+if exec_ops['plot_grand_avg_evokeds']:
+    plot.plot_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
                                     event_id, save_plots, figures_path)
 
-if exec_ops['plot_grand_averages_butterfly_evokeds']:
-    plot.plot_grand_averages_butterfly_evokeds(lowpass, highpass, save_dir_averages,
-                                               grand_avg_dict, event_id, save_plots,
-                                               figures_path)
+if exec_ops['plot_grand_avg_tfr']:
+    plot.plot_grand_avg_tfr(lowpass, highpass, baseline, tmin, tmax,
+                           save_dir_averages, grand_avg_dict,
+                           event_id, save_plots, figures_path)
 
-if exec_ops['plot_grand_averages_source_estimates']:
-    plot.plot_grand_averages_source_estimates(name, save_dir_averages,lowpass, highpass,
-                                              subjects_dir, method,
-                                              mne_evoked_time, event_id_list, save_plots,
-                                              figures_path, which_file)
+if exec_ops['plot_grand_avg_stc']:
+    plot.plot_grand_avg_stc(lowpass, highpass, save_dir_averages,
+                            grand_avg_dict, mne_evoked_time, morph_to,
+                            subjects_dir, event_id, save_plots,
+                            figures_path)
 
+if exec_ops['plot_grand_avg_stc_anim']:
+    plot.plot_grand_avg_stc_anim(lowpass, highpass, save_dir_averages,
+                                 grand_avg_dict, stc_animation, morph_to,
+                                 subjects_dir, event_id, save_plots,
+                                 figures_path)
+
+if exec_ops['plot_grand_avg_connect']:
+    plot.plot_grand_avg_connect(lowpass, highpass, save_dir_averages,
+                                grand_avg_dict, subjects_dir, morph_to, event_id,
+                                con_methods, con_fmin, con_fmax,
+                                save_plots, figures_path)
 #==============================================================================
 # STATISTICS SOURCE SPACE
 #==============================================================================
@@ -756,3 +781,7 @@ if exec_ops['plot_grand_averages_source_estimates_cluster_masked']:
         name, save_dir_averages,lowpass, highpass, subjects_dir, method, time_window,
         save_plots, figures_path, independent_variable_1,
         independent_variable_2, mne_evoked_time, p_threshold)
+
+# close all plots
+if exec_ops['close_plots']:
+    plot.close_all()
