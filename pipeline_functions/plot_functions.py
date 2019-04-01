@@ -12,7 +12,7 @@ martin@stud.uni-heidelberg.de
 from __future__ import print_function
 
 import mne
-from os.path import join, isfile
+from os.path import join
 import matplotlib.pyplot as plt
 from mayavi import mlab
 from . import io_functions as io
@@ -176,11 +176,11 @@ def plot_power_spectra_epochs(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_power_spectra_topo(name, save_dir, lowpass, highpass, save_plots,
-                        figures_path, bad_channels, layout):
+                            figures_path, bad_channels):
 
     epochs = io.read_epochs(name, save_dir, lowpass, highpass)
     for trial_type in epochs.event_id:
-        psd_figure = epochs[trial_type].plot_psd_topomap(layout=layout, n_jobs=-1)
+        psd_figure = epochs[trial_type].plot_psd_topomap(n_jobs=-1)
         plt.title(name + '-' + trial_type)
         
         if save_plots:
@@ -192,89 +192,84 @@ def plot_power_spectra_topo(name, save_dir, lowpass, highpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
-def tf_morlet(name, save_dir, lowpass, highpass, tmin, tmax, baseline,
-              TF_Morlet_Freqs, save_plots, figures_path, n_jobs):
-    
-    power_name = name + filter_string(lowpass, highpass) + '_pw-tfr.h5'
-    power_path = join(save_dir, power_name)
+def plot_tfr(name, save_dir, lowpass, highpass, tmin, tmax, baseline,
+             tfr_method, save_plots, figures_path):
 
-    itc_name = name + filter_string(lowpass, highpass) + '_itc-tfr.h5'
-    itc_path = join(save_dir, itc_name)
-    
-    if isfile(power_path) or isfile(itc_path):
-        power = mne.time_frequency.read_tfrs(power_path)[0]
-        itc = mne.time_frequency.read_tfrs(itc_path)[0]
-        
-        if not np.all(power.freqs == TF_Morlet_Freqs):
-            epochs = io.read_epochs(name, save_dir, lowpass, highpass)
-            n_cycles = TF_Morlet_Freqs / 2.
-            power, itc = mne.time_frequency.tfr_morlet(epochs['LBT'], freqs=TF_Morlet_Freqs,
-                                                       n_cycles=n_cycles, use_fft=True,
-                                                       return_itc=True, n_jobs=n_jobs)
-            power.save(power_path)
-            itc.save(itc_path)           
+    powers = io.read_tfr_power(name, save_dir, lowpass, highpass, tfr_method)
+    itcs = io.read_tfr_itc(name, save_dir, lowpass, highpass, tfr_method)
 
-    else:
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
-        n_cycles = TF_Morlet_Freqs / 2.
-        power, itc = mne.time_frequency.tfr_morlet(epochs['LBT'], freqs=TF_Morlet_Freqs,
-                                                   n_cycles=n_cycles, use_fft=True,
-                                                   return_itc=True, n_jobs=n_jobs)
-        power.save(power_path)
-        itc.save(itc_path)
+    for power in powers:
+        fig1 = power.plot(baseline=baseline, mode='logratio', tmin=tmin,
+                          tmax=tmax, title=f'{name}-{power.comment}')
+        fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=tmin,
+                               tmax=tmax, title=f'{name}-{power.comment}')    
+        fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=tmin,
+                                tmax=tmax, title=f'{name}-{power.comment}')
+    
+        fig4, axis = plt.subplots(1, 5, figsize=(15,2))
+        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=5, fmax=8,
+                           baseline=(-0.5, 0), mode='logratio', axes=axis[0],
+                           title='Theta 5-8 Hz', show=False)
+        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=8, fmax=12,
+                           baseline=(-0.5, 0), mode='logratio', axes=axis[1],
+                           title='Alpha 8-12 Hz', show=False)
+        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=13, fmax=30,
+                           baseline=(-0.5, 0), mode='logratio', axes=axis[2],
+                           title='Beta 13-30 Hz', show=False)
+        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=31, fmax=60,
+                           baseline=(-0.5, 0), mode='logratio', axes=axis[3],
+                           title='Low Gamma 30-60 Hz', show=False)
+        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=61, fmax=100,
+                           baseline=(-0.5, 0), mode='logratio', axes=axis[4],
+                           title='High Gamma 60-100 Hz', show=False)
+        mne.viz.tight_layout()
+        plt.title(f'{name}-{power.comment}')
+        plt.show()
+
+        if save_plots:
+            save_path1 = join(figures_path, 'tf_sensor_space/plot',
+                              power.comment, name + '_tf' + \
+                              filter_string(lowpass, highpass) + \
+                              '-' + power.comment + '.jpg')
+            fig1.savefig(save_path1, dpi=600)
+            print('figure: ' + save_path1 + ' has been saved')
+            save_path2 = join(figures_path, 'tf_sensor_space/topo',
+                              power.comment, name + '_tf_topo' + \
+                              filter_string(lowpass, highpass) + \
+                              '-' + power.comment + '.jpg')
+            fig2.savefig(save_path2, dpi=600)
+            print('figure: ' + save_path2 + ' has been saved')
+            save_path3 = join(figures_path, 'tf_sensor_space/joint',
+                              power.comment, name + '_tf_joint' + \
+                              filter_string(lowpass, highpass) + \
+                              '-' + power.comment + '.jpg')
+            fig3.savefig(save_path3, dpi=600)
+            print('figure: ' + save_path3 + ' has been saved')
+            save_path4 = join(figures_path, 'tf_sensor_space/oscs',
+                              power.comment, name + '_tf_oscs' + \
+                              filter_string(lowpass, highpass) + \
+                              '-' + power.comment + '.jpg')
+            fig4.savefig(save_path4, dpi=600)
+            print('figure: ' + save_path4 + ' has been saved')
+        else:
+            print('Not saving plots; set "save_plots" to "True" to save')
+
+    for itc in itcs:
+        fig5 = itc.plot_topo(title=f'{name}-{itc.comment}-itc',
+                             vmin=0., vmax=1., cmap='Reds')
         
-    fig1 = power.plot(baseline=baseline, mode='logratio', tmin=tmin, tmax=tmax, title=name)
-    fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=tmin, tmax=tmax, title=name)    
-    fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=tmin, tmax=tmax, title=name)
-    fig4 = itc.plot_topo(title=name + '-itc', vmin=0., vmax=1., cmap='Reds')
-    
-    fig5, axis = plt.subplots(1, 5, figsize=(15,2))
-    power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=5, fmax=8,
-                       baseline=(-0.5, 0), mode='logratio', axes=axis[0],
-                       title='Theta 5-8 Hz', show=False)
-    power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=8, fmax=12,
-                       baseline=(-0.5, 0), mode='logratio', axes=axis[1],
-                       title='Alpha 8-12 Hz', show=False)
-    power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=13, fmax=30,
-                       baseline=(-0.5, 0), mode='logratio', axes=axis[2],
-                       title='Beta 13-30 Hz', show=False)
-    power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=31, fmax=60,
-                       baseline=(-0.5, 0), mode='logratio', axes=axis[3],
-                       title='Low Gamma 30-60 Hz', show=False)
-    power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=61, fmax=100,
-                       baseline=(-0.5, 0), mode='logratio', axes=axis[4],
-                       title='High Gamma 60-100 Hz', show=False)
-    mne.viz.tight_layout()
-    plt.title(name
-              )
-    plt.show()
-    
-    if save_plots:
-        save_path1 = join(figures_path, 'tf_sensor_space', name + '_tf' + \
-                             filter_string(lowpass, highpass) + '.jpg')
-        fig1.savefig(save_path1, dpi=600)
-        print('figure: ' + save_path1 + ' has been saved')
-        save_path2 = join(figures_path, 'tf_sensor_space', name + '_tf_topo' + \
-                             filter_string(lowpass, highpass) + '.jpg')
-        fig2.savefig(save_path2, dpi=600)
-        print('figure: ' + save_path2 + ' has been saved')
-        save_path3 = join(figures_path, 'tf_sensor_space', name + '_tf_joint' + \
-                             filter_string(lowpass, highpass) + '.jpg')
-        fig3.savefig(save_path3, dpi=600)
-        print('figure: ' + save_path3 + ' has been saved')
-        save_path4 = join(figures_path, 'tf_sensor_space', name + '_tf_itc' + \
-                             filter_string(lowpass, highpass) + '.jpg')
-        fig4.savefig(save_path4, dpi=600)
-        print('figure: ' + save_path4 + ' has been saved')
-        save_path5 = join(figures_path, 'tf_sensor_space', name + '_tf_oscs' + \
-                             filter_string(lowpass, highpass) + '.jpg')
-        fig5.savefig(save_path5, dpi=600)        
-        print('figure: ' + save_path5 + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
+        if save_plots:
+            save_path5 = join(figures_path, 'tf_sensor_space/itc',
+                              power.comment, name + '_tf_itc' + \
+                              filter_string(lowpass, highpass) + \
+                              '-' + itc.comment + '.jpg')
+            fig5.savefig(save_path5, dpi=600)        
+            print('figure: ' + save_path5 + ' has been saved')
+        else:
+            print('Not saving plots; set "save_plots" to "True" to save')
         
 @decor.topline
-def tf_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
+def tfr_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
                       bad_channels, n_jobs):
     
     iter_freqs = [
@@ -342,7 +337,7 @@ def tf_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
 
 
     if save_plots:
-        save_path = join(figures_path, 'tf_sensor_space', name + '_tf_dynamics' + '.jpg')
+        save_path = join(figures_path, 'tf_sensor_space/dynamics', name + '_tf_dynamics' + '.jpg')
         fig.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
     else:
@@ -350,7 +345,7 @@ def tf_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
         
 @decor.topline
 def plot_ssp(name, save_dir, lowpass, highpass, save_plots,
-                        figures_path, bad_channels, layout, ermsub):
+                        figures_path, bad_channels, ermsub):
 
     if ermsub == 'None':
         print('no empty_room_data found for' + name)
@@ -359,7 +354,7 @@ def plot_ssp(name, save_dir, lowpass, highpass, save_plots,
     else:
         epochs = io.read_ssp_epochs(name, save_dir, lowpass, highpass)
 
-        ssp_figure = epochs.plot_projs_topomap(layout=layout)
+        ssp_figure = epochs.plot_projs_topomap()
 
         if save_plots:
             save_path = join(figures_path, 'ssp', name + '_ssp' + \
@@ -371,7 +366,7 @@ def plot_ssp(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_ssp_eog(name, save_dir, lowpass, highpass, save_plots,
-                        figures_path, bad_channels, layout):
+                        figures_path, bad_channels):
     proj_name = name + '_eog-proj.fif'
     proj_path = join(save_dir, proj_name)
 
@@ -449,12 +444,12 @@ def plot_epochs_image(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_epochs_topo(name, save_dir, lowpass, highpass, save_plots,
-                      figures_path, layout):
+                      figures_path):
 
     epochs = io.read_epochs(name, save_dir, lowpass, highpass)
     for trial_type in epochs.event_id:
 
-        epochs_topo = mne.viz.plot_topo_image_epochs(epochs, title=name, layout=layout)
+        epochs_topo = mne.viz.plot_topo_image_epochs(epochs, title=name)
 
         if save_plots:
             save_path = join(figures_path, 'epochs_topo', trial_type, name + '_epochs_topo' + \
@@ -507,7 +502,6 @@ def plot_evoked_topomap(name, save_dir, lowpass, highpass, save_plots, figures_p
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
     for evoked in evokeds:
         evoked_figure = mne.viz.plot_evoked_topomap(evoked, times='auto',
-                                                    layout=layout,
                                                     title=name +'-' + evoked.comment)
 
         if save_plots:
@@ -549,7 +543,7 @@ def plot_evoked_field(name, save_dir, lowpass, highpass,
 
 @decor.topline
 def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
-                      layout, figures_path, ECDs):
+                      figures_path, ECDs):
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
@@ -562,14 +556,12 @@ def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
                 times.append(i)
         timesarr = np.array(times)
         figure = mne.viz.plot_evoked_joint(evoked, times=timesarr,
-                           title=name + ' - ' + evoked.comment,
-                           topomap_args={'layout':layout})
+                           title=name + ' - ' + evoked.comment)
 
     else:
         for evoked in evokeds:
             figure = mne.viz.plot_evoked_joint(evoked, times='peaks',
-                                               title=name + ' - ' + evoked.comment,
-                                               topomap_args={'layout':layout})
+                                               title=name + ' - ' + evoked.comment)
 
             if save_plots:
                 save_path = join(figures_path, 'evoked_joint', evoked.comment,
@@ -582,7 +574,7 @@ def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, save_plots,
-                                figures_path, time_unit, ermsub, use_calm_cov):
+                           figures_path, time_unit, ermsub, use_calm_cov):
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
@@ -661,7 +653,7 @@ def plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots,
                                surfaces=['head-dense', 'inner_skull', 'brain'],
                                show_axes=True, dig=True)
 
-        mlab.view(45, 90, distance=0.6, focalpoint=(0., 0., 0.))
+        mlab.view(45, 90, distance=0.6, focalpoint=(0., 0., 0.025))
 
         if save_plots:
             save_path = join(figures_path, 'transformation', name + '_trans' + \
@@ -728,28 +720,28 @@ def plot_noise_covariance(name, save_dir, lowpass, highpass, subtomri, save_plot
 
 @decor.topline
 def plot_source_estimates(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
-                          method, mne_evoked_time,
+                          method, mne_evoked_time, event_id, stc_interactive,
                           save_plots, figures_path):
-#changed for only one trial type
-    stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method)
+    stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method,
+                                    event_id)
     for trial_type in stcs:
-        for t in mne_evoked_time:
+        for idx, t in enumerate(mne_evoked_time):
             stc = stcs[trial_type]
-            mlab.figure(figure=name + '_' + trial_type + \
-                        filter_string(lowpass, highpass) + '-' + str(t), size=(1000, 800))
-            mne.viz.plot_source_estimates(stc=stc,subject=subtomri, surface='inflated',
-                                        subjects_dir=subjects_dir, figure=mlab.gcf(),
-                                        time_viewer=False, hemi='both',
-                                        views='med', initial_time=t)
-            mlab.title(name + '_' + trial_type + \
-                       filter_string(lowpass, highpass) + '-' + str(t),
-                       figure = mlab.gcf(), height=0.9)
-
+            if stc_interactive:
+                figures = (mlab.figure(size=(800,800)),mlab.figure(size=(800,800)))
+                brain = stc.plot(subject=subtomri, surface='inflated', subjects_dir=subjects_dir,
+                                 time_viewer=True, hemi='both', views='lat', initial_time=t,
+                                 title=name+'-'+trial_type, figure=figures)
+            else:
+                brain = stc.plot(subject=subtomri, surface='inflated', subjects_dir=subjects_dir,
+                                 time_viewer=False, hemi='split', views='lat', initial_time=t,
+                                 title=name+'-'+trial_type, size=(1600,800))
+            brain.title = name+'-'+trial_type
             if save_plots:
                 save_path = join(figures_path, 'stcs', trial_type,
                                  name + '_' + trial_type + \
-                                 filter_string(lowpass, highpass) + str(t) + 'sec.jpg')
-                mlab.savefig(save_path, figure=mlab.gcf())
+                                 filter_string(lowpass, highpass) + '_' + str(idx) + '.jpg')
+                brain.save_image(save_path)
                 print('figure: ' + save_path + ' has been saved')
 
             else:
@@ -781,54 +773,25 @@ def plot_vector_source_estimates(name, save_dir, lowpass, highpass, subtomri, su
 
 @decor.topline
 def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
-                          method, mne_evoked_time, stc_animation, tmin, tmax,
-                          save_plots, figures_path):
+                      method, mne_evoked_time, stc_animation, tmin, tmax, event_id,
+                      save_plots, figures_path):
 
-    stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method)
+    stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method,
+                                    event_id)
 
     stc = stcs['LBT']
     save_path = join(figures_path, 'stcs_movie', 'LBT', name + '_' + 'LBT' +\
 						      filter_string(lowpass, highpass) + '.mp4')
 
     brain = mne.viz.plot_source_estimates(stc=stc,subject=subtomri, surface='inflated',
-                                subjects_dir=subjects_dir,
-                                hemi='both', views=['lat','med'],
+                                subjects_dir=subjects_dir, size=(1600,800),
+                                hemi='split', views='lat',
                                 title=name + '_' + 'LBT' + '_movie')
 
     print('Saving Video')
-    brain.save_movie(save_path, time_dilation=4,
+    brain.save_movie(save_path, time_dilation=8,
                      tmin=stc_animation[0], tmax=stc_animation[1], framerate=30)
     mlab.close()
-    """
-    @mlab.animate(delay=1000)
-    def anim():
-        while 1:
-            for t in range(0, 10):
-                brain.set_data_time_index(t)
-                yield
-
-
-    anim()
-
-
-    @mlab.animate
-    def anim():
-        for x in brain._iter_time()
-
-    anim()
-    mlab.show()
-
-
-    @mlab.animate
-    def anim():
-        for i in range(stc_animation[0], stc_animation[1]):
-            fig.mlab_source.set_data_time_index(i)
-            yield
-         int((tmax-tmin)*1000)
-    anim()
-    mlab.show()
-    """
-
 
 @decor.topline
 def plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path):
@@ -889,53 +852,132 @@ def label_time_course(name, save_dir, lowpass, highpass, subtomri, target_labels
                                          pick_ori='normal')    
     
     labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
+    
+    # Annotation Parameters
+    bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
+    arrowprops=dict(arrowstyle="->")
+    kw = dict(xycoords='data', arrowprops=arrowprops, bbox=bbox_props)
 
-    for label in labels:
-        if label.name in target_labels:
-            l = label
-            print(l.name)
-
-            stc_label = stc.in_label(l)
-            mean = stc.extract_label_time_course(l, src, mode='mean')
-            mean_flip = stc.extract_label_time_course(l, src, mode='mean_flip')
-            pca = stc.extract_label_time_course(l, src, mode='pca_flip')
-
-            plt.figure()
-            plt.plot(1e3 * stc_label.times, stc_label.data.T, 'k', linewidth=0.5)
-            h0, = plt.plot(1e3 * stc_label.times, mean.T, 'r', linewidth=3)
-            h1, = plt.plot(1e3 * stc_label.times, mean_flip.T, 'g', linewidth=3)
-            h2, = plt.plot(1e3 * stc_label.times, pca.T, 'b', linewidth=3)
-            plt.legend([h0, h1, h2], ['mean', 'mean flip', 'PCA flip'])
-            plt.xlabel('Time (ms)')
-            plt.ylabel('Source amplitude')
-            plt.title(f'Activations in Label :{l}-{evoked.comment}')
-            plt.show()
-
-            if save_plots:
-                save_path = join(figures_path, 'label_time_course', evoked.comment, name + \
-                                     filter_string(lowpass, highpass) + '_' + \
-                                     evoked.comment + '_' + l.name + '.jpg')
-                plt.savefig(save_path, dpi=600)
-                print('figure: ' + save_path + ' has been saved')
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
+    for hemi in target_labels:
+        for l in labels:
+            if l.name in target_labels[hemi]:
+                print(l.name)
+    
+                stc_label = stc.in_label(l)
+                mean = stc.extract_label_time_course(l, src, mode='mean')
+                mean_flip = stc.extract_label_time_course(l, src, mode='mean_flip')
+                pca = stc.extract_label_time_course(l, src, mode='pca_flip')
+                
+                t = 1e3 * stc_label.times
+                tmax = t[np.argmax(pca)]
+                tmin = t[np.argmin(pca)]
+                print(tmin)
+                print(tmax)
+                
+                plt.figure()
+                plt.plot(t, stc_label.data.T, 'k', linewidth=0.5)
+                h0, = plt.plot(t, mean.T, 'r', linewidth=3)
+                h1, = plt.plot(t, mean_flip.T, 'g', linewidth=3)
+                h2, = plt.plot(t, pca.T, 'b', linewidth=3)
+                
+                if -200<tmax<500:
+                    plt.annotate(f'max_lat={int(tmax)}ms',
+                                 xy=(tmax, pca.max()),
+                                 xytext=(tmax+200, pca.max()+2), **kw)
+                if -200<tmin<500:
+                    plt.annotate(f'min_lat={int(tmin)}ms',
+                                 xy=(tmin, pca.min()),
+                                 xytext=(tmin+200, pca.min()-2), **kw)
+                plt.legend([h0, h1, h2], ['mean', 'mean flip', 'PCA flip'])
+                plt.xlabel('Time (ms)')
+                plt.ylabel('Source amplitude')
+                plt.title(f'Activations in Label :{l.name}-{evoked.comment}')
+                plt.show()
+    
+                if save_plots:
+                    save_path = join(figures_path, 'label_time_course', evoked.comment, name + \
+                                         filter_string(lowpass, highpass) + '_' + \
+                                         evoked.comment + '_' + l.name + '.jpg')
+                    plt.savefig(save_path, dpi=600)
+                    print('figure: ' + save_path + ' has been saved')
+                else:
+                    print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
-def cmp_label_time_course(name, save_dir, lowpass, highpass):
+def cmp_label_time_course(data_path, lowpass, highpass, sub_to_mri, comp_dict,
+                          parcellation, target_labels, save_plots, figures_path):
     
     snr = 3.0
     lambda2 = 1.0 / snr ** 2
-    method = "dSPM"    
-
-@decor.topline
-def tf_label_power(name, save_dir, lowpass, highpass, subtomri, parcellation,
-                   save_plots, figures_path, n_jobs):
-    
-    raw = io.read_raw(name, save_dir)
-    events = io.read_events(name, save_dir)
-    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
-    
-
+    method = "dSPM"
+    color_dict = {'low':'g', 'middle':'y', 'high':'r', 't':'b'}
+   
+    # Differentiate a and b
+    for ab_key in comp_dict:
+        
+        subtomri = sub_to_mri[ab_key[:-2]]
+        labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
+        nrows = len(target_labels)
+        ncols = len(target_labels['lh'])
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
+                                 sharex='all', sharey='all',
+                                 gridspec_kw={'hspace':0.1, 'wspace':0.1,
+                                              'left':0.05, 'right':0.95,
+                                              'top':0.95, 'bottom':0.05},
+                                 figsize=(18,8))
+        # Nasty workaround to set label-titles on axes
+        # key in target_labels = row in plot
+        r_cnt = 0
+        for tl in target_labels:
+            c_cnt = 0
+            for t in target_labels[tl]:
+                axes[r_cnt, c_cnt].set_title(t)
+                c_cnt += 1
+            r_cnt += 1
+            
+        # Trials(low,middle,high,t)
+        for trial in comp_dict[ab_key]:
+            
+            name = comp_dict[ab_key][trial]
+            save_dir = join(data_path, name)
+            color = color_dict[trial]
+             
+            evoked = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
+            evoked = evoked.crop(tmax=1)
+            inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+            src = inv_op['src']
+            stc = mne.minimum_norm.apply_inverse(evoked, inv_op, lambda2, method,
+                                                 pick_ori='normal')
+            
+            #choose target labels
+            for hemi in target_labels:
+                for l in labels:
+                    if l.name in target_labels[hemi]:
+                        print(l.name)                        
+                        stc_label = stc.in_label(l)
+                        pca = stc.extract_label_time_course(l, src, mode='pca_flip')
+                        
+                        t = 1e3 * stc_label.times
+                        # Ensure, that plot gets in the axe with the right title
+                        axe = None
+                        for ax in axes.flatten():
+                            if ax.get_title() == l.name:
+                                axe = ax
+                        axe.plot(t, pca.T, color, label=trial)
+                        axe.legend()
+        fig.suptitle(ab_key, size=16, weight=4)
+        fig.text(0.5, 0.01, 'Time [ms]', ha='center')
+        fig.text(0.01, 0.5, 'Source Amplitude', va='center', rotation='vertical')
+        plt.show()
+        
+        if save_plots:
+            save_path = join(figures_path, 'label_time_course', ab_key + \
+                                 filter_string(lowpass, highpass) + 'label-cmp.jpg')
+            plt.savefig(save_path, dpi=600)
+            print('figure: ' + save_path + ' has been saved')
+        else:
+            print('Not saving plots; set "save_plots" to "True" to save')    
+        close_all()
 @decor.topline
 def tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri, parcellation,
                          save_plots, figures_path, n_jobs):
@@ -995,7 +1037,7 @@ def tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri, parcellati
     plt.show()   
 
     if save_plots:
-        save_path = join(figures_path, 'tf_source_space', name + '_label_power' + \
+        save_path = join(figures_path, 'tf_source_space/label_power', name + '_label_power' + \
                          filter_string(lowpass, highpass) + '.jpg')
         plt.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
@@ -1003,56 +1045,28 @@ def tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri, parcellati
         print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
-def source_space_connectivity(name, save_dir, lowpass, highpass, subtomri, subjects_dir, method,
-                              save_plots, figures_path):
+def plot_source_space_connectivity(name, save_dir, lowpass, highpass,
+                                   subtomri, subjects_dir,
+                                   con_methods, con_fmin,
+                                   con_fmax, save_plots, figures_path, n_jobs):
     
-    title = name
-    info = io.read_info(name, save_dir)
-    epochs = io.read_epochs(name, save_dir, lowpass, highpass)['LBT']
-    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
-    
-    # Compute inverse solution and for each epoch. By using "return_generator=True"
-    # stcs will be a generator object instead of a list.
-    snr = 1.0  # use lower SNR for single epochs
-    lambda2 = 1.0 / snr ** 2
-    method = "dSPM"  # use dSPM method (could also be MNE or sLORETA)
-    stcs = mne.minimum_norm.apply_inverse_epochs(epochs, inverse_operator, lambda2, method,
-                                pick_ori="normal", return_generator=True)
-    
+    con_dict = io.read_connect(name, save_dir, lowpass, highpass, con_methods,
+                    con_fmin, con_fmax)
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
     labels = mne.read_labels_from_annot(subtomri, parc='aparc',
                                         subjects_dir=subjects_dir)
     label_colors = [label.color for label in labels]
-    
-    # Average the source estimates within each label using sign-flips to reduce
-    # signal cancellations, also here we return a generator
-    src = inverse_operator['src']
-    label_ts = mne.extract_label_time_course(stcs, labels, src, mode='mean_flip',
-                                             return_generator=True)
-    
-    fmin = 30.
-    fmax = 60.
-    sfreq = info['sfreq']  # the sampling frequency
-    con_methods = ['pli', 'wpli2_debiased']
-    con, freqs, times, n_epochs, n_tapers = mne.connectivity.spectral_connectivity(
-        label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=fmin,
-        fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=1)
-    
-    # con is a 3D array, get the connectivity for the first (and only) freq. band
-    # for each method
-    con_res = dict()
-    for method, c in zip(con_methods, con):
-        con_res[method] = c[:, :, 0]    
+
 
     # First, we reorder the labels based on their location in the left hemi
     label_names = [label.name for label in labels]
     
-    lh_labels = [name for name in label_names if name.endswith('lh')]
+    lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
     
     # Get the y-location of the label
     label_ypos = list()
-    for name in lh_labels:
-        idx = label_names.index(name)
+    for l_name in lh_labels:
+        idx = label_names.index(l_name)
         ypos = np.mean(labels[idx].pos[:, 1])
         label_ypos.append(ypos)
     
@@ -1072,137 +1086,222 @@ def source_space_connectivity(name, save_dir, lowpass, highpass, subtomri, subje
     
     # Plot the graph using node colors from the FreeSurfer parcellation. We only
     # show the 300 strongest connections.
-    fig, axes = mne.viz.plot_connectivity_circle(con_res['pli'], label_names, n_lines=300,
-                                           node_angles=node_angles, node_colors=label_colors,
-                                           title='All-to-All Connectivity')
-    if save_plots:
-        save_path = join(figures_path, 'tf_source_space', title + '_tf_srcsp_connect' + \
-                         filter_string(lowpass, highpass) + '.jpg')
-        fig.savefig(save_path, face_color='black', dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-        
-@decor.topline
-def plot_grand_average_evokeds(name, lowpass, highpass, save_dir_averages,
-                               evoked_data_all, event_id_list,
-                               save_plots, figures_path, which_file):
-
-    grand_averages = []
-    order = ['pinprick', 'WU_First', 'WU_Last']
-
-    for evoked_type in order:
-        if evoked_type in event_id_list:
-            filename = join(save_dir_averages,
-                            evoked_type + filter_string(lowpass, highpass) + \
-                            '_' + which_file + '_grand_average-ave.fif')
-            evoked = mne.read_evokeds(filename)[0]
-            evoked.comment = evoked_type
-            grand_averages.append(evoked)
-
-    # sort evokeds
-    plot_evokeds = []
-
-    for evoked_type in order:
-        if evoked_type in event_id_list:
-            for evoked in grand_averages:
-                if evoked.comment == evoked_type:
-                    plot_evokeds.append(evoked)
-
-    plt.close('all')
-
-    evoked_figure = mne.viz.plot_evoked_topo(plot_evokeds)
-    evoked_figure.comment = 'all_evokeds_'
-
-    figures = [evoked_figure]
-
-    if save_plots:
-        for figure in figures:
-            save_path = join(figures_path, 'grand_averages', 'sensor_space',
-                             figure.comment + '_' + which_file + \
-                             filter_string(lowpass, highpass) + '.jpg')
-            figure.savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-@decor.topline
-def plot_grand_averages_butterfly_evokeds(name, lowpass, highpass, save_dir_averages, event_id_list,
-                                          save_plots, figures_path, which_file):
-
-    grand_averages = []
-    order = ['pinprick', 'WU_First', 'WU_Last']
-
-    for evoked_type in order:
-        if evoked_type in event_id_list:
-            filename = join(save_dir_averages,
-                            evoked_type + filter_string(lowpass, highpass) + \
-                            '_' + which_file + '_grand_average-ave.fif')
-            evoked = mne.read_evokeds(filename)[0]
-            evoked.comment = evoked_type
-            grand_averages.append(evoked)
-
-    for grand_average in grand_averages:
-        figure = grand_average.plot(spatial_colors=True, selectable=True,
-                                    gfp=True, zorder='std', window_title=grand_average.comment)
-
+    for method in con_methods:
+        fig, axes = mne.viz.plot_connectivity_circle(con_dict[method], label_names, n_lines=300,
+                                               node_angles=node_angles, node_colors=label_colors,
+                                               title=method+'_'+str(con_fmin)+'-'+str(con_fmax))
         if save_plots:
-            save_path = join(figures_path, 'grand_averages', 'sensor_space',
-                             'butterfly_' + grand_average.comment + '_' + which_file + \
-                             filter_string(lowpass, highpass) + '.jpg')
-            figure.savefig(save_path, dpi=600)
+            save_path = join(figures_path, 'tf_source_space/connectivity', name + \
+                             filter_string(lowpass, highpass) + \
+                             '_' + str(con_fmin) + '-' + str(con_fmax) + \
+                             '_' + method + '.jpg')
+            fig.savefig(save_path, dpi=600, facecolor='k', edgecolor='k')
             print('figure: ' + save_path + ' has been saved')
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
-
+        
 @decor.topline
-def plot_grand_averages_source_estimates(name, save_dir_averages, lowpass, highpass,
-                          subjects_dir, method, mne_evoked_time, event_id_list,
-                          save_plots, figures_path, which_file):
+def plot_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                               event_id, save_plots, figures_path):
 
-    stcs = dict()
-    order = ['pinprick', 'WU_First', 'WU_Last']
-
-    for stc_type in order:
-        if stc_type in event_id_list:
-            filename = join(save_dir_averages,
-                            stc_type + filter_string(lowpass, highpass) + \
-                            '_morphed_data_' + method + '_' + which_file)
-            stc = mne.read_source_estimate(filename)
-            stc.comment = stc_type
-            stcs[stc_type] = stc
-
-    brains = dict()
-    for trial_type in list(stcs.keys()):
-        brains[trial_type] = None
-
-    mlab.close(None, True)
-
-    for brains_figure_counter, stc in enumerate(stcs):
-        for t in mne_evoked_time:
-            mlab.figure(figure=name + \
-                        filter_string(lowpass, highpass) + '-' + str(t), size=(1000, 800))
-            brains[stc] = stcs[stc].plot(subject='fsaverage',
-                                        subjects_dir=subjects_dir,
-                                        time_viewer=False, hemi='both',
-                                        figure=mlab.gcf(),
-                                        views='med')
-            time = t
-            brains[stc].set_time(time)
-            message = list(stcs.keys())[brains_figure_counter]
-            brains[stc].add_text(0.01, 0.9, message,
-                     str(brains_figure_counter), font_size=14)
-
+    ga_dict = io.read_grand_avg_evokeds(lowpass, highpass, save_dir_averages,
+                                        grand_avg_dict, event_id)
+    
+    for stim_type in ga_dict:
+        for trial in ga_dict[stim_type]:
+            figure = ga_dict[stim_type][trial].plot_joint(title=stim_type + '_' + trial,
+                            ts_args={'ylim':{'grad':[-50,20]}})
             if save_plots:
-                save_path = join(figures_path, 'grand_averages', 'source_space',
-                                 stc + '_' + which_file + '_' + \
-                                 filter_string(lowpass, highpass) + '_' + str(time * 1e3) + \
-                                     '_msec.jpg')
-                brains[stc].save_single_image(save_path)
+                save_path = join(figures_path, 'grand_averages/sensor_space/evoked',
+                                 stim_type + '_' + trial + \
+                                 filter_string(lowpass, highpass) + '.jpg')
+                figure.savefig(save_path, dpi=600)
                 print('figure: ' + save_path + ' has been saved')
-
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
+
+@decor.topline
+def plot_grand_avg_tfr(lowpass, highpass, baseline, tmin, tmax,
+                           save_dir_averages, grand_avg_dict,
+                           event_id, save_plots, figures_path):
+    
+    ga_dict = io.read_grand_avg_tfr(lowpass, highpass, save_dir_averages,
+                                    grand_avg_dict, event_id)
+    
+    for stim_type in ga_dict:
+        for trial in ga_dict[stim_type]:
+            power = ga_dict[stim_type][trial]
+            fig1 = power.plot(baseline=baseline, mode='logratio', tmin=tmin,
+                              tmax=tmax, title=f'{stim_type}-{trial}')
+            fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=tmin,
+                                   tmax=tmax, title=f'{stim_type}-{trial}')    
+            fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=tmin,
+                                    tmax=tmax, title=f'{stim_type}-{trial}')
+        
+            fig4, axis = plt.subplots(1, 5, figsize=(15,2))
+            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=5, fmax=8,
+                               baseline=(-0.5, 0), mode='logratio', axes=axis[0],
+                               title='Theta 5-8 Hz', show=False)
+            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=8, fmax=12,
+                               baseline=(-0.5, 0), mode='logratio', axes=axis[1],
+                               title='Alpha 8-12 Hz', show=False)
+            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=13, fmax=30,
+                               baseline=(-0.5, 0), mode='logratio', axes=axis[2],
+                               title='Beta 13-30 Hz', show=False)
+            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=31, fmax=60,
+                               baseline=(-0.5, 0), mode='logratio', axes=axis[3],
+                               title='Low Gamma 30-60 Hz', show=False)
+            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=61, fmax=100,
+                               baseline=(-0.5, 0), mode='logratio', axes=axis[4],
+                               title='High Gamma 60-100 Hz', show=False)
+            mne.viz.tight_layout()
+            plt.title(f'{stim_type}-{trial}')
+            plt.show()
+    
+            if save_plots:
+                save_path1 = join(figures_path, 'grand_averages/sensor_space/tfr',
+                                  stim_type + '_' + trial + '_tf' + \
+                                  filter_string(lowpass, highpass) + '.jpg')
+                fig1.savefig(save_path1, dpi=600)
+                print('figure: ' + save_path1 + ' has been saved')
+                save_path2 = join(figures_path, 'grand_averages/sensor_space/tfr',
+                                  stim_type + '_' + trial + '_tf_topo' + \
+                                  filter_string(lowpass, highpass) + '.jpg')
+                fig2.savefig(save_path2, dpi=600)
+                print('figure: ' + save_path2 + ' has been saved')
+                save_path3 = join(figures_path, 'grand_averages/sensor_space/tfr',
+                                  stim_type + '_' + trial + '_tf_joint' + \
+                                  filter_string(lowpass, highpass) + '.jpg')
+                fig3.savefig(save_path3, dpi=600)
+                print('figure: ' + save_path3 + ' has been saved')
+                save_path4 = join(figures_path, 'grand_averages/sensor_space/tfr',
+                                  stim_type + '_' + trial + '_tf_oscs' + \
+                                  filter_string(lowpass, highpass) + '.jpg')
+                fig4.savefig(save_path4, dpi=600)
+                print('figure: ' + save_path4 + ' has been saved')
+            else:
+                print('Not saving plots; set "save_plots" to "True" to save')
+            
+            close_all()
+
+@decor.topline
+def plot_grand_avg_stc(lowpass, highpass, save_dir_averages,
+                       grand_avg_dict, mne_evoked_time, morph_to,
+                       subjects_dir, event_id, save_plots,
+                       figures_path):
+    
+    ga_dict = io.read_grand_avg_stcs(lowpass, highpass, save_dir_averages,
+                                     grand_avg_dict, event_id)
+
+    for stim_type in ga_dict:
+        for trial in ga_dict[stim_type]:
+            for idx, t in enumerate(mne_evoked_time):
+                brain = ga_dict[stim_type][trial].plot(subject=morph_to,
+                                subjects_dir=subjects_dir, size=(1600,800),
+                                title=f'{stim_type}-{trial}', hemi='split',
+                                views='lat', initial_time=t)
+                brain.title = stim_type+'-'+trial
+
+                if save_plots:
+                    save_path = join(figures_path, 'grand_averages/source_space/stc',
+                                     stim_type + '_' + trial + \
+                                     filter_string(lowpass, highpass) + \
+                                     '_' + str(idx) + '.jpg')
+                    brain.save_image(save_path)
+                    print('figure: ' + save_path + ' has been saved')
+    
+                else:
+                    print('Not saving plots; set "save_plots" to "True" to save')
+
+@decor.topline
+def plot_grand_avg_stc_anim(lowpass, highpass, save_dir_averages,
+                                grand_avg_dict, stc_animation,
+                                morph_to, subjects_dir, event_id,
+                                save_plots, figures_path):
+    
+    ga_dict = io.read_grand_avg_stcs(lowpass, highpass, save_dir_averages,
+                                     grand_avg_dict, event_id)
+
+    for stim_type in ga_dict:
+        for trial in ga_dict[stim_type]:
+            brain = ga_dict[stim_type][trial].plot(subject=morph_to,
+                            subjects_dir=subjects_dir, size=(1600,800),
+                            title=f'{stim_type}-{trial}', hemi='split',
+                            views='lat')
+            brain.title = stim_type+'-'+trial
+            
+            print('Saving Video')
+            save_path = join(figures_path, 'grand_averages/source_space/stc_movie',
+                             stim_type + '_' + trial + \
+                             filter_string(lowpass, highpass) + '.mp4')
+            brain.save_movie(save_path, time_dilation=30,
+                             tmin=stc_animation[0], tmax=stc_animation[1], framerate=30)
+            mlab.close()
+
+@decor.topline
+def plot_grand_avg_connect(lowpass, highpass, save_dir_averages,
+                           grand_avg_dict, subjects_dir, morph_to, event_id,
+                           con_methods, con_fmin, con_fmax,
+                           save_plots, figures_path):
+    
+    ga_dict = io.read_grand_avg_connect(lowpass, highpass, save_dir_averages,
+                                        grand_avg_dict, con_methods,
+                                        con_fmin, con_fmax)
+
+    # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
+    labels = mne.read_labels_from_annot(morph_to, parc='aparc',
+                                        subjects_dir=subjects_dir)
+    label_colors = [label.color for label in labels]
+    for l in labels:
+        if l.name=='unknown-lh':
+            del labels[labels.index(l)]
+            print('unknown-lh removed')
+            
+
+
+    # First, we reorder the labels based on their location in the left hemi
+    label_names = [label.name for label in labels]
+    
+    lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
+    
+    # Get the y-location of the label
+    label_ypos = list()
+    for l_name in lh_labels:
+        idx = label_names.index(l_name)
+        ypos = np.mean(labels[idx].pos[:, 1])
+        label_ypos.append(ypos)
+    
+    # Reorder the labels based on their location
+    lh_labels = [label for (yp, label) in sorted(zip(label_ypos, lh_labels))]
+    
+    # For the right hemi
+    rh_labels = [label[:-2] + 'rh' for label in lh_labels]
+    
+    # Save the plot order and create a circular layout
+    node_order = list()
+    node_order.extend(lh_labels[::-1])  # reverse the order
+    node_order.extend(rh_labels)
+    
+    node_angles = mne.viz.circular_layout(label_names, node_order, start_pos=90,
+                                          group_boundaries=[0, len(label_names) / 2])
+
+    for stim_type in ga_dict:
+        for method in ga_dict[stim_type]:
+            fig, axes = mne.viz.plot_connectivity_circle(ga_dict[stim_type][method],
+                                                         label_names, n_lines=300,
+                                                         node_angles=node_angles,
+                                                         node_colors=label_colors,
+                                                         title=method+'_'+str(con_fmin)+'-'+str(con_fmax))
+            if save_plots:
+                save_path = join(figures_path, 'grand_averages/source_space/connectivity', stim_type + \
+                                 filter_string(lowpass, highpass) + \
+                                 '_' + str(con_fmin) + '-' + str(con_fmax) + \
+                                 '_' + method + '.jpg')
+                fig.savefig(save_path, dpi=600, facecolor='k', edgecolor='k')
+                print('figure: ' + save_path + ' has been saved')
+            else:
+                print('Not saving plots; set "save_plots" to "True" to save')
+        close_all()
 
 @decor.topline
 def plot_grand_averages_source_estimates_cluster_masked(name,

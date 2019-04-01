@@ -7,7 +7,7 @@ Created on Thu Jan 17 01:00:31 2019
 
 import os
 from os import makedirs
-from os.path import join, isfile, isdir, exists
+from os.path import join, isfile, exists
 import sys
 import autoreject as ar
 import tkinter as t
@@ -227,10 +227,12 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
     
     return file_dict
 
-def get_subject_groups(all_subjects):
+def get_subject_groups(all_subjects, fuse_ab):
     
     subjects = []
     
+    pre_order_dict = {}
+    order_dict = {}
     ab_dict = {}
     comp_dict = {}
     grand_avg_dict = {}
@@ -240,7 +242,37 @@ def get_subject_groups(all_subjects):
         match = re.match(basic_pattern, s)
         if match:
             subjects.append(s)
-                
+    
+    for s in subjects:
+        match = re.match(basic_pattern, s)
+        key = match.group(1) + '_' + match.group(3)
+        if key in pre_order_dict:
+            pre_order_dict[key].append(match.group(2))
+        else:
+            pre_order_dict.update({key:[match.group(2)]})
+    
+    for key in pre_order_dict:
+        v_list = pre_order_dict[key]
+        if 't' in v_list:
+            v_list.remove('t')
+        v_list.sort(key=int)
+        order_dict.update({key:{}})
+        if len(v_list)==1:
+            order_dict[key].update({v_list[0]:'undefined'})
+        if len(v_list)==2:
+            order_dict[key].update({v_list[0]:'low'})
+            order_dict[key].update({v_list[1]:'high'})
+        if len(v_list)==3:
+            order_dict[key].update({v_list[0]:'low'})
+            order_dict[key].update({v_list[1]:'middle'})
+            order_dict[key].update({v_list[2]:'high'})        
+        if len(v_list)==4:
+            order_dict[key].update({v_list[0]:'low'})
+            order_dict[key].update({v_list[1]:'middle'})
+            order_dict[key].update({v_list[2]:'high'})
+            order_dict[key].update({v_list[3]:'high'})
+        order_dict[key].update({'t':'t'})
+            
     for s in subjects:
         match = re.match(basic_pattern, s)        
         key = match.group(1) + '_' + match.group(2)
@@ -252,14 +284,7 @@ def get_subject_groups(all_subjects):
     for s in subjects:
         match = re.match(basic_pattern, s)
         key = match.group(1) + '_' + match.group(3)
-        if match.group(2)=='16' or match.group(2)=='32':
-            sub_key = 'low'    
-        if match.group(2)=='64' or match.group(2)=='128':
-            sub_key = 'middle'
-        if match.group(2)=='256' or match.group(2)=='512':
-            sub_key = 'high'
-        if match.group(2)=='t':
-            sub_key = 't'
+        sub_key = order_dict[key][match.group(2)]
         if key in comp_dict:
             comp_dict[key].update({sub_key:s})
         else:
@@ -267,14 +292,11 @@ def get_subject_groups(all_subjects):
 
     for s in subjects:
         match = re.match(basic_pattern, s)
-        if match.group(2)=='16' or match.group(2)=='32':
-            key = 'low_' + match.group(3)        
-        if match.group(2)=='64' or match.group(2)=='128':
-            key = 'middle_' + match.group(3)
-        if match.group(2)=='256' or match.group(2)=='512':
-            key = 'high_' + match.group(3)
-        if match.group(2)=='t':
-            key = match.group(2) + '_' + match.group(3)
+        if fuse_ab:
+            key = order_dict[match.group(1)+'_'+match.group(3)][match.group(2)]
+        else:
+            key = order_dict[match.group(1)+'_'+match.group(3)][match.group(2)]\
+            + '_' + match.group(3)
         if key in grand_avg_dict:
             grand_avg_dict[key].append(s)
         else:

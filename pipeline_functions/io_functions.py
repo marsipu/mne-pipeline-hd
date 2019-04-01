@@ -14,6 +14,7 @@ from __future__ import print_function
 import mne
 from os.path import join
 import pickle
+import numpy as np
 
 def filter_string(lowpass, highpass):
     
@@ -165,6 +166,54 @@ def read_evokeds(name, save_dir, lowpass, highpass):
 
     return evokeds
 
+def read_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                           event_id):
+    ga_dict = {}
+    for key in grand_avg_dict:
+        trial_dict = {}
+        for trial in event_id:
+            ga_path = join(save_dir_averages, 'evoked', key + '_'  + trial + \
+                           filter_string(lowpass, highpass) + \
+                           '-grand_avg-ave.fif')
+            evoked = mne.read_evokeds(ga_path)[0]
+            trial_dict.update({trial:evoked})
+        ga_dict.update({key:trial_dict})
+        print(f'Add {key} to ga_dict')
+    
+    return ga_dict
+        
+def read_tfr_power(name, save_dir, lowpass, highpass, tfr_method):
+    
+    power_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_pw-tfr.h5'
+    power_path = join(save_dir, power_name)
+    powers = mne.time_frequency.read_tfrs(power_path)
+        
+    return powers
+
+def read_tfr_itc(name, save_dir, lowpass, highpass, tfr_method):
+    
+    itc_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_itc-tfr.h5'
+    itc_path = join(save_dir, itc_name)
+    itcs = mne.time_frequency.read_tfrs(itc_path)
+        
+    return itcs
+
+def read_grand_avg_tfr(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                       event_id):
+    ga_dict = {}
+    for key in grand_avg_dict:
+        trial_dict = {}
+        for trial in event_id:
+            ga_path = join(save_dir_averages, 'tfr', key + '_'  + trial + \
+                           filter_string(lowpass, highpass) + \
+                           '-grand_avg-tfr.h5')
+            power = mne.time_frequency.read_tfrs(ga_path)[0]
+            trial_dict.update({trial:power})
+        ga_dict.update({key:trial_dict})
+        print(f'Add {key} to ga_dict')
+        
+    return ga_dict
+   
 def read_forward(name, save_dir):
 
     forward_name = name + '-fwd.fif'
@@ -206,38 +255,75 @@ def read_inverse_operator(name, save_dir, lowpass, highpass):
     return inverse_operator
 
 
-def read_source_estimates(name, save_dir, lowpass, highpass, method):
-
-    evokeds = read_evokeds(name, save_dir, lowpass, highpass)
+def read_source_estimates(name, save_dir, lowpass, highpass, method,
+                          event_id):
     stcs = dict()
 
-    for evoked in evokeds:
-        trial_type = evoked.comment
-        stcs[trial_type] = None
-        for stc in stcs:
-                stc_name = name + filter_string(lowpass, highpass) + \
-                    '_' + stc + '_' + method
-                stc_path = join(save_dir, stc_name)
-                stcs[stc] = mne.source_estimate.read_source_estimate(stc_path)
+    for trial_type in event_id:
+        stc_name = name + filter_string(lowpass, highpass) + \
+            '_' + trial_type + '_' + method
+        stc_path = join(save_dir, stc_name)
+        stcs.update({trial_type:mne.source_estimate.read_source_estimate(stc_path)})
 
     return stcs
 
-def read_avg_source_estimates(name, save_dir, lowpass, highpass, method):
-
-    evokeds = read_evokeds(name, save_dir, lowpass, highpass)
+def read_morphed_source_estimates(name, save_dir, lowpass, highpass, method,
+                                  event_id):
     stcs = dict()
 
-    for evoked in evokeds:
-        trial_type = evoked.comment
-        stcs[trial_type] = None
-        for stc in stcs:
-                stc_name = name + filter_string(lowpass, highpass) + \
-                    '_' + stc + '_' + method + '_morph'
-                stc_path = join(save_dir, stc_name)
-                stcs[stc] = mne.source_estimate.read_source_estimate(stc_path)
+    for trial_type in event_id:
+        stc_name = name + filter_string(lowpass, highpass) + \
+            '_' + trial_type + '_' + method + '_morphed'
+        stc_path = join(save_dir, stc_name)
+        stcs.update({trial_type:mne.source_estimate.read_source_estimate(stc_path)})
 
     return stcs
 
+def read_connect(name, save_dir, lowpass, highpass, con_methods, con_fmin, con_fmax):
+    con_dict = dict()
+
+    for con_method in con_methods:
+        file_name = name + filter_string(lowpass, highpass) + \
+        '_' + str(con_fmin) + '-' + str(con_fmax) + '_' + con_method + '.npy'
+        file_path = join(save_dir, file_name)
+        
+        con = np.load(file_path)
+        con_dict.update({con_method:con})
+    
+    return con_dict
+
+def read_grand_avg_stcs(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                        event_id):
+    ga_dict = {}
+    for key in grand_avg_dict:
+        trial_dict = {}
+        for trial in event_id:
+            ga_path = join(save_dir_averages, 'stc', key + '_'  + trial + \
+                               filter_string(lowpass, highpass) + \
+                               '-grand_avg')
+            stcs = mne.source_estimate.read_source_estimate(ga_path)
+            trial_dict.update({trial:stcs})
+        ga_dict.update({key:trial_dict})
+        print(f'Add {key} to ga_dict')
+        
+    return ga_dict
+
+def read_grand_avg_connect(lowpass, highpass, save_dir_averages, grand_avg_dict,
+                           con_methods, con_fmin, con_fmax):
+    ga_dict = {}
+    for key in grand_avg_dict:
+        con_methods_dict = {}
+        for con_method in con_methods:
+            ga_path = join(save_dir_averages, 'connect', key + '_'  + con_method + \
+                           filter_string(lowpass, highpass) + \
+                           '-grand_avg_connect.npy')
+            con = np.load(ga_path)
+            con_methods_dict.update({con_method:con})
+        ga_dict.update({key:con_methods_dict})
+        print(f'Add {key} to ga_dict')
+        
+    return ga_dict
+        
 def read_vector_source_estimates(name, save_dir, lowpass, highpass, method):
 
     evokeds = read_evokeds(name, save_dir, lowpass, highpass)
@@ -262,6 +348,17 @@ def read_source_space(subtomri, subjects_dir, source_space_method):
     source_space = mne.source_space.read_source_spaces(source_space_path)
 
     return source_space
+
+def read_morph(mri_subject, morph_to, source_space_method,
+               subjects_dir):
+    
+    morph_name = mri_subject + '--to--' + morph_to + '-' + \
+    source_space_method + '-morph.h5'
+    morph_path = join(subjects_dir, mri_subject, morph_name)
+
+    morph = mne.read_source_morph(morph_path)
+    
+    return morph
 
 def read_transformation(save_dir, subtomri):
 

@@ -33,9 +33,14 @@ sensor_space_operations = dict(filter_raw = 0,
                                apply_ssp_ecg = 0,
                                run_ica = 0, # HIGPASS-FILTER RECOMMENDED!!!
                                apply_ica = 0,
-                               ica_pure = 0,
-                               get_evokeds = 0)
+                               get_evokeds = 0,
+                               tfr = 0)
 
+mri_subject_operations = dict(apply_watershed = 0,
+                              make_dense_scalp_surfaces = 0, #until here all bash scripts!
+                              prepare_bem = 0,
+                              setup_source_space = 0,
+                              morph_subject = 0)
 
 source_space_operations = dict(mri_coreg = 0,
                                create_forward_solution = 0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
@@ -44,20 +49,13 @@ source_space_operations = dict(mri_coreg = 0,
                                source_estimate = 0,
                                vector_source_estimate = 0,
                                ECD_fit = 0,
-                               morph_to_fsaverage = 0,
-                               morph_to_fsaverage_precomputed = 0) # for slower Computers
+                               apply_morph = 0,
+                               source_space_connectivity = 0)
 
-
-mri_subject_operations = dict(import_mri = 0,
-                              segment_mri = 0, # long process (>10 h)
-                              apply_watershed = 0,
-                              make_dense_scalp_surfaces = 0, #until here all bash scripts!
-                              prepare_bem = 0,
-                              setup_source_space = 0)
-
-
-grand_average_operations = dict(grand_averages_evokeds = 0, # sensor space
-                                average_morphed_data = 0) # source space
+grand_average_operations = dict(grand_avg_evokeds = 0, # sensor space
+                                grand_avg_tfr = 0,
+                                grand_avg_morphed = 0,
+                                grand_avg_connect = 0) # source space
 
 
 sensor_space_plots = dict(plot_raw = 0,
@@ -70,8 +68,8 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_power_spectra = 0,
                           plot_power_spectra_epochs = 0,
                           plot_power_spectra_topo = 0,
-                          tf_morlet = 0,
-                          tf_event_dynamics = 0,
+                          plot_tfr = 0,
+                          tfr_event_dynamics = 0,
                           plot_ssp = 0, #
                           plot_ssp_eog = 0, #EOG-Elektrodes have to be digitized and assigned to type 3
                           plot_ssp_ecg = 0, #ECG-Elektrodes have to be digitized and assigned to type 3
@@ -100,15 +98,17 @@ source_space_plots = dict(plot_transformation = 0,
                           label_time_course = 0,
                           cmp_label_time_course = 0,
                           tf_label_power_phlck = 0,
-                          source_space_connectivity = 0)
+                          plot_source_space_connectivity = 0)
 
 grand_average_plots = dict(
                     # plotting sensor space (between subjects)
-                    plot_grand_averages_evokeds = 0,
-                    plot_grand_averages_butterfly_evokeds = 0,
+                    plot_grand_avg_evokeds = 0,
+                    plot_grand_avg_tfr = 0,
 
                     # plotting source space (between subjects)
-                    plot_grand_averages_source_estimates = 0,
+                    plot_grand_avg_stc = 0,
+                    plot_grand_avg_stc_anim = 0,
+                    plot_grand_avg_connect = 0,
 
                     # statistics in source space
                     statistics_source_space = 0,
@@ -119,8 +119,8 @@ grand_average_plots = dict(
 all_fs = {'subject_operations':subject_operations,
                  'basic_operations':basic_operations,
                  'sensor_space_operations':sensor_space_operations,
-                 'source_space_operations':source_space_operations,
                  'mri_subject_operations':mri_subject_operations,
+                 'source_space_operations':source_space_operations,
                  'grand_average_operations':grand_average_operations,
                  'sensor_space_plots':sensor_space_plots,
                  'source_space_plots':source_space_plots,

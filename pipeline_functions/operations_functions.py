@@ -29,6 +29,7 @@ from matplotlib import pyplot as plt
 from itertools import combinations
 from functools import reduce
 import random
+import gc
 
 # Naming Conventions
 
@@ -44,220 +45,82 @@ def filter_string(lowpass, highpass):
 #==============================================================================
 # OPERATING SYSTEM COMMANDS
 #==============================================================================
-@decor.topline
-def populate_data_directory(home_path, project_name, data_path, figures_path,
-                            subjects_dir, subjects, event_id):
+def populate_directories(data_path, figures_path, event_id):
 
-    ## create MEG and MRI paths
-    for name in subjects:
+    ## create grand averages path with a statistics folder
+    ga_folders = ['statistics', 'evoked', 'stc', 'tfr', 'connect']
+    for subfolder in ga_folders:
+        grand_average_path = join(data_path, 'grand_averages', subfolder)
+        if not exists(grand_average_path):
+            makedirs(grand_average_path)
+            print(grand_average_path + ' has been created')
 
-        full_path_MEG = join(home_path, project_name, data_path, name)
-
-        ## create MEG dirs
-        try:
-            makedirs(full_path_MEG)
-            print(full_path_MEG + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create grand averages path with a statistics folder
-    grand_average_path = join(home_path, project_name, data_path,
-                              'grand_averages/statistics')
-    try:
-        makedirs(grand_average_path)
-        print(grand_average_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
-
-    ##also create erm(empty_room_measurements)paths
-    erm_path = join(home_path, project_name, data_path,
-                              'empty_room_data')
-    try:
+    ## create erm(empty_room_measurements)paths
+    erm_path = join(data_path, 'empty_room_data')
+    if not exists(erm_path):
         makedirs(erm_path)
         print(erm_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
 
-    ## also create figures path
-    figure_subfolders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
-                         'power_spectra_raw', 'power_spectra_epochs',
-                         'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
-                         'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
-                         'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
-                         'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
+    ## create figures path
+    folders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
+               'power_spectra_raw', 'power_spectra_epochs',
+               'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
+               'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
+               'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
+               'noise_covariance', 'events', 'label_time_course', 'ECD',
+               'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
+               'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
+               'tf_sensor_space/topo', 'tf_sensor_space/joint',
+               'tf_sensor_space/oscs','tf_sensor_space/itc',
+               'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
+               'epochs_drop_log']
 
-    for figure_subfolder in figure_subfolders:
-        full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
-        ## create figure paths
-        try:
-            makedirs(full_path_figures)
-            print(full_path_figures + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
+    for folder in folders:
+        folder_path = join(figures_path, folder)
+        if not exists(folder_path):
+            makedirs(folder_path)
+            print(folder_path + ' has been created')
+        
+        # create erm_figure
+        erm_folders = join(figures_path, 'ERM_Figures', folder)
+        if not exists(erm_folders):
+            makedirs(erm_folders)
+            print(erm_folders + ' has been created')
 
-    # create subfolders for event_ids
+    # create subfolders for for event_ids
     trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
                        'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                       'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
+                       'evoked_field', 'evoked_topomap', 'evoked_image',
                        'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
-                       'stcs', 'vec_stcs','stcs_movie', 'snr']
+                       'stcs', 'vec_stcs','stcs_movie', 'snr',
+                       'tf_sensor_space/plot', 'tf_sensor_space/topo',
+                       'tf_sensor_space/joint', 'tf_sensor_space/oscs',
+                       'tf_sensor_space/itc']
 
     for ev_id in event_id:
         for tr in trialed_folders:
-            subfolder_path = join(home_path, project_name, figures_path, tr, ev_id)
-            try:
-                makedirs(subfolder_path)
-                print(subfolder_path + ' has been created')
-            except OSError as exc:
-                if exc.errno == 17: ## dir already exists
-                    pass
-
-    ## also create ERM_Figures path
-    figure_subfolders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
-                         'power_spectra_raw', 'power_spectra_epochs',
-                         'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
-                         'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
-                         'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
-                         'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
-
-    for figure_subfolder in figure_subfolders:
-        full_path_figures = join(home_path, project_name, figures_path,
-                                 'ERM_Figures', figure_subfolder)
-        ## create figure paths
-        try:
-            makedirs(full_path_figures)
-            print(full_path_figures + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    # create subfolders for event_ids (ERM)
-    trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
-                       'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                       'evoked_field', 'evoked_topo', 'evoked_topomap', 'evoked_image',
-                       'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
-                       'stcs', 'vec_stcs','stcs_movie', 'snr']
-
-    for ev_id in event_id:
-        for tr in trialed_folders:
-            subfolder_path = join(home_path, project_name, figures_path,
-                                  'ERM_Figures', tr, ev_id)
-            try:
-                makedirs(subfolder_path)
-                print(subfolder_path + ' has been created')
-            except OSError as exc:
-                if exc.errno == 17: ## dir already exists
-                    pass
+            subfolder = join(figures_path, tr, ev_id)
+            if not exists(subfolder):
+                makedirs(subfolder)
+                print(subfolder + ' has been created')
+            
+            # for erm
+            erm_subfolder = join(figures_path, 'ERM_Figures', tr, ev_id)
+            if not exists(erm_subfolder):
+                makedirs(erm_subfolder)
+                print(erm_subfolder + ' has been created')
                 
-    ## also create grand average figures path
-    grand_averages_figures_path = join(home_path, project_name, figures_path,
-                                      'grand_averages')
-    figure_subfolders = ['sensor_space', 'source_space/statistics']
+    ## create grand average figures path
+    grand_averages_figures_path = join(figures_path, 'grand_averages')
+    figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
+                         'source_space/statistics', 'source_space/stc',
+                         'source_space/connectivity', 'source_space/stc_movie']
+    
     for figure_subfolder in figure_subfolders:
-        try:
-            full_path = join(grand_averages_figures_path, figure_subfolder)
-            makedirs(full_path)
-            print(full_path + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create FreeSurfer path
-    freesurfer_path = join(home_path, project_name, subjects_dir)
-    try:
-        makedirs(freesurfer_path)
-        print(freesurfer_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
-
-
-def populate_data_directory_small(home_path, project_name, data_path, figures_path,
-                                  subjects_dir, subjects):
-
-    ## create MEG and MRI paths
-    for name in subjects:
-
-        full_path_MEG = join(home_path, project_name, data_path, name)
-
-        ## create MEG dirs
-        try:
-            makedirs(full_path_MEG)
-            print(full_path_MEG + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create grand averages path with a statistics folder
-    grand_average_path = join(home_path, project_name, data_path,
-                              'grand_averages/statistics')
-    try:
-        makedirs(grand_average_path)
-        print(grand_average_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
-
-    ##also create erm(empty_room_measurements)paths
-    erm_path = join(home_path, project_name, data_path,
-                              'empty_room_data')
-    try:
-        makedirs(erm_path)
-        print(erm_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
-
-    ## also create figures path
-    figure_subfolders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
-                         'power_spectra_raw', 'power_spectra_epochs',
-                         'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
-                         'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
-                         'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
-                         'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space', 'tf_source_space', 'epochs_drop_log']
-
-    for figure_subfolder in figure_subfolders:
-        full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
-        ## create figure paths
-        try:
-            makedirs(full_path_figures)
-            print(full_path_figures + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create grand average figures path
-    grand_averages_figures_path = join(home_path, project_name, figures_path,
-                                      'grand_averages')
-    figure_subfolders = ['sensor_space', 'source_space/statistics']
-    for figure_subfolder in figure_subfolders:
-        try:
-            full_path = join(grand_averages_figures_path, figure_subfolder)
-            makedirs(full_path)
-            print(full_path + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create FreeSurfer path
-    freesurfer_path = join(home_path, project_name, subjects_dir)
-    try:
-        makedirs(freesurfer_path)
-        print(freesurfer_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
-
+        folder_path = join(grand_averages_figures_path, figure_subfolder)
+        if not exists(folder_path):
+            makedirs(folder_path)
+            print(folder_path + ' has been created')
 #==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 #==============================================================================
@@ -277,6 +140,7 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
 
         filter_name = name  + filter_string(lowpass, highpass) + '-raw.fif'
         filter_path = join(save_dir, filter_name)
+        
         raw.save(filter_path, overwrite=True)
 
     else:
@@ -303,7 +167,7 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
             print('ERM-Data filtered and saved')
 
         else:
-            print('erm_raw file: ' + filter_path + ' already exists')
+            print('erm_raw file: ' + erm_filter_path + ' already exists')
 
     else:
         print('no erm_file assigned')
@@ -312,6 +176,146 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
 def find_events(name, save_dir, min_duration,
                 adjust_timeline_by_msec, lowpass, highpass, overwrite,
                 save_plots, figures_path):
+
+    events_name = name + '-eve.fif'
+    events_path = join(save_dir, events_name)
+
+    if overwrite or not isfile(events_path):
+
+        try:
+            raw = io.read_filtered(name, save_dir, lowpass, highpass)
+        except FileNotFoundError:
+            raw = io.read_raw(name, save_dir)
+
+        # By Martin Schulz
+        # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg
+
+        # prepare arrays
+        events = np.ndarray(shape=(0,3), dtype=np.int32)
+        evs = list()
+        evs_tol = list()
+
+
+        # Find events for each stim channel, append sample values to list
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 001'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 002'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 003'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 004'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 005'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 006'])[:,0])
+
+        for i in evs:
+
+            # delete events in each channel, which are too close too each other (1ms)
+            too_close = np.where(np.diff(i)<=1)
+            if np.size(too_close)>=1:
+                print(f'Two close events (1ms) at samples {i[too_close] + raw.first_samp}, first deleted')
+                i = np.delete(i,too_close,0)
+                evs[evs.index(i)] = i
+
+            # add tolerance to each value
+            i_tol = np.ndarray(shape = (0,1), dtype=np.int32)
+            for t in i:
+                i_tol = np.append(i_tol, t-1)
+                i_tol = np.append(i_tol, t)
+                i_tol = np.append(i_tol, t+1)
+
+            evs_tol.append(i_tol)
+
+
+        # Get events from combinated Stim-Channels
+        equals = reduce(np.intersect1d, (evs_tol[0], evs_tol[1], evs_tol[2],
+                                         evs_tol[3], evs_tol[4], evs_tol[5]))
+        #elimnate duplicated events
+        too_close = np.where(np.diff(equals)<=1)
+        if np.size(too_close)>=1:
+            equals = np.delete(equals,too_close,0)
+            equals -= 1 # correction, because of shift with deletion
+
+        for q in equals:
+            if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                events = np.append(events, [[q,0,63]], axis=0)
+
+
+        for a,b,c,d,e in combinations(range(6), 5):
+            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c],
+                                             evs_tol[d], evs_tol[e]))
+            too_close = np.where(np.diff(equals)<=1)
+            if np.size(too_close)>=1:
+                equals = np.delete(equals,too_close,0)
+                equals -= 1
+
+            for q in equals:
+                if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c + 2**d + 2**e)]], axis=0)
+
+
+        for a,b,c,d in combinations(range(6), 4):
+            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c], evs_tol[d]))
+            too_close = np.where(np.diff(equals)<=1)
+            if np.size(too_close)>=1:
+                equals = np.delete(equals,too_close,0)
+                equals -= 1
+
+            for q in equals:
+                if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c + 2**d)]], axis=0)
+
+
+        for a,b,c in combinations(range(6), 3):
+            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c]))
+            too_close = np.where(np.diff(equals)<=1)
+            if np.size(too_close)>=1:
+                equals = np.delete(equals,too_close,0)
+                equals -= 1
+
+            for q in equals:
+                if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c)]], axis=0)
+
+
+        for a,b in combinations(range(6), 2):
+            equals = np.intersect1d(evs_tol[a], evs_tol[b])
+            too_close = np.where(np.diff(equals)<=1)
+            if np.size(too_close)>=1:
+                equals = np.delete(equals,too_close,0)
+                equals -= 1
+
+            for q in equals:
+                if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                    events = np.append(events, [[q,0,int(2**a + 2**b)]], axis=0)
+
+
+        # Get single-channel events
+        for i in range(6):
+            for e in evs[i]:
+                if not e in events[:,0] and not e in events[:,0]+1 and not e in events[:,0]-1:
+                    events = np.append(events, [[e,0,2**i]], axis=0)
+
+        # sort only along samples(column 0)
+        events = events[events[:,0].argsort()]
+
+        # apply latency correction
+        events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10**-3 * \
+                    raw.info['sfreq']) for ts in events[:, 0]]
+
+        ids = np.unique(events[:,2])
+        print('unique ID\'s assigned: ',ids)
+
+
+        if np.size(events)>0:
+            mne.event.write_events(events_path, events)
+        else:
+            print('No events found')
+
+
+    else:
+        print('event file: '+ events_path + ' already exists')
+
+@decor.topline
+def find_events_pp(name, save_dir, min_duration,
+                   adjust_timeline_by_msec, lowpass, highpass, overwrite,
+                   save_plots, figures_path):
 
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
@@ -493,7 +497,7 @@ def find_events(name, save_dir, min_duration,
                 fig.show()
 
                 save_path = join(figures_path, 'events', name + '-ratings.jpg')
-                fig.savefig(save_path, dpi=600)
+                fig.savefig(save_path, dpi=600, overwrite=True)
                 print('figure: ' + save_path + ' has been saved')
                 
                 plt.close(fig)
@@ -1008,7 +1012,7 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
         # components have to be selected manually in the ica_components.py
         else:
             print('No EEG-Channels to read EOG/EEG from')
-
+            ica_dict = {}
             if not isfile(ica_comp_file_path):
                 if not exists(sub_script_path):
                     makedirs(sub_script_path)
@@ -1017,7 +1021,6 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                     ica_f.write(f'{name}:[]\n')
                     print(ica_comp_file_path + ' created')           
             else:
-                ica_dict = {}
                 with open(ica_comp_file_path, 'r') as ica_f:
                     for item in ica_f:
                         if ':' in item:
@@ -1101,6 +1104,9 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                     print('figure: ' + save_path + ' has been saved')                    
                 else:
                     print('Not saving plots; set "save_plots" to "True" to save')               
+    
+        plt.close('all')
+    
     else:
         print('ica file: '+ ica_path + ' already exists')
 
@@ -1126,100 +1132,15 @@ def apply_ica(name, save_dir, lowpass, highpass, data_path,
         print('ica epochs file: '+ ica_epochs_path + ' already exists')
 
 @decor.topline
-def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
-             ecg_channel, layout, reject, flat, bad_channels, autoreject,
-             overwrite_ar):
-
-    ica_name = name + filter_string(lowpass, highpass) + '-pure-ica.fif'
-    ica_path = join(save_dir, ica_name)
-
-    if overwrite or not isfile(ica_path):
-
-        raw = io.read_filtered(name, save_dir, lowpass, highpass)
-        picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
-                               stim=False, exclude=bad_channels)
-
-        ica = mne.preprocessing.ICA(n_components=25, method='fastica')
-
-        if autoreject:
-            reject_value_path = join(save_dir, filter_string(lowpass, highpass) \
-                                     + '_reject_value.py')
-            print('Rejection with Autoreject')
-            if overwrite_ar or not isfile(reject_value_path):
-
-                reject = ar.get_rejection_threshold(raw)
-
-                with open(reject_value_path, 'w') as rv:
-                    for key,value in reject.items():
-                        rv.write(f'{key}:{value}\n')
-
-            else:
-                with open(reject_value_path, 'r') as rv:
-                    reject = {}
-                    for item in rv:
-                        if ':' in item:
-                            key,value = item.split(':', 1)
-                            value = value[:-1]
-                            reject[key] = float(value)
-
-            print('Reading Rejection-Threshold from file')
-
-        ica.fit(raw, picks, reject=reject, flat=flat, reject_by_annotation=True)
-        ica.save(ica_path)
-        print(ica)
-
-
-        ica.plot_components()
-        ica.plot_overlay(raw)
-        ica.plot_properties(raw)
-        ica.plot_sources(raw)
-
-        """
-        eog_epochs = mne.preprocessing.create_eog_epochs(raw, ch_name=eog_channel)
-        ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, ch_name=ecg_channel)
-        eog_average = eog_epochs.average()
-        ecg_average = ecg_epochs.average()
-
-        eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel)
-        ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name=ecg_channel)
-
-
-        ica.plot_scores(ecg_scores, exclude=ecg_indices, title=name)
-        ica.plot_sources(ecg_average, exclude=ecg_indices)
-        ica.plot_properties(ecg_epochs, picks=ecg_indices, topomap_args={'layout':layout})
-        ica.plot_overlay(ecg_average, exclude=ecg_indices, show=False)
-
-        ica.plot_scores(eog_scores, exclude=eog_indices, title=name)
-        ica.plot_sources(eog_average, exclude=eog_indices)
-        ica.plot_properties(eog_epochs, picks=eog_indices, topomap_args={'layout':layout})
-        ica.plot_overlay(eog_average, exclude=eog_indices, show=False)
-
-        ica.plot_sources(raw, title=name)
-
-        try:
-            ica.plot_components(title=name, layout=layout)
-
-        except RuntimeError:
-            print('No EEG-Electrodes(kind=3)digitized')
-            pass
-        """
-    else:
-        print('pure-ica file: '+ ica_path + ' already exists')
-
-@decor.topline
 def get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
-                detrend, overwrite):
+                detrend, ica_evokeds, overwrite):
 
     evokeds_name = name + filter_string(lowpass, highpass) + '-ave.fif'
     evokeds_path = join(save_dir, evokeds_name)
     info = io.read_info(name, save_dir)
 
     if overwrite or not isfile(evokeds_path):
-        if exec_ops['apply_ica'] and exec_ops['apply_ssp_er'] \
-        and 'EEG 001' in info['ch_names']:
-            epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
-            print('Evokeds from ICA-Epochs after applied SSP')
-        elif exec_ops['apply_ica']:
+        if ica_evokeds:
             epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
             print('Evokeds from ICA-Epochs')
         elif exec_ops['apply_ssp_er'] and ermsub!='None':
@@ -1252,25 +1173,139 @@ def get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
         print('evokeds file: '+ evokeds_path + ' already exists')
 
 @decor.topline
-def grand_average_evokeds(evoked_data_all, save_dir_averages, lowpass, highpass, which_file):
+def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
+                      lowpass, highpass):
+    
+    for key in grand_avg_dict:
+        trial_dict = {}
+        print(f'grand_average for {key}')
+        for name in grand_avg_dict[key]:
+            save_dir = join(data_path, name)
+            print(f'Add {name} to grand_average')
+            evokeds = io.read_evokeds(name, save_dir, lowpass,
+                                     highpass)
+            for evoked in evokeds:
+                if evoked.nave!=0:
+                    if evoked.comment in trial_dict:
+                        trial_dict[evoked.comment].append(evoked)
+                    else:
+                        trial_dict.update({evoked.comment:[evoked]})
+                else:
+                    print(f'{evoked.comment} for {name} got nave=0')
+            
 
-    grand_averages = dict()
-    for trial_type in evoked_data_all:
-        if evoked_data_all[trial_type]!=[]:
-            grand_averages[trial_type] = \
-                mne.grand_average(evoked_data_all[trial_type], interpolate_bads=False,
-                                  drop_bads=True)
+        for trial in trial_dict:
+            if len(trial_dict[trial])!=0:
+                ga = mne.grand_average(trial_dict[trial],
+                                       interpolate_bads=True,
+                                       drop_bads=True)
+                ga.comment = trial
+                ga_path = join(save_dir_averages, 'evoked',
+                                          key + '_'  + trial + \
+                                          filter_string(lowpass, highpass) + \
+                                          '-grand_avg-ave.fif')
+                ga.save(ga_path)
 
-    for trial_type in grand_averages:
-        grand_average_path = save_dir_averages + \
-            trial_type +  filter_string(lowpass, highpass) + \
-            '_' + which_file + '_grand_average-ave.fif'
-        mne.evoked.write_evokeds(grand_average_path,
-                                 grand_averages[trial_type])
+@decor.topline
+def tfr(name, save_dir, lowpass, highpass, ica_evokeds, tfr_freqs, overwrite_tfr,
+        tfr_method, multitaper_bandwith, stockwell_width, n_jobs):
+
+    power_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_pw-tfr.h5'
+    power_path = join(save_dir, power_name)
+    itc_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_itc-tfr.h5'
+    itc_path = join(save_dir, itc_name)
+    
+    n_cycles = tfr_freqs / 2.
+    powers = []
+    itcs = []
+    
+    if overwrite_tfr or not isfile(power_path) or not isfile(itc_path):
+        if ica_evokeds:
+            epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+        else:
+            epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+            
+        for trial_type in epochs.event_id:
+            if tfr_method == 'morlet':
+                power, itc = mne.time_frequency.tfr_morlet(epochs[trial_type],
+                                                           freqs=tfr_freqs,
+                                                           n_cycles=n_cycles,
+                                                           n_jobs=n_jobs)
+            elif tfr_method == 'multitaper':
+                power, itc = mne.time_frequency.tfr_multitaper(epochs[trial_type],
+                                                               freqs=tfr_freqs,
+                                                               n_cycles=n_cycles,
+                                                               time_bandwith=multitaper_bandwith,
+                                                               n_jobs=n_jobs)
+            elif tfr_method == 'stockwell':
+                fmin, fmax = tfr_freqs[[0,-1]]
+                power, itc = mne.time_frequency.tfr_stockwell(epochs[trial_type],
+                                                              fmin=fmin, fmax=fmax,
+                                                              width=stockwell_width,
+                                                              n_jobs=n_jobs)
+            else:
+                print('No appropriate tfr_method defined in pipeline')
+                
+            power.comment = trial_type
+            itc.comment = trial_type
+            
+            powers.append(power)
+            itcs.append(itc)
+        
+        mne.time_frequency.write_tfrs(power_path, powers, overwrite=True)
+        mne.time_frequency.write_tfrs(itc_path, itcs, overwrite=True)
+
+@decor.topline
+def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
+                  lowpass, highpass, tfr_method):
+    
+    for key in grand_avg_dict:
+        trial_dict = {}
+        print(f'grand_average for {key}')
+        for name in grand_avg_dict[key]:
+            save_dir = join(data_path, name)
+            print(f'Add {name} to grand_average')
+            powers = io.read_tfr_power(name, save_dir, lowpass,
+                                       highpass, tfr_method)
+            for power in powers:
+                if power.nave!=0:
+                    if power.comment in trial_dict:
+                        trial_dict[power.comment].append(power)
+                    else:
+                        trial_dict.update({power.comment:[power]})
+                else:
+                    print(f'{power.comment} for {name} got nave=0')
+            
+
+        for trial in trial_dict:
+            if len(trial_dict[trial])!=0:
+                
+                # Make sure, all have the same number of channels
+                commons = set()
+                for power in trial_dict[trial]:
+                    if len(commons)==0:
+                        for c in power.ch_names:
+                            commons.add(c)
+                    commons = commons & set(power.ch_names)
+                print(f'{trial}:Reducing all n_channels to {len(commons)}')
+                for idx, power in enumerate(trial_dict[trial]):
+                    trial_dict[trial][idx] = power.pick_channels(list(commons))
+                
+                ga = mne.grand_average(trial_dict[trial],
+                                       interpolate_bads=True,
+                                       drop_bads=True)
+                ga.comment = trial
+                ga_path = join(save_dir_averages, 'tfr',
+                                          key + '_'  + trial + \
+                                          filter_string(lowpass, highpass) + \
+                                          '-grand_avg-tfr.h5')
+                
+                ga.save(ga_path)
 
 #==============================================================================
 # BASH OPERATIONS
 #==============================================================================
+## These functions do not work on Windows
 
 ## local function used in the bash commands below
 def run_process_and_write_output(command, subjects_dir):
@@ -1281,16 +1316,6 @@ def run_process_and_write_output(command, subjects_dir):
     ## write bash output in python console
     for c in iter(lambda: process.stdout.read(1), b''):
         sys.stdout.write(c.decode('utf-8'))
-
-def win_run_process_and_write_output(command, subjects_dir):
-# possible in shell to run bash -c or wsl, but calling freesurfer-functions is not possible
-    win_command = 'wsl&ls'
-    environment = environ.copy()
-    environment["SUBJECTS_DIR"] = subjects_dir
-    process = subprocess.run(win_command,stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,shell=True,env=environment)
-    ## write bash output in python console
-    print(process.stdout.decode('utf_8'))
 
 def import_mri(dicom_path, mri_subject, subjects_dir, n_jobs_freesurfer):
     files = listdir(dicom_path)
@@ -1417,14 +1442,43 @@ def prepare_bem(mri_subject, subjects_dir, overwrite):
     solution = mne.make_bem_solution(model)
     mne.write_bem_solution(solution_path, solution)
     print(solution_path + ' written')
+
+@decor.topline
+def morph_subject(mri_subject, subjects_dir, morph_to, source_space_method,
+                  overwrite):
+    
+    morph_name = mri_subject + '--to--' + morph_to + '-' + source_space_method
+    morph_path = join(subjects_dir, mri_subject, morph_name)
+    
+    src = io.read_source_space(mri_subject, subjects_dir, source_space_method)
+    
+    morph = mne.compute_source_morph(src, subject_from=mri_subject,
+                                     subject_to=morph_to, subjects_dir=subjects_dir)
+    
+    if overwrite or not isfile(morph_path):
+        morph.save(morph_path, overwrite=True)
+        print(f'{morph_path} written')
     
 @decor.topline
-def mri_coreg(name, save_dir, subtomri, subjects_dir):
+def mri_coreg(name, save_dir, subtomri, subjects_dir, eog_digitized):
 
     raw_name = name + '-raw.fif'
     raw_path = join(save_dir, raw_name)
     #trans-file pre-reading makes an error window
-
+    
+    if eog_digitized:
+        raw = io.read_raw(name, save_dir)
+        digi = raw.info['dig']
+        if len(digi)==111:
+            if digi[-1]['kind']!=3:
+                for i in digi[-4:]:
+                    i['kind'] = 3
+                raw.info['dig'] = digi
+                raw.save(raw_path, overwrite=True)
+                print('Set EOG-Digitization-Points to kind 3 and saved')
+            else:
+                print('EOG-Digitization-Points already set to kind 3')
+                
     mne.gui.coregistration(subject=subtomri, inst=raw_path,
                            subjects_dir=subjects_dir, guess_mri_subject=False)
 
@@ -1452,7 +1506,7 @@ def create_forward_solution(name, save_dir, subtomri, subjects_dir,
 
 @decor.topline
 def estimate_noise_covariance(name, save_dir, lowpass, highpass, overwrite, ermsub, data_path,
-                              bad_channels, n_jobs, use_calm_cov, erm_ica):
+                              bad_channels, n_jobs, use_calm_cov, ica_evokeds, erm_ica):
 
     if use_calm_cov==True:
 
@@ -1481,7 +1535,10 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass, overwrite, erms
 
         if overwrite or not isfile(covariance_path):
 
-            epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+            if ica_evokeds:
+                epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+            else:
+                epochs = io.read_epochs(name, save_dir, lowpass, highpass)
 
             noise_covariance = mne.compute_covariance(epochs, n_jobs=n_jobs)
 
@@ -1709,91 +1766,176 @@ def ECD_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
         pass
 
 @decor.topline
-def morph_data_to_fsaverage(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
-                            method, overwrite, n_jobs, vertices_to, morph_to):
+def apply_morph(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
+                method, overwrite, n_jobs, morph_to, source_space_method,
+                event_id):
 
-    stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method)
-
-    subject_from = subtomri
-    subject_to = morph_to
-    stcs_morph = dict()
-
-    for trial_type in stcs:
-        stc_morph_name = name + filter_string(lowpass, highpass) + '_' + \
-        trial_type +  '_' + method + '_morph'
-        stc_morph_path = join(save_dir, stc_morph_name)
-
-        if overwrite or not isfile(stc_morph_path + '-lh.stc'):
-            stc_from = stcs[trial_type]
-            stcs_morph[trial_type] = mne.morph_data(subject_from, subject_to,
-                                                    stc_from, grade=vertices_to,
-                                                    subjects_dir=subjects_dir,
-                                                    n_jobs=n_jobs)
-        else:
-            print('morphed source estimates for: '+  stc_morph_path + \
-                  ' already exists')
-
-    for trial_type in stcs_morph:
-        stc_morph_name = name + filter_string(lowpass, highpass) + '_' + \
-        trial_type +  '_' + method + '_morph'
-        stc_morph_path = join(save_dir, stc_morph_name)
-        if overwrite or not isfile(stc_morph_path + '-lh.stc'):
-            stcs_morph[trial_type].save(stc_morph_path)
-
-@decor.topline
-def morph_data_to_fsaverage_precomputed(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
-                            method, overwrite, n_jobs, morph_to, vertices_to):
-
-    stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method)
-    subject_from = subtomri
-    subject_to = morph_to
+    stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method,
+                                    event_id)
+    morph = io.read_morph(subtomri, morph_to, source_space_method, subjects_dir)
 
     for trial_type in stcs:
-        stc_morph_name = name + filter_string(lowpass, highpass) + '_' + \
-        trial_type +  '_' + method + '_morph'
-        stc_morph_path = join(save_dir, stc_morph_name)
+        stc_morphed_name = name + filter_string(lowpass, highpass) + '_' + \
+        trial_type +  '_' + method + '_morphed'
+        stc_morphed_path = join(save_dir, stc_morphed_name)
 
-        stc_from = stcs[trial_type]
-
-        morph_mat = mne.compute_morph_matrix(subject_from=subject_from, subject_to=subject_to,
-                                            vertices_from=stc_from.vertices, vertices_to=vertices_to,
-                                            subjects_dir=subjects_dir, warn=True)
-
-
-        if overwrite or not isfile(stc_morph_path + '-lh.stc'):
-            stcs_morph = mne.morph_data_precomputed(subject_from, subject_to,
-                                                    stc_from, vertices_to, morph_mat)
-            stcs_morph.save(stc_morph_path)
-
+        if overwrite or not isfile(stc_morphed_path + '-lh.stc'):
+            stc_morphed = morph.apply(stcs[trial_type])
+            stc_morphed.save(stc_morphed_path)
+            
         else:
-            print('morphed source estimates for: '+  stc_morph_path + \
+            print('morphed source estimates for: '+  stc_morphed_path + \
                   ' already exists')
 
 @decor.topline
-def average_morphed_data(morphed_data_all, method, save_dir_averages, lowpass, highpass,
-                         which_file):
+def source_space_connectivity(name, save_dir, lowpass, highpass,
+                              subtomri, subjects_dir, method,
+                              con_methods, con_fmin, con_fmax,
+                              n_jobs, overwrite):
 
-    averaged_morphed_data = dict()
+    info = io.read_info(name, save_dir)
+    epochs = io.read_epochs(name, save_dir, lowpass, highpass)['LBT']
+    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    
+    # Compute inverse solution and for each epoch. By using "return_generator=True"
+    # stcs will be a generator object instead of a list.
+    snr = 1.0  # use lower SNR for single epochs
+    lambda2 = 1.0 / snr ** 2
+    method = "dSPM"  # use dSPM method (could also be MNE or sLORETA)
+    stcs = mne.minimum_norm.apply_inverse_epochs(epochs, inverse_operator, lambda2, method,
+                                pick_ori="normal", return_generator=True)
+    
+    # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
+    labels = mne.read_labels_from_annot(subtomri, parc='aparc',
+                                        subjects_dir=subjects_dir)
+    
+    # Average the source estimates within each label using sign-flips to reduce
+    # signal cancellations, also here we return a generator
+    src = inverse_operator['src']
+    label_ts = mne.extract_label_time_course(stcs, labels, src, mode='mean_flip',
+                                             return_generator=True)
+    
+    sfreq = info['sfreq']  # the sampling frequency
+    con, freqs, times, n_epochs, n_tapers = mne.connectivity.spectral_connectivity(
+        label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
+        fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
+    
 
-    n_subjects = len(morphed_data_all['pinprick'])
-    for trial_type in morphed_data_all:
-        if morphed_data_all[trial_type]!=[]:
-            trial_morphed_data = morphed_data_all[trial_type]
-            trial_average = trial_morphed_data[0].copy()#get copy of first instance
+    
+    # con is a 3D array, get the connectivity for the first (and only) freq. band
+    # for each con_method
+    con_res = dict()
+    for con_method, c in zip(con_methods, con):
+        con_res[con_method] = c[:, :, 0]    
 
-        for trial_index in range(1, n_subjects):
-            trial_average._data += trial_morphed_data[trial_index].data
-
-        trial_average._data /= n_subjects
-        averaged_morphed_data[trial_type] = trial_average
-
-    for trial_type in averaged_morphed_data:
-        stc_path = save_dir_averages  + \
-            trial_type + filter_string(lowpass, highpass) + '_morphed_data_' + method + \
-            '_' + which_file
-        averaged_morphed_data[trial_type].save(stc_path)
-
-
+        # save to .npy file
+        file_name = name + filter_string(lowpass, highpass) + \
+        '_' + str(con_fmin) + '-' + str(con_fmax) + '_' + con_method
+        file_path = join(save_dir, file_name)
+        if overwrite or not isfile(file_path):
+            np.save(file_path, con_res[con_method])
+        else:
+            print('connectivity_measures for for: '+ file_path + \
+                  ' already exists')
+@decor.topline
+def grand_avg_morphed(grand_avg_dict, data_path, method, save_dir_averages,
+                      lowpass, highpass, event_id):
+    # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
+    n_chunks = 8
+    for key in grand_avg_dict:
+        print(f'grand_average for {key}')
+        #divide in chunks to save memory
+        fusion_dict = {}
+        for i in range(0, len(grand_avg_dict[key]), n_chunks):
+            sub_trial_dict = {}
+            ga_chunk = grand_avg_dict[key][i:i+n_chunks]
+            print(ga_chunk)
+            for name in ga_chunk:
+                save_dir = join(data_path, name)
+                print(f'Add {name} to grand_average')
+                stcs = io.read_morphed_source_estimates(name, save_dir, lowpass,
+                                                        highpass, method, event_id)
+                for trial_type in stcs:
+                    if trial_type in sub_trial_dict:
+                        sub_trial_dict[trial_type].append(stcs[trial_type])
+                    else:
+                        sub_trial_dict.update({trial_type:[stcs[trial_type]]})       
+    
+            # Average chunks
+            for trial in sub_trial_dict:
+                if len(sub_trial_dict[trial])!=0:
+                    print(f'grand_average for {trial}-chunk {i}-{i+n_chunks}')
+                    sub_trial_average = sub_trial_dict[trial][0].copy()
+                    n_subjects = len(sub_trial_dict[trial])
+                    
+                    for trial_index in range(1, n_subjects):
+                        sub_trial_average._data += sub_trial_dict[trial][trial_index].data
+                        
+                    sub_trial_average._data /= n_subjects
+                    sub_trial_average.comment = trial
+                    if trial in fusion_dict:
+                        fusion_dict[trial].append(sub_trial_average)
+                    else:
+                        fusion_dict.update({trial:[sub_trial_average]})
+        
+        for trial in fusion_dict:
+            if len(fusion_dict[trial])!=0:
+                print(f'grand_average for {key}-{trial}')
+                trial_average = fusion_dict[trial][0].copy()
+                n_subjects = len(fusion_dict[trial])
+                
+                for trial_index in range(1, n_subjects):
+                    trial_average._data += fusion_dict[trial][trial_index].data
+                    
+                trial_average._data /= n_subjects
+                trial_average.comment = trial
+                ga_path = join(save_dir_averages, 'stc',
+                               key + '_'  + trial + \
+                               filter_string(lowpass, highpass) + \
+                               '-grand_avg')
+                trial_average.save(ga_path)
+        #clear memory
+        gc.collect()
+    
+@decor.topline
+def grand_avg_connect(grand_avg_dict, data_path, con_methods,
+                      con_fmin, con_fmax, save_dir_averages,
+                      lowpass, highpass):
+    
+    for key in grand_avg_dict:
+        con_methods_dict = {}
+        print(f'grand_average for {key}')
+        for name in grand_avg_dict[key]:
+            save_dir = join(data_path, name)
+            print(f'Add {name} to grand_average')
+            
+            con_dict = io.read_connect(name, save_dir, lowpass,
+                                       highpass, con_methods,
+                                       con_fmin, con_fmax)
+            
+            for con_method in con_dict:
+                if con_method in con_methods_dict:
+                    con_methods_dict[con_method].append(con_dict[con_method])
+                else:
+                    con_methods_dict.update({con_method:[con_dict[con_method]]})
+        
+        for method in con_methods_dict:
+            if len(con_methods_dict[method])!=0:
+                print(f'grand_average for {key}-{method}')
+                con_list = con_methods_dict[method]
+                n_subjects = len(con_list)
+                average = con_list[0]
+                for idx in range(1, n_subjects):
+                    average += con_list[idx]
+                
+                average /= n_subjects
+                
+                ga_path = join(save_dir_averages, 'connect',
+                               key + '_'  + method + \
+                               filter_string(lowpass, highpass) + \
+                               '-grand_avg_connect')
+                np.save(ga_path, average)
+                
 #==============================================================================
 # STATISTICS
 #==============================================================================
@@ -1860,25 +2002,15 @@ def statistics_source_space(morphed_data_all, save_dir_averages,
         print('cluster permutation: '+ cluster_path + \
               ' already exists')
 
-
-
-"""
-How to really make a correlation analysis:
-Separate your trials in odd and even. Then calculate the correlation between odd and even
-for ascending number of trials"""
 @decor.topline
 def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
-             subtomri, save_plots, figures_path):
+             subtomri, ica_evokeds, save_plots, figures_path):
 
     info = io.read_info(name, save_dir)
 
-    if exec_ops['apply_ica'] and exec_ops['apply_ssp_er'] \
-    and 'EEG 001' in info['ch_names']:
+    if ica_evokeds:
         epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
         print('Evokeds from ICA-Epochs after applied SSP')
-    elif exec_ops['apply_ica'] and 'EEG 001' in info['ch_names']:
-        epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
-        print('Evokeds from ICA-Epochs')
     elif exec_ops['apply_ssp_er'] and ermsub!='None':
         epochs = io.read_ssp_epochs(name, save_dir, lowpass, highpass)
         print('Evokeds from SSP_ER-Epochs')
@@ -1895,8 +2027,8 @@ def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
         epochs = io.read_epochs(name, save_dir, lowpass, highpass)
         print('Evokeds from (normal) Epochs')
     # Analysis for each trial_type
-    labels = mne.read_labels_from_annot(subtomri)
-    target_labels = ['postcentral-lh']
+    labels = mne.read_labels_from_annot(subtomri, parc='aparc.a2009s')
+    target_labels = ['S_central-lh']
     ch_labels = []
     
     for label in labels:
