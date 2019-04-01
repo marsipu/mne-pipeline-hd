@@ -1,17 +1,39 @@
 # -*- coding: utf-8 -*-
 """
 Pipeline for group analysis of MEG data
-Adapted from Lau Møller Andersen
+@author: Lau Møller Andersen
+@email: lau.moller.andersen@ki.se | lau.andersen@cnru.dk
+@github: https://github.com/ualsbombe/omission_frontiers.git
+
+Adapted to Sektion Biomagnetismus Kopfklinik
 @author: Martin Schulz
 @email: martin.schulz@stud.uni-heidelberg.de
 @github: marsipu/mne_pipeline_hd
+
+Functions to implement:
+- plot compare evokeds
+- Sensitivity Analysys
+- bad epochs handling?
+- Baseline SSP?
+- Group analasys with condition-list(picking file and trial_type)
+- Condition tags for subject/Grand Average Customizing
+    - Comparative Plots
+- Source Estimate with MRI-Slides?
+- Parameters in File und auf Cond/File angepasst (save params?)
+- beamformer
+- Group analysis for a/b
+- implement Phase-Amplitude-Coupling with pactools
+- Make Paradimg-compare-plots (4plots in 1figure)
+- Improve morphe with average brain from subjects?
+- Subject chooser
+- improve run_i-ca readability
 """
-#%%============================================================================
-# IMPORTS
+
 #==============================================================================
+# IMPORTS
+#%%============================================================================
 import sys
-from os import makedirs
-from os.path import join, isfile, exists
+from os.path import join
 import re
 import numpy as np
 import mne
@@ -21,48 +43,53 @@ from pipeline_functions import operations_functions as op
 from pipeline_functions import plot_functions as plot
 from pipeline_functions import subject_organisation as suborg
 from pipeline_functions import utilities as ut
-#%%============================================================================
-# WHICH SUBJECT? (TO SET)
 #==============================================================================
-# Which File do you want to run?
-# Type in the line of the filename in your sub_list.py
-    # Examples:
-    # '5' (One File)
-    # '1,7,28' (Several Files)
-    # '1-5' (From File x to File y)
-    # '1-4,7,20-26' (The last two combined)
-    # '1-20,!4-6' (1-20 except 4-6)
-    # 'all' (All files in sub_list.py)
-    # 'all,!4-6' (All files except 4-6)
+# WHICH SUBJECT?
+#%%============================================================================
 
-which_file = '100' # Has to be a string/enclosed in apostrophs
-which_mri_subject = '61' # Has to be a string/enclosed in apostrophs
-which_erm_file = 'all' # Has to be a string/enclosed in apostrophs
-which_motor_erm_file = 'all' # Has to be a string/enclosed in apostrophs
-#%%============================================================================
-# PARAMETERS (TO SET)
+# Which File do you want to run?
+# Type in the Number of the File in your sub_list.py = Line
+    #possible input(examples):
+        #'5'
+        #'1,7,28'
+        #'1-5'
+        #'1-4,7,20-26'
+        #'all'
+
+which_file = '2-8' # Has to be strings!
+
+which_mri_subject = '61' # Has to be a string!
+
+which_erm_file = 'all'
+
+which_motor_erm_file = 'all'
+
 #==============================================================================
+# INITIALIZATION GUIS
+#%%============================================================================
+exec_ops = ut.choose_function()
+#==============================================================================
+# PARAMETERS
+#%%============================================================================
+#parameters_start
 #OS
 n_jobs = -1 #number of processor-cores to use, -1 for auto
 enable_cuda = False # Using CUDA on supported graphics card e.g. for filtering
                     # cupy and appropriate CUDA-Drivers have to be installed
                     # https://mne-tools.github.io/dev/advanced_setup.html#advanced-setup
-
-#File I/O
-unspecified_names = True # If you don't use Regular Expressions to handle your filenames
-
+                    
 # should files be overwritten
 overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
 
 # raw
-predefined_bads = [6,7,8,26,27,28,79,97,103]
-eog_digitized = True # Set True, if the last 4 digitized points where EOG
-lowpass = 80 # Hz
+predefined_bads = [7,8,26,27,79,103]
+eog_digitized = False # Set True, if the last 4 digitized points where EOG
+lowpass = 100 # Hz
 highpass = 1 # Hz # at least 1 if to apply ICA
 
 # events
-adjust_timeline_by_msec = -95 #delay to stimulus in ms
+adjust_timeline_by_msec = 0 #delay to stimulus in ms
 
 # epochs
 min_duration = 0.005 # s
@@ -76,10 +103,10 @@ reject = dict(grad=8000e-13) # if not reject with autoreject
 flat = dict(grad=1e-15)
 reject_eog_epochs=False
 decim = 1 # downsampling factor
-event_id = {'LBT':1, 'offset':4, 'lower_R':5, 'same_R':6, 'higher_R':7}
+event_id = {'Laser':1}
 
 # evokeds
-ica_evokeds = True
+ica_evokeds = False
 detrend = False # somehow not working on all data
 
 #Time-Frequency-Analysis
@@ -89,9 +116,13 @@ tfr_method = 'morlet'
 multitaper_bandwith = 4.0
 stockwell_width = 1.0
 
+
 #ICA
 eog_channel = 'EEG 001'
 ecg_channel = 'EEG 003'
+
+# Layout (our special Neuromag-122-Layout, should be in same directory as script)
+layout = mne.channels.read_layout('Neuromag_122', path = './')
 
 # forward modeling
 source_space_method = 'ico5'
@@ -114,13 +145,22 @@ ECDs = {}
 ECD_min = 0.200
 ECD_max = 0.250
 
+"""target_labels = {'lh':['G_postcentral-lh', 'S_postcentral-lh',
+                 'S_circular_insula_sup-lh', 'G_Ins_lg&S_cent_ins-lh',
+                 'S_circular_insula_inf-lh'],
+                 'rh':['G_postcentral-rh', 'S_postcentral-rh',
+                 'S_circular_insula_sup-rh', 'G_Ins_lg&S_cent_ins-rh',
+                 'S_circular_insula_inf-rh']}"""
+
 target_labels = {'lh':['S_central-lh', 'S_postcentral-lh', 'S_circular_insula_sup-lh',
                        'S_temporal_sup-lh'],
                  'rh':['S_central-rh', 'S_postcentral-rh', 'S_circular_insula_sup-rh',
                        'S_temporal_sup-rh']}
+# morph maps
+morph_to='fsaverage'
 
 # grand averages
-morph_to='fsaverage' # name of the freesurfer subject to be morphed to
+# empty containers to the put the single subjects data in
 fuse_ab = True
 
 # statistics
@@ -133,28 +173,26 @@ n_permutations = 10000 # specify as integer
 p_threshold = 1e-15 # 1e-15 is the smallest it can get for the way it is coded
 
 # freesurfer and MNE-C commands
-n_jobs_freesurfer = 4 # change according to amount of processors you have available
-#%%============================================================================
-# GUI CALL
-#==============================================================================
-exec_ops = ut.choose_function()
-#%%============================================================================
-# PATHS (TO SET)
-#==============================================================================
-# specify the path to a general analysis folder according to your OS
-if sys.platform == 'win32':
-    home_path = 'D:/Promotion' # A folder to put your MNE-Projects in
-if sys.platform == 'linux':
-    home_path = '/mnt/d/Promotion'
+n_jobs_freesurfer = 4 # change according to amount of processors you have
+                        # available
+ # supply a method and a spacing/grade
+                                  # see mne_setup_source_space --help in bash
+                                  # methods 'spacing', 'ico', 'oct'
 
-project_name = 'Test' # specify the name for your project as a folder
-subjects_dir = join(home_path, 'Freesurfer/Output') # name of your
-orig_data_path = join(home_path, 'Test/Dateien')
-#%%============================================================================
-# DEPENDING PATHS (NOT TO SET)
+#parameters_stop
 #==============================================================================
+# PATHS
+#%%============================================================================
+if sys.platform == 'win32':
+    home_path = 'Z:/Promotion' # change this according to needs
+
+if sys.platform == 'linux':
+    home_path = '/mnt/z/Promotion' # change this according to needs
+
+project_name = 'Pin-Prick-Projekt/Laser-Analyse'
 data_path = join(home_path, project_name, 'Daten')
 sub_script_path = join(data_path, '_Subject_scripts')
+subjects_dir = join(home_path, 'Freesurfer/Output')
 mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
 save_dir_averages = join(data_path,'grand_averages')
 
@@ -165,49 +203,36 @@ else:
 
 #add subjects, mri_subjects, sub_dict, bad_channels_dict
 sub_list_path = join(sub_script_path, 'sub_list.py')
-erm_list_path = join(sub_script_path, 'erm_list.py') # ERM means Empty-Room
-motor_erm_list_path = join(sub_script_path, 'motor_erm_list.py') # Special for Pinprick
+erm_list_path = join(sub_script_path, 'erm_list.py')
+motor_erm_list_path = join(sub_script_path, 'motor_erm_list.py')
 mri_sub_list_path = join(sub_script_path, 'mri_sub_list.py')
 sub_dict_path = join(sub_script_path, 'sub_dict.py')
 erm_dict_path = join(sub_script_path, 'erm_dict.py')
 bad_channels_dict_path = join(sub_script_path, 'bad_channels_dict.py')
+sub_cond_dict_path = join(sub_script_path, 'sub_cond_dict.py')
 
-path_list = [subjects_dir, orig_data_path, data_path, sub_script_path,
-             figures_path]
-file_list = [sub_list_path, erm_list_path, motor_erm_list_path, mri_sub_list_path,
-             sub_dict_path, erm_dict_path, bad_channels_dict_path]
-
-if not exists(home_path):
-    print('Create home_path manually and set the variable accordingly')
-    
-for p in path_list:
-    if not exists(p):
-        makedirs(p)
-        print(f'{p} created')
-
-for f in file_list:
-    if not isfile(f):
-        with open(f, 'w') as file:
-            file.write('')
-        print(f'{f} created')
-        
-op.populate_directories(data_path, figures_path, event_id)
-#%%============================================================================
-# SUBJECT ORGANISATION (NOT TO SET)
 #==============================================================================
+# SUBJECT ORGANISATION
+#%%============================================================================
+orig_data_path = join(home_path, 'Pin-Prick-Projekt/Laserdaten')
+orig_mri_data_path = join(home_path, 'Freesurfer/Output')
+
+unspecified_names = True
+
 if exec_ops['add_subjects']: # set 1 to run
     suborg.add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
-                        data_path, figures_path, subjects_dir, orig_data_path,
-                        unspecified_names, gui=False)
+                        home_path, project_name, data_path, figures_path,
+                        subjects_dir, orig_data_path, unspecified_names,
+                        gui=False)
 
 if exec_ops['add_mri_subjects']: # set 1 to run
-    suborg.add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False)
+    suborg.add_mri_subjects(mri_sub_list_path, data_path)
 
 if exec_ops['add_sub_dict']: # set 1 to run
-    suborg.add_sub_dict(sub_dict_path, sub_list_path, mri_sub_list_path, data_path)
+    suborg.add_sub_dict(sub_dict_path, sub_list_path, data_path)
 
 if exec_ops['add_erm_dict']: #set 1 to run
-    suborg.add_erm_dict(erm_dict_path, sub_list_path, erm_list_path, data_path)
+    suborg.add_erm_dict(erm_dict_path, sub_list_path, data_path)
 
 if exec_ops['add_bad_channels']:
     suborg.add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
@@ -223,9 +248,10 @@ motor_erm_files = suborg.read_subjects(motor_erm_list_path)
 sub_to_mri = suborg.read_sub_dict(sub_dict_path)
 erm_dict = suborg.read_sub_dict(erm_dict_path) # add None if not available
 bad_channels_dict = suborg.read_bad_channels_dict(bad_channels_dict_path)
-#%%========================================================================
-# MRI-Subjects (NOT TO SET)
-#============================================================================
+
+#==========================================================================
+# MRI-Subjects
+#==========================================================================
 if exec_ops['mri_preprocessing']:
 
     mri_subjects = suborg.mri_subject_selection(which_mri_subject, all_mri_subjects)
@@ -240,6 +266,9 @@ if exec_ops['mri_preprocessing']:
         #==========================================================================
         # BASH SCRIPTS
         #==========================================================================
+        if exec_ops['segment_mri']:
+            op.segment_mri(mri_subject, subjects_dir, n_jobs_freesurfer)
+
         if exec_ops['apply_watershed']:
             op.apply_watershed(mri_subject, subjects_dir, overwrite)
 
@@ -278,58 +307,49 @@ if exec_ops['mri_preprocessing']:
         # close plots
         if exec_ops['close_plots']:
             plot.close_all()
-#%%========================================================================
-# Subjects (NOT TO SET)
-#===========================================================================
+#==========================================================================
+# Subjects
+#=========================================================================
+
 if exec_ops['erm_analysis']:
     subjects = suborg.file_selection(which_erm_file, erm_files)   
+
 if exec_ops['motor_erm_analysis']:
     subjects = suborg.file_selection(which_motor_erm_file, motor_erm_files)
+
 else:
     subjects = suborg.file_selection(which_file, all_subjects)
 
+print('Selected Subjects:')
+for i in subjects:
+    print(i)
 
-if len(all_subjects)==0:
-    print('No subjects in sub_list!')
-    print('Add some folders(the ones with the date) to your orig_data_path-folder and check "add_subjects"')
-else:
-    print('Selected Subjects:')
-    for s in subjects:
-        print(s)
-
-# Get dicts grouping the subjects together depending on their names to allow grand_averaging:
+# Get the dicts according to naming:
 ab_dict, comp_dict, grand_avg_dict = ut.get_subject_groups(subjects, fuse_ab)
 
 morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
+
 for name in subjects:
-    # Print Subject Console Header
-    print(60*'='+'\n'+name)
+    subject_index = subjects.index(name)
     
     if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
         save_dir = join(data_path, 'empty_room_data')
+        
     else:
         save_dir = join(data_path, name)       
     
-    # Use Regular Expressions to make ermsub and subtomri assignement easier
     pattern = r'pp[0-9]+[a-z]?'
+    
     if unspecified_names:
         pattern = r'.*'
+        
     match = re.match(pattern, name)
     prefix = match.group()
     
-    try:
-        ermsub = erm_dict[prefix]
-    except KeyError as k:
-        print(f'No erm_measurement for {k}')
-        suborg.add_erm_dict(erm_dict_path, sub_list_path, data_path)
-    
-    try:
-        subtomri = sub_to_mri[prefix]
-    except KeyError as k:
-        print(f'No mri_subject assigned to {k}')
-        suborg.add_sub_dict(sub_dict_path, sub_list_path, data_path)
-        
+    ermsub = erm_dict[prefix]
+    subtomri = sub_to_mri[prefix]
+            
     try:
         bad_channels = bad_channels_dict[name]
     except KeyError as k:
@@ -338,6 +358,20 @@ for name in subjects:
                                      erm_list_path, motor_erm_list_path,
                                      data_path, predefined_bads,
                                      sub_script_path)
+
+    event_id_list = []
+
+    # Print Subject Console Header
+    print(60*'='+'\n'+name)
+
+    #==========================================================================
+    # POPULATE SUBJECT DIRECTORIES
+    #==========================================================================
+    if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
+        if exec_ops['populate_data_directory']:
+            op.populate_data_directory(home_path, project_name, data_path,
+                                       figures_path, subjects_dir, subjects,
+                                       event_id)
 
     #==========================================================================
     # FILTER RAW
@@ -352,9 +386,9 @@ for name in subjects:
     #==========================================================================
 
     if exec_ops['find_events']:
-        op.find_events_pp(name, save_dir, min_duration,
-                          adjust_timeline_by_msec,lowpass, highpass, overwrite,
-                          save_plots, figures_path)
+        op.find_events(name, save_dir, min_duration,
+                adjust_timeline_by_msec,lowpass, highpass, overwrite,
+                save_plots, figures_path)
 
     if exec_ops['find_eog_events']:
         op.find_eog_events(name, save_dir, eog_channel)
@@ -401,11 +435,16 @@ for name in subjects:
 
     if exec_ops['plot_ssp']:
         plot.plot_ssp(name, save_dir,lowpass, highpass, save_plots,
-                      figures_path, bad_channels, ermsub)
+                      figures_path, bad_channels, layout, ermsub)
 
     if exec_ops['plot_ssp_eog']:
         plot.plot_ssp_eog(name, save_dir,lowpass, highpass, save_plots,
-                              figures_path, bad_channels)
+                              figures_path, bad_channels, layout)
+
+    if exec_ops['ica_pure']:
+        op.ica_pure(name, save_dir,lowpass, highpass, overwrite, eog_channel,
+                            ecg_channel, layout, reject, flat, bad_channels, autoreject,
+                            overwrite_ar)
 
     if exec_ops['run_ica']:
         op.run_ica(name, save_dir,lowpass, highpass, eog_channel, ecg_channel,
@@ -545,7 +584,7 @@ for name in subjects:
 
     if exec_ops['plot_power_spectra_topo']:
         plot.plot_power_spectra_topo(name, save_dir,lowpass, highpass,
-                                     save_plots, figures_path, bad_channels)
+                                     save_plots, figures_path, bad_channels, layout)
 
     #==========================================================================
     # PLOT TIME-FREQUENCY-ANALASYS
@@ -572,7 +611,7 @@ for name in subjects:
 
     if exec_ops['plot_epochs_topo']:
         plot.plot_epochs_topo(name, save_dir,lowpass, highpass, save_plots,
-                              figures_path)
+                      figures_path, layout)
     
     if exec_ops['plot_epochs_drop_log']:
         plot.plot_epochs_drop_log(name, save_dir, lowpass, highpass, save_plots,
@@ -587,7 +626,7 @@ for name in subjects:
 
     if exec_ops['plot_evoked_topomap']:
         plot.plot_evoked_topomap(name, save_dir,lowpass, highpass, save_plots,
-                                 figures_path)
+                                 figures_path, layout)
 
     if exec_ops['plot_butterfly_evokeds']:
         plot.plot_butterfly_evokeds(name, save_dir,lowpass, highpass,
@@ -601,7 +640,7 @@ for name in subjects:
 
     if exec_ops['plot_evoked_joint']:
         plot.plot_evoked_joint(name, save_dir,lowpass, highpass, save_plots,
-                               figures_path, ECDs)
+                               layout, figures_path, ECDs)
 
     if exec_ops['plot_evoked_white']:
         plot.plot_evoked_white(name, save_dir,lowpass, highpass,
@@ -677,9 +716,9 @@ if exec_ops['cmp_label_time_course']:
     plot.cmp_label_time_course(data_path, lowpass, highpass, sub_to_mri, comp_dict,
                                parcellation, target_labels, save_plots, figures_path)
 
-#%%============================================================================
+#==============================================================================
 # GRAND AVERAGES (sensor space and source space)
-#================================================================================
+#==============================================================================
 
 if exec_ops['grand_avg_evokeds']:
     op.grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
@@ -698,9 +737,9 @@ if exec_ops['grand_avg_connect']:
                          con_fmin, con_fmax, save_dir_averages,
                          lowpass, highpass)
     
-#%%============================================================================
+#==============================================================================
 # GRAND AVERAGES PLOTS (sensor space and source space)
-#================================================================================
+#==============================================================================
 
 if exec_ops['plot_grand_avg_evokeds']:
     plot.plot_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,

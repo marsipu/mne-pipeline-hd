@@ -5,9 +5,8 @@ martin.schulz@stud.uni-heidelberg.de
 """
 import os
 import shutil
-from os.path import join, isfile, exists
+from os.path import join, isfile, isdir, exists
 from . import io_functions as io
-from . import operations_functions as op
 from . import utilities as ut
 import tkinter as t
 import re
@@ -15,19 +14,19 @@ import re
 
 ## Subjects
 def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
-                 home_path, project_name, data_path, figures_path,
-                 subjects_dir, orig_data_path, gui=False):
+                 data_path, figures_path, subjects_dir, orig_data_path,
+                 unspecified_names=True, gui=False):
     
     subjects = read_subjects(sub_list_path)
     erm_files = read_subjects(erm_list_path)
     motor_erm_files = read_subjects(motor_erm_list_path)
-    op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
-                           subjects_dir, subjects)
     
     all_files, paths = ut.getallfifFiles(orig_data_path)
     
     #Regular-Expressions Pattern
     pattern = r'pp[0-9][0-9]*[a-z]*_[0-9]{0,3}t?_[a,b]$'
+    if unspecified_names:
+        pattern = r'.*'
     
     for f in all_files:
         fname = f[:-4]
@@ -103,9 +102,11 @@ def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
     
             # Copy sub_files to destination
             if not isfile(fdest):
-                subjects = read_subjects(sub_list_path)
-                op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
-                                                 subjects_dir, subjects)
+                folder_path = join(data_path, fname)
+            
+                if not exists(folder_path):
+                    os.makedirs(folder_path)
+                    print(folder_path + ' has been created')
                 
                 print(f'Copying File from {paths[f]}...')
                 shutil.copy2(paths[f], fdest)
@@ -155,8 +156,12 @@ def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
         def pop_dir():
     
             subjects = read_subjects(sub_list_path)
-            op.populate_data_directory_small(home_path, project_name, data_path, figures_path,
-                                       subjects_dir, subjects)
+            for name in subjects:
+                folder_path = join(data_path, name)
+            
+                if not exists(folder_path):
+                    os.makedirs(folder_path)
+                    print(folder_path + ' has been created')
     
         master = t.Tk()
         t.Label(master, text='Subject(Filename without .fif)').grid(row=0, column=0)
@@ -172,7 +177,6 @@ def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
     
         t.mainloop()
 
-
 def read_subjects(sub_list_path):
 
     sub_list = []
@@ -184,68 +188,80 @@ def read_subjects(sub_list_path):
                 sub_list.append(currentPlace)
 
     except FileNotFoundError:
-        print(f'{sub_list_path} not yet created, add subject')
+        print(f'{sub_list_path} not yet created, put some files in orig_data_path')
+        pass
 
     return sub_list
 
 ##MRI-Subjects
-def add_mri_subjects(mri_sub_list_path, data_path):
-
-    def add_to_list():
-        if not isfile(mri_sub_list_path):
-            if not exists(join(data_path, '_Subject_scripts')):
-                os.makedirs(join(data_path, '_Subject_scripts'))
-            ilist = []
-            ilist.append(e1.get())
-            e1.delete(0,t.END)
-            with open(mri_sub_list_path, 'w') as sl:
-                for listitem in ilist:
-                    sl.write('%s\n' % listitem)
-
-            print('mri_sub_list.py created')
-
-        else:
-            elist = []
-            elist.append(e1.get())
-            e1.delete(0,t.END)
-            with open(mri_sub_list_path, 'a') as sl:
-                for listitem in elist:
-                    sl.write('%s\n' % listitem)
-
-    def delete_last():
-        with open(mri_sub_list_path, 'r') as dl:
-            dlist = (dl.readlines())
-
-        with open(mri_sub_list_path, 'w') as dl:
-            for listitem in dlist[:-1]:
-                dl.write('%s' % listitem)
-
-    def quittk():
-        master.quit()
-        master.destroy()
-
-    def readl():
-        try:
-            with open(mri_sub_list_path, 'r') as rl:
-                print(rl.read())
-        except FileNotFoundError:
-            print('mri_sub_list.py not yet created, run add_mri_subjects')
-
-    master = t.Tk()
-    t.Label(master, text='MRI-Subject(Foldername in SUBJECTS_DIR)').grid(row=0, column=0)
-
-    e1 = t.Entry(master)
-    e1.grid(row=0, column=1)
-
-    t.Button(master, text='read', command=readl).grid(row=1, column=0)
-    t.Button(master, text='delete_last', command=delete_last).grid(row=1, column=1)
-    t.Button(master, text='add', command=add_to_list).grid(row=1, column=2)
-    t.Button(master, text='quit', command=quittk).grid(row=1, column=3)
-
-    t.mainloop()
-
-
-
+def add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False):
+    
+    mri_subjects = read_mri_subjects(mri_sub_list_path)
+    
+    folder_list = os.listdir(subjects_dir)
+    
+    for f in folder_list:
+        if isdir(join(subjects_dir, f)):
+            if not f in mri_subjects:
+                mri_subjects.append(f)
+            
+    with open(mri_sub_list_path, 'w') as slp:
+        for ms in mri_subjects:
+            slp.write(ms + '\n')
+    
+    if gui==True:
+        def add_to_list():
+            if not isfile(mri_sub_list_path):
+                if not exists(join(data_path, '_Subject_scripts')):
+                    os.makedirs(join(data_path, '_Subject_scripts'))
+                ilist = []
+                ilist.append(e1.get())
+                e1.delete(0,t.END)
+                with open(mri_sub_list_path, 'w') as sl:
+                    for listitem in ilist:
+                        sl.write('%s\n' % listitem)
+    
+                print('mri_sub_list.py created')
+    
+            else:
+                elist = []
+                elist.append(e1.get())
+                e1.delete(0,t.END)
+                with open(mri_sub_list_path, 'a') as sl:
+                    for listitem in elist:
+                        sl.write('%s\n' % listitem)
+    
+        def delete_last():
+            with open(mri_sub_list_path, 'r') as dl:
+                dlist = (dl.readlines())
+    
+            with open(mri_sub_list_path, 'w') as dl:
+                for listitem in dlist[:-1]:
+                    dl.write('%s' % listitem)
+    
+        def quittk():
+            master.quit()
+            master.destroy()
+    
+        def readl():
+            try:
+                with open(mri_sub_list_path, 'r') as rl:
+                    print(rl.read())
+            except FileNotFoundError:
+                print('mri_sub_list.py not yet created, run add_mri_subjects')
+    
+        master = t.Tk()
+        t.Label(master, text='MRI-Subject(Foldername in SUBJECTS_DIR)').grid(row=0, column=0)
+    
+        e1 = t.Entry(master)
+        e1.grid(row=0, column=1)
+    
+        t.Button(master, text='read', command=readl).grid(row=1, column=0)
+        t.Button(master, text='delete_last', command=delete_last).grid(row=1, column=1)
+        t.Button(master, text='add', command=add_to_list).grid(row=1, column=2)
+        t.Button(master, text='quit', command=quittk).grid(row=1, column=3)
+    
+        t.mainloop()
 
 def read_mri_subjects(mri_sub_list_path):
 
@@ -263,29 +279,27 @@ def read_mri_subjects(mri_sub_list_path):
     return mri_sub_list
 
 ##Subject-Dict
-def add_sub_dict(sub_dict_path, sub_list_path, data_path):
+def add_sub_dict(sub_dict_path, sub_list_path, mri_sub_list_path, data_path):
 
     def assign_sub():
-        choice=listbox.get(listbox.curselection())
+        choice1=listbox1.get(listbox1.curselection())
+        choice2=listbox2.get(listbox2.curselection())
         if not isfile(sub_dict_path):
             if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
-            idict.update({choice:e2.get()})
-            e2.delete(0,t.END)
+            idict.update({choice1:choice2})
             with open(sub_dict_path, 'w') as sd:
                 for key, value in idict.items():
-                    sd.write('%s:%s\n' % (key, value))
-
+                    sd.write(f'{key}:{value}\n')
             print('sub_dict.py created')
 
         else:
-            edict = {}
-            edict.update({choice:e2.get()})
-            e2.delete(0,t.END)
+            idict = {}
+            idict.update({choice1:choice2})
             with open(sub_dict_path, 'a') as sd:
-                for key, value in edict.items():
-                    sd.write('%s:%s\n' % (key, value))
+                for key, value in idict.items():
+                    sd.write(f'{key}:{value}\n')
 
     def delete_last():
         with open(sub_dict_path, 'r') as dd:
@@ -307,30 +321,44 @@ def add_sub_dict(sub_dict_path, sub_list_path, data_path):
             print('sub_dict.py not yet created, run add_sub_dict')
 
     master = t.Tk()
-    t.Label(master, text='Assign Subject to MRI-Subject').pack(side=t.TOP)
+    master.title('Assign Subject to MRI-Subject')
+    
+    t.Label(master, text='Subjects').grid(row=0, column=1)
+    scrollbar1 = t.Scrollbar(master)
+    scrollbar1.grid(row=1, column=0, rowspan=4, sticky=t.NS)
+    listbox1 = t.Listbox(master, width=40, height=30, selectmode = 'SINGLE',
+                         yscrollcommand = scrollbar1.set, exportselection=0)
+    listbox1.grid(row=1, column=1, rowspan=4)
+    scrollbar1.config(command=listbox1.yview)
 
-    e2 = t.Entry(master, width=100)
-    e2.pack(side=t.TOP, expand=True)
-
-    scrollbar = t.Scrollbar(master)
-    scrollbar.pack(side=t.LEFT, fill = t.Y)
-
-    listbox = t.Listbox(master, height=20, selectmode = 'SINGLE', yscrollcommand = scrollbar.set)
-    listbox.pack(side=t.LEFT, expand=True)
-
-    scrollbar.config(command=listbox.yview)
-
+    t.Label(master, text='MRI-Subjects').grid(row=0, column=2)
+    scrollbar2 = t.Scrollbar(master)
+    scrollbar2.grid(row=1, column=3, rowspan=4, sticky=t.NS)
+    listbox2 = t.Listbox(master, width=40, height=30, selectmode = 'SINGLE',
+                         yscrollcommand = scrollbar2.set, exportselection=0)
+    listbox2.grid(row=1, column=2, rowspan=4)
+    scrollbar2.config(command=listbox2.yview)
 
     with open(sub_list_path, 'r') as sl:
         for line in sl:
-            currentPlace = line[:-1]
-            listbox.insert(t.END, currentPlace)
+            listbox1.insert(t.END, line[:-1])
 
-    t.Button(master, text='read', command=readd).pack()
-    t.Button(master, text='delete_last', command=delete_last).pack()
-    t.Button(master, text='assign', command=assign_sub).pack()
-    t.Button(master, text='quit', command=quittk).pack()
+    with open(mri_sub_list_path, 'r') as msl:
+        for line in msl:
+            listbox2.insert(t.END, line[:-1])
 
+    t.Button(master, text='assign', command=assign_sub, bg='green',
+             activebackground='blue', fg='white', font=100, relief=t.RAISED
+             ).grid(row=1, column=4, sticky=t.NS+t.EW)
+    t.Button(master, text='read', command=readd, bg='cyan',
+             activebackground='magenta', fg='white', font=100, relief=t.RAISED
+             ).grid(row=2, column=4, sticky=t.NS+t.EW)
+    t.Button(master, text='delete_last', command=delete_last, bg='red',
+             activebackground='orange', fg='white', font=100, relief=t.RAISED
+             ).grid(row=3, column=4, sticky=t.NS+t.EW)
+    t.Button(master, text='quit', command=quittk, bg='black',
+             activebackground='yellow', fg='white', font=100, relief=t.RAISED
+             ).grid(row=4, column=4, sticky=t.NS+t.EW)
 
     t.mainloop()
 def read_sub_dict(sub_dict_path):
@@ -351,29 +379,27 @@ def read_sub_dict(sub_dict_path):
 
 ## empty_room_data
 
-def add_erm_dict(erm_dict_path, sub_list_path, data_path):
+def add_erm_dict(erm_dict_path, sub_list_path, erm_list_path, data_path):
 
     def assign_erm():
-        choice=listbox.get(listbox.curselection())
+        choice1=listbox1.get(listbox1.curselection())
+        choice2=listbox2.get(listbox2.curselection())
         if not isfile(erm_dict_path):
             if not exists(join(data_path, '_Subject_scripts')):
                 os.makedirs(join(data_path, '_Subject_scripts'))
             idict = {}
-            idict.update({choice:e2.get()})
-            e2.delete(0,t.END)
+            idict.update({choice1:choice2})
             with open(erm_dict_path, 'w') as sd:
                 for key, value in idict.items():
-                    sd.write('%s:%s\n' % (key, value))
-
+                    sd.write(f'{key}:{value}\n')
             print('erm_dict.py created')
 
         else:
-            edict = {}
-            edict.update({choice:e2.get()})
-            e2.delete(0,t.END)
+            idict = {}
+            idict.update({choice1:choice2})
             with open(erm_dict_path, 'a') as sd:
-                for key, value in edict.items():
-                    sd.write('%s:%s\n' % (key, value))
+                for key, value in idict.items():
+                    sd.write(f'{key}:{value}\n')
 
     def delete_last():
         with open(erm_dict_path, 'r') as dd:
@@ -395,30 +421,44 @@ def add_erm_dict(erm_dict_path, sub_list_path, data_path):
             print('erm_dict.py not yet created, run add_erm_dict')
 
     master = t.Tk()
-    t.Label(master, text='Assign ERM to Subject').pack(side=t.TOP)
+    master.title('Assign Subject to Empty-Room-File')
 
-    e2 = t.Entry(master, width=100)
-    e2.pack(side=t.TOP, expand=True)
+    t.Label(master, text='Subjects').grid(row=0, column=1)
+    scrollbar1 = t.Scrollbar(master)
+    scrollbar1.grid(row=1, column=0, rowspan=4, sticky=t.NS)
+    listbox1 = t.Listbox(master, width=40, height=30, selectmode = 'SINGLE',
+                         yscrollcommand = scrollbar1.set, exportselection=0)
+    listbox1.grid(row=1, column=1, rowspan=4)
+    scrollbar1.config(command=listbox1.yview)
 
-    scrollbar = t.Scrollbar(master)
-    scrollbar.pack(side=t.LEFT, fill = t.Y)
-
-    listbox = t.Listbox(master, height=20, selectmode = 'SINGLE', yscrollcommand = scrollbar.set)
-    listbox.pack(side=t.LEFT, expand=True)
-
-    scrollbar.config(command=listbox.yview)
-
+    t.Label(master, text='Empty-Room-Measurements').grid(row=0, column=2)
+    scrollbar2 = t.Scrollbar(master)
+    scrollbar2.grid(row=1, column=3, rowspan=4, sticky=t.NS)
+    listbox2 = t.Listbox(master, width=40, height=30, selectmode = 'SINGLE',
+                         yscrollcommand = scrollbar2.set, exportselection=0)
+    listbox2.grid(row=1, column=2, rowspan=4)
+    scrollbar2.config(command=listbox2.yview)
 
     with open(sub_list_path, 'r') as sl:
         for line in sl:
-            currentPlace = line[:-1]
-            listbox.insert(t.END, currentPlace)
+            listbox1.insert(t.END, line[:-1])
 
-    t.Button(master, text='read', command=readd).pack()
-    t.Button(master, text='delete_last', command=delete_last).pack()
-    t.Button(master, text='assign', command=assign_erm).pack()
-    t.Button(master, text='quit', command=quittk).pack()
+    with open(erm_list_path, 'r') as msl:
+        for line in msl:
+            listbox2.insert(t.END, line[:-1])
 
+    t.Button(master, text='assign', command=assign_erm, bg='green',
+             activebackground='blue', fg='white', font=100, relief=t.RAISED
+             ).grid(row=1, column=4, sticky=t.NS+t.EW)
+    t.Button(master, text='read', command=readd, bg='cyan',
+             activebackground='magenta', fg='white', font=100, relief=t.RAISED
+             ).grid(row=2, column=4, sticky=t.NS+t.EW)
+    t.Button(master, text='delete_last', command=delete_last, bg='red',
+             activebackground='orange', fg='white', font=100, relief=t.RAISED
+             ).grid(row=3, column=4, sticky=t.NS+t.EW)
+    t.Button(master, text='quit', command=quittk, bg='black',
+             activebackground='yellow', fg='white', font=100, relief=t.RAISED
+             ).grid(row=4, column=4, sticky=t.NS+t.EW)
 
     t.mainloop()
 
@@ -447,7 +487,6 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
                           sub_script_path):
 
     def check():
-        
         for x in var_dict:
             n = var_dict[x].get()
             if n == 1:
@@ -574,25 +613,34 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
                 listbox.itemconfig(listbox.size()-1, {'bg':'green', 'fg':'white'})
             else:
                 listbox.itemconfig(listbox.size()-1, {'bg':'red', 'fg':'white'})
-                
-    with open(erm_list_path, 'r') as el:
-        for line in el:
-            currentPlace = line[:-1]
-            listbox.insert(t.END, currentPlace)
-            if currentPlace in bad_channels_dict:
-                listbox.itemconfig(listbox.size()-1, {'bg':'green', 'fg':'white'})
-            else:
-                listbox.itemconfig(listbox.size()-1, {'bg':'red', 'fg':'white'})
-                
-    with open(motor_erm_list_path, 'r') as el:
-        for line in el:
-            currentPlace = line[:-1]
-            listbox.insert(t.END, currentPlace)
-            if currentPlace in bad_channels_dict:
-                listbox.itemconfig(listbox.size()-1, {'bg':'green', 'fg':'white'})
-            else:
-                listbox.itemconfig(listbox.size()-1, {'bg':'red', 'fg':'white'})
-                
+    
+    try:            
+        with open(erm_list_path, 'r') as el:
+            for line in el:
+                currentPlace = line[:-1]
+                listbox.insert(t.END, currentPlace)
+                if currentPlace in bad_channels_dict:
+                    listbox.itemconfig(listbox.size()-1, {'bg':'green', 'fg':'white'})
+                else:
+                    listbox.itemconfig(listbox.size()-1, {'bg':'red', 'fg':'white'})
+    
+    except:
+        print('No erm-files')
+        pass
+    
+    try:
+        with open(motor_erm_list_path, 'r') as el:
+            for line in el:
+                currentPlace = line[:-1]
+                listbox.insert(t.END, currentPlace)
+                if currentPlace in bad_channels_dict:
+                    listbox.itemconfig(listbox.size()-1, {'bg':'green', 'fg':'white'})
+                else:
+                    listbox.itemconfig(listbox.size()-1, {'bg':'red', 'fg':'white'})
+    except:
+        print('No motor-erm-files')
+        pass
+    
     # Add Checkbuttons for each channel
     var_dict = {} 
     for x in range(1,123):      
@@ -642,13 +690,20 @@ def file_selection(which_file, all_subjects):
             z = which_file.split(',')
             run = []
             for i in z:
-                if '-' in i:
+                if '-' in i and not '!' in i:
                     x,y = i.split('-')
                     for n in range(int(x)-1,int(y)):
                         run.append(n)
+                elif not '!' in i:
+                    run.append(int(i)-1)
+                elif '!' in i and '-' in i:
+                    x,y = i.split('-')
+                    x = x[1:]
+                    for n in range(int(x)-1,int(y)):
+                        run.remove(int(n)-1)
                 else:
-                    run.append(int(i)-1)              
-        
+                    run.remove(int(i[1:])-1)
+                    
         elif '-' in which_file and ',' not in which_file:
             x,y = which_file.split('-')
             run = range(int(x)-1,int(y))
@@ -657,7 +712,7 @@ def file_selection(which_file, all_subjects):
             run = which_file.split(',')
             for i in run:
                 run[run.index(i)] = int(i)-1
-            
+                
         else:
             run = [int(which_file)-1]
         
@@ -666,10 +721,10 @@ def file_selection(which_file, all_subjects):
         return subjects
     
     except TypeError:
-        raise TypeError('{} is not a string(enclosed by quotes)'.format(which_file))
+        raise TypeError(f'{which_file} is not a string(enclosed by quotes)')
     
     except ValueError:
-        raise ValueError('{} is not a whole number'.format(which_file))
+        raise ValueError(f'{which_file} is not a whole number')
 
 def mri_subject_selection(which_mri_subject, all_mri_subjects):
     # Turn string input into according mri_sub_list-Index

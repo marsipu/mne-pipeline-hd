@@ -176,11 +176,11 @@ def plot_power_spectra_epochs(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_power_spectra_topo(name, save_dir, lowpass, highpass, save_plots,
-                        figures_path, bad_channels, layout):
+                            figures_path, bad_channels):
 
     epochs = io.read_epochs(name, save_dir, lowpass, highpass)
     for trial_type in epochs.event_id:
-        psd_figure = epochs[trial_type].plot_psd_topomap(layout=layout, n_jobs=-1)
+        psd_figure = epochs[trial_type].plot_psd_topomap(n_jobs=-1)
         plt.title(name + '-' + trial_type)
         
         if save_plots:
@@ -345,7 +345,7 @@ def tfr_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
         
 @decor.topline
 def plot_ssp(name, save_dir, lowpass, highpass, save_plots,
-                        figures_path, bad_channels, layout, ermsub):
+                        figures_path, bad_channels, ermsub):
 
     if ermsub == 'None':
         print('no empty_room_data found for' + name)
@@ -354,7 +354,7 @@ def plot_ssp(name, save_dir, lowpass, highpass, save_plots,
     else:
         epochs = io.read_ssp_epochs(name, save_dir, lowpass, highpass)
 
-        ssp_figure = epochs.plot_projs_topomap(layout=layout)
+        ssp_figure = epochs.plot_projs_topomap()
 
         if save_plots:
             save_path = join(figures_path, 'ssp', name + '_ssp' + \
@@ -366,7 +366,7 @@ def plot_ssp(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_ssp_eog(name, save_dir, lowpass, highpass, save_plots,
-                        figures_path, bad_channels, layout):
+                        figures_path, bad_channels):
     proj_name = name + '_eog-proj.fif'
     proj_path = join(save_dir, proj_name)
 
@@ -444,12 +444,12 @@ def plot_epochs_image(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_epochs_topo(name, save_dir, lowpass, highpass, save_plots,
-                      figures_path, layout):
+                      figures_path):
 
     epochs = io.read_epochs(name, save_dir, lowpass, highpass)
     for trial_type in epochs.event_id:
 
-        epochs_topo = mne.viz.plot_topo_image_epochs(epochs, title=name, layout=layout)
+        epochs_topo = mne.viz.plot_topo_image_epochs(epochs, title=name)
 
         if save_plots:
             save_path = join(figures_path, 'epochs_topo', trial_type, name + '_epochs_topo' + \
@@ -502,7 +502,6 @@ def plot_evoked_topomap(name, save_dir, lowpass, highpass, save_plots, figures_p
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
     for evoked in evokeds:
         evoked_figure = mne.viz.plot_evoked_topomap(evoked, times='auto',
-                                                    layout=layout,
                                                     title=name +'-' + evoked.comment)
 
         if save_plots:
@@ -544,7 +543,7 @@ def plot_evoked_field(name, save_dir, lowpass, highpass,
 
 @decor.topline
 def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
-                      layout, figures_path, ECDs):
+                      figures_path, ECDs):
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
@@ -557,14 +556,12 @@ def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
                 times.append(i)
         timesarr = np.array(times)
         figure = mne.viz.plot_evoked_joint(evoked, times=timesarr,
-                           title=name + ' - ' + evoked.comment,
-                           topomap_args={'layout':layout})
+                           title=name + ' - ' + evoked.comment)
 
     else:
         for evoked in evokeds:
             figure = mne.viz.plot_evoked_joint(evoked, times='peaks',
-                                               title=name + ' - ' + evoked.comment,
-                                               topomap_args={'layout':layout})
+                                               title=name + ' - ' + evoked.comment)
 
             if save_plots:
                 save_path = join(figures_path, 'evoked_joint', evoked.comment,
@@ -577,7 +574,7 @@ def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, save_plots,
-                                figures_path, time_unit, ermsub, use_calm_cov):
+                           figures_path, time_unit, ermsub, use_calm_cov):
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
@@ -656,7 +653,7 @@ def plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots,
                                surfaces=['head-dense', 'inner_skull', 'brain'],
                                show_axes=True, dig=True)
 
-        mlab.view(45, 90, distance=0.6, focalpoint=(0., 0., 0.))
+        mlab.view(45, 90, distance=0.6, focalpoint=(0., 0., 0.025))
 
         if save_plots:
             save_path = join(figures_path, 'transformation', name + '_trans' + \
@@ -1112,8 +1109,8 @@ def plot_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
     
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
-            figure = ga_dict[stim_type][trial].plot_joint(title=stim_type + '_' + trial)
-
+            figure = ga_dict[stim_type][trial].plot_joint(title=stim_type + '_' + trial,
+                            ts_args={'ylim':{'grad':[-50,20]}})
             if save_plots:
                 save_path = join(figures_path, 'grand_averages/sensor_space/evoked',
                                  stim_type + '_' + trial + \

@@ -7,7 +7,7 @@ Created on Thu Jan 17 01:00:31 2019
 
 import os
 from os import makedirs
-from os.path import join, isfile, isdir, exists
+from os.path import join, isfile, exists
 import sys
 import autoreject as ar
 import tkinter as t

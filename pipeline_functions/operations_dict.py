@@ -33,13 +33,10 @@ sensor_space_operations = dict(filter_raw = 0,
                                apply_ssp_ecg = 0,
                                run_ica = 0, # HIGPASS-FILTER RECOMMENDED!!!
                                apply_ica = 0,
-                               ica_pure = 0,
                                get_evokeds = 0,
                                tfr = 0)
 
-mri_subject_operations = dict(import_mri = 0,
-                              segment_mri = 0, # long process (>10 h)
-                              apply_watershed = 0,
+mri_subject_operations = dict(apply_watershed = 0,
                               make_dense_scalp_surfaces = 0, #until here all bash scripts!
                               prepare_bem = 0,
                               setup_source_space = 0,

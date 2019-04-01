@@ -45,70 +45,49 @@ def filter_string(lowpass, highpass):
 #==============================================================================
 # OPERATING SYSTEM COMMANDS
 #==============================================================================
-@decor.topline
-def populate_data_directory(home_path, project_name, data_path, figures_path,
-                            subjects_dir, subjects, event_id):
+def populate_directories(data_path, figures_path, event_id):
 
-    ## create MEG and MRI paths
-    for name in subjects:
-
-        full_path_MEG = join(home_path, project_name, data_path, name)
-
-        ## create MEG dirs
-        try:
-            makedirs(full_path_MEG)
-            print(full_path_MEG + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create grand averages path with a statistics folder
+    ## create grand averages path with a statistics folder
     ga_folders = ['statistics', 'evoked', 'stc', 'tfr', 'connect']
     for subfolder in ga_folders:
-        grand_average_path = join(home_path, project_name, data_path,
-                                  'grand_averages', subfolder)
-        try:
+        grand_average_path = join(data_path, 'grand_averages', subfolder)
+        if not exists(grand_average_path):
             makedirs(grand_average_path)
             print(grand_average_path + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
 
-    ##also create erm(empty_room_measurements)paths
-    erm_path = join(home_path, project_name, data_path,
-                              'empty_room_data')
-    try:
+    ## create erm(empty_room_measurements)paths
+    erm_path = join(data_path, 'empty_room_data')
+    if not exists(erm_path):
         makedirs(erm_path)
         print(erm_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
 
-    ## also create figures path
-    figure_subfolders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
-                         'power_spectra_raw', 'power_spectra_epochs',
-                         'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
-                         'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
-                         'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
-                         'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
-                         'tf_sensor_space/topo', 'tf_sensor_space/joint',
-                         'tf_sensor_space/oscs','tf_sensor_space/itc',
-                         'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
-                         'epochs_drop_log']
+    ## create figures path
+    folders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
+               'power_spectra_raw', 'power_spectra_epochs',
+               'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
+               'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
+               'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
+               'noise_covariance', 'events', 'label_time_course', 'ECD',
+               'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
+               'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
+               'tf_sensor_space/topo', 'tf_sensor_space/joint',
+               'tf_sensor_space/oscs','tf_sensor_space/itc',
+               'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
+               'epochs_drop_log']
 
-    for figure_subfolder in figure_subfolders:
-        full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
-        ## create figure paths
-        try:
-            makedirs(full_path_figures)
-            print(full_path_figures + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
+    for folder in folders:
+        folder_path = join(figures_path, folder)
+        if not exists(folder_path):
+            makedirs(folder_path)
+            print(folder_path + ' has been created')
+        
+        # create erm_figure
+        erm_folders = join(figures_path, 'ERM_Figures', folder)
+        if not exists(erm_folders):
+            makedirs(erm_folders)
+            print(erm_folders + ' has been created')
 
-    # create subfolders for event_ids
+    # create subfolders for for event_ids
     trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
                        'epochs_image', 'epochs_topo', 'evoked_butterfly',
                        'evoked_field', 'evoked_topomap', 'evoked_image',
@@ -120,171 +99,28 @@ def populate_data_directory(home_path, project_name, data_path, figures_path,
 
     for ev_id in event_id:
         for tr in trialed_folders:
-            subfolder_path = join(home_path, project_name, figures_path, tr, ev_id)
-            try:
-                makedirs(subfolder_path)
-                print(subfolder_path + ' has been created')
-            except OSError as exc:
-                if exc.errno == 17: ## dir already exists
-                    pass
-
-    ## also create ERM_Figures path
-    figure_subfolders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
-                         'power_spectra_raw', 'power_spectra_epochs',
-                         'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
-                         'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
-                         'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
-                         'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
-                         'tf_sensor_space/topo', 'tf_sensor_space/joint',
-                         'tf_sensor_space/oscs','tf_sensor_space/itc',
-                         'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
-                         'epochs_drop_log']
-
-    for figure_subfolder in figure_subfolders:
-        full_path_figures = join(home_path, project_name, figures_path,
-                                 'ERM_Figures', figure_subfolder)
-        ## create figure paths
-        try:
-            makedirs(full_path_figures)
-            print(full_path_figures + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    # create subfolders for event_ids (ERM)
-    trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
-                       'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                       'evoked_field', 'evoked_topomap', 'evoked_image',
-                       'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
-                       'stcs', 'vec_stcs','stcs_movie', 'snr',
-                       'tf_sensor_space/plot', 'tf_sensor_space/topo',
-                       'tf_sensor_space/joint', 'tf_sensor_space/oscs',
-                       'tf_sensor_space/itc']
-
-    for ev_id in event_id:
-        for tr in trialed_folders:
-            subfolder_path = join(home_path, project_name, figures_path,
-                                  'ERM_Figures', tr, ev_id)
-            try:
-                makedirs(subfolder_path)
-                print(subfolder_path + ' has been created')
-            except OSError as exc:
-                if exc.errno == 17: ## dir already exists
-                    pass
+            subfolder = join(figures_path, tr, ev_id)
+            if not exists(subfolder):
+                makedirs(subfolder)
+                print(subfolder + ' has been created')
+            
+            # for erm
+            erm_subfolder = join(figures_path, 'ERM_Figures', tr, ev_id)
+            if not exists(erm_subfolder):
+                makedirs(erm_subfolder)
+                print(erm_subfolder + ' has been created')
                 
-    ## also create grand average figures path
-    grand_averages_figures_path = join(home_path, project_name, figures_path,
-                                      'grand_averages')
+    ## create grand average figures path
+    grand_averages_figures_path = join(figures_path, 'grand_averages')
     figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
                          'source_space/statistics', 'source_space/stc',
                          'source_space/connectivity', 'source_space/stc_movie']
+    
     for figure_subfolder in figure_subfolders:
-        try:
-            full_path = join(grand_averages_figures_path, figure_subfolder)
-            makedirs(full_path)
-            print(full_path + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create FreeSurfer path
-    freesurfer_path = join(home_path, project_name, subjects_dir)
-    try:
-        makedirs(freesurfer_path)
-        print(freesurfer_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
-
-
-def populate_data_directory_small(home_path, project_name, data_path, figures_path,
-                                  subjects_dir, subjects):
-
-    ## create MEG and MRI paths
-    for name in subjects:
-
-        full_path_MEG = join(home_path, project_name, data_path, name)
-
-        ## create MEG dirs
-        try:
-            makedirs(full_path_MEG)
-            print(full_path_MEG + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create grand averages path with a statistics folder
-    ga_folders = ['statistics', 'evoked', 'stc', 'tfr', 'connect']
-    for subfolder in ga_folders:
-        grand_average_path = join(home_path, project_name, data_path,
-                                  'grand_averages', subfolder)
-        try:
-            makedirs(grand_average_path)
-            print(grand_average_path + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ##also create erm(empty_room_measurements)paths
-    erm_path = join(home_path, project_name, data_path,
-                              'empty_room_data')
-    try:
-        makedirs(erm_path)
-        print(erm_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
-
-    ## also create figures path
-    figure_subfolders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
-                         'power_spectra_raw', 'power_spectra_epochs',
-                         'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
-                         'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
-                         'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
-                         'noise_covariance', 'events', 'label_time_course', 'ECD',
-                         'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-                         'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
-                         'tf_sensor_space/topo', 'tf_sensor_space/joint',
-                         'tf_sensor_space/oscs','tf_sensor_space/itc',
-                         'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
-                         'epochs_drop_log']
-
-    for figure_subfolder in figure_subfolders:
-        full_path_figures = join(home_path, project_name, figures_path, figure_subfolder)
-        ## create figure paths
-        try:
-            makedirs(full_path_figures)
-            print(full_path_figures + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create grand average figures path
-    grand_averages_figures_path = join(home_path, project_name, figures_path,
-                                      'grand_averages')
-    figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
-                         'source_space/statistics', 'source_space/stc',
-                         'source_space/connectivity', 'source_space/stc_movie']
-    for figure_subfolder in figure_subfolders:
-        try:
-            full_path = join(grand_averages_figures_path, figure_subfolder)
-            makedirs(full_path)
-            print(full_path + ' has been created')
-        except OSError as exc:
-            if exc.errno == 17: ## dir already exists
-                pass
-
-    ## also create FreeSurfer path
-    freesurfer_path = join(home_path, project_name, subjects_dir)
-    try:
-        makedirs(freesurfer_path)
-        print(freesurfer_path + ' has been created')
-    except OSError as exc:
-        if exc.errno == 17: ## dir already exists
-            pass
-
+        folder_path = join(grand_averages_figures_path, figure_subfolder)
+        if not exists(folder_path):
+            makedirs(folder_path)
+            print(folder_path + ' has been created')
 #==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 #==============================================================================
@@ -340,6 +176,146 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
 def find_events(name, save_dir, min_duration,
                 adjust_timeline_by_msec, lowpass, highpass, overwrite,
                 save_plots, figures_path):
+
+    events_name = name + '-eve.fif'
+    events_path = join(save_dir, events_name)
+
+    if overwrite or not isfile(events_path):
+
+        try:
+            raw = io.read_filtered(name, save_dir, lowpass, highpass)
+        except FileNotFoundError:
+            raw = io.read_raw(name, save_dir)
+
+        # By Martin Schulz
+        # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg
+
+        # prepare arrays
+        events = np.ndarray(shape=(0,3), dtype=np.int32)
+        evs = list()
+        evs_tol = list()
+
+
+        # Find events for each stim channel, append sample values to list
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 001'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 002'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 003'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 004'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 005'])[:,0])
+        evs.append(mne.find_events(raw,min_duration=0.002,stim_channel=['STI 006'])[:,0])
+
+        for i in evs:
+
+            # delete events in each channel, which are too close too each other (1ms)
+            too_close = np.where(np.diff(i)<=1)
+            if np.size(too_close)>=1:
+                print(f'Two close events (1ms) at samples {i[too_close] + raw.first_samp}, first deleted')
+                i = np.delete(i,too_close,0)
+                evs[evs.index(i)] = i
+
+            # add tolerance to each value
+            i_tol = np.ndarray(shape = (0,1), dtype=np.int32)
+            for t in i:
+                i_tol = np.append(i_tol, t-1)
+                i_tol = np.append(i_tol, t)
+                i_tol = np.append(i_tol, t+1)
+
+            evs_tol.append(i_tol)
+
+
+        # Get events from combinated Stim-Channels
+        equals = reduce(np.intersect1d, (evs_tol[0], evs_tol[1], evs_tol[2],
+                                         evs_tol[3], evs_tol[4], evs_tol[5]))
+        #elimnate duplicated events
+        too_close = np.where(np.diff(equals)<=1)
+        if np.size(too_close)>=1:
+            equals = np.delete(equals,too_close,0)
+            equals -= 1 # correction, because of shift with deletion
+
+        for q in equals:
+            if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                events = np.append(events, [[q,0,63]], axis=0)
+
+
+        for a,b,c,d,e in combinations(range(6), 5):
+            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c],
+                                             evs_tol[d], evs_tol[e]))
+            too_close = np.where(np.diff(equals)<=1)
+            if np.size(too_close)>=1:
+                equals = np.delete(equals,too_close,0)
+                equals -= 1
+
+            for q in equals:
+                if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c + 2**d + 2**e)]], axis=0)
+
+
+        for a,b,c,d in combinations(range(6), 4):
+            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c], evs_tol[d]))
+            too_close = np.where(np.diff(equals)<=1)
+            if np.size(too_close)>=1:
+                equals = np.delete(equals,too_close,0)
+                equals -= 1
+
+            for q in equals:
+                if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c + 2**d)]], axis=0)
+
+
+        for a,b,c in combinations(range(6), 3):
+            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c]))
+            too_close = np.where(np.diff(equals)<=1)
+            if np.size(too_close)>=1:
+                equals = np.delete(equals,too_close,0)
+                equals -= 1
+
+            for q in equals:
+                if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                    events = np.append(events, [[q,0,int(2**a + 2**b + 2**c)]], axis=0)
+
+
+        for a,b in combinations(range(6), 2):
+            equals = np.intersect1d(evs_tol[a], evs_tol[b])
+            too_close = np.where(np.diff(equals)<=1)
+            if np.size(too_close)>=1:
+                equals = np.delete(equals,too_close,0)
+                equals -= 1
+
+            for q in equals:
+                if not q in events[:,0] and not q in events[:,0]+1 and not q in events[:,0]-1:
+                    events = np.append(events, [[q,0,int(2**a + 2**b)]], axis=0)
+
+
+        # Get single-channel events
+        for i in range(6):
+            for e in evs[i]:
+                if not e in events[:,0] and not e in events[:,0]+1 and not e in events[:,0]-1:
+                    events = np.append(events, [[e,0,2**i]], axis=0)
+
+        # sort only along samples(column 0)
+        events = events[events[:,0].argsort()]
+
+        # apply latency correction
+        events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10**-3 * \
+                    raw.info['sfreq']) for ts in events[:, 0]]
+
+        ids = np.unique(events[:,2])
+        print('unique ID\'s assigned: ',ids)
+
+
+        if np.size(events)>0:
+            mne.event.write_events(events_path, events)
+        else:
+            print('No events found')
+
+
+    else:
+        print('event file: '+ events_path + ' already exists')
+
+@decor.topline
+def find_events_pp(name, save_dir, min_duration,
+                   adjust_timeline_by_msec, lowpass, highpass, overwrite,
+                   save_plots, figures_path):
 
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
@@ -1036,7 +1012,7 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
         # components have to be selected manually in the ica_components.py
         else:
             print('No EEG-Channels to read EOG/EEG from')
-
+            ica_dict = {}
             if not isfile(ica_comp_file_path):
                 if not exists(sub_script_path):
                     makedirs(sub_script_path)
@@ -1045,7 +1021,6 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                     ica_f.write(f'{name}:[]\n')
                     print(ica_comp_file_path + ' created')           
             else:
-                ica_dict = {}
                 with open(ica_comp_file_path, 'r') as ica_f:
                     for item in ica_f:
                         if ':' in item:
@@ -1155,87 +1130,6 @@ def apply_ica(name, save_dir, lowpass, highpass, data_path,
         
     else:
         print('ica epochs file: '+ ica_epochs_path + ' already exists')
-
-@decor.topline
-def ica_pure(name, save_dir, lowpass, highpass, overwrite, eog_channel,
-             ecg_channel, layout, reject, flat, bad_channels, autoreject,
-             overwrite_ar):
-
-    ica_name = name + filter_string(lowpass, highpass) + '-pure-ica.fif'
-    ica_path = join(save_dir, ica_name)
-
-    if overwrite or not isfile(ica_path):
-
-        raw = io.read_filtered(name, save_dir, lowpass, highpass)
-        picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
-                               stim=False, exclude=bad_channels)
-
-        ica = mne.preprocessing.ICA(n_components=25, method='fastica')
-
-        if autoreject:
-            reject_value_path = join(save_dir, filter_string(lowpass, highpass) \
-                                     + '_reject_value.py')
-            print('Rejection with Autoreject')
-            if overwrite_ar or not isfile(reject_value_path):
-
-                reject = ar.get_rejection_threshold(raw)
-
-                with open(reject_value_path, 'w') as rv:
-                    for key,value in reject.items():
-                        rv.write(f'{key}:{value}\n')
-
-            else:
-                with open(reject_value_path, 'r') as rv:
-                    reject = {}
-                    for item in rv:
-                        if ':' in item:
-                            key,value = item.split(':', 1)
-                            value = value[:-1]
-                            reject[key] = float(value)
-
-            print('Reading Rejection-Threshold from file')
-
-        ica.fit(raw, picks, reject=reject, flat=flat, reject_by_annotation=True)
-        ica.save(ica_path)
-        print(ica)
-
-
-        ica.plot_components()
-        ica.plot_overlay(raw)
-        ica.plot_properties(raw)
-        ica.plot_sources(raw)
-
-        """
-        eog_epochs = mne.preprocessing.create_eog_epochs(raw, ch_name=eog_channel)
-        ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, ch_name=ecg_channel)
-        eog_average = eog_epochs.average()
-        ecg_average = ecg_epochs.average()
-
-        eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel)
-        ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name=ecg_channel)
-
-
-        ica.plot_scores(ecg_scores, exclude=ecg_indices, title=name)
-        ica.plot_sources(ecg_average, exclude=ecg_indices)
-        ica.plot_properties(ecg_epochs, picks=ecg_indices, topomap_args={'layout':layout})
-        ica.plot_overlay(ecg_average, exclude=ecg_indices, show=False)
-
-        ica.plot_scores(eog_scores, exclude=eog_indices, title=name)
-        ica.plot_sources(eog_average, exclude=eog_indices)
-        ica.plot_properties(eog_epochs, picks=eog_indices, topomap_args={'layout':layout})
-        ica.plot_overlay(eog_average, exclude=eog_indices, show=False)
-
-        ica.plot_sources(raw, title=name)
-
-        try:
-            ica.plot_components(title=name, layout=layout)
-
-        except RuntimeError:
-            print('No EEG-Electrodes(kind=3)digitized')
-            pass
-        """
-    else:
-        print('pure-ica file: '+ ica_path + ' already exists')
 
 @decor.topline
 def get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
@@ -1411,6 +1305,7 @@ def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
 #==============================================================================
 # BASH OPERATIONS
 #==============================================================================
+## These functions do not work on Windows
 
 ## local function used in the bash commands below
 def run_process_and_write_output(command, subjects_dir):
@@ -1421,16 +1316,6 @@ def run_process_and_write_output(command, subjects_dir):
     ## write bash output in python console
     for c in iter(lambda: process.stdout.read(1), b''):
         sys.stdout.write(c.decode('utf-8'))
-
-def win_run_process_and_write_output(command, subjects_dir):
-# possible in shell to run bash -c or wsl, but calling freesurfer-functions is not possible
-    win_command = 'wsl&ls'
-    environment = environ.copy()
-    environment["SUBJECTS_DIR"] = subjects_dir
-    process = subprocess.run(win_command,stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,shell=True,env=environment)
-    ## write bash output in python console
-    print(process.stdout.decode('utf_8'))
 
 def import_mri(dicom_path, mri_subject, subjects_dir, n_jobs_freesurfer):
     files = listdir(dicom_path)
@@ -2117,12 +2002,6 @@ def statistics_source_space(morphed_data_all, save_dir_averages,
         print('cluster permutation: '+ cluster_path + \
               ' already exists')
 
-
-
-"""
-How to really make a correlation analysis:
-Separate your trials in odd and even. Then calculate the correlation between odd and even
-for ascending number of trials"""
 @decor.topline
 def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
              subtomri, ica_evokeds, save_plots, figures_path):
