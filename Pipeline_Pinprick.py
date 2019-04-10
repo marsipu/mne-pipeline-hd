@@ -56,16 +56,16 @@ overwrite = True # this counts for all operations below that save output
 save_plots = True # should plots be saved
 
 # raw
-predefined_bads = [6,7,8,26,27,28,79,97,103]
+predefined_bads = [6,7,8,26,27,28,79,97,103] # Default bad channels
 eog_digitized = True # Set True, if the last 4 digitized points where EOG
 lowpass = 80 # Hz
-highpass = 1 # Hz # at least 1 if to apply ICA
+highpass = 1 # Hz, at least 1 if to apply ICA
 
 # events
 adjust_timeline_by_msec = -95 #delay to stimulus in ms
 
 # epochs
-min_duration = 0.005 # s
+min_duration = 0.005 # s 
 time_unit = 's'
 tmin = -0.500 # s
 tmax = 2.000 # s
@@ -352,9 +352,9 @@ for name in subjects:
     #==========================================================================
 
     if exec_ops['find_events']:
-        op.find_events_pp(name, save_dir, min_duration,
-                          adjust_timeline_by_msec,lowpass, highpass, overwrite,
-                          save_plots, figures_path)
+        op.find_events(name, save_dir, min_duration,
+                       adjust_timeline_by_msec,lowpass, highpass, overwrite,
+                       save_plots, figures_path)
 
     if exec_ops['find_eog_events']:
         op.find_eog_events(name, save_dir, eog_channel)

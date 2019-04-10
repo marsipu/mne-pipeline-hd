@@ -8,7 +8,6 @@ Pipeline for group analysis of MEG data - operations functions
 Edited by Martin Schulz
 martin@stud.uni-heidelberg.de
 """
-
 from __future__ import print_function
     
 import mne
@@ -22,7 +21,6 @@ from . import utilities as ut
 from . import decorators as decor
 import pickle
 import subprocess
-import autoreject as ar
 from collections import Counter
 from nilearn.plotting import plot_anat
 from matplotlib import pyplot as plt
@@ -173,8 +171,7 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
         print('no erm_file assigned')
 
 @decor.topline
-def find_events(name, save_dir, min_duration,
-                adjust_timeline_by_msec, lowpass, highpass, overwrite,
+def find_events(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, overwrite,
                 save_plots, figures_path):
 
     events_name = name + '-eve.fif'
@@ -313,8 +310,7 @@ def find_events(name, save_dir, min_duration,
         print('event file: '+ events_path + ' already exists')
 
 @decor.topline
-def find_events_pp(name, save_dir, min_duration,
-                   adjust_timeline_by_msec, lowpass, highpass, overwrite,
+def find_events_pp(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, overwrite,
                    save_plots, figures_path):
 
     events_name = name + '-eve.fif'
@@ -1311,8 +1307,14 @@ def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
 def run_process_and_write_output(command, subjects_dir):
     environment = environ.copy()
     environment["SUBJECTS_DIR"] = subjects_dir
+    
+    if sys.platform == 'win32':
+        raise RuntimeError('mri_subject_functions are currently not working on Windows, please run them on Linux')
+        #command.insert(0, 'wsl')
+    
     process = subprocess.Popen(command, stdout=subprocess.PIPE,
                                env=environment)
+    
     ## write bash output in python console
     for c in iter(lambda: process.stdout.read(1), b''):
         sys.stdout.write(c.decode('utf-8'))
@@ -1364,7 +1366,7 @@ def apply_watershed(mri_subject, subjects_dir, overwrite):
     else:
         overwrite_string = ''
     ## watershed command
-    command = ['mne_watershed_bem',
+    command = ['mne', 'watershed_bem',
                '--subject', mri_subject,
                overwrite_string]
 
@@ -1407,7 +1409,7 @@ def make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite):
     else:
         overwrite_string = ''
 
-    command = ['mne_make_scalp_surfaces',
+    command = ['mne', 'make_scalp_surfaces',
                '--subject', mri_subject,
                overwrite_string]
 
@@ -1480,7 +1482,8 @@ def mri_coreg(name, save_dir, subtomri, subjects_dir, eog_digitized):
                 print('EOG-Digitization-Points already set to kind 3')
                 
     mne.gui.coregistration(subject=subtomri, inst=raw_path,
-                           subjects_dir=subjects_dir, guess_mri_subject=False)
+                           subjects_dir=subjects_dir, guess_mri_subject=False,
+                           advanced_rendering=True)
 
 @decor.topline
 def create_forward_solution(name, save_dir, subtomri, subjects_dir,

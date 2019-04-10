@@ -574,12 +574,12 @@ def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, save_plots,
-                           figures_path, time_unit, ermsub, use_calm_cov):
+                           figures_path, ermsub, use_calm_cov):
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
     for evoked in evokeds:
-        figure = evoked.plot(spatial_colors=True, time_unit=time_unit,
+        figure = evoked.plot(spatial_colors=True,
                              window_title=name + ' - ' + evoked.comment,
                              selectable=True, gfp=True, zorder='std')
 

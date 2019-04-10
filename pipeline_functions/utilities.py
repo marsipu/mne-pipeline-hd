@@ -3,8 +3,7 @@
 Created on Thu Jan 17 01:00:31 2019
 
 @author: 'Martin Schulz'
-"""
-
+"""   
 import os
 from os import makedirs
 from os.path import join, isfile, exists
@@ -227,9 +226,9 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
     
     return file_dict
 
-def get_subject_groups(all_subjects, fuse_ab):
+def get_subject_groups(all_files, fuse_ab, unspecified_names):
     
-    subjects = []
+    files = []
     
     pre_order_dict = {}
     order_dict = {}
@@ -238,12 +237,12 @@ def get_subject_groups(all_subjects, fuse_ab):
     grand_avg_dict = {}
 
     basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
-    for s in all_subjects:
+    for s in all_files:
         match = re.match(basic_pattern, s)
         if match:
-            subjects.append(s)
+            files.append(s)
     
-    for s in subjects:
+    for s in files:
         match = re.match(basic_pattern, s)
         key = match.group(1) + '_' + match.group(3)
         if key in pre_order_dict:
@@ -273,7 +272,7 @@ def get_subject_groups(all_subjects, fuse_ab):
             order_dict[key].update({v_list[3]:'high'})
         order_dict[key].update({'t':'t'})
             
-    for s in subjects:
+    for s in files:
         match = re.match(basic_pattern, s)        
         key = match.group(1) + '_' + match.group(2)
         if key in ab_dict:
@@ -281,7 +280,7 @@ def get_subject_groups(all_subjects, fuse_ab):
         else:
             ab_dict.update({key:[s]})
             
-    for s in subjects:
+    for s in files:
         match = re.match(basic_pattern, s)
         key = match.group(1) + '_' + match.group(3)
         sub_key = order_dict[key][match.group(2)]
@@ -290,7 +289,7 @@ def get_subject_groups(all_subjects, fuse_ab):
         else:
             comp_dict.update({key:{sub_key:s}})
 
-    for s in subjects:
+    for s in files:
         match = re.match(basic_pattern, s)
         if fuse_ab:
             key = order_dict[match.group(1)+'_'+match.group(3)][match.group(2)]
@@ -302,24 +301,23 @@ def get_subject_groups(all_subjects, fuse_ab):
         else:
             grand_avg_dict.update({key:[s]})    
     
+    if unspecified_names:
+        grand_avg_dict.update({'Unspecified':all_files})
+    
     return ab_dict, comp_dict, grand_avg_dict
 
 def getallfifFiles(dirName):
     # create a list of file and sub directories
     # names in the given directory
     listOfFile = os.walk(dirName)
-    allFiles = list()
+    all_fif_files = list()
     paths = dict()
     # Iterate over all the entries
     for dirpath, dirnames, filenames in listOfFile:
 
         for file in filenames:
             if file[-4:] == '.fif':
-                allFiles.append(file)
+                all_fif_files.append(file)
                 paths.update({file:join(dirpath, file)})
 
-    return allFiles, paths
-
-if __name__ == '__main__':
-    app = choose_function()
-    print('Huhu')
+    return all_fif_files, paths

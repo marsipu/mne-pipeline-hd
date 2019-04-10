@@ -6,15 +6,13 @@ Created on Mon Feb 11 03:11:47 2019
 @author: Martin Schulz
 """
 
-subject_operations = dict(add_subjects = 0,
+subject_operations = dict(add_files = 0,
                           add_mri_subjects = 0,
                           add_sub_dict = 0,
                           add_erm_dict = 0,
                           add_bad_channels = 0)
 
-basic_operations = dict(populate_data_directory = 0, #don't do it in Linux if you're using also Windows!
-                        mri_preprocessing = 0, # enable to do any of the mri_subject-related functions
-                        erm_analysis = 0,
+basic_operations = dict(erm_analysis = 0,
                         motor_erm_analysis = 0,
                         close_plots = 0)
 
@@ -59,7 +57,6 @@ grand_average_operations = dict(grand_avg_evokeds = 0, # sensor space
 
 
 sensor_space_plots = dict(plot_raw = 0,
-                          print_info = 0,
                           plot_sensors = 0,
                           plot_events = 0,
                           plot_events_diff = 0,
