@@ -1797,7 +1797,7 @@ def source_space_connectivity(name, save_dir, lowpass, highpass,
                               n_jobs, overwrite):
 
     info = io.read_info(name, save_dir)
-    epochs = io.read_epochs(name, save_dir, lowpass, highpass)['LBT']
+    epochs = io.read_epochs(name, save_dir, lowpass, highpass)[0]
     inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
     
     # Compute inverse solution and for each epoch. By using "return_generator=True"
@@ -2042,7 +2042,7 @@ def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
     src = inv_op['src']            
 
     for l in ch_labels:
-        ep_tr = epochs['LBT']
+        ep_tr = epochs[0]
         ep_tr.crop(0,0.3)
         ep_len = len(ep_tr)//2*2 # Make sure ep_len is even
         idxs = range(ep_len)

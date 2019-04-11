@@ -779,7 +779,7 @@ def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
     stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method,
                                     event_id)
 
-    stc = stcs['LBT']
+    stc = stcs[0]
     save_path = join(figures_path, 'stcs_movie', 'LBT', name + '_' + 'LBT' +\
 						      filter_string(lowpass, highpass) + '.mp4')
 
@@ -992,7 +992,7 @@ def tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri, parcellati
         if l.name == 'S_postcentral-lh':
             label = l
     
-    epochs = io.read_epochs(name, save_dir, lowpass, highpass)['LBT']
+    epochs = io.read_epochs(name, save_dir, lowpass, highpass)[0]
     inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
     # subtract the evoked response in order to exclude evoked activity
     epochs_induced = epochs.copy().subtract_evoked()
