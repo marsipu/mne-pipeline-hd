@@ -13,22 +13,22 @@ import re
 
 
 ## Subjects
-def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
-                 data_path, figures_path, subjects_dir, orig_data_path,
-                 unspecified_names=True, gui=False):
+def add_files(file_list_path, erm_list_path, motor_erm_list_path,
+              data_path, figures_path, subjects_dir, orig_data_path,
+              unspecified_names=True, gui=False):
     
-    subjects = read_subjects(sub_list_path)
-    erm_files = read_subjects(erm_list_path)
-    motor_erm_files = read_subjects(motor_erm_list_path)
+    files = read_files(file_list_path)
+    erm_files = read_files(erm_list_path)
+    motor_erm_files = read_files(motor_erm_list_path)
     
-    all_files, paths = ut.getallfifFiles(orig_data_path)
+    all_fif_files, paths = ut.getallfifFiles(orig_data_path)
     
     #Regular-Expressions Pattern
     pattern = r'pp[0-9][0-9]*[a-z]*_[0-9]{0,3}t?_[a,b]$'
     if unspecified_names:
         pattern = r'.*'
     
-    for f in all_files:
+    for f in all_fif_files:
         fname = f[:-4]
         fdest = join(data_path, fname, fname + '-raw.fif')
         ermdest = join(data_path, 'empty_room_data', fname + '-raw.fif')
@@ -82,21 +82,21 @@ def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
 
         elif match:       
             # Organize sub_files
-            if not fname in subjects:
-                if not isfile(sub_list_path):
+            if not fname in files:
+                if not isfile(file_list_path):
                     print('-'*60 + '\n' + fname)
                     if not exists(join(data_path, '_Subject_scripts')):
                         os.makedirs(join(data_path, '_Subject_scripts'))
                         print(join(data_path, '_Subject_scripts created'))
                         
-                    with open(sub_list_path, 'w') as sl1:
+                    with open(file_list_path, 'w') as sl1:
                         sl1.write(fname + '\n')
-                    print('sub_list.py created') 
+                    print('file_list.py created') 
                     print(f'{fname} was automatically added to sub_list from {orig_data_path}')
                     
                 else:
                     print('-'*60 + '\n' + fname)
-                    with open(sub_list_path, 'a') as sl2:
+                    with open(file_list_path, 'a') as sl2:
                         sl2.write(fname + '\n')
                 print(f'{fname} was automatically added to sub_list from {orig_data_path}')
     
@@ -115,30 +115,30 @@ def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
             
     if gui == True:
         def add_to_list():
-            if not isfile(sub_list_path):
+            if not isfile(file_list_path):
                 if not exists(join(data_path, '_Subject_scripts')):
                     os.makedirs(join(data_path, '_Subject_scripts'))
                 ilist = []
                 ilist.append(e1.get())
                 e1.delete(0,t.END)
-                with open(sub_list_path, 'w') as sl:
+                with open(file_list_path, 'w') as sl:
                     for listitem in ilist:
                         sl.write('%s\n' % listitem)
-                print('sub_list.py created')
+                print('file_list.py created')
     
             else:
                 elist = []
                 elist.append(e1.get())
                 e1.delete(0,t.END)
-                with open(sub_list_path, 'a') as sl:
+                with open(file_list_path, 'a') as sl:
                     for listitem in elist:
                         sl.write('%s\n' % listitem)
     
         def delete_last():
-            with open(sub_list_path, 'r') as dl:
+            with open(file_list_path, 'r') as dl:
                 dlist = (dl.readlines())
     
-            with open(sub_list_path, 'w') as dl:
+            with open(file_list_path, 'w') as dl:
                 for listitem in dlist[:-1]:
                     dl.write('%s' % listitem)
     
@@ -148,15 +148,15 @@ def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
     
         def readl():
             try:
-                with open(sub_list_path, 'r') as rl:
+                with open(file_list_path, 'r') as rl:
                     print(rl.read())
             except FileNotFoundError:
-                print('sub_list.py not yet created, run add_subjects')
+                print('file_list.py not yet created, run add_files')
     
         def pop_dir():
     
-            subjects = read_subjects(sub_list_path)
-            for name in subjects:
+            files = read_files(file_list_path)
+            for name in files:
                 folder_path = join(data_path, name)
             
                 if not exists(folder_path):
@@ -177,21 +177,21 @@ def add_subjects(sub_list_path, erm_list_path, motor_erm_list_path,
     
         t.mainloop()
 
-def read_subjects(sub_list_path):
+def read_files(file_list_path):
 
-    sub_list = []
+    file_list = []
 
     try:
-        with open(sub_list_path, 'r') as sl:
+        with open(file_list_path, 'r') as sl:
             for line in sl:
                 currentPlace = line[:-1]
-                sub_list.append(currentPlace)
+                file_list.append(currentPlace)
 
     except FileNotFoundError:
-        print(f'{sub_list_path} not yet created, put some files in orig_data_path')
+        print(f'{file_list_path} not yet created, put some files in orig_data_path')
         pass
 
-    return sub_list
+    return file_list
 
 ##MRI-Subjects
 def add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False):
@@ -279,7 +279,7 @@ def read_mri_subjects(mri_sub_list_path):
     return mri_sub_list
 
 ##Subject-Dict
-def add_sub_dict(sub_dict_path, sub_list_path, mri_sub_list_path, data_path):
+def add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path):
 
     def assign_sub():
         choice1=listbox1.get(listbox1.curselection())
@@ -339,7 +339,7 @@ def add_sub_dict(sub_dict_path, sub_list_path, mri_sub_list_path, data_path):
     listbox2.grid(row=1, column=2, rowspan=4)
     scrollbar2.config(command=listbox2.yview)
 
-    with open(sub_list_path, 'r') as sl:
+    with open(file_list_path, 'r') as sl:
         for line in sl:
             listbox1.insert(t.END, line[:-1])
 
@@ -379,7 +379,7 @@ def read_sub_dict(sub_dict_path):
 
 ## empty_room_data
 
-def add_erm_dict(erm_dict_path, sub_list_path, erm_list_path, data_path):
+def add_erm_dict(erm_dict_path, file_list_path, erm_list_path, data_path):
 
     def assign_erm():
         choice1=listbox1.get(listbox1.curselection())
@@ -439,13 +439,14 @@ def add_erm_dict(erm_dict_path, sub_list_path, erm_list_path, data_path):
     listbox2.grid(row=1, column=2, rowspan=4)
     scrollbar2.config(command=listbox2.yview)
 
-    with open(sub_list_path, 'r') as sl:
+    with open(file_list_path, 'r') as sl:
         for line in sl:
             listbox1.insert(t.END, line[:-1])
 
     with open(erm_list_path, 'r') as msl:
         for line in msl:
             listbox2.insert(t.END, line[:-1])
+        listbox2.insert(t.END, 'None')
 
     t.Button(master, text='assign', command=assign_erm, bg='green',
              activebackground='blue', fg='white', font=100, relief=t.RAISED
@@ -481,7 +482,7 @@ def read_erm_dict(erm_dict_path):
 
 ## bad_channels_dict
 
-def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
+def add_bad_channels_dict(bad_channels_dict_path, file_list_path,
                           erm_list_path, motor_erm_list_path,
                           data_path, predefined_bads,
                           sub_script_path):
@@ -604,8 +605,8 @@ def add_bad_channels_dict(bad_channels_dict_path, sub_list_path,
     scrollbar.config(command=listbox.yview)
 
     bad_channels_dict = read_bad_channels_dict(bad_channels_dict_path)     
-    # Add entries for subjects and erm_files
-    with open(sub_list_path, 'r') as sl:
+    # Add entries for files and erm_files
+    with open(file_list_path, 'r') as sl:
         for line in sl:
             currentPlace = line[:-1]
             listbox.insert(t.END, currentPlace)
@@ -680,15 +681,30 @@ def read_bad_channels_dict(bad_channels_dict_path):
 
     return bad_channels_dict
 
-def file_selection(which_file, all_subjects):
+def file_selection(which_file, all_files):
     # Turn string input into according sub_list-Index
     try:
-        if which_file == 'all':
-            run = range(0,len(all_subjects))
+        if 'all' in which_file:
+            if ',' in which_file:
+                splits = which_file.split(',')
+                rm = []
+                run = []
+                for sp in splits:
+                    if '!' in sp:
+                        rm.append(int(sp[1:])-1)
+                    if 'all' in sp:
+                        for i in range(0, len(all_files)):
+                            run.append(i)
+                for r in rm:
+                    if r in run:
+                        run.remove(r)
+            else:
+                run = range(0,len(all_files))
         
         elif ',' in which_file and '-' in which_file:
             z = which_file.split(',')
             run = []
+            rm = []
             for i in z:
                 if '-' in i and not '!' in i:
                     x,y = i.split('-')
@@ -700,31 +716,43 @@ def file_selection(which_file, all_subjects):
                     x,y = i.split('-')
                     x = x[1:]
                     for n in range(int(x)-1,int(y)):
-                        run.remove(int(n)-1)
-                else:
-                    run.remove(int(i[1:])-1)
+                        rm.append(n)
+                elif '!' in i:
+                    rm.append(int(i[1:])-1)
+            
+            for r in rm:
+                if r in run:
+                    run.remove(r)
                     
         elif '-' in which_file and ',' not in which_file:
             x,y = which_file.split('-')
             run = range(int(x)-1,int(y))
             
         elif ',' in which_file and '-' not in which_file:
-            run = which_file.split(',')
-            for i in run:
-                run[run.index(i)] = int(i)-1
+            splits = which_file.split(',')
+            rm = []
+            run = []
+            for sp in splits:
+                if '!' in sp:
+                    rm.append(int(sp)-1)
+                else:
+                    run.append(int(sp)-1)
+            if len(rm)>0:
+                for r in rm:
+                    run.remove(r)
                 
         else:
             run = [int(which_file)-1]
         
-        subjects = [x for (i,x) in enumerate(all_subjects) if i in run]
+        files = [x for (i,x) in enumerate(all_files) if i in run]
         
-        return subjects
+        return files
     
     except TypeError:
         raise TypeError(f'{which_file} is not a string(enclosed by quotes)')
     
     except ValueError:
-        raise ValueError(f'{which_file} is not a whole number')
+        raise ValueError(f'{which_file} makes a problem')
 
 def mri_subject_selection(which_mri_subject, all_mri_subjects):
     # Turn string input into according mri_sub_list-Index

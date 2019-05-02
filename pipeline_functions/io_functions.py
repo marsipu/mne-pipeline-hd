@@ -50,32 +50,6 @@ def read_raw(name, save_dir):
 
     return raw
 
-def read_maxfiltered(name, save_dir):
-#obsolet if you only have one file per measurement
-    split_string_number = 0
-    read_all_files = False
-    raws = []
-    while not read_all_files:
-
-        if split_string_number > 0:
-            split_string_part = '-' + str(split_string_number)
-        else:
-            split_string_part = ''
-
-        raw_name = name + split_string_part + '.fif'
-        raw_path = join(save_dir, raw_name)
-        try:
-            raw_part = mne.io.Raw(raw_path, preload=True)
-            raws.append(raw_part)
-            split_string_number += 1
-        except:
-            read_all_files = True
-            print(str(split_string_number) + ' raw files were read')
-
-    raw = mne.concatenate_raws(raws)
-
-    return raw
-
 def read_filtered(name, save_dir, lowpass, highpass):
 
     raw_name = name + filter_string(lowpass, highpass) + '-raw.fif'

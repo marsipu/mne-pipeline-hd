@@ -279,7 +279,7 @@ def tfr_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
     ('l_Gamma', 30, 60)
     ]
     
-    event_id = {'LBT':1}
+    event_id = {'1':1}
     baseline = None
     
     raw = io.read_raw(name, save_dir)
@@ -574,12 +574,12 @@ def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
 
 @decor.topline
 def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, save_plots,
-                           figures_path, time_unit, ermsub, use_calm_cov):
+                           figures_path, ermsub, use_calm_cov):
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
     for evoked in evokeds:
-        figure = evoked.plot(spatial_colors=True, time_unit=time_unit,
+        figure = evoked.plot(spatial_colors=True,
                              window_title=name + ' - ' + evoked.comment,
                              selectable=True, gfp=True, zorder='std')
 
@@ -728,10 +728,9 @@ def plot_source_estimates(name, save_dir, lowpass, highpass, subtomri, subjects_
         for idx, t in enumerate(mne_evoked_time):
             stc = stcs[trial_type]
             if stc_interactive:
-                figures = (mlab.figure(size=(800,800)),mlab.figure(size=(800,800)))
                 brain = stc.plot(subject=subtomri, surface='inflated', subjects_dir=subjects_dir,
-                                 time_viewer=True, hemi='both', views='lat', initial_time=t,
-                                 title=name+'-'+trial_type, figure=figures)
+                                 time_viewer=True, hemi='split', views='lat', initial_time=t,
+                                 title=name+'-'+trial_type, size=(1600,800))
             else:
                 brain = stc.plot(subject=subtomri, surface='inflated', subjects_dir=subjects_dir,
                                  time_viewer=False, hemi='split', views='lat', initial_time=t,
@@ -779,14 +778,14 @@ def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
     stcs = io.read_source_estimates(name, save_dir,lowpass, highpass, method,
                                     event_id)
 
-    stc = stcs['LBT']
-    save_path = join(figures_path, 'stcs_movie', 'LBT', name + '_' + 'LBT' +\
+    stc = stcs[0]
+    save_path = join(figures_path, 'stcs_movie', name +\
 						      filter_string(lowpass, highpass) + '.mp4')
 
     brain = mne.viz.plot_source_estimates(stc=stc,subject=subtomri, surface='inflated',
                                 subjects_dir=subjects_dir, size=(1600,800),
                                 hemi='split', views='lat',
-                                title=name + '_' + 'LBT' + '_movie')
+                                title=name + '_movie')
 
     print('Saving Video')
     brain.save_movie(save_path, time_dilation=8,
@@ -820,11 +819,7 @@ def plot_labels(mri_subject, subjects_dir, save_plots, figures_path,
 
     brain = Brain(mri_subject, hemi='lh', surf='inflated', views='lat')
     
-    labels = mne.read_labels_from_annot(mri_subject, parc=parcellation,
-                                        hemi='lh')
-
-    for label in labels:
-        brain.add_label(label)
+    brain.add_annotation(parcellation)
     
     if save_plots:
         save_path = join(figures_path, 'labels',
@@ -992,7 +987,7 @@ def tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri, parcellati
         if l.name == 'S_postcentral-lh':
             label = l
     
-    epochs = io.read_epochs(name, save_dir, lowpass, highpass)['LBT']
+    epochs = io.read_epochs(name, save_dir, lowpass, highpass)[0]
     inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
     # subtract the evoked response in order to exclude evoked activity
     epochs_induced = epochs.copy().subtract_evoked()
@@ -1046,14 +1041,14 @@ def tf_label_power_phlck(name, save_dir, lowpass, highpass, subtomri, parcellati
 
 @decor.topline
 def plot_source_space_connectivity(name, save_dir, lowpass, highpass,
-                                   subtomri, subjects_dir,
+                                   subtomri, subjects_dir, parcellation,
                                    con_methods, con_fmin,
                                    con_fmax, save_plots, figures_path, n_jobs):
     
     con_dict = io.read_connect(name, save_dir, lowpass, highpass, con_methods,
-                    con_fmin, con_fmax)
+                               con_fmin, con_fmax)
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
-    labels = mne.read_labels_from_annot(subtomri, parc='aparc',
+    labels = mne.read_labels_from_annot(subtomri, parc=parcellation,
                                         subjects_dir=subjects_dir)
     label_colors = [label.color for label in labels]
 
@@ -1062,19 +1057,26 @@ def plot_source_space_connectivity(name, save_dir, lowpass, highpass,
     label_names = [label.name for label in labels]
     
     lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
+    rh_labels = [l_name for l_name in label_names if l_name.endswith('rh')]
     
     # Get the y-location of the label
-    label_ypos = list()
+    lh_label_ypos = list()
     for l_name in lh_labels:
         idx = label_names.index(l_name)
         ypos = np.mean(labels[idx].pos[:, 1])
-        label_ypos.append(ypos)
+        lh_label_ypos.append(ypos)
+
+    rh_label_ypos = list()
+    for l_name in lh_labels:
+        idx = label_names.index(l_name)
+        ypos = np.mean(labels[idx].pos[:, 1])
+        rh_label_ypos.append(ypos)
     
     # Reorder the labels based on their location
-    lh_labels = [label for (yp, label) in sorted(zip(label_ypos, lh_labels))]
-    
+    lh_labels = [label for (yp, label) in sorted(zip(lh_label_ypos, lh_labels))]
+    rh_labels = [label for (yp, label) in sorted(zip(rh_label_ypos, rh_labels))]
     # For the right hemi
-    rh_labels = [label[:-2] + 'rh' for label in lh_labels]
+    #rh_labels = [label[:-2] + 'rh' for label in lh_labels]
     
     # Save the plot order and create a circular layout
     node_order = list()
@@ -1089,7 +1091,8 @@ def plot_source_space_connectivity(name, save_dir, lowpass, highpass,
     for method in con_methods:
         fig, axes = mne.viz.plot_connectivity_circle(con_dict[method], label_names, n_lines=300,
                                                node_angles=node_angles, node_colors=label_colors,
-                                               title=method+'_'+str(con_fmin)+'-'+str(con_fmax))
+                                               title=method+'_'+str(con_fmin)+'-'+str(con_fmax),
+                                               fontsize_names=2)
         if save_plots:
             save_path = join(figures_path, 'tf_source_space/connectivity', name + \
                              filter_string(lowpass, highpass) + \
@@ -1110,7 +1113,7 @@ def plot_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
             figure = ga_dict[stim_type][trial].plot_joint(title=stim_type + '_' + trial,
-                            ts_args={'ylim':{'grad':[-50,20]}})
+                            ts_args={'ylim':{'grad':[-50,30]}})
             if save_plots:
                 save_path = join(figures_path, 'grand_averages/sensor_space/evoked',
                                  stim_type + '_' + trial + \
@@ -1241,7 +1244,7 @@ def plot_grand_avg_stc_anim(lowpass, highpass, save_dir_averages,
 @decor.topline
 def plot_grand_avg_connect(lowpass, highpass, save_dir_averages,
                            grand_avg_dict, subjects_dir, morph_to, event_id,
-                           con_methods, con_fmin, con_fmax,
+                           parcellation, con_methods, con_fmin, con_fmax,
                            save_plots, figures_path):
     
     ga_dict = io.read_grand_avg_connect(lowpass, highpass, save_dir_averages,
@@ -1249,7 +1252,7 @@ def plot_grand_avg_connect(lowpass, highpass, save_dir_averages,
                                         con_fmin, con_fmax)
 
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
-    labels = mne.read_labels_from_annot(morph_to, parc='aparc',
+    labels = mne.read_labels_from_annot(morph_to, parc=parcellation,
                                         subjects_dir=subjects_dir)
     label_colors = [label.color for label in labels]
     for l in labels:
@@ -1263,19 +1266,27 @@ def plot_grand_avg_connect(lowpass, highpass, save_dir_averages,
     label_names = [label.name for label in labels]
     
     lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
-    
+    rh_labels = [l_name for l_name in label_names if l_name.endswith('rh')]
+
     # Get the y-location of the label
-    label_ypos = list()
+    lh_label_ypos = list()
     for l_name in lh_labels:
         idx = label_names.index(l_name)
         ypos = np.mean(labels[idx].pos[:, 1])
-        label_ypos.append(ypos)
+        lh_label_ypos.append(ypos)
+
+    rh_label_ypos = list()
+    for l_name in lh_labels:
+        idx = label_names.index(l_name)
+        ypos = np.mean(labels[idx].pos[:, 1])
+        rh_label_ypos.append(ypos)
     
     # Reorder the labels based on their location
-    lh_labels = [label for (yp, label) in sorted(zip(label_ypos, lh_labels))]
+    lh_labels = [label for (yp, label) in sorted(zip(lh_label_ypos, lh_labels))]
+    rh_labels = [label for (yp, label) in sorted(zip(rh_label_ypos, rh_labels))]
     
     # For the right hemi
-    rh_labels = [label[:-2] + 'rh' for label in lh_labels]
+    #rh_labels = [label[:-2] + 'rh' for label in lh_labels]
     
     # Save the plot order and create a circular layout
     node_order = list()
@@ -1291,7 +1302,8 @@ def plot_grand_avg_connect(lowpass, highpass, save_dir_averages,
                                                          label_names, n_lines=300,
                                                          node_angles=node_angles,
                                                          node_colors=label_colors,
-                                                         title=method+'_'+str(con_fmin)+'-'+str(con_fmax))
+                                                         title=method+'_'+str(con_fmin)+'-'+str(con_fmax),
+                                                         fontsize_names=2)
             if save_plots:
                 save_path = join(figures_path, 'grand_averages/source_space/connectivity', stim_type + \
                                  filter_string(lowpass, highpass) + \
