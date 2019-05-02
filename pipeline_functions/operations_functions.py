@@ -172,11 +172,15 @@ def filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
 
 @decor.topline
 def find_events(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, overwrite,
-                save_plots, figures_path):
+                save_plots, figures_path, exec_ops):
 
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
-
+    
+    if exec_ops['erm_analysis']:
+        print('No events for erm-data')
+        return
+    
     if overwrite or not isfile(events_path):
 
         try:
@@ -311,10 +315,14 @@ def find_events(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, over
 
 @decor.topline
 def find_events_pp(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, overwrite,
-                   save_plots, figures_path):
+                   save_plots, figures_path, exec_ops):
 
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
+
+    if exec_ops['erm_analysis']:
+        print('No events for erm-data')
+        return
 
     if overwrite or not isfile(events_path):
 
@@ -557,19 +565,35 @@ def find_eog_events(name, save_dir, eog_channel):
 def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
               baseline, reject, flat, autoreject, overwrite_ar,
               sub_script_path, bad_channels, decim,
-              reject_eog_epochs, overwrite):
+              reject_eog_epochs, overwrite, exec_ops):
 
     epochs_name = name + filter_string(lowpass, highpass) + '-epo.fif'
     epochs_path = join(save_dir, epochs_name)
     if overwrite or not isfile(epochs_path):
 
-        events = io.read_events(name, save_dir)
+        raw = io.read_filtered(name, save_dir, lowpass, highpass)
+        
+        if exec_ops['erm_analysis']:
+            n_times = raw.n_times
+            sfreq = raw.info['sfreq']
+            step = (n_times-10*sfreq)/200 # Numer of events in motor_erm
+            events = np.ndarray((200,3), dtype='int32')
+            times = np.arange(5*sfreq, n_times-5*sfreq, step)[:200]
+            events[:,0] = times
+            events[:,1] = 0
+            events[:,2] = 1
+        else:
+            events = io.read_events(name, save_dir)
+        
+        # Choose only included event_ids
         actual_event_id = {}
         for i in event_id:
             if event_id[i] in np.unique(events[:,2]):
                 actual_event_id.update({i:event_id[i]})
-                
-        raw = io.read_filtered(name, save_dir, lowpass, highpass)
+        
+        print('Event_ids included:')
+        for i in actual_event_id:
+            print(i)
 
         picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False,
                                eog=False, ecg=False, exclude=bad_channels)
@@ -593,7 +617,7 @@ def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
             print(f'{n_blinks} blinks detected and annotated')
 
 
-        epochs = mne.Epochs(raw, events, event_id, tmin, tmax, baseline,
+        epochs = mne.Epochs(raw, events, actual_event_id, tmin, tmax, baseline,
                             preload=True, picks=picks, proj=False,
                             decim=decim, on_missing='ignore',reject_by_annotation=True)
 
@@ -1460,7 +1484,32 @@ def morph_subject(mri_subject, subjects_dir, morph_to, source_space_method,
     if overwrite or not isfile(morph_path):
         morph.save(morph_path, overwrite=True)
         print(f'{morph_path} written')
+
+def morph_labels(mri_subject, subjects_dir, overwrite):
     
+    parcellations = ['aparc_sub','HCPMMP1_combined','HCPMMP1']
+    if not isfile(join(subjects_dir, 'fsaverage/label',
+                       'lh.' + parcellations[0] + '.annot')):
+        mne.datasets.fetch_hcp_mmp_parcellation(subjects_dir=subjects_dir,
+                                                verbose=True)
+        
+        mne.datasets.fetch_aparc_sub_parcellation(subjects_dir=subjects_dir,
+                                                  verbose=True)
+    else:
+        print('You\'ve already downloaded the parcellations, splendid!')
+
+    if not isfile(join(subjects_dir, mri_subject, 'label',
+                       'lh.' + parcellations[0] + '.annot')) or overwrite:        
+        for pc in parcellations:
+            labels = mne.read_labels_from_annot('fsaverage', pc, hemi='both')
+            
+            m_labels = mne.morph_labels(labels, mri_subject, 'fsaverage', subjects_dir,
+                                        surf_name='pial')
+            
+            mne.write_labels_to_annot(m_labels, mri_subject, pc, subjects_dir=subjects_dir)
+    
+    else:
+        print(f'{parcellations} already exist')
 @decor.topline
 def mri_coreg(name, save_dir, subtomri, subjects_dir, eog_digitized):
 
@@ -1792,7 +1841,7 @@ def apply_morph(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
 
 @decor.topline
 def source_space_connectivity(name, save_dir, lowpass, highpass,
-                              subtomri, subjects_dir, method,
+                              subtomri, subjects_dir, method, parcellation,
                               con_methods, con_fmin, con_fmax,
                               n_jobs, overwrite):
 
@@ -1809,7 +1858,7 @@ def source_space_connectivity(name, save_dir, lowpass, highpass,
                                 pick_ori="normal", return_generator=True)
     
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
-    labels = mne.read_labels_from_annot(subtomri, parc='aparc',
+    labels = mne.read_labels_from_annot(subtomri, parc=parcellation,
                                         subjects_dir=subjects_dir)
     
     # Average the source estimates within each label using sign-flips to reduce

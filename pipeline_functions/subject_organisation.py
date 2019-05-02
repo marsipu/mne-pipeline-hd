@@ -684,12 +684,27 @@ def read_bad_channels_dict(bad_channels_dict_path):
 def file_selection(which_file, all_files):
     # Turn string input into according sub_list-Index
     try:
-        if which_file == 'all':
-            run = range(0,len(all_files))
+        if 'all' in which_file:
+            if ',' in which_file:
+                splits = which_file.split(',')
+                rm = []
+                run = []
+                for sp in splits:
+                    if '!' in sp:
+                        rm.append(int(sp[1:])-1)
+                    if 'all' in sp:
+                        for i in range(0, len(all_files)):
+                            run.append(i)
+                for r in rm:
+                    if r in run:
+                        run.remove(r)
+            else:
+                run = range(0,len(all_files))
         
         elif ',' in which_file and '-' in which_file:
             z = which_file.split(',')
             run = []
+            rm = []
             for i in z:
                 if '-' in i and not '!' in i:
                     x,y = i.split('-')
@@ -701,18 +716,30 @@ def file_selection(which_file, all_files):
                     x,y = i.split('-')
                     x = x[1:]
                     for n in range(int(x)-1,int(y)):
-                        run.remove(int(n)-1)
-                else:
-                    run.remove(int(i[1:])-1)
+                        rm.append(n)
+                elif '!' in i:
+                    rm.append(int(i[1:])-1)
+            
+            for r in rm:
+                if r in run:
+                    run.remove(r)
                     
         elif '-' in which_file and ',' not in which_file:
             x,y = which_file.split('-')
             run = range(int(x)-1,int(y))
             
         elif ',' in which_file and '-' not in which_file:
-            run = which_file.split(',')
-            for i in run:
-                run[run.index(i)] = int(i)-1
+            splits = which_file.split(',')
+            rm = []
+            run = []
+            for sp in splits:
+                if '!' in sp:
+                    rm.append(int(sp)-1)
+                else:
+                    run.append(int(sp)-1)
+            if len(rm)>0:
+                for r in rm:
+                    run.remove(r)
                 
         else:
             run = [int(which_file)-1]
@@ -725,7 +752,7 @@ def file_selection(which_file, all_files):
         raise TypeError(f'{which_file} is not a string(enclosed by quotes)')
     
     except ValueError:
-        raise ValueError(f'{which_file} is not a whole number')
+        raise ValueError(f'{which_file} makes a problem')
 
 def mri_subject_selection(which_mri_subject, all_mri_subjects):
     # Turn string input into according mri_sub_list-Index

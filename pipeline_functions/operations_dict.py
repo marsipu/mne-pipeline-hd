@@ -38,7 +38,8 @@ mri_subject_operations = dict(apply_watershed = 0,
                               make_dense_scalp_surfaces = 0, #until here all bash scripts!
                               prepare_bem = 0,
                               setup_source_space = 0,
-                              morph_subject = 0)
+                              morph_subject = 0,
+                              morph_labels = 0)
 
 source_space_operations = dict(mri_coreg = 0,
                                create_forward_solution = 0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate

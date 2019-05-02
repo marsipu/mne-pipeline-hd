@@ -25,7 +25,7 @@ from pipeline_functions import utilities as ut
 # WHICH SUBJECT? (TO SET)
 #==============================================================================
 # Which File do you want to run?
-# Type in the line of the filename in your file_list.py
+# Type in the LINE of the filename in your file_list.py
     # Examples:
     # '5' (One File)
     # '1,7,28' (Several Files)
@@ -37,7 +37,7 @@ from pipeline_functions import utilities as ut
 
 which_file = '1' # Has to be a string/enclosed in apostrophs
 which_mri_subject = 'all' # Has to be a string/enclosed in apostrophs
-which_erm_file = 'all' # Has to be a string/enclosed in apostrophs
+which_erm_file = 'all' # !12 Has to be a string/enclosed in apostrophs
 which_motor_erm_file = 'all' # Has to be a string/enclosed in apostrophs
 #%%============================================================================
 # PARAMETERS (TO SET)
@@ -52,7 +52,7 @@ enable_cuda = False # Using CUDA on supported graphics card e.g. for filtering
 unspecified_names = False # If you don't use Regular Expressions to handle your filenames
 print_info = False # Print the raw-info of each file in the console
 
-overwrite = True # should files be overwritten in general
+overwrite = False # should files be overwritten in general
 save_plots = True # should plots be saved
 
 # raw
@@ -62,7 +62,7 @@ lowpass = 80 # Hz
 highpass = 1 # Hz # at least 1 if to apply ICA
 
 # events
-adjust_timeline_by_msec = 0 # delay to stimulus in ms
+adjust_timeline_by_msec = -95 # delay to stimulus in ms
 pinprick = True # Events including Rating
 
 # epochs
@@ -78,7 +78,7 @@ decim = 1 # downsampling factor
 event_id = {'LBT':1, 'offset':4, 'lower_R':5, 'same_R':6, 'higher_R':7} # dictionary to assign strings to the event_ids
 
 # evokeds
-ica_evokeds = True # Apply ICA to evokeds
+ica_evokeds = False # Apply ICA to evokeds
 detrend = False # sometimes not working
 
 #Time-Frequency-Analysis
@@ -100,19 +100,19 @@ use_calm_cov = False # Use of a specific time interval in a measurement for nois
 erm_ica = False # Causes sometimes errors
 method = 'dSPM'
 mne_evoked_time = [0, 0.05, 0.1, 0.15, 0.2] # time points to be displayed in several plots [s]
-stc_interactive = False # interactive stc-plots
+stc_interactive = True # interactive stc-plots
 stc_animation = [0,0.5] # time span for stc-animation [s]
 eeg_fwd = False # set True if working with EEG-Data
-parcellation = 'aparc.a2009s'
+parcellation = 'aparc_sub'
 target_labels = {'lh':['S_central-lh', 'S_postcentral-lh', 'S_circular_insula_sup-lh',
                        'S_temporal_sup-lh'],
                  'rh':['S_central-rh', 'S_postcentral-rh', 'S_circular_insula_sup-rh',
                        'S_temporal_sup-rh']}
 
 # connectivity
-con_methods = ['coh', 'pli', 'wpli2_debiased'] # methods for connectivity plots
+con_methods = ['coh', 'pli'] # methods for connectivity plots
 con_fmin = 30 # fmin for connectivity plot
-con_fmax = 60 # fmax for connectivity plot
+con_fmax = 80 # fmax for connectivity plot
 
 # Dipole-fit
 ECDs = {} # Assign manually time points [s] to each file to make a dipole fit
@@ -146,7 +146,7 @@ if sys.platform == 'linux':
     home_path = '/mnt/z/Promotion/Pin-Prick-Projekt'
 
 project_name = 'PP_Messungen' # specify the name for your project as a folder
-subjects_dir = join(home_path, 'Freesurfer/Output') # name of your
+subjects_dir = join('Z:/Promotion/Freesurfer/Output') # name of your Freesurfer
 orig_data_path = join(home_path, 'Messungen_Dateien')
 
 #%%============================================================================
@@ -227,7 +227,9 @@ bad_channels_dict = suborg.read_bad_channels_dict(bad_channels_dict_path)
 #============================================================================
 if exec_ops['apply_watershed'] or exec_ops['make_dense_scalp_surfaces']\
 or exec_ops['prepare_bem'] or exec_ops['setup_source_space']\
-or exec_ops['morph_subject']:
+or exec_ops['morph_subject'] or exec_ops['plot_source_space']\
+or exec_ops['plot_bem'] or exec_ops['plot_labels']\
+or exec_ops['morph_labels']:
 
     mri_subjects = suborg.mri_subject_selection(which_mri_subject, all_mri_subjects)
 
@@ -260,7 +262,9 @@ or exec_ops['morph_subject']:
         if exec_ops['morph_subject']:
             op.morph_subject(mri_subject, subjects_dir, morph_to,
                              source_space_method, overwrite)
-            
+        
+        if exec_ops['morph_labels']:
+            op.morph_labels(mri_subject, subjects_dir, overwrite)
         #==========================================================================
         # PLOT SOURCE SPACES
         #==========================================================================
@@ -284,7 +288,7 @@ or exec_ops['morph_subject']:
 #===========================================================================
 if exec_ops['erm_analysis']:
     files = suborg.file_selection(which_erm_file, erm_files)   
-if exec_ops['motor_erm_analysis']:
+elif exec_ops['motor_erm_analysis']:
     files = suborg.file_selection(which_motor_erm_file, motor_erm_files)
 else:
     files = suborg.file_selection(which_file, all_files)
@@ -359,10 +363,12 @@ for name in files:
     if exec_ops['find_events']:
         if pinprick:
             op.find_events_pp(name, save_dir, adjust_timeline_by_msec, lowpass,
-                              highpass, overwrite, save_plots, figures_path)
+                              highpass, overwrite, save_plots, figures_path,
+                              exec_ops)
         else:
             op.find_events(name, save_dir, adjust_timeline_by_msec, lowpass,
-                           highpass, overwrite, save_plots, figures_path)
+                           highpass, overwrite, save_plots, figures_path,
+                           exec_ops)
 
     if exec_ops['find_eog_events']:
         op.find_eog_events(name, save_dir, eog_channel)
@@ -375,7 +381,7 @@ for name in files:
         op.epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
                      baseline, reject, flat, autoreject, overwrite_ar,
                      sub_script_path, bad_channels, decim,
-                     reject_eog_epochs, overwrite)
+                     reject_eog_epochs, overwrite, exec_ops)
 
     #==========================================================================
     # SIGNAL SPACE PROJECTION
@@ -656,14 +662,15 @@ for name in files:
         
     if exec_ops['source_space_connectivity']:
         op.source_space_connectivity(name, save_dir, lowpass, highpass,
-                                     subtomri, subjects_dir, method,
+                                     subtomri, subjects_dir, method, parcellation,
                                      con_methods, con_fmin, con_fmax,
                                      n_jobs, overwrite)
         
     if exec_ops['plot_source_space_connectivity']:
         plot.plot_source_space_connectivity(name, save_dir, lowpass, highpass,
-                                   subtomri, subjects_dir, con_methods, con_fmin,
-                                   con_fmax, save_plots, figures_path, n_jobs)
+                                   subtomri, subjects_dir, parcellation,
+                                   con_methods, con_fmin,con_fmax, save_plots,
+                                   figures_path, n_jobs)
 
     #==========================================================================
     # General Statistics
@@ -731,7 +738,7 @@ if exec_ops['plot_grand_avg_stc_anim']:
 if exec_ops['plot_grand_avg_connect']:
     plot.plot_grand_avg_connect(lowpass, highpass, save_dir_averages,
                                 grand_avg_dict, subjects_dir, morph_to, event_id,
-                                con_methods, con_fmin, con_fmax,
+                                parcellation, con_methods, con_fmin, con_fmax,
                                 save_plots, figures_path)
 #==============================================================================
 # STATISTICS SOURCE SPACE
