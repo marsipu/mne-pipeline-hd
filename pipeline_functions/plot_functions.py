@@ -15,12 +15,13 @@ import mne
 from os.path import join
 import matplotlib.pyplot as plt
 from mayavi import mlab
+from scipy import stats
 from . import io_functions as io
 from . import decorators as decor
 import numpy as np
 from surfer import Brain
 import gc
-import statistics as stats
+import statistics as st
 
 def filter_string(lowpass, highpass):
 
@@ -110,8 +111,8 @@ def plot_events_diff(name, save_dir, save_plots, figures_path):
             if events[x+1,2]==1:
                 l1.append(events[x+1,0] - events[x,0])
 
-    diff_mean = stats.mean(l1)
-    diff_stdev = stats.stdev(l1)
+    diff_mean = st.mean(l1)
+    diff_stdev = st.stdev(l1)
 
     figure = plt.figure()
     plt.plot(l1)
@@ -573,16 +574,22 @@ def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
                 print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
-def plot_butterfly_evokeds(name, save_dir, lowpass, highpass, save_plots,
-                           figures_path, ermsub, use_calm_cov):
+def plot_evoked_butterfly(name, save_dir, lowpass, highpass, save_plots,
+                          figures_path):
 
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
     for evoked in evokeds:
+        #ch_name, latency, amplitude = evoked.get_peak(tmin=-0.05, tmax=0.2, return_amplitude=True)
+
         figure = evoked.plot(spatial_colors=True,
                              window_title=name + ' - ' + evoked.comment,
                              selectable=True, gfp=True, zorder='std')
-
+        
+        #tp = abs(evoked.times[0]) + latency
+        #plt.plot(tp, amplitude, 'bo', figure=plt.gcf())
+        #plt.annotate(ch_name, (tp, amplitude))
+        
         if save_plots:
             save_path = join(figures_path, 'evoked_butterfly', evoked.comment,
                              name + '_' + evoked.comment + '_butterfly' + \
@@ -642,6 +649,37 @@ def plot_evoked_image(name, save_dir, lowpass, highpass, save_plots, figures_pat
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
+@decor.topline
+def plot_evoked_compare(data_path, lowpass, highpass, event_id, comp_dict,
+                        save_plots, figures_path):
+    
+    for title in comp_dict:
+        cond_dict = {}
+        trials = set()
+        channels = []
+        for cond in comp_dict[title]:
+            name = comp_dict[title][cond]
+            save_dir = join(data_path, name)
+            evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+            for evoked in evokeds:
+                channels.append(set(evoked.ch_names))
+                trial = evoked.comment
+                trials.add(trial)
+                if cond in cond_dict:
+                    cond_dict[cond].update({trial:evoked})
+                else:
+                    cond_dict.update({cond:{trial:evoked}})
+        
+        channels = list(set.intersection(*channels))
+        print('Preparation finished')
+        for trial in trials:
+            evoked_dict = {}
+            for cond in cond_dict:
+                evoked = cond_dict[cond][trial]
+                evoked = evoked.pick_channels(channels)
+                evoked_dict.update({cond:evoked})
+            mne.viz.plot_compare_evokeds(evoked_dict, picks=channels, gfp=True, title=title)
+            
 @decor.topline
 def plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots,
                         figures_path):
@@ -832,71 +870,70 @@ def plot_labels(mri_subject, subjects_dir, save_plots, figures_path,
         
 
 @decor.topline
-def label_time_course(name, save_dir, lowpass, highpass, subtomri, target_labels,
-                      save_plots, figures_path, parcellation):
+def label_time_course(name, save_dir, lowpass, highpass, subtomri,
+                      subjects_dir, method, source_space_method,
+                      target_labels, save_plots, figures_path,
+                      parcellation, event_id, ev_ids_label_analysis):
 
-    snr = 3.0
-    lambda2 = 1.0 / snr ** 2
-    method = "dSPM"
-
-    evoked = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
-    inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
-    src = inv_op['src']
-    # pick_ori has to be normal to plot bipolar time course
-    stc = mne.minimum_norm.apply_inverse(evoked, inv_op, lambda2, method,
-                                         pick_ori='normal')    
+    stcs = io.read_normal_source_estimates(name, save_dir, lowpass, highpass,
+                                           method, event_id)
     
-    labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
+    src = io.read_source_space(subtomri, subjects_dir, source_space_method)
+    
+    labels = mne.read_labels_from_annot(subtomri,
+                                        subjects_dir=subjects_dir,
+                                        parc=parcellation)
     
     # Annotation Parameters
     bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
     arrowprops=dict(arrowstyle="->")
     kw = dict(xycoords='data', arrowprops=arrowprops, bbox=bbox_props)
-
-    for hemi in target_labels:
-        for l in labels:
-            if l.name in target_labels[hemi]:
-                print(l.name)
-    
-                stc_label = stc.in_label(l)
-                mean = stc.extract_label_time_course(l, src, mode='mean')
-                mean_flip = stc.extract_label_time_course(l, src, mode='mean_flip')
-                pca = stc.extract_label_time_course(l, src, mode='pca_flip')
-                
-                t = 1e3 * stc_label.times
-                tmax = t[np.argmax(pca)]
-                tmin = t[np.argmin(pca)]
-                print(tmin)
-                print(tmax)
-                
-                plt.figure()
-                plt.plot(t, stc_label.data.T, 'k', linewidth=0.5)
-                h0, = plt.plot(t, mean.T, 'r', linewidth=3)
-                h1, = plt.plot(t, mean_flip.T, 'g', linewidth=3)
-                h2, = plt.plot(t, pca.T, 'b', linewidth=3)
-                
-                if -200<tmax<500:
-                    plt.annotate(f'max_lat={int(tmax)}ms',
-                                 xy=(tmax, pca.max()),
-                                 xytext=(tmax+200, pca.max()+2), **kw)
-                if -200<tmin<500:
-                    plt.annotate(f'min_lat={int(tmin)}ms',
-                                 xy=(tmin, pca.min()),
-                                 xytext=(tmin+200, pca.min()-2), **kw)
-                plt.legend([h0, h1, h2], ['mean', 'mean flip', 'PCA flip'])
-                plt.xlabel('Time (ms)')
-                plt.ylabel('Source amplitude')
-                plt.title(f'Activations in Label :{l.name}-{evoked.comment}')
-                plt.show()
-    
-                if save_plots:
-                    save_path = join(figures_path, 'label_time_course', evoked.comment, name + \
-                                         filter_string(lowpass, highpass) + '_' + \
-                                         evoked.comment + '_' + l.name + '.jpg')
-                    plt.savefig(save_path, dpi=600)
-                    print('figure: ' + save_path + ' has been saved')
-                else:
-                    print('Not saving plots; set "save_plots" to "True" to save')
+    for trial in ev_ids_label_analysis:
+        stc = stcs[trial]
+        for hemi in target_labels:
+            for l in labels:
+                if l.name in target_labels[hemi]:
+                    print(l.name)
+        
+                    stc_label = stc.in_label(l)
+                    mean = stc.extract_label_time_course(l, src, mode='mean')
+                    mean_flip = stc.extract_label_time_course(l, src, mode='mean_flip')
+                    pca = stc.extract_label_time_course(l, src, mode='pca_flip')
+                    
+                    t = 1e3 * stc_label.times
+                    tmax = t[np.argmax(pca)]
+                    tmin = t[np.argmin(pca)]
+                    print(tmin)
+                    print(tmax)
+                    
+                    plt.figure()
+                    plt.plot(t, stc_label.data.T, 'k', linewidth=0.5)
+                    h0, = plt.plot(t, mean.T, 'r', linewidth=3)
+                    h1, = plt.plot(t, mean_flip.T, 'g', linewidth=3)
+                    h2, = plt.plot(t, pca.T, 'b', linewidth=3)
+                    
+                    if -200<tmax<500:
+                        plt.annotate(f'max_lat={int(tmax)}ms',
+                                     xy=(tmax, pca.max()),
+                                     xytext=(tmax+200, pca.max()+2), **kw)
+                    if -200<tmin<500:
+                        plt.annotate(f'min_lat={int(tmin)}ms',
+                                     xy=(tmin, pca.min()),
+                                     xytext=(tmin+200, pca.min()-2), **kw)
+                    plt.legend([h0, h1, h2], ['mean', 'mean flip', 'PCA flip'])
+                    plt.xlabel('Time (ms)')
+                    plt.ylabel('Source amplitude')
+                    plt.title(f'Activations in Label :{l.name}-{trial}')
+                    plt.show()
+        
+                    if save_plots:
+                        save_path = join(figures_path, 'label_time_course', trial, name + \
+                                             filter_string(lowpass, highpass) + '_' + \
+                                             trial + '_' + l.name + '.jpg')
+                        plt.savefig(save_path, dpi=600)
+                        print('figure: ' + save_path + ' has been saved')
+                    else:
+                        print('Not saving plots; set "save_plots" to "True" to save')
 
 @decor.topline
 def cmp_label_time_course(data_path, lowpass, highpass, sub_to_mri, comp_dict,
@@ -1089,7 +1126,7 @@ def plot_source_space_connectivity(name, save_dir, lowpass, highpass,
     # Plot the graph using node colors from the FreeSurfer parcellation. We only
     # show the 300 strongest connections.
     for method in con_methods:
-        fig, axes = mne.viz.plot_connectivity_circle(con_dict[method], label_names, n_lines=300,
+        fig, axes = mne.viz.plot_connectivity_circle(con_dict[method], label_names, n_lines=500,
                                                node_angles=node_angles, node_colors=label_colors,
                                                title=method+'_'+str(con_fmin)+'-'+str(con_fmax),
                                                fontsize_names=2)
@@ -1122,6 +1159,12 @@ def plot_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
                 print('figure: ' + save_path + ' has been saved')
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
+
+@decor.topline
+def plot_grand_avg_evokeds_compare(data_path, lowpass, highpass, grand_avg_dict,
+                                   save_plots, figures_path):
+    
+    x = grand_avg_dict
 
 @decor.topline
 def plot_grand_avg_tfr(lowpass, highpass, baseline, tmin, tmax,
@@ -1399,6 +1442,41 @@ def plot_grand_averages_source_estimates_cluster_masked(name,
     else:
         print('Not saving plots; set "save_plots" to "True" to save')
 
+@decor.topline
+def pp_plot_latency_S1_corr(data_path, files, lowpass, highpass,
+                            save_plots, figures_path):
+    S1_lat = []
+    ev_lat = []
+    plt.figure()
+    
+    for name in files:
+        save_dir = join(data_path, name)
+        evoked = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
+        if not evoked.comment == 'LBT':
+            raise RuntimeError(f'Wrong trigger {evoked.comment} for analysis')
+        ch_name, latency, amplitude = evoked.get_peak(tmin=0, tmax=0.2, return_amplitude=True)
+        S1_lat.append(latency)
+        
+        events = io.read_events(name, save_dir)
+        l1 = []
+        for x in range(np.size(events, axis=0)):
+            if events[x,2]==2:
+                if events[x+1,2]==1:
+                    l1.append(events[x+1,0] - events[x,0])
+        diff_mean = st.mean(l1)
+
+        ev_lat.append(diff_mean)
+        
+        plt.plot(st.mean(l1), latency, 'bo')
+    plt.xlabel('Latency MotStart-LBT')
+    plt.ylabel('Latency S1')
+    if save_plots:
+        save_path = join(figures_path, 'statistics', 'MotStart-LBT_diff' + \
+                             filter_string(lowpass, highpass) + '.jpg')
+        plt.savefig(save_path, dpi=600)
+        print('figure: ' + save_path + ' has been saved')
+    else:
+        print('Not saving plots; set "save_plots" to "True" to save')
 @decor.topline
 def close_all():
 

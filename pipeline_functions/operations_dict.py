@@ -37,7 +37,8 @@ sensor_space_operations = dict(filter_raw = 0,
 mri_subject_operations = dict(apply_watershed = 0,
                               make_dense_scalp_surfaces = 0, #until here all bash scripts!
                               prepare_bem = 0,
-                              setup_source_space = 0,
+                              setup_src = 0,
+                              compute_src_distances = 0,
                               morph_subject = 0,
                               morph_labels = 0)
 
@@ -48,6 +49,7 @@ source_space_operations = dict(mri_coreg = 0,
                                source_estimate = 0,
                                vector_source_estimate = 0,
                                ECD_fit = 0,
+                               create_func_label = 0,
                                apply_morph = 0,
                                source_space_connectivity = 0)
 
@@ -75,13 +77,14 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_epochs_image = 0,
                           plot_epochs_topo = 0,
                           plot_epochs_drop_log = 0,
-                          plot_butterfly_evokeds = 0,
+                          plot_evoked_butterfly = 0,
                           plot_evoked_topo = 0,
                           plot_evoked_topomap = 0,
                           plot_evoked_field = 0,
                           plot_evoked_joint = 0,
                           plot_evoked_white = 0,
                           plot_evoked_image = 0,
+                          plot_evoked_compare = 0,
                           corr_ntr = 0)
 
 source_space_plots = dict(plot_transformation = 0,
@@ -112,7 +115,9 @@ grand_average_plots = dict(
                     statistics_source_space = 0,
 
                     # plot source space with statistics mask
-                    plot_grand_averages_source_estimates_cluster_masked = 0)
+                    plot_grand_averages_source_estimates_cluster_masked = 0,
+                    
+                    pp_plot_latency_S1_corr = 0)
 
 all_fs = {'subject_operations':subject_operations,
                  'basic_operations':basic_operations,

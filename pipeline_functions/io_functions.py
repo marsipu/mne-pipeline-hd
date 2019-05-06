@@ -237,9 +237,23 @@ def read_source_estimates(name, save_dir, lowpass, highpass, method,
         stc_name = name + filter_string(lowpass, highpass) + \
             '_' + trial_type + '_' + method
         stc_path = join(save_dir, stc_name)
-        stcs.update({trial_type:mne.source_estimate.read_source_estimate(stc_path)})
+        stc = mne.source_estimate.read_source_estimate(stc_path)
+        stcs.update({trial_type:stc})
 
     return stcs
+
+def read_normal_source_estimates(name, save_dir, lowpass, highpass, method,
+                                 event_id):
+    n_stcs = dict()
+
+    for trial_type in event_id:
+        n_stc_name = name + filter_string(lowpass, highpass) + \
+            '_' + trial_type + '_' + method + '-normal'
+        n_stc_path = join(save_dir, n_stc_name)
+        n_stc = mne.source_estimate.read_source_estimate(n_stc_path)
+        n_stcs.update({trial_type:n_stc})
+
+    return n_stcs
 
 def read_morphed_source_estimates(name, save_dir, lowpass, highpass, method,
                                   event_id):
