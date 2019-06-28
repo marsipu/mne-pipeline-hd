@@ -14,7 +14,8 @@ subject_operations = dict(add_files = 0,
 
 basic_operations = dict(erm_analysis = 0,
                         motor_erm_analysis = 0,
-                        close_plots = 0)
+                        close_plots = 0,
+                        shutdown = 0)
 
 
 sensor_space_operations = dict(filter_raw = 0,
@@ -32,7 +33,8 @@ sensor_space_operations = dict(filter_raw = 0,
                                run_ica = 0, # HIGPASS-FILTER RECOMMENDED!!!
                                apply_ica = 0,
                                get_evokeds = 0,
-                               tfr = 0)
+                               tfr = 0,
+                               align_peaks = 0)
 
 mri_subject_operations = dict(apply_watershed = 0,
                               make_dense_scalp_surfaces = 0, #until here all bash scripts!
@@ -40,7 +42,7 @@ mri_subject_operations = dict(apply_watershed = 0,
                               setup_src = 0,
                               compute_src_distances = 0,
                               morph_subject = 0,
-                              morph_labels = 0)
+                              morph_labels_from_fsaverage = 0)
 
 source_space_operations = dict(mri_coreg = 0,
                                create_forward_solution = 0, # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
@@ -48,15 +50,23 @@ source_space_operations = dict(mri_coreg = 0,
                                create_inverse_operator = 0,
                                source_estimate = 0,
                                vector_source_estimate = 0,
-                               ECD_fit = 0,
+                               ecd_fit = 0,
                                create_func_label = 0,
+                               func_label_processing = 0,
+                               func_label_ctf_ps = 0,
+                               label_power_phlck = 0,
                                apply_morph = 0,
+                               apply_morph_normal = 0,
                                source_space_connectivity = 0)
 
 grand_average_operations = dict(grand_avg_evokeds = 0, # sensor space
                                 grand_avg_tfr = 0,
                                 grand_avg_morphed = 0,
-                                grand_avg_connect = 0) # source space
+                                grand_avg_normal_morphed = 0,
+                                grand_avg_connect = 0,
+                                grand_avg_label_power = 0,
+                                grand_avg_func_labels = 0,
+                                grand_avg_func_labels_processing = 0) # source space
 
 
 sensor_space_plots = dict(plot_raw = 0,
@@ -85,38 +95,44 @@ sensor_space_plots = dict(plot_raw = 0,
                           plot_evoked_white = 0,
                           plot_evoked_image = 0,
                           plot_evoked_compare = 0,
+                          plot_evoked_h1h2 = 0,
                           corr_ntr = 0)
 
 source_space_plots = dict(plot_transformation = 0,
                           plot_source_space = 0,
                           plot_bem = 0,
                           plot_noise_covariance = 0,
-                          plot_source_estimates = 0,
+                          plot_stc = 0,
+                          plot_normal_stc = 0,
                           plot_animated_stc = 0,
                           plot_vector_source_estimates = 0, # plots in same window as plot_source_estimate
                           plot_snr = 0,
                           plot_labels = 0,
                           label_time_course = 0,
                           cmp_label_time_course = 0,
-                          tf_label_power_phlck = 0,
+                          sub_func_label_analysis = 0,
+                          all_func_label_analysis = 0,
+                          plot_label_power_phlck = 0,
                           plot_source_space_connectivity = 0)
 
 grand_average_plots = dict(
                     # plotting sensor space (between subjects)
                     plot_grand_avg_evokeds = 0,
+                    plot_grand_avg_evokeds_h1h2 = 0,
                     plot_grand_avg_tfr = 0,
 
                     # plotting source space (between subjects)
                     plot_grand_avg_stc = 0,
                     plot_grand_avg_stc_anim = 0,
                     plot_grand_avg_connect = 0,
+                    plot_grand_avg_label_power = 0,
 
                     # statistics in source space
                     statistics_source_space = 0,
 
                     # plot source space with statistics mask
                     plot_grand_averages_source_estimates_cluster_masked = 0,
-                    
+
                     pp_plot_latency_S1_corr = 0)
 
 all_fs = {'subject_operations':subject_operations,
