@@ -44,7 +44,6 @@ def filter_string(lowpass, highpass):
 
     return fs
 
-
 # ==============================================================================
 # OPERATING SYSTEM COMMANDS
 # ==============================================================================
@@ -1915,71 +1914,73 @@ def ecd_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
             print('Noise Covariance from Empty-Room-Data')
 
         evoked = evokeds[0]
-        for Dip in ecd:
-            tmin, tmax = ecd[Dip]
-            evoked_full = evoked.copy()
-            cevk = evoked.copy().crop(tmin, tmax)
-
-            dipole, data = mne.fit_dipole(cevk, noise_covariance, bem, trans,
-                                          min_dist=3.0, n_jobs=4)
-
-            figure = dipole.plot_locations(trans, subtomri, subjects_dir,
-                                           mode='orthoview', idx='gof')
-            plt.title(name, loc='right')
-
-            """pred_evoked = mne.simulation.simulate_evoked(fwd, stc, cevk.info, cov=None, nave=np.inf)
-            """
-            # find time point with highest GOF to plot
-            best_idx = np.argmax(dipole.gof)
-            best_time = dipole.times[best_idx]
-
-            print(f'Highest GOF {dipole.gof[best_idx]:.2f}% at t={best_time * 1000:.1f} ms with confidence volume'
-                  f'{dipole.conf["vol"][best_idx] * 100 ** 3} cm^3')
-
-            mri_pos = mne.head_to_mri(dipole.pos, subtomri, trans, subjects_dir)
-
-            save_path_anat = join(figures_path, 'ECD', name +
-                                  filter_string(lowpass, highpass) + '_' +
-                                  cevk.comment + Dip + '_ECD_anat.jpg')
-
-            plot_anat(t1_path, cut_coords=mri_pos[best_idx], output_file=save_path_anat,
-                      title=name + '_' + cevk.comment + '_' + Dip,
-                      annotate=True, draw_cross=True)
-
-            plot_anat(t1_path, cut_coords=mri_pos[best_idx],
-                      title=name + '_' + cevk.comment + '_' + Dip,
-                      annotate=True, draw_cross=True)
-
-            # remember to create a subplot for the colorbar
-            """fig, axes = plt.subplots(nrows=1, ncols=4, figsize=[10., 3.4])
-            # first plot the topography at the time of the best fitting (single) dipole
-            plot_params = dict(times=best_time, ch_type='grad', outlines='skirt',
-                               colorbar=False, time_unit='s')
-            cevk.plot_topomap(time_format='Measured field', axes=axes[0], **plot_params)
-
-            pred_evoked.plot_topomap(time_format='Predicted field', axes=axes[1],
-                                     **plot_params)"""
-
-            if save_plots:
-                save_path = join(figures_path, 'ECD', name +
-                                 filter_string(lowpass, highpass) + '_' +
-                                 cevk.comment + '_ECD_' + Dip + '.jpg')
-                figure.savefig(save_path, dpi=600)
-                print('figure: ' + save_path + ' has been saved')
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
-
-            # Subtract predicted from measured data (apply equal weights)
-            """diff = mne.evoked.combine_evoked([cevk, -pred_evoked], weights='equal')
-            plot_params['colorbar'] = True
-            diff.plot_topomap(time_format='Difference', axes=axes[2], **plot_params)
-            plt.suptitle('Comparison of measured and predicted fields '
-                         'at {:.0f} ms'.format(best_time * 1000.), fontsize=16)"""
-
-            dip_fixed = mne.fit_dipole(evoked_full, noise_covariance, bem, trans,
-                                       pos=dipole.pos[best_idx], ori=dipole.ori[best_idx])[0]
-            dip_fixed.plot(time_unit='s')
-
+        for evoked in evokeds:
+            trial_type = evoked.comment
+            for Dip in ecd:
+                tmin, tmax = ecd[Dip]
+                evoked_full = evoked.copy()
+                cevk = evoked.copy().crop(tmin, tmax)
+    
+                dipole, data = mne.fit_dipole(cevk, noise_covariance, bem, trans,
+                                              min_dist=3.0, n_jobs=4)
+    
+                figure = dipole.plot_locations(trans, subtomri, subjects_dir,
+                                               mode='orthoview', idx='gof')
+                plt.title(name, loc='right')
+    
+                """pred_evoked = mne.simulation.simulate_evoked(fwd, stc, cevk.info, cov=None, nave=np.inf)
+                """
+                # find time point with highest GOF to plot
+                best_idx = np.argmax(dipole.gof)
+                best_time = dipole.times[best_idx]
+    
+                print(f'Highest GOF {dipole.gof[best_idx]:.2f}% at t={best_time * 1000:.1f} ms with confidence volume'
+                      f'{dipole.conf["vol"][best_idx] * 100 ** 3} cm^3')
+    
+                mri_pos = mne.head_to_mri(dipole.pos, subtomri, trans, subjects_dir)
+    
+                save_path_anat = join(figures_path, 'ECD', name +
+                                      filter_string(lowpass, highpass) + '_' +
+                                      cevk.comment + Dip + '_ECD_anat.jpg')
+    
+                plot_anat(t1_path, cut_coords=mri_pos[best_idx], output_file=save_path_anat,
+                          title=name + '_' + cevk.comment + '_' + Dip,
+                          annotate=True, draw_cross=True)
+    
+                plot_anat(t1_path, cut_coords=mri_pos[best_idx],
+                          title=name + '_' + cevk.comment + '_' + Dip,
+                          annotate=True, draw_cross=True)
+    
+                # remember to create a subplot for the colorbar
+                """fig, axes = plt.subplots(nrows=1, ncols=4, figsize=[10., 3.4])
+                # first plot the topography at the time of the best fitting (single) dipole
+                plot_params = dict(times=best_time, ch_type='grad', outlines='skirt',
+                                   colorbar=False, time_unit='s')
+                cevk.plot_topomap(time_format='Measured field', axes=axes[0], **plot_params)
+    
+                pred_evoked.plot_topomap(time_format='Predicted field', axes=axes[1],
+                                         **plot_params)"""
+    
+                if save_plots:
+                    save_path = join(figures_path, 'ECD', trial_type, name +
+                                     filter_string(lowpass, highpass) + '_' +
+                                     cevk.comment + '_ECD_' + Dip + '.jpg')
+                    figure.savefig(save_path, dpi=600)
+                    print('figure: ' + save_path + ' has been saved')
+                else:
+                    print('Not saving plots; set "save_plots" to "True" to save')
+    
+                # Subtract predicted from measured data (apply equal weights)
+                """diff = mne.evoked.combine_evoked([cevk, -pred_evoked], weights='equal')
+                plot_params['colorbar'] = True
+                diff.plot_topomap(time_format='Difference', axes=axes[2], **plot_params)
+                plt.suptitle('Comparison of measured and predicted fields '
+                             'at {:.0f} ms'.format(best_time * 1000.), fontsize=16)"""
+    
+                dip_fixed = mne.fit_dipole(evoked_full, noise_covariance, bem, trans,
+                                           pos=dipole.pos[best_idx], ori=dipole.ori[best_idx])[0]
+                dip_fixed.plot(time_unit='s')
+    
     except KeyError:
         print('No Dipole times assigned to this file')
         pass
