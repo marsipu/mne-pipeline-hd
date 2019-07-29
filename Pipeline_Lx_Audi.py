@@ -12,7 +12,6 @@ Adapted from Lau Møller Andersen
 import sys
 from os import makedirs
 from os.path import join, isfile, exists
-import importlib
 import re
 import numpy as np
 import mne
@@ -22,12 +21,6 @@ from pipeline_functions import operations_functions as op
 from pipeline_functions import plot_functions as plot
 from pipeline_functions import subject_organisation as suborg
 from pipeline_functions import utilities as ut
-
-importlib.reload(io)
-importlib.reload(op)
-importlib.reload(plot)
-importlib.reload(suborg)
-importlib.reload(ut)
 
 # %%============================================================================
 # WHICH SUBJECT? (TO SET)
@@ -43,10 +36,10 @@ importlib.reload(ut)
 # 'all' (All files in file_list.py)
 # 'all,!4-6' (All files except 4-6)
 
-which_file = '4'  # Has to be a string/enclosed in apostrophs
+which_file = 'all'  # Has to be a string/enclosed in apostrophs
 quality = [1]
 modality = ['256', 't']
-which_mri_subject = '1'  # Has to be a string/enclosed in apostrophs
+which_mri_subject = 'all'  # Has to be a string/enclosed in apostrophs
 which_erm_file = 'all'  # !112 Has to be a string/enclosed in apostrophs
 which_motor_erm_file = 'all'  # Has to be a string/enclosed in apostrophs
 
@@ -60,7 +53,7 @@ enable_cuda = False  # Using CUDA on supported graphics card e.g. for filtering
 # https://mne-tools.github.io/dev/advanced_setup.html#advanced-setup
 
 # File I/O
-unspecified_names = False  # True if you don't use Regular Expressions to handle your filenames
+unspecified_names = True  # True if you don't use Regular Expressions to handle your filenames
 print_info = False  # Print the raw-info of each file in the console
 
 overwrite = True  # should files be overwritten in general
@@ -69,13 +62,13 @@ save_plots = True  # should plots be saved
 # raw
 predefined_bads = [6, 7, 8, 26, 27, 103]  # Default bad channels
 eog_digitized = True  # Set True, if the last 4 digitized points where EOG
-lowpass = 80  # Hz
+lowpass = 50  # Hz
 highpass = 1  # Hz # at least 1 if to apply ICA
 erm_t_limit = 300  # Limits Empty-Room-Measurement-Length [s]
 
 # events
-adjust_timeline_by_msec = -200  # custom delay to stimulus in ms
-pinprick = True  # Events including Rating
+adjust_timeline_by_msec = 0  # custom delay to stimulus in ms
+pinprick = False  # Events including Rating
 
 # epochs
 tmin = -0.500  # start of epoch [s]
@@ -87,13 +80,14 @@ reject = dict(grad=8000e-13)  # default reject parameter if not reject with auto
 flat = dict(grad=1e-15)  # default flat parameter
 reject_eog_epochs = False  # function to reject eog_epochs after use of find_eog_events
 decim = 1  # downsampling factor
-event_id = {'LBT': 1}  # dictionary to assign strings to the event_ids
+event_id = {'tief_stark': 2}
+#'tief_stark':2, 'hoch_schwach':3, 'hoch_stark':4}  # dictionary to assign strings to the event_ids
 # {'LBT':1, 'offset':4, 'lower_R':5, 'same_R':6, 'higher_R':7}
 
 # evokeds
-ica_evokeds = True  # Apply ICA to evokeds
+ica_evokeds = False  # Apply ICA to evokeds
 detrend = False  # sometimes not working
-ana_h1h2 = True
+ana_h1h2 = False
 
 # Time-Frequency-Analysis
 tfr_freqs = np.arange(30, 80, 5)  # Frequencies to analyze
@@ -114,15 +108,18 @@ erm_noise_covariance = True
 use_calm_cov = False  # Use of a specific time interval in a measurement for noise covariance
 erm_ica = False  # Causes sometimes errors
 method = 'dSPM'
-mne_evoked_time = [0, 0.05, 0.1, 0.15, 0.2]  # time points to be displayed in several plots [s]
-stc_interactive = False  # interactive stc-plots
+mne_evoked_time = [0.18, 0.58]  # time points to be displayed in several plots [s]
+stc_interactive = True  # interactive stc-plots
 stc_animation = (0, 0.5)  # time span for stc-animation [s]
 eeg_fwd = False  # set True if working with EEG-Data
 parcellation = 'HCPMMP1'
 parcellation_orig = 'aparc_sub'
-ev_ids_label_analysis = ['LBT']
+ev_ids_label_analysis = ['tief_stark']
 n_std = 4  # Determing the amount of standard-deviations, the prominence must have
 corr_threshold = 0.95
+
+# Dipole-fit
+ecds = {'irn_demo_2':{'D1':(0.05,0.07)}}  # Assign manually time points [s] to each file to make a dipole fit
 
 target_labels = {'lh': ['Somatosensory and Motor Cortex-lh',
                         'Posterior Opercular Cortex-lh',
@@ -420,9 +417,6 @@ con_methods = ['pli', 'wpli2_debiased', 'plv']  # methods for connectivity plots
 con_fmin = 30  # fmin for connectivity plot
 con_fmax = 80  # fmax for connectivity plot
 
-# Dipole-fit
-ecds = {}  # Assign manually time points [s] to each file to make a dipole fit
-
 # grand averages
 morph_to = 'fsaverage'  # name of the freesurfer subject to be morphed to
 fuse_ab = True  # pinprick-specific
@@ -448,17 +442,15 @@ exec_ops = ut.choose_function()
 # ==============================================================================
 # specify the path to a general analysis folder according to your OS
 if sys.platform == 'win32':
-    home_path = 'Z:/Promotion'  # Windows-Path
+    home_path = 'D:/Rächner/Desktop'  # Windows-Path
 if sys.platform == 'linux':
     home_path = '/mnt/z/Promotion'  # Linux-Path
 if sys.platform == 'darwin':
     home_path = 'Users/'  # Mac-Path
-else:
-    home_path = 'Z:/Promotion'
 
-project_name = 'Pin-Prick-Projekt/PP_Messungen'  # specify the name for your project as a folder
-subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
-orig_data_path = join(home_path, 'Pin-Prick-Projekt/Messungen_Dateien')
+project_name = 'Lx-Demo'  # specify the name for your project as a folder
+subjects_dir = join(home_path, 'Freesurfer')  # name of your Freesurfer
+orig_data_path = join(home_path, 'files')
 
 # %%============================================================================
 # DEPENDING PATHS (NOT TO SET)
@@ -481,11 +473,12 @@ mri_sub_list_path = join(sub_script_path, 'mri_sub_list.py')
 sub_dict_path = join(sub_script_path, 'sub_dict.py')
 erm_dict_path = join(sub_script_path, 'erm_dict.py')
 bad_channels_dict_path = join(sub_script_path, 'bad_channels_dict.py')
+quality_dict_path = join(sub_script_path, 'quality.py')
 
 path_lists = [subjects_dir, orig_data_path, data_path, sub_script_path,
               figures_path]
 file_lists = [file_list_path, erm_list_path, motor_erm_list_path, mri_sub_list_path,
-              sub_dict_path, erm_dict_path, bad_channels_dict_path]
+              sub_dict_path, erm_dict_path, bad_channels_dict_path, quality_dict_path]
 
 if not exists(home_path):
     print('Create home_path manually and set the variable accordingly')
@@ -608,8 +601,10 @@ elif exec_ops['motor_erm_analysis']:
 else:
     files = suborg.file_selection(which_file, all_files)
 
-quality_dict = ut.read_dict_file('quality', sub_script_path)
 
+
+quality_dict = ut.read_dict_file('quality', sub_script_path)
+"""
 basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
 if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
     delete_files = set()
@@ -625,7 +620,7 @@ if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
 
     for df in delete_files:
         files.remove(df)
-
+"""
 if len(all_files) == 0:
     print('No files in file_list!')
     print('Add some folders(the ones with the date) to your orig_data_path-folder and check "add_files"')

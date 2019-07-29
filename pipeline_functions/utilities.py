@@ -126,10 +126,10 @@ class Function_Window:
         with open(self.c_path, 'w') as fc:
             fc.write(str(self.func_dict))
 
+        print('Function-Window closed')
+
         self.master.quit()
         self.master.destroy()
-
-        sys.exit()
 
 def choose_function():
     master = t.Tk()

@@ -29,11 +29,11 @@ import statistics as st
 
 def filter_string(lowpass, highpass):
     if highpass is not None and highpass != 0:
-        filter_string = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
+        f_string = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
     else:
-        filter_string = '_' + str(lowpass) + '_Hz'
+        f_string = '_' + str(lowpass) + '_Hz'
 
-    return filter_string
+    return f_string
 
 
 # ==============================================================================
@@ -548,16 +548,12 @@ def plot_evoked_field(name, save_dir, lowpass, highpass,
 
 @decor.topline
 def plot_evoked_joint(name, save_dir, lowpass, highpass, save_plots,
-                      figures_path, ecds, quality_dict):
+                      figures_path, quality_dict):
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
-    quality = quality_dict[name]
-    if name in ecds:
-        evoked = evokeds[0]
-        times = []
-        for Dip in ecd:
-            for i in ecd[Dip]:
-                times.append(i)
-        timesarr = np.array(times)
+    try:
+        quality = quality_dict[name]
+    except KeyError:
+        quality = ''
 
     else:
         for evoked in evokeds:
@@ -887,7 +883,7 @@ def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
                                               title=name + '_movie')
 
         print('Saving Video')
-        brain.save_movie(save_path, time_dilation=30,
+        brain.save_movie(save_path, time_dilation=10,
                          tmin=stc_animation[0], tmax=stc_animation[1], framerate=30)
         mlab.close()
 
@@ -1494,7 +1490,7 @@ def plot_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
             figure = ga_dict[stim_type][trial].plot(window_title=stim_type + '_' + trial,
-                                                    spatial_colors=True, ylim={'grad': [-80, 35]}, gfp=True)
+                                                    spatial_colors=True, gfp=True) # ylim={'grad': [-80, 35]},
             if save_plots:
                 save_path = join(figures_path, 'grand_averages/sensor_space/evoked',
                                  stim_type + '_' + trial + \
