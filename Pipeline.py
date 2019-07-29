@@ -80,6 +80,7 @@ event_id = {'LBT':1, 'offset':4, 'lower_R':5, 'same_R':6, 'higher_R':7} # dictio
 # evokeds
 ica_evokeds = False # Apply ICA to evokeds
 detrend = False # sometimes not working
+ana_h1h2 = True
 
 #Time-Frequency-Analysis
 tfr_freqs = np.arange(5,100,5) # Frequencies to analyze
@@ -259,7 +260,7 @@ or exec_ops['morph_labels']:
                            overwrite, n_jobs)
         
         if exec_ops['prepare_bem']:
-            op.prepare_bem(mri_subject, subjects_dir, overwrite)
+            op.prepare_bem(mri_subject, subjects_dir)
             
         if exec_ops['morph_subject']:
             op.morph_subject(mri_subject, subjects_dir, morph_to,
@@ -279,7 +280,7 @@ or exec_ops['morph_labels']:
                           save_plots)
             
         if exec_ops['plot_labels']:
-            plot.plot_labels(mri_subject, subjects_dir, save_plots, figures_path,
+            plot.plot_labels(mri_subject, save_plots, figures_path,
                              parcellation)
             
         # close plots
@@ -355,7 +356,7 @@ for name in files:
     #==========================================================================
 
     if exec_ops['filter_raw']:
-        op.filter_raw(name, save_dir, lowpass, highpass, overwrite, ermsub,
+        op.filter_raw(name, save_dir, lowpass, highpass, ermsub,
                       data_path, n_jobs, enable_cuda, bad_channels)
 
     #==========================================================================
@@ -369,8 +370,7 @@ for name in files:
                               exec_ops)
         else:
             op.find_events(name, save_dir, adjust_timeline_by_msec, lowpass,
-                           highpass, overwrite, save_plots, figures_path,
-                           exec_ops)
+                           highpass, overwrite, exec_ops)
 
     if exec_ops['find_eog_events']:
         op.find_eog_events(name, save_dir, eog_channel)
@@ -390,7 +390,7 @@ for name in files:
     #==========================================================================
     if exec_ops['run_ssp_er']:
         op.run_ssp_er(name, save_dir, lowpass, highpass, data_path, ermsub, bad_channels,
-                      eog_channel, ecg_channel, overwrite)
+                      overwrite)
 
     if exec_ops['apply_ssp_er']:
         op.apply_ssp_er(name, save_dir,lowpass, highpass, overwrite)
@@ -402,26 +402,26 @@ for name in files:
         op.apply_ssp_clm(name, save_dir, lowpass, highpass, overwrite)
 
     if exec_ops['run_ssp_eog']:
-        op.run_ssp_eog(name, save_dir, lowpass, highpass, n_jobs, eog_channel,
-                                   bad_channels, overwrite)
+        op.run_ssp_eog(name, save_dir, n_jobs, eog_channel,
+                       bad_channels, overwrite)
 
     if exec_ops['apply_ssp_eog']:
         op.apply_ssp_eog(name, save_dir, lowpass, highpass, overwrite)
 
     if exec_ops['run_ssp_ecg']:
-        op.run_ssp_ecg(name, save_dir,lowpass, highpass, n_jobs, ecg_channel,
-                                   bad_channels, overwrite)
+        op.run_ssp_ecg(name, save_dir, n_jobs, ecg_channel,
+                       bad_channels, overwrite)
 
     if exec_ops['apply_ssp_ecg']:
         op.apply_ssp_ecg(name, save_dir,lowpass, highpass, overwrite)
 
     if exec_ops['plot_ssp']:
-        plot.plot_ssp(name, save_dir,lowpass, highpass, save_plots,
-                      figures_path, bad_channels, ermsub)
+        plot.plot_ssp(name, save_dir, lowpass, highpass, save_plots,
+                      figures_path, ermsub)
 
     if exec_ops['plot_ssp_eog']:
-        plot.plot_ssp_eog(name, save_dir,lowpass, highpass, save_plots,
-                              figures_path, bad_channels)
+        plot.plot_ssp_eog(name, save_dir, lowpass, highpass, save_plots,
+                          figures_path)
 
     if exec_ops['run_ica']:
         op.run_ica(name, save_dir,lowpass, highpass, eog_channel, ecg_channel,
@@ -443,7 +443,7 @@ for name in files:
 
     if exec_ops['get_evokeds']:
         op.get_evokeds(name, save_dir,lowpass, highpass, exec_ops, ermsub,
-                       detrend, ica_evokeds, overwrite)
+                       detrend, ica_evokeds, overwrite, ana_h1h2)
     
     #==========================================================================
     # TIME-FREQUENCY-ANALASYS
@@ -464,7 +464,7 @@ for name in files:
 
     if exec_ops['plot_noise_covariance']:
         plot.plot_noise_covariance(name, save_dir,lowpass, highpass,
-                                   subtomri, save_plots, figures_path, ermsub,
+                                   save_plots, figures_path, ermsub,
                                    use_calm_cov)
 
     #==========================================================================
@@ -502,7 +502,7 @@ for name in files:
     #==========================================================================
 
     if exec_ops['source_estimate']:
-        op.source_estimate(name, save_dir,lowpass, highpass, method, overwrite)
+        op.source_estimate(name, save_dir, lowpass, highpass, method)
 
     if exec_ops['vector_source_estimate']:
         op.vector_source_estimate(name, save_dir,lowpass, highpass, method, overwrite)
@@ -515,7 +515,7 @@ for name in files:
     if exec_ops['apply_morph']:
         stcs = op.apply_morph(name, save_dir, lowpass, highpass,
                               subjects_dir, subtomri, method,
-                              overwrite, n_jobs, morph_to,
+                              overwrite, morph_to,
                               source_space_method, event_id)
         
     #==========================================================================
@@ -530,7 +530,7 @@ for name in files:
     #==========================================================================
 
     if exec_ops['plot_raw']:
-        plot.plot_raw(name, save_dir, overwrite, bad_channels, bad_channels_dict)
+        plot.plot_raw(name, save_dir, bad_channels, bad_channels_dict)
 
     if exec_ops['plot_filtered']:
         plot.plot_filtered(name, save_dir, lowpass, highpass, bad_channels)
@@ -553,12 +553,12 @@ for name in files:
                                 save_plots, figures_path, bad_channels)
 
     if exec_ops['plot_power_spectra_epochs']:
-        plot.plot_power_spectra_epochs(name, save_dir,lowpass, highpass,
-                                       save_plots, figures_path, bad_channels)
+        plot.plot_power_spectra_epochs(name, save_dir, lowpass, highpass,
+                                       save_plots, figures_path)
 
     if exec_ops['plot_power_spectra_topo']:
-        plot.plot_power_spectra_topo(name, save_dir,lowpass, highpass,
-                                     save_plots, figures_path, bad_channels)
+        plot.plot_power_spectra_topo(name, save_dir, lowpass, highpass,
+                                     save_plots, figures_path)
 
     #==========================================================================
     # PLOT TIME-FREQUENCY-ANALASYS
@@ -641,10 +641,9 @@ for name in files:
                                       save_plots, figures_path)
 
     if exec_ops['plot_animated_stc']:
-        plot.plot_animated_stc(name, save_dir,lowpass, highpass, subtomri,
-                               subjects_dir, method, mne_evoked_time,
-                               stc_animation, tmin, tmax, event_id,
-                               save_plots, figures_path)
+        plot.plot_animated_stc(name, save_dir, lowpass, highpass, subtomri,
+                               subjects_dir, method, stc_animation, event_id,
+                               figures_path)
 
     if exec_ops['plot_snr']:
         plot.plot_snr(name, save_dir,lowpass, highpass, save_plots, figures_path)
@@ -664,7 +663,7 @@ for name in files:
         
     if exec_ops['source_space_connectivity']:
         op.source_space_connectivity(name, save_dir, lowpass, highpass,
-                                     subtomri, subjects_dir, method, parcellation,
+                                     subtomri, subjects_dir, parcellation,
                                      con_methods, con_fmin, con_fmax,
                                      n_jobs, overwrite)
         
@@ -734,13 +733,11 @@ if exec_ops['plot_grand_avg_stc']:
 if exec_ops['plot_grand_avg_stc_anim']:
     plot.plot_grand_avg_stc_anim(lowpass, highpass, save_dir_averages,
                                  grand_avg_dict, stc_animation, morph_to,
-                                 subjects_dir, event_id, save_plots,
-                                 figures_path)
+                                 subjects_dir, event_id, figures_path)
 
 if exec_ops['plot_grand_avg_connect']:
     plot.plot_grand_avg_connect(lowpass, highpass, save_dir_averages,
-                                grand_avg_dict, subjects_dir, morph_to, event_id,
-                                parcellation, con_methods, con_fmin, con_fmax,
+                                grand_avg_dict, subjects_dir, morph_to, parcellation, con_methods, con_fmin, con_fmax,
                                 save_plots, figures_path)
 #==============================================================================
 # STATISTICS SOURCE SPACE
