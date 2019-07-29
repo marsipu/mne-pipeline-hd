@@ -793,11 +793,11 @@ def plot_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
             if stc_interactive:
                 brain = stc.plot(subject=subtomri, surface='inflated', subjects_dir=subjects_dir,
                                  time_viewer=True, hemi='split', views='lat', initial_time=t,
-                                 title=name + '-' + trial_type, size=(1600, 800))
+                                 title=name + '-' + trial_type, size=(1600, 800), figure=idx)
             else:
                 brain = stc.plot(subject=subtomri, surface='inflated', subjects_dir=subjects_dir,
                                  time_viewer=False, hemi='split', views='lat', initial_time=t,
-                                 title=name + '-' + trial_type, size=(1600, 800))
+                                 title=name + '-' + trial_type, size=(1600, 800), figure=idx)
             brain.title = name + '-' + trial_type
             if save_plots:
                 save_path = join(figures_path, 'stcs', trial_type,
