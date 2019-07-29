@@ -11,7 +11,6 @@ from . import utilities as ut
 import tkinter as t
 import re
 
-
 ## Subjects
 def add_files(file_list_path, erm_list_path, motor_erm_list_path,
               data_path, figures_path, subjects_dir, orig_data_path,
@@ -753,42 +752,3 @@ def file_selection(which_file, all_files):
     
     except ValueError:
         raise ValueError(f'{which_file} makes a problem')
-
-def mri_subject_selection(which_mri_subject, all_mri_subjects):
-    # Turn string input into according mri_sub_list-Index
-    try:
-        if which_mri_subject == 'all':
-            run = range(0,len(all_mri_subjects))
-        
-        elif ',' in which_mri_subject and '-' in which_mri_subject:
-            z = which_mri_subject.split(',')
-            run = []
-            for i in z:
-                if '-' in i:
-                    x,y = i.split('-')
-                    for n in range(int(x)-1,int(y)):
-                        run.append(n)
-                else:
-                    run.append(int(i)-1)
-                    
-        elif '-' in which_mri_subject and ',' not in which_mri_subject:
-            x,y = which_mri_subject.split('-')
-            run = range(int(x)-1,int(y))
-            
-        elif ',' in which_mri_subject and '-' not in which_mri_subject:
-            run = which_mri_subject.split(',')
-            for i in run:
-                run[run.index(i)] = int(i)-1
-            
-        else:
-            run = [int(which_mri_subject)-1]
-            
-        mri_subjects = [x for (i,x) in enumerate(all_mri_subjects) if i in run]
-    
-        return mri_subjects
-  
-    except TypeError:
-        raise TypeError('{} is not a string(enclosed by quotes)'.format(which_mri_subject))
-    
-    except ValueError:
-        raise ValueError('{} is not a whole number'.format(which_mri_subject))

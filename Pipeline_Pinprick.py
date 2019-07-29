@@ -35,8 +35,8 @@ from pipeline_functions import utilities as ut
     # 'all' (All files in file_list.py)
     # 'all,!4-6' (All files except 4-6)
 
-which_file = '1' # Has to be a string/enclosed in apostrophs
-which_mri_subject = 'all' # Has to be a string/enclosed in apostrophs
+which_file = '1-101' # Has to be a string/enclosed in apostrophs
+which_mri_subject = 'all,!1,!6' # Has to be a string/enclosed in apostrophs
 which_erm_file = 'all' # !12 Has to be a string/enclosed in apostrophs
 which_motor_erm_file = 'all' # Has to be a string/enclosed in apostrophs
 #%%============================================================================
@@ -49,10 +49,10 @@ enable_cuda = False # Using CUDA on supported graphics card e.g. for filtering
                     # https://mne-tools.github.io/dev/advanced_setup.html#advanced-setup
 
 #File I/O
-unspecified_names = False # If you don't use Regular Expressions to handle your filenames
+unspecified_names = False # True if you don't use Regular Expressions to handle your filenames
 print_info = False # Print the raw-info of each file in the console
 
-overwrite = False # should files be overwritten in general
+overwrite = True # should files be overwritten in general
 save_plots = True # should plots be saved
 
 # raw
@@ -62,12 +62,12 @@ lowpass = 80 # Hz
 highpass = 1 # Hz # at least 1 if to apply ICA
 
 # events
-adjust_timeline_by_msec = -95 # delay to stimulus in ms
+adjust_timeline_by_msec = 0 # custom delay to stimulus in ms
 pinprick = True # Events including Rating
 
 # epochs
 tmin = -0.500 # start of epoch [s]
-tmax = 2.000 # end of epoch [s]
+tmax = 1.500 # end of epoch [s]
 baseline = (-0.500, -0.100) # has to be a tuple [s]
 autoreject = True # set True to use autoreject
 overwrite_ar = False # if to calculate new thresholds or to use previously calculated
@@ -96,6 +96,7 @@ ecg_channel = 'EEG 003' # Set ECG-Channel
 source_space_method = 'ico5' # See the MNE-Documentation for further details
 
 # source reconstruction
+erm_noise_covariance = False
 use_calm_cov = False # Use of a specific time interval in a measurement for noise covariance (see function-defintion)
 erm_ica = False # Causes sometimes errors
 method = 'dSPM'
@@ -103,11 +104,14 @@ mne_evoked_time = [0, 0.05, 0.1, 0.15, 0.2] # time points to be displayed in sev
 stc_interactive = True # interactive stc-plots
 stc_animation = [0,0.5] # time span for stc-animation [s]
 eeg_fwd = False # set True if working with EEG-Data
-parcellation = 'aparc_sub'
+parcellation = 'aparc.a2009s'
+ev_ids_label_analysis = ['LBT']
 target_labels = {'lh':['S_central-lh', 'S_postcentral-lh', 'S_circular_insula_sup-lh',
                        'S_temporal_sup-lh'],
                  'rh':['S_central-rh', 'S_postcentral-rh', 'S_circular_insula_sup-rh',
                        'S_temporal_sup-rh']}
+label_origin = ['S_central-lh', 'S_central-rh', 'S_circular_insula_sup-lh',
+                'S_circular_insula_sup-rh']
 
 # connectivity
 con_methods = ['coh', 'pli'] # methods for connectivity plots
@@ -119,7 +123,7 @@ ECDs = {} # Assign manually time points [s] to each file to make a dipole fit
 
 # grand averages
 morph_to='fsaverage' # name of the freesurfer subject to be morphed to
-fuse_ab = True # pinprick-specific
+fuse_ab = False # pinprick-specific
 
 # statistics (still original from Andersen, may not work)
 independent_variable_1 = 'standard_3'
@@ -141,13 +145,15 @@ exec_ops = ut.choose_function()
 #==============================================================================
 # specify the path to a general analysis folder according to your OS
 if sys.platform == 'win32':
-    home_path = 'Z:/Promotion/Pin-Prick-Projekt' # A folder to put your MNE-Projects in
+    home_path = 'Z:/Promotion' # Windows-Path
 if sys.platform == 'linux':
-    home_path = '/mnt/z/Promotion/Pin-Prick-Projekt'
+    home_path = '/mnt/z/Promotion' # Linux-Path
+if sys.platform == 'darwin':
+    home_path = 'Users/' # Mac-Path
 
-project_name = 'PP_Messungen' # specify the name for your project as a folder
-subjects_dir = join('Z:/Promotion/Freesurfer/Output') # name of your Freesurfer
-orig_data_path = join(home_path, 'Messungen_Dateien')
+project_name = 'Pin-Prick-Projekt/PP_Messungen' # specify the name for your project as a folder
+subjects_dir = join(home_path, 'Freesurfer/Output') # name of your Freesurfer
+orig_data_path = join(home_path, 'Pin-Prick-Projekt/Messungen_Dateien')
 
 #%%============================================================================
 # DEPENDING PATHS (NOT TO SET)
@@ -226,12 +232,12 @@ bad_channels_dict = suborg.read_bad_channels_dict(bad_channels_dict_path)
 # MRI-Subjects (NOT TO SET)
 #============================================================================
 if exec_ops['apply_watershed'] or exec_ops['make_dense_scalp_surfaces']\
-or exec_ops['prepare_bem'] or exec_ops['setup_source_space']\
+or exec_ops['prepare_bem'] or exec_ops['setup_src']\
 or exec_ops['morph_subject'] or exec_ops['plot_source_space']\
 or exec_ops['plot_bem'] or exec_ops['plot_labels']\
-or exec_ops['morph_labels']:
+or exec_ops['morph_labels'] or exec_ops['compute_src_distances']:
 
-    mri_subjects = suborg.mri_subject_selection(which_mri_subject, all_mri_subjects)
+    mri_subjects = suborg.file_selection(which_mri_subject, all_mri_subjects)
 
     print('Selected MRI-Subjects:')
     for i in mri_subjects:
@@ -252,10 +258,12 @@ or exec_ops['morph_labels']:
         #==========================================================================
         # Forward Modeling
         #==========================================================================
-        if exec_ops['setup_source_space']:
-            op.setup_source_space(mri_subject, subjects_dir, source_space_method,
+        if exec_ops['setup_src']:
+            op.setup_src(mri_subject, subjects_dir, source_space_method,
                            overwrite, n_jobs)
-        
+        if exec_ops['compute_src_distances']:
+            op.compute_src_distances(mri_subject, subjects_dir,
+                                     source_space_method, n_jobs)
         if exec_ops['prepare_bem']:
             op.prepare_bem(mri_subject, subjects_dir, overwrite)
             
@@ -284,7 +292,7 @@ or exec_ops['morph_labels']:
         if exec_ops['close_plots']:
             plot.close_all()
 #%%========================================================================
-# Subjects (NOT TO SET)
+# Files (NOT TO SET)
 #===========================================================================
 if exec_ops['erm_analysis']:
     files = suborg.file_selection(which_erm_file, erm_files)   
@@ -313,6 +321,7 @@ for name in files:
     
     if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
         save_dir = join(data_path, 'empty_room_data')
+        data_path = join(home_path, project_name, 'Daten/empty_room_data')
     else:
         save_dir = join(data_path, name)       
     
@@ -363,8 +372,8 @@ for name in files:
     if exec_ops['find_events']:
         if pinprick:
             op.find_events_pp(name, save_dir, adjust_timeline_by_msec, lowpass,
-                              highpass, overwrite, save_plots, figures_path,
-                              exec_ops)
+                              highpass, overwrite,sub_script_path,
+                              save_plots, figures_path, exec_ops)
         else:
             op.find_events(name, save_dir, adjust_timeline_by_msec, lowpass,
                            highpass, overwrite, save_plots, figures_path,
@@ -458,7 +467,8 @@ for name in files:
     if exec_ops['estimate_noise_covariance']:
         op.estimate_noise_covariance(name, save_dir,lowpass, highpass, overwrite,
                                      ermsub, data_path, bad_channels, n_jobs,
-                                     use_calm_cov, ica_evokeds, erm_ica)
+                                     erm_noise_covariance, use_calm_cov,
+                                     ica_evokeds, erm_ica)
 
     if exec_ops['plot_noise_covariance']:
         plot.plot_noise_covariance(name, save_dir,lowpass, highpass,
@@ -493,17 +503,20 @@ for name in files:
 
     if exec_ops['create_inverse_operator']:
         op.create_inverse_operator(name, save_dir,lowpass, highpass,
-                                        overwrite, ermsub, use_calm_cov)
+                                   overwrite, ermsub, use_calm_cov,
+                                   erm_noise_covariance)
 
     #==========================================================================
     # SOURCE ESTIMATE MNE
     #==========================================================================
 
     if exec_ops['source_estimate']:
-        op.source_estimate(name, save_dir,lowpass, highpass, method, overwrite)
+        op.source_estimate(name, save_dir,lowpass, highpass, method,
+                           event_id,  overwrite)
 
     if exec_ops['vector_source_estimate']:
-        op.vector_source_estimate(name, save_dir,lowpass, highpass, method, overwrite)
+        op.vector_source_estimate(name, save_dir,lowpass, highpass,
+                                  method, overwrite)
 
     if exec_ops['ECD_fit']:
         op.ECD_fit(name, save_dir,lowpass, highpass, ermsub, subjects_dir,
@@ -515,7 +528,13 @@ for name in files:
                               subjects_dir, subtomri, method,
                               overwrite, n_jobs, morph_to,
                               source_space_method, event_id)
-        
+    if exec_ops['create_func_label']:
+        op.create_func_label(name, save_dir, lowpass, highpass,
+                             method, event_id, subtomri, subjects_dir,
+                             source_space_method, label_origin,
+                             parcellation, ev_ids_label_analysis,
+                             save_plots, figures_path)
+
     #==========================================================================
     # PRINT INFO
     #==========================================================================
@@ -600,10 +619,9 @@ for name in files:
         plot.plot_evoked_topomap(name, save_dir,lowpass, highpass, save_plots,
                                  figures_path)
 
-    if exec_ops['plot_butterfly_evokeds']:
-        plot.plot_butterfly_evokeds(name, save_dir,lowpass, highpass,
-                                    save_plots, figures_path, ermsub,
-                                    use_calm_cov)
+    if exec_ops['plot_evoked_butterfly']:
+        plot.plot_evoked_butterfly(name, save_dir,lowpass, highpass,
+                                   save_plots, figures_path)
 
     if exec_ops['plot_evoked_field']:
         plot.plot_evoked_field(name, save_dir,lowpass, highpass, subtomri,
@@ -621,6 +639,10 @@ for name in files:
     if exec_ops['plot_evoked_image']:
         plot.plot_evoked_image(name, save_dir,lowpass, highpass,
                                save_plots, figures_path)
+
+    if exec_ops['plot_evoked_compare']:
+        plot.plot_evoked_compare(data_path, lowpass, highpass, event_id, comp_dict,
+                        save_plots, figures_path)
 
     #==========================================================================
     # PLOT SOURCE ESTIMATES MNE
@@ -648,9 +670,10 @@ for name in files:
         plot.plot_snr(name, save_dir,lowpass, highpass, save_plots, figures_path)
 
     if exec_ops['label_time_course']:
-        plot.label_time_course(name, save_dir, lowpass, highpass, subtomri,
+        plot.label_time_course(name, save_dir, lowpass, highpass,
+                               subtomri, subjects_dir, method, source_space_method,
                                target_labels, save_plots, figures_path,
-                               parcellation)
+                               parcellation, event_id, ev_ids_label_analysis)
 
     #==========================================================================
     # TIME-FREQUENCY IN SOURCE SPACE
@@ -695,7 +718,7 @@ if exec_ops['cmp_label_time_course']:
 
 if exec_ops['grand_avg_evokeds']:
     op.grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
-                         lowpass, highpass)
+                         lowpass, highpass, exec_ops)
 
 if exec_ops['grand_avg_tfr']:
     op.grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
@@ -760,6 +783,13 @@ if exec_ops['plot_grand_averages_source_estimates_cluster_masked']:
         name, save_dir_averages,lowpass, highpass, subjects_dir, method, time_window,
         save_plots, figures_path, independent_variable_1,
         independent_variable_2, mne_evoked_time, p_threshold)
+#==============================================================================
+# MISCELLANEOUS
+#==============================================================================
+
+if exec_ops['pp_plot_latency_S1_corr']:
+    plot.pp_plot_latency_S1_corr(data_path, files, lowpass, highpass,
+                                 save_plots, figures_path)
 
 # close all plots
 if exec_ops['close_plots']:

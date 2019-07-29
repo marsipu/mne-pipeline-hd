@@ -17,6 +17,7 @@ from scipy import stats
 from os import makedirs, listdir, environ
 import sys
 from . import io_functions as io
+from . import plot_functions as plot
 from . import utilities as ut
 from . import decorators as decor
 import pickle
@@ -28,9 +29,10 @@ from itertools import combinations
 from functools import reduce
 import random
 import gc
+import statistics as st
+from mayavi import mlab
 
 # Naming Conventions
-
 def filter_string(lowpass, highpass):
 
     if highpass!=None and highpass!=0:
@@ -315,7 +317,7 @@ def find_events(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, over
 
 @decor.topline
 def find_events_pp(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, overwrite,
-                   save_plots, figures_path, exec_ops):
+                   sub_script_path, save_plots, figures_path, exec_ops):
 
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
@@ -511,10 +513,60 @@ def find_events_pp(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, o
         else:
             print('No Rating in Trig-Channels 10-19')
 
-        # apply latency correction
+        # apply custom latency correction
         events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10**-3 * \
-                    raw.info['sfreq']) for ts in events[:, 0]]
+                        raw.info['sfreq']) for ts in events[:, 0]]
+        
+        # General Latency-Correction based on Latency-Tests
+        if 't' in name: # applies to tactile and motor_erm
+            events[:, 0] = [ts + np.round(-98 * 10**-3 * \
+                        raw.info['sfreq']) for ts in events[:, 0]]
+        else:
+            events[:, 0] = [ts + np.round(-90 * 10**-3 * \
+                        raw.info['sfreq']) for ts in events[:, 0]]
+        
 
+        l1 = []
+        l2 = []
+        for x in range(np.size(events, axis=0)):
+            if events[x,2]==2:
+                if events[x+1,2]==1:
+                    l1.append(events[x+1,0] - events[x,0])
+        diff1_mean = st.mean(l1)
+        diff1_stdev = st.stdev(l1)
+        ut.dict_filehandler(name, 'MotStart-LBT_diffs.py',
+                            sub_script_path, values={'mean':diff1_mean,
+                                                     'stdev':diff1_stdev})
+        
+        if exec_ops['motor_erm_analysis']:
+            for x in range(np.size(events, axis=0)-3):
+                if events[x,2]==2:
+                    if events[x+2,2]==4:
+                        l2.append(events[x+2,0] - events[x,0])
+            diff2_mean = st.mean(l2)
+            diff2_stdev = st.stdev(l2)
+            ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs.py',
+                                sub_script_path, values={'mean':diff2_mean,
+                                                         'stdev':diff2_stdev})
+        else:
+            for x in range(np.size(events, axis=0)-3):
+                if events[x,2]==2:
+                    if events[x+3,2]==4:
+                        l2.append(events[x+3,0] - events[x,0])
+            diff2_mean = st.mean(l2)
+            diff2_stdev = st.stdev(l2)
+            ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs.py',
+                                sub_script_path, values={'mean':diff2_mean,
+                                                         'stdev':diff2_stdev})       
+        # Latency-Correction for Offset-Trigger[4]
+        for x in range(np.size(events, axis=0)-3):
+            if events[x,2]==2:
+                if events[x+1,2]==1:
+                    if events[x+3,2]==4:
+                        corr = diff1_mean - (events[x+1,0] - events[x,0])
+                        events[x+3,0] = events[x+3,0] + corr
+                    
+        # unique event_ids    
         ids = np.unique(events[:,2])
         print('unique ID\'s assigned: ',ids)
 
@@ -629,7 +681,7 @@ def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
         print(f'Rejection Threshold: {reject}')
 
         epochs.drop_bad(reject=reject, flat=flat)
-        epochs.save(epochs_path)
+        epochs.save(epochs_path, overwrite=True)
 
         reject_channels = []
         log = epochs.drop_log
@@ -898,8 +950,8 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             fig1 = ica.plot_components(picks=comp_list, title=name)
             if ica.exclude != []:
                 fig2 = ica.plot_properties(raw, ica.exclude,psd_args={'fmax':lowpass})                
-            fig3 = ica.plot_sources(raw, picks=comp_list[:12], start=470, stop=500, title=name)
-            fig4 = ica.plot_sources(raw, picks=comp_list[12:], start=470, stop=500, title=name)   
+            fig3 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=name)
+            fig4 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=name)   
             fig5 = ica.plot_overlay(epochs.average(), title=name)
             if save_plots:
             
@@ -971,8 +1023,8 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             fig1 = ica.plot_components(picks=comp_list, title=name)
             if ica.exclude != []:
                 fig2 = ica.plot_properties(raw, indices, psd_args={'fmax':lowpass})          
-            fig5 = ica.plot_sources(raw, picks=comp_list[:12], start=470, stop=500, title=name)
-            fig6 = ica.plot_sources(raw, picks=comp_list[12:], start=470, stop=500, title=name)
+            fig5 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=name)
+            fig6 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=name)
             if eog_indices != []:
                 fig3 = ica.plot_scores(eog_scores, title=name+'_eog')
                 fig7 = ica.plot_overlay(epochs.average(), exclude=eog_indices, title=name+'_eog')
@@ -1066,8 +1118,8 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                 fig1 = ica.plot_components(picks=comp_list, title=name)
                 if ica.exclude != []:
                     fig2 = ica.plot_properties(raw, ica.exclude,psd_args={'fmax':lowpass})                
-                fig3 = ica.plot_sources(raw, picks=comp_list[:12], start=470, stop=500, title=name)
-                fig4 = ica.plot_sources(raw, picks=comp_list[12:], start=470, stop=500, title=name)   
+                fig3 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=name)
+                fig4 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=name)   
                 fig5 = ica.plot_overlay(epochs.average(), title=name)
                 if save_plots:
                 
@@ -1105,8 +1157,8 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                 for c in range(ica.n_components):
                     comp_list.append(c)
                 fig1 = ica.plot_components(picks=comp_list, title=name)
-                fig2 = ica.plot_sources(raw, picks=comp_list[:12], start=470, stop=500, title=name)
-                fig3 = ica.plot_sources(raw, picks=comp_list[12:], start=470, stop=500, title=name)                
+                fig2 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=name)
+                fig3 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=name)                
                 if save_plots:
                     save_path = join(figures_path, 'ica', name + \
                                      '_ica_comp' + filter_string(lowpass, highpass) + '.jpg')
@@ -1194,13 +1246,16 @@ def get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
 
 @decor.topline
 def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
-                      lowpass, highpass):
+                      lowpass, highpass, exec_ops):
     
     for key in grand_avg_dict:
         trial_dict = {}
         print(f'grand_average for {key}')
         for name in grand_avg_dict[key]:
-            save_dir = join(data_path, name)
+            if exec_ops['motor_erm_analysis']:
+                save_dir = data_path
+            else:
+                save_dir = join(data_path, name)
             print(f'Add {name} to grand_average')
             evokeds = io.read_evokeds(name, save_dir, lowpass,
                                      highpass)
@@ -1443,16 +1498,27 @@ def make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite):
 # MNE SOURCE RECONSTRUCTIONS
 #==============================================================================
 @decor.topline
-def setup_source_space(mri_subject, subjects_dir, source_space_method, n_jobs,
-                       overwrite):
+def setup_src(mri_subject, subjects_dir, source_space_method, n_jobs,
+              overwrite):
     src_name = mri_subject + '_' + source_space_method + '-src.fif'
     src_path = join(subjects_dir, mri_subject, 'bem', src_name)
 
     if overwrite or not isfile(src_path):
         src = mne.setup_source_space(mri_subject, spacing=source_space_method,
-                               surface='white', subjects_dir=subjects_dir,
-                               add_dist=False, n_jobs=n_jobs)
+                                     surface='white', subjects_dir=subjects_dir,
+                                     add_dist=False, n_jobs=n_jobs)
         src.save(src_path, overwrite=True)
+
+@decor.topline
+def compute_src_distances(mri_subject, subjects_dir, source_space_method,
+                          n_jobs):
+    src = io.read_source_space(mri_subject, subjects_dir, source_space_method)
+    src_computed = mne.add_source_space_distances(src, n_jobs=n_jobs)
+    
+    src_name = mri_subject + '_' + source_space_method + '-src.fif'
+    src_path = join(subjects_dir, mri_subject, 'bem', src_name)
+
+    src_computed.save(src_path, overwrite=True)    
 
 @decor.topline
 def prepare_bem(mri_subject, subjects_dir, overwrite):
@@ -1485,6 +1551,7 @@ def morph_subject(mri_subject, subjects_dir, morph_to, source_space_method,
         morph.save(morph_path, overwrite=True)
         print(f'{morph_path} written')
 
+@decor.topline
 def morph_labels(mri_subject, subjects_dir, overwrite):
     
     parcellations = ['aparc_sub','HCPMMP1_combined','HCPMMP1']
@@ -1506,7 +1573,8 @@ def morph_labels(mri_subject, subjects_dir, overwrite):
             m_labels = mne.morph_labels(labels, mri_subject, 'fsaverage', subjects_dir,
                                         surf_name='pial')
             
-            mne.write_labels_to_annot(m_labels, mri_subject, pc, subjects_dir=subjects_dir)
+            mne.write_labels_to_annot(m_labels, mri_subject, pc, subjects_dir=subjects_dir,
+                                      overwrite=True)
     
     else:
         print(f'{parcellations} already exist')
@@ -1557,8 +1625,10 @@ def create_forward_solution(name, save_dir, subtomri, subjects_dir,
         print('forward solution: ' + forward_path + ' already exists')
 
 @decor.topline
-def estimate_noise_covariance(name, save_dir, lowpass, highpass, overwrite, ermsub, data_path,
-                              bad_channels, n_jobs, use_calm_cov, ica_evokeds, erm_ica):
+def estimate_noise_covariance(name, save_dir, lowpass, highpass,
+                              overwrite, ermsub, data_path,
+                              bad_channels, n_jobs, erm_noise_covariance,
+                              use_calm_cov, ica_evokeds, erm_ica):
 
     if use_calm_cov==True:
 
@@ -1579,7 +1649,7 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass, overwrite, erms
             print('noise covariance file: '+ covariance_path + \
                   ' already exists')
 
-    elif ermsub=='None' or 'leer' in name:
+    elif ermsub=='None' or 'leer' in name or erm_noise_covariance==False:
 
         print('Noise Covariance on Epochs')
         covariance_name = name + filter_string(lowpass, highpass) + '-cov.fif'
@@ -1629,7 +1699,8 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass, overwrite, erms
                   ' already exists')
 
 @decor.topline
-def create_inverse_operator(name, save_dir, lowpass, highpass, overwrite, ermsub, use_calm_cov):
+def create_inverse_operator(name, save_dir, lowpass, highpass,
+                            overwrite, ermsub, use_calm_cov, erm_noise_covariance):
 
     inverse_operator_name = name + filter_string(lowpass, highpass) +  '-inv.fif'
     inverse_operator_path = join(save_dir, inverse_operator_name)
@@ -1640,7 +1711,7 @@ def create_inverse_operator(name, save_dir, lowpass, highpass, overwrite, ermsub
         if use_calm_cov==True:
             noise_covariance = io.read_clm_noise_covariance(name, save_dir, lowpass, highpass)
             print('Noise Covariance from 1-min Calm in raw')
-        elif ermsub=='None':
+        elif ermsub=='None' or erm_noise_covariance==False:
             noise_covariance = io.read_noise_covariance(name, save_dir, lowpass, highpass)
             print('Noise Covariance from Epochs')
         else:
@@ -1648,7 +1719,7 @@ def create_inverse_operator(name, save_dir, lowpass, highpass, overwrite, ermsub
             print('Noise Covariance from Empty-Room-Data')
 
         forward = io.read_forward(name, save_dir)
-
+        
         inverse_operator = mne.minimum_norm.make_inverse_operator(
                             info, forward, noise_covariance)
 
@@ -1661,28 +1732,30 @@ def create_inverse_operator(name, save_dir, lowpass, highpass, overwrite, ermsub
 
 @decor.topline
 def source_estimate(name, save_dir, lowpass, highpass, method,
-                    overwrite):
+                    event_id, overwrite):
 
     inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
-    to_reconstruct = io.read_evokeds(name, save_dir, lowpass, highpass)
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
     stcs = dict()
+    normal_stcs = dict()
 
     snr = 3.0
     lambda2 = 1.0 / snr ** 2
-
-    for to_reconstruct_index, evoked in enumerate(evokeds):
-        stc_name = name + filter_string(lowpass, highpass) + '_' + evoked.comment + \
-                '_' + method + '-lh.stc'
+    
+    for evoked in evokeds:
+        trial_type = evoked.comment
+        stc_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '_' + method
         stc_path = join(save_dir, stc_name)
         if overwrite or not isfile(stc_path):
-            trial_type = evoked.comment
 
             stcs[trial_type] = mne.minimum_norm.apply_inverse(
-                                        to_reconstruct[to_reconstruct_index],
-                                        inverse_operator, lambda2,
-                                        method=method, pick_ori=None)
+                                        evoked, inverse_operator, lambda2,
+                                        method=method)
+            
+            normal_stcs[trial_type] = mne.minimum_norm.apply_inverse(
+                                        evoked, inverse_operator, lambda2,
+                                        method=method, pick_ori='normal')
         else:
             print('source estimates for: '+  stc_path + \
                   ' already exists')
@@ -1693,9 +1766,15 @@ def source_estimate(name, save_dir, lowpass, highpass, method,
         if overwrite or not isfile(stc_path + '-lh.stc'):
             stcs[stc].save(stc_path)
 
+    for n_stc in normal_stcs:
+        n_stc_name = name + filter_string(lowpass, highpass) + '_' + n_stc + '_' + method + '-normal'
+        n_stc_path = join(save_dir, n_stc_name)
+        if overwrite or not isfile(n_stc_path + '-lh.stc'):
+            normal_stcs[n_stc].save(n_stc_path)
+
 @decor.topline
 def vector_source_estimate(name, save_dir, lowpass, highpass, method,
-                    overwrite):
+                           overwrite):
 
     inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
     to_reconstruct = io.read_evokeds(name, save_dir, lowpass, highpass)
@@ -1817,6 +1896,110 @@ def ECD_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
         print('No Dipole times assigned to this file')
         pass
 
+@decor.topline
+def create_func_label(name, save_dir, lowpass, highpass, method, event_id,
+                      subtomri, subjects_dir, source_space_method, label_origin,
+                      parcellation, ev_ids_label_analysis,
+                      save_plots, figures_path):
+    
+    stcs = io.read_source_estimates(name, save_dir, lowpass,
+                                    highpass, method, event_id)
+    n_stcs = io.read_normal_source_estimates(name, save_dir,
+                                             lowpass, highpass,
+                                             method, event_id)
+    
+    src = io.read_source_space(subtomri, subjects_dir, source_space_method)
+    labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir,
+                                        parc=parcellation)
+    for trial in ev_ids_label_analysis:
+        stc = stcs[trial]
+        n_stc = n_stcs[trial]
+        for label in [l for l in labels if l.name in label_origin]:
+            print(label.name)
+            stc_label = stc.in_label(label)
+            vtx, hemi, t = stc_label.center_of_mass(subtomri, subjects_dir=subjects_dir)
+            mni_coords = mne.vertex_to_mni(vtx, hemi, subtomri, subjects_dir=subjects_dir)
+            
+            tc = n_stc.extract_label_time_course(label, src, mode='pca_flip')
+            max_t = stc.times[np.argmax(tc)]
+            tmin = (max_t - 0.05)
+            tmax = (max_t + 0.05)
+            if tmin < stc.tmin:
+                diff = stc.tmin - tmin
+                tmin += diff
+                tmax += diff
+            if tmax > stc.times[-1]:
+                diff = tmax - stc.times[-1]
+                tmin -= diff
+                tmax -= diff
+            print(f'{tmin} - {tmax}s')
+            print('Check1')
+            # Make an STC in the time interval of interest and take the mean
+            stc_mean = n_stc.copy().crop(tmin, tmax).mean()
+            
+            # use the stc_mean to generate a functional label
+            # region growing is halted at 60% of the peak value within the
+            # anatomical label / ROI specified by aparc_label_name
+            stc_mean_label = stc_mean.in_label(label)
+            data = np.abs(stc_mean_label.data)
+            stc_mean_label.data[data < 0.8 * np.max(data)] = 0.
+            print('Check2')
+
+            # 8.5% of original source space vertices were omitted during forward
+            # calculation, suppress the warning here with verbose='error'
+            func_labels = mne.stc_to_label(stc_mean_label, src=src, smooth=True,
+                                          subjects_dir=subjects_dir, connected=False,
+                                          verbose='DEBUG')
+            
+            for i in func_labels:
+                if i!=None:
+                    func_label = i
+            
+            label_path = join(subjects_dir, subtomri, 'label', label.name + '_func.label')
+            mne.write_label(label_path, func_label)
+            print('Check3')
+            if hemi==0:
+                hemi='lh'
+            if hemi==1:
+                hemi='rh'
+            brain = stc_mean.plot(subject=subtomri, hemi=hemi, subjects_dir=subjects_dir,
+                                  title=f'{label.name}_{tmin}-{tmax}')
+            brain.add_foci(mni_coords)
+            brain.add_label(label, borders=True)
+            brain.add_label(func_label, color='yellow')
+            
+            # extract the anatomical time course for each label
+            stc_anat_label = n_stc.in_label(label)
+            pca_anat = n_stc.extract_label_time_course(label, src, mode='pca_flip')[0]
+            
+            stc_func_label = n_stc.in_label(func_label)
+            pca_func = n_stc.extract_label_time_course(func_label, src, mode='pca_flip')[0]
+            
+            # flip the pca so that the max power between tmin and tmax is positive
+            pca_anat *= np.sign(pca_anat[np.argmax(np.abs(pca_anat))])
+            pca_func *= np.sign(pca_func[np.argmax(np.abs(pca_anat))])
+            
+            plt.figure()
+            plt.plot(1e3 * stc_anat_label.times, pca_anat, 'k',
+                     label=f'Anatomical {label.name}')
+            plt.plot(1e3 * stc_func_label.times, pca_func, 'b',
+                     label=f'Functional {label.name}')
+            plt.legend()
+            plt.show()
+            
+            if save_plots:
+                save_path = join(figures_path, 'label_time_course',
+                                 f'{name}_{label.name}{filter_string(lowpass, highpass)}-tc.jpg')
+                plt.savefig(save_path, dpi=600)
+
+                b_save_path = join(figures_path, 'labels',
+                                   f'{name}_{label.name}{filter_string(lowpass, highpass)}-b.jpg')
+                brain.save_image(b_save_path)
+            
+            else:
+                print('Not saving plots; set "save_plots" to "True" to save')
+    
+    plot.close_all()
 @decor.topline
 def apply_morph(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
                 method, overwrite, n_jobs, morph_to, source_space_method,

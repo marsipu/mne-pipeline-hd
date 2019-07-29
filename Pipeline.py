@@ -141,13 +141,15 @@ exec_ops = ut.choose_function()
 #==============================================================================
 # specify the path to a general analysis folder according to your OS
 if sys.platform == 'win32':
-    home_path = 'Z:/Promotion/Pin-Prick-Projekt' # A folder to put your MNE-Projects in
+    home_path = 'Z:/Promotion' # Windows-Path
 if sys.platform == 'linux':
-    home_path = '/mnt/z/Promotion/Pin-Prick-Projekt'
+    home_path = '/mnt/z/Promotion' # Linux-Path
+if sys.platform == 'darwin':
+    home_path = 'Users/' # Mac-Path
 
-project_name = 'PP_Messungen' # specify the name for your project as a folder
-subjects_dir = join('Z:/Promotion/Freesurfer/Output') # name of your Freesurfer
-orig_data_path = join(home_path, 'Messungen_Dateien')
+project_name = 'Pin-Prick-Projekt/PP_Messungen' # specify the name for your project as a folder
+subjects_dir = join(home_path, 'Freesurfer/Output') # name of your Freesurfer
+orig_data_path = join(home_path, 'Pin-Prick-Projekt/Messungen_Dateien')
 
 #%%============================================================================
 # DEPENDING PATHS (NOT TO SET)
