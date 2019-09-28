@@ -8,11 +8,16 @@ import os
 from os import makedirs
 from os.path import join, isfile, exists
 import sys
-import autoreject as ar
+try:
+    import autoreject as ar
+except ImportError:
+    print('#%§&$$ autoreject-Import-Bug is not corrected in latest dev')
+    ar = 0
 import tkinter as t
 import re
 
 from pipeline_functions import operations_dict as opd
+
 
 class Function_Window:
 
@@ -126,10 +131,10 @@ class Function_Window:
         with open(self.c_path, 'w') as fc:
             fc.write(str(self.func_dict))
 
-        print('Function-Window closed')
-
         self.master.quit()
         self.master.destroy()
+        #sys.exit() Not working for PyCharm, stopping the console
+        raise SystemExit(0)
 
 def choose_function():
     master = t.Tk()
@@ -139,16 +144,16 @@ def choose_function():
     return gui.func_dict
 
 
-def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
+def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwrite_ar=False,
                        only_read=False):
 
-    reject_value_path = join(sub_script_path, 'reject_values.py')
+    reject_value_path = join(sub_script_path, f'reject_values_{highpass}-{lowpass}_Hz.py')
 
     if not isfile(reject_value_path):
         if only_read:
             raise Exception('New Autoreject-Threshold only from epoch_raw')
         else:
-            reject = ar.get_rejection_threshold(epochs)
+            reject = ar.get_rejection_threshold(epochs, ch_types=['grad'])
             with open(reject_value_path, 'w') as rv:
                 rv.write(f'{name}:{reject}\n')
             print(reject_value_path + ' created')
@@ -168,7 +173,7 @@ def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
                 if only_read:
                     raise Exception('New Autoreject-Threshold only from epoch_raw')
                 print('Rejection with Autoreject')
-                reject = ar.get_rejection_threshold(epochs)
+                reject = ar.get_rejection_threshold(epochs, ch_types=['grad'])
                 prae_reject = read_reject[name]
                 read_reject[name] = reject
                 if prae_reject == reject:
@@ -186,7 +191,7 @@ def autoreject_handler(name, epochs, sub_script_path, overwrite_ar=False,
             if only_read:
                 raise Exception('New Autoreject-Threshold only from epoch_raw')
             print('Rejection with Autoreject')
-            reject = ar.get_rejection_threshold(epochs)
+            reject = ar.get_rejection_threshold(epochs, ch_types=['grad'])
             read_reject.update({name:reject})
             print(f'Added AR-Threshold {reject} for {name}')
             with open(reject_value_path, 'w') as rv:
@@ -416,6 +421,15 @@ def getallfifFiles(dirName):
                 paths.update({file:join(dirpath, file)})
 
     return all_fif_files, paths
+
+def delete_files(data_path, pattern):
+    main_dir = os.walk(data_path)
+    for dirpath, dirnames, filenames in main_dir:
+        for f in filenames:
+            match = re.match(pattern, f)
+            if match:
+                os.remove(join(dirpath, f))
+                print(f'{f} removed')
 
 def shutdown():
     if sys.platform == 'win32':

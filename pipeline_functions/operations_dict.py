@@ -20,17 +20,19 @@ sensor_space_operations = dict(filter_raw=0,
                                find_events=0,
                                find_eog_events=0,
                                epoch_raw=0,
-                               run_ssp_er=0,  # on Empty-Room-Data
-                               apply_ssp_er=0,
-                               run_ssp_clm=0,  # on 1-Minute-Calm-Data
-                               apply_ssp_clm=0,
-                               run_ssp_eog=0,  # EOG-Projection-Computation
-                               apply_ssp_eog=0,
-                               run_ssp_ecg=0,  # ECG-Projection-Computation
-                               apply_ssp_ecg=0,
+                               # run_ssp_er=0,  # on Empty-Room-Data
+                               # apply_ssp_er=0,
+                               # run_ssp_clm=0,  # on 1-Minute-Calm-Data
+                               # apply_ssp_clm=0,
+                               # run_ssp_eog=0,  # EOG-Projection-Computation
+                               # apply_ssp_eog=0,
+                               # run_ssp_ecg=0,  # ECG-Projection-Computation
+                               # apply_ssp_ecg=0,
                                run_ica=0,  # HIGPASS-FILTER RECOMMENDED!!!
                                apply_ica=0,
                                get_evokeds=0,
+                               get_h1h2_evokeds=0,
+                               combine_evokeds_ab=0,
                                tfr=0,
                                align_peaks=0)
 
@@ -39,8 +41,12 @@ mri_subject_operations = dict(apply_watershed=0,
                               prepare_bem=0,
                               setup_src=0,
                               compute_src_distances=0,
+                              setup_vol_src = 0,
                               morph_subject=0,
-                              morph_labels_from_fsaverage=0)
+                              morph_labels_from_fsaverage=0,
+                              plot_source_space=0,
+                              plot_bem=0,
+                              plot_labels=0)
 
 source_space_operations = dict(mri_coreg=0,
                                create_forward_solution=0,
@@ -49,6 +55,7 @@ source_space_operations = dict(mri_coreg=0,
                                create_inverse_operator=0,
                                source_estimate=0,
                                vector_source_estimate=0,
+                               mixed_norm_estimate=0,
                                ecd_fit=0,
                                create_func_label=0,
                                func_label_processing=0,
@@ -78,9 +85,9 @@ sensor_space_plots = dict(plot_raw=0,
                           plot_power_spectra_topo=0,
                           plot_tfr=0,
                           tfr_event_dynamics=0,
-                          plot_ssp=0,  #
-                          plot_ssp_eog=0,  # EOG-Elektrodes have to be digitized and assigned to type 3
-                          plot_ssp_ecg=0,  # ECG-Elektrodes have to be digitized and assigned to type 3
+                          # plot_ssp=0,  #
+                          # plot_ssp_eog=0,  # EOG-Elektrodes have to be digitized and assigned to type 3
+                          # plot_ssp_ecg=0,  # ECG-Elektrodes have to be digitized and assigned to type 3
                           plot_epochs=0,
                           plot_epochs_image=0,
                           plot_epochs_topo=0,
@@ -97,16 +104,15 @@ sensor_space_plots = dict(plot_raw=0,
                           corr_ntr=0)
 
 source_space_plots = dict(plot_transformation=0,
-                          plot_source_space=0,
-                          plot_bem=0,
+                          plot_sensitivity_maps=0,
                           plot_noise_covariance=0,
                           plot_stc=0,
                           plot_normal_stc=0,
+                          plot_vector_stc=0,
+                          plot_mixn=0,
                           plot_animated_stc=0,
-                          plot_vector_source_estimates=0,  # plots in same window as plot_source_estimate
                           plot_snr=0,
-                          plot_labels=0,
-                          label_time_course=0,
+                          plot_label_time_course=0,
                           cmp_label_time_course=0,
                           sub_func_label_analysis=0,
                           all_func_label_analysis=0,
