@@ -22,12 +22,15 @@ from pipeline_functions import operations_functions as op
 from pipeline_functions import plot_functions as plot
 from pipeline_functions import subject_organisation as suborg
 from pipeline_functions import utilities as ut
+from pipeline_functions import operations_dict as opd
 
+# Ensure, that changes in modules will be effective
 importlib.reload(io)
 importlib.reload(op)
 importlib.reload(plot)
 importlib.reload(suborg)
 importlib.reload(ut)
+importlib.reload(opd)
 
 # %%============================================================================
 # WHICH SUBJECT? (TO SET)
@@ -43,11 +46,11 @@ importlib.reload(ut)
 # 'all' (All files in file_list.py)
 # 'all,!4-6' (All files except 4-6)
 
-which_file = '4'  # Has to be a string/enclosed in apostrophs
-quality = [1]
-modality = ['256', 't']
-which_mri_subject = '1'  # Has to be a string/enclosed in apostrophs
-which_erm_file = 'all'  # !112 Has to be a string/enclosed in apostrophs
+which_file = 'all'  # Has to be a string/enclosed in apostrophs
+quality = ['all']
+modality = ['all']
+which_mri_subject = 'all'  # Has to be a string/enclosed in apostrophs
+which_erm_file = 'all'  # Has to be a string/enclosed in apostrophs
 which_motor_erm_file = 'all'  # Has to be a string/enclosed in apostrophs
 
 # %%============================================================================
@@ -66,24 +69,33 @@ print_info = False  # Print the raw-info of each file in the console
 overwrite = True  # should files be overwritten in general
 save_plots = True  # should plots be saved
 
+# Pinprick-specific
+combine_ab = True  # pinprick-specific
+plot_ab_combined = True
+cmp_cond = ['high', 'tactile']  # Specify two conditions, which will be compared
+
 # raw
 predefined_bads = [6, 7, 8, 26, 27, 103]  # Default bad channels
 eog_digitized = True  # Set True, if the last 4 digitized points where EOG
-lowpass = 80  # Hz
-highpass = 1  # Hz # at least 1 if to apply ICA
+ch_types = ['grad']
+lowpass = 100  # Hz
+highpass = 1  # Hz
 erm_t_limit = 300  # Limits Empty-Room-Measurement-Length [s]
 
 # events
-adjust_timeline_by_msec = -200  # custom delay to stimulus in ms
+adjust_timeline_by_msec = -100  # custom delay to stimulus in ms
 pinprick = True  # Events including Rating
 
 # epochs
-tmin = -0.500  # start of epoch [s]
-tmax = 1.500  # end of epoch [s]
-baseline = (-0.500, 0)  # has to be a tuple [s]
-autoreject = True  # set True to use autoreject
+# Pinprick: Add 100ms Puffer on each side to allow latency alignment with group-averages
+# Leave baseline at -0.100 to allow shift
+tmin = -0.600  # start of epoch [s]
+tmax = 1.600  # end of epoch [s]
+baseline = (-0.600, -0.100)  # has to be a tuple [s]
+enable_ica = True  # Use ica-epochs, create 1Hz-Highpass-Raw if not existent
+autoreject = False  # set True to use autoreject
 overwrite_ar = False  # if to calculate new thresholds or to use previously calculated
-reject = dict(grad=8000e-13)  # default reject parameter if not reject with autoreject
+reject = dict(grad=8e-10)  # default reject parameter if not reject with autoreject
 flat = dict(grad=1e-15)  # default flat parameter
 reject_eog_epochs = False  # function to reject eog_epochs after use of find_eog_events
 decim = 1  # downsampling factor
@@ -91,13 +103,12 @@ event_id = {'LBT': 1}  # dictionary to assign strings to the event_ids
 # {'LBT':1, 'offset':4, 'lower_R':5, 'same_R':6, 'higher_R':7}
 
 # evokeds
-ica_evokeds = True  # Apply ICA to evokeds
-detrend = False  # sometimes not working
+detrend = True  # sometimes not working
 ana_h1h2 = True
 
 # Time-Frequency-Analysis
-tfr_freqs = np.arange(30, 80, 5)  # Frequencies to analyze
-overwrite_tfr = False  # Recalculate and overwrite tfr
+tfr_freqs = np.logspace(*np.log10([6, 100]), num=8)  # Frequencies to analyze
+overwrite_tfr = True  # Recalculate and overwrite tfr
 tfr_method = 'morlet'
 multitaper_bandwith = 4.0
 stockwell_width = 1.0
@@ -108,21 +119,46 @@ ecg_channel = 'EEG 003'  # Set ECG-Channel
 
 # forward modeling
 source_space_method = 'ico5'  # See the MNE-Documentation for further details
+eeg_fwd = False  # set True if working with EEG-Data
 
 # source reconstruction
-erm_noise_covariance = True
-use_calm_cov = False  # Use of a specific time interval in a measurement for noise covariance
+erm_noise_cov = True
+calm_noise_cov = False  # Use of a specific time interval in a measurement for noise covariance
 erm_ica = False  # Causes sometimes errors
-method = 'dSPM'
-mne_evoked_time = [0, 0.05, 0.1, 0.15, 0.2]  # time points to be displayed in several plots [s]
+inverse_method = 'dSPM'
+toi = [0.0, 0.5]  # Time of Interest for analysis
+mne_evoked_time = [0.1, 0.15, 0.2]  # time points to be displayed in several plots [s]
 stc_interactive = False  # interactive stc-plots
+mixn_dip = True
 stc_animation = (0, 0.5)  # time span for stc-animation [s]
-eeg_fwd = False  # set True if working with EEG-Data
 parcellation = 'HCPMMP1'
 parcellation_orig = 'aparc_sub'
 ev_ids_label_analysis = ['LBT']
 n_std = 4  # Determing the amount of standard-deviations, the prominence must have
 corr_threshold = 0.95
+
+# connectivity
+con_methods = ['pli', 'wpli2_debiased', 'plv']  # methods for connectivity plots
+con_fmin = 30  # fmin for connectivity plot
+con_fmax = 80  # fmax for connectivity plot
+
+# Dipole-fit
+ecds = {'pp1a_128_a': {'Dip1': [0, 0.5]}}  # Assign manually time points [s] to each file to make a dipole fit
+
+# grand averages
+morph_to = 'fsaverage'  # name of the freesurfer subject to be morphed to
+
+# statistics (still original from Andersen, may not work)
+independent_variable_1 = 'standard_3'
+independent_variable_2 = 'non_stimulation'
+time_window = (0.050, 0.060)
+n_permutations = 10000  # specify as integer
+
+# statistics plotting
+p_threshold = 1e-15  # 1e-15 is the smallest it can get for the way it is coded
+
+# freesurfer and MNE-C commands
+n_jobs_freesurfer = 4  # change according to amount of processors you have available
 
 target_labels = {'lh': ['Somatosensory and Motor Cortex-lh',
                         'Posterior Opercular Cortex-lh',
@@ -415,30 +451,6 @@ label_origin = ['bankssts_1-lh',
                 'transversetemporal_1-rh',
                 'transversetemporal_2-lh']
 
-# connectivity
-con_methods = ['pli', 'wpli2_debiased', 'plv']  # methods for connectivity plots
-con_fmin = 30  # fmin for connectivity plot
-con_fmax = 80  # fmax for connectivity plot
-
-# Dipole-fit
-ecds = {}  # Assign manually time points [s] to each file to make a dipole fit
-
-# grand averages
-morph_to = 'fsaverage'  # name of the freesurfer subject to be morphed to
-fuse_ab = True  # pinprick-specific
-align_peaks = True
-
-# statistics (still original from Andersen, may not work)
-independent_variable_1 = 'standard_3'
-independent_variable_2 = 'non_stimulation'
-time_window = (0.050, 0.060)
-n_permutations = 10000  # specify as integer
-
-# statistics plotting
-p_threshold = 1e-15  # 1e-15 is the smallest it can get for the way it is coded
-
-# freesurfer and MNE-C commands
-n_jobs_freesurfer = 4  # change according to amount of processors you have available
 # %%============================================================================
 # GUI CALL
 # ==============================================================================
@@ -449,12 +461,10 @@ exec_ops = ut.choose_function()
 # specify the path to a general analysis folder according to your OS
 if sys.platform == 'win32':
     home_path = 'Z:/Promotion'  # Windows-Path
-if sys.platform == 'linux':
+elif sys.platform == 'linux':
     home_path = '/mnt/z/Promotion'  # Linux-Path
-if sys.platform == 'darwin':
+elif sys.platform == 'darwin':
     home_path = 'Users/'  # Mac-Path
-else:
-    home_path = 'Z:/Promotion'
 
 project_name = 'Pin-Prick-Projekt/PP_Messungen'  # specify the name for your project as a folder
 subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
@@ -471,13 +481,13 @@ save_dir_averages = join(data_path, 'grand_averages')
 if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
     figures_path = join(home_path, project_name, 'Figures/ERM_Figures')
 else:
-    figures_path = join(home_path, project_name, 'Figures/')
+    figures_path = join(home_path, project_name, f'Figures/{highpass}-{lowpass}_Hz')
 
 # add file_names, mri_subjects, sub_dict, bad_channels_dict
 file_list_path = join(sub_script_path, 'file_list.py')
 erm_list_path = join(sub_script_path, 'erm_list.py')  # ERM means Empty-Room
 motor_erm_list_path = join(sub_script_path, 'motor_erm_list.py')  # Special for Pinprick
-mri_sub_list_path = join(sub_script_path, 'mri_sub_list.py')
+mri_sub_list_path = join(sub_script_path, 'mri_sub_list_pp.py')
 sub_dict_path = join(sub_script_path, 'sub_dict.py')
 erm_dict_path = join(sub_script_path, 'erm_dict.py')
 bad_channels_dict_path = join(sub_script_path, 'bad_channels_dict.py')
@@ -536,12 +546,11 @@ bad_channels_dict = suborg.read_bad_channels_dict(bad_channels_dict_path)
 # %%========================================================================
 # MRI-Subjects (NOT TO SET)
 # ============================================================================
-if exec_ops['apply_watershed'] or exec_ops['make_dense_scalp_surfaces'] \
-        or exec_ops['prepare_bem'] or exec_ops['setup_src'] \
-        or exec_ops['morph_subject'] or exec_ops['plot_source_space'] \
-        or exec_ops['plot_bem'] or exec_ops['plot_labels'] \
-        or exec_ops['morph_labels_from_fsaverage'] or exec_ops['compute_src_distances']:
-
+run_mrisf = False
+for msop in opd.mri_subject_operations:
+    if exec_ops[msop]:
+        run_mrisf = True
+if run_mrisf:
     mri_subjects = suborg.file_selection(which_mri_subject, all_mri_subjects)
 
     print(f'Selected {len(mri_subjects)} MRI-Subjects:')
@@ -559,6 +568,9 @@ if exec_ops['apply_watershed'] or exec_ops['make_dense_scalp_surfaces'] \
         if exec_ops['apply_watershed']:
             op.apply_watershed(mri_subject, subjects_dir, overwrite)
 
+        if exec_ops['prepare_bem']:
+            op.prepare_bem(mri_subject, subjects_dir)
+
         if exec_ops['make_dense_scalp_surfaces']:
             op.make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite)
 
@@ -571,8 +583,9 @@ if exec_ops['apply_watershed'] or exec_ops['make_dense_scalp_surfaces'] \
         if exec_ops['compute_src_distances']:
             op.compute_src_distances(mri_subject, subjects_dir,
                                      source_space_method, n_jobs)
-        if exec_ops['prepare_bem']:
-            op.prepare_bem(mri_subject, subjects_dir)
+
+        if exec_ops['setup_vol_src']:
+            op.setup_vol_src(mri_subject, subjects_dir)
 
         if exec_ops['morph_subject']:
             op.morph_subject(mri_subject, subjects_dir, morph_to,
@@ -612,18 +625,20 @@ quality_dict = ut.read_dict_file('quality', sub_script_path)
 
 basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
 if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
-    delete_files = set()
+    silenced_files = set()
     for file in files:
-        file_quality = int(quality_dict[file])
-        if file_quality not in quality:
-            delete_files.add(file)
+        if 'all' not in quality:
+            file_quality = int(quality_dict[file])
+            if file_quality not in quality:
+                silenced_files.add(file)
 
-        match = re.match(basic_pattern, file)
-        file_modality = match.group(2)
-        if file_modality not in modality:
-            delete_files.add(file)
+        if 'all' not in modality:
+            match = re.match(basic_pattern, file)
+            file_modality = match.group(2)
+            if file_modality not in modality:
+                silenced_files.add(file)
 
-    for df in delete_files:
+    for df in silenced_files:
         files.remove(df)
 
 if len(all_files) == 0:
@@ -635,8 +650,11 @@ else:
         print(f)
 
 # Get dicts grouping the files together depending on their names to allow grand_averaging:
-ab_dict, comp_dict, grand_avg_dict, sub_files_dict = ut.get_subject_groups(files, fuse_ab, unspecified_names)
+ab_dict, comp_dict, grand_avg_dict, sub_files_dict = ut.get_subject_groups(files, combine_ab, unspecified_names)
 morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
+
+if plot_ab_combined:
+    files = [f for f in ab_dict]
 
 for name in files:
 
@@ -648,6 +666,8 @@ for name in files:
     if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
         save_dir = join(home_path, project_name, 'Daten/empty_room_data')
         data_path = join(home_path, project_name, 'Daten/empty_room_data')
+    elif plot_ab_combined:
+        save_dir = join(save_dir_averages, 'ab_combined')
     else:
         save_dir = join(data_path, name)
 
@@ -675,16 +695,18 @@ for name in files:
         print(f'No mri_subject assigned to {k}')
         subtomri = []
         suborg.add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path)
-
-    try:
-        bad_channels = bad_channels_dict[name]
-    except KeyError as k:
-        print(f'No bad channels for {k}')
+    if plot_ab_combined:
         bad_channels = []
-        suborg.add_bad_channels_dict(bad_channels_dict_path, file_list_path,
-                                     erm_list_path, motor_erm_list_path,
-                                     data_path, predefined_bads,
-                                     sub_script_path)
+    else:
+        try:
+            bad_channels = bad_channels_dict[name]
+        except KeyError as k:
+            print(f'No bad channels for {k}')
+            bad_channels = []
+            suborg.add_bad_channels_dict(bad_channels_dict_path, file_list_path,
+                                         erm_list_path, motor_erm_list_path,
+                                         data_path, predefined_bads,
+                                         sub_script_path)
 
     # ==========================================================================
     # FILTER RAW
@@ -692,7 +714,8 @@ for name in files:
 
     if exec_ops['filter_raw']:
         op.filter_raw(name, save_dir, lowpass, highpass, ermsub,
-                      data_path, n_jobs, enable_cuda, bad_channels, erm_t_limit)
+                      data_path, n_jobs, enable_cuda, bad_channels, erm_t_limit,
+                      enable_ica, eog_digitized)
 
     # ==========================================================================
     # FIND EVENTS
@@ -723,40 +746,44 @@ for name in files:
     # ==========================================================================
     # SIGNAL SPACE PROJECTION
     # ==========================================================================
-    if exec_ops['run_ssp_er']:
-        op.run_ssp_er(name, save_dir, lowpass, highpass, data_path, ermsub, bad_channels,
-                      overwrite)
-
-    if exec_ops['apply_ssp_er']:
-        op.apply_ssp_er(name, save_dir, lowpass, highpass, overwrite)
-
-    if exec_ops['run_ssp_clm']:
-        op.run_ssp_clm(name, save_dir, lowpass, highpass, bad_channels, overwrite)
-
-    if exec_ops['apply_ssp_clm']:
-        op.apply_ssp_clm(name, save_dir, lowpass, highpass, overwrite)
-
-    if exec_ops['run_ssp_eog']:
-        op.run_ssp_eog(name, save_dir, n_jobs, eog_channel,
-                       bad_channels, overwrite)
-
-    if exec_ops['apply_ssp_eog']:
-        op.apply_ssp_eog(name, save_dir, lowpass, highpass, overwrite)
-
-    if exec_ops['run_ssp_ecg']:
-        op.run_ssp_ecg(name, save_dir, n_jobs, ecg_channel,
-                       bad_channels, overwrite)
-
-    if exec_ops['apply_ssp_ecg']:
-        op.apply_ssp_ecg(name, save_dir, lowpass, highpass, overwrite)
-
-    if exec_ops['plot_ssp']:
-        plot.plot_ssp(name, save_dir, lowpass, highpass, save_plots,
-                      figures_path, ermsub)
-
-    if exec_ops['plot_ssp_eog']:
-        plot.plot_ssp_eog(name, save_dir, lowpass, highpass, save_plots,
-                          figures_path)
+    # if exec_ops['run_ssp_er']:
+    #     op.run_ssp_er(name, save_dir, lowpass, highpass, data_path, ermsub, bad_channels,
+    #                   overwrite)
+    #
+    # if exec_ops['apply_ssp_er']:
+    #     op.apply_ssp_er(name, save_dir, lowpass, highpass, overwrite)
+    #
+    # if exec_ops['run_ssp_clm']:
+    #     op.run_ssp_clm(name, save_dir, lowpass, highpass, bad_channels, overwrite)
+    #
+    # if exec_ops['apply_ssp_clm']:
+    #     op.apply_ssp_clm(name, save_dir, lowpass, highpass, overwrite)
+    #
+    # if exec_ops['run_ssp_eog']:
+    #     op.run_ssp_eog(name, save_dir, n_jobs, eog_channel,
+    #                    bad_channels, overwrite)
+    #
+    # if exec_ops['apply_ssp_eog']:
+    #     op.apply_ssp_eog(name, save_dir, lowpass, highpass, overwrite)
+    #
+    # if exec_ops['run_ssp_ecg']:
+    #     op.run_ssp_ecg(name, save_dir, n_jobs, ecg_channel,
+    #                    bad_channels, overwrite)
+    #
+    # if exec_ops['apply_ssp_ecg']:
+    #     op.apply_ssp_ecg(name, save_dir, lowpass, highpass, overwrite)
+    #
+    # if exec_ops['plot_ssp']:
+    #     plot.plot_ssp(name, save_dir, lowpass, highpass, save_plots,
+    #                   figures_path, ermsub)
+    #
+    # if exec_ops['plot_ssp_eog']:
+    #     plot.plot_ssp_eog(name, save_dir, lowpass, highpass, save_plots,
+    #                       figures_path)
+    #
+    # if exec_ops['plot_ssp_ecg']:
+    #     plot.plot_ssp_ecg(name, save_dir, lowpass, highpass, save_plots,
+    #                       figures_path)
 
     if exec_ops['run_ica']:
         op.run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
@@ -777,14 +804,18 @@ for name in files:
 
     if exec_ops['get_evokeds']:
         op.get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
-                       detrend, ica_evokeds, overwrite, ana_h1h2)
+                       detrend, enable_ica, overwrite)
+
+    if exec_ops['get_h1h2_evokeds']:
+        op.get_h1h2_evokeds(name, save_dir, lowpass, highpass, enable_ica,
+                            exec_ops, ermsub, detrend)
 
     if exec_ops['align_peaks']:
         op.align_peaks(name, save_dir, lowpass, highpass, sub_script_path,
                        event_id, tmin, tmax, baseline, reject, flat, autoreject,
                        overwrite_ar, bad_channels, overwrite, decim, exec_ops,
                        eog_channel, save_plots, figures_path, ecg_channel,
-                       reject_eog_epochs, ica_evokeds, ermsub, detrend,
+                       reject_eog_epochs, enable_ica, ermsub, detrend,
                        ana_h1h2)
 
     # ==========================================================================
@@ -792,7 +823,7 @@ for name in files:
     # ==========================================================================
 
     if exec_ops['tfr']:
-        op.tfr(name, save_dir, lowpass, highpass, ica_evokeds, tfr_freqs, overwrite_tfr,
+        op.tfr(name, save_dir, lowpass, highpass, enable_ica, tfr_freqs, overwrite_tfr,
                tfr_method, multitaper_bandwith, stockwell_width, n_jobs)
 
     # ==========================================================================
@@ -802,13 +833,13 @@ for name in files:
     if exec_ops['estimate_noise_covariance']:
         op.estimate_noise_covariance(name, save_dir, lowpass, highpass, overwrite,
                                      ermsub, data_path, baseline, bad_channels,
-                                     n_jobs, erm_noise_covariance, use_calm_cov,
-                                     ica_evokeds, erm_ica)
+                                     n_jobs, erm_noise_cov, calm_noise_cov,
+                                     enable_ica, erm_ica)
 
     if exec_ops['plot_noise_covariance']:
         plot.plot_noise_covariance(name, save_dir, lowpass, highpass,
-                                   save_plots, figures_path, ermsub,
-                                   use_calm_cov)
+                                   save_plots, figures_path, erm_noise_cov, ermsub,
+                                   calm_noise_cov)
 
     # ==========================================================================
     # CO-REGISTRATION
@@ -817,11 +848,15 @@ for name in files:
     # use mne.gui.coregistration()
 
     if exec_ops['mri_coreg']:
-        op.mri_coreg(name, save_dir, subtomri, subjects_dir, eog_digitized)
+        op.mri_coreg(name, save_dir, subtomri, subjects_dir)
 
     if exec_ops['plot_transformation']:
         plot.plot_transformation(name, save_dir, subtomri, subjects_dir,
                                  save_plots, figures_path)
+
+    if exec_ops['plot_sensitivity_maps']:
+        plot.plot_sensitivity_maps(name, save_dir, subjects_dir, ch_types,
+                                   save_plots, figures_path)
 
     # ==========================================================================
     # CREATE FORWARD MODEL
@@ -838,53 +873,57 @@ for name in files:
 
     if exec_ops['create_inverse_operator']:
         op.create_inverse_operator(name, save_dir, lowpass, highpass,
-                                   overwrite, ermsub, use_calm_cov,
-                                   erm_noise_covariance)
+                                   overwrite, ermsub, calm_noise_cov,
+                                   erm_noise_cov)
 
     # ==========================================================================
     # SOURCE ESTIMATE MNE
     # ==========================================================================
 
     if exec_ops['source_estimate']:
-        op.source_estimate(name, save_dir, lowpass, highpass, method,
+        op.source_estimate(name, save_dir, lowpass, highpass, inverse_method, toi,
                            overwrite)
 
     if exec_ops['vector_source_estimate']:
         op.vector_source_estimate(name, save_dir, lowpass, highpass,
-                                  method, overwrite)
+                                  inverse_method, toi, overwrite)
+
+    if exec_ops['mixed_norm_estimate']:
+        op.mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, erm_noise_cov,
+                               ermsub, calm_noise_cov, event_id, mixn_dip, overwrite)
 
     if exec_ops['ecd_fit']:
         op.ecd_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
-                   subtomri, use_calm_cov, ecds,
+                   subtomri, erm_noise_cov, calm_noise_cov, ecds,
                    save_plots, figures_path)
 
     if exec_ops['apply_morph']:
         stcs = op.apply_morph(name, save_dir, lowpass, highpass,
-                              subjects_dir, subtomri, method,
+                              subjects_dir, subtomri, inverse_method,
                               overwrite, morph_to,
                               source_space_method, event_id)
 
     if exec_ops['apply_morph_normal']:
         stcs = op.apply_morph_normal(name, save_dir, lowpass, highpass,
-                                     subjects_dir, subtomri, method,
+                                     subjects_dir, subtomri, inverse_method,
                                      overwrite, morph_to,
                                      source_space_method, event_id)
 
-    if not fuse_ab:
+    if not combine_ab:
         if exec_ops['create_func_label']:
             op.create_func_label(name, save_dir, lowpass, highpass,
-                                 method, event_id, subtomri, subjects_dir,
+                                 inverse_method, event_id, subtomri, subjects_dir,
                                  source_space_method, label_origin,
                                  parcellation_orig, ev_ids_label_analysis,
                                  save_plots, figures_path, sub_script_path,
-                                 n_std, fuse_ab)
+                                 n_std, combine_ab)
 
-    if not fuse_ab:
+    if not combine_ab:
         if exec_ops['func_label_processing']:
             op.func_label_processing(name, save_dir, lowpass, highpass,
                                      save_plots, figures_path, subtomri, subjects_dir,
                                      sub_script_path, ev_ids_label_analysis,
-                                     corr_threshold, fuse_ab)
+                                     corr_threshold, combine_ab)
 
     if exec_ops['func_label_ctf_ps']:
         op.func_label_ctf_ps(name, save_dir, lowpass, highpass, subtomri,
@@ -988,14 +1027,11 @@ for name in files:
 
     if exec_ops['plot_evoked_white']:
         plot.plot_evoked_white(name, save_dir, lowpass, highpass,
-                               save_plots, figures_path, ermsub, use_calm_cov)
+                               save_plots, figures_path, erm_noise_cov, ermsub, calm_noise_cov)
 
     if exec_ops['plot_evoked_image']:
         plot.plot_evoked_image(name, save_dir, lowpass, highpass,
                                save_plots, figures_path)
-
-    if exec_ops['plot_evoked_compare']:
-        plot.plot_evoked_compare(data_path, lowpass, highpass, comp_dict)
 
     if exec_ops['plot_evoked_h1h2']:
         plot.plot_evoked_h1h2(name, save_dir, lowpass, highpass, event_id,
@@ -1007,34 +1043,38 @@ for name in files:
     if exec_ops['plot_stc']:
         plot.plot_stc(name, save_dir, lowpass, highpass,
                       subtomri, subjects_dir,
-                      method, mne_evoked_time, event_id,
+                      inverse_method, mne_evoked_time, event_id,
                       stc_interactive, save_plots, figures_path)
 
     if exec_ops['plot_normal_stc']:
         plot.plot_normal_stc(name, save_dir, lowpass, highpass,
                              subtomri, subjects_dir,
-                             method, mne_evoked_time, event_id,
+                             inverse_method, mne_evoked_time, event_id,
                              stc_interactive, save_plots, figures_path)
 
-    if exec_ops['plot_vector_source_estimates']:
-        plot.plot_vector_source_estimates(name, save_dir, lowpass, highpass,
-                                          subtomri, subjects_dir,
-                                          method, mne_evoked_time,
-                                          save_plots, figures_path)
+    if exec_ops['plot_vector_stc']:
+        plot.plot_vector_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
+                             inverse_method, mne_evoked_time, event_id, stc_interactive,
+                             save_plots, figures_path)
+
+    if exec_ops['plot_mixn']:
+        plot.plot_mixn(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
+                       mne_evoked_time, event_id, stc_interactive,
+                       save_plots, figures_path, mixn_dip, parcellation)
 
     if exec_ops['plot_animated_stc']:
         plot.plot_animated_stc(name, save_dir, lowpass, highpass, subtomri,
-                               subjects_dir, method, stc_animation, event_id,
+                               subjects_dir, inverse_method, stc_animation, event_id,
                                figures_path, ev_ids_label_analysis)
 
     if exec_ops['plot_snr']:
         plot.plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path)
 
-    if exec_ops['label_time_course']:
-        plot.label_time_course(name, save_dir, lowpass, highpass,
-                               subtomri, subjects_dir, method, source_space_method,
-                               target_labels, save_plots, figures_path,
-                               parcellation, event_id, ev_ids_label_analysis)
+    if exec_ops['plot_label_time_course']:
+        plot.plot_label_time_course(name, save_dir, lowpass, highpass,
+                                    subtomri, subjects_dir, inverse_method, source_space_method,
+                                    target_labels, save_plots, figures_path,
+                                    parcellation, event_id, ev_ids_label_analysis)
 
     # ==========================================================================
     # TIME-FREQUENCY IN SOURCE SPACE
@@ -1056,7 +1096,7 @@ for name in files:
                                      subtomri, subjects_dir, parcellation,
                                      target_labels, con_methods,
                                      con_fmin, con_fmax,
-                                     n_jobs, overwrite, ica_evokeds,
+                                     n_jobs, overwrite, enable_ica,
                                      ev_ids_label_analysis)
 
     if exec_ops['plot_source_space_connectivity']:
@@ -1071,7 +1111,7 @@ for name in files:
     # ==========================================================================
     if exec_ops['corr_ntr']:
         op.corr_ntr(name, save_dir, lowpass, highpass, exec_ops,
-                    ermsub, subtomri, ica_evokeds, save_plots, figures_path)
+                    ermsub, subtomri, enable_ica, save_plots, figures_path)
 
     # close all plots
     if exec_ops['close_plots']:
@@ -1083,12 +1123,12 @@ for name in files:
 # ==============================================================================
 if exec_ops['cmp_label_time_course']:
     plot.cmp_label_time_course(data_path, lowpass, highpass, sub_dict, comp_dict,
-                               subjects_dir, method, source_space_method, parcellation,
+                               subjects_dir, inverse_method, source_space_method, parcellation,
                                target_labels, save_plots, figures_path,
-                               event_id, ev_ids_label_analysis, fuse_ab,
+                               event_id, ev_ids_label_analysis, combine_ab,
                                sub_script_path, exec_ops)
 
-if fuse_ab:
+if combine_ab:
     if exec_ops['create_func_label']:
         for key in ab_dict:
             print(60 * '=' + '\n' + key)
@@ -1111,13 +1151,13 @@ if fuse_ab:
                 prefix = match.group()
                 subtomri = sub_dict[prefix]
             op.create_func_label(name, save_dir, lowpass, highpass,
-                                 method, event_id, subtomri, subjects_dir,
+                                 inverse_method, event_id, subtomri, subjects_dir,
                                  source_space_method, label_origin,
                                  parcellation_orig, ev_ids_label_analysis,
                                  save_plots, figures_path, sub_script_path,
-                                 n_std, fuse_ab)
+                                 n_std, combine_ab)
 
-if fuse_ab:
+if combine_ab:
     if exec_ops['func_label_processing']:
         for key in ab_dict:
             print(60 * '=' + '\n' + key)
@@ -1142,7 +1182,7 @@ if fuse_ab:
             op.func_label_processing(name, save_dir, lowpass, highpass,
                                      save_plots, figures_path, subtomri, subjects_dir,
                                      sub_script_path, ev_ids_label_analysis,
-                                     corr_threshold, fuse_ab)
+                                     corr_threshold, combine_ab)
 
 if exec_ops['sub_func_label_analysis']:
     plot.sub_func_label_analysis(lowpass, highpass, tmax, sub_files_dict,
@@ -1163,16 +1203,19 @@ if exec_ops['grand_avg_evokeds']:
                          lowpass, highpass, exec_ops, quality,
                          ana_h1h2)
 
+if exec_ops['combine_evokeds_ab']:
+    op.combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_dict)
+
 if exec_ops['grand_avg_tfr']:
     op.grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
                      lowpass, highpass, tfr_method)
 
 if exec_ops['grand_avg_morphed']:
-    op.grand_avg_morphed(grand_avg_dict, data_path, method, save_dir_averages,
+    op.grand_avg_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averages,
                          lowpass, highpass, event_id)
 
 if exec_ops['grand_avg_normal_morphed']:
-    op.grand_avg_normal_morphed(grand_avg_dict, data_path, method, save_dir_averages,
+    op.grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averages,
                                 lowpass, highpass, event_id)
 
 if exec_ops['grand_avg_connect']:
@@ -1203,6 +1246,9 @@ if exec_ops['plot_grand_avg_evokeds']:
 if exec_ops['plot_grand_avg_evokeds_h1h2']:
     plot.plot_grand_avg_evokeds_h1h2(lowpass, highpass, save_dir_averages, grand_avg_dict,
                                      event_id, save_plots, figures_path, quality)
+
+if exec_ops['plot_evoked_compare']:
+    plot.plot_evoked_compare(data_path, save_dir_averages, lowpass, highpass, comp_dict, combine_ab, event_id)
 
 if exec_ops['plot_grand_avg_tfr']:
     plot.plot_grand_avg_tfr(lowpass, highpass, baseline, tmin, tmax,
@@ -1247,7 +1293,7 @@ if exec_ops['statistics_source_space']:
 
 if exec_ops['plot_grand_averages_source_estimates_cluster_masked']:
     plot.plot_grand_averages_source_estimates_cluster_masked(
-        save_dir_averages, lowpass, highpass, subjects_dir, method, time_window,
+        save_dir_averages, lowpass, highpass, subjects_dir, inverse_method, time_window,
         save_plots, figures_path, independent_variable_1,
         independent_variable_2, mne_evoked_time, p_threshold)
 # ==============================================================================
@@ -1255,7 +1301,7 @@ if exec_ops['plot_grand_averages_source_estimates_cluster_masked']:
 # ==============================================================================
 
 if exec_ops['pp_plot_latency_S1_corr']:
-    plot.pp_plot_latency_S1_corr(data_path, files, lowpass, highpass,
+    plot.pp_plot_latency_s1_corr(data_path, files, lowpass, highpass,
                                  save_plots, figures_path)
 
 # close all plots

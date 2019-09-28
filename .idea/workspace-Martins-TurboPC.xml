@@ -1,0 +1,1095 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AnalysisUIOptions">
+    <option name="SCOPE_TYPE" value="3" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="30b6139c-1c5f-47c0-8736-e01327e98669" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/Pipeline_Pinprick.py" beforeDir="false" afterPath="$PROJECT_DIR$/Pipeline_Pinprick.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pipeline_functions/func_cache.py" beforeDir="false" afterPath="$PROJECT_DIR$/pipeline_functions/func_cache.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pipeline_functions/operations_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/pipeline_functions/operations_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pipeline_functions/plot_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/pipeline_functions/plot_functions.py" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_DATA_SOURCES" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
+    <option name="HIDDEN_KINDS">
+      <set />
+    </option>
+    <expand />
+    <select />
+  </component>
+  <component name="FavoritesManager">
+    <favorites_list name="mne stuff">
+      <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/bti" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/bti/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/bti/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/bti/tests/test_bti.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/bti/bti.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/bti/read.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/bti/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/bti/constants.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/cnt" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/cnt/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/cnt/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/cnt/tests/test_cnt.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/cnt/cnt.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/cnt/_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/cnt/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/hc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/tests/test_ctf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/ctf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/eeg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/info.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/res4.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/trans.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf/constants.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf/tests/test_edf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf/tests/test_gdf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf/edf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf/_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/edf/gdf_encodes.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi/tests/test_egi.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi/egi.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi/egimff.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi/events.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi/general.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/egi/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit/tests/test_kit.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit/tests/test_coreg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit/kit.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit/coreg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/kit/constants.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fiff" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fiff/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fiff/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fiff/tests/test_raw_fiff.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fiff/raw.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fiff/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/array" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/array/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/array/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/array/tests/test_array.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/array/array.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/array/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_raw.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_pick.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_constants.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_meas_info.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_reference.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_compensator.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_proc_history.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tests/test_apply_function.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eeglab" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eeglab/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eeglab/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eeglab/tests/test_eeglab.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eeglab/eeglab.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eeglab/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eximia" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eximia/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eximia/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eximia/tests/test_eximia.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eximia/eximia.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/eximia/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tag.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/base.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/diff.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/nicolet" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/nicolet/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/nicolet/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/nicolet/tests/test_nicolet.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/nicolet/nicolet.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/nicolet/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/open.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/pick.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/proj.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/tree.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/write.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fieldtrip" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fieldtrip/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fieldtrip/tests/helpers.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fieldtrip/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fieldtrip/tests/test_fieldtrip.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fieldtrip/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fieldtrip/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/fieldtrip/fieldtrip.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/matrix.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/tests/test_artemis123.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/resources" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/resources/Artemis123_mneLoc.csv" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/resources/Artemis123_ChannelMap.csv" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/artemis123/artemis123.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/brainvision" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/brainvision/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/brainvision/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/brainvision/tests/test_brainvision.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/brainvision/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/brainvision/brainvision.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/ctf_comp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/constants.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/meas_info.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/reference.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/compensator.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/io/proc_history.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/help" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/help/kit2fiff.json" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/tests/test_coreg_gui.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/tests/test_marker_gui.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/tests/test_file_traits.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/tests/test_kit2fiff_gui.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/tests/test_fiducials_gui.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/_help.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/_viewer.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/_backend.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/_coreg_gui.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/_marker_gui.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/_file_traits.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/_kit2fiff_gui.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/gui/_fiducials_gui.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_3d.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_ica.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_raw.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_misc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_topo.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_circle.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_epochs.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_evoked.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_montage.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/tests/test_topomap.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_3d.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_brain" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_brain/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_brain/tests/test_brain.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_brain/view.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_brain/_brain.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_brain/surface.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_brain/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/_brain/colormap.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/ica.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/raw.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/misc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/topo.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/tests/_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/tests/test_renderer.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/_pyvista.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/renderer.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/base_renderer.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/backends/_pysurfer_mayavi.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/circle.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/epochs.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/evoked.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/montage.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/topomap.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/viz/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/image" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/image/mni_brain.gif" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/image/custom_layout.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets/KIT.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets/122m.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets/306m.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets/306m_rt.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets/CTF_275.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets/BabySQUID.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets/Magnes_2500wh.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/helmets/Magnes_3600wh.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/fsaverage" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/fsaverage/fsaverage-head.fif" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/fsaverage/fsaverage-trans.fif" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/fsaverage/fsaverage-fiducials.fif" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/fsaverage/fsaverage-inner_skull-bem.fif" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/icos.fif.gz" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/coil_def.dat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/mne_analyze.sel" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/coil_def_Elekta.dat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/data/FreeSurferColorLUT.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/html" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/html/jquery.js" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/html/d3.v3.min.js" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/html/bootstrap.min.js" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/html/jquery-ui.min.js" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/html/bootstrap.min.css" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/html/jquery-ui.min.css" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/html/mpld3.v0.2.min.js" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/tests/test_multi_comp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/tests/test_parametric.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/tests/test_regression.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/tests/test_permutations.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/tests/test_cluster_level.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/multi_comp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/parametric.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/regression.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/permutations.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/stats/cluster_level.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_bem.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_cov.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_chpi.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_misc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_proj.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_rank.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_coreg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_event.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_fixes.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_label.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_morph.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_dipole.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_epochs.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_evoked.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_filter.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_report.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_surface.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_defaults.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_selection.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_transforms.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_annotations.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_digitization.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_line_endings.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_source_space.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_import_nesting.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_source_estimate.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/tests/test_docstring_parameters.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_docs.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_misc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_bunch.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_check.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_mixin.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_config.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_logging.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_testing.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_fetching.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_numerics.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/tests/test_progressbar.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/docs.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/misc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/check.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/mixin.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/_bunch.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/config.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/_logging.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/_testing.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/fetching.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/numerics.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/utils/progressbar.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/bem.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/cov.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/chpi.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/cuda.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/tests/test_forward.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/tests/test_make_forward.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/tests/test_field_interpolation.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/forward.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/_lead_dots.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/_make_forward.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/_compute_forward.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/forward/_field_interpolation.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/misc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/proj.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/rank.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/CTF151.lay" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/CTF275.lay" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/biosemi.lay" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/EEG1005.lay" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/EGI256.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/KIT-160.lay" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/KIT-AD.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/CTF-275.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/KIT-157.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/KIT-UMD-3.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/KIT-AS-2008.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/magnesWH3600.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/Neuromag_122.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/Vectorview-all.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/Vectorview-mag.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/Vectorview-grad.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/layouts/Vectorview-grad_norm.lout" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/mgh60.elc" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/mgh70.elc" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/EGI_256.csd" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/biosemi16.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/biosemi32.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/biosemi64.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/biosemi128.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/biosemi160.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/biosemi256.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/easycap-M1.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/easycap-M10.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/standard_1005.elc" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/standard_1020.elc" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/GSN-HydroCel-32.sfp" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/standard_primed.elc" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/GSN-HydroCel-128.sfp" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/GSN-HydroCel-129.sfp" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/GSN-HydroCel-256.sfp" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/GSN-HydroCel-257.sfp" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/standard_prefixed.elc" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/standard_postfixed.elc" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/GSN-HydroCel-64_1.0.sfp" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/GSN-HydroCel-65_1.0.sfp" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/montages/standard_alphabetic.elc" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/ctf64_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/bti148_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/bti248_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/ctf151_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/ctf275_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/KIT-157_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/KIT-208_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/biosemi16_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/biosemi32_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/biosemi64_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/easycapM1_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/KIT-UMD-1_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/KIT-UMD-2_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/KIT-UMD-3_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/bti248grad_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/easycapM11_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/easycapM14_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/easycapM15_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/neuromag122_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/neuromag306mag_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/easycap32ch-avg_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/easycap64ch-avg_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/easycap128ch-avg_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/data/neighbors/neuromag306planar_neighb.mat" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/tests/test_layout.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/tests/test_montage.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/tests/test_channels.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/tests/test_interpolation.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/layout.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/montage.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/channels.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/channels/interpolation.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/tests/test_commands.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_coreg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_report.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_bti2fiff.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_kit2fiff.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_surf2bem.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_flash_bem.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_maxfilter.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_show_fiff.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_show_info.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_browse_raw.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_compare_fiff.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_clean_eog_ecg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_watershed_bem.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_compute_proj_ecg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_compute_proj_eog.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_make_scalp_surfaces.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/commands/mne_freeview_bem_surfaces.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/coreg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/opm" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/opm/opm.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/opm/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/limo" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/limo/limo.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/limo/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/misc" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/misc/_misc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/misc/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/mtrf" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/mtrf/mtrf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/mtrf/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/_fake" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/_fake/_fake.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/_fake/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/tests/test_datasets.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/eegbci" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/eegbci/eegbci.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/eegbci/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/hf_sef" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/hf_sef/hf_sef.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/hf_sef/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sample" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sample/sample.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sample/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/somato" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/somato/somato.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/somato/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/testing" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/testing/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/testing/_testing.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/kiloword" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/kiloword/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/kiloword/kiloword.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/spm_face" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/spm_face/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/spm_face/spm_data.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/_fsaverage" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/_fsaverage/base.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/_fsaverage/bem.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/_fsaverage/root.txt" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/_fsaverage/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/brainstorm" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/brainstorm/bst_raw.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/brainstorm/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/brainstorm/bst_resting.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/brainstorm/bst_auditory.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/brainstorm/bst_phantom_ctf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/brainstorm/bst_phantom_elekta.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/multimodal" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/multimodal/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/multimodal/multimodal.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/fieldtrip_cmc" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/fieldtrip_cmc/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/fieldtrip_cmc/fieldtrip_cmc.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/phantom_4dbti" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/phantom_4dbti/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/phantom_4dbti/phantom_4dbti.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+              <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/tests/test_physionet.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            </favorite_root>
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/age.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/SHA1SUMS" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/temazepam.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/age_records.csv" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/sleep_physionet/temazepam_records.csv" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/visual_92_categories" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/visual_92_categories/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/datasets/visual_92_categories/visual_92_categories.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests/test_csp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests/test_ems.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests/test_base.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests/test_transformer.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests/test_search_light.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests/test_time_frequency.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/tests/test_receptive_field.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/csp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/ems.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/base.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/mixin.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/transformer.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/search_light.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/time_frequency.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/receptive_field.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/decoding/time_delaying_ridge.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/event.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/fixes.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/label.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/morph.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/dipole.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/epochs.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/evoked.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/h5io" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/h5io/_h5io.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/h5io/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/tempita" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/tempita/_looper.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/tempita/compat3.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/tempita/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/jdcal.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/doccer.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/pymatreader" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/pymatreader/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/pymatreader/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/pymatreader/pymatreader.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/decorator.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/externals/FieldTrip.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/filter.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/report.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/tests/test_dics.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/tests/test_lcmv.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/tests/test_external.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/tests/test_rap_music.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/_dics.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/_lcmv.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/_rap_music.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/beamformer/_compute_beamformer.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/tests/test_raw.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/tests/test_evoked.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/tests/test_source.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/tests/test_metrics.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/raw.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/evoked.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/source.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/metrics.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/simulation/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/surface.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/baseline.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/conftest.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/defaults.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/parallel.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/tests/test_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/tests/test_envelope.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/tests/test_spectral.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/tests/test_effective.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/envelope.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/spectral.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/connectivity/effective.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/digitization" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/digitization/base.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/digitization/_utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/digitization/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/tests/test_snr.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/tests/test_inverse.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/tests/test_psf_ctf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/tests/test_time_frequency.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/inverse.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/psf_ctf.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/_eloreta.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/minimum_norm/time_frequency.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/selection.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_ecg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_eog.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_ica.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_otp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_ssp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_ctps.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_flat.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_stim.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_xdawn.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_infomax.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_maxwell.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_fine_cal.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_peak_finder.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/tests/test_eeglab_infomax.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/ecg.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/eog.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/ica.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/otp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/ssp.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/bads.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/flat.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/stim.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/ctps_.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/utils.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/xdawn.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/maxwell.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/infomax_.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/_fine_cal.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/maxfilter.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/preprocessing/_peak_finder.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/transforms.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/annotations.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/tests/test_gamma_map.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/tests/test_mxne_optim.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/tests/test_mxne_inverse.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/tests/test_mxne_debiasing.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/_gamma_map.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/mxne_optim.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/mxne_inverse.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/inverse_sparse/mxne_debiasing.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/ar.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests" type="directory" klass="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode">
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests/test_ar.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests/test_csd.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests/test_psd.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests/test_tfr.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests/test_stft.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests/test_stockwell.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+            <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tests/test_multitaper.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          </favorite_root>
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/csd.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/psd.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/tfr.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/stft.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/__init__.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/_stockwell.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+          <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/time_frequency/multitaper.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        </favorite_root>
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/source_space.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+        <favorite_root url="file://C:/Anaconda3/envs/mne_dev/Lib/site-packages/mne/source_estimate.py" type="psiFile" klass="com.intellij.ide.projectView.impl.nodes.PsiFileNode" />
+      </favorite_root>
+    </favorites_list>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>not q</find>
+      <find>ecd</find>
+      <find>\</find>
+      <find>l1</find>
+      <find>remove</find>
+      <find>power</find>
+      <find>n_stc</find>
+      <find>global</find>
+      <find>T_obs</find>
+      <find>H0</find>
+      <find>##</find>
+      <find>s1</find>
+      <find>joint</find>
+    </findStrings>
+    <replaceStrings>
+      <replace>q not</replace>
+      <replace>pw</replace>
+      <replace>t_obs</replace>
+      <replace>h0</replace>
+      <replace>#</replace>
+    </replaceStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="may_changes" />
+      </map>
+    </option>
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/pipeline_functions/operations_functions.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/pipeline_functions/plot_functions.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Pipeline_Pinprick.py" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="IgnoredFileRootStore">
+    <option name="generatedRoots">
+      <set>
+        <option value="D:\Rächner\OneDrive - bwedu\Promotion_OD\MNE-Python\mne_pipeline_hd\.idea" />
+      </set>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-15" />
+    <option name="width" value="1750" />
+    <option name="height" value="995" />
+  </component>
+  <component name="ProjectId" id="1OghuDSKU0NyzJC8Hr9yzJtos6a" />
+  <component name="PropertiesComponent">
+    <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="full.screen.before.presentation.mode" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../Arduino/Pinprick-Motor.v12/Pinprick-Motor.v12.ino" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
+    <property name="settings.editor.selected.configurable" value="MTConfigurable" />
+    <property name="two.files.diff.last.used.file" value="$PROJECT_DIR$/../../Arduino/Pinprick-Motor.v12/Pinprick-Motor.v12.ino" />
+  </component>
+  <component name="PyConsoleOptionsProvider">
+    <option name="myPythonConsoleState">
+      <console-settings module-name="mne_pipeline_hd" is-module-sdk="true">
+        <option name="useSoftWraps" value="true" />
+        <option name="myUseModuleSdk" value="true" />
+        <option name="myModuleName" value="mne_pipeline_hd" />
+      </console-settings>
+    </option>
+    <option name="myShowDebugConsoleByDefault" value="true" />
+    <option name="myShowVariablesByDefault" value="false" />
+    <option name="myUseExistingConsole" value="true" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Python.Pipeline_Pinprick">
+    <configuration name="Pipeline_Pinprick" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="mne_pipeline_hd" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="DISPLAY" value="True" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Pipeline_Pinprick.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <module name="mne_pipeline_hd" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="operations_functions" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="mne_pipeline_hd" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/pipeline_functions" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/pipeline_functions/operations_functions.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.Pipeline_Pinprick" />
+        <item itemvalue="Python.operations_functions" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="StructureViewFactory">
+    <option name="ACTIVE_ACTIONS" value=",ALPHA_COMPARATOR" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="30b6139c-1c5f-47c0-8736-e01327e98669" name="Default Changelist" comment="" />
+      <created>1561736621678</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1561736621678</updated>
+      <workItem from="1561736626621" duration="3331000" />
+      <workItem from="1561742035381" duration="961000" />
+      <workItem from="1561743020881" duration="1538000" />
+      <workItem from="1561744964591" duration="1624000" />
+      <workItem from="1561748968203" duration="7293000" />
+      <workItem from="1562617555263" duration="239000" />
+      <workItem from="1564040699740" duration="3522000" />
+      <workItem from="1564044320845" duration="819000" />
+      <workItem from="1564047253582" duration="740000" />
+      <workItem from="1564405379548" duration="1985000" />
+      <workItem from="1564410258128" duration="1799000" />
+      <workItem from="1564412085210" duration="109000" />
+      <workItem from="1564412211116" duration="1163000" />
+      <workItem from="1564413776356" duration="1703000" />
+      <workItem from="1564415531558" duration="481000" />
+      <workItem from="1564416108910" duration="2490000" />
+      <workItem from="1564426796564" duration="96000" />
+      <workItem from="1564427017180" duration="116000" />
+      <workItem from="1564428200255" duration="91000" />
+      <workItem from="1564428365707" duration="1320000" />
+      <workItem from="1564507185661" duration="159000" />
+      <workItem from="1564507387768" duration="1189000" />
+      <workItem from="1564514989362" duration="2237000" />
+      <workItem from="1564586049459" duration="29000" />
+      <workItem from="1564586099205" duration="1186000" />
+    </task>
+    <task id="LOCAL-00001" summary="Maybe these code style changes will break a lot">
+      <created>1561756319256</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1561756319256</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Small changes for ECD">
+      <created>1564411019547</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1564411019547</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Small changes for ECD">
+      <created>1564411115044</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1564411115044</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="Branch">
+          <value>
+            <list />
+          </value>
+        </entry>
+        <entry key="User">
+          <value>
+            <list />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Maybe these code style changes will break a lot" />
+    <MESSAGE value="Small changes for ECD" />
+    <option name="LAST_COMMIT_MESSAGE" value="Small changes for ECD" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="ga_folders" />
+      </configuration>
+    </watches-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/mne_pipeline_hd$operations_functions.coverage" NAME="operations_functions Coverage Results" MODIFIED="1564409459302" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pipeline_functions" />
+    <SUITE FILE_PATH="coverage/mne_pipeline_hd$Pipeline_Pinprick.coverage" NAME="Pipeline_Pinprick Coverage Results" MODIFIED="1564414663842" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+  </component>
+</project>
