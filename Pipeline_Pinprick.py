@@ -12,7 +12,7 @@ Adapted from Lau Møller Andersen
 import sys
 from os import makedirs
 from os.path import join, isfile, exists
-import importlib
+from importlib import reload
 import re
 import numpy as np
 import mne
@@ -23,15 +23,18 @@ from pipeline_functions import plot_functions as plot
 from pipeline_functions import subject_organisation as suborg
 from pipeline_functions import utilities as ut
 from pipeline_functions import operations_dict as opd
+from pipeline_functions import decorators as decor
 
-# Ensure, that changes in modules will be effective
-importlib.reload(io)
-importlib.reload(op)
-importlib.reload(plot)
-importlib.reload(suborg)
-importlib.reload(ut)
-importlib.reload(opd)
+def reload_all():
+   reload(io)
+   reload(op)
+   reload(plot)
+   reload(suborg)
+   reload(ut)
+   reload(opd)
+   reload(decor)
 
+reload_all()
 # %%============================================================================
 # WHICH SUBJECT? (TO SET)
 # ==============================================================================
@@ -45,8 +48,8 @@ importlib.reload(opd)
 # '1-20,!4-6' (1-20 except 4-6)
 # 'all' (All files in file_list.py)
 # 'all,!4-6' (All files except 4-6)
-
-which_file = 'all'  # Has to be a string/enclosed in apostrophs
+# Todo: Choose-Subject-Window
+which_file = 'all'  # Has to be a string/enclosed in apostrophs-
 quality = ['all']
 modality = ['all']
 which_mri_subject = 'all'  # Has to be a string/enclosed in apostrophs
@@ -71,7 +74,6 @@ save_plots = True  # should plots be saved
 
 # Pinprick-specific
 combine_ab = True  # pinprick-specific
-plot_ab_combined = True
 cmp_cond = ['high', 'tactile']  # Specify two conditions, which will be compared
 
 # raw
@@ -107,7 +109,7 @@ detrend = True  # sometimes not working
 ana_h1h2 = True
 
 # Time-Frequency-Analysis
-tfr_freqs = np.logspace(*np.log10([6, 100]), num=8)  # Frequencies to analyze
+tfr_freqs = np.arange(10, 100, 5)  # Frequencies to analyze
 overwrite_tfr = True  # Recalculate and overwrite tfr
 tfr_method = 'morlet'
 multitaper_bandwith = 4.0
@@ -131,7 +133,7 @@ mne_evoked_time = [0.1, 0.15, 0.2]  # time points to be displayed in several plo
 stc_interactive = False  # interactive stc-plots
 mixn_dip = True
 stc_animation = (0, 0.5)  # time span for stc-animation [s]
-parcellation = 'HCPMMP1'
+parcellation = 'aparc'
 parcellation_orig = 'aparc_sub'
 ev_ids_label_analysis = ['LBT']
 n_std = 4  # Determing the amount of standard-deviations, the prominence must have
@@ -143,7 +145,9 @@ con_fmin = 30  # fmin for connectivity plot
 con_fmax = 80  # fmax for connectivity plot
 
 # Dipole-fit
-ecds = {'pp1a_128_a': {'Dip1': [0, 0.5]}}  # Assign manually time points [s] to each file to make a dipole fit
+ecds = {'pp1a_128_a': {'Dip1': [0, 0.5]},
+        'pp20_512_a': {'Dip1': [0.05, 0.15]},
+        'pp20_512_b': {'Dip1': [-0.075, 0.05]}}  # Assign manually time points [s] to each file to make a dipole fit
 
 # grand averages
 morph_to = 'fsaverage'  # name of the freesurfer subject to be morphed to
@@ -160,12 +164,14 @@ p_threshold = 1e-15  # 1e-15 is the smallest it can get for the way it is coded
 # freesurfer and MNE-C commands
 n_jobs_freesurfer = 4  # change according to amount of processors you have available
 
-target_labels = {'lh': ['Somatosensory and Motor Cortex-lh',
-                        'Posterior Opercular Cortex-lh',
-                        'Insular and Frontal Opercular Cortex-lh'],
-                 'rh': ['Somatosensory and Motor Cortex-rh',
-                        'Posterior Opercular Cortex-rh',
-                        'Insular and Frontal Opercular Cortex-rh']}
+target_labels = {'lh': ['postcentral-lh', 'insula-lh'], 'rh': ['postcentral-rh', 'insula-rh']}
+
+# target_labels = {'lh': ['Somatosensory and Motor Cortex-lh',
+#                         'Posterior Opercular Cortex-lh',
+#                         'Insular and Frontal Opercular Cortex-lh'],
+#                  'rh': ['Somatosensory and Motor Cortex-rh',
+#                         'Posterior Opercular Cortex-rh',
+#                         'Insular and Frontal Opercular Cortex-rh']}
 
 # target_labels= {'lh':['L_3a_ROI-lh', 'L_3b_ROI-lh',
 #                'L_43_ROI-lh', 'L_OP4_ROI-lh', 'L_OP2-3_ROI-lh', 'L_MI_ROI-lh',
@@ -461,10 +467,13 @@ exec_ops = ut.choose_function()
 # specify the path to a general analysis folder according to your OS
 if sys.platform == 'win32':
     home_path = 'Z:/Promotion'  # Windows-Path
+    # home_path = 'D:/Rächner/Desktop/Pinprick-Offline'
 elif sys.platform == 'linux':
     home_path = '/mnt/z/Promotion'  # Linux-Path
 elif sys.platform == 'darwin':
     home_path = 'Users/'  # Mac-Path
+else:
+    home_path = 'Z:/Promotion'  # some other path
 
 project_name = 'Pin-Prick-Projekt/PP_Messungen'  # specify the name for your project as a folder
 subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
@@ -620,8 +629,10 @@ elif exec_ops['motor_erm_analysis']:
     files = suborg.file_selection(which_motor_erm_file, motor_erm_files)
 else:
     files = suborg.file_selection(which_file, all_files)
-
-quality_dict = ut.read_dict_file('quality', sub_script_path)
+try:
+    quality_dict = ut.read_dict_file('quality', sub_script_path)
+except FileNotFoundError('No quality_dict yet created'):
+    quality_dict = dict()
 
 basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
 if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
@@ -653,7 +664,7 @@ else:
 ab_dict, comp_dict, grand_avg_dict, sub_files_dict = ut.get_subject_groups(files, combine_ab, unspecified_names)
 morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
-if plot_ab_combined:
+if exec_ops['plot_ab_combined']:
     files = [f for f in ab_dict]
 
 for name in files:
@@ -666,7 +677,7 @@ for name in files:
     if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
         save_dir = join(home_path, project_name, 'Daten/empty_room_data')
         data_path = join(home_path, project_name, 'Daten/empty_room_data')
-    elif plot_ab_combined:
+    elif exec_ops['plot_ab_combined']:
         save_dir = join(save_dir_averages, 'ab_combined')
     else:
         save_dir = join(data_path, name)
@@ -695,7 +706,7 @@ for name in files:
         print(f'No mri_subject assigned to {k}')
         subtomri = []
         suborg.add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path)
-    if plot_ab_combined:
+    if exec_ops['plot_ab_combined']:
         bad_channels = []
     else:
         try:
@@ -809,14 +820,6 @@ for name in files:
     if exec_ops['get_h1h2_evokeds']:
         op.get_h1h2_evokeds(name, save_dir, lowpass, highpass, enable_ica,
                             exec_ops, ermsub, detrend)
-
-    if exec_ops['align_peaks']:
-        op.align_peaks(name, save_dir, lowpass, highpass, sub_script_path,
-                       event_id, tmin, tmax, baseline, reject, flat, autoreject,
-                       overwrite_ar, bad_channels, overwrite, decim, exec_ops,
-                       eog_channel, save_plots, figures_path, ecg_channel,
-                       reject_eog_epochs, enable_ica, ermsub, detrend,
-                       ana_h1h2)
 
     # ==========================================================================
     # TIME-FREQUENCY-ANALASYS
@@ -1036,6 +1039,10 @@ for name in files:
     if exec_ops['plot_evoked_h1h2']:
         plot.plot_evoked_h1h2(name, save_dir, lowpass, highpass, event_id,
                               save_plots, figures_path)
+
+    if exec_ops['plot_gfp']:
+        plot.plot_gfp(name, save_dir, lowpass, highpass, save_plots,
+                      figures_path)
     # ==========================================================================
     # PLOT SOURCE ESTIMATES MNE
     # ==========================================================================
@@ -1068,7 +1075,8 @@ for name in files:
                                figures_path, ev_ids_label_analysis)
 
     if exec_ops['plot_snr']:
-        plot.plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path)
+        plot.plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path,
+                      inverse_method, event_id)
 
     if exec_ops['plot_label_time_course']:
         plot.plot_label_time_course(name, save_dir, lowpass, highpass,
@@ -1121,6 +1129,11 @@ for name in files:
 # %%============================================================================
 # All-Subject-Analysis
 # ==============================================================================
+if exec_ops['get_alignment']:
+    op.get_alignment(ab_dict, sub_dict, data_path, lowpass, highpass, sub_script_path,
+                     event_id, subjects_dir, inverse_method, source_space_method,
+                     parcellation, figures_path)
+
 if exec_ops['cmp_label_time_course']:
     plot.cmp_label_time_course(data_path, lowpass, highpass, sub_dict, comp_dict,
                                subjects_dir, inverse_method, source_space_method, parcellation,

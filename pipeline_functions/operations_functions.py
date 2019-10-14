@@ -32,13 +32,14 @@ from surfer import Brain
 import random
 import gc
 import statistics as st
+import re
+import importlib
 
 try:
     from autoreject import AutoReject
 except ImportError:
     print('#%§&$$ autoreject-Import-Bug is not corrected in latest dev')
     AutoReject = 0
-
 
 # Naming Conventions
 def filter_string(lowpass, highpass):
@@ -72,7 +73,7 @@ def populate_directories(data_path, figures_path, event_id):
     folders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
                'power_spectra_raw', 'power_spectra_epochs',
                'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
-               'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white',
+               'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white', 'gfp',
                'ica', 'ssp', 'stcs', 'vec_stcs', 'mxne', 'transformation', 'source_space',
                'noise_covariance', 'events', 'label_time_course', 'ECD',
                'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
@@ -99,7 +100,7 @@ def populate_directories(data_path, figures_path, event_id):
     trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
                        'epochs_image', 'epochs_topo', 'evoked_butterfly',
                        'evoked_field', 'evoked_topomap', 'evoked_image',
-                       'evoked_joint', 'evoked_white', 'label_time_course', 'ECD',
+                       'evoked_joint', 'evoked_white', 'gfp', 'label_time_course', 'ECD',
                        'stcs', 'vec_stcs', 'stcs_movie', 'snr',
                        'tf_sensor_space/plot', 'tf_sensor_space/topo',
                        'tf_sensor_space/joint', 'tf_sensor_space/oscs',
@@ -185,7 +186,7 @@ def filter_raw(name, save_dir, lowpass, highpass, ermsub,
         print('NO OVERWRITE FOR FILTERING, please change settings or delete files for new methods')
 
     # Make Raw-Version with 1 Hz Highpass-Filter if not existent
-    if enable_ica and highpass<1:
+    if enable_ica and highpass < 1:
         ica_filter_name = name + filter_string(lowpass, 1) + '-raw.fif'
         ica_filter_path = join(save_dir, ica_filter_name)
 
@@ -962,7 +963,8 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
         try:
             raw = io.read_filtered(name, save_dir, lowpass, 1)
         except FileNotFoundError:
-            raise RuntimeError('No Raw with Highpass=1-Filter found,set "enable_ica" to true and run "filter_raw" again')
+            raise RuntimeError(
+                'No Raw with Highpass=1-Filter found,set "enable_ica" to true and run "filter_raw" again')
 
         epochs = io.read_epochs(name, save_dir, lowpass, highpass)
         picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
@@ -1279,7 +1281,6 @@ def get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
 @decor.topline
 def get_h1h2_evokeds(name, save_dir, lowpass, highpass, enable_ica, exec_ops, ermsub,
                      detrend):
-
     info = io.read_info(name, save_dir)
 
     if enable_ica:
@@ -1324,6 +1325,13 @@ def get_h1h2_evokeds(name, save_dir, lowpass, highpass, enable_ica, exec_ops, er
 
 
 @decor.topline
+def calculate_gfp(evoked):
+    gfp = np.std(evoked.data, axis=0)
+
+    return gfp
+
+
+@decor.topline
 def combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_dict):
     for title in ab_dict:
         print(f'abs for {title}')
@@ -1356,49 +1364,123 @@ def combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_dict)
         mne.write_evokeds(evokeds_path, evokeds)
 
 
-# Todo: Make Peak-Alignment reliable and repeatable, maybe make it faster with shifting with puffer on both sides
+# Todo: Plot all true Latencies (determined by S1-Label-Time-Course and vice versa ECD)
 @decor.topline
-def align_peaks(name, save_dir, lowpass, highpass, sub_script_path,
-                event_id, tmin, tmax, baseline, reject, flat, autoreject,
-                overwrite_ar, bad_channels, overwrite, decim, exec_ops,
-                eog_channel, save_plots, figures_path, ecg_channel,
-                reject_eog_epochs, ica_evokeds, ermsub, detrend,
-                ana_h1h2):
-    try:
-        evoked = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
-        # get peak from evokeds
-        ch, lat = evoked.get_peak(tmin=0.05, tmax=0.25)
+def get_alignment(ab_dict, sub_dict, data_path, lowpass, highpass, sub_script_path,
+                    event_id, subjects_dir, inverse_method, source_space_method,
+                    parcellation, figures_path):
+    window = 51
+    polyorder = 5
+    for title in ab_dict:
+        print(title)
+        # ltcs = list()
+        # pattern = r'pp[0-9]+[a-z]?'
+        # match = re.match(pattern, title)
+        # prefix = match.group()
+        # subtomri = sub_dict[prefix]
+        # src = io.read_source_space(subtomri, subjects_dir, source_space_method)
+        # for name in ab_dict[title]:
+        #     save_dir = join(data_path, name)
+        #     try:
+        #         evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+        #     except FileNotFoundError:
+        #         raise RuntimeError('No existing evokeds for {highpass}-{lowpass} Hz to find peaks')
+        #     try:
+        #         n_stc = io.read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method, event_id)[
+        #             'LBT']
+        #     except FileNotFoundError:
+        #         raise RuntimeError('No existing source-estimate for {highpass}-{lowpass} Hz to find peaks')
+        #     # get peaks from label-time-course
+        #     labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir, parc=parcellation)
+        #     label = None
+        #     for l in labels:
+        #         if l.name == 'postcentral-lh':
+        #             label = l
+        #     peaks = dict()
+        #     ltc = n_stc.extract_label_time_course(label, src, mode='pca_flip')
+        #     ltc = ltc[0][:250]
+        #     f = signal.savgol_filter(ltc, window, polyorder)
+        #     ltcs.append(f)
+            # std = np.std(f)
+            # mean = np.mean(f)
+            # ltc_peaks, properties = signal.find_peaks(abs(f), height=3 * std + mean, distance=10)
+            # ltc_peaks = list(ltc_peaks)
+            # peaks.update({'ltc_peaks': ltc_peaks})
+            # # get peak from evokeds
+            # ev_peaks = list()
+            # if len(evokeds) > 1:
+            #     for evoked in evokeds:
+            #         ch, lat = evoked.get_peak(tmin=0., tmax=0.25)
+            #         ev_peaks.append(lat)
+            # else:
+            #     ch, lat = evokeds[0].get_peak(tmin=0., tmax=0.25)
+            #     ev_peaks.append(int(lat * 1000))
+            # peaks.update({'ev_peaks': ev_peaks})
+            # # Save peak-latencies
+            # ut.dict_filehandler(name, 'peak_detection', sub_script_path,
+            #                     values=peaks)
+            # # Plot label-time-course
+            # plt.figure()
+            # plt.plot(f, label=f'savgol-filter: window={window}, polyorder={polyorder}')
+            # plt.plot(ltc, label='label-time-course')
+            # plt.legend()
+            # for lp in ltc_peaks:
+            #     plt.plot(lp, f[lp], 'rX')
+            # for ep in ev_peaks:
+            #     plt.plot(ep, f[int(ep)], 'yX')
+            # plt.title('Peaks detected, yellow=evoked, red=label postcentral')
+            # save_path = join(figures_path, 'align_peaks')
+            # if not exists(save_path):
+            #     makedirs(save_path)
+            # filename = join(save_path, f'{name}{filter_string(lowpass, highpass)}_peaks_{label.name}.jpg')
+            # plt.savefig(filename)
+            # plt.close('all')
 
-        ut.dict_filehandler(name, 'peak_detection', sub_script_path,
-                            values=lat)
+        # Cross-Correlate a and b
+        if len(ltcs) > 1:
+            # Plot Time-Course for a and b
+            ltc1, ltc2 = ltcs[0], ltcs[1]
+            plt.figure()
+            plt.plot(ltc1, label='sig1')
+            plt.plot(ltc2, label='sig2')
+            plt.legend()
+            save_path = join(figures_path, 'align_peaks')
+            filename = join(save_path, f'{title}{filter_string(lowpass, highpass)}_peaks_corrab_{label.name}.jpg')
+            plt.savefig(filename)
 
-        events = io.read_events(name, save_dir)
 
-        # Shift all events that detected peak is at 100 ms
-        diff = 0.1 - lat
-        events[:, 0] = [ts - np.round(diff * evoked.info['sfreq']) for ts in events[:, 0]]
+            plt.figure()
+            lags, corr, peak, max_val = cross_correlation(ltc1, ltc2)
+            plt.plot(lags, corr)
+            plt.plot(peak, max_val, 'rx')
+            filename = join(save_path, f'{title}{filter_string(lowpass, highpass)}_xcorrab_{label.name}.jpg')
+            plt.savefig(filename)
+            plt.close('all')
 
-        events_name = name + '-eve.fif'
-        events_path = join(save_dir, events_name)
-        mne.event.write_events(events_path, events)
 
-        epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
-                  baseline, reject, flat, autoreject, overwrite_ar,
-                  sub_script_path, bad_channels, decim,
-                  reject_eog_epochs, overwrite, exec_ops)
+        # Cross-Correlate ab-average with best gfp(pp14_256_a, 105)
 
-        if ica_evokeds:
-            run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
-                    reject, flat, bad_channels, overwrite, autoreject,
-                    save_plots, figures_path, sub_script_path,
-                    exec_ops['erm_analysis'])
-            apply_ica(name, save_dir, lowpass, highpass, overwrite)
+@decor.nested
+def cross_correlation(x, y):
+    Nx = len(x)
+    if Nx != len(y):
+        raise ValueError('x and y must be equal length')
+    correls = np.correlate(x, y, mode="full")
+    # Normed correlation values
+    correls /= np.sqrt(np.dot(x, x) * np.dot(y, y))
+    maxlags = Nx-1
+    lags = np.arange(-maxlags, maxlags + 1)
 
-        get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
-                    detrend, ica_evokeds, overwrite, ana_h1h2)
+    peak = lags[np.argmax(np.abs(correls))]
+    max_val = correls[np.argmax(np.abs(correls))]
 
-    except FileNotFoundError:
-        print('No existing evokeds to find peaks')
+    return lags, correls, peak, max_val
+
+
+def apply_alignment():
+    det_peaks = ut.read_dict_file('peak_alignment', sub_script_path)
+    for name in det_peaks:
+        save_dir = join(data_path, name)
 
 
 @decor.topline
@@ -1799,6 +1881,7 @@ def mri_coreg(name, save_dir, subtomri, subjects_dir):
                            subjects_dir=subjects_dir, guess_mri_subject=False,
                            advanced_rendering=True, mark_inside=True)
 
+
 @decor.topline
 def create_forward_solution(name, save_dir, subtomri, subjects_dir,
                             source_space_method, overwrite, n_jobs, eeg_fwd):
@@ -1844,7 +1927,7 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass,
                 raw = ica.apply(raw)
 
             noise_covariance = mne.compute_raw_covariance(raw, n_jobs=n_jobs,
-                                                          method='shrunk')
+                                                          method='empirical')
             mne.cov.write_cov(covariance_path, noise_covariance)
 
         else:
@@ -1866,7 +1949,7 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass,
 
             tmin, tmax = baseline
             noise_covariance = mne.compute_covariance(epochs, tmin=tmin, tmax=tmax,
-                                                      inverse_method='auto', n_jobs=n_jobs)
+                                                      inverse_method='empirical', n_jobs=n_jobs)
 
             mne.cov.write_cov(covariance_path, noise_covariance)
 
@@ -1892,7 +1975,7 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass,
                 erm = ica.apply(erm)
 
             noise_covariance = mne.compute_raw_covariance(erm, n_jobs=n_jobs,
-                                                          method='shrunk')
+                                                          method='empirical')
             mne.cov.write_cov(covariance_path, noise_covariance)
 
         else:
@@ -1956,6 +2039,7 @@ def source_estimate(name, save_dir, lowpass, highpass, inverse_method, toi,
         else:
             print('normal-source estimates for: ' + name + \
                   ' already exists')
+
 
 @decor.topline
 def vector_source_estimate(name, save_dir, lowpass, highpass, inverse_method, toi, overwrite):
@@ -2022,9 +2106,9 @@ def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, 
 
         if mixn_dip:
             mixn, residual = mne.inverse_sparse.mixed_norm(evoked, forward, noise_cov, alpha,
-                                                               maxit=3000, tol=1e-4, active_set_size=10, debias=True,
-                                                               weights=stcs[trial_type], n_mxne_iter=n_mxne_iter,
-                                                               return_residual=True, return_as_dipoles=True)
+                                                           maxit=3000, tol=1e-4, active_set_size=10, debias=True,
+                                                           weights=stcs[trial_type], n_mxne_iter=n_mxne_iter,
+                                                           return_residual=True, return_as_dipoles=True)
 
             for idx, dip in enumerate(mixn):
                 mixn_dip_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '-mixn-dip-' + str(idx)
@@ -2032,9 +2116,9 @@ def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, 
                 dip.save(mixn_dip_path)
         else:
             mixn, residual = mne.inverse_sparse.mixed_norm(evoked, forward, noise_cov, alpha,
-                                                               maxit=3000, tol=1e-4, active_set_size=10, debias=True,
-                                                               weights=stcs[trial_type], n_mxne_iter=n_mxne_iter,
-                                                               return_residual=True, return_as_dipoles=True)
+                                                           maxit=3000, tol=1e-4, active_set_size=10, debias=True,
+                                                           weights=stcs[trial_type], n_mxne_iter=n_mxne_iter,
+                                                           return_residual=True, return_as_dipoles=True)
 
             mixn_stc_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '-mixn'
             mixn_stc_path = join(save_dir, mixn_stc_name)
@@ -2051,6 +2135,7 @@ def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, 
         else:
             print('mixed-norm source estimate residual for: ' + name + \
                   ' already exists')
+
 
 @decor.topline
 def ecd_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,

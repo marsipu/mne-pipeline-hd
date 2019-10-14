@@ -6,10 +6,21 @@ Created on Wed Sep 19 15:21:50 2018
 """
 import functools
 
+
 def topline(func):
     @functools.wraps(func)
     def wrapper_topline(*args, **kwargs):
-        print('-'*60)
+        print('-' * 60)
         print(func.__name__)
         return func(*args, **kwargs)
+
+    return wrapper_topline
+
+
+def nested(func):
+    @functools.wraps(func)
+    def wrapper_topline(*args, **kwargs):
+        print(f'Executing: {func.__name__}')
+        return func(*args, **kwargs)
+
     return wrapper_topline
