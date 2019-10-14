@@ -19,6 +19,7 @@ from matplotlib.lines import Line2D
 from mayavi import mlab
 from scipy import stats
 from . import io_functions as io
+from . import operations_functions as op
 from . import utilities as ut
 from . import decorators as decor
 import numpy as np
@@ -676,6 +677,24 @@ def plot_evoked_h1h2(name, save_dir, lowpass, highpass, event_id,
 
 
 @decor.topline
+def plot_gfp(name, save_dir, lowpass, highpass, save_plots, figures_path):
+    evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+    for evoked in evokeds:
+        gfp = op.calculate_gfp(evoked)
+        t = evoked.times
+        trial_type = evoked.comment
+        plt.figure()
+        plt.plot(t, gfp)
+        plt.title(f'GFP of {name}-{trial_type}')
+        if save_plots:
+            save_path = join(figures_path, 'gfp', trial_type,
+                             f'{name}-{trial_type}_gfp{filter_string(lowpass, highpass)}.jpg')
+            plt.savefig(save_path, dpi=600)
+        else:
+            print('Not saving plots; set "save_plots" to "True" to save')
+
+
+@decor.topline
 def plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots,
                         figures_path):
     info = io.read_info(name, save_dir)
@@ -1005,24 +1024,30 @@ def plot_animated_stc(name, save_dir, lowpass, highpass, subtomri, subjects_dir,
 
 
 @decor.topline
-def plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path):
+def plot_snr(name, save_dir, lowpass, highpass, save_plots, figures_path, inverse_method, event_id):
     evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
 
     inv = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    # stcs = io.read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method, event_id)
 
     for evoked in evokeds:
-
+        trial_type = evoked.comment
+        # data snr
         figure = mne.viz.plot_snr_estimate(evoked, inv)
         plt.title(name + ' - ' + evoked.comment, loc='center')
 
         if save_plots:
-            save_path = join(figures_path, 'snr', evoked.comment,
+            save_path = join(figures_path, 'snr', trial_type,
                              name + '_' + evoked.comment + '_snr' + \
                              filter_string(lowpass, highpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
+        # source-space snr
+        # fixed orientation and MNE-solution needed
+        # stc = stcs[trial_type]
+        # stc.estimate_snr(evoked.info)
 
 
 @decor.topline
@@ -1264,7 +1289,7 @@ def plot_label_time_course(name, save_dir, lowpass, highpass, subtomri,
 def cmp_label_time_course(data_path, lowpass, highpass, sub_dict, comp_dict,
                           subjects_dir, inverse_method, source_space_method, parcellation,
                           target_labels, save_plots, figures_path,
-                          event_id, ev_ids_label_analysis, fuse_ab,
+                          event_id, ev_ids_label_analysis, combine_ab,
                           sub_script_path, exec_ops):
     color_dict = {'low': 'g', 'middle': 'y', 'high': 'r', 't': 'b'}
 
@@ -1273,7 +1298,7 @@ def cmp_label_time_course(data_path, lowpass, highpass, sub_dict, comp_dict,
         print(ab_key)
         pre_corr_dict = {}
         corr_dict = {}
-        if fuse_ab:
+        if combine_ab:
             subtomri = sub_dict[ab_key]
         else:
             subtomri = sub_dict[ab_key[:-2]]
@@ -1288,32 +1313,32 @@ def cmp_label_time_course(data_path, lowpass, highpass, sub_dict, comp_dict,
 
         nrows = len(target_labels)
         ncols = len(target_labels['lh'])
-        fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
-                                 sharex='all', sharey='all',
-                                 gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
-                                              'left': 0.05, 'right': 0.95,
-                                              'top': 0.95, 'bottom': 0.05},
-                                 figsize=(18, 8))
-        # Nasty workaround to set label-titles on axes
-        # key in target_labels = row in plot
-        r_cnt = 0
-        for tl in target_labels:
-            c_cnt = 0
-            for t in target_labels[tl]:
-                axes[r_cnt, c_cnt].set_title(t)
-                c_cnt += 1
-            r_cnt += 1
+        for trial_type in ev_ids_label_analysis:
+            fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
+                                     sharex='all', sharey='all',
+                                     gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
+                                                  'left': 0.05, 'right': 0.95,
+                                                  'top': 0.95, 'bottom': 0.05},
+                                     figsize=(18, 8))
+            # Nasty workaround to set label-titles on axes
+            # key in target_labels = row in plot
+            r_cnt = 0
+            for tl in target_labels:
+                c_cnt = 0
+                for t in target_labels[tl]:
+                    axes[r_cnt, c_cnt].set_title(t)
+                    c_cnt += 1
+                r_cnt += 1
 
-        # Trials(low,middle,high,t)
-        for trial in comp_dict[ab_key]:
-            print(trial)
-            for name in comp_dict[ab_key][trial]:
-                print(name)
-                save_dir = join(data_path, name)
-                color = color_dict[trial]
-                stcs = io.read_normal_source_estimates(name, save_dir, lowpass, highpass,
-                                                       inverse_method, event_id)
-                for trial_type in ev_ids_label_analysis:
+            # Trials(low,middle,high,t)
+            for trial in comp_dict[ab_key]:
+                print(trial)
+                for name in comp_dict[ab_key][trial]:
+                    print(name)
+                    save_dir = join(data_path, name)
+                    color = color_dict[trial]
+                    stcs = io.read_normal_source_estimates(name, save_dir, lowpass, highpass,
+                                                           inverse_method, event_id)
                     stc = stcs[trial_type]
 
                     # choose target labels
@@ -1332,7 +1357,7 @@ def cmp_label_time_course(data_path, lowpass, highpass, sub_dict, comp_dict,
                                         axe = ax
                                 axe.plot(t, pca.T, color, label=trial)
 
-                                if fuse_ab and not only_a:
+                                if combine_ab and not only_a:
                                     # Save Array for later Correlation-Analysis
                                     if l.name in pre_corr_dict:
                                         if trial in pre_corr_dict[l.name]:
@@ -1342,37 +1367,38 @@ def cmp_label_time_course(data_path, lowpass, highpass, sub_dict, comp_dict,
                                     else:
                                         pre_corr_dict.update({l.name: {trial: [pca]}})
 
-        fig.suptitle(ab_key, size=16, weight=4)
-        fig.text(0.5, 0.01, 'Time [ms]', ha='center')
-        fig.text(0.01, 0.5, 'Source Amplitude', va='center', rotation='vertical')
-        plt.legend(loc=4)
-        plt.show()
+            fig.suptitle(ab_key, size=16, weight=4)
+            fig.text(0.5, 0.01, 'Time [ms]', ha='center')
+            fig.text(0.01, 0.5, 'Source Amplitude', va='center', rotation='vertical')
+            plt.legend(loc=4)
+            plt.show()
 
-        if save_plots:
-            if not exists(join(figures_path, 'label_time_course', 'comp_plots')):
-                makedirs(join(figures_path, 'label_time_course', 'comp_plots'))
-            save_path = join(figures_path, 'label_time_course', 'comp_plots', \
-                             ab_key + filter_string(lowpass, highpass) + \
-                             '_' + trial_type + '_' + 'label-cmp.jpg')
-            plt.savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-        # Correlation-Dict
-        if fuse_ab and not only_a:
-            for label in pre_corr_dict:
-                for trial in pre_corr_dict[label]:
-                    l = pre_corr_dict[label][trial]
-                    coef = abs(np.corrcoef(l[0], l[1])[0, 1])
-                    if label in corr_dict:
-                        corr_dict[label].update({trial: coef})
-                    else:
-                        corr_dict.update({label: {trial: coef}})
+            if save_plots:
+                if not exists(join(figures_path, 'label_time_course', 'comp_plots')):
+                    makedirs(join(figures_path, 'label_time_course', 'comp_plots'))
+                save_path = join(figures_path, 'label_time_course', 'comp_plots', \
+                                 ab_key + filter_string(lowpass, highpass) + \
+                                 '_' + trial_type + '_' + 'label-cmp.jpg')
+                plt.savefig(save_path, dpi=600)
+                print('figure: ' + save_path + ' has been saved')
+            else:
+                print('Not saving plots; set "save_plots" to "True" to save')
 
-            ut.dict_filehandler(ab_key, 'ab_coef_label_time_course',
-                                sub_script_path, values=corr_dict)
-        if exec_ops['close_plots']:
-            close_all()
+            # Correlation between a and b
+            if combine_ab and not only_a:
+                for label in pre_corr_dict:
+                    for trial in pre_corr_dict[label]:
+                        l = pre_corr_dict[label][trial]
+                        coef = abs(np.corrcoef(l[0], l[1])[0, 1])
+                        if label in corr_dict:
+                            corr_dict[label].update({trial: coef})
+                        else:
+                            corr_dict.update({label: {trial: coef}})
+
+                ut.dict_filehandler(ab_key, f'ab_coef_label_time_course{filter_string(lowpass, highpass)}-{trial_type}',
+                                    sub_script_path, values=corr_dict)
+            if exec_ops['close_plots']:
+                close_all()
 
 
 @decor.topline

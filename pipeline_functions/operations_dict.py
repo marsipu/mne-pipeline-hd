@@ -13,6 +13,7 @@ subject_operations = dict(add_files=0,
 
 basic_operations = dict(erm_analysis=0,
                         motor_erm_analysis=0,
+                        plot_ab_combined=0,
                         close_plots=0,
                         shutdown=0)
 
@@ -34,7 +35,7 @@ sensor_space_operations = dict(filter_raw=0,
                                get_h1h2_evokeds=0,
                                combine_evokeds_ab=0,
                                tfr=0,
-                               align_peaks=0)
+                               get_alignment=0)
 
 mri_subject_operations = dict(apply_watershed=0,
                               make_dense_scalp_surfaces=0,  # until here all bash scripts!
@@ -101,6 +102,7 @@ sensor_space_plots = dict(plot_raw=0,
                           plot_evoked_image=0,
                           plot_evoked_compare=0,
                           plot_evoked_h1h2=0,
+                          plot_gfp=0,
                           corr_ntr=0)
 
 source_space_plots = dict(plot_transformation=0,

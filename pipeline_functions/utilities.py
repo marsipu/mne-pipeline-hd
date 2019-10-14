@@ -18,7 +18,7 @@ import re
 
 from pipeline_functions import operations_dict as opd
 
-
+# Todo: If checked, change color
 class Function_Window:
 
     def __init__(self, master):
@@ -32,6 +32,11 @@ class Function_Window:
 
         self.make_chkbs()
         self.huga = 12
+
+        # # React to keyboard input
+        # frame = t.Frame(self.master, bg='green')
+        # frame.bind('<Return>', self.start)
+        # master.bind('<Return>', self.start())
 
     def make_chkbs(self):
         r_cnt = -1
@@ -426,7 +431,7 @@ def delete_files(data_path, pattern):
     main_dir = os.walk(data_path)
     for dirpath, dirnames, filenames in main_dir:
         for f in filenames:
-            match = re.match(pattern, f)
+            match = re.search(pattern, f)
             if match:
                 os.remove(join(dirpath, f))
                 print(f'{f} removed')
