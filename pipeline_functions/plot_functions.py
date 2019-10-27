@@ -1245,6 +1245,7 @@ def plot_label_time_course(name, save_dir, lowpass, highpass, subtomri,
                     print(l.name)
 
                     stc_label = stc.in_label(l)
+                    gfp = op.calculate_gfp(stc)
                     mean = stc.extract_label_time_course(l, src, mode='mean')
                     mean_flip = stc.extract_label_time_course(l, src, mode='mean_flip')
                     pca = stc.extract_label_time_course(l, src, mode='pca_flip')
@@ -1260,6 +1261,7 @@ def plot_label_time_course(name, save_dir, lowpass, highpass, subtomri,
                     h0, = plt.plot(t, mean.T, 'r', linewidth=3)
                     h1, = plt.plot(t, mean_flip.T, 'g', linewidth=3)
                     h2, = plt.plot(t, pca.T, 'b', linewidth=3)
+                    h3, = plt.plot(t, gfp, 'y', linewidth=3)
 
                     if -200 < tmax < 500:
                         plt.annotate(f'max_lat={int(tmax)}ms',
@@ -1269,7 +1271,7 @@ def plot_label_time_course(name, save_dir, lowpass, highpass, subtomri,
                         plt.annotate(f'min_lat={int(tmin)}ms',
                                      xy=(tmin, pca.min()),
                                      xytext=(tmin + 200, pca.min() - 2), **kw)
-                    plt.legend([h0, h1, h2], ['mean', 'mean flip', 'PCA flip'])
+                    plt.legend([h0, h1, h2, h3], ['mean', 'mean flip', 'PCA flip', 'GFP'])
                     plt.xlabel('Time (ms)')
                     plt.ylabel('Source amplitude')
                     plt.title(f'Activations in Label :{l.name}-{trial}')

@@ -35,7 +35,7 @@ sensor_space_operations = dict(filter_raw=0,
                                get_h1h2_evokeds=0,
                                combine_evokeds_ab=0,
                                tfr=0,
-                               get_alignment=0)
+                               pp_alignment=0)
 
 mri_subject_operations = dict(apply_watershed=0,
                               make_dense_scalp_surfaces=0,  # until here all bash scripts!

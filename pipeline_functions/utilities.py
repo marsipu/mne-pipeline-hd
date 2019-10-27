@@ -8,6 +8,7 @@ import os
 from os import makedirs
 from os.path import join, isfile, exists
 import sys
+
 try:
     import autoreject as ar
 except ImportError:
@@ -18,6 +19,7 @@ import re
 
 from pipeline_functions import operations_dict as opd
 
+
 # Todo: If checked, change color
 class Function_Window:
 
@@ -25,9 +27,9 @@ class Function_Window:
         self.master = master
         master.title('Choose the functions to be executed')
 
-        self.var_dict = {}
-        self.pre_func_dict = {}
-        self.func_dict = {}
+        self.var_dict = dict()
+        self.pre_func_dict = dict()
+        self.func_dict = dict()
         self.c_path = './pipeline_functions/func_cache.py'
 
         self.make_chkbs()
@@ -47,13 +49,13 @@ class Function_Window:
             if r_cnt > 25:
                 r_cnt = 0
             label = t.Label(self.master, text=function_group,
-                            bg='blue',fg='white', relief=t.RAISED)
+                            bg='blue', fg='white', relief=t.RAISED)
             label.grid(row=r_cnt, column=c_cnt)
             r_cnt += 1
             for function in opd.all_fs[function_group]:
                 var = t.IntVar()
-                self.var_dict.update({function:var})
-                self.func_dict.update({function:0})
+                self.var_dict.update({function: var})
+                self.func_dict.update({function: 0})
                 chk = t.Checkbutton(self.master, text=function, variable=var)
                 chk.grid(row=r_cnt, column=c_cnt, sticky=t.W)
                 r_cnt += 1
@@ -71,7 +73,7 @@ class Function_Window:
                 for k in self.pre_func_dict:
                     if k not in self.func_dict:
                         del_list.append(k)
-                if len(del_list)>0:
+                if len(del_list) > 0:
                     for d in del_list:
                         del self.pre_func_dict[d]
                         print(f'{d} from operations_cache deleted')
@@ -80,38 +82,38 @@ class Function_Window:
             for f in self.func_dict:
                 n = self.func_dict[f]
                 self.var_dict[f].set(n)
-        
-        if r_cnt>r_max-6:
+
+        if r_cnt > r_max - 6:
             r_cnt = 0
             c_cnt += 1
-        
+
         bt_start = t.Button(self.master, text='Start',
                             command=self.start, bg='green',
                             activebackground='blue',
                             fg='white', font=100,
                             relief=t.RAISED)
-        bt_start.grid(row=int(r_cnt+(r_max-r_cnt)/3), column=c_cnt,
-                      rowspan=int((r_max-r_cnt+1)/3),
-                      sticky=t.N+t.S+t.W+t.E)
+        bt_start.grid(row=int(r_cnt + (r_max - r_cnt) / 3), column=c_cnt,
+                      rowspan=int((r_max - r_cnt + 1) / 3),
+                      sticky=t.N + t.S + t.W + t.E)
 
         bt_stop = t.Button(self.master, text='Stop',
-                            command=self.stop, bg='red',
-                            activebackground='yellow',
-                            fg='white', font=100,
-                            relief=t.RAISED)
-        bt_stop.grid(row=int(r_cnt+(r_max-r_cnt)*2/3), column=c_cnt,
-                      rowspan=int((r_max-r_cnt+1)/3),
-                      sticky=t.N+t.S+t.W+t.E)
+                           command=self.stop, bg='red',
+                           activebackground='yellow',
+                           fg='white', font=100,
+                           relief=t.RAISED)
+        bt_stop.grid(row=int(r_cnt + (r_max - r_cnt) * 2 / 3), column=c_cnt,
+                     rowspan=int((r_max - r_cnt + 1) / 3),
+                     sticky=t.N + t.S + t.W + t.E)
 
         bt_clear = t.Button(self.master, text='Clear_all',
-                      command=self.clear_all, bg='magenta',
-                      activebackground='cyan',
-                      fg='white', font=100,
-                      relief=t.RAISED)
+                            command=self.clear_all, bg='magenta',
+                            activebackground='cyan',
+                            fg='white', font=100,
+                            relief=t.RAISED)
 
         bt_clear.grid(row=r_cnt, column=c_cnt,
-                      rowspan=int((r_max-r_cnt+1)/3),
-                      sticky=t.N+t.S+t.W+t.E)
+                      rowspan=int((r_max - r_cnt + 1) / 3),
+                      sticky=t.N + t.S + t.W + t.E)
 
     def clear_all(self):
         for x in self.var_dict:
@@ -138,8 +140,9 @@ class Function_Window:
 
         self.master.quit()
         self.master.destroy()
-        #sys.exit() Not working for PyCharm, stopping the console
+        # sys.exit() Not working for PyCharm, stopping the console
         raise SystemExit(0)
+
 
 def choose_function():
     master = t.Tk()
@@ -151,7 +154,6 @@ def choose_function():
 
 def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwrite_ar=False,
                        only_read=False):
-
     reject_value_path = join(sub_script_path, f'reject_values_{highpass}-{lowpass}_Hz.py')
 
     if not isfile(reject_value_path):
@@ -164,12 +166,12 @@ def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwri
             print(reject_value_path + ' created')
 
     else:
-        read_reject = {}
+        read_reject = dict()
         with open(reject_value_path, 'r') as rv:
 
             for item in rv:
                 if ':' in item:
-                    key,value = item.split(':', 1)
+                    key, value = item.split(':', 1)
                     value = eval(value[:-1])
                     read_reject[key] = value
 
@@ -186,7 +188,7 @@ def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwri
                 else:
                     print(f'Replaced AR-Threshold {prae_reject} with {reject}')
                 with open(reject_value_path, 'w') as rv:
-                    for key,value in read_reject.items():
+                    for key, value in read_reject.items():
                         rv.write(f'{key}:{value}\n')
             else:
                 reject = read_reject[name]
@@ -197,19 +199,19 @@ def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwri
                 raise Exception('New Autoreject-Threshold only from epoch_raw')
             print('Rejection with Autoreject')
             reject = ar.get_rejection_threshold(epochs, ch_types=['grad'])
-            read_reject.update({name:reject})
+            read_reject.update({name: reject})
             print(f'Added AR-Threshold {reject} for {name}')
             with open(reject_value_path, 'w') as rv:
-                for key,value in read_reject.items():
+                for key, value in read_reject.items():
                     rv.write(f'{key}:{value}\n')
 
     return reject
 
+
 def dict_filehandler(name, file_name, sub_script_path, values=None,
                      onlyread=False, overwrite=True, silent=False):
-
     file_path = join(sub_script_path, file_name + '.py')
-    file_dict = {}
+    file_dict = dict()
 
     if not isfile(file_path):
         if not exists(sub_script_path):
@@ -224,9 +226,9 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
         with open(file_path, 'r') as file:
             for item in file:
                 if ':' in item:
-                    key,value = item.split(':', 1)
+                    key, value = item.split(':', 1)
                     value = eval(value)
-                    file_dict[key]=value
+                    file_dict[key] = value
 
         if not onlyread:
             if name in file_dict:
@@ -254,34 +256,34 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
 
     return file_dict
 
-def read_dict_file(file_name, sub_script_path):
 
+def read_dict_file(file_name, sub_script_path):
     file_path = join(sub_script_path, file_name + '.py')
-    file_dict = {}
+    file_dict = dict()
     with open(file_path, 'r') as file:
         for item in file:
             if ':' in item:
-                key,value = item.split(':', 1)
+                key, value = item.split(':', 1)
                 value = eval(value)
-                file_dict[key]=value
+                file_dict[key] = value
 
     return file_dict
 
-def order_the_dict(filename, sub_script_path, unspecified_names=False):
 
+def order_the_dict(filename, sub_script_path, unspecified_names=False):
     file_path = join(sub_script_path, 'MotStart-LBT_diffs' + '.py')
-    file_dict = {}
-    order_dict1 = {}
-    order_dict2 = {}
-    order_dict3 = {}
+    file_dict = dict()
+    order_dict1 = dict()
+    order_dict2 = dict()
+    order_dict3 = dict()
     order_list = []
 
     with open(file_path, 'r') as file:
         for item in file:
             if ':' in item:
-                key,value = item.split(':', 1)
+                key, value = item.split(':', 1)
                 value = eval(value)
-                file_dict[key]=value
+                file_dict[key] = value
 
     if not unspecified_names:
         pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
@@ -302,16 +304,17 @@ def order_the_dict(filename, sub_script_path, unspecified_names=False):
         order_list.append(order_dict1[key])
     order_list.sort()
 
+
 def get_subject_groups(all_files, fuse_ab, unspecified_names):
+    files = list()
 
-    files = []
-
-    pre_order_dict = {}
-    order_dict = {}
-    ab_dict = {}
-    comp_dict = {}
-    grand_avg_dict = {}
-    sub_files_dict = {}
+    pre_order_dict = dict()
+    order_dict = dict()
+    ab_dict = dict()
+    comp_dict = dict()
+    grand_avg_dict = dict()
+    sub_files_dict = dict()
+    cond_dict = dict()
 
     basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
     for s in all_files:
@@ -319,54 +322,39 @@ def get_subject_groups(all_files, fuse_ab, unspecified_names):
         if match:
             files.append(s)
 
+    # prepare order_dict
     for s in files:
         match = re.match(basic_pattern, s)
         key = match.group(1) + '_' + match.group(3)
         if key in pre_order_dict:
             pre_order_dict[key].append(match.group(2))
         else:
-            pre_order_dict.update({key:[match.group(2)]})
+            pre_order_dict.update({key: [match.group(2)]})
 
+    # Assign string-groups to modalities
     for key in pre_order_dict:
         v_list = pre_order_dict[key]
-        order_dict.update({key:{}})
+        order_dict.update({key: dict()})
         for it in v_list:
-            if it=='16' or it=='32':
-                order_dict[key].update({it:'low'})
-            if it=='64' or it=='128':
-                order_dict[key].update({it:'middle'})
-            if it=='256' or it=='512':
-                order_dict[key].update({it:'high'})
-            if it=='t':
-                order_dict[key].update({it:'tactile'})
-        """if 't' in v_list:
-            v_list.remove('t')
-        v_list.sort(key=int)
-        order_dict.update({key:{}})
-        if len(v_list)==1:
-            order_dict[key].update({v_list[0]:'undefined'})
-        if len(v_list)==2:
-            order_dict[key].update({v_list[0]:'low'})
-            order_dict[key].update({v_list[1]:'high'})
-        if len(v_list)==3:
-            order_dict[key].update({v_list[0]:'low'})
-            order_dict[key].update({v_list[1]:'middle'})
-            order_dict[key].update({v_list[2]:'high'})
-        if len(v_list)==4:
-            order_dict[key].update({v_list[0]:'low'})
-            order_dict[key].update({v_list[1]:'middle'})
-            order_dict[key].update({v_list[2]:'high'})
-            order_dict[key].update({v_list[3]:'high'})
-        order_dict[key].update({'t':'tactile'})"""
+            if it == '16' or it == '32':
+                order_dict[key].update({it: 'low'})
+            if it == '64' or it == '128':
+                order_dict[key].update({it: 'middle'})
+            if it == '256' or it == '512':
+                order_dict[key].update({it: 'high'})
+            if it == 't':
+                order_dict[key].update({it: 'tactile'})
 
+    # Make a dict, where a/b-files are grouped together
     for s in files:
         match = re.match(basic_pattern, s)
         key = match.group(1) + '_' + match.group(2)
         if key in ab_dict:
             ab_dict[key].append(s)
         else:
-            ab_dict.update({key:[s]})
+            ab_dict.update({key: [s]})
 
+    # Make a dict for each subject, where the files are ordere by their modality
     for s in files:
         match = re.match(basic_pattern, s)
         key = match.group(1) + '_' + match.group(3)
@@ -377,39 +365,47 @@ def get_subject_groups(all_files, fuse_ab, unspecified_names):
                 if sub_key in comp_dict[key]:
                     comp_dict[key][sub_key].append(s)
                 else:
-                    comp_dict[key].update({sub_key:[s]})
+                    comp_dict[key].update({sub_key: [s]})
             else:
-                comp_dict.update({key:{sub_key:[s]}})
+                comp_dict.update({key: {sub_key: [s]}})
         else:
             if key in comp_dict:
-                comp_dict[key].update({sub_key:[s]})
+                comp_dict[key].update({sub_key: [s]})
             else:
-                comp_dict.update({key:{sub_key:[s]}})
+                comp_dict.update({key: {sub_key: [s]}})
 
+    # Make a dict, where each file get its modality as value
+    for s in files:
+        match = re.match(basic_pattern, s)
+        val = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)]
+        cond_dict[s] = val
+
+    # Make a grand-avg-dict with all files of a modality in one list together
     for s in files:
         match = re.match(basic_pattern, s)
         if fuse_ab:
-            key = order_dict[match.group(1)+'_'+match.group(3)][match.group(2)]
+            key = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)]
         else:
-            key = order_dict[match.group(1)+'_'+match.group(3)][match.group(2)]\
-            + '_' + match.group(3)
+            key = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)] + '_' + match.group(3)
         if key in grand_avg_dict:
             grand_avg_dict[key].append(s)
         else:
-            grand_avg_dict.update({key:[s]})
+            grand_avg_dict.update({key: [s]})
 
+    # Make a dict with all the files for one subject
     for s in files:
         match = re.match(basic_pattern, s)
         key = match.group(1)
         if key in sub_files_dict:
             sub_files_dict[key].append(s)
         else:
-            sub_files_dict.update({key:[s]})
+            sub_files_dict.update({key: [s]})
 
     if unspecified_names:
-        grand_avg_dict.update({'Unspecified':all_files})
+        grand_avg_dict.update({'Unspecified': all_files})
 
-    return ab_dict, comp_dict, grand_avg_dict, sub_files_dict
+    return ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict
+
 
 def getallfifFiles(dirName):
     # create a list of file and sub directories
@@ -423,9 +419,10 @@ def getallfifFiles(dirName):
         for file in filenames:
             if file[-4:] == '.fif':
                 all_fif_files.append(file)
-                paths.update({file:join(dirpath, file)})
+                paths.update({file: join(dirpath, file)})
 
     return all_fif_files, paths
+
 
 def delete_files(data_path, pattern):
     main_dir = os.walk(data_path)
@@ -435,6 +432,7 @@ def delete_files(data_path, pattern):
             if match:
                 os.remove(join(dirpath, f))
                 print(f'{f} removed')
+
 
 def shutdown():
     if sys.platform == 'win32':

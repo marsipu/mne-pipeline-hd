@@ -2,6 +2,13 @@
 <project version="4">
   <component name="WebResourcesPaths">
     <contentEntries>
+      <entry url="file://$PROJECT_DIR$">
+        <entryData>
+          <resourceRoots>
+            <path value="file://$PROJECT_DIR$/docs" />
+          </resourceRoots>
+        </entryData>
+      </entry>
       <entry url="file://Z:/Promotion/Pin-Prick-Projekt/PP_Messungen/Daten/_Subject_scripts">
         <entryData>
           <resourceRoots>

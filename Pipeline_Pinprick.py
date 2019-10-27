@@ -25,14 +25,16 @@ from pipeline_functions import utilities as ut
 from pipeline_functions import operations_dict as opd
 from pipeline_functions import decorators as decor
 
+
 def reload_all():
-   reload(io)
-   reload(op)
-   reload(plot)
-   reload(suborg)
-   reload(ut)
-   reload(opd)
-   reload(decor)
+    reload(io)
+    reload(op)
+    reload(plot)
+    reload(suborg)
+    reload(ut)
+    reload(opd)
+    reload(decor)
+
 
 reload_all()
 # %%============================================================================
@@ -48,8 +50,14 @@ reload_all()
 # '1-20,!4-6' (1-20 except 4-6)
 # 'all' (All files in file_list.py)
 # 'all,!4-6' (All files except 4-6)
-# Todo: Choose-Subject-Window
-which_file = 'all'  # Has to be a string/enclosed in apostrophs-
+# Todo: Pipeline 2.0
+#  QT-Windows
+#  Parameters in own script
+#  Label-Selection-GUI
+#  Choose-Subject-Window
+#  Default Function-Buttons selected
+#  Assistant for Regular Expressions
+which_file = '1-4'  # Has to be a string/enclosed in apostrophs-
 quality = ['all']
 modality = ['all']
 which_mri_subject = 'all'  # Has to be a string/enclosed in apostrophs
@@ -128,7 +136,7 @@ erm_noise_cov = True
 calm_noise_cov = False  # Use of a specific time interval in a measurement for noise covariance
 erm_ica = False  # Causes sometimes errors
 inverse_method = 'dSPM'
-toi = [0.0, 0.5]  # Time of Interest for analysis
+toi = [-0.1, 0.5]  # Time of Interest for analysis
 mne_evoked_time = [0.1, 0.15, 0.2]  # time points to be displayed in several plots [s]
 stc_interactive = False  # interactive stc-plots
 mixn_dip = True
@@ -164,7 +172,7 @@ p_threshold = 1e-15  # 1e-15 is the smallest it can get for the way it is coded
 # freesurfer and MNE-C commands
 n_jobs_freesurfer = 4  # change according to amount of processors you have available
 
-target_labels = {'lh': ['postcentral-lh', 'insula-lh'], 'rh': ['postcentral-rh', 'insula-rh']}
+target_labels = {'lh': ['postcentral-lh']}
 
 # target_labels = {'lh': ['Somatosensory and Motor Cortex-lh',
 #                         'Posterior Opercular Cortex-lh',
@@ -466,8 +474,8 @@ exec_ops = ut.choose_function()
 # ==============================================================================
 # specify the path to a general analysis folder according to your OS
 if sys.platform == 'win32':
-    home_path = 'Z:/Promotion'  # Windows-Path
-    # home_path = 'D:/Rächner/Desktop/Pinprick-Offline'
+    # home_path = 'Z:/Promotion'  # Windows-Path
+    home_path = 'D:/Rächner/Desktop/Pinprick-Offline'
 elif sys.platform == 'linux':
     home_path = '/mnt/z/Promotion'  # Linux-Path
 elif sys.platform == 'darwin':
@@ -661,7 +669,8 @@ else:
         print(f)
 
 # Get dicts grouping the files together depending on their names to allow grand_averaging:
-ab_dict, comp_dict, grand_avg_dict, sub_files_dict = ut.get_subject_groups(files, combine_ab, unspecified_names)
+ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict = ut.get_subject_groups(files, combine_ab,
+                                                                                      unspecified_names)
 morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
 if exec_ops['plot_ab_combined']:
@@ -1129,8 +1138,8 @@ for name in files:
 # %%============================================================================
 # All-Subject-Analysis
 # ==============================================================================
-if exec_ops['get_alignment']:
-    op.get_alignment(ab_dict, sub_dict, data_path, lowpass, highpass, sub_script_path,
+if exec_ops['pp_alignment']:
+    op.pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub_script_path,
                      event_id, subjects_dir, inverse_method, source_space_method,
                      parcellation, figures_path)
 

@@ -33,13 +33,13 @@ import random
 import gc
 import statistics as st
 import re
-import importlib
 
 try:
     from autoreject import AutoReject
 except ImportError:
     print('#%§&$$ autoreject-Import-Bug is not corrected in latest dev')
     AutoReject = 0
+
 
 # Naming Conventions
 def filter_string(lowpass, highpass):
@@ -1324,9 +1324,10 @@ def get_h1h2_evokeds(name, save_dir, lowpass, highpass, enable_ica, exec_ops, er
     mne.evoked.write_evokeds(h2_evokeds_path, h2_evokeds)
 
 
-@decor.topline
+@decor.small_func
 def calculate_gfp(evoked):
-    gfp = np.std(evoked.data, axis=0)
+    d = evoked.data
+    gfp = np.sqrt((d * d).mean(axis=0))
 
     return gfp
 
@@ -1364,123 +1365,234 @@ def combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_dict)
         mne.write_evokeds(evokeds_path, evokeds)
 
 
-# Todo: Plot all true Latencies (determined by S1-Label-Time-Course and vice versa ECD)
 @decor.topline
-def get_alignment(ab_dict, sub_dict, data_path, lowpass, highpass, sub_script_path,
-                    event_id, subjects_dir, inverse_method, source_space_method,
-                    parcellation, figures_path):
-    window = 51
-    polyorder = 5
+def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub_script_path,
+                 event_id, subjects_dir, inverse_method, source_space_method,
+                 parcellation, figures_path):
+
+    # Noch problematisch: pp9_64, pp19_64
+    # Mit ab-average werden die nicht alignierten falsch gemittelt, Annahme lag zu Mitte zwischen ab
+
+    ab_gfp_data = dict()
+    ab_ltc_data = dict()
+    ab_lags = dict()
+
     for title in ab_dict:
-        print(title)
-        # ltcs = list()
-        # pattern = r'pp[0-9]+[a-z]?'
-        # match = re.match(pattern, title)
-        # prefix = match.group()
-        # subtomri = sub_dict[prefix]
-        # src = io.read_source_space(subtomri, subjects_dir, source_space_method)
-        # for name in ab_dict[title]:
-        #     save_dir = join(data_path, name)
-        #     try:
-        #         evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
-        #     except FileNotFoundError:
-        #         raise RuntimeError('No existing evokeds for {highpass}-{lowpass} Hz to find peaks')
-        #     try:
-        #         n_stc = io.read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method, event_id)[
-        #             'LBT']
-        #     except FileNotFoundError:
-        #         raise RuntimeError('No existing source-estimate for {highpass}-{lowpass} Hz to find peaks')
-        #     # get peaks from label-time-course
-        #     labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir, parc=parcellation)
-        #     label = None
-        #     for l in labels:
-        #         if l.name == 'postcentral-lh':
-        #             label = l
-        #     peaks = dict()
-        #     ltc = n_stc.extract_label_time_course(label, src, mode='pca_flip')
-        #     ltc = ltc[0][:250]
-        #     f = signal.savgol_filter(ltc, window, polyorder)
-        #     ltcs.append(f)
-            # std = np.std(f)
-            # mean = np.mean(f)
-            # ltc_peaks, properties = signal.find_peaks(abs(f), height=3 * std + mean, distance=10)
-            # ltc_peaks = list(ltc_peaks)
-            # peaks.update({'ltc_peaks': ltc_peaks})
-            # # get peak from evokeds
-            # ev_peaks = list()
-            # if len(evokeds) > 1:
-            #     for evoked in evokeds:
-            #         ch, lat = evoked.get_peak(tmin=0., tmax=0.25)
-            #         ev_peaks.append(lat)
-            # else:
-            #     ch, lat = evokeds[0].get_peak(tmin=0., tmax=0.25)
-            #     ev_peaks.append(int(lat * 1000))
-            # peaks.update({'ev_peaks': ev_peaks})
-            # # Save peak-latencies
-            # ut.dict_filehandler(name, 'peak_detection', sub_script_path,
-            #                     values=peaks)
-            # # Plot label-time-course
-            # plt.figure()
-            # plt.plot(f, label=f'savgol-filter: window={window}, polyorder={polyorder}')
-            # plt.plot(ltc, label='label-time-course')
-            # plt.legend()
-            # for lp in ltc_peaks:
-            #     plt.plot(lp, f[lp], 'rX')
-            # for ep in ev_peaks:
-            #     plt.plot(ep, f[int(ep)], 'yX')
-            # plt.title('Peaks detected, yellow=evoked, red=label postcentral')
-            # save_path = join(figures_path, 'align_peaks')
-            # if not exists(save_path):
-            #     makedirs(save_path)
-            # filename = join(save_path, f'{name}{filter_string(lowpass, highpass)}_peaks_{label.name}.jpg')
-            # plt.savefig(filename)
-            # plt.close('all')
+        print('--------' + title + '--------')
+        names = ab_dict[title]
+        pattern = r'pp[0-9]+[a-z]?'
+        match = re.match(pattern, title)
+        prefix = match.group()
+        subtomri = sub_dict[prefix]
+        src = io.read_source_space(subtomri, subjects_dir, source_space_method)
+
+        for name in ab_dict[title]:
+            # Assumes, that first evoked in evokeds is LBT
+            save_dir = join(data_path, name)
+            e = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
+            e.crop(-0.1, 0.3)
+            gfp = calculate_gfp(e)
+            ab_gfp_data[name] = gfp
+
+            n_stc = io.read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method, event_id)['LBT']
+            # get peaks from label-time-course
+            labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir, parc=parcellation)
+            label = None
+            for l in labels:
+                if l.name == 'postcentral-lh':
+                    label = l
+            # Crop here only possible, if toi is set to (-0.1, ...) according to gfp.crop(-0.1, ...)
+            ltc = n_stc.extract_label_time_course(label, src, mode='pca_flip')[0][:400]
+            ab_ltc_data[name] = ltc
 
         # Cross-Correlate a and b
-        if len(ltcs) > 1:
+        if len(ab_dict[title]) > 1:
             # Plot Time-Course for a and b
-            ltc1, ltc2 = ltcs[0], ltcs[1]
-            plt.figure()
-            plt.plot(ltc1, label='sig1')
-            plt.plot(ltc2, label='sig2')
-            plt.legend()
-            save_path = join(figures_path, 'align_peaks')
-            filename = join(save_path, f'{title}{filter_string(lowpass, highpass)}_peaks_corrab_{label.name}.jpg')
+            n1, n2 = names
+            g1, g2 = ab_gfp_data[n1], ab_gfp_data[n2]
+            l1, l2 = ab_ltc_data[n1], ab_ltc_data[n2]
+
+            # cross-correlation of ab-gfps
+            ab_glags, ab_gcorr, ab_gmax_lag, ab_gmax_val = cross_correlation(g1, g2)
+
+            # cross-correlation of ab-label-time-courses in postcentral-lh
+            llags, lcorr, ab_lmax_lag, ab_lmax_val = cross_correlation(l1, l2)
+
+            # Evaluate appropriate lags, threshold: normed correlation >= 0.8
+            if ab_gmax_lag != 0 and ab_lmax_lag != 0:
+                if ab_gmax_val >= 0.7 and ab_lmax_val >= 0.7:
+                    ab_lag = ab_lmax_lag
+                    # if ab_gmax_lag != ab_lmax_lag:
+                    #     if ab_gmax_val > ab_lmax_val:
+                    #         ab_lag = ab_gmax_lag
+                    #     else:
+                    #         ab_lag = ab_lmax_lag
+                    # else:
+                    #     ab_lag = ab_gmax_lag
+                elif ab_gmax_val >= 0.7:
+                    ab_lag = ab_gmax_lag
+                elif ab_lmax_val >= 0.7:
+                    ab_lag = ab_lmax_lag
+                else:
+                    ab_lag = 0
+            elif ab_gmax_lag != 0:
+                if ab_gmax_val >= 0.7:
+                    ab_lag = ab_gmax_lag
+                else:
+                    ab_lag = 0
+            elif ab_lmax_lag != 0:
+                if ab_lmax_val >= 0.7:
+                    ab_lag = ab_lmax_lag
+                else:
+                    ab_lag = 0
+            else:
+                ab_lag = 0
+                print('No lags in gfp or ltc')
+
+            # Make ab-averages to improve SNR
+            # The partner-data is aligned with ab_lag and averaged
+            # The single overhang of the base-data is added to the partner-data, thus avg=base_data at overhang
+            if ab_lag < 0:
+                g1_applag = np.append(g1[:int(ab_lag)], g2[:-int(ab_lag)])
+                g2_applag = np.append(g2[-int(ab_lag):], g1[int(ab_lag):])
+                g1_avg = (g1 + g2_applag) / 2
+                g2_avg = (g2 + g1_applag) / 2
+
+                l1_applag = np.append(l1[:int(ab_lag)], l2[:-int(ab_lag)])
+                l2_applag = np.append(l2[-int(ab_lag):], l1[int(ab_lag):])
+                l1_avg = (l1 + l2_applag) / 2
+                l2_avg = (l2 + l1_applag) / 2
+            elif ab_lag > 0:
+                g1_applag = np.append(g1[int(ab_lag):], g2[-int(ab_lag):])
+                g2_applag = np.append(g2[:-int(ab_lag)], g1[:int(ab_lag)])
+                g1_avg = (g1 + g2_applag) / 2
+                g2_avg = (g2 + g1_applag) / 2
+
+                l1_applag = np.append(l1[int(ab_lag):], l2[-int(ab_lag):])
+                l2_applag = np.append(l2[:-int(ab_lag)], l1[:int(ab_lag)])
+                l1_avg = (l1 + l2_applag) / 2
+                l2_avg = (l2 + l1_applag) / 2
+            else:
+                g1_avg = g1
+                g2_avg = g2
+                l1_avg = l1
+                l2_avg = l2
+
+                # g1_avg = (g1 + g2) / 2
+                # g2_avg = (g1 + g2) / 2
+                # l1_avg = (l1 + l2) / 2
+                # l2_avg = (l1 + l2) / 2
+
+            ab_gfp_data[n1] = g1_avg
+            ab_gfp_data[n2] = g2_avg
+            ab_ltc_data[n1] = l1_avg
+            ab_ltc_data[n2] = l2_avg
+            # Save lags to dict, ab_lag applies to data_b
+            ut.dict_filehandler(title, 'ab_lags', sub_script_path,
+                                {'gfp_lag': ab_gmax_lag, 'gfp_val': round(ab_gmax_val, 2),
+                                 'ltc_lag': ab_lmax_lag, 'ltc_val': round(ab_lmax_val, 2),
+                                 'ab_lag': ab_lag})
+
+            # Plot Compare Plot
+            if ab_lag != 0:
+                fig, axes = plt.subplots(nrows=2, ncols=3, sharex='col',
+                                         gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
+                                                      'left': 0.05, 'right': 0.95,
+                                                      'top': 0.95, 'bottom': 0.05},
+                                         figsize=(18, 8))
+            else:
+                fig, axes = plt.subplots(nrows=2, ncols=2, sharex='col',
+                                         gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
+                                                      'left': 0.05, 'right': 0.95,
+                                                      'top': 0.95, 'bottom': 0.05},
+                                         figsize=(18, 8))
+            axes[0, 0].plot(g1, label=n1)
+            axes[0, 0].plot(g2, label=n2)
+            axes[0, 0].legend()
+            axes[0, 0].set_title(f'GFP\'s')
+
+            axes[0, 1].plot(ab_glags, ab_gcorr)
+            axes[0, 1].plot(ab_gmax_lag, ab_gmax_val, 'rx')
+            axes[0, 1].set_title(f'Cross-Correlation, lag = {ab_gmax_lag}')
+
+            # Plot label-time-courses of postcentral-lh
+            axes[1, 0].plot(l1, label=n1)
+            axes[1, 0].plot(l2, label=n2)
+            axes[1, 0].legend()
+            axes[1, 0].set_title(f'Label-Time-Course in postcentral-lh')
+
+            axes[1, 1].plot(llags, lcorr)
+            axes[1, 1].plot(ab_lmax_lag, ab_lmax_val, 'rx')
+            axes[1, 1].set_title(f'Cross-Correlation, lag = {ab_lmax_lag}')
+
+            if ab_lag != 0:
+                # Apply ab_lag for comparision (lag applies to data_b)
+                if ab_lag < 0:
+                    g1a = g1[:int(ab_lag)]
+                    g2a = g2[-int(ab_lag):]
+                elif ab_lag > 0:
+                    g1a = g1[int(ab_lag):]
+                    g2a = g2[:-int(ab_lag)]
+                else:
+                    g1a = g1
+                    g2a = g2
+
+                axes[0, 2].plot(g1a, label=n1)
+                axes[0, 2].plot(g2a, label=n2)
+                axes[0, 2].legend()
+                axes[0, 2].set_title(f'GFP\'s corrected with ab_lag = {ab_lag}')
+
+                # Apply ab_lag for comparision (lag applies to data_b)
+                if ab_lmax_lag < 0:
+                    l1a = l1[:int(ab_lag)]
+                    l2a = l2[-int(ab_lag):]
+                elif ab_lmax_lag > 0:
+                    l1a = l1[int(ab_lag):]
+                    l2a = l2[:-int(ab_lag)]
+                else:
+                    l1a = l1
+                    l2a = l2
+
+                axes[1, 2].plot(l1a, label=n1)
+                axes[1, 2].plot(l2a, label=n2)
+                axes[1, 2].legend()
+                axes[1, 2].set_title(f'LTC\'s corrected with ab_lag = {ab_lag}')
+
+            filename = join(figures_path, 'align_peaks', f'{title}{filter_string(lowpass, highpass)}_xcorr_ab.jpg')
             plt.savefig(filename)
 
-
-            plt.figure()
-            lags, corr, peak, max_val = cross_correlation(ltc1, ltc2)
-            plt.plot(lags, corr)
-            plt.plot(peak, max_val, 'rx')
-            filename = join(save_path, f'{title}{filter_string(lowpass, highpass)}_xcorrab_{label.name}.jpg')
-            plt.savefig(filename)
-            plt.close('all')
+        else:
+            print('No b-measurement available')
+            ut.dict_filehandler(title, 'ab_lags', sub_script_path,
+                                {'gfp_lag': 0, 'gfp_val': 1, 'ltc_lag': 0, 'ltc_val': 1, 'ab_lag': 0})
 
 
-        # Cross-Correlate ab-average with best gfp(pp14_256_a, 105)
+    plot.close_all()
 
-@decor.nested
+
+@decor.small_func
 def cross_correlation(x, y):
-    Nx = len(x)
-    if Nx != len(y):
-        raise ValueError('x and y must be equal length')
+    nx = len(x) + len(y)
+    # if nx != len(y):
+    #     raise ValueError('x and y must be equal length')
     correls = np.correlate(x, y, mode="full")
     # Normed correlation values
     correls /= np.sqrt(np.dot(x, x) * np.dot(y, y))
-    maxlags = Nx-1
+    # maxlags = int(nx/2) - 1
+    maxlags = int(len(correls) / 2)
     lags = np.arange(-maxlags, maxlags + 1)
 
-    peak = lags[np.argmax(np.abs(correls))]
+    max_lag = lags[np.argmax(np.abs(correls))]
     max_val = correls[np.argmax(np.abs(correls))]
 
-    return lags, correls, peak, max_val
+    return lags, correls, max_lag, max_val
 
 
-def apply_alignment():
-    det_peaks = ut.read_dict_file('peak_alignment', sub_script_path)
-    for name in det_peaks:
-        save_dir = join(data_path, name)
+# def apply_alignment():
+#     # Apply alignment over changing the
+#     det_peaks = ut.read_dict_file('peak_alignment', sub_script_path)
+#     for name in det_peaks:
+#         save_dir = join(data_path, name)
 
 
 @decor.topline
@@ -1562,7 +1674,6 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
 @decor.topline
 def tfr(name, save_dir, lowpass, highpass, ica_evokeds, tfr_freqs, overwrite_tfr,
         tfr_method, multitaper_bandwith, stockwell_width, n_jobs):
-    global itc, power
     power_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_pw-tfr.h5'
     power_path = join(save_dir, power_name)
     itc_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_itc-tfr.h5'
@@ -1597,6 +1708,7 @@ def tfr(name, save_dir, lowpass, highpass, ica_evokeds, tfr_freqs, overwrite_tfr
                                                               width=stockwell_width,
                                                               n_jobs=n_jobs)
             else:
+                power, itc = [], []
                 print('No appropriate tfr_method defined in pipeline')
 
             power.comment = trial_type
@@ -1875,7 +1987,7 @@ def mri_coreg(name, save_dir, subtomri, subjects_dir):
     raw_name = name + '-raw.fif'
     raw_path = join(save_dir, raw_name)
 
-    fids = mne.coreg.get_mni_fiducials(subtomri, subjects_dir)
+    # fids = mne.coreg.get_mni_fiducials(subtomri, subjects_dir)
 
     mne.gui.coregistration(subject=subtomri, inst=raw_path,
                            subjects_dir=subjects_dir, guess_mri_subject=False,
@@ -3684,3 +3796,19 @@ def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
             print('figure: ' + save_path + ' has been saved')
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
+
+
+def get_meas_order(sub_files_dict, data_path, sub_script_path):
+    # Get measurement order in time
+    for sub in sub_files_dict:
+        ts = list()
+        for name in sub_files_dict[sub]:
+            save_dir = join(data_path, name)
+            i = io.read_info(name, save_dir)
+            ts.append(i['meas_date'][0])
+        ts.sort()
+        for name in sub_files_dict[sub]:
+            save_dir = join(data_path, name)
+            i = io.read_info(name, save_dir)
+            idx = ts.index(i['meas_date'][0])
+            ut.dict_filehandler(name, 'meas_order', sub_script_path, values=idx)

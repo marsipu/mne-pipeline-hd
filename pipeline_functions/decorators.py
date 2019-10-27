@@ -17,10 +17,10 @@ def topline(func):
     return wrapper_topline
 
 
-def nested(func):
+def small_func(func):
     @functools.wraps(func)
     def wrapper_topline(*args, **kwargs):
-        print(f'Executing: {func.__name__}')
+        print(f'_______{func.__name__}_______')
         return func(*args, **kwargs)
 
     return wrapper_topline
