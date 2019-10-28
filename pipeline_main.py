@@ -17,13 +17,13 @@ from importlib import reload
 import re
 import mne
 
-from bin import io_functions as io
-from bin import operations_functions as op
-from bin import plot_functions as plot
-from bin import subject_organisation as suborg
-from bin import utilities as ut
-from bin import operations_dict as opd
-from bin import decorators as decor
+from p_functions import io_functions as io
+from p_functions import operations_functions as op
+from p_functions import plot_functions as plot
+from p_functions import subject_organisation as suborg
+from p_functions import utilities as ut
+from p_functions import operations_dict as opd
+from p_functions import decorators as decor
 
 
 def reload_all():
