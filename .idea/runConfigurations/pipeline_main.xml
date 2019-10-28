@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Pipeline_Pinprick" type="PythonConfigurationType" factoryName="Python" singleton="false">
+  <configuration default="false" name="pipeline_main" type="PythonConfigurationType" factoryName="Python" singleton="false">
     <module name="mne_pipeline_hd" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -9,7 +9,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Pipeline_Pinprick.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/pipeline_main.py" />
     <option name="PARAMETERS" value="" />
     <option name="SHOW_COMMAND_LINE" value="true" />
     <option name="EMULATE_TERMINAL" value="false" />

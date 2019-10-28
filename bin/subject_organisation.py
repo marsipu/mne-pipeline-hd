@@ -11,7 +11,8 @@ import tkinter as t
 import re
 
 
-## Subjects
+# Todo: Benamung verallgemeinern, -raw-Problematik lösen
+# Subjects
 def add_files(file_list_path, erm_list_path, motor_erm_list_path,
               data_path, figures_path, subjects_dir, orig_data_path,
               unspecified_names=True, gui=False):
@@ -28,7 +29,10 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
 
     for f in all_fif_files:
         fname = f[:-4]
-        fdest = join(data_path, fname, fname + '-raw.fif')
+        if fname[-4:] == '-raw':
+            fdest = join(data_path, fname, fname + '.fif')
+        else:
+            fdest = join(data_path, fname, fname + '-raw.fif')
         ermdest = join(data_path, 'empty_room_data', fname + '-raw.fif')
 
         match = re.match(pattern, fname)
@@ -42,7 +46,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
                 print(f'Finished Copying to {ermdest}')
             # Organize Motor-ERMs
             if 'motor_leer' in fname:
-                if not fname in motor_erm_files:
+                if fname not in motor_erm_files:
                     if not isfile(motor_erm_list_path):
                         print('-' * 60 + '\n' + fname)
                         if not exists(join(data_path, '_Subject_scripts')):
@@ -60,7 +64,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
                         print(f'{fname} was automatically added to motor_erm_list from {orig_data_path}')
             # Organize ERMs
             else:
-                if not fname in erm_files:
+                if fname not in erm_files:
                     if not isfile(erm_list_path):
                         print('-' * 60 + '\n' + fname)
                         if not exists(join(data_path, '_Subject_scripts')):
@@ -77,10 +81,9 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
                             sl2.write(fname + '\n')
                         print(f'{fname} was automatically added to erm_list from {orig_data_path}')
 
-
         elif match:
             # Organize sub_files
-            if not fname in files:
+            if fname not in files:
                 if not isfile(file_list_path):
                     print('-' * 60 + '\n' + fname)
                     if not exists(join(data_path, '_Subject_scripts')):
@@ -110,7 +113,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
                 shutil.copy2(paths[f], fdest)
                 print(f'Finished Copying to {fdest}')
 
-    if gui == True:
+    if gui:
         def add_to_list():
             if not isfile(file_list_path):
                 if not exists(join(data_path, '_Subject_scripts')):
