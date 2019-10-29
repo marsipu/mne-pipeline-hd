@@ -30,7 +30,7 @@ class Function_Window:
         self.var_dict = dict()
         self.pre_func_dict = dict()
         self.func_dict = dict()
-        self.c_path = './p_functions/func_cache.py'
+        self.c_path = './pipeline_functions/func_cache.py'
 
         self.make_chkbs()
         self.huga = 12
