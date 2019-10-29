@@ -17,6 +17,7 @@ overwrite = True  # should files be overwritten in general
 save_plots = True  # should plots be saved
 
 # Pinprick-specific
+pinprick = True  # Events including Rating
 combine_ab = True  # pinprick-specific
 cmp_cond = ['high', 'tactile']  # Specify two conditions, which will be compared
 
@@ -30,7 +31,6 @@ erm_t_limit = 300  # Limits Empty-Room-Measurement-Length [s]
 
 # events
 adjust_timeline_by_msec = -100  # custom delay to stimulus in ms
-pinprick = True  # Events including Rating
 
 # epochs
 # Pinprick: Add 100ms Puffer on each side to allow latency alignment with group-averages

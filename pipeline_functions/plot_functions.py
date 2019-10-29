@@ -46,11 +46,12 @@ def print_info(name, save_dir):
     info = io.read_info(name, save_dir)
     print(info)
 
-
+# Todo: Plot Raw with block to mark bads on the fly, test on all OS (hangs on Spyder?!)
 @decor.topline
-def plot_raw(name, save_dir, bad_channels, bad_channels_dict):
+def plot_raw(name, save_dir, bad_channels):
     raw = io.read_raw(name, save_dir)
     raw.info['bads'] = bad_channels
+    print(f"Pre-Bads:, {raw.info['bads']}")
     try:
         events = io.read_events(name, save_dir)
         mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red', events=events,
@@ -61,8 +62,6 @@ def plot_raw(name, save_dir, bad_channels, bad_channels_dict):
         mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red',
                          scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
                          title=name)
-
-    bad_channels_dict[name] = raw.info['bads']  # would be useful, if block worked properly
 
 
 @decor.topline

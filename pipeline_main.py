@@ -13,18 +13,20 @@ import sys
 import shutil
 import os
 from os.path import join, isfile, exists
-from importlib import reload
+from importlib import reload, util
 import re
 import mne
 
-from p_functions import io_functions as io
-from p_functions import operations_functions as op
-from p_functions import plot_functions as plot
-from p_functions import subject_organisation as suborg
-from p_functions import utilities as ut
-from p_functions import operations_dict as opd
-from p_functions import decorators as decor
+from pipeline_functions import io_functions as io
+from pipeline_functions import operations_functions as op
+from pipeline_functions import plot_functions as plot
+from pipeline_functions import subject_organisation as suborg
+from pipeline_functions import utilities as ut
+from pipeline_functions import operations_dict as opd
+from pipeline_functions import decorators as decor
 
+from custom_functions import pinprick_functions as ppf
+from custom_functions import melofix_functions as mff
 
 def reload_all():
     reload(io)
@@ -73,7 +75,7 @@ exec_ops = ut.choose_function()
 # specify the path to a general analysis folder according to your OS
 if sys.platform == 'win32':
     # home_path = 'Z:/Promotion'  # Windows-Path
-    home_path = 'D:/Rächner/Desktop/Pinprick-Offline'
+    home_path = 'Y:/Pinprick-Offline'
 elif sys.platform == 'linux':
     home_path = '/mnt/z/Promotion'  # Linux-Path
 elif sys.platform == 'darwin':
@@ -89,11 +91,20 @@ subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
 script_path = os.path.dirname(os.path.realpath(__file__))
 if not isfile(join(home_path, project_name, 'parameters.py')):
     from templates.parameters_template import *
+
     shutil.copy2(join(script_path, 'templates/parameters_template.py'), join(home_path, project_name, 'parameters.py'))
     print('Hugi')
 else:
-    sys.path.append(join(home_path, project_name))
+    # sys.path.append(join(home_path, project_name))
+    # this is generally not recommended for good style, but facilitates here
+    # maintenance of the parameters file.
+    # Be careful not to reassign variables of the parameters-file in this file
+    spec = util.spec_from_file_location('parameters', join(home_path, project_name, 'parameters.py'))
+    module = util.module_from_spec(spec)
+    sys.modules['parameters'] = module
+    spec.loader.exec_module(module)
     from parameters import *
+
     print('Wugi')
 # %%============================================================================
 # DEPENDING PATHS (NOT TO SET)
@@ -354,13 +365,15 @@ for name in files:
     # ==========================================================================
 
     if exec_ops['find_events']:
-        if pinprick:
-            op.find_events_pp(name, save_dir, adjust_timeline_by_msec, lowpass,
-                              highpass, overwrite, sub_script_path,
-                              save_plots, figures_path, exec_ops)
-        else:
-            op.find_events(name, save_dir, adjust_timeline_by_msec, lowpass,
-                           highpass, overwrite, exec_ops)
+        op.find_events(name, save_dir, adjust_timeline_by_msec, overwrite, exec_ops)
+
+    if exec_ops['pp_event_handling']:
+        ppf.pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
+                              sub_script_path, save_plots, figures_path, exec_ops)
+
+    if exec_ops['melofix_event_handling']:
+        mff.melofix_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
+                                   sub_script_path, save_plots, figures_path, exec_ops)
 
     if exec_ops['find_eog_events']:
         op.find_eog_events(name, save_dir, eog_channel)
@@ -564,7 +577,7 @@ for name in files:
     # ==========================================================================
 
     if exec_ops['plot_raw']:
-        plot.plot_raw(name, save_dir, bad_channels, bad_channels_dict)
+        plot.plot_raw(name, save_dir, bad_channels)
 
     if exec_ops['plot_filtered']:
         plot.plot_filtered(name, save_dir, lowpass, highpass, bad_channels)

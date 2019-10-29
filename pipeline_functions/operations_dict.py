@@ -17,6 +17,10 @@ basic_operations = dict(erm_analysis=0,
                         close_plots=0,
                         shutdown=0)
 
+pinprick_functions = dict(pp_event_handling=0)
+
+melofix_functions = dict(melofix_event_handling = 0)
+
 sensor_space_operations = dict(filter_raw=0,
                                find_events=0,
                                find_eog_events=0,
@@ -143,6 +147,8 @@ grand_average_plots = dict(
 
 all_fs = {'subject_operations': subject_operations,
           'basic_operations': basic_operations,
+          'pinprick_functions': pinprick_functions,
+          'melofix_functions': melofix_functions,
           'sensor_space_operations': sensor_space_operations,
           'mri_subject_operations': mri_subject_operations,
           'source_space_operations': source_space_operations,

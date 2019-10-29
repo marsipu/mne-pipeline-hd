@@ -12,32 +12,32 @@ from __future__ import print_function
 
 import mne
 import numpy as np
+from matplotlib import pyplot as plt
+from os import makedirs, listdir, environ, remove
 from os.path import join, isfile, isdir, exists
 from scipy import stats, signal
-from os import makedirs, listdir, environ, remove
 import sys
-from . import io_functions as io
-from . import plot_functions as plot
-from . import utilities as ut
-from . import decorators as decor
 import pickle
 import subprocess
 from collections import Counter
 from nilearn.plotting import plot_anat
-from matplotlib import pyplot as plt
 from mayavi import mlab
 from itertools import combinations
 from functools import reduce
 from surfer import Brain
 import random
 import gc
-import statistics as st
 import re
+
+from . import io_functions as io
+from . import plot_functions as plot
+from . import utilities as ut
+from . import decorators as decor
 
 try:
     from autoreject import AutoReject
 except ImportError:
-    print('#%§&$$ autoreject-Import-Bug is not corrected in latest dev')
+    print('#%§&$$ autoreject-Import-Bug is not corrected autoreject-2.0')
     AutoReject = 0
 
 
@@ -243,8 +243,7 @@ def filter_raw(name, save_dir, lowpass, highpass, ermsub,
 
 
 @decor.topline
-def find_events(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, overwrite,
-                exec_ops):
+def find_events(name, save_dir, adjust_timeline_by_msec, overwrite, exec_ops):
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
 
@@ -253,15 +252,9 @@ def find_events(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, over
         return
 
     if overwrite or not isfile(events_path):
+        raw = io.read_raw(name, save_dir)
 
-        try:
-            raw = io.read_filtered(name, save_dir, lowpass, highpass)
-        except FileNotFoundError:
-            raw = io.read_raw(name, save_dir)
-
-        # By Martin Schulz
         # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg
-
         # prepare arrays
         events = np.ndarray(shape=(0, 3), dtype=np.int32)
         evs = list()
@@ -364,251 +357,6 @@ def find_events(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, over
         events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10 ** -3 *
                                       raw.info['sfreq']) for ts in events[:, 0]]
 
-        ids = np.unique(events[:, 2])
-        print('unique ID\'s assigned: ', ids)
-
-        if np.size(events) > 0:
-            mne.event.write_events(events_path, events)
-        else:
-            print('No events found')
-
-    else:
-        print('event file: ' + events_path + ' already exists')
-
-
-@decor.topline
-def find_events_pp(name, save_dir, adjust_timeline_by_msec, lowpass, highpass, overwrite,
-                   sub_script_path, save_plots, figures_path, exec_ops):
-    events_name = name + '-eve.fif'
-    events_path = join(save_dir, events_name)
-
-    if exec_ops['erm_analysis']:
-        print('No events for erm-data')
-        return
-
-    if overwrite or not isfile(events_path):
-
-        try:
-            raw = io.read_filtered(name, save_dir, lowpass, highpass)
-        except FileNotFoundError:
-            raw = io.read_raw(name, save_dir)
-
-        # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg
-        # prepare arrays
-        events = np.ndarray(shape=(0, 3), dtype=np.int32)
-        evs = list()
-        evs_tol = list()
-
-        # Find events for each stim channel, append sample values to list
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 001'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 002'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 003'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 004'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 005'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 006'])[:, 0])
-
-        """#test events evs = [np.array([1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,
-        55,57,59,61,63])*10, np.array([2,3,6,7,10,11,14,15,18,19,22,23,26,27,30,31,34,35,38,39,42,43,46,47,50,51,54,
-        55,58,59,62,63])*10, np.array([4,5,6,7,12,13,14,15,20,21,22,23,28,29,30,31,36,37,38,39,44,45,46,47,52,53,54,
-        55,60,61,62,63])*10, np.array([8,9,10,11,12,13,14,15,24,25,26,27,28,29,30,31,40,41,42,43,44,45,46,47,56,57,
-        58,59,60,61,62,63])*10, np.array([16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,48,49,50,51,52,53,54,55,56,
-        57,58,59,60,61,62,63])*10, np.array([32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,
-        56,57,58,59,60,61,62,63])*10] """
-
-        for i in evs:
-
-            # delete events in each channel, which are too close too each other (1ms)
-            too_close = np.where(np.diff(i) <= 1)
-            if np.size(too_close) >= 1:
-                print(f'Two close events (1ms) at samples {i[too_close] + raw.first_samp}, first deleted')
-                i = np.delete(i, too_close, 0)
-                evs[evs.index(i)] = i
-
-            # add tolerance to each value
-            i_tol = np.ndarray(shape=(0, 1), dtype=np.int32)
-            for t in i:
-                i_tol = np.append(i_tol, t - 1)
-                i_tol = np.append(i_tol, t)
-                i_tol = np.append(i_tol, t + 1)
-
-            evs_tol.append(i_tol)
-
-        # Get events from combinated Stim-Channels
-        equals = reduce(np.intersect1d, (evs_tol[0], evs_tol[1], evs_tol[2],
-                                         evs_tol[3], evs_tol[4], evs_tol[5]))
-        # elimnate duplicated events
-        too_close = np.where(np.diff(equals) <= 1)
-        if np.size(too_close) >= 1:
-            equals = np.delete(equals, too_close, 0)
-            equals -= 1  # correction, because of shift with deletion
-
-        for q in equals:
-            if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                events = np.append(events, [[q, 0, 63]], axis=0)
-
-        for a, b, c, d, e in combinations(range(6), 5):
-            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c],
-                                             evs_tol[d], evs_tol[e]))
-            too_close = np.where(np.diff(equals) <= 1)
-            if np.size(too_close) >= 1:
-                equals = np.delete(equals, too_close, 0)
-                equals -= 1
-
-            for q in equals:
-                if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                    events = np.append(events, [[q, 0, int(2 ** a + 2 ** b + 2 ** c + 2 ** d + 2 ** e)]], axis=0)
-
-        for a, b, c, d in combinations(range(6), 4):
-            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c], evs_tol[d]))
-            too_close = np.where(np.diff(equals) <= 1)
-            if np.size(too_close) >= 1:
-                equals = np.delete(equals, too_close, 0)
-                equals -= 1
-
-            for q in equals:
-                if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                    events = np.append(events, [[q, 0, int(2 ** a + 2 ** b + 2 ** c + 2 ** d)]], axis=0)
-
-        for a, b, c in combinations(range(6), 3):
-            equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c]))
-            too_close = np.where(np.diff(equals) <= 1)
-            if np.size(too_close) >= 1:
-                equals = np.delete(equals, too_close, 0)
-                equals -= 1
-
-            for q in equals:
-                if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                    events = np.append(events, [[q, 0, int(2 ** a + 2 ** b + 2 ** c)]], axis=0)
-
-        for a, b in combinations(range(6), 2):
-            equals = np.intersect1d(evs_tol[a], evs_tol[b])
-            too_close = np.where(np.diff(equals) <= 1)
-            if np.size(too_close) >= 1:
-                equals = np.delete(equals, too_close, 0)
-                equals -= 1
-
-            for q in equals:
-                if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                    events = np.append(events, [[q, 0, int(2 ** a + 2 ** b)]], axis=0)
-
-        # Get single-channel events
-        for i in range(6):
-            for e in evs[i]:
-                if e not in events[:, 0] and e not in events[:, 0] + 1 and e not in events[:, 0] - 1:
-                    events = np.append(events, [[e, 0, 2 ** i]], axis=0)
-
-        # sort only along samples(column 0)
-        events = events[events[:, 0].argsort()]
-
-        # delete Trigger 1 if not after Trigger 2 (due to mistake with light-barrier)
-        removes = np.array([], dtype=int)
-        for n in range(len(events)):
-            if events[n, 2] == 1:
-                if events[n - 1, 2] != 2:
-                    removes = np.append(removes, n)
-                    print(f'{events[n, 0]} removed Trigger 1')
-        events = np.delete(events, removes, axis=0)
-
-        # Rating
-        pre_ratings = events[np.nonzero(np.logical_and(9 < events[:, 2], events[:, 2] < 20))]
-        if len(pre_ratings) != 0:
-            first_idx = np.nonzero(np.diff(pre_ratings[:, 0], axis=0) < 200)[0]
-            last_idx = first_idx + 1
-            ratings = pre_ratings[first_idx]
-            ratings[:, 2] = (ratings[:, 2] - 10) * 10 + pre_ratings[last_idx][:, 2] - 10
-
-            diff_ratings = np.copy(ratings)
-            diff_ratings[np.nonzero(np.diff(ratings[:, 2]) < 0)[0] + 1, 2] = 5
-            diff_ratings[np.nonzero(np.diff(ratings[:, 2]) == 0)[0] + 1, 2] = 6
-            diff_ratings[np.nonzero(np.diff(ratings[:, 2]) > 0)[0] + 1, 2] = 7
-            diff_ratings = np.delete(diff_ratings, [0], axis=0)
-
-            pre_events = events[np.nonzero(events[:, 2] == 1)][:, 0]
-            for n in range(len(diff_ratings)):
-                diff_ratings[n, 0] = pre_events[np.nonzero(pre_events - diff_ratings[n, 0] < 0)][-1] + 3
-
-            # Eliminate Duplicates
-            diff_removes = np.array([], dtype=int)
-            for n in range(1, len(diff_ratings)):
-                if diff_ratings[n, 0] == diff_ratings[n - 1, 0]:
-                    diff_removes = np.append(diff_removes, n)
-                    print(f'{diff_ratings[n, 0]} removed as Duplicate')
-            diff_ratings = np.delete(diff_ratings, diff_removes, axis=0)
-
-            events = np.append(events, diff_ratings, axis=0)
-            events = events[events[:, 0].argsort()]
-
-            if save_plots:
-                fig, ax1 = plt.subplots(figsize=(20, 10))
-                ax1.plot(ratings[:, 2], 'b')
-                ax1.set_ylim(0, 100)
-
-                ax2 = ax1.twinx()
-                ax2.plot(diff_ratings, 'og')
-                ax2.set_ylim(4.5, 7.5)
-
-                fig.tight_layout()
-                plt.title(name + ' - rating')
-                fig.show()
-
-                save_path = join(figures_path, 'events', name + '-ratings.jpg')
-                fig.savefig(save_path, dpi=600, overwrite=True)
-                print('figure: ' + save_path + ' has been saved')
-
-                plt.close(fig)
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
-
-        else:
-            print('No Rating in Trig-Channels 10-19')
-
-        # apply custom latency correction
-        events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10 ** -3 *
-                                      raw.info['sfreq']) for ts in events[:, 0]]
-
-        # Calculate and Save Latencies
-        l1 = []
-        l2 = []
-        for x in range(np.size(events, axis=0)):
-            if events[x, 2] == 2:
-                if events[x + 1, 2] == 1:
-                    l1.append(events[x + 1, 0] - events[x, 0])
-        diff1_mean = st.mean(l1)
-        diff1_stdev = st.stdev(l1)
-        ut.dict_filehandler(name, 'MotStart-LBT_diffs',
-                            sub_script_path, values={'mean': diff1_mean,
-                                                     'stdev': diff1_stdev})
-
-        if exec_ops['motor_erm_analysis']:
-            for x in range(np.size(events, axis=0) - 3):
-                if events[x, 2] == 2:
-                    if events[x + 2, 2] == 4:
-                        l2.append(events[x + 2, 0] - events[x, 0])
-            diff2_mean = st.mean(l2)
-            diff2_stdev = st.stdev(l2)
-            ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
-                                sub_script_path, values={'mean': diff2_mean,
-                                                         'stdev': diff2_stdev})
-        else:
-            for x in range(np.size(events, axis=0) - 3):
-                if events[x, 2] == 2:
-                    if events[x + 3, 2] == 4:
-                        l2.append(events[x + 3, 0] - events[x, 0])
-            diff2_mean = st.mean(l2)
-            diff2_stdev = st.stdev(l2)
-            ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
-                                sub_script_path, values={'mean': diff2_mean,
-                                                         'stdev': diff2_stdev})
-
-        # Latency-Correction for Offset-Trigger[4]
-        for x in range(np.size(events, axis=0) - 3):
-            if events[x, 2] == 2:
-                if events[x + 1, 2] == 1:
-                    if events[x + 3, 2] == 4:
-                        corr = diff1_mean - (events[x + 1, 0] - events[x, 0])
-                        events[x + 3, 0] = events[x + 3, 0] + corr
-
-        # unique event_ids
         ids = np.unique(events[:, 2])
         print('unique ID\'s assigned: ', ids)
 
