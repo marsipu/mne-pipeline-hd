@@ -13,7 +13,7 @@ import sys
 import shutil
 import os
 from os.path import join, isfile, exists
-from importlib import reload, util
+from importlib import reload, util, import_module
 import re
 import mne
 
@@ -90,20 +90,15 @@ subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
 # ==============================================================================
 script_path = os.path.dirname(os.path.realpath(__file__))
 if not isfile(join(home_path, project_name, 'parameters.py')):
-    from templates.parameters_template import *
+    from templates import parameters_template as p
 
     shutil.copy2(join(script_path, 'templates/parameters_template.py'), join(home_path, project_name, 'parameters.py'))
     print('Hugi')
 else:
-    # sys.path.append(join(home_path, project_name))
-    # this is generally not recommended for good style, but facilitates here
-    # maintenance of the parameters file.
-    # Be careful not to reassign variables of the parameters-file in this file
     spec = util.spec_from_file_location('parameters', join(home_path, project_name, 'parameters.py'))
-    module = util.module_from_spec(spec)
-    sys.modules['parameters'] = module
-    spec.loader.exec_module(module)
-    from parameters import *
+    p = util.module_from_spec(spec)
+    sys.modules['parameters'] = p
+    spec.loader.exec_module(p)
 
     print('Wugi')
 # %%============================================================================
@@ -117,7 +112,7 @@ save_dir_averages = join(data_path, 'grand_averages')
 if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
     figures_path = join(home_path, project_name, 'Figures/ERM_Figures')
 else:
-    figures_path = join(home_path, project_name, f'Figures/{highpass}-{lowpass}_Hz')
+    figures_path = join(home_path, project_name, f'Figures/{p.highpass}-{p.lowpass}_Hz')
 
 # add file_names, mri_subjects, sub_dict, bad_channels_dict
 file_list_path = join(sub_script_path, 'file_list.py')
