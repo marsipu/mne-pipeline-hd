@@ -35,8 +35,8 @@ adjust_timeline_by_msec = -100  # custom delay to stimulus in ms
 # epochs
 # Pinprick: Add 100ms Puffer on each side to allow latency alignment with group-averages
 # Leave baseline at -0.100 to allow shift
-tmin = -0.600  # start of epoch [s]
-tmax = 1.600  # end of epoch [s]
+etmin = -0.600  # start of epoch [s]
+etmax = 1.600  # end of epoch [s]
 baseline = (-0.600, -0.100)  # has to be a tuple [s]
 enable_ica = True  # Use ica-epochs, create 1Hz-Highpass-Raw if not existent
 autoreject = False  # set True to use autoreject
