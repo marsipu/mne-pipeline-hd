@@ -21,7 +21,7 @@ from . import operations_dict as opd
 
 
 # Todo: If checked, change color
-class Function_Window:
+class FunctionWindow:
 
     def __init__(self, master):
         self.master = master
@@ -146,7 +146,7 @@ class Function_Window:
 
 def choose_function():
     master = t.Tk()
-    gui = Function_Window(master)
+    gui = FunctionWindow(master)
     master.mainloop()
 
     return gui.func_dict
@@ -441,3 +441,10 @@ def shutdown():
         os.system('sudo shutdown now')
     if sys.platform == 'darwin':
         os.system('sudo shutdown -h now')
+
+# Todo: Update MNE-Function
+def update_mne():
+    command = 'curl -O https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml'
+    command2 = 'conda env update --file environment.yml'
+
+# Todo: Update Pipeline-Function
