@@ -17,7 +17,9 @@ basic_operations = dict(erm_analysis=0,
                         close_plots=0,
                         shutdown=0)
 
-pinprick_functions = dict(pp_event_handling=0)
+pinprick_functions = dict(pp_event_handling=0,
+                          pp_combine_evokeds_ab=0,
+                          pp_alignment=0)
 
 melofix_functions = dict(melofix_event_handling = 0)
 
@@ -37,9 +39,7 @@ sensor_space_operations = dict(filter_raw=0,
                                apply_ica=0,
                                get_evokeds=0,
                                get_h1h2_evokeds=0,
-                               combine_evokeds_ab=0,
-                               tfr=0,
-                               pp_alignment=0)
+                               tfr=0)
 
 mri_subject_operations = dict(apply_watershed=0,
                               make_dense_scalp_surfaces=0,  # until here all bash scripts!

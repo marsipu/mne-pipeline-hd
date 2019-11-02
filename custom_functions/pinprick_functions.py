@@ -138,8 +138,9 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
 
     mne.event.write_events(events_path, events)
 
+
 @decor.topline
-def combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_dict):
+def pp_combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_dict):
     for title in ab_dict:
         print(f'abs for {title}')
         ab_ev_dict = dict()
@@ -371,7 +372,6 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
             print('No b-measurement available')
             ut.dict_filehandler(title, 'ab_lags', sub_script_path,
                                 {'gfp_lag': 0, 'gfp_val': 1, 'ltc_lag': 0, 'ltc_val': 1, 'ab_lag': 0})
-
 
     plot.close_all()
 

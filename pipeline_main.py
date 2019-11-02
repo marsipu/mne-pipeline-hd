@@ -847,7 +847,7 @@ if exec_ops['grand_avg_evokeds']:
                          p.ana_h1h2)
 
 if exec_ops['combine_evokeds_ab']:
-    ppf.combine_evokeds_ab(data_path, save_dir_averages, p.lowpass, p.highpass, ab_dict)
+    ppf.pp_combine_evokeds_ab(data_path, save_dir_averages, p.lowpass, p.highpass, ab_dict)
 
 if exec_ops['grand_avg_tfr']:
     op.grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
