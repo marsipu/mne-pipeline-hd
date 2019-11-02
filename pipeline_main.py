@@ -71,26 +71,27 @@ which_motor_erm_file = 'all'  # Has to be a string/enclosed in apostrophs
 # ==============================================================================
 exec_ops = ut.choose_function()
 # %%============================================================================
-# PATHS (TO SET)
+# PATHS
 # ==============================================================================
-# specify the path to a general analysis folder according to your OS
-if sys.platform == 'win32':
-    # home_path = 'Z:/Promotion'  # Windows-Path
-    home_path = 'Y:/Pinprick-Offline'
-elif sys.platform == 'linux':
-    home_path = '/mnt/z/Promotion'  # Linux-Path
-elif sys.platform == 'darwin':
-    home_path = 'Users/'  # Mac-Path
+script_path = os.path.dirname(os.path.realpath(__file__))
+if not isfile(join(script_path, 'paths.py')):
+    from templates.paths_template import home_path, project_name
+    shutil.copy2(join(script_path, 'templates/paths_template.py'), join(script_path, 'paths.py'))
+    print(f'paths.py created from paths_template.py')
 else:
-    home_path = 'Z:/Promotion'  # some other path
-project_name = 'Andre_Test'  # specify the name for your project as a folder
+    spec = util.spec_from_file_location('paths', join(script_path, 'paths.py'))
+    pth = util.module_from_spec(spec)
+    sys.modules['parameters'] = pth
+    spec.loader.exec_module(pth)
+    home_path, project_name = pth.home_path, pth.project_name
+    print(f'Read Paths from paths.py')
+
 project_path = join(home_path, project_name)
 orig_data_path = join(project_path, 'meg')  # location of original-data
 subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
 # %%============================================================================
 # LOAD PARAMETERS
 # ==============================================================================
-script_path = os.path.dirname(os.path.realpath(__file__))
 if not isfile(join(project_path, 'parameters.py')):
     from templates import parameters_template as p
     shutil.copy2(join(script_path, 'templates/parameters_template.py'), join(project_path, 'parameters.py'))
@@ -759,9 +760,9 @@ for name in files:
 # All-Subject-Analysis
 # ==============================================================================
 if exec_ops['pp_alignment']:
-    op.pp_alignment(ab_dict, cond_dict, sub_dict, data_path, p.lowpass, p.highpass, sub_script_path,
-                    p.event_id, subjects_dir, p.inverse_method, p.source_space_method,
-                    p.parcellation, figures_path)
+    ppf.pp_alignment(ab_dict, cond_dict, sub_dict, data_path, p.lowpass, p.highpass, sub_script_path,
+                     p.event_id, subjects_dir, p.inverse_method, p.source_space_method,
+                     p.parcellation, figures_path)
 
 if exec_ops['cmp_label_time_course']:
     plot.cmp_label_time_course(data_path, p.lowpass, p.highpass, sub_dict, comp_dict,
@@ -846,7 +847,7 @@ if exec_ops['grand_avg_evokeds']:
                          p.ana_h1h2)
 
 if exec_ops['combine_evokeds_ab']:
-    op.combine_evokeds_ab(data_path, save_dir_averages, p.lowpass, p.highpass, ab_dict)
+    ppf.combine_evokeds_ab(data_path, save_dir_averages, p.lowpass, p.highpass, ab_dict)
 
 if exec_ops['grand_avg_tfr']:
     op.grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
