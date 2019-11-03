@@ -1,4 +1,5 @@
 import mne
+import re
 import numpy as np
 import statistics as st
 from matplotlib import pyplot as plt
@@ -167,7 +168,7 @@ def pp_combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_di
         for trial in ab_ev_dict:
             cmb_evokeds = mne.combine_evoked(ab_ev_dict[trial], weights='equal')
             evokeds.append(cmb_evokeds)
-        evokeds_name = f'{title}{filter_string(lowpass, highpass)}-ave.fif'
+        evokeds_name = f'{title}{op.filter_string(lowpass, highpass)}-ave.fif'
         evokeds_path = join(save_dir_averages, 'ab_combined', evokeds_name)
         mne.write_evokeds(evokeds_path, evokeds)
 
@@ -198,7 +199,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
             save_dir = join(data_path, name)
             e = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
             e.crop(-0.1, 0.3)
-            gfp = calculate_gfp(e)
+            gfp = op.calculate_gfp(e)
             ab_gfp_data[name] = gfp
 
             n_stc = io.read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method, event_id)['LBT']
@@ -365,7 +366,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
                 axes[1, 2].legend()
                 axes[1, 2].set_title(f'LTC\'s corrected with ab_lag = {ab_lag}')
 
-            filename = join(figures_path, 'align_peaks', f'{title}{filter_string(lowpass, highpass)}_xcorr_ab.jpg')
+            filename = join(figures_path, 'align_peaks', f'{title}{op.filter_string(lowpass, highpass)}_xcorr_ab.jpg')
             plt.savefig(filename)
 
         else:

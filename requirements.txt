@@ -1,38 +1,4 @@
 # MNE-Python-Requirements
-mne
-numpy
-scipy
-matplotlib
-mayavi
-pyqt
-sip
-scikit-learn
-nibabel
-numba
-h5py
-pandas
-numexpr
-python-picard
-statsmodels
-pytest!=4.6.0
-pytest-cov
-pytest-faulthandler
-pytest-mock
-pytest-sugar
-pytest-timeout
-joblib
-psutil
-dipy
-https://api.github.com/repos/numpy/numpydoc/zipball/master
-PySurfer[save_movie]
-nilearn
-neo
-xlrd
-pydocstyle
-flake8
-https://github.com/pyvista/pyvista/zipball/master
-
-# Extra Pipeline-Requirements
-autoreject
+# pip install <requirement>
 https://api.github.com/repos/autoreject/autoreject/zipball/master
 imageio-ffmpeg
