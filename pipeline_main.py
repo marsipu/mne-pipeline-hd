@@ -37,6 +37,8 @@ def reload_all():
     reload(ut)
     reload(opd)
     reload(decor)
+    reload(ppf)
+    reload(mff)
 
 
 reload_all()
@@ -60,7 +62,7 @@ reload_all()
 #  Choose-Subject-Window
 #  Default Function-Buttons selected
 #  Assistant for Regular Expressions
-which_file = '1'  # Has to be a string/enclosed in apostrophs-
+which_file = '3-4'  # Has to be a string/enclosed in apostrophs-
 quality = ['all']
 modality = ['all']
 which_mri_subject = 'all'  # Has to be a string/enclosed in apostrophs
@@ -846,7 +848,7 @@ if exec_ops['grand_avg_evokeds']:
                          p.lowpass, p.highpass, exec_ops, quality,
                          p.ana_h1h2)
 
-if exec_ops['combine_evokeds_ab']:
+if exec_ops['pp_combine_evokeds_ab']:
     ppf.pp_combine_evokeds_ab(data_path, save_dir_averages, p.lowpass, p.highpass, ab_dict)
 
 if exec_ops['grand_avg_tfr']:

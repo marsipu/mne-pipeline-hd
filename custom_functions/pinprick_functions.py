@@ -3,8 +3,7 @@ import re
 import numpy as np
 import statistics as st
 from matplotlib import pyplot as plt
-from os import makedirs, listdir, environ, remove
-from os.path import join, isfile, isdir, exists
+from os.path import join
 
 from pipeline_functions import io_functions as io
 from pipeline_functions import operations_functions as op
@@ -16,7 +15,6 @@ from pipeline_functions import decorators as decor
 @decor.topline
 def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
                       sub_script_path, save_plots, figures_path, exec_ops):
-
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
 
@@ -177,13 +175,15 @@ def pp_combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_di
 def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub_script_path,
                  event_id, subjects_dir, inverse_method, source_space_method,
                  parcellation, figures_path):
-
     # Noch problematisch: pp9_64, pp19_64
     # Mit ab-average werden die nicht alignierten falsch gemittelt, Annahme lag zu Mitte zwischen ab
 
     ab_gfp_data = dict()
     ab_ltc_data = dict()
-    ab_lags = dict()
+    ab_gfp_avg_data = dict()
+    ab_ltc_avg_data = dict()
+    ab_gfp_max_dict = dict()
+    ab_ltc_max_dict = dict()
 
     for title in ab_dict:
         print('--------' + title + '--------')
@@ -193,7 +193,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
         prefix = match.group()
         subtomri = sub_dict[prefix]
         src = io.read_source_space(subtomri, subjects_dir, source_space_method)
-
+        cond = cond_dict[ab_dict[title][0]]
         for name in ab_dict[title]:
             # Assumes, that first evoked in evokeds is LBT
             save_dir = join(data_path, name)
@@ -203,7 +203,6 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
             ab_gfp_data[name] = gfp
 
             n_stc = io.read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method, event_id)['LBT']
-            # get peaks from label-time-course
             labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir, parc=parcellation)
             label = None
             for l in labels:
@@ -224,19 +223,12 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
             ab_glags, ab_gcorr, ab_gmax_lag, ab_gmax_val = cross_correlation(g1, g2)
 
             # cross-correlation of ab-label-time-courses in postcentral-lh
-            llags, lcorr, ab_lmax_lag, ab_lmax_val = cross_correlation(l1, l2)
+            ab_llags, ab_lcorr, ab_lmax_lag, ab_lmax_val = cross_correlation(l1, l2)
 
             # Evaluate appropriate lags, threshold: normed correlation >= 0.8
             if ab_gmax_lag != 0 and ab_lmax_lag != 0:
                 if ab_gmax_val >= 0.7 and ab_lmax_val >= 0.7:
-                    ab_lag = ab_lmax_lag
-                    # if ab_gmax_lag != ab_lmax_lag:
-                    #     if ab_gmax_val > ab_lmax_val:
-                    #         ab_lag = ab_gmax_lag
-                    #     else:
-                    #         ab_lag = ab_lmax_lag
-                    # else:
-                    #     ab_lag = ab_gmax_lag
+                    ab_lag = ab_lmax_lag  # Arbitrary choice for ltc being more specific
                 elif ab_gmax_val >= 0.7:
                     ab_lag = ab_gmax_lag
                 elif ab_lmax_val >= 0.7:
@@ -257,131 +249,169 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
                 ab_lag = 0
                 print('No lags in gfp or ltc')
 
+            abl = int(ab_lag)
+            ablh = ab_lag // 2  # Has to be floor-division for indexing
+
+            # Method 1: Applying Lag to single-files for each round (ab, sub, cond)
             # Make ab-averages to improve SNR
             # The partner-data is aligned with ab_lag and averaged
             # The single overhang of the base-data is added to the partner-data, thus avg=base_data at overhang
+
+            # if ab_lag < 0:
+            #     g1_applag = np.append(g2[:-abl], g1[:abl])
+            #     g2_applag = np.append(g2[-abl:], g1[abl:])
+            #     g1_avg = (g1 + g2_applag) / 2
+            #     g2_avg = (g2 + g1_applag) / 2
+            #
+            #     l1_applag = np.append(l2[:-abl], l1[:abl])
+            #     l2_applag = np.append(l2[-abl:], l1[abl:])
+            #     l1_avg = (l1 + l2_applag) / 2
+            #     l2_avg = (l2 + l1_applag) / 2
+            # elif ab_lag > 0:
+            #     g1_applag = np.append(g1[abl:], g2[-abl:])
+            #     g2_applag = np.append(g1[:abl], g2[:-abl])
+            #     g1_avg = (g1 + g2_applag) / 2
+            #     g2_avg = (g2 + g1_applag) / 2
+            #
+            #     l1_applag = np.append(l1[abl:], l2[-abl:])
+            #     l2_applag = np.append(l1[:abl], l2[:-abl])
+            #     l1_avg = (l1 + l2_applag) / 2
+            #     l2_avg = (l2 + l1_applag) / 2
+            # else:
+            #     g1_avg = (g1 + g2) / 2
+            #     g2_avg = (g1 + g2) / 2
+            #     l1_avg = (l1 + l2) / 2
+            #     l2_avg = (l1 + l2) / 2
+
+            # ab_gfp_avg_data[n1] = g1_avg
+            # ab_gfp_avg_data[n2] = g2_avg
+            # ab_ltc_avg_data[n1] = l1_avg
+            # ab_ltc_avg_data[n2] = l2_avg
+
+            # Method 2: Align abs and create ab-average of orig-length (cut ab_lag//2 at end of each file)
+            # then continue next rounds (sub, cond) with the average of the preceding round
+
             if ab_lag < 0:
-                g1_applag = np.append(g1[:int(ab_lag)], g2[:-int(ab_lag)])
-                g2_applag = np.append(g2[-int(ab_lag):], g1[int(ab_lag):])
-                g1_avg = (g1 + g2_applag) / 2
-                g2_avg = (g2 + g1_applag) / 2
+                g1_applag = np.append(g2[-ablh:-abl], g1[:ablh])
+                g2_applag = np.append(g2[-ablh:], g1[abl:ablh])
+                g_ab_avg = (g1_applag + g2_applag) / 2
 
-                l1_applag = np.append(l1[:int(ab_lag)], l2[:-int(ab_lag)])
-                l2_applag = np.append(l2[-int(ab_lag):], l1[int(ab_lag):])
-                l1_avg = (l1 + l2_applag) / 2
-                l2_avg = (l2 + l1_applag) / 2
+                l1_applag = np.append(l2[-ablh:-abl], l1[:ablh])
+                l2_applag = np.append(l2[-ablh:], l1[abl:ablh])
+                l_ab_avg = (l1_applag + l2_applag) / 2
             elif ab_lag > 0:
-                g1_applag = np.append(g1[int(ab_lag):], g2[-int(ab_lag):])
-                g2_applag = np.append(g2[:-int(ab_lag)], g1[:int(ab_lag)])
-                g1_avg = (g1 + g2_applag) / 2
-                g2_avg = (g2 + g1_applag) / 2
+                g1_applag = np.append(g1[ablh:], g2[-abl:-ablh])
+                g2_applag = np.append(g1[ablh:abl], g2[:-ablh])
+                g_ab_avg = (g1_applag + g2_applag) / 2
 
-                l1_applag = np.append(l1[int(ab_lag):], l2[-int(ab_lag):])
-                l2_applag = np.append(l2[:-int(ab_lag)], l1[:int(ab_lag)])
-                l1_avg = (l1 + l2_applag) / 2
-                l2_avg = (l2 + l1_applag) / 2
+                l1_applag = np.append(l1[ablh:], l2[-abl:-ablh])
+                l2_applag = np.append(l1[ablh:abl], l2[:-ablh])
+                l_ab_avg = (l1_applag + l2_applag) / 2
             else:
-                g1_avg = g1
-                g2_avg = g2
-                l1_avg = l1
-                l2_avg = l2
+                g_ab_avg = (g1 + g2) / 2
+                l_ab_avg = (l1 + l2) / 2
 
-                # g1_avg = (g1 + g2) / 2
-                # g2_avg = (g1 + g2) / 2
-                # l1_avg = (l1 + l2) / 2
-                # l2_avg = (l1 + l2) / 2
+            g_ab_max = max(abs(g_ab_avg))
+            l_ab_max = max(abs(l_ab_avg))
 
-            ab_gfp_data[n1] = g1_avg
-            ab_gfp_data[n2] = g2_avg
-            ab_ltc_data[n1] = l1_avg
-            ab_ltc_data[n2] = l2_avg
+            if cond in ab_gfp_avg_data:
+                ab_gfp_avg_data[cond].update({title: g_ab_avg})
+            else:
+                ab_gfp_avg_data[cond] = {title: g_ab_avg}
+            if cond in ab_gfp_max_dict:
+                ab_gfp_max_dict[cond].update({title: g_ab_max})
+            else:
+                ab_gfp_max_dict[cond] = {title: g_ab_max}
+
+            if cond in ab_ltc_avg_data:
+                ab_ltc_avg_data[cond].update({title: l_ab_avg})
+            else:
+                ab_ltc_avg_data[cond] = {title: l_ab_avg}
+            if cond in ab_ltc_max_dict:
+                ab_ltc_max_dict[cond].update({title: l_ab_max})
+            else:
+                ab_ltc_max_dict[cond] = {title: l_ab_max}
+
             # Save lags to dict, ab_lag applies to data_b
             ut.dict_filehandler(title, 'ab_lags', sub_script_path,
                                 {'gfp_lag': ab_gmax_lag, 'gfp_val': round(ab_gmax_val, 2),
                                  'ltc_lag': ab_lmax_lag, 'ltc_val': round(ab_lmax_val, 2),
                                  'ab_lag': ab_lag})
 
-            # Plot Compare Plot
-            if ab_lag != 0:
-                fig, axes = plt.subplots(nrows=2, ncols=3, sharex='col',
-                                         gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
-                                                      'left': 0.05, 'right': 0.95,
-                                                      'top': 0.95, 'bottom': 0.05},
-                                         figsize=(18, 8))
-            else:
-                fig, axes = plt.subplots(nrows=2, ncols=2, sharex='col',
-                                         gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
-                                                      'left': 0.05, 'right': 0.95,
-                                                      'top': 0.95, 'bottom': 0.05},
-                                         figsize=(18, 8))
-            axes[0, 0].plot(g1, label=n1)
-            axes[0, 0].plot(g2, label=n2)
-            axes[0, 0].legend()
-            axes[0, 0].set_title(f'GFP\'s')
-
-            axes[0, 1].plot(ab_glags, ab_gcorr)
-            axes[0, 1].plot(ab_gmax_lag, ab_gmax_val, 'rx')
-            axes[0, 1].set_title(f'Cross-Correlation, lag = {ab_gmax_lag}')
-
-            # Plot label-time-courses of postcentral-lh
-            axes[1, 0].plot(l1, label=n1)
-            axes[1, 0].plot(l2, label=n2)
-            axes[1, 0].legend()
-            axes[1, 0].set_title(f'Label-Time-Course in postcentral-lh')
-
-            axes[1, 1].plot(llags, lcorr)
-            axes[1, 1].plot(ab_lmax_lag, ab_lmax_val, 'rx')
-            axes[1, 1].set_title(f'Cross-Correlation, lag = {ab_lmax_lag}')
-
-            if ab_lag != 0:
-                # Apply ab_lag for comparision (lag applies to data_b)
-                if ab_lag < 0:
-                    g1a = g1[:int(ab_lag)]
-                    g2a = g2[-int(ab_lag):]
-                elif ab_lag > 0:
-                    g1a = g1[int(ab_lag):]
-                    g2a = g2[:-int(ab_lag)]
-                else:
-                    g1a = g1
-                    g2a = g2
-
-                axes[0, 2].plot(g1a, label=n1)
-                axes[0, 2].plot(g2a, label=n2)
-                axes[0, 2].legend()
-                axes[0, 2].set_title(f'GFP\'s corrected with ab_lag = {ab_lag}')
-
-                # Apply ab_lag for comparision (lag applies to data_b)
-                if ab_lmax_lag < 0:
-                    l1a = l1[:int(ab_lag)]
-                    l2a = l2[-int(ab_lag):]
-                elif ab_lmax_lag > 0:
-                    l1a = l1[int(ab_lag):]
-                    l2a = l2[:-int(ab_lag)]
-                else:
-                    l1a = l1
-                    l2a = l2
-
-                axes[1, 2].plot(l1a, label=n1)
-                axes[1, 2].plot(l2a, label=n2)
-                axes[1, 2].legend()
-                axes[1, 2].set_title(f'LTC\'s corrected with ab_lag = {ab_lag}')
-
-            filename = join(figures_path, 'align_peaks', f'{title}{op.filter_string(lowpass, highpass)}_xcorr_ab.jpg')
-            plt.savefig(filename)
-
+            # Plot ab_compare
+            plot_latency_alignment(f'{title}_ab', ab_lag, n1, n2,
+                                   g1, g2, g_ab_avg,
+                                   l1, l2, l_ab_avg,
+                                   ab_glags, ab_gcorr, ab_gmax_lag, ab_gmax_val,
+                                   ab_llags, ab_lcorr, ab_lmax_lag, ab_lmax_val,
+                                   figures_path, lowpass, highpass)
+            plot.close_all()
         else:
             print('No b-measurement available')
             ut.dict_filehandler(title, 'ab_lags', sub_script_path,
                                 {'gfp_lag': 0, 'gfp_val': 1, 'ltc_lag': 0, 'ltc_val': 1, 'ab_lag': 0})
+            if cond in ab_gfp_avg_data:
+                ab_gfp_avg_data[cond].update({title: ab_gfp_data[names[0]]})
+            else:
+                ab_gfp_avg_data[cond] = {title: ab_gfp_data[names[0]]}
 
-    plot.close_all()
+            if cond in ab_ltc_avg_data:
+                ab_ltc_avg_data[cond].update({title: ab_ltc_data[names[0]]})
+            else:
+                ab_ltc_avg_data[cond] = {title: ab_ltc_data[names[0]]}
+    
+    for cond in ab_gfp_avg_data:
+        # Comparision of absolute max in each ab-average to determine
+        # best signal to cross-correlate all signals on
+        title_max_gfp = max(ab_gfp_max_dict[cond], key=ab_gfp_max_dict[cond].get)
+        title_max_ltc = max(ab_ltc_max_dict[cond], key=ab_ltc_max_dict[cond].get)
+        
+        print(f'{title_max_gfp} as best signal for gfp-condition-average')
+        print(f'{title_max_ltc} as best signal for ltc-condition-average')
+        
+        gc1 = ab_gfp_avg_data[cond][title_max_gfp]
+        lc1 = ab_ltc_avg_data[cond][title_max_ltc]
+        
+        for title in ab_gfp_avg_data[cond]:
+            gc2 = ab_gfp_avg_data[cond][title]
+            lc2 = ab_ltc_avg_data[cond][title]
+            
+            # cross-correlation of cond-gfps
+            cond_glags, cond_gcorr, cond_gmax_lag, cond_gmax_val = cross_correlation(gc1, gc2)
+
+            # cross-correlation of cond-ltcs in postcentral-lh
+            cond_llags, cond_lcorr, cond_lmax_lag, cond_lmax_val = cross_correlation(lc1, lc2)
+
+            # Evaluate appropriate lags, threshold: normed correlation >= 0.8
+            if cond_gmax_lag != 0 and cond_lmax_lag != 0:
+                if cond_gmax_val >= 0.7 and cond_lmax_val >= 0.7:
+                    cond_lag = cond_lmax_lag  # Arbitrary choice for ltc being more specific
+                elif cond_gmax_val >= 0.7:
+                    cond_lag = cond_gmax_lag
+                elif cond_lmax_val >= 0.7:
+                    cond_lag = cond_lmax_lag
+                else:
+                    cond_lag = 0
+            elif cond_gmax_lag != 0:
+                if cond_gmax_val >= 0.7:
+                    cond_lag = cond_gmax_lag
+                else:
+                    cond_lag = 0
+            elif cond_lmax_lag != 0:
+                if cond_lmax_val >= 0.7:
+                    cond_lag = cond_lmax_lag
+                else:
+                    cond_lag = 0
+            else:
+                cond_lag = 0
+                print('No lags in gfp or ltc')
 
 
 @decor.small_func
 def cross_correlation(x, y):
-    nx = len(x) + len(y)
-    # if nx != len(y):
-    #     raise ValueError('x and y must be equal length')
+    nx = (len(x) + len(y)) // 2
+    if nx != len(y):
+        raise ValueError('x and y must be equal length')
     correls = np.correlate(x, y, mode="full")
     # Normed correlation values
     correls /= np.sqrt(np.dot(x, x) * np.dot(y, y))
@@ -395,10 +425,82 @@ def cross_correlation(x, y):
     return lags, correls, max_lag, max_val
 
 
+@decor.small_func
+def plot_latency_alignment(layer, lag, n1, n2,
+                           g1, g2, g_avg,
+                           l1, l2, l_avg,
+                           glags, gcorr, gmax_lag, gmax_val,
+                           llags, lcorr, lmax_lag, lmax_val,
+                           figures_path, lowpass, highpass):
+    if lag != 0:
+        fig, axes = plt.subplots(nrows=2, ncols=3, sharex='col',
+                                 gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
+                                              'left': 0.05, 'right': 0.95,
+                                              'top': 0.95, 'bottom': 0.05},
+                                 figsize=(18, 8))
+    else:
+        fig, axes = plt.subplots(nrows=2, ncols=2, sharex='col',
+                                 gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
+                                              'left': 0.05, 'right': 0.95,
+                                              'top': 0.95, 'bottom': 0.05},
+                                 figsize=(18, 8))
+    axes[0, 0].plot(g1, label=n1)
+    axes[0, 0].plot(g2, label=n2)
+    axes[0, 0].plot(g_avg, label='ab_average')
+    axes[0, 0].legend()
+    axes[0, 0].set_title(f'GFP\'s')
+
+    axes[0, 1].plot(glags, gcorr)
+    axes[0, 1].plot(gmax_lag, gmax_val, 'rx')
+    axes[0, 1].set_title(f'Cross-Correlation, lag = {gmax_lag}')
+
+    # Plot label-time-courses of postcentral-lh
+    axes[1, 0].plot(l1, label=n1)
+    axes[1, 0].plot(l2, label=n2)
+    axes[1, 0].plot(l_avg, label='ab_average')
+    axes[1, 0].legend()
+    axes[1, 0].set_title(f'Label-Time-Course in postcentral-lh')
+
+    axes[1, 1].plot(llags, lcorr)
+    axes[1, 1].plot(lmax_lag, lmax_val, 'rx')
+    axes[1, 1].set_title(f'Cross-Correlation, lag = {lmax_lag}')
+
+    if lag != 0:
+        # Apply lag for comparision to gfps (lag applies to data_b)
+        if lag < 0:
+            g1a = g1[:lag]
+            g2a = g2[-lag:]
+        elif lag > 0:
+            g1a = g1[lag:]
+            g2a = g2[:-lag]
+        else:
+            g1a = g1
+            g2a = g2
+        axes[0, 2].plot(g1a, label=n1)
+        axes[0, 2].plot(g2a, label=n2)
+        axes[0, 2].legend()
+        axes[0, 2].set_title(f'GFP\'s corrected with ab_lag = {lag}')
+
+        # Apply lag for comparision to ltcs(lag applies to data_b)
+        if lmax_lag < 0:
+            l1a = l1[:lag]
+            l2a = l2[-lag:]
+        elif lmax_lag > 0:
+            l1a = l1[lag:]
+            l2a = l2[:-lag]
+        else:
+            l1a = l1
+            l2a = l2
+        axes[1, 2].plot(l1a, label=n1)
+        axes[1, 2].plot(l2a, label=n2)
+        axes[1, 2].legend()
+        axes[1, 2].set_title(f'LTC\'s corrected with ab_lag = {lag}')
+
+    filename = join(figures_path, 'align_peaks', f'{layer}{op.filter_string(lowpass, highpass)}_xcorr_ab.jpg')
+    plt.savefig(filename)
+
 # def apply_alignment():
 #     # Apply alignment over changing the
 #     det_peaks = ut.read_dict_file('peak_alignment', sub_script_path)
 #     for name in det_peaks:
 #         save_dir = join(data_path, name)
-
-
