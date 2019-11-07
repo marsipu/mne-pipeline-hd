@@ -8,7 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="false" />
     </content>
     <content url="file://Z:/Promotion/Pin-Prick-Projekt/PP_Messungen/Daten/_Subject_scripts" />
-    <orderEntry type="jdk" jdkName="MNE_0.19.1" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="MNE 0.19.1" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="_Subject_scripts" />
   </component>

@@ -227,21 +227,21 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
 
             # Evaluate appropriate lags, threshold: normed correlation >= 0.8
             if ab_gmax_lag != 0 and ab_lmax_lag != 0:
-                if ab_gmax_val >= 0.7 and ab_lmax_val >= 0.7:
+                if abs(ab_gmax_val) >= 0.7 and abs(ab_lmax_val) >= 0.7:
                     ab_lag = ab_lmax_lag  # Arbitrary choice for ltc being more specific
-                elif ab_gmax_val >= 0.7:
+                elif abs(ab_gmax_val) >= 0.7:
                     ab_lag = ab_gmax_lag
-                elif ab_lmax_val >= 0.7:
+                elif abs(ab_lmax_val) >= 0.7:
                     ab_lag = ab_lmax_lag
                 else:
                     ab_lag = 0
             elif ab_gmax_lag != 0:
-                if ab_gmax_val >= 0.7:
+                if abs(ab_gmax_val) >= 0.7:
                     ab_lag = ab_gmax_lag
                 else:
                     ab_lag = 0
             elif ab_lmax_lag != 0:
-                if ab_lmax_val >= 0.7:
+                if abs(ab_lmax_val) >= 0.7:
                     ab_lag = ab_lmax_lag
                 else:
                     ab_lag = 0
@@ -249,8 +249,19 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
                 ab_lag = 0
                 print('No lags in gfp or ltc')
 
-            abl = int(ab_lag)
-            ablh = ab_lag // 2  # Has to be floor-division for indexing
+            # ab_lag hast to be even to make all resulting averages the same length
+            if ab_lag % 2 == 0:
+                abl = int(ab_lag)
+                ablh = int(ab_lag / 2)
+            else:
+                if ab_lag > 0:
+                    abl = int(ab_lag - 1)
+                elif ab_lag < 0:
+                    abl = int(ab_lag + 1)
+                else:
+                    abl = int(ab_lag)
+                ablh = int(ab_lag / 2)
+
 
             # Method 1: Applying Lag to single-files for each round (ab, sub, cond)
             # Make ab-averages to improve SNR
@@ -291,7 +302,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
             # Method 2: Align abs and create ab-average of orig-length (cut ab_lag//2 at end of each file)
             # then continue next rounds (sub, cond) with the average of the preceding round
 
-            if ab_lag < 0:
+            if abl < 0:
                 g1_applag = np.append(g2[-ablh:-abl], g1[:ablh])
                 g2_applag = np.append(g2[-ablh:], g1[abl:ablh])
                 g_ab_avg = (g1_applag + g2_applag) / 2
@@ -299,7 +310,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
                 l1_applag = np.append(l2[-ablh:-abl], l1[:ablh])
                 l2_applag = np.append(l2[-ablh:], l1[abl:ablh])
                 l_ab_avg = (l1_applag + l2_applag) / 2
-            elif ab_lag > 0:
+            elif abl > 0:
                 g1_applag = np.append(g1[ablh:], g2[-abl:-ablh])
                 g2_applag = np.append(g1[ablh:abl], g2[:-ablh])
                 g_ab_avg = (g1_applag + g2_applag) / 2
@@ -336,10 +347,10 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
             ut.dict_filehandler(title, 'ab_lags', sub_script_path,
                                 {'gfp_lag': ab_gmax_lag, 'gfp_val': round(ab_gmax_val, 2),
                                  'ltc_lag': ab_lmax_lag, 'ltc_val': round(ab_lmax_val, 2),
-                                 'ab_lag': ab_lag})
+                                 'ab_lag': abl})
 
             # Plot ab_compare
-            plot_latency_alignment(f'{title}_ab', ab_lag, n1, n2,
+            plot_latency_alignment(f'{title}_ab', abl, n1, n2,
                                    g1, g2, g_ab_avg,
                                    l1, l2, l_ab_avg,
                                    ab_glags, ab_gcorr, ab_gmax_lag, ab_gmax_val,
@@ -359,8 +370,15 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
                 ab_ltc_avg_data[cond].update({title: ab_ltc_data[names[0]]})
             else:
                 ab_ltc_avg_data[cond] = {title: ab_ltc_data[names[0]]}
-    
+
+    ga_avg_gfp_data = dict()
+    ga_avg_ltc_data = dict()
+
     for cond in ab_gfp_avg_data:
+        print('%%%%%%%%%' + cond + '%%%%%%%%%')
+        cond_avg_gfp_data = dict()
+        cond_avg_ltc_data = dict()
+
         # Comparision of absolute max in each ab-average to determine
         # best signal to cross-correlate all signals on
         title_max_gfp = max(ab_gfp_max_dict[cond], key=ab_gfp_max_dict[cond].get)
@@ -373,6 +391,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
         lc1 = ab_ltc_avg_data[cond][title_max_ltc]
         
         for title in ab_gfp_avg_data[cond]:
+            print('--------' + title + '--------')
             gc2 = ab_gfp_avg_data[cond][title]
             lc2 = ab_ltc_avg_data[cond][title]
             
@@ -384,27 +403,117 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
 
             # Evaluate appropriate lags, threshold: normed correlation >= 0.8
             if cond_gmax_lag != 0 and cond_lmax_lag != 0:
-                if cond_gmax_val >= 0.7 and cond_lmax_val >= 0.7:
+                if abs(cond_gmax_val) >= 0.7 and abs(cond_lmax_val) >= 0.7:
                     cond_lag = cond_lmax_lag  # Arbitrary choice for ltc being more specific
-                elif cond_gmax_val >= 0.7:
+                elif abs(cond_gmax_val) >= 0.7:
                     cond_lag = cond_gmax_lag
-                elif cond_lmax_val >= 0.7:
+                elif abs(cond_lmax_val) >= 0.7:
                     cond_lag = cond_lmax_lag
                 else:
                     cond_lag = 0
             elif cond_gmax_lag != 0:
-                if cond_gmax_val >= 0.7:
+                if abs(cond_gmax_val) >= 0.7:
                     cond_lag = cond_gmax_lag
                 else:
                     cond_lag = 0
             elif cond_lmax_lag != 0:
-                if cond_lmax_val >= 0.7:
+                if abs(cond_lmax_val) >= 0.7:
                     cond_lag = cond_lmax_lag
                 else:
                     cond_lag = 0
             else:
                 cond_lag = 0
                 print('No lags in gfp or ltc')
+
+            cl = int(cond_lag)
+            # apply lag to title-signal with adding missing signal from best-signal
+            if cond_lag < 0:
+                gc2_applag = np.append(gc2[-cl:], gc1[cl:])
+                lc2_applag = np.append(lc2[-cl:], lc1[cl:])
+
+            elif cond_lag > 0:
+                gc2_applag = np.append(gc1[:cl], gc2[:-cl])
+                lc2_applag = np.append(lc1[:cl], lc2[:-cl])
+            else:
+                gc2_applag = gc2
+                lc2_applag = lc2
+
+            if title == title_max_gfp:
+                pass
+            else:
+                cond_avg_gfp_data[title] = gc2_applag
+            if title == title_max_ltc:
+                pass
+            else:
+                cond_avg_ltc_data[title] = lc2_applag
+
+            plot_latency_alignment(f'{title}_{cond}', cl, {'gfp':title_max_gfp, 'ltc':title_max_ltc}, title,
+                                   gc1, gc2, None, lc1, lc2, None,
+                                   cond_glags, cond_gcorr, cond_gmax_lag, cond_gmax_val,
+                                   cond_llags, cond_lcorr, cond_lmax_lag, cond_lmax_val,
+                                   figures_path, lowpass, highpass)
+            plot.close_all()
+
+            # Save lags to dict, cond-lag applies to best-signal
+            ut.dict_filehandler(title, 'cond_lags', sub_script_path,
+                                {'gfp_lag': cond_gmax_lag, 'gfp_val': round(cond_gmax_val, 2),
+                                 'ltc_lag': cond_lmax_lag, 'ltc_val': round(cond_lmax_val, 2),
+                                 'cond_lag': cl})
+        cond_avg_gfp_data[title_max_gfp] = gc1
+        cond_avg_ltc_data[title_max_ltc] = lc1
+
+        cond_avg_gfp = 0
+        for k in cond_avg_gfp_data:
+            cond_avg_gfp += cond_avg_gfp_data[k]
+        cond_avg_gfp /= len(cond_avg_gfp_data)
+        ga_avg_gfp_data[cond] = cond_avg_gfp
+
+        cond_avg_ltc = 0
+        for k in cond_avg_ltc_data:
+            cond_avg_ltc += cond_avg_ltc_data[k]
+        cond_avg_ltc /= len(cond_avg_ltc_data)
+        ga_avg_ltc_data[cond] = cond_avg_ltc
+
+    cond_max_gfp = max(ga_avg_gfp_data, key=ga_avg_gfp_data.get)
+    cond_max_ltc = max(ga_avg_ltc_data, key=ga_avg_ltc_data.get)
+
+    ga1 = ga_avg_gfp_data[cond_max_gfp]
+    la1 = ga_avg_ltc_data[cond_max_ltc]
+
+    for cond in ga_avg_gfp_data:
+        print('--------' + cond + '--------')
+        ga2 = ga_avg_gfp_data[cond]
+        la2 = ga_avg_ltc_data[cond]
+
+        # cross-correlation of cond-gfps
+        ga_glags, ga_gcorr, ga_gmax_lag, ga_gmax_val = cross_correlation(ga1, ga2)
+
+        # cross-correlation of cond-ltcs in postcentral-lh
+        ga_llags, ga_lcorr, ga_lmax_lag, ga_lmax_val = cross_correlation(la1, la2)
+
+        # Evaluate appropriate lags, threshold: normed correlation >= 0.8
+        if ga_gmax_lag != 0 and ga_lmax_lag != 0:
+            if abs(ga_gmax_val) >= 0.7 and abs(ga_lmax_val) >= 0.7:
+                ga_lag = ga_lmax_val  # Arbitrary choice for ltc being more specific
+            elif abs(ga_gmax_val) >= 0.7:
+                ga_lag = ga_gmax_lag
+            elif abs(ga_lmax_val) >= 0.7:
+                ga_lag = ga_lmax_lag
+            else:
+                ga_lag = 0
+        elif ga_gmax_lag != 0:
+            if abs(ga_gmax_val) >= 0.7:
+                ga_lag = ga_gmax_lag
+            else:
+                ga_lag = 0
+        elif ga_lmax_lag != 0:
+            if abs(ga_lmax_val) >= 0.7:
+                ga_lag = ga_lmax_lag
+            else:
+                ga_lag = 0
+        else:
+            ga_lag = 0
+            print('No lags in gfp or ltc')
 
 
 @decor.small_func
@@ -444,9 +553,17 @@ def plot_latency_alignment(layer, lag, n1, n2,
                                               'left': 0.05, 'right': 0.95,
                                               'top': 0.95, 'bottom': 0.05},
                                  figsize=(18, 8))
-    axes[0, 0].plot(g1, label=n1)
+    if isinstance(n1, dict):
+        n1a = n1['gfp']
+        n1b = n1['ltc']
+    else:
+        n1a = n1
+        n1b = n1
+
+    axes[0, 0].plot(g1, label=n1a)
     axes[0, 0].plot(g2, label=n2)
-    axes[0, 0].plot(g_avg, label='ab_average')
+    if g_avg is not None:
+        axes[0, 0].plot(g_avg, label='ab_average')
     axes[0, 0].legend()
     axes[0, 0].set_title(f'GFP\'s')
 
@@ -455,9 +572,10 @@ def plot_latency_alignment(layer, lag, n1, n2,
     axes[0, 1].set_title(f'Cross-Correlation, lag = {gmax_lag}')
 
     # Plot label-time-courses of postcentral-lh
-    axes[1, 0].plot(l1, label=n1)
+    axes[1, 0].plot(l1, label=n1b)
     axes[1, 0].plot(l2, label=n2)
-    axes[1, 0].plot(l_avg, label='ab_average')
+    if l_avg is not None:
+        axes[1, 0].plot(l_avg, label='ab_average')
     axes[1, 0].legend()
     axes[1, 0].set_title(f'Label-Time-Course in postcentral-lh')
 
@@ -476,7 +594,7 @@ def plot_latency_alignment(layer, lag, n1, n2,
         else:
             g1a = g1
             g2a = g2
-        axes[0, 2].plot(g1a, label=n1)
+        axes[0, 2].plot(g1a, label=n1a)
         axes[0, 2].plot(g2a, label=n2)
         axes[0, 2].legend()
         axes[0, 2].set_title(f'GFP\'s corrected with ab_lag = {lag}')
@@ -491,12 +609,12 @@ def plot_latency_alignment(layer, lag, n1, n2,
         else:
             l1a = l1
             l2a = l2
-        axes[1, 2].plot(l1a, label=n1)
+        axes[1, 2].plot(l1a, label=n1b)
         axes[1, 2].plot(l2a, label=n2)
         axes[1, 2].legend()
         axes[1, 2].set_title(f'LTC\'s corrected with ab_lag = {lag}')
 
-    filename = join(figures_path, 'align_peaks', f'{layer}{op.filter_string(lowpass, highpass)}_xcorr_ab.jpg')
+    filename = join(figures_path, 'align_peaks', f'{layer}{op.filter_string(lowpass, highpass)}_xcorr.jpg')
     plt.savefig(filename)
 
 # def apply_alignment():

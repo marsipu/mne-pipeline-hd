@@ -62,7 +62,7 @@ reload_all()
 #  Choose-Subject-Window
 #  Default Function-Buttons selected
 #  Assistant for Regular Expressions
-which_file = '3-4'  # Has to be a string/enclosed in apostrophs-
+which_file = '3'  # Has to be a string/enclosed in apostrophs-
 quality = ['all']
 modality = ['all']
 which_mri_subject = 'all'  # Has to be a string/enclosed in apostrophs
@@ -72,6 +72,10 @@ which_motor_erm_file = 'all'  # Has to be a string/enclosed in apostrophs
 # GUI CALL
 # ==============================================================================
 exec_ops = ut.choose_function()
+# Fix until QT-GUIs work, use operations_dict.py-file to change function-execution
+for f_group in opd.all_fs:
+    for key, value in opd.all_fs[f_group].items():
+        exec_ops[key] = value
 # %%============================================================================
 # PATHS
 # ==============================================================================
@@ -94,16 +98,17 @@ subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
 # %%============================================================================
 # LOAD PARAMETERS
 # ==============================================================================
-if not isfile(join(project_path, 'parameters.py')):
+if not isfile(join(project_path, f'parameters_{project_name}.py')):
     from templates import parameters_template as p
-    shutil.copy2(join(script_path, 'templates/parameters_template.py'), join(project_path, 'parameters.py'))
-    print(f'parameters.py created in {project_path} from parameters_template.py')
+    shutil.copy2(join(script_path, 'templates/parameters_template.py'),
+                 join(project_path, f'parameters_{project_name}.py'))
+    print(f'parameters_{project_name}.py created in {project_path} from parameters_template.py')
 else:
-    spec = util.spec_from_file_location('parameters', join(project_path, 'parameters.py'))
+    spec = util.spec_from_file_location('parameters', join(project_path, f'parameters_{project_name}.py'))
     p = util.module_from_spec(spec)
     sys.modules['parameters'] = p
     spec.loader.exec_module(p)
-    print(f'Read Parameters from parameters.py in {project_path}')
+    print(f'Read Parameters from parameters_{project_name}.py in {project_path}')
 # %%============================================================================
 # DEPENDING PATHS (NOT TO SET)
 # ==============================================================================
