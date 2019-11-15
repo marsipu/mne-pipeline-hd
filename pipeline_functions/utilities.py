@@ -19,7 +19,7 @@ import re
 
 from . import operations_dict as opd
 
-
+# Todo: Change from tkinter in QT (use qtpy
 # Todo: If checked, change color
 class FunctionWindow:
 
@@ -442,9 +442,12 @@ def shutdown():
     if sys.platform == 'darwin':
         os.system('sudo shutdown -h now')
 
+
+
 # Todo: Update MNE-Function
 def update_mne():
     command = 'curl -O https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml'
     command2 = 'conda env update --file environment.yml'
+    command3 = 'pip install -r requirements.txt'
 
 # Todo: Update Pipeline-Function

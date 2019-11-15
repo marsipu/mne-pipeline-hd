@@ -95,6 +95,7 @@ else:
 project_path = join(home_path, project_name)
 orig_data_path = join(project_path, 'meg')  # location of original-data
 subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
+# Todo: Path-Existence Assertion
 # %%============================================================================
 # LOAD PARAMETERS
 # ==============================================================================

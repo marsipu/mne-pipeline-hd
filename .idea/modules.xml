@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://Z:/Promotion/Pin-Prick-Projekt/Daten/_Subject_scripts/.idea/_Subject_scripts.iml" filepath="Z:/Promotion/Pin-Prick-Projekt/Daten/_Subject_scripts/.idea/_Subject_scripts.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/mne_pipeline_hd.iml" filepath="$PROJECT_DIR$/.idea/mne_pipeline_hd.iml" />
     </modules>
   </component>
