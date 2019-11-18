@@ -18,7 +18,7 @@ import numpy as np
 import re
 
 
-def filter_string(lowpass, highpass):
+def filter_string(highpass, lowpass):
     if highpass is not None and highpass != 0:
         filter_string = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
     else:
@@ -52,8 +52,8 @@ def read_raw(name, save_dir):
     return raw
 
 
-def read_filtered(name, save_dir, lowpass, highpass):
-    raw_name = name + filter_string(lowpass, highpass) + '-raw.fif'
+def read_filtered(name, save_dir, highpass, lowpass):
+    raw_name = name + filter_string(highpass, lowpass) + '-raw.fif'
     raw_path = join(save_dir, raw_name)
     raw = mne.io.Raw(raw_path, preload=True)
 
@@ -76,89 +76,89 @@ def read_eog_events(name, save_dir):
     return eog_events
 
 
-def read_epochs(name, save_dir, lowpass, highpass):
-    epochs_name = name + filter_string(lowpass, highpass) + '-epo.fif'
+def read_epochs(name, save_dir, highpass, lowpass):
+    epochs_name = name + filter_string(highpass, lowpass) + '-epo.fif'
     epochs_path = join(save_dir, epochs_name)
     epochs = mne.read_epochs(epochs_path)
 
     return epochs
 
 
-def read_ica(name, save_dir, lowpass, highpass):
-    ica_name = name + filter_string(lowpass, highpass) + '-ica.fif'
+def read_ica(name, save_dir, highpass, lowpass):
+    ica_name = name + filter_string(highpass, lowpass) + '-ica.fif'
     ica_path = join(save_dir, ica_name)
     ica = mne.preprocessing.read_ica(ica_path)
 
     return ica
 
 
-def read_ica_epochs(name, save_dir, lowpass, highpass):
-    ica_epochs_name = name + filter_string(lowpass, highpass) + '-ica-epo.fif'
+def read_ica_epochs(name, save_dir, highpass, lowpass):
+    ica_epochs_name = name + filter_string(highpass, lowpass) + '-ica-epo.fif'
     ica_epochs_path = join(save_dir, ica_epochs_name)
     ica_epochs = mne.read_epochs(ica_epochs_path)
 
     return ica_epochs
 
 
-def read_ssp_epochs(name, save_dir, lowpass, highpass):
-    ssp_epochs_name = name + filter_string(lowpass, highpass) + '-ssp-epo.fif'
+def read_ssp_epochs(name, save_dir, highpass, lowpass):
+    ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ssp-epo.fif'
     ssp_epochs_path = join(save_dir, ssp_epochs_name)
     ssp_epochs = mne.read_epochs(ssp_epochs_path)
 
     return ssp_epochs
 
 
-def read_ssp_clm_epochs(name, save_dir, lowpass, highpass):
-    ssp_epochs_name = name + filter_string(lowpass, highpass) + '-ssp_clm-epo.fif'
+def read_ssp_clm_epochs(name, save_dir, highpass, lowpass):
+    ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ssp_clm-epo.fif'
     ssp_epochs_path = join(save_dir, ssp_epochs_name)
     ssp_epochs = mne.read_epochs(ssp_epochs_path)
 
     return ssp_epochs
 
 
-def read_ssp_eog_epochs(name, save_dir, lowpass, highpass):
-    ssp_epochs_name = name + filter_string(lowpass, highpass) + '-eog_ssp-epo.fif'
+def read_ssp_eog_epochs(name, save_dir, highpass, lowpass):
+    ssp_epochs_name = name + filter_string(highpass, lowpass) + '-eog_ssp-epo.fif'
     ssp_epochs_path = join(save_dir, ssp_epochs_name)
     ssp_epochs = mne.read_epochs(ssp_epochs_path)
 
     return ssp_epochs
 
 
-def read_ssp_ecg_epochs(name, save_dir, lowpass, highpass):
-    ssp_epochs_name = name + filter_string(lowpass, highpass) + '-ecg_ssp-epo.fif'
+def read_ssp_ecg_epochs(name, save_dir, highpass, lowpass):
+    ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ecg_ssp-epo.fif'
     ssp_epochs_path = join(save_dir, ssp_epochs_name)
     ssp_epochs = mne.read_epochs(ssp_epochs_path)
 
     return ssp_epochs
 
 
-def read_evokeds(name, save_dir, lowpass, highpass):
-    evokeds_name = name + filter_string(lowpass, highpass) + '-ave.fif'
+def read_evokeds(name, save_dir, highpass, lowpass):
+    evokeds_name = name + filter_string(highpass, lowpass) + '-ave.fif'
     evokeds_path = join(save_dir, evokeds_name)
     evokeds = mne.read_evokeds(evokeds_path)
 
     return evokeds
 
 
-def read_evoked_combined_ab(title, save_dir_averages, lowpass, highpass):
-    evokeds_name = f'{title}{filter_string(lowpass, highpass)}-ave.fif'
+def read_evoked_combined_ab(title, save_dir_averages, highpass, lowpass):
+    evokeds_name = f'{title}{filter_string(highpass, lowpass)}-ave.fif'
     evokeds_path = join(save_dir_averages, 'ab_combined', evokeds_name)
     evokeds = mne.read_evokeds(evokeds_path)
 
     return evokeds
 
 
-def read_h1h2_evokeds(name, save_dir, lowpass, highpass):
+def read_h1h2_evokeds(name, save_dir, highpass, lowpass):
     evokeds_dict = {}
 
-    h1_evokeds_name = name + filter_string(lowpass, highpass) + \
+    h1_evokeds_name = name + filter_string(highpass, lowpass) + \
                       '_h1-ave.fif'
     h1_evokeds_path = join(save_dir, h1_evokeds_name)
 
     evokeds_h1 = mne.read_evokeds(h1_evokeds_path)
     evokeds_dict.update({'h1': evokeds_h1})
 
-    h2_evokeds_name = name + filter_string(lowpass, highpass) + \
+    h2_evokeds_name = name + filter_string(highpass, lowpass) + \
                       '_h2-ave.fif'
     h2_evokeds_path = join(save_dir, h2_evokeds_name)
 
@@ -168,14 +168,14 @@ def read_h1h2_evokeds(name, save_dir, lowpass, highpass):
     return evokeds_dict
 
 
-def read_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
+def read_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
                            event_id, quality):
     ga_dict = {}
     for key in grand_avg_dict:
         trial_dict = {}
         for trial in event_id:
             ga_path = join(save_dir_averages, 'evoked', key + '_' + trial + \
-                           filter_string(lowpass, highpass) + \
+                           filter_string(highpass, lowpass) + \
                            '_' + str(quality) + '-grand_avg-ave.fif')
             evoked = mne.read_evokeds(ga_path)[0]
             trial_dict.update({trial: evoked})
@@ -185,7 +185,7 @@ def read_grand_avg_evokeds(lowpass, highpass, save_dir_averages, grand_avg_dict,
     return ga_dict
 
 
-def read_grand_avg_evokeds_h1h2(lowpass, highpass, save_dir_averages, grand_avg_dict,
+def read_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages, grand_avg_dict,
                                 event_id, quality):
     ga_dict = {}
     for key in grand_avg_dict:
@@ -193,10 +193,10 @@ def read_grand_avg_evokeds_h1h2(lowpass, highpass, save_dir_averages, grand_avg_
         for trial in event_id:
             h1h2_dict = {}
             ga_path_h1 = join(save_dir_averages, 'evoked', key + '_' + trial + \
-                              '_' + 'h1' + filter_string(lowpass, highpass) + \
+                              '_' + 'h1' + filter_string(highpass, lowpass) + \
                               '_' + str(quality) + '-grand_avg-ave.fif')
             ga_path_h2 = join(save_dir_averages, 'evoked', key + '_' + trial + \
-                              '_' + 'h2' + filter_string(lowpass, highpass) + \
+                              '_' + 'h2' + filter_string(highpass, lowpass) + \
                               '_' + str(quality) + '-grand_avg-ave.fif')
             evoked_h1 = mne.read_evokeds(ga_path_h1)[0]
             evoked_h2 = mne.read_evokeds(ga_path_h2)[0]
@@ -209,30 +209,30 @@ def read_grand_avg_evokeds_h1h2(lowpass, highpass, save_dir_averages, grand_avg_
     return ga_dict
 
 
-def read_tfr_power(name, save_dir, lowpass, highpass, tfr_method):
-    power_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_pw-tfr.h5'
+def read_tfr_power(name, save_dir, highpass, lowpass, tfr_method):
+    power_name = name + filter_string(highpass, lowpass) + '_' + tfr_method + '_pw-tfr.h5'
     power_path = join(save_dir, power_name)
     powers = mne.time_frequency.read_tfrs(power_path)
 
     return powers
 
 
-def read_tfr_itc(name, save_dir, lowpass, highpass, tfr_method):
-    itc_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_itc-tfr.h5'
+def read_tfr_itc(name, save_dir, highpass, lowpass, tfr_method):
+    itc_name = name + filter_string(highpass, lowpass) + '_' + tfr_method + '_itc-tfr.h5'
     itc_path = join(save_dir, itc_name)
     itcs = mne.time_frequency.read_tfrs(itc_path)
 
     return itcs
 
 
-def read_grand_avg_tfr(lowpass, highpass, save_dir_averages, grand_avg_dict,
+def read_grand_avg_tfr(highpass, lowpass, save_dir_averages, grand_avg_dict,
                        event_id):
     ga_dict = {}
     for key in grand_avg_dict:
         trial_dict = {}
         for trial in event_id:
             ga_path = join(save_dir_averages, 'tfr', key + '_' + trial + \
-                           filter_string(lowpass, highpass) + \
+                           filter_string(highpass, lowpass) + \
                            '-grand_avg-tfr.h5')
             power = mne.time_frequency.read_tfrs(ga_path)[0]
             trial_dict.update({trial: power})
@@ -250,19 +250,19 @@ def read_forward(name, save_dir):
     return forward
 
 
-def read_noise_covariance(name, save_dir, lowpass, highpass, erm_noise_cov, ermsub, calm_noise_cov):
+def read_noise_covariance(name, save_dir, highpass, lowpass, erm_noise_cov, ermsub, calm_noise_cov):
     if calm_noise_cov:
-        covariance_name = name + filter_string(lowpass, highpass) + '-clm-cov.fif'
+        covariance_name = name + filter_string(highpass, lowpass) + '-clm-cov.fif'
         covariance_path = join(save_dir, covariance_name)
         noise_covariance = mne.read_cov(covariance_path)
         print('Reading Noise-Covariance from 1-min Calm in raw')
     elif ermsub == 'None' or 'leer' in name or erm_noise_cov is False:
-        covariance_name = name + filter_string(lowpass, highpass) + '-cov.fif'
+        covariance_name = name + filter_string(highpass, lowpass) + '-cov.fif'
         covariance_path = join(save_dir, covariance_name)
         noise_covariance = mne.read_cov(covariance_path)
         print('Reading Noise-Covariance from Epochs')
     else:
-        covariance_name = name + filter_string(lowpass, highpass) + '-erm-cov.fif'
+        covariance_name = name + filter_string(highpass, lowpass) + '-erm-cov.fif'
         covariance_path = join(save_dir, covariance_name)
         noise_covariance = mne.read_cov(covariance_path)
         print('Reading Noise-Covariance from Empty-Room-Data')
@@ -270,20 +270,20 @@ def read_noise_covariance(name, save_dir, lowpass, highpass, erm_noise_cov, erms
     return noise_covariance
 
 
-def read_inverse_operator(name, save_dir, lowpass, highpass):
-    inverse_operator_name = name + filter_string(lowpass, highpass) + '-inv.fif'
+def read_inverse_operator(name, save_dir, highpass, lowpass):
+    inverse_operator_name = name + filter_string(highpass, lowpass) + '-inv.fif'
     inverse_operator_path = join(save_dir, inverse_operator_name)
     inverse_operator = mne.minimum_norm.read_inverse_operator(inverse_operator_path)
 
     return inverse_operator
 
 
-def read_source_estimates(name, save_dir, lowpass, highpass, method,
+def read_source_estimates(name, save_dir, highpass, lowpass, method,
                           event_id):
     stcs = dict()
 
     for trial_type in event_id:
-        stc_name = name + filter_string(lowpass, highpass) + \
+        stc_name = name + filter_string(highpass, lowpass) + \
                    '_' + trial_type + '_' + method
         stc_path = join(save_dir, stc_name)
         stc = mne.source_estimate.read_source_estimate(stc_path)
@@ -292,12 +292,12 @@ def read_source_estimates(name, save_dir, lowpass, highpass, method,
     return stcs
 
 
-def read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method,
+def read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
                                  event_id):
     n_stcs = dict()
 
     for trial_type in event_id:
-        n_stc_name = name + filter_string(lowpass, highpass) + \
+        n_stc_name = name + filter_string(highpass, lowpass) + \
                      '_' + trial_type + '_' + inverse_method + '-normal'
         n_stc_path = join(save_dir, n_stc_name)
         n_stc = mne.source_estimate.read_source_estimate(n_stc_path)
@@ -306,12 +306,12 @@ def read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_meth
     return n_stcs
 
 
-def read_vector_source_estimates(name, save_dir, lowpass, highpass, inverse_method,
+def read_vector_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
                                  event_id):
     v_stcs = dict()
 
     for trial_type in event_id:
-        v_stc_name = name + filter_string(lowpass, highpass) + \
+        v_stc_name = name + filter_string(highpass, lowpass) + \
                      '_' + trial_type + '_' + inverse_method + '-vector-stc.h5'
         v_stc_path = join(save_dir, v_stc_name)
         v_stc = mne.source_estimate.read_source_estimate(v_stc_path)
@@ -320,11 +320,11 @@ def read_vector_source_estimates(name, save_dir, lowpass, highpass, inverse_meth
     return v_stcs
 
 
-def read_mixn_source_estimates(name, save_dir, lowpass, highpass, event_id):
+def read_mixn_source_estimates(name, save_dir, highpass, lowpass, event_id):
     mx_stcs = dict()
 
     for trial_type in event_id:
-        mx_stc_name = name + filter_string(lowpass, highpass) + \
+        mx_stc_name = name + filter_string(highpass, lowpass) + \
                       '_' + trial_type + '-mixn'
         mx_stc_path = join(save_dir, mx_stc_name)
         mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
@@ -333,12 +333,12 @@ def read_mixn_source_estimates(name, save_dir, lowpass, highpass, event_id):
     return mx_stcs
 
 
-def read_morphed_source_estimates(name, save_dir, lowpass, highpass, inverse_method,
+def read_morphed_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
                                   event_id):
     stcs = dict()
 
     for trial_type in event_id:
-        stc_name = name + filter_string(lowpass, highpass) + \
+        stc_name = name + filter_string(highpass, lowpass) + \
                    '_' + trial_type + '_' + inverse_method + '_morphed'
         stc_path = join(save_dir, stc_name)
         stcs.update({trial_type: mne.source_estimate.read_source_estimate(stc_path)})
@@ -346,12 +346,12 @@ def read_morphed_source_estimates(name, save_dir, lowpass, highpass, inverse_met
     return stcs
 
 
-def read_morphed_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method,
+def read_morphed_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
                                          event_id):
     stcs = dict()
 
     for trial_type in event_id:
-        stc_name = name + filter_string(lowpass, highpass) + \
+        stc_name = name + filter_string(highpass, lowpass) + \
                    '_' + trial_type + '_' + inverse_method + '_morphed_normal'
         stc_path = join(save_dir, stc_name)
         stcs.update({trial_type: mne.source_estimate.read_source_estimate(stc_path)})
@@ -359,14 +359,14 @@ def read_morphed_normal_source_estimates(name, save_dir, lowpass, highpass, inve
     return stcs
 
 
-def read_mixn_dipoles(name, save_dir, lowpass, highpass, event_id):
+def read_mixn_dipoles(name, save_dir, highpass, lowpass, event_id):
     dipoles = dict()
     for trial_type in event_id:
         idx = 0
         dip_list = list()
         try:
             while True:
-                mixn_dip_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '-mixn-dip-' + str(idx)
+                mixn_dip_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '-mixn-dip-' + str(idx)
                 mixn_dip_path = join(save_dir, 'dipoles', mixn_dip_name)
                 dip_list.append(mne.read_dipole(mixn_dip_path))
                 idx += 1
@@ -377,13 +377,13 @@ def read_mixn_dipoles(name, save_dir, lowpass, highpass, event_id):
     return dipoles
 
 
-def read_connect(name, save_dir, lowpass, highpass, con_methods, con_fmin, con_fmax,
+def read_connect(name, save_dir, highpass, lowpass, con_methods, con_fmin, con_fmax,
                  ev_ids_label_analysis):
     con_dict = dict()
     for ev_id in ev_ids_label_analysis:
         trial_dict = {}
         for con_method in con_methods:
-            file_name = name + filter_string(lowpass, highpass) + \
+            file_name = name + filter_string(highpass, lowpass) + \
                         '_' + str(con_fmin) + '-' + str(con_fmax) + '_' + con_method \
                         + '-' + ev_id + '.npy'
             file_path = join(save_dir, file_name)
@@ -395,14 +395,14 @@ def read_connect(name, save_dir, lowpass, highpass, con_methods, con_fmin, con_f
     return con_dict
 
 
-def read_grand_avg_stcs(lowpass, highpass, save_dir_averages, grand_avg_dict,
+def read_grand_avg_stcs(highpass, lowpass, save_dir_averages, grand_avg_dict,
                         event_id):
     ga_dict = {}
     for key in grand_avg_dict:
         trial_dict = {}
         for trial in event_id:
             ga_path = join(save_dir_averages, 'stc', key + '_' + trial + \
-                           filter_string(lowpass, highpass) + \
+                           filter_string(highpass, lowpass) + \
                            '-grand_avg')
             stcs = mne.source_estimate.read_source_estimate(ga_path)
             trial_dict.update({trial: stcs})
@@ -412,14 +412,14 @@ def read_grand_avg_stcs(lowpass, highpass, save_dir_averages, grand_avg_dict,
     return ga_dict
 
 
-def read_grand_avg_stcs_normal(lowpass, highpass, save_dir_averages, grand_avg_dict,
+def read_grand_avg_stcs_normal(highpass, lowpass, save_dir_averages, grand_avg_dict,
                                event_id):
     ga_dict = {}
     for key in grand_avg_dict:
         trial_dict = {}
         for trial in event_id:
             ga_path = join(save_dir_averages, 'stc', key + '_' + trial + \
-                           filter_string(lowpass, highpass) + \
+                           filter_string(highpass, lowpass) + \
                            '-grand_avg-normal')
             stcs = mne.source_estimate.read_source_estimate(ga_path)
             trial_dict.update({trial: stcs})
@@ -429,7 +429,7 @@ def read_grand_avg_stcs_normal(lowpass, highpass, save_dir_averages, grand_avg_d
     return ga_dict
 
 
-def read_grand_avg_connect(lowpass, highpass, save_dir_averages, grand_avg_dict,
+def read_grand_avg_connect(highpass, lowpass, save_dir_averages, grand_avg_dict,
                            con_methods, con_fmin, con_fmax, ev_ids_label_analysis):
     ga_dict = {}
     for key in grand_avg_dict:
@@ -438,7 +438,7 @@ def read_grand_avg_connect(lowpass, highpass, save_dir_averages, grand_avg_dict,
             con_methods_dict = {}
             for con_method in con_methods:
                 ga_path = join(save_dir_averages, 'connect', key + '_' + con_method + \
-                               filter_string(lowpass, highpass) + \
+                               filter_string(highpass, lowpass) + \
                                '-grand_avg_connect' + '-' + ev_id + '.npy')
                 con = np.load(ga_path)
                 con_methods_dict.update({con_method: con})
@@ -449,7 +449,7 @@ def read_grand_avg_connect(lowpass, highpass, save_dir_averages, grand_avg_dict,
     return ga_dict
 
 
-def read_label_power(name, save_dir, lowpass, highpass,
+def read_label_power(name, save_dir, highpass, lowpass,
                      ev_ids_label_analysis, target_labels):
     power_dict = {}
 
@@ -459,12 +459,12 @@ def read_label_power(name, save_dir, lowpass, highpass,
             for label_name in target_labels[hemi]:
                 power_dict[ev_id].update({label_name: {}})
 
-                #                power = np.load(join(save_dir, f'{name}_{label_name}_{filter_string(lowpass, highpass)}_{ev_id}_pw-tfr.npy'))
-                #                itc = np.load(join(save_dir, f'{name}_{label_name}_{filter_string(lowpass, highpass)}_{ev_id}_itc-tfr.npy'))
+                #                power = np.load(join(save_dir, f'{name}_{label_name}_{filter_string(highpass, lowpass)}_{ev_id}_pw-tfr.npy'))
+                #                itc = np.load(join(save_dir, f'{name}_{label_name}_{filter_string(highpass, lowpass)}_{ev_id}_itc-tfr.npy'))
                 power_ind = np.load(
-                    join(save_dir, f'{name}_{label_name}_{filter_string(lowpass, highpass)}_{ev_id}_pw-ind-tfr.npy'))
+                    join(save_dir, f'{name}_{label_name}_{filter_string(highpass, lowpass)}_{ev_id}_pw-ind-tfr.npy'))
                 itc_ind = np.load(
-                    join(save_dir, f'{name}_{label_name}_{filter_string(lowpass, highpass)}_{ev_id}_itc-ind-tfr.npy'))
+                    join(save_dir, f'{name}_{label_name}_{filter_string(highpass, lowpass)}_{ev_id}_itc-ind-tfr.npy'))
 
                 #                power_dict[ev_id][label_name].update({'power':power})
                 #                power_dict[ev_id][label_name].update({'itc':itc})
@@ -576,9 +576,9 @@ def read_bem_solution(mri_subject, subjects_dir):
 
 
 def read_clusters(save_dir_averages, independent_variable_1,
-                  independent_variable_2, time_window, lowpass, highpass):
+                  independent_variable_2, time_window, highpass, lowpass):
     cluster_name = independent_variable_1 + '_vs_' + independent_variable_2 + \
-                   filter_string(lowpass, highpass) + '_time_' + \
+                   filter_string(highpass, lowpass) + '_time_' + \
                    str(int(time_window[0] * 1e3)) + '-' + \
                    str(int(time_window[1] * 1e3)) + '_msec.cluster'
     cluster_path = join(save_dir_averages, 'statistics', cluster_name)

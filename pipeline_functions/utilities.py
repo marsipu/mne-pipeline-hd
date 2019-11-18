@@ -19,9 +19,9 @@ import re
 
 from . import operations_dict as opd
 
-# Todo: Change from tkinter in QT (use qtpy
+
 # Todo: If checked, change color
-class FunctionWindow:
+class TkFunctionWindow:
 
     def __init__(self, master):
         self.master = master
@@ -44,7 +44,7 @@ class FunctionWindow:
         r_cnt = -1
         c_cnt = 0
         r_max = 25
-        for function_group in opd.all_fs:
+        for function_group in opd.all_fs_gs:
             r_cnt += 1
             if r_cnt > 25:
                 r_cnt = 0
@@ -52,7 +52,7 @@ class FunctionWindow:
                             bg='blue', fg='white', relief=t.RAISED)
             label.grid(row=r_cnt, column=c_cnt)
             r_cnt += 1
-            for function in opd.all_fs[function_group]:
+            for function in opd.all_fs_gs[function_group]:
                 var = t.IntVar()
                 self.var_dict.update({function: var})
                 self.func_dict.update({function: 0})
@@ -64,7 +64,6 @@ class FunctionWindow:
                     r_cnt = 0
 
         # Preload existing checks
-
         if isfile(self.c_path):
             with open(self.c_path, 'r') as fc:
                 # Make sure that cache takes changes from operations_dict
@@ -146,7 +145,7 @@ class FunctionWindow:
 
 def choose_function():
     master = t.Tk()
-    gui = FunctionWindow(master)
+    gui = TkFunctionWindow(master)
     master.mainloop()
 
     return gui.func_dict
@@ -219,7 +218,10 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
             if not silent:
                 print(sub_script_path + ' created')
         with open(file_path, 'w') as file:
-            file.write(f'{name}:{values}\n')
+            if type(values) == str:
+                file.write(f'{name}:"{values}"\n')
+            else:
+                file.write(f'{name}:{values}\n')
             if not silent:
                 print(file_path + ' created')
     else:
@@ -252,7 +254,10 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
 
             with open(file_path, 'w') as file:
                 for name, values in file_dict.items():
-                    file.write(f'{name}:{values}\n')
+                    if type(values) == str:
+                        file.write(f'{name}:"{values}"\n')
+                    else:
+                        file.write(f'{name}:{values}\n')
 
     return file_dict
 
@@ -264,7 +269,10 @@ def read_dict_file(file_name, sub_script_path):
         for item in file:
             if ':' in item:
                 key, value = item.split(':', 1)
-                value = eval(value)
+                if value == '\n':
+                    value = None
+                else:
+                    value = eval(value)
                 file_dict[key] = value
 
     return file_dict
@@ -305,116 +313,21 @@ def order_the_dict(filename, sub_script_path, unspecified_names=False):
     order_list.sort()
 
 
-def get_subject_groups(all_files, fuse_ab, unspecified_names):
-    files = list()
+def get_pipeline_path(path):
+    match = re.search('mne_pipeline_hd', path)
+    pipeline_path = path[:match.span()[1]]
 
-    pre_order_dict = dict()
-    order_dict = dict()
-    ab_dict = dict()
-    comp_dict = dict()
-    grand_avg_dict = dict()
-    sub_files_dict = dict()
-    cond_dict = dict()
-
-    basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
-    for s in all_files:
-        match = re.match(basic_pattern, s)
-        if match:
-            files.append(s)
-
-    # prepare order_dict
-    for s in files:
-        match = re.match(basic_pattern, s)
-        key = match.group(1) + '_' + match.group(3)
-        if key in pre_order_dict:
-            pre_order_dict[key].append(match.group(2))
-        else:
-            pre_order_dict.update({key: [match.group(2)]})
-
-    # Assign string-groups to modalities
-    for key in pre_order_dict:
-        v_list = pre_order_dict[key]
-        order_dict.update({key: dict()})
-        for it in v_list:
-            if it == '16' or it == '32':
-                order_dict[key].update({it: 'low'})
-            if it == '64' or it == '128':
-                order_dict[key].update({it: 'middle'})
-            if it == '256' or it == '512':
-                order_dict[key].update({it: 'high'})
-            if it == 't':
-                order_dict[key].update({it: 'tactile'})
-
-    # Make a dict, where a/b-files are grouped together
-    for s in files:
-        match = re.match(basic_pattern, s)
-        key = match.group(1) + '_' + match.group(2)
-        if key in ab_dict:
-            ab_dict[key].append(s)
-        else:
-            ab_dict.update({key: [s]})
-
-    # Make a dict for each subject, where the files are ordere by their modality
-    for s in files:
-        match = re.match(basic_pattern, s)
-        key = match.group(1) + '_' + match.group(3)
-        sub_key = order_dict[key][match.group(2)]
-        if fuse_ab:
-            key = match.group(1)
-            if key in comp_dict:
-                if sub_key in comp_dict[key]:
-                    comp_dict[key][sub_key].append(s)
-                else:
-                    comp_dict[key].update({sub_key: [s]})
-            else:
-                comp_dict.update({key: {sub_key: [s]}})
-        else:
-            if key in comp_dict:
-                comp_dict[key].update({sub_key: [s]})
-            else:
-                comp_dict.update({key: {sub_key: [s]}})
-
-    # Make a dict, where each file get its modality as value
-    for s in files:
-        match = re.match(basic_pattern, s)
-        val = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)]
-        cond_dict[s] = val
-
-    # Make a grand-avg-dict with all files of a modality in one list together
-    for s in files:
-        match = re.match(basic_pattern, s)
-        if fuse_ab:
-            key = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)]
-        else:
-            key = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)] + '_' + match.group(3)
-        if key in grand_avg_dict:
-            grand_avg_dict[key].append(s)
-        else:
-            grand_avg_dict.update({key: [s]})
-
-    # Make a dict with all the files for one subject
-    for s in files:
-        match = re.match(basic_pattern, s)
-        key = match.group(1)
-        if key in sub_files_dict:
-            sub_files_dict[key].append(s)
-        else:
-            sub_files_dict.update({key: [s]})
-
-    if unspecified_names:
-        grand_avg_dict.update({'Unspecified': all_files})
-
-    return ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict
+    return pipeline_path
 
 
-def getallfifFiles(dirName):
+def get_all_fif_files(dirname):
     # create a list of file and sub directories
     # names in the given directory
-    listOfFile = os.walk(dirName)
+    list_of_file = os.walk(dirname)
     all_fif_files = list()
     paths = dict()
     # Iterate over all the entries
-    for dirpath, dirnames, filenames in listOfFile:
+    for dirpath, dirnames, filenames in list_of_file:
 
         for file in filenames:
             if file[-4:] == '.fif':
@@ -443,10 +356,10 @@ def shutdown():
         os.system('sudo shutdown -h now')
 
 
-
 # Todo: Update MNE-Function
 def update_mne():
     command = 'curl -O https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml'
+    # Update the environment-file from MNE and add pipeline-specific packages
     command2 = 'conda env update --file environment.yml'
     command3 = 'pip install -r requirements.txt'
 

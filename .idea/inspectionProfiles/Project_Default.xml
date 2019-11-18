@@ -12,7 +12,7 @@
     <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredPackages">
         <value>
-          <list size="9">
+          <list size="8">
             <item index="0" class="java.lang.String" itemvalue="mne" />
             <item index="1" class="java.lang.String" itemvalue="numpy" />
             <item index="2" class="java.lang.String" itemvalue="matplotlib" />
@@ -21,7 +21,6 @@
             <item index="5" class="java.lang.String" itemvalue="mayavi" />
             <item index="6" class="java.lang.String" itemvalue="autoreject" />
             <item index="7" class="java.lang.String" itemvalue="PyQt5" />
-            <item index="8" class="java.lang.String" itemvalue="imageio-ffmpeg" />
           </list>
         </value>
       </option>
@@ -32,6 +31,15 @@
           <option value="E502" />
           <option value="E127" />
           <option value="E501" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="PyQt5.QtWidgets.clicked.connect" />
+          <option value="PyQt5.QtGui.lastWindowClosed.connect" />
+          <option value="PyQt5.QtWidgets.triggered.connect" />
         </list>
       </option>
     </inspection_tool>

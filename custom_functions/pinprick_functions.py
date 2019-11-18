@@ -139,7 +139,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
 
 
 @decor.topline
-def pp_combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_dict):
+def pp_combine_evokeds_ab(data_path, save_dir_averages, highpass, lowpass, ab_dict):
     for title in ab_dict:
         print(f'abs for {title}')
         ab_ev_dict = dict()
@@ -147,7 +147,7 @@ def pp_combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_di
         trials = set()
         for name in ab_dict[title]:
             save_dir = join(data_path, name)
-            evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+            evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
             channels.append(set(evokeds[0].ch_names))
             for evoked in evokeds:
                 trial = evoked.comment
@@ -166,13 +166,13 @@ def pp_combine_evokeds_ab(data_path, save_dir_averages, lowpass, highpass, ab_di
         for trial in ab_ev_dict:
             cmb_evokeds = mne.combine_evoked(ab_ev_dict[trial], weights='equal')
             evokeds.append(cmb_evokeds)
-        evokeds_name = f'{title}{op.filter_string(lowpass, highpass)}-ave.fif'
+        evokeds_name = f'{title}{op.filter_string(highpass, lowpass)}-ave.fif'
         evokeds_path = join(save_dir_averages, 'ab_combined', evokeds_name)
         mne.write_evokeds(evokeds_path, evokeds)
 
 
 @decor.topline
-def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub_script_path,
+def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, highpass, lowpass, sub_script_path,
                  event_id, subjects_dir, inverse_method, source_space_method,
                  parcellation, figures_path):
     # Noch problematisch: pp9_64, pp19_64
@@ -197,12 +197,12 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
         for name in ab_dict[title]:
             # Assumes, that first evoked in evokeds is LBT
             save_dir = join(data_path, name)
-            e = io.read_evokeds(name, save_dir, lowpass, highpass)[0]
+            e = io.read_evokeds(name, save_dir, highpass, lowpass)[0]
             e.crop(-0.1, 0.3)
             gfp = op.calculate_gfp(e)
             ab_gfp_data[name] = gfp
 
-            n_stc = io.read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method, event_id)['LBT']
+            n_stc = io.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method, event_id)['LBT']
             labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir, parc=parcellation)
             label = None
             for l in labels:
@@ -261,7 +261,6 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
                 else:
                     abl = int(ab_lag)
                 ablh = int(ab_lag / 2)
-
 
             # Method 1: Applying Lag to single-files for each round (ab, sub, cond)
             # Make ab-averages to improve SNR
@@ -355,7 +354,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
                                    l1, l2, l_ab_avg,
                                    ab_glags, ab_gcorr, ab_gmax_lag, ab_gmax_val,
                                    ab_llags, ab_lcorr, ab_lmax_lag, ab_lmax_val,
-                                   figures_path, lowpass, highpass)
+                                   figures_path, highpass, lowpass)
             plot.close_all()
         else:
             print('No b-measurement available')
@@ -383,18 +382,18 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
         # best signal to cross-correlate all signals on
         title_max_gfp = max(ab_gfp_max_dict[cond], key=ab_gfp_max_dict[cond].get)
         title_max_ltc = max(ab_ltc_max_dict[cond], key=ab_ltc_max_dict[cond].get)
-        
+
         print(f'{title_max_gfp} as best signal for gfp-condition-average')
         print(f'{title_max_ltc} as best signal for ltc-condition-average')
-        
+
         gc1 = ab_gfp_avg_data[cond][title_max_gfp]
         lc1 = ab_ltc_avg_data[cond][title_max_ltc]
-        
+
         for title in ab_gfp_avg_data[cond]:
             print('--------' + title + '--------')
             gc2 = ab_gfp_avg_data[cond][title]
             lc2 = ab_ltc_avg_data[cond][title]
-            
+
             # cross-correlation of cond-gfps
             cond_glags, cond_gcorr, cond_gmax_lag, cond_gmax_val = cross_correlation(gc1, gc2)
 
@@ -447,11 +446,11 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, lowpass, highpass, sub
             else:
                 cond_avg_ltc_data[title] = lc2_applag
 
-            plot_latency_alignment(f'{title}_{cond}', cl, {'gfp':title_max_gfp, 'ltc':title_max_ltc}, title,
+            plot_latency_alignment(f'{title}_{cond}', cl, {'gfp': title_max_gfp, 'ltc': title_max_ltc}, title,
                                    gc1, gc2, None, lc1, lc2, None,
                                    cond_glags, cond_gcorr, cond_gmax_lag, cond_gmax_val,
                                    cond_llags, cond_lcorr, cond_lmax_lag, cond_lmax_val,
-                                   figures_path, lowpass, highpass)
+                                   figures_path, highpass, lowpass)
             plot.close_all()
 
             # Save lags to dict, cond-lag applies to best-signal
@@ -540,7 +539,7 @@ def plot_latency_alignment(layer, lag, n1, n2,
                            l1, l2, l_avg,
                            glags, gcorr, gmax_lag, gmax_val,
                            llags, lcorr, lmax_lag, lmax_val,
-                           figures_path, lowpass, highpass):
+                           figures_path, highpass, lowpass):
     if lag != 0:
         fig, axes = plt.subplots(nrows=2, ncols=3, sharex='col',
                                  gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
@@ -614,7 +613,7 @@ def plot_latency_alignment(layer, lag, n1, n2,
         axes[1, 2].legend()
         axes[1, 2].set_title(f'LTC\'s corrected with ab_lag = {lag}')
 
-    filename = join(figures_path, 'align_peaks', f'{layer}{op.filter_string(lowpass, highpass)}_xcorr.jpg')
+    filename = join(figures_path, 'align_peaks', f'{layer}{op.filter_string(highpass, lowpass)}_xcorr.jpg')
     plt.savefig(filename)
 
 # def apply_alignment():
@@ -622,3 +621,105 @@ def plot_latency_alignment(layer, lag, n1, n2,
 #     det_peaks = ut.read_dict_file('peak_alignment', sub_script_path)
 #     for name in det_peaks:
 #         save_dir = join(data_path, name)
+
+
+def get_subject_groups(all_files, fuse_ab, unspecified_names):
+    files = list()
+
+    pre_order_dict = dict()
+    order_dict = dict()
+    ab_dict = dict()
+    comp_dict = dict()
+    grand_avg_dict = dict()
+    sub_files_dict = dict()
+    cond_dict = dict()
+
+    basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
+    for s in all_files:
+        match = re.match(basic_pattern, s)
+        if match:
+            files.append(s)
+
+    # prepare order_dict
+    for s in files:
+        match = re.match(basic_pattern, s)
+        key = match.group(1) + '_' + match.group(3)
+        if key in pre_order_dict:
+            pre_order_dict[key].append(match.group(2))
+        else:
+            pre_order_dict.update({key: [match.group(2)]})
+
+    # Assign string-groups to modalities
+    for key in pre_order_dict:
+        v_list = pre_order_dict[key]
+        order_dict.update({key: dict()})
+        for it in v_list:
+            if it == '16' or it == '32':
+                order_dict[key].update({it: 'low'})
+            if it == '64' or it == '128':
+                order_dict[key].update({it: 'middle'})
+            if it == '256' or it == '512':
+                order_dict[key].update({it: 'high'})
+            if it == 't':
+                order_dict[key].update({it: 'tactile'})
+
+    # Make a dict, where a/b-files are grouped together
+    for s in files:
+        match = re.match(basic_pattern, s)
+        key = match.group(1) + '_' + match.group(2)
+        if key in ab_dict:
+            ab_dict[key].append(s)
+        else:
+            ab_dict.update({key: [s]})
+
+    # Make a dict for each subject, where the files are ordere by their modality
+    for s in files:
+        match = re.match(basic_pattern, s)
+        key = match.group(1) + '_' + match.group(3)
+        sub_key = order_dict[key][match.group(2)]
+        if fuse_ab:
+            key = match.group(1)
+            if key in comp_dict:
+                if sub_key in comp_dict[key]:
+                    comp_dict[key][sub_key].append(s)
+                else:
+                    comp_dict[key].update({sub_key: [s]})
+            else:
+                comp_dict.update({key: {sub_key: [s]}})
+        else:
+            if key in comp_dict:
+                comp_dict[key].update({sub_key: [s]})
+            else:
+                comp_dict.update({key: {sub_key: [s]}})
+
+    # Make a dict, where each file get its modality as value
+    for s in files:
+        match = re.match(basic_pattern, s)
+        val = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)]
+        cond_dict[s] = val
+
+    # Make a grand-avg-dict with all files of a modality in one list together
+    for s in files:
+        match = re.match(basic_pattern, s)
+        if fuse_ab:
+            key = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)]
+        else:
+            key = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)] + '_' + match.group(3)
+        if key in grand_avg_dict:
+            grand_avg_dict[key].append(s)
+        else:
+            grand_avg_dict.update({key: [s]})
+
+    # Make a dict with all the files for one subject
+    for s in files:
+        match = re.match(basic_pattern, s)
+        key = match.group(1)
+        if key in sub_files_dict:
+            sub_files_dict[key].append(s)
+        else:
+            sub_files_dict.update({key: [s]})
+
+    if unspecified_names:
+        grand_avg_dict.update({'Unspecified': all_files})
+
+    return ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict

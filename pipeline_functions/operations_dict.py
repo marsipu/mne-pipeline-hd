@@ -12,16 +12,16 @@ subject_operations = dict(add_files=0,
                           add_bad_channels=0)
 
 basic_operations = dict(erm_analysis=0,
-                        motor_erm_analysis=0,
-                        plot_ab_combined=0,
-                        close_plots=0,
+                        close_plots=1,
                         shutdown=0)
 
 pinprick_functions = dict(pp_event_handling=0,
                           pp_combine_evokeds_ab=0,
-                          pp_alignment=0)
+                          pp_alignment=0,
+                          motor_erm_analysis=0,
+                          plot_ab_combined=0)
 
-melofix_functions = dict(melofix_event_handling = 0)
+melofix_functions = dict(melofix_event_handling=0)
 
 sensor_space_operations = dict(filter_raw=0,
                                find_events=0,
@@ -46,7 +46,7 @@ mri_subject_operations = dict(apply_watershed=0,
                               prepare_bem=0,
                               setup_src=0,
                               compute_src_distances=0,
-                              setup_vol_src = 0,
+                              setup_vol_src=0,
                               morph_subject=0,
                               morph_labels_from_fsaverage=0,
                               plot_source_space=0,
@@ -145,14 +145,19 @@ grand_average_plots = dict(
 
     pp_plot_latency_S1_corr=0)
 
-all_fs = {'subject_operations': subject_operations,
-          'basic_operations': basic_operations,
-          'pinprick_functions': pinprick_functions,
-          'melofix_functions': melofix_functions,
-          'sensor_space_operations': sensor_space_operations,
-          'mri_subject_operations': mri_subject_operations,
-          'source_space_operations': source_space_operations,
-          'grand_average_operations': grand_average_operations,
-          'sensor_space_plots': sensor_space_plots,
-          'source_space_plots': source_space_plots,
-          'grand_average_plots': grand_average_plots}
+all_fs_gs = {'subject_operations': subject_operations,
+             'basic_operations': basic_operations,
+             'pinprick_functions': pinprick_functions,
+             'melofix_functions': melofix_functions,
+             'sensor_space_operations': sensor_space_operations,
+             'mri_subject_operations': mri_subject_operations,
+             'source_space_operations': source_space_operations,
+             'grand_average_operations': grand_average_operations,
+             'sensor_space_plots': sensor_space_plots,
+             'source_space_plots': source_space_plots,
+             'grand_average_plots': grand_average_plots}
+
+all_fs = {}
+for fg in all_fs_gs:
+    for f, v in all_fs_gs[fg].items():
+        all_fs.update({f: v})

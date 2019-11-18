@@ -10,34 +10,34 @@ enable_cuda = False  # Using CUDA on supported graphics card e.g. for filtering
 # https://mne-tools.github.io/dev/advanced_setup.html#advanced-setup
 
 # File I/O
-unspecified_names = False  # True if you don't use Regular Expressions to handle your filenames
+unspecified_names = True  # True if you don't use Regular Expressions to handle your filenames
 print_info = False  # Print the raw-info of each file in the console
 
 overwrite = True  # should files be overwritten in general
 save_plots = True  # should plots be saved
 
 # Pinprick-specific
-pinprick = True  # Events including Rating
+pinprick = False  # Events including Rating
 combine_ab = True  # pinprick-specific
 cmp_cond = ['high', 'tactile']  # Specify two conditions, which will be compared
 
 # raw
 predefined_bads = [6, 7, 8, 26, 27, 103]  # Default bad channels
-eog_digitized = True  # Set True, if the last 4 digitized points where EOG
+eog_digitized = False  # Set True, if the last 4 digitized points where EOG
 ch_types = ['grad']
 lowpass = 100  # Hz
 highpass = 1  # Hz
 erm_t_limit = 300  # Limits Empty-Room-Measurement-Length [s]
 
 # events
-adjust_timeline_by_msec = -100  # custom delay to stimulus in ms
+adjust_timeline_by_msec = 0  # custom delay to stimulus in ms
 
 # epochs
 # Pinprick: Add 100ms Puffer on each side to allow latency alignment with group-averages
 # Leave baseline at -0.100 to allow shift
-etmin = -0.600  # start of epoch [s]
-etmax = 1.600  # end of epoch [s]
-baseline = (-0.600, -0.100)  # has to be a tuple [s]
+etmin = -0.500  # start of epoch [s]
+etmax = 1.500  # end of epoch [s]
+baseline = (-0.500, 0)  # has to be a tuple [s]
 enable_ica = True  # Use ica-epochs, create 1Hz-Highpass-Raw if not existent
 autoreject = False  # set True to use autoreject
 overwrite_ar = False  # if to calculate new thresholds or to use previously calculated
@@ -45,8 +45,7 @@ reject = dict(grad=8e-10)  # default reject parameter if not reject with autorej
 flat = dict(grad=1e-15)  # default flat parameter
 reject_eog_epochs = False  # function to reject eog_epochs after use of find_eog_events
 decim = 1  # downsampling factor
-event_id = {'LBT': 1}  # dictionary to assign strings to the event_ids
-# {'LBT':1, 'offset':4, 'lower_R':5, 'same_R':6, 'higher_R':7}
+event_id = {}  # dictionary to assign strings to the event_ids
 
 # evokeds
 detrend = True  # sometimes not working
@@ -72,14 +71,14 @@ erm_noise_cov = True
 calm_noise_cov = False  # Use of a specific time interval in a measurement for noise covariance
 erm_ica = False  # Causes sometimes errors
 inverse_method = 'dSPM'
-toi = [-0.1, 0.5]  # Time of Interest for analysis
+toi = [0, 0.5]  # Time of Interest for analysis
 mne_evoked_time = [0.1, 0.15, 0.2]  # time points to be displayed in several plots [s]
 stc_interactive = False  # interactive stc-plots
 mixn_dip = True
 stc_animation = (0, 0.5)  # time span for stc-animation [s]
 parcellation = 'aparc'
 parcellation_orig = 'aparc_sub'
-ev_ids_label_analysis = ['LBT']
+ev_ids_label_analysis = []
 n_std = 4  # Determing the amount of standard-deviations, the prominence must have
 corr_threshold = 0.95
 

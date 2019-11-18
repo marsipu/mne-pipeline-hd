@@ -14,13 +14,12 @@ import re
 # Todo: Benamung verallgemeinern, -raw-Problematik lösen
 # Subjects
 def add_files(file_list_path, erm_list_path, motor_erm_list_path,
-              data_path, figures_path, subjects_dir, orig_data_path,
-              unspecified_names=True, gui=False):
+              data_path, orig_data_path, unspecified_names=True, gui=False):
     files = read_files(file_list_path)
     erm_files = read_files(erm_list_path)
     motor_erm_files = read_files(motor_erm_list_path)
 
-    all_fif_files, paths = ut.getallfifFiles(orig_data_path)
+    all_fif_files, paths = ut.get_all_fif_files(orig_data_path)
 
     # Regular-Expressions Pattern
     pattern = r'pp[0-9][0-9]*[a-z]*_[0-9]{0,3}t?_[a,b]$'
@@ -31,9 +30,10 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
         fname = f[:-4]
         if fname[-4:] == '-raw':
             fdest = join(data_path, fname, fname + '.fif')
+            ermdest = join(data_path, 'empty_room_data', fname + '.fif')
         else:
             fdest = join(data_path, fname, fname + '-raw.fif')
-        ermdest = join(data_path, 'empty_room_data', fname + '-raw.fif')
+            ermdest = join(data_path, 'empty_room_data', fname + '-raw.fif')
 
         match = re.match(pattern, fname)
 
@@ -41,8 +41,8 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
         if 'leer' in fname:
             if not isfile(ermdest):
                 print('-' * 60 + '\n' + fname)
-                print(f'Copying ERM_File from {paths[f]}')
-                shutil.copy2(paths[f], ermdest)
+                print(f'Moving ERM_File from {paths[f]}')
+                shutil.move(paths[f], ermdest)
                 print(f'Finished Copying to {ermdest}')
             # Organize Motor-ERMs
             if 'motor_leer' in fname:
@@ -109,8 +109,8 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
                     os.makedirs(folder_path)
                     print(folder_path + ' has been created')
 
-                print(f'Copying File from {paths[f]}...')
-                shutil.copy2(paths[f], fdest)
+                print(f'Moving File from {paths[f]}...')
+                shutil.move(paths[f], fdest)
                 print(f'Finished Copying to {fdest}')
 
     if gui:
@@ -118,8 +118,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
             if not isfile(file_list_path):
                 if not exists(join(data_path, '_Subject_scripts')):
                     os.makedirs(join(data_path, '_Subject_scripts'))
-                ilist = []
-                ilist.append(e1.get())
+                ilist = [e1.get()]
                 e1.delete(0, t.END)
                 with open(file_list_path, 'w') as sl:
                     for listitem in ilist:
@@ -127,8 +126,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
                 print('file_list.py created')
 
             else:
-                elist = []
-                elist.append(e1.get())
+                elist = [e1.get()]
                 e1.delete(0, t.END)
                 with open(file_list_path, 'a') as sl:
                     for listitem in elist:
@@ -155,13 +153,13 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
 
         def pop_dir():
 
-            files = read_files(file_list_path)
-            for name in files:
-                folder_path = join(data_path, name)
+            fls = read_files(file_list_path)
+            for name in fls:
+                fld_path = join(data_path, name)
 
-                if not exists(folder_path):
-                    os.makedirs(folder_path)
-                    print(folder_path + ' has been created')
+                if not exists(fld_path):
+                    os.makedirs(fld_path)
+                    print(fld_path + ' has been created')
 
         master = t.Tk()
         t.Label(master, text='Subject(Filename without .fif)').grid(row=0, column=0)
@@ -184,8 +182,8 @@ def read_files(file_list_path):
     try:
         with open(file_list_path, 'r') as sl:
             for line in sl:
-                currentPlace = line[:-1]
-                file_list.append(currentPlace)
+                current_place = line[:-1]
+                file_list.append(current_place)
 
     except FileNotFoundError:
         print(f'{file_list_path} not yet created, put some files in orig_data_path')
@@ -194,7 +192,7 @@ def read_files(file_list_path):
     return file_list
 
 
-##MRI-Subjects
+# MRI-Subjects
 def add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False):
     mri_subjects = read_mri_subjects(mri_sub_list_path)
 
@@ -202,20 +200,20 @@ def add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False):
 
     for f in folder_list:
         if isdir(join(subjects_dir, f)):
-            if not f in mri_subjects:
+            if f not in mri_subjects:
                 mri_subjects.append(f)
+                print(f'Added {f} to mri-subjects')
 
     with open(mri_sub_list_path, 'w') as slp:
         for ms in mri_subjects:
             slp.write(ms + '\n')
 
-    if gui == True:
+    if gui:
         def add_to_list():
             if not isfile(mri_sub_list_path):
                 if not exists(join(data_path, '_Subject_scripts')):
                     os.makedirs(join(data_path, '_Subject_scripts'))
-                ilist = []
-                ilist.append(e1.get())
+                ilist = [e1.get()]
                 e1.delete(0, t.END)
                 with open(mri_sub_list_path, 'w') as sl:
                     for listitem in ilist:
@@ -224,8 +222,7 @@ def add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False):
                 print('mri_sub_list.py created')
 
             else:
-                elist = []
-                elist.append(e1.get())
+                elist = [e1.get()]
                 e1.delete(0, t.END)
                 with open(mri_sub_list_path, 'a') as sl:
                     for listitem in elist:
@@ -270,8 +267,8 @@ def read_mri_subjects(mri_sub_list_path):
     try:
         with open(mri_sub_list_path, 'r') as sl:
             for line in sl:
-                currentPlace = line[:-1]
-                mri_sub_list.append(currentPlace)
+                current_place = line[:-1]
+                mri_sub_list.append(current_place)
 
     except FileNotFoundError:
         print('mri_sub_list.py not yet created, add mri_subject')
@@ -279,7 +276,7 @@ def read_mri_subjects(mri_sub_list_path):
     return mri_sub_list
 
 
-##Subject-Dict
+# Subject-Dict
 def add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path):
     def assign_sub():
         choice1 = listbox1.get(listbox1.curselection())

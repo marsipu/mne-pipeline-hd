@@ -42,7 +42,7 @@ except ImportError:
 
 
 # Naming Conventions
-def filter_string(lowpass, highpass):
+def filter_string(highpass, lowpass):
     if highpass is not None and highpass != 0:
         fs = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
     else:
@@ -137,10 +137,10 @@ def populate_directories(data_path, figures_path, event_id):
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
 @decor.topline
-def filter_raw(name, save_dir, lowpass, highpass, ermsub,
+def filter_raw(name, save_dir, highpass, lowpass, ermsub,
                data_path, n_jobs, enable_cuda, bad_channels, erm_t_limit,
                enable_ica, eog_digitized):
-    filter_name = name + filter_string(lowpass, highpass) + '-raw.fif'
+    filter_name = name + filter_string(highpass, lowpass) + '-raw.fif'
     filter_path = join(save_dir, filter_name)
 
     ica_filter_name = name + filter_string(lowpass, 1) + '-raw.fif'
@@ -156,7 +156,7 @@ def filter_raw(name, save_dir, lowpass, highpass, ermsub,
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
 
-        filter_name = name + filter_string(lowpass, highpass) + '-raw.fif'
+        filter_name = name + filter_string(highpass, lowpass) + '-raw.fif'
         filter_path = join(save_dir, filter_name)
 
         # Save some data in the info-dictionary and finally save it
@@ -211,7 +211,7 @@ def filter_raw(name, save_dir, lowpass, highpass, ermsub,
     if ermsub != 'None':
         erm_name = ermsub + '-raw.fif'
         erm_path = join(data_path, 'empty_room_data', erm_name)
-        erm_filter_name = ermsub + filter_string(lowpass, highpass) + '-raw.fif'
+        erm_filter_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
         erm_filter_path = join(data_path, 'empty_room_data', erm_filter_name)
 
         if not isfile(erm_filter_path):
@@ -404,15 +404,15 @@ def find_eog_events(name, save_dir, eog_channel):
 
 
 @decor.topline
-def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
+def epoch_raw(name, save_dir, highpass, lowpass, event_id, tmin, tmax,
               baseline, reject, flat, autoreject, overwrite_ar,
               sub_script_path, bad_channels, decim,
               reject_eog_epochs, overwrite, exec_ops):
-    epochs_name = name + filter_string(lowpass, highpass) + '-epo.fif'
+    epochs_name = name + filter_string(highpass, lowpass) + '-epo.fif'
     epochs_path = join(save_dir, epochs_name)
     if overwrite or not isfile(epochs_path):
 
-        raw = io.read_filtered(name, save_dir, lowpass, highpass)
+        raw = io.read_filtered(name, save_dir, highpass, lowpass)
         raw.info['bads'] = bad_channels
 
         if exec_ops['erm_analysis']:
@@ -490,13 +490,13 @@ def epoch_raw(name, save_dir, lowpass, highpass, event_id, tmin, tmax,
 
 
 @decor.topline
-def run_ssp_er(name, save_dir, lowpass, highpass, data_path, ermsub, bad_channels,
+def run_ssp_er(name, save_dir, highpass, lowpass, data_path, ermsub, bad_channels,
                overwrite):
     if ermsub == 'None':
         print('no empty_room_data found for' + name)
         pass
     else:
-        erm_name = ermsub + filter_string(lowpass, highpass) + '-raw.fif'
+        erm_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
         erm_path = join(data_path, 'empty_room_data', erm_name)
 
         erm = mne.io.read_raw_fif(erm_path, preload=True)
@@ -515,7 +515,7 @@ def run_ssp_er(name, save_dir, lowpass, highpass, data_path, ermsub, bad_channel
 
 
 @decor.topline
-def apply_ssp_er(name, save_dir, lowpass, highpass, overwrite):
+def apply_ssp_er(name, save_dir, highpass, lowpass, overwrite):
     proj_name = name + '_ssp-proj.fif'
     proj_path = join(save_dir, proj_name)
 
@@ -524,9 +524,9 @@ def apply_ssp_er(name, save_dir, lowpass, highpass, overwrite):
         pass
     else:
         projs = mne.read_proj(proj_path)
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
 
-        ssp_epochs_name = name + filter_string(lowpass, highpass) + '-ssp-epo.fif'
+        ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ssp-epo.fif'
         ssp_epochs_path = join(save_dir, ssp_epochs_name)
 
         if overwrite or not isfile(ssp_epochs_path):
@@ -539,8 +539,8 @@ def apply_ssp_er(name, save_dir, lowpass, highpass, overwrite):
 
 
 @decor.topline
-def run_ssp_clm(name, save_dir, lowpass, highpass, bad_channels, overwrite):
-    raw = io.read_filtered(name, save_dir, lowpass, highpass)
+def run_ssp_clm(name, save_dir, highpass, lowpass, bad_channels, overwrite):
+    raw = io.read_filtered(name, save_dir, highpass, lowpass)
     raw.pick_types(exclude=bad_channels)
     raw.crop(tmin=5, tmax=50)
 
@@ -558,7 +558,7 @@ def run_ssp_clm(name, save_dir, lowpass, highpass, bad_channels, overwrite):
 
 
 @decor.topline
-def apply_ssp_clm(name, save_dir, lowpass, highpass, overwrite):
+def apply_ssp_clm(name, save_dir, highpass, lowpass, overwrite):
     proj_name = name + '_ssp_clm-proj.fif'
     proj_path = join(save_dir, proj_name)
 
@@ -567,9 +567,9 @@ def apply_ssp_clm(name, save_dir, lowpass, highpass, overwrite):
         pass
     else:
         projs = mne.read_proj(proj_path)
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
 
-        ssp_epochs_name = name + filter_string(lowpass, highpass) + '-ssp_clm-epo.fif'
+        ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ssp_clm-epo.fif'
         ssp_epochs_path = join(save_dir, ssp_epochs_name)
 
         if overwrite or not isfile(ssp_epochs_path):
@@ -614,7 +614,7 @@ def run_ssp_eog(name, save_dir, n_jobs, eog_channel,
 
 
 @decor.topline
-def apply_ssp_eog(name, save_dir, lowpass, highpass, overwrite):
+def apply_ssp_eog(name, save_dir, highpass, lowpass, overwrite):
     proj_name = name + '_eog-proj.fif'
     proj_path = join(save_dir, proj_name)
 
@@ -623,9 +623,9 @@ def apply_ssp_eog(name, save_dir, lowpass, highpass, overwrite):
         pass
     else:
         projs = mne.read_proj(proj_path)
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
 
-        ssp_epochs_name = name + filter_string(lowpass, highpass) + '-eog_ssp-epo.fif'
+        ssp_epochs_name = name + filter_string(highpass, lowpass) + '-eog_ssp-epo.fif'
         ssp_epochs_path = join(save_dir, ssp_epochs_name)
 
         if overwrite or not isfile(ssp_epochs_path):
@@ -670,7 +670,7 @@ def run_ssp_ecg(name, save_dir, n_jobs, ecg_channel,
 
 
 @decor.topline
-def apply_ssp_ecg(name, save_dir, lowpass, highpass, overwrite):
+def apply_ssp_ecg(name, save_dir, highpass, lowpass, overwrite):
     proj_name = name + '_ecg-proj.fif'
     proj_path = join(save_dir, proj_name)
 
@@ -679,9 +679,9 @@ def apply_ssp_ecg(name, save_dir, lowpass, highpass, overwrite):
         pass
     else:
         projs = mne.read_proj(proj_path)
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
 
-        ssp_epochs_name = name + filter_string(lowpass, highpass) + '-ecg_ssp-epo.fif'
+        ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ecg_ssp-epo.fif'
         ssp_epochs_path = join(save_dir, ssp_epochs_name)
 
         if overwrite or not isfile(ssp_epochs_path):
@@ -695,15 +695,15 @@ def apply_ssp_ecg(name, save_dir, lowpass, highpass, overwrite):
 
 # TODO: Organize run_ica properly
 @decor.topline
-def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
+def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             reject, flat, bad_channels, overwrite, autoreject,
             save_plots, figures_path, sub_script_path, erm_analysis):
     info = io.read_info(name, save_dir)
 
-    ica_dict = ut.dict_filehandler(name, f'ica_components{filter_string(lowpass, highpass)}', sub_script_path,
+    ica_dict = ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', sub_script_path,
                                    onlyread=True)
 
-    ica_name = name + filter_string(lowpass, highpass) + '-ica.fif'
+    ica_name = name + filter_string(highpass, lowpass) + '-ica.fif'
     ica_path = join(save_dir, ica_name)
 
     if overwrite or not isfile(ica_path):
@@ -714,7 +714,7 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             raise RuntimeError(
                 'No Raw with Highpass=1-Filter found,set "enable_ica" to true and run "filter_raw" again')
 
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
         picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
                                stim=False, exclude=bad_channels)
 
@@ -745,23 +745,23 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             if save_plots:
 
                 save_path = join(figures_path, 'ica', name +
-                                 '_ica_comp' + filter_string(lowpass, highpass) + '.jpg')
+                                 '_ica_comp' + filter_string(highpass, lowpass) + '.jpg')
                 fig1.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
                 save_path = join(figures_path, 'ica', name +
-                                 '_ica_src' + filter_string(lowpass, highpass) + '_0.jpg')
+                                 '_ica_src' + filter_string(highpass, lowpass) + '_0.jpg')
                 fig3.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
                 save_path = join(figures_path, 'ica', name +
-                                 '_ica_src' + filter_string(lowpass, highpass) + '_1.jpg')
+                                 '_ica_src' + filter_string(highpass, lowpass) + '_1.jpg')
                 fig4.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
                 if not exists(join(figures_path, 'ica/evoked_overlay')):
                     makedirs(join(figures_path, 'ica/evoked_overlay'))
                 save_path = join(figures_path, 'ica/evoked_overlay', name + \
-                                 '_ica_ovl' + filter_string(lowpass, highpass) + '.jpg')
+                                 '_ica_ovl' + filter_string(highpass, lowpass) + '.jpg')
                 fig5.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
@@ -790,18 +790,18 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                     if save_plots:
                         for f in fig2:
                             save_path = join(figures_path, 'ica', name + \
-                                             '_ica_prop_eog' + filter_string(lowpass, highpass) + \
+                                             '_ica_prop_eog' + filter_string(highpass, lowpass) + \
                                              f'_{fig2.index(f)}.jpg')
                             f.savefig(save_path, dpi=300)
                             print('figure: ' + save_path + ' has been saved')
 
                         save_path = join(figures_path, 'ica', name + \
-                                         '_ica_scor_eog' + filter_string(lowpass, highpass) + '.jpg')
+                                         '_ica_scor_eog' + filter_string(highpass, lowpass) + '.jpg')
                         fig3.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
 
                         save_path = join(figures_path, 'ica', name + \
-                                         '_ica_ovl_eog' + filter_string(lowpass, highpass) + '.jpg')
+                                         '_ica_ovl_eog' + filter_string(highpass, lowpass) + '.jpg')
                         fig7.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
 
@@ -819,18 +819,18 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                     if save_plots:
                         for f in fig9:
                             save_path = join(figures_path, 'ica', name + \
-                                             '_ica_prop_ecg' + filter_string(lowpass, highpass) + \
+                                             '_ica_prop_ecg' + filter_string(highpass, lowpass) + \
                                              f'_{fig9.index(f)}.jpg')
                             f.savefig(save_path, dpi=300)
                             print('figure: ' + save_path + ' has been saved')
 
                         save_path = join(figures_path, 'ica', name + \
-                                         '_ica_scor_ecg' + filter_string(lowpass, highpass) + '.jpg')
+                                         '_ica_scor_ecg' + filter_string(highpass, lowpass) + '.jpg')
                         fig4.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
 
                         save_path = join(figures_path, 'ica', name + \
-                                         '_ica_ovl_ecg' + filter_string(lowpass, highpass) + '.jpg')
+                                         '_ica_ovl_ecg' + filter_string(highpass, lowpass) + '.jpg')
                         fig8.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
 
@@ -842,7 +842,7 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
             for i in exes:
                 indices.append(int(i))
 
-            ut.dict_filehandler(name, f'ica_components{filter_string(lowpass, highpass)}', sub_script_path,
+            ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', sub_script_path,
                                 values=indices, overwrite=True)
 
             # Plot ICA integrated
@@ -856,23 +856,23 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
 
             if save_plots:
                 save_path = join(figures_path, 'ica', name + \
-                                 '_ica_comp' + filter_string(lowpass, highpass) + '.jpg')
+                                 '_ica_comp' + filter_string(highpass, lowpass) + '.jpg')
                 fig1.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
                 if not exists(join(figures_path, 'ica/evoked_overlay')):
                     makedirs(join(figures_path, 'ica/evoked_overlay'))
                 save_path = join(figures_path, 'ica/evoked_overlay', name + \
-                                 '_ica_ovl' + filter_string(lowpass, highpass) + '.jpg')
+                                 '_ica_ovl' + filter_string(highpass, lowpass) + '.jpg')
                 fig10.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
                 save_path = join(figures_path, 'ica', name + \
-                                 '_ica_src' + filter_string(lowpass, highpass) + '_0.jpg')
+                                 '_ica_src' + filter_string(highpass, lowpass) + '_0.jpg')
                 fig5.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
                 save_path = join(figures_path, 'ica', name + \
-                                 '_ica_src' + filter_string(lowpass, highpass) + '_1.jpg')
+                                 '_ica_src' + filter_string(highpass, lowpass) + '_1.jpg')
                 fig6.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
@@ -898,21 +898,21 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
                     fig6 = ica.plot_overlay(ecg_epochs.average(), exclude=ecg_indices, title=name + '_ecg')
 
                     save_path = join(figures_path, 'ica', name + \
-                                     '_ica_scor_ecg' + filter_string(lowpass, highpass) + '.jpg')
+                                     '_ica_scor_ecg' + filter_string(highpass, lowpass) + '.jpg')
                     fig4.savefig(save_path, dpi=300)
                     print('figure: ' + save_path + ' has been saved')
                     for f in fig5:
                         save_path = join(figures_path, 'ica', name + \
-                                         '_ica_prop_ecg' + filter_string(lowpass, highpass) \
+                                         '_ica_prop_ecg' + filter_string(highpass, lowpass) \
                                          + f'_{fig5.index(f)}.jpg')
                         f.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
                     save_path = join(figures_path, 'ica', name + \
-                                     '_ica_ovl_ecg' + filter_string(lowpass, highpass) + '.jpg')
+                                     '_ica_ovl_ecg' + filter_string(highpass, lowpass) + '.jpg')
                     fig6.savefig(save_path, dpi=300)
                     print('figure: ' + save_path + ' has been saved')
 
-            ut.dict_filehandler(name, f'ica_components{filter_string(lowpass, highpass)}', sub_script_path, values=[])
+            ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', sub_script_path, values=[])
 
             ica.save(ica_path)
             comp_list = []
@@ -924,17 +924,17 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
 
             if save_plots:
                 save_path = join(figures_path, 'ica', name + \
-                                 '_ica_comp' + filter_string(lowpass, highpass) + '.jpg')
+                                 '_ica_comp' + filter_string(highpass, lowpass) + '.jpg')
                 fig1.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
                 save_path = join(figures_path, 'ica', name + \
-                                 '_ica_src' + filter_string(lowpass, highpass) + '_0.jpg')
+                                 '_ica_src' + filter_string(highpass, lowpass) + '_0.jpg')
                 fig2.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
                 save_path = join(figures_path, 'ica', name + \
-                                 '_ica_src' + filter_string(lowpass, highpass) + '_1.jpg')
+                                 '_ica_src' + filter_string(highpass, lowpass) + '_1.jpg')
                 fig3.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
@@ -948,14 +948,14 @@ def run_ica(name, save_dir, lowpass, highpass, eog_channel, ecg_channel,
 
 
 @decor.topline
-def apply_ica(name, save_dir, lowpass, highpass, overwrite):
-    ica_epochs_name = name + filter_string(lowpass, highpass) + '-ica-epo.fif'
+def apply_ica(name, save_dir, highpass, lowpass, overwrite):
+    ica_epochs_name = name + filter_string(highpass, lowpass) + '-ica-epo.fif'
     ica_epochs_path = join(save_dir, ica_epochs_name)
 
     if overwrite or not isfile(ica_epochs_path):
 
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
-        ica = io.read_ica(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
+        ica = io.read_ica(name, save_dir, highpass, lowpass)
 
         if len(ica.exclude) == 0:
             print('No components excluded here')
@@ -968,16 +968,16 @@ def apply_ica(name, save_dir, lowpass, highpass, overwrite):
 
 
 @decor.topline
-def autoreject_interpolation(name, save_dir, lowpass, highpass, ica_evokeds):
+def autoreject_interpolation(name, save_dir, highpass, lowpass, ica_evokeds):
     if ica_evokeds:
-        ica_epochs_name = name + filter_string(lowpass, highpass) + '-ica-epo.fif'
+        ica_epochs_name = name + filter_string(highpass, lowpass) + '-ica-epo.fif'
         save_path = join(save_dir, ica_epochs_name)
-        epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from ICA-Epochs')
     else:
-        epochs_name = name + filter_string(lowpass, highpass) + '-epo.fif'
+        epochs_name = name + filter_string(highpass, lowpass) + '-epo.fif'
         save_path = join(save_dir, epochs_name)
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from (normal) Epochs')
     autor = AutoReject(n_jobs=-1)
     epochs_clean = autor.fit_transform(epochs)
@@ -986,30 +986,30 @@ def autoreject_interpolation(name, save_dir, lowpass, highpass, ica_evokeds):
 
 
 @decor.topline
-def get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
+def get_evokeds(name, save_dir, highpass, lowpass, exec_ops, ermsub,
                 detrend, enable_ica, overwrite):
-    evokeds_name = name + filter_string(lowpass, highpass) + '-ave.fif'
+    evokeds_name = name + filter_string(highpass, lowpass) + '-ave.fif'
     evokeds_path = join(save_dir, evokeds_name)
     info = io.read_info(name, save_dir)
 
     if overwrite or not isfile(evokeds_path):
         if enable_ica:
-            epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+            epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from ICA-Epochs')
         elif exec_ops['apply_ssp_er'] and ermsub != 'None':
-            epochs = io.read_ssp_epochs(name, save_dir, lowpass, highpass)
+            epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from SSP_ER-Epochs')
         elif exec_ops['apply_ssp_clm']:
-            epochs = io.read_ssp_clm_epochs(name, save_dir, lowpass, highpass)
+            epochs = io.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds form SSP_Clm-Epochs')
         elif exec_ops['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
-            epochs = io.read_ssp_eog_epochs(name, save_dir, lowpass, highpass)
+            epochs = io.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from SSP_EOG-Epochs')
         elif exec_ops['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
-            epochs = io.read_ssp_ecg_epochs(name, save_dir, lowpass, highpass)
+            epochs = io.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from SSP_ECG-Epochs')
         else:
-            epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+            epochs = io.read_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from (normal) Epochs')
 
         evokeds = []
@@ -1027,32 +1027,32 @@ def get_evokeds(name, save_dir, lowpass, highpass, exec_ops, ermsub,
 
 
 @decor.topline
-def get_h1h2_evokeds(name, save_dir, lowpass, highpass, enable_ica, exec_ops, ermsub,
+def get_h1h2_evokeds(name, save_dir, highpass, lowpass, enable_ica, exec_ops, ermsub,
                      detrend):
     info = io.read_info(name, save_dir)
 
     if enable_ica:
-        epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from ICA-Epochs')
     elif exec_ops['apply_ssp_er'] and ermsub != 'None':
-        epochs = io.read_ssp_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ER-Epochs')
     elif exec_ops['apply_ssp_clm']:
-        epochs = io.read_ssp_clm_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds form SSP_Clm-Epochs')
     elif exec_ops['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
-        epochs = io.read_ssp_eog_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_EOG-Epochs')
     elif exec_ops['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
-        epochs = io.read_ssp_ecg_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ECG-Epochs')
     else:
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from (normal) Epochs')
 
-    h1_evokeds_name = name + filter_string(lowpass, highpass) + '_h1-ave.fif'
+    h1_evokeds_name = name + filter_string(highpass, lowpass) + '_h1-ave.fif'
     h1_evokeds_path = join(save_dir, h1_evokeds_name)
-    h2_evokeds_name = name + filter_string(lowpass, highpass) + '_h2-ave.fif'
+    h2_evokeds_name = name + filter_string(highpass, lowpass) + '_h2-ave.fif'
     h2_evokeds_path = join(save_dir, h2_evokeds_name)
 
     h1_evokeds = []
@@ -1082,7 +1082,7 @@ def calculate_gfp(evoked):
 
 @decor.topline
 def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
-                      lowpass, highpass, exec_ops, quality, ana_h1h2):
+                      highpass, lowpass, exec_ops, quality, ana_h1h2):
     for key in grand_avg_dict:
         trial_dict = {}
         h1_dict = {}
@@ -1106,7 +1106,7 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
                     print(f'{evoked.comment} for {name} got nave=0')
 
             if ana_h1h2:
-                evokeds_dict = io.read_h1h2_evokeds(name, save_dir, lowpass, highpass)
+                evokeds_dict = io.read_h1h2_evokeds(name, save_dir, highpass, lowpass)
                 for evoked in evokeds_dict['h1']:
                     if evoked.comment in h1_dict:
                         h1_dict[evoked.comment].append(evoked)
@@ -1127,7 +1127,7 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
                 ga.comment = trial
                 ga_path = join(save_dir_averages, 'evoked',
                                key + '_' + trial + \
-                               filter_string(lowpass, highpass) + \
+                               filter_string(highpass, lowpass) + \
                                '_' + str(quality) + '-grand_avg-ave.fif')
                 ga.save(ga_path)
 
@@ -1139,7 +1139,7 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
                 ga.comment = trial
                 ga_path = join(save_dir_averages, 'evoked',
                                key + '_' + trial + '_' + 'h1' + \
-                               filter_string(lowpass, highpass) + \
+                               filter_string(highpass, lowpass) + \
                                '_' + str(quality) + '-grand_avg-ave.fif')
                 ga.save(ga_path)
 
@@ -1151,17 +1151,17 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
                 ga.comment = trial
                 ga_path = join(save_dir_averages, 'evoked',
                                key + '_' + trial + '_' + 'h2' + \
-                               filter_string(lowpass, highpass) + \
+                               filter_string(highpass, lowpass) + \
                                '_' + str(quality) + '-grand_avg-ave.fif')
                 ga.save(ga_path)
 
 
 @decor.topline
-def tfr(name, save_dir, lowpass, highpass, ica_evokeds, tfr_freqs, overwrite_tfr,
+def tfr(name, save_dir, highpass, lowpass, ica_evokeds, tfr_freqs, overwrite_tfr,
         tfr_method, multitaper_bandwith, stockwell_width, n_jobs):
-    power_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_pw-tfr.h5'
+    power_name = name + filter_string(highpass, lowpass) + '_' + tfr_method + '_pw-tfr.h5'
     power_path = join(save_dir, power_name)
-    itc_name = name + filter_string(lowpass, highpass) + '_' + tfr_method + '_itc-tfr.h5'
+    itc_name = name + filter_string(highpass, lowpass) + '_' + tfr_method + '_itc-tfr.h5'
     itc_path = join(save_dir, itc_name)
 
     n_cycles = tfr_freqs / 2.
@@ -1170,9 +1170,9 @@ def tfr(name, save_dir, lowpass, highpass, ica_evokeds, tfr_freqs, overwrite_tfr
 
     if overwrite_tfr or not isfile(power_path) or not isfile(itc_path):
         if ica_evokeds:
-            epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+            epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         else:
-            epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+            epochs = io.read_epochs(name, save_dir, highpass, lowpass)
 
         for trial_type in epochs.event_id:
             if tfr_method == 'morlet':
@@ -1208,7 +1208,7 @@ def tfr(name, save_dir, lowpass, highpass, ica_evokeds, tfr_freqs, overwrite_tfr
 
 @decor.topline
 def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
-                  lowpass, highpass, tfr_method):
+                  highpass, lowpass, tfr_method):
     for key in grand_avg_dict:
         trial_dict = {}
         print(f'grand_average for {key}')
@@ -1246,7 +1246,7 @@ def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
                 ga.comment = trial
                 ga_path = join(save_dir_averages, 'tfr',
                                key + '_' + trial + \
-                               filter_string(lowpass, highpass) + \
+                               filter_string(highpass, lowpass) + \
                                '-grand_avg-tfr.h5')
 
                 ga.save(ga_path)
@@ -1502,25 +1502,25 @@ def create_forward_solution(name, save_dir, subtomri, subjects_dir,
 
 
 @decor.topline
-def estimate_noise_covariance(name, save_dir, lowpass, highpass,
+def estimate_noise_covariance(name, save_dir, highpass, lowpass,
                               overwrite, ermsub, data_path, baseline,
                               bad_channels, n_jobs, erm_noise_cov,
                               calm_noise_cov, ica_evokeds, erm_ica):
     if calm_noise_cov:
 
         print('Noise Covariance on 1-Minute-Calm')
-        covariance_name = name + filter_string(lowpass, highpass) + '-clm-cov.fif'
+        covariance_name = name + filter_string(highpass, lowpass) + '-clm-cov.fif'
         covariance_path = join(save_dir, covariance_name)
 
         if overwrite or not isfile(covariance_path):
 
-            raw = io.read_filtered(name, save_dir, lowpass, highpass)
+            raw = io.read_filtered(name, save_dir, highpass, lowpass)
             raw.crop(tmin=5, tmax=50)
             raw.pick_types(exclude=bad_channels)
 
             if erm_ica:
                 print('Applying ICA to ERM-Raw')
-                ica = io.read_ica(name, save_dir, lowpass, highpass)
+                ica = io.read_ica(name, save_dir, highpass, lowpass)
                 raw = ica.apply(raw)
 
             noise_covariance = mne.compute_raw_covariance(raw, n_jobs=n_jobs,
@@ -1534,15 +1534,15 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass,
     elif ermsub == 'None' or 'leer' in name or erm_noise_cov is False:
 
         print('Noise Covariance on Epochs')
-        covariance_name = name + filter_string(lowpass, highpass) + '-cov.fif'
+        covariance_name = name + filter_string(highpass, lowpass) + '-cov.fif'
         covariance_path = join(save_dir, covariance_name)
 
         if overwrite or not isfile(covariance_path):
 
             if ica_evokeds:
-                epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+                epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
             else:
-                epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+                epochs = io.read_epochs(name, save_dir, highpass, lowpass)
 
             tmin, tmax = baseline
             noise_covariance = mne.compute_covariance(epochs, tmin=tmin, tmax=tmax,
@@ -1556,19 +1556,19 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass,
 
     else:
         print('Noise Covariance on ERM')
-        covariance_name = name + filter_string(lowpass, highpass) + '-erm-cov.fif'
+        covariance_name = name + filter_string(highpass, lowpass) + '-erm-cov.fif'
         covariance_path = join(save_dir, covariance_name)
 
         if overwrite or not isfile(covariance_path):
 
-            erm_name = ermsub + filter_string(lowpass, highpass) + '-raw.fif'
+            erm_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
             erm_path = join(data_path, 'empty_room_data', erm_name)
 
             erm = mne.io.read_raw_fif(erm_path, preload=True)
             erm.pick_types(exclude=bad_channels)
             if erm_ica:
                 print('Applying ICA to ERM-Raw')
-                ica = io.read_ica(name, save_dir, lowpass, highpass)
+                ica = io.read_ica(name, save_dir, highpass, lowpass)
                 erm = ica.apply(erm)
 
             noise_covariance = mne.compute_raw_covariance(erm, n_jobs=n_jobs,
@@ -1581,15 +1581,15 @@ def estimate_noise_covariance(name, save_dir, lowpass, highpass,
 
 
 @decor.topline
-def create_inverse_operator(name, save_dir, lowpass, highpass,
+def create_inverse_operator(name, save_dir, highpass, lowpass,
                             overwrite, ermsub, calm_noise_cov, erm_noise_cov):
-    inverse_operator_name = name + filter_string(lowpass, highpass) + '-inv.fif'
+    inverse_operator_name = name + filter_string(highpass, lowpass) + '-inv.fif'
     inverse_operator_path = join(save_dir, inverse_operator_name)
 
     if overwrite or not isfile(inverse_operator_path):
 
         info = io.read_info(name, save_dir)
-        noise_covariance = io.read_noise_covariance(name, save_dir, lowpass, highpass,
+        noise_covariance = io.read_noise_covariance(name, save_dir, highpass, lowpass,
                                                     erm_noise_cov, ermsub, calm_noise_cov)
 
         forward = io.read_forward(name, save_dir)
@@ -1605,10 +1605,10 @@ def create_inverse_operator(name, save_dir, lowpass, highpass,
 
 # noinspection PyShadowingNames
 @decor.topline
-def source_estimate(name, save_dir, lowpass, highpass, inverse_method, toi,
+def source_estimate(name, save_dir, highpass, lowpass, inverse_method, toi,
                     overwrite):
-    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
-    evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+    inverse_operator = io.read_inverse_operator(name, save_dir, highpass, lowpass)
+    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
 
     snr = 3.0
     lambda2 = 1.0 / snr ** 2
@@ -1618,7 +1618,7 @@ def source_estimate(name, save_dir, lowpass, highpass, inverse_method, toi,
         evoked = evoked.crop(toi[0], toi[1])
         trial_type = evoked.comment
 
-        stc_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '_' + inverse_method
+        stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '_' + inverse_method
         stc_path = join(save_dir, stc_name)
         if overwrite or not isfile(stc_path + '-lh.stc'):
             stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, method=inverse_method)
@@ -1627,7 +1627,7 @@ def source_estimate(name, save_dir, lowpass, highpass, inverse_method, toi,
             print('source estimates for: ' + name + \
                   ' already exists')
 
-        n_stc_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '_' + inverse_method + '-normal'
+        n_stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '_' + inverse_method + '-normal'
         n_stc_path = join(save_dir, n_stc_name)
         if overwrite or not isfile(n_stc_path + '-lh.stc'):
             normal_stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2,
@@ -1639,9 +1639,9 @@ def source_estimate(name, save_dir, lowpass, highpass, inverse_method, toi,
 
 
 @decor.topline
-def vector_source_estimate(name, save_dir, lowpass, highpass, inverse_method, toi, overwrite):
-    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
-    evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+def vector_source_estimate(name, save_dir, highpass, lowpass, inverse_method, toi, overwrite):
+    inverse_operator = io.read_inverse_operator(name, save_dir, highpass, lowpass)
+    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
 
     snr = 3.0
     lambda2 = 1.0 / snr ** 2
@@ -1651,7 +1651,7 @@ def vector_source_estimate(name, save_dir, lowpass, highpass, inverse_method, to
         evoked = evoked.crop(toi[0], toi[1])
         trial_type = evoked.comment
 
-        v_stc_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '_' + inverse_method + '-vector'
+        v_stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '_' + inverse_method + '-vector'
         v_stc_path = join(save_dir, v_stc_name)
         if overwrite or not isfile(v_stc_path + '-stc.h5'):
             v_stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2,
@@ -1662,16 +1662,16 @@ def vector_source_estimate(name, save_dir, lowpass, highpass, inverse_method, to
 
 
 @decor.topline
-def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, erm_noise_cov,
+def mixed_norm_estimate(name, save_dir, highpass, lowpass, toi, inverse_method, erm_noise_cov,
                         ermsub, calm_noise_cov, event_id, mixn_dip, overwrite):
-    evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
     forward = io.read_forward(name, save_dir)
-    noise_cov = io.read_noise_covariance(name, save_dir, lowpass, highpass,
+    noise_cov = io.read_noise_covariance(name, save_dir, highpass, lowpass,
                                          erm_noise_cov, ermsub, calm_noise_cov)
-    inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    inv_op = io.read_inverse_operator(name, save_dir, highpass, lowpass)
     if inverse_method == 'dSPM':
         print('dSPM-Inverse-Solution existent, loading...')
-        stcs = io.read_source_estimates(name, save_dir, lowpass, highpass, inverse_method, event_id)
+        stcs = io.read_source_estimates(name, save_dir, highpass, lowpass, inverse_method, event_id)
     else:
         print('No dSPM-Inverse-Solution available, calculating...')
         stcs = dict()
@@ -1682,7 +1682,7 @@ def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, 
             evoked = evoked.crop(toi[0], toi[1])
             trial_type = evoked.comment
             stcs[trial_type] = mne.minimum_norm.apply_inverse(evoked, inv_op, lambda2, method='dSPM')
-            stc_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '_' + inverse_method
+            stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '_' + inverse_method
             stc_path = join(save_dir, stc_name)
             stcs[trial_type].save(stc_path)
 
@@ -1708,7 +1708,7 @@ def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, 
                                                            return_residual=True, return_as_dipoles=True)
 
             for idx, dip in enumerate(mixn):
-                mixn_dip_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '-mixn-dip-' + str(idx)
+                mixn_dip_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '-mixn-dip-' + str(idx)
                 mixn_dip_path = join(save_dir, 'dipoles', mixn_dip_name)
                 dip.save(mixn_dip_path)
         else:
@@ -1717,7 +1717,7 @@ def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, 
                                                            weights=stcs[trial_type], n_mxne_iter=n_mxne_iter,
                                                            return_residual=True, return_as_dipoles=True)
 
-            mixn_stc_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '-mixn'
+            mixn_stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '-mixn'
             mixn_stc_path = join(save_dir, mixn_stc_name)
             if overwrite or not isfile(mixn_stc_path + '-lh.stc'):
                 mixn.save(mixn_stc_path)
@@ -1725,7 +1725,7 @@ def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, 
                 print('mixed-norm source estimates for: ' + name + \
                       ' already exists')
 
-        mixn_res_name = name + filter_string(lowpass, highpass) + '_' + trial_type + '-mixn-res-ave.fif'
+        mixn_res_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '-mixn-res-ave.fif'
         mixn_res_path = join(save_dir, mixn_res_name)
         if overwrite or not isfile(mixn_res_path):
             residual.save(mixn_res_path)
@@ -1735,17 +1735,17 @@ def mixed_norm_estimate(name, save_dir, lowpass, highpass, toi, inverse_method, 
 
 
 @decor.topline
-def ecd_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
+def ecd_fit(name, save_dir, highpass, lowpass, ermsub, subjects_dir,
             subtomri, erm_noise_cov, calm_noise_cov, ecds, save_plots, figures_path):
     try:
         ecd = ecds[name]
 
-        evokeds = io.read_evokeds(name, save_dir, lowpass, highpass)
+        evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
         bem = io.read_bem_solution(subtomri, subjects_dir)
         trans = io.read_transformation(save_dir, subtomri)
         t1_path = io.path_fs_volume('T1', subtomri, subjects_dir)
 
-        noise_covariance = io.read_noise_covariance(name, save_dir, lowpass, highpass,
+        noise_covariance = io.read_noise_covariance(name, save_dir, highpass, lowpass,
                                                     erm_noise_cov, ermsub, calm_noise_cov)
 
         for evoked in evokeds:
@@ -1772,7 +1772,7 @@ def ecd_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
                 mri_pos = mne.head_to_mri(dipole.pos, subtomri, trans, subjects_dir)
 
                 save_path_anat = join(figures_path, 'ECD', name +
-                                      filter_string(lowpass, highpass) + '_' +
+                                      filter_string(highpass, lowpass) + '_' +
                                       cevk.comment + Dip + '_ECD_anat.jpg')
 
                 plot_anat(t1_path, cut_coords=mri_pos[best_idx], output_file=save_path_anat,
@@ -1795,7 +1795,7 @@ def ecd_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
 
                 if save_plots:
                     save_path = join(figures_path, 'ECD', trial_type, name +
-                                     filter_string(lowpass, highpass) + '_' +
+                                     filter_string(highpass, lowpass) + '_' +
                                      cevk.comment + '_ECD_' + Dip + '.jpg')
                     figure.savefig(save_path, dpi=600)
                     print('figure: ' + save_path + ' has been saved')
@@ -1819,7 +1819,7 @@ def ecd_fit(name, save_dir, lowpass, highpass, ermsub, subjects_dir,
 
 
 @decor.topline
-def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_id,
+def create_func_label(name, save_dir, highpass, lowpass, inverse_method, event_id,
                       subtomri, subjects_dir, source_space_method, label_origin,
                       parcellation_orig, ev_ids_label_analysis,
                       save_plots, figures_path, sub_script_path,
@@ -1827,10 +1827,10 @@ def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_i
     print(name)
     if combine_ab and isinstance(name, tuple):
         n_stcs_a = io.read_normal_source_estimates(name[0], save_dir[0],
-                                                   lowpass, highpass,
+                                                   highpass, lowpass,
                                                    inverse_method, event_id)
         n_stcs_b = io.read_normal_source_estimates(name[1], save_dir[1],
-                                                   lowpass, highpass,
+                                                   highpass, lowpass,
                                                    inverse_method, event_id)
         n_stcs = {}
         print('Grand_Averaging a/b')
@@ -1845,7 +1845,7 @@ def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_i
             n_stcs.update({trial: n_stc_average})
 
     n_stcs = io.read_normal_source_estimates(name, save_dir,
-                                             lowpass, highpass,
+                                             highpass, lowpass,
                                              inverse_method, event_id)
 
     src = io.read_source_space(subtomri, subjects_dir, source_space_method)
@@ -1998,13 +1998,13 @@ def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_i
                     plt.plot(1e3 * n_stc.times, tc_f, 'k',
                              label=f'Anatomical {label.name}')
                     save_path = join(figures_path, 'func_labels', 'label_time_course',
-                                     f'{name[0]}_{label.name}{filter_string(lowpass, highpass)}-0.jpg')
+                                     f'{name[0]}_{label.name}{filter_string(highpass, lowpass)}-0.jpg')
                     plt.savefig(save_path, dpi=600)
                     plt.figure(3)
                     plt.plot(1e3 * stc_func_label.times, pca_func_f, 'b',
                              label=f'Functional {label.name}')
                     save_path = join(figures_path, 'func_labels', 'label_time_course',
-                                     f'{name[0]}_{label.name}{filter_string(lowpass, highpass)}-1.jpg')
+                                     f'{name[0]}_{label.name}{filter_string(highpass, lowpass)}-1.jpg')
                     plt.savefig(save_path, dpi=600)
                     axes.plot(1e3 * n_stc.times, tc_f, 'k',
                               label=f'Anatomical {label.name}')
@@ -2016,9 +2016,9 @@ def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_i
                     axes.set_xlabel('time [ms]')
                     axes.set_ylabel('source amplitude (normal orientation)')
                     if combine_ab and isinstance(name, tuple):
-                        axes.set_title(f'{name[0]}_{label.name}_{max_t}s_{filter_string(lowpass, highpass)}')
+                        axes.set_title(f'{name[0]}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
                     else:
-                        axes.set_title(f'{name}_{label.name}_{max_t}s_{filter_string(lowpass, highpass)}')
+                        axes.set_title(f'{name}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
                 else:
                     axes[idx].plot(1e3 * n_stc.times, tc_f, 'k',
                                    label=f'Anatomical {label.name}')
@@ -2030,9 +2030,9 @@ def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_i
                     axes[idx].set_xlabel('time [ms]')
                     axes[0].set_ylabel('source amplitude (normal orientation)')
                     if combine_ab and isinstance(name, tuple):
-                        axes[idx].set_title(f'{name[0]}_{label.name}_{max_t}s_{filter_string(lowpass, highpass)}')
+                        axes[idx].set_title(f'{name[0]}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
                     else:
-                        axes[idx].set_title(f'{name}_{label.name}_{max_t}s_{filter_string(lowpass, highpass)}')
+                        axes[idx].set_title(f'{name}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
             plt.show()
 
             if save_plots:
@@ -2040,10 +2040,10 @@ def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_i
                     makedirs(join(figures_path, 'func_labels', 'label_time_course'))
                 if combine_ab and isinstance(name, tuple):
                     save_path = join(figures_path, 'func_labels', 'label_time_course',
-                                     f'{name[0]}_{label.name}{filter_string(lowpass, highpass)}-tc.jpg')
+                                     f'{name[0]}_{label.name}{filter_string(highpass, lowpass)}-tc.jpg')
                 else:
                     save_path = join(figures_path, 'func_labels', 'label_time_course',
-                                     f'{name}_{label.name}{filter_string(lowpass, highpass)}-tc.jpg')
+                                     f'{name}_{label.name}{filter_string(highpass, lowpass)}-tc.jpg')
                 print(save_path)
                 fig.savefig(save_path, dpi=600)
 
@@ -2111,10 +2111,10 @@ def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_i
                 makedirs(join(figures_path, 'func_labels', 'brain_plots'))
             if combine_ab and isinstance(name, tuple):
                 b_save_path = join(figures_path, 'func_labels', 'brain_plots',
-                                   f'{name[0]}-{trial}{filter_string(lowpass, highpass)}-b.jpg')
+                                   f'{name[0]}-{trial}{filter_string(highpass, lowpass)}-b.jpg')
             else:
                 b_save_path = join(figures_path, 'func_labels', 'brain_plots',
-                                   f'{name}-{trial}{filter_string(lowpass, highpass)}-b.jpg')
+                                   f'{name}-{trial}{filter_string(highpass, lowpass)}-b.jpg')
             brain.save_image(b_save_path)
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
@@ -2130,7 +2130,7 @@ def create_func_label(name, save_dir, lowpass, highpass, inverse_method, event_i
 
 # noinspection PyTypeChecker
 @decor.topline
-def func_label_processing(name, save_dir, lowpass, highpass,
+def func_label_processing(name, save_dir, highpass, lowpass,
                           save_plots, figures_path, subtomri, subjects_dir,
                           sub_script_path, ev_ids_label_analysis,
                           corr_threshold, fuse_ab):
@@ -2271,10 +2271,10 @@ def func_label_processing(name, save_dir, lowpass, highpass,
                         makedirs(join(figures_path, 'func_labels', 'group_time_course'))
                     if fuse_ab and isinstance(name, tuple):
                         save_path = join(figures_path, 'func_labels', 'group_time_course',
-                                         f'{name[0]}-{ev_id}{filter_string(lowpass, highpass)}_{str(i)}-{hemi}-tc.jpg')
+                                         f'{name[0]}-{ev_id}{filter_string(highpass, lowpass)}_{str(i)}-{hemi}-tc.jpg')
                     else:
                         save_path = join(figures_path, 'func_labels', 'group_time_course',
-                                         f'{name}-{ev_id}{filter_string(lowpass, highpass)}_{str(i)}-{hemi}-tc.jpg')
+                                         f'{name}-{ev_id}{filter_string(highpass, lowpass)}_{str(i)}-{hemi}-tc.jpg')
                     plt.savefig(save_path, dpi=600)
 
                 else:
@@ -2285,17 +2285,17 @@ def func_label_processing(name, save_dir, lowpass, highpass,
                     makedirs(join(figures_path, 'func_labels', 'group_brain_plots'))
                 if fuse_ab and isinstance(name, tuple):
                     b_save_path = join(figures_path, 'func_labels', 'group_brain_plots',
-                                       f'{name[0]}-{ev_id}{filter_string(lowpass, highpass)}-{hemi}-b.jpg')
+                                       f'{name[0]}-{ev_id}{filter_string(highpass, lowpass)}-{hemi}-b.jpg')
                 else:
                     b_save_path = join(figures_path, 'func_labels', 'group_brain_plots',
-                                       f'{name}-{ev_id}{filter_string(lowpass, highpass)}-{hemi}-b.jpg')
+                                       f'{name}-{ev_id}{filter_string(highpass, lowpass)}-{hemi}-b.jpg')
                 brain.save_image(b_save_path)
 
             plot.close_all()
 
 
 @decor.topline
-def func_label_ctf_ps(name, save_dir, lowpass, highpass, subtomri,
+def func_label_ctf_ps(name, save_dir, highpass, lowpass, subtomri,
                       subjects_dir, parcellation_orig):
     label_origin = ['S_central-lh', 'S_central-rh', 'S_circular_insula_sup-lh',
                     'S_circular_insula_sup-rh']
@@ -2303,7 +2303,7 @@ def func_label_ctf_ps(name, save_dir, lowpass, highpass, subtomri,
     forward = io.read_forward(name, save_dir)
     labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir,
                                         parc=parcellation_orig)
-    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    inverse_operator = io.read_inverse_operator(name, save_dir, highpass, lowpass)
     labels_list = []
     for label in [l for l in labels if l.name in label_origin]:
         labels_list.append(label)
@@ -2321,7 +2321,7 @@ def func_label_ctf_ps(name, save_dir, lowpass, highpass, subtomri,
 
 
 @decor.topline
-def label_power_phlck(name, save_dir, lowpass, highpass, baseline, tfr_freqs,
+def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
                       subtomri, target_labels, parcellation,
                       ev_ids_label_analysis, n_jobs,
                       save_plots, figures_path):
@@ -2330,10 +2330,10 @@ def label_power_phlck(name, save_dir, lowpass, highpass, baseline, tfr_freqs,
     freqs = tfr_freqs  # define frequencies of interest
     n_cycles = freqs / 3.  # different number of cycle per frequency
     labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
-    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    inverse_operator = io.read_inverse_operator(name, save_dir, highpass, lowpass)
 
     for ev_id in ev_ids_label_analysis:
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)[ev_id]
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)[ev_id]
         # subtract the evoked response in order to exclude evoked activity
         epochs_induced = epochs.copy().subtract_evoked()
 
@@ -2355,12 +2355,12 @@ def label_power_phlck(name, save_dir, lowpass, highpass, baseline, tfr_freqs,
                 power_ind = np.mean(power_ind, axis=0)  # average over sources
                 itc_ind = np.mean(itc_ind, axis=0)  # average over sources
 
-                # power_path = join(save_dir, f'{name}_{label.name}_{filter_string(lowpass, highpass)}_{ev_id}_pw-tfr.npy')
-                # itc_path = join(save_dir, f'{name}_{label.name}_{filter_string(lowpass, highpass)}_{ev_id}_itc-tfr.npy')
+                # power_path = join(save_dir, f'{name}_{label.name}_{filter_string(highpass, lowpass)}_{ev_id}_pw-tfr.npy')
+                # itc_path = join(save_dir, f'{name}_{label.name}_{filter_string(highpass, lowpass)}_{ev_id}_itc-tfr.npy')
                 power_ind_path = join(save_dir,
-                                      f'{name}_{label.name}_{filter_string(lowpass, highpass)}_{ev_id}_pw-ind-tfr.npy')
+                                      f'{name}_{label.name}_{filter_string(highpass, lowpass)}_{ev_id}_pw-ind-tfr.npy')
                 itc_ind_path = join(save_dir,
-                                    f'{name}_{label.name}_{filter_string(lowpass, highpass)}_{ev_id}_itc-ind-tfr.npy')
+                                    f'{name}_{label.name}_{filter_string(highpass, lowpass)}_{ev_id}_itc-ind-tfr.npy')
 
                 #                np.save(power_path, power)
                 #                np.save(itc_path, itc)
@@ -2416,7 +2416,7 @@ def label_power_phlck(name, save_dir, lowpass, highpass, baseline, tfr_freqs,
                 if save_plots:
                     save_path = join(figures_path, 'tf_source_space/label_power',
                                      name + '_' + label.name + '_power_' + \
-                                     ev_id + filter_string(lowpass, highpass) + '.jpg')
+                                     ev_id + filter_string(highpass, lowpass) + '.jpg')
                     plt.savefig(save_path, dpi=600)
                     print('figure: ' + save_path + ' has been saved')
                 else:
@@ -2427,7 +2427,7 @@ def label_power_phlck(name, save_dir, lowpass, highpass, baseline, tfr_freqs,
 
 @decor.topline
 def grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis,
-                          data_path, lowpass, highpass,
+                          data_path, highpass, lowpass,
                           target_labels, save_dir_averages):
     for key in grand_avg_dict:
         #        powers = {}
@@ -2449,7 +2449,7 @@ def grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis,
 
         for name in grand_avg_dict[key]:
             save_dir = join(data_path, name)
-            power_dict = io.read_label_power(name, save_dir, lowpass, highpass,
+            power_dict = io.read_label_power(name, save_dir, highpass, lowpass,
                                              ev_ids_label_analysis, target_labels)
             for ev_id in ev_ids_label_analysis:
                 for hemi in target_labels:
@@ -2485,15 +2485,15 @@ def grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis,
 
 
 @decor.topline
-def apply_morph(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
+def apply_morph(name, save_dir, highpass, lowpass, subjects_dir, subtomri,
                 inverse_method, overwrite, morph_to, source_space_method,
                 event_id):
-    stcs = io.read_source_estimates(name, save_dir, lowpass, highpass, inverse_method,
+    stcs = io.read_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
                                     event_id)
     morph = io.read_morph(subtomri, morph_to, source_space_method, subjects_dir)
 
     for trial_type in stcs:
-        stc_morphed_name = name + filter_string(lowpass, highpass) + '_' + \
+        stc_morphed_name = name + filter_string(highpass, lowpass) + '_' + \
                            trial_type + '_' + inverse_method + '_morphed'
         stc_morphed_path = join(save_dir, stc_morphed_name)
 
@@ -2507,15 +2507,15 @@ def apply_morph(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
 
 
 @decor.topline
-def apply_morph_normal(name, save_dir, lowpass, highpass, subjects_dir, subtomri,
+def apply_morph_normal(name, save_dir, highpass, lowpass, subjects_dir, subtomri,
                        inverse_method, overwrite, morph_to, source_space_method,
                        event_id):
-    stcs = io.read_normal_source_estimates(name, save_dir, lowpass, highpass, inverse_method,
+    stcs = io.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
                                            event_id)
     morph = io.read_morph(subtomri, morph_to, source_space_method, subjects_dir)
 
     for trial_type in stcs:
-        stc_morphed_name = name + filter_string(lowpass, highpass) + '_' + \
+        stc_morphed_name = name + filter_string(highpass, lowpass) + '_' + \
                            trial_type + '_' + inverse_method + '_morphed_normal'
         stc_morphed_path = join(save_dir, stc_morphed_name)
 
@@ -2529,16 +2529,16 @@ def apply_morph_normal(name, save_dir, lowpass, highpass, subjects_dir, subtomri
 
 
 @decor.topline
-def source_space_connectivity(name, save_dir, lowpass, highpass,
+def source_space_connectivity(name, save_dir, highpass, lowpass,
                               subtomri, subjects_dir, parcellation,
                               target_labels, con_methods, con_fmin, con_fmax,
                               n_jobs, overwrite, ica_evokeds, ev_ids_label_analysis):
     info = io.read_info(name, save_dir)
     if ica_evokeds:
-        all_epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+        all_epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
     else:
-        all_epochs = io.read_epochs(name, save_dir, lowpass, highpass)
-    inverse_operator = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+        all_epochs = io.read_epochs(name, save_dir, highpass, lowpass)
+    inverse_operator = io.read_inverse_operator(name, save_dir, highpass, lowpass)
     src = inverse_operator['src']
 
     for ev_id in ev_ids_label_analysis:
@@ -2577,7 +2577,7 @@ def source_space_connectivity(name, save_dir, lowpass, highpass,
             con_res[con_method] = c[:, :, 0]
 
             # save to .npy file
-            file_name = name + filter_string(lowpass, highpass) + \
+            file_name = name + filter_string(highpass, lowpass) + \
                         '_' + str(con_fmin) + '-' + str(con_fmax) + '_' + con_method \
                         + '-' + ev_id
             file_path = join(save_dir, file_name)
@@ -2590,7 +2590,7 @@ def source_space_connectivity(name, save_dir, lowpass, highpass,
 
 @decor.topline
 def grand_avg_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averages,
-                      lowpass, highpass, event_id):
+                      highpass, lowpass, event_id):
     # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
     n_chunks = 8
     for key in grand_avg_dict:
@@ -2642,7 +2642,7 @@ def grand_avg_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averag
                 trial_average.comment = trial
                 ga_path = join(save_dir_averages, 'stc',
                                key + '_' + trial + \
-                               filter_string(lowpass, highpass) + \
+                               filter_string(highpass, lowpass) + \
                                '-grand_avg')
                 trial_average.save(ga_path)
         # clear memory
@@ -2651,7 +2651,7 @@ def grand_avg_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averag
 
 @decor.topline
 def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averages,
-                             lowpass, highpass, event_id):
+                             highpass, lowpass, event_id):
     # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
     n_chunks = 8
     for key in grand_avg_dict:
@@ -2703,7 +2703,7 @@ def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir
                 trial_average.comment = trial
                 ga_path = join(save_dir_averages, 'stc',
                                key + '_' + trial + \
-                               filter_string(lowpass, highpass) + \
+                               filter_string(highpass, lowpass) + \
                                '-grand_avg-normal')
                 trial_average.save(ga_path)
         # clear memory
@@ -2711,7 +2711,7 @@ def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir
 
 
 # noinspection PyTypeChecker,PyTypeChecker
-def grand_avg_func_labels(grand_avg_dict, lowpass, highpass,
+def grand_avg_func_labels(grand_avg_dict, highpass, lowpass,
                           save_dir_averages, event_id, ev_ids_label_analysis,
                           subjects_dir, source_space_method,
                           parcellation_orig, sub_script_path, save_plots,
@@ -2719,7 +2719,7 @@ def grand_avg_func_labels(grand_avg_dict, lowpass, highpass,
     global func_label
     figures_path_grand_averages = join(figures_path, 'grand_averages/source_space/stc')
     save_dir = join(save_dir_averages, 'stc')
-    ga_dict = io.read_grand_avg_stcs_normal(lowpass, highpass, save_dir_averages, grand_avg_dict,
+    ga_dict = io.read_grand_avg_stcs_normal(highpass, lowpass, save_dir_averages, grand_avg_dict,
                                             event_id)
 
     src = io.read_source_space('fsaverage', subjects_dir, source_space_method)
@@ -2841,7 +2841,7 @@ def grand_avg_func_labels(grand_avg_dict, lowpass, highpass,
                         axes.legend()
                         axes.set_xlabel('time [ms]')
                         axes.set_ylabel('source amplitude (normal orientation)')
-                        axes.set_title(f'{key}_{label.name}_{max_t}s_{filter_string(lowpass, highpass)}')
+                        axes.set_title(f'{key}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
                     else:
                         axes[idx].plot(1e3 * n_stc.times, tc_f, 'k',
                                        label=f'Anatomical {label.name}')
@@ -2852,14 +2852,14 @@ def grand_avg_func_labels(grand_avg_dict, lowpass, highpass,
                         axes[idx].legend()
                         axes[idx].set_xlabel('time [ms]')
                         axes[0].set_ylabel('source amplitude (normal orientation)')
-                        axes[idx].set_title(f'{key}_{label.name}_{max_t}s_{filter_string(lowpass, highpass)}')
+                        axes[idx].set_title(f'{key}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
                 plt.show()
 
                 if save_plots:
                     if not exists(join(figures_path_grand_averages, 'func_labels', 'label_time_course')):
                         makedirs(join(figures_path_grand_averages, 'func_labels', 'label_time_course'))
                     save_path = join(figures_path_grand_averages, 'func_labels', 'label_time_course',
-                                     f'{key}_{label.name}{filter_string(lowpass, highpass)}-tc.jpg')
+                                     f'{key}_{label.name}{filter_string(highpass, lowpass)}-tc.jpg')
                     print(save_path)
                     fig.savefig(save_path, dpi=600)
 
@@ -2921,7 +2921,7 @@ def grand_avg_func_labels(grand_avg_dict, lowpass, highpass,
                 if not exists(join(figures_path_grand_averages, 'func_labels', 'brain_plots')):
                     makedirs(join(figures_path_grand_averages, 'func_labels', 'brain_plots'))
                 b_save_path = join(figures_path_grand_averages, 'func_labels', 'brain_plots',
-                                   f'{key}-{ev_id}{filter_string(lowpass, highpass)}-b.jpg')
+                                   f'{key}-{ev_id}{filter_string(highpass, lowpass)}-b.jpg')
                 brain.save_image(b_save_path)
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
@@ -2931,7 +2931,7 @@ def grand_avg_func_labels(grand_avg_dict, lowpass, highpass,
             plot.close_all()
 
 
-def grand_avg_func_labels_processing(grand_avg_dict, lowpass, highpass,
+def grand_avg_func_labels_processing(grand_avg_dict, highpass, lowpass,
                                      save_dir_averages, ev_ids_label_analysis,
                                      subjects_dir, sub_script_path, save_plots,
                                      figures_path, corr_threshold,
@@ -3081,7 +3081,7 @@ def grand_avg_func_labels_processing(grand_avg_dict, lowpass, highpass,
                     if not exists(join(figures_path_grand_averages, 'func_labels', 'group_time_course')):
                         makedirs(join(figures_path_grand_averages, 'func_labels', 'group_time_course'))
                     save_path = join(figures_path_grand_averages, 'func_labels', 'group_time_course',
-                                     f'{key}-{ev_id}{filter_string(lowpass, highpass)}_{hemi}-tc.jpg')
+                                     f'{key}-{ev_id}{filter_string(highpass, lowpass)}_{hemi}-tc.jpg')
                     plt.savefig(save_path, dpi=600)
 
                 else:
@@ -3091,7 +3091,7 @@ def grand_avg_func_labels_processing(grand_avg_dict, lowpass, highpass,
                     if not exists(join(figures_path_grand_averages, 'func_labels', 'group_brain_plots')):
                         makedirs(join(figures_path_grand_averages, 'func_labels', 'group_brain_plots'))
                     b_save_path = join(figures_path_grand_averages, 'func_labels', 'group_brain_plots',
-                                       f'{key}-{ev_id}{filter_string(lowpass, highpass)}-{hemi}-b.jpg')
+                                       f'{key}-{ev_id}{filter_string(highpass, lowpass)}-{hemi}-b.jpg')
                     brain.save_image(b_save_path)
 
                 plot.close_all()
@@ -3100,7 +3100,7 @@ def grand_avg_func_labels_processing(grand_avg_dict, lowpass, highpass,
 @decor.topline
 def grand_avg_connect(grand_avg_dict, data_path, con_methods,
                       con_fmin, con_fmax, save_dir_averages,
-                      lowpass, highpass, ev_ids_label_analysis):
+                      highpass, lowpass, ev_ids_label_analysis):
     for key in grand_avg_dict:
         for ev_id in ev_ids_label_analysis:
             con_methods_dict = {}
@@ -3132,7 +3132,7 @@ def grand_avg_connect(grand_avg_dict, data_path, con_methods,
 
                     ga_path = join(save_dir_averages, 'connect',
                                    key + '_' + inverse_method + \
-                                   filter_string(lowpass, highpass) + \
+                                   filter_string(highpass, lowpass) + \
                                    '-grand_avg_connect' + '-' + ev_id)
                     np.save(ga_path, average)
 
@@ -3144,9 +3144,9 @@ def grand_avg_connect(grand_avg_dict, data_path, con_methods,
 def statistics_source_space(morphed_data_all, save_dir_averages,
                             independent_variable_1,
                             independent_variable_2,
-                            time_window, n_permutations, lowpass, highpass, overwrite):
+                            time_window, n_permutations, highpass, lowpass, overwrite):
     cluster_name = independent_variable_1 + '_vs_' + independent_variable_2 + \
-                   filter_string(lowpass, highpass) + '_time_' + \
+                   filter_string(highpass, lowpass) + '_time_' + \
                    str(int(time_window[0] * 1e3)) + '-' + \
                    str(int(time_window[1] * 1e3)) + '_msec.cluster'
     cluster_path = join(save_dir_averages, 'statistics', cluster_name)
@@ -3204,27 +3204,27 @@ def statistics_source_space(morphed_data_all, save_dir_averages,
 
 
 @decor.topline
-def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
+def corr_ntr(name, save_dir, highpass, lowpass, exec_ops, ermsub,
              subtomri, ica_evokeds, save_plots, figures_path):
     info = io.read_info(name, save_dir)
 
     if ica_evokeds:
-        epochs = io.read_ica_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from ICA-Epochs after applied SSP')
     elif exec_ops['apply_ssp_er'] and ermsub != 'None':
-        epochs = io.read_ssp_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ER-Epochs')
     elif exec_ops['apply_ssp_clm']:
-        epochs = io.read_ssp_clm_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds form SSP_Clm-Epochs')
     elif exec_ops['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
-        epochs = io.read_ssp_eog_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_EOG-Epochs')
     elif exec_ops['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
-        epochs = io.read_ssp_ecg_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ECG-Epochs')
     else:
-        epochs = io.read_epochs(name, save_dir, lowpass, highpass)
+        epochs = io.read_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from (normal) Epochs')
     # Analysis for each trial_type
     labels = mne.read_labels_from_annot(subtomri, parc='aparc.a2009s')
@@ -3235,7 +3235,7 @@ def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
         if label.name in target_labels:
             ch_labels.append(label)
 
-    inv_op = io.read_inverse_operator(name, save_dir, lowpass, highpass)
+    inv_op = io.read_inverse_operator(name, save_dir, highpass, lowpass)
     src = inv_op['src']
 
     for l in ch_labels:
@@ -3275,7 +3275,7 @@ def corr_ntr(name, save_dir, lowpass, highpass, exec_ops, ermsub,
 
         if save_plots:
             save_path = join(figures_path, 'correlation_ntr', name + \
-                             filter_string(lowpass, highpass) + \
+                             filter_string(highpass, lowpass) + \
                              '_' + l.name + '.jpg')
             plt.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
