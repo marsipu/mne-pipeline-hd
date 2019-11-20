@@ -8,7 +8,7 @@ from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import (QWidget, QToolTip, QPushButton, QApplication, QMainWindow, QToolBar,
                              QStatusBar, QInputDialog, QFileDialog, QLabel, QGridLayout, QDesktopWidget, QVBoxLayout,
                              QHBoxLayout, QAction, QMenu, QActionGroup, QWidgetAction, QLineEdit, QDialog, QListWidget)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSettings
 from . import operations_dict as opd
 from . import utilities as ut
 from . import subject_organisation as suborg
@@ -30,13 +30,19 @@ def bt_delet_last(path):
         for listitem in dlist[:-1]:
             dl.write('%s' % listitem)
 
+
 def bt_assign():
     pass
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.app = QApplication.instance()
+        self.app.setApplicationName('mne_pipeline_hd')
+        self.app.setOrganizationName('marsipu')
+        self.settings = QSettings()
+
         self.setWindowTitle('MNE-Pipeline HD')
         self._centralWidget = QWidget(self)
         self.setCentralWidget(self._centralWidget)
@@ -52,10 +58,8 @@ class MainWindow(QMainWindow):
         self.texts = ['which_file', 'quality', 'modality', 'which_mri_subject', 'which_erm_file',
                       'which_motor_erm_file']
 
-        self.pipeline_path = ut.get_pipeline_path(__file__)
+        self.pipeline_path = ut.get_pipeline_path(os.getcwd())
         self.cache_path = join(join(self.pipeline_path, '_pipeline_cache'))
-        print(self.cache_path)
-        self.f_cache_path = join(self.cache_path, 'func_cache.py')
         self.platform = sys.platform
         if not exists(join(self.pipeline_path, '_pipeline_cache')):
             makedirs(join(self.pipeline_path, '_pipeline_cache'))
@@ -79,6 +83,7 @@ class MainWindow(QMainWindow):
                 else:
                     self.home_path = str(hp)
                     ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
+        # Todo: Store evererything in QSettings
         # Get project_name
         if not exists(join(self.cache_path, 'win_cache.py')):
             self.project_name, ok = QInputDialog().getText(self, 'Project-Selection',
@@ -101,6 +106,7 @@ class MainWindow(QMainWindow):
         self.which_erm_file = self.lines['which_erm_file'].text()
         self.which_motor_erm_file = self.lines['which_motor_erm_file'].text()
 
+    # Todo Mac-Bug Menu not selectable
     def create_menu(self):
         # Project
         project_menu = QMenu('Project')
@@ -109,7 +115,7 @@ class MainWindow(QMainWindow):
             projects = [p for p in os.listdir(self.home_path) if isdir(join(self.home_path, p, 'Daten'))]
         except FileNotFoundError:
             print(f'{self.home_path} can not be found, choose another one!')
-            hp = QFileDialog.getExistingDirectory(self, 'Select another folder to store your Pipeline-Projects')
+            hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
             if hp == '':
                 raise RuntimeError('You canceled an important step, start over')
             else:
@@ -121,6 +127,7 @@ class MainWindow(QMainWindow):
                                                          'Enter a project-name for your first project')
             if ok:
                 projects.append(self.project_name)
+                makedirs(join(self.home_path, self.project_name))
             else:
                 # Problem in Python Console, QInputDialog somehow stays in memory
                 raise RuntimeError('You canceled an important step, start over')
@@ -158,9 +165,12 @@ class MainWindow(QMainWindow):
         self.actions['add_subject'] = input_menu.addAction('Add Files', partial(suborg.add_files, file_list_path,
                                                                                 erm_list_path, motor_erm_list_path,
                                                                                 data_path, orig_data_path))
-        self.actions['add_mri_subject'] = input_menu.addAction('Add MRI-Subject', partial(suborg.add_mri_subjects, subjects_dir,
-                                                                                          mri_sub_list_path, data_path))
-        self.actions['add_sub_dict'] = input_menu.addAction('Assign File --> MRI-Subject', partial(self.add_sub_dict, file_list_path, mri_sub_list_path))
+        self.actions['add_mri_subject'] = input_menu.addAction('Add MRI-Subject',
+                                                               partial(suborg.add_mri_subjects, subjects_dir,
+                                                                       mri_sub_list_path, data_path))
+        self.actions['add_sub_dict'] = input_menu.addAction('Assign File --> MRI-Subject',
+                                                            partial(self.add_sub_dict, file_list_path,
+                                                                    mri_sub_list_path))
 
         # Setting
         setting_menu = self.menuBar().addMenu('Settings')
@@ -226,8 +236,7 @@ class MainWindow(QMainWindow):
         bt_layout.addWidget(delete_bt)
         layout.addLayout(bt_layout)
         dlg.setLayout(layout)
-        dlg.exec()
-
+        dlg.exec_()
 
     # Todo: Fix Dark-Mode
     def dark_mode(self):
@@ -252,7 +261,7 @@ class MainWindow(QMainWindow):
             white_palette = QPalette()
             white_palette.setColor(QPalette.Window, QColor(255, 255, 255))
             white_palette.setColor(QPalette.WindowText, Qt.black)
-            white_palette.setColor(QPalette.Base, QColor(25, 25, 25))
+            white_palette.setColor(QPalette.Base, QColor(255, 255, 255))
             white_palette.setColor(QPalette.AlternateBase, QColor(255, 255, 255))
             white_palette.setColor(QPalette.ToolTipBase, Qt.black)
             white_palette.setColor(QPalette.ToolTipText, Qt.black)
@@ -282,13 +291,20 @@ class MainWindow(QMainWindow):
         self.update()
         ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
 
-    # Todo: Make Center work, frameGeometry doesn't give the actual geometry after make_func_bts
+    # # Todo: Make Center work, frameGeometry doesn't give the actual geometry after make_func_bts
     def center(self):
-        qr = self.frameGeometry()
-        print(qr)
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
+        # qr = self.frameGeometry()
+        # print(qr)
+        # cp = QDesktopWidget().availableGeometry().center()
+        # qr.moveCenter(cp)
+        # self.move(qr.topLeft())
+        pass
+        # self.move(QApplication.desktop().screen().rect().center() - self.rect().center())
+        # print(f'Destop-Center: {QApplication.desktop().screen().rect().center()}, Window-Center: {self.rect().center()}'
+        #       f', Difference: {QApplication.desktop().screen().rect().center() - self.rect().center()}')
+        # print(self._centralWidget.geometry())
+        # self.updateGeometry()
+        # print(self._centralWidget.geometry())
 
     def subject_selection(self):
         stat_dict = ut.read_dict_file('win_cache', self.cache_path)
@@ -296,7 +312,7 @@ class MainWindow(QMainWindow):
 
         for t in self.texts:
             self.lines[t] = QLineEdit()
-            self.lines[t] .setPlaceholderText(t)
+            self.lines[t].setPlaceholderText(t)
             self.lines[t].textChanged.connect(partial(self.update_subsel, t))
             subsel_layout.addWidget(self.lines[t])
             if t in stat_dict:
@@ -323,29 +339,22 @@ class MainWindow(QMainWindow):
         for f, v in opd.all_fs.items():
             self.func_dict.update({f: v})
 
-        if not exists(self.f_cache_path):
-            with open(self.f_cache_path, 'w') as fc:
-                fc.write(str(self.func_dict))
-        else:
-            with open(self.f_cache_path, 'r') as fc:
-                # Make sure that cache takes changes from operations_dict
-                pre_f_cache = eval(fc.read())
-                if len(pre_f_cache) == 0:
-                    pre_f_cache = self.func_dict
-                else:
-                    del_list = []
-                    for k in pre_f_cache:
-                        if k not in opd.all_fs:
-                            del_list.append(k)
-                    if len(del_list) > 0:
-                        for d in del_list:
-                            del pre_f_cache[d]
-                            print(f'{d} from func_cache deleted')
+        pre_func_dict = self.settings.value('func_checked')
+        del_list = []
+        if pre_func_dict is not None:
+            for k in pre_func_dict:
+                if k not in opd.all_fs:
+                    del_list.append(k)
+            if len(del_list) > 0:
+                for d in del_list:
+                    del pre_func_dict[d]
+                    print(f'{d} from func_cache deleted')
 
-                # Default selection from opd overwrites cache
-                for f in self.func_dict:
+            # Default selection from opd overwrites cache
+            for f in self.func_dict:
+                if f in pre_func_dict:
                     if not self.func_dict[f]:
-                        self.func_dict[f] = pre_f_cache[f]
+                        self.func_dict[f] = pre_func_dict[f]
 
         for function_group in opd.all_fs_gs:
             if r_cnt > 25:
@@ -360,7 +369,7 @@ class MainWindow(QMainWindow):
                 if self.func_dict[function]:
                     pb.setChecked(True)
                     self.func_dict[function] = 1
-                pb.clicked.connect(partial(self.select_func, function))
+                pb.toggled.connect(partial(self.select_func, function))
                 func_layout.addWidget(pb, r_cnt, c_cnt)
                 r_cnt += 1
                 if r_cnt >= r_max:
@@ -369,8 +378,12 @@ class MainWindow(QMainWindow):
         self.general_layout.addLayout(func_layout)
 
     def select_func(self, function):
-        self.func_dict[function] = 1
-        print(function)
+        if self.bt_dict[function].isChecked():
+            self.func_dict[function] = 1
+            print(f'{function} selected')
+        else:
+            print(f'{function} deselected')
+            self.func_dict[function] = 0
 
     def add_main_bts(self):
         main_bt_layout = QHBoxLayout()
@@ -401,32 +414,34 @@ class MainWindow(QMainWindow):
         self.make_it_stop = True
 
     def closeEvent(self, event):
-        with open(self.f_cache_path, 'w') as fc:
-            fc.write(str(self.func_dict))
+        self.settings.setValue('func_checked', self.func_dict)
         for ln in self.lines:
+
             ut.dict_filehandler(ln, 'win_cache', self.cache_path, self.lines[ln].text(), silent=True)
         # for act in self.actions:
         #     if self.actions[act].checked():
         #         ut.dict_filehandler(act, 'win_cache', self.cache_path, 1, silent=True)
+
         event.accept()
 
 
 # for testing
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    win = MainWindow()
-    win.show()
-    # for Spyder, when exit-button only closes Main-Widget
-    # app.lastWindowClosed.connect(app.quit)
-    app.exec_()
-    # win.close()
-    home_path = win.home_path
-    project_name = win.project_name
-    exec_ops = win.func_dict
-    make_it_stop = win.make_it_stop
-    del app, win, MainWindow
-    if make_it_stop:
-        raise SystemExit(0)
+    def run_main_gui():
+        app = QApplication(sys.argv)
+        win = MainWindow()
+        win.show()
+        # for Spyder, when exit-button only closes Main-Widget
+        # app.lastWindowClosed.connect(app.quit)
+        app.exec_()
+        # win.close()
+        home_path = win.home_path
+        project_name = win.project_name
+        exec_ops = win.func_dict
+        make_it_stop = win.make_it_stop
+        # del app, win, MainWindow
+        if make_it_stop:
+            raise SystemExit(0)
     # sys.exit(app.exec_())
     # Proper way would be sys.exit(app.exec_()), but this ends the console with exit code 0
     # This is the way, when FunctionWindow acts as main window for the Pipeline and all functions

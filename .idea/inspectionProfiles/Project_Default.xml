@@ -40,6 +40,9 @@
           <option value="PyQt5.QtWidgets.clicked.connect" />
           <option value="PyQt5.QtGui.lastWindowClosed.connect" />
           <option value="PyQt5.QtWidgets.triggered.connect" />
+          <option value="PyQt5.QtWidgets.pressed.connect" />
+          <option value="PyQt5.QtWidgets.released.connect" />
+          <option value="PyQt5.QtWidgets.toggled.connect" />
         </list>
       </option>
     </inspection_tool>

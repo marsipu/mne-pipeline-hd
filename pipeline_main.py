@@ -18,7 +18,6 @@ from os.path import join, isfile, exists
 from importlib import reload, util
 from PyQt5.QtWidgets import QApplication
 
-
 from pipeline_functions import io_functions as io
 from pipeline_functions import operations_functions as op
 from pipeline_functions import plot_functions as plot
@@ -44,7 +43,10 @@ def reload_all():
     reload(ppf)
     reload(mff)
 
+
 reload_all()
+
+
 # %%============================================================================
 # WHICH SUBJECT? (TO SET)
 # ==============================================================================
@@ -64,12 +66,15 @@ reload_all()
 app = QApplication(sys.argv)
 win = guif.MainWindow()
 win.show()
+win.activateWindow()
+# Important for Spyder, will get stuck otherwise
 app.lastWindowClosed.connect(app.quit)
-app.exec()
+app.exec_()
 
 home_path = win.home_path
 project_name = win.project_name
 project_path = join(home_path, project_name)
+pipeline_path = win.pipeline_path
 exec_ops = win.func_dict
 make_it_stop = win.make_it_stop
 which_file = win.which_file
@@ -79,6 +84,8 @@ which_mri_subject = win.which_mri_subject
 which_erm_file = win.which_erm_file
 which_motor_erm_file = win.which_motor_erm_file
 
+# Needed to prevent exit code -1073741819 (0xC0000005) (probably memory error)
+#   after sequential running
 del app, win
 if make_it_stop:
     raise SystemExit(0)
@@ -122,10 +129,10 @@ for file in file_lists:
 # %%============================================================================
 # LOAD PARAMETERS
 # ==============================================================================
-pscript_path = os.path.dirname(os.path.realpath(__file__))
 if not isfile(join(project_path, f'parameters_{project_name}.py')):
     from templates import parameters_template as p
-    shutil.copy2(join(pscript_path, 'templates/parameters_template.py'),
+
+    shutil.copy2(join(pipeline_path, 'templates/parameters_template.py'),
                  join(project_path, f'parameters_{project_name}.py'))
     print(f'parameters_{project_name}.py created in {project_path} from parameters_template.py')
 else:
@@ -141,8 +148,6 @@ else:
     figures_path = join(project_path, f'Figures/{p.highpass}-{p.lowpass}_Hz')
 
 op.populate_directories(data_path, figures_path, p.event_id)
-# Todo: Path-Existence Assertion
-
 # %%============================================================================
 # SUBJECT ORGANISATION (NOT TO SET)
 # ==============================================================================
@@ -274,7 +279,8 @@ if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
 
 if len(all_files) == 0:
     print('No files in file_list!')
-    print('Add some folders(the ones with the date containing fif-files) to your orig_data_path-folder and check "add_files"')
+    print(
+        'Add some folders(the ones with the date containing fif-files) to your orig_data_path-folder and check "add_files"')
 else:
     print(f'Selected {len(files)} Subjects:')
     for f in files:
