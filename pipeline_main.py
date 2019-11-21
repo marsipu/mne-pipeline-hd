@@ -5,6 +5,7 @@ Adapted from Lau Møller Andersen
 @author: Martin Schulz
 @email: martin.schulz@stud.uni-heidelberg.de
 @github: marsipu/mne_pipeline_hd
+Adapted to Melody Processing of Kim's data
 """
 # %%============================================================================
 # IMPORTS
@@ -64,7 +65,7 @@ reload_all()
 # %%============================================================================
 # GUI CALL
 # ==============================================================================
-matplotlib.use("Qt5Agg")
+#matplotlib.use("Qt5Agg")
 app = QApplication(sys.argv)
 win = guif.MainWindow()
 win.show()

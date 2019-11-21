@@ -130,6 +130,7 @@ class MainWindow(QMainWindow):
                 makedirs(join(self.home_path, self.project_name))
             else:
                 # Problem in Python Console, QInputDialog somehow stays in memory
+                self.close()
                 raise RuntimeError('You canceled an important step, start over')
         for project in projects:
             action = QAction(project, project_menu)
