@@ -17,6 +17,7 @@ import mne
 from os.path import join, isfile, exists
 from importlib import reload, util
 from PyQt5.QtWidgets import QApplication
+import matplotlib
 
 from pipeline_functions import io_functions as io
 from pipeline_functions import operations_functions as op
@@ -63,6 +64,7 @@ reload_all()
 # %%============================================================================
 # GUI CALL
 # ==============================================================================
+matplotlib.use("Qt5Agg")
 app = QApplication(sys.argv)
 win = guif.MainWindow()
 win.show()
