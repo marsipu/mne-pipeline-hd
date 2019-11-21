@@ -5,3 +5,4 @@ __pycache__/*
 cachedir/*
 /_pipeline_cache/*
 .idea/*
+.idea
