@@ -48,7 +48,6 @@ def reload_all():
 
 reload_all()
 
-
 # %%============================================================================
 # WHICH SUBJECT? (TO SET)
 # ==============================================================================
@@ -65,8 +64,24 @@ reload_all()
 # %%============================================================================
 # GUI CALL
 # ==============================================================================
-#matplotlib.use("Qt5Agg")
+matplotlib.use("Qt5Agg")
+app_name = 'mne_pipeline_hd'
+if sys.platform.startswith("darwin"):
+    try:  # set bundle name on macOS (app name shown in the menu bar)
+        from Foundation import NSBundle
+
+        bundle = NSBundle.mainBundle()
+        if bundle:
+            info = (bundle.localizedInfoDictionary() or
+                    bundle.infoDictionary())
+            if info:
+                info["CFBundleName"] = app_name
+    except ImportError:
+        NSBundle = None
+        pass
 app = QApplication(sys.argv)
+app.setApplicationName(app_name)
+app.setOrganizationName('marsipu')
 win = guif.MainWindow()
 win.show()
 win.activateWindow()

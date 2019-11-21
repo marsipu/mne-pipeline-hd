@@ -39,8 +39,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.app = QApplication.instance()
-        self.app.setApplicationName('mne_pipeline_hd')
-        self.app.setOrganizationName('marsipu')
         self.settings = QSettings()
 
         self.setWindowTitle('MNE-Pipeline HD')
@@ -67,6 +65,7 @@ class MainWindow(QMainWindow):
         if not exists(join(self.cache_path, 'paths.py')):
             hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
             if hp == '':
+                self.close()
                 raise RuntimeError('You canceled an important step, start over')
             else:
                 self.home_path = str(hp)
@@ -79,6 +78,7 @@ class MainWindow(QMainWindow):
                 hp = QFileDialog.getExistingDirectory(self,
                                                       'New OS: Select the folder where you store your Pipeline-Projects')
                 if hp == '':
+                    self.close()
                     raise RuntimeError('You canceled an important step, start over')
                 else:
                     self.home_path = str(hp)
@@ -117,6 +117,7 @@ class MainWindow(QMainWindow):
             print(f'{self.home_path} can not be found, choose another one!')
             hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
             if hp == '':
+                self.close()
                 raise RuntimeError('You canceled an important step, start over')
             else:
                 self.home_path = str(hp)
