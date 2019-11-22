@@ -1,8 +1,6 @@
 
 *.pyc
-Pipeline_functions/__pycache__/operations_functions.cpython-36.pyc
 __pycache__/*
 cachedir/*
 /_pipeline_cache/*
 .idea/*
-.idea

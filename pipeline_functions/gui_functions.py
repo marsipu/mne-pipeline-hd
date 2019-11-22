@@ -9,9 +9,14 @@ from PyQt5.QtWidgets import (QWidget, QToolTip, QPushButton, QApplication, QMain
                              QStatusBar, QInputDialog, QFileDialog, QLabel, QGridLayout, QDesktopWidget, QVBoxLayout,
                              QHBoxLayout, QAction, QMenu, QActionGroup, QWidgetAction, QLineEdit, QDialog, QListWidget)
 from PyQt5.QtCore import Qt, QSettings
-from . import operations_dict as opd
-from . import utilities as ut
-from . import subject_organisation as suborg
+try:
+    from . import operations_dict as opd
+    from . import utilities as ut
+    from . import subject_organisation as suborg
+except ImportError:
+    from pipeline_functions import operations_dict as opd
+    from pipeline_functions import utilities as ut
+    from pipeline_functions import subject_organisation as suborg
 
 
 def bt_read(path):
@@ -75,15 +80,15 @@ class MainWindow(QMainWindow):
             if self.platform in path_dict:
                 self.home_path = path_dict[self.platform]
             else:
-                hp = QFileDialog.getExistingDirectory(self,
-                                                      'New OS: Select the folder where you store your Pipeline-Projects')
+                hp = QFileDialog.getExistingDirectory(self, 'New OS: Select the folder where '
+                                                      'you store your Pipeline-Projects')
                 if hp == '':
                     self.close()
                     raise RuntimeError('You canceled an important step, start over')
                 else:
                     self.home_path = str(hp)
                     ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
-        # Todo: Store evererything in QSettings
+        # Todo: Store evrything in QSettings
         # Get project_name
         if not exists(join(self.cache_path, 'win_cache.py')):
             self.project_name, ok = QInputDialog().getText(self, 'Project-Selection',
@@ -302,7 +307,8 @@ class MainWindow(QMainWindow):
         # self.move(qr.topLeft())
         pass
         # self.move(QApplication.desktop().screen().rect().center() - self.rect().center())
-        # print(f'Destop-Center: {QApplication.desktop().screen().rect().center()}, Window-Center: {self.rect().center()}'
+        # print(f'Destop-Center: {QApplication.desktop().screen().rect().center()},
+        #       f'Window-Center: {self.rect().center()}'
         #       f', Difference: {QApplication.desktop().screen().rect().center() - self.rect().center()}')
         # print(self._centralWidget.geometry())
         # self.updateGeometry()
@@ -418,7 +424,6 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.settings.setValue('func_checked', self.func_dict)
         for ln in self.lines:
-
             ut.dict_filehandler(ln, 'win_cache', self.cache_path, self.lines[ln].text(), silent=True)
         # for act in self.actions:
         #     if self.actions[act].checked():
@@ -429,21 +434,17 @@ class MainWindow(QMainWindow):
 
 # for testing
 if __name__ == '__main__':
-    def run_main_gui():
-        app = QApplication(sys.argv)
-        win = MainWindow()
-        win.show()
-        # for Spyder, when exit-button only closes Main-Widget
-        # app.lastWindowClosed.connect(app.quit)
-        app.exec_()
-        # win.close()
-        home_path = win.home_path
-        project_name = win.project_name
-        exec_ops = win.func_dict
-        make_it_stop = win.make_it_stop
-        # del app, win, MainWindow
-        if make_it_stop:
-            raise SystemExit(0)
+    app = QApplication(sys.argv)
+    win = MainWindow()
+    win.show()
+    # not working in PyCharm, needed for Spyder
+    # app.lastWindowClosed.connect(app.quit)
+    app.exec_()
+    # win.close()
+    make_it_stop = win.make_it_stop
+    del app, win
+    if make_it_stop:
+        raise SystemExit(0)
     # sys.exit(app.exec_())
     # Proper way would be sys.exit(app.exec_()), but this ends the console with exit code 0
     # This is the way, when FunctionWindow acts as main window for the Pipeline and all functions

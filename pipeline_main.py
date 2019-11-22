@@ -64,7 +64,7 @@ reload_all()
 # %%============================================================================
 # GUI CALL
 # ==============================================================================
-matplotlib.use("Qt5Agg")
+# matplotlib.use("Qt5Agg")
 app_name = 'mne_pipeline_hd'
 if sys.platform.startswith("darwin"):
     try:  # set bundle name on macOS (app name shown in the menu bar)
@@ -85,8 +85,8 @@ app.setOrganizationName('marsipu')
 win = guif.MainWindow()
 win.show()
 win.activateWindow()
-# Important for Spyder, will get stuck otherwise
-app.lastWindowClosed.connect(app.quit)
+# In Pycharm not working but needed for Spyder
+# app.lastWindowClosed.connect(app.quit)
 app.exec_()
 
 home_path = win.home_path
@@ -297,8 +297,8 @@ if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
 
 if len(all_files) == 0:
     print('No files in file_list!')
-    print(
-        'Add some folders(the ones with the date containing fif-files) to your orig_data_path-folder and check "add_files"')
+    print('Add some folders(the ones with the date containing fif-files) to your orig_data_path-folder and check '
+          '"add_files"')
 else:
     print(f'Selected {len(files)} Subjects:')
     for f in files:
