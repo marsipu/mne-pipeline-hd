@@ -200,9 +200,10 @@ def add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False):
 
     for f in folder_list:
         if isdir(join(subjects_dir, f)):
-            if f not in mri_subjects:
-                mri_subjects.append(f)
-                print(f'Added {f} to mri-subjects')
+            if 'surf' in os.listdir(join(subjects_dir, f)):
+                if f not in mri_subjects:
+                    mri_subjects.append(f)
+                    print(f'Added {f} to mri-subjects')
 
     with open(mri_sub_list_path, 'w') as slp:
         for ms in mri_subjects:

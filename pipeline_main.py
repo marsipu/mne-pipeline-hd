@@ -112,7 +112,7 @@ if make_it_stop:
 # ==============================================================================
 pscripts_path = join(project_path, '_pipeline_scripts')
 orig_data_path = join(project_path, 'meg')  # location of original-data
-subjects_dir = join(home_path, 'Freesurfer/Output')  # name of your Freesurfer
+subjects_dir = join(home_path, 'Freesurfer')  # name of your Freesurfer
 data_path = join(project_path, 'Daten')
 mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
 save_dir_averages = join(data_path, 'grand_averages')
