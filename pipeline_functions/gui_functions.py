@@ -2,42 +2,185 @@ import sys
 import os
 from functools import partial
 from os import makedirs, listdir
-from os.path import join, isdir, exists
+from os.path import join, isfile, isdir, exists
 
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import (QWidget, QToolTip, QPushButton, QApplication, QMainWindow, QToolBar,
                              QStatusBar, QInputDialog, QFileDialog, QLabel, QGridLayout, QDesktopWidget, QVBoxLayout,
-                             QHBoxLayout, QAction, QMenu, QActionGroup, QWidgetAction, QLineEdit, QDialog, QListWidget)
+                             QHBoxLayout, QAction, QMenu, QActionGroup, QWidgetAction, QLineEdit, QDialog, QListWidget,
+                             QMessageBox)
 from PyQt5.QtCore import Qt, QSettings
+
 try:
     from . import operations_dict as opd
     from . import utilities as ut
     from . import subject_organisation as suborg
+    from . import io_functions as io
 except ImportError:
     from pipeline_functions import operations_dict as opd
     from pipeline_functions import utilities as ut
     from pipeline_functions import subject_organisation as suborg
+    from pipeline_functions import io_functions as io
 
 
-def bt_read(path):
-    try:
-        with open(path, 'r') as rl:
-            print(rl.read())
-    except FileNotFoundError:
-        print('mri_sub_list.py not yet created, run add_mri_subjects')
+def selectedlistitem(inst1, inst2, dict_path):
+    choice = inst1.currentItem().text()
+    existing_dict = suborg.read_sub_dict(dict_path)
+    if choice in existing_dict:
+        it2 = inst2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
+        inst2.setCurrentItem(it2)
 
 
-def bt_delet_last(path):
-    with open(path, 'r') as dl:
+def assign(dict_path, list_widget1, list_widget2):
+    choice1 = list_widget1.currentItem().text()
+    choice2 = list_widget2.currentItem().text()
+    if not isfile(dict_path):
+        with open(dict_path, 'w') as sd:
+            sd.write(f'{choice1}:{choice2}\n')
+        print(f'{dict_path} created')
+
+    else:
+        existing_dict = suborg.read_sub_dict(dict_path)
+        if choice1 in existing_dict:
+            existing_dict[choice1] = choice2
+        else:
+            existing_dict.update({choice1: choice2})
+        with open(dict_path, 'w') as sd:
+            for key, value in existing_dict.items():
+                sd.write(f'{key}:{value}\n')
+
+
+def assign_none(dict_path, list_widget1):
+    choice = list_widget1.currentItem().text()
+    if not isfile(dict_path):
+        with open(dict_path, 'w') as sd:
+            sd.write(f'{choice}:None\n')
+        print(f'{dict_path} created')
+
+    else:
+        existing_dict = suborg.read_sub_dict(dict_path)
+        if choice in existing_dict:
+            existing_dict[choice] = None
+        else:
+            existing_dict.update({choice: None})
+        with open(dict_path, 'w') as sd:
+            for key, value in existing_dict.items():
+                sd.write(f'{key}:{value}\n')
+
+
+def assign_all_none(inst, dict_path, list_widget1):
+    reply = QMessageBox.question(inst, 'Assign None to All?', 'Do you really want to assign none to all?',
+                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+    if reply == QMessageBox.Yes:
+        all_items = dict()
+        for i in range(list_widget1.count()):
+            all_items.update({list_widget1.item(i).text(): None})
+        if not isfile(dict_path):
+            with open(dict_path, 'w') as sd:
+                for key, value in all_items.items():
+                    sd.write(f'{key}:{value}\n')
+        else:
+            with open(dict_path, 'w') as sd:
+                for key, value in all_items.items():
+                    sd.write(f'{key}:{value}\n')
+    else:
+        print('Puh, pig haved')
+
+
+def delete_last(dict_path):
+    with open(dict_path, 'r') as dl:
         dlist = (dl.readlines())
 
-    with open(path, 'w') as dl:
+    with open(dict_path, 'w') as dl:
         for listitem in dlist[:-1]:
-            dl.write('%s' % listitem)
+            dl.write(str(listitem))
 
 
-def bt_assign():
-    pass
+def read(dict_path):
+    try:
+        with open(dict_path, 'r') as rl:
+            print(rl.read())
+    except FileNotFoundError:
+        print('file not yet created, assign some files')
+
+
+# General Function for Assignment of MRI-Subject and ERM-File
+class SubDictDialog(QDialog):
+    def __init__(self, main_win, mode):
+        super().__init__(main_win)
+        self.main_win = main_win
+        self.layout = QGridLayout()
+        self.mode = mode
+        if mode == 'mri':
+            self.setWindowTitle('Assign files to their MRI-Subject')
+            self.path2 = main_win.mri_sub_list_path
+            self.dict_path = main_win.sub_dict_path
+            self.label2 = 'Choose a mri-subject'
+        elif mode == 'erm':
+            self.setWindowTitle('Assign files to their ERM-File')
+            self.path2 = main_win.erm_list_path
+            self.dict_path = main_win.erm_dict_path
+            self.label2 = 'Choose a erm-file'
+
+        self.init_ui()
+        self.show()
+        self.activateWindow()
+        self.exec_()
+
+    def init_ui(self):
+        file_label = QLabel('Choose a file', self)
+        second_label = QLabel(self.label2, self)
+
+        self.layout.addWidget(file_label, 0, 0)
+        self.layout.addWidget(second_label, 0, 1)
+        # ListWidgets
+        list_widget1 = QListWidget(self)
+        list_widget2 = QListWidget(self)
+        with open(self.main_win.file_list_path, 'r') as sl:
+            for idx, line in enumerate(sl):
+                list_widget1.insertItem(idx, line[:-1])
+        with open(self.path2, 'r') as msl:
+            for idx, line in enumerate(msl):
+                list_widget2.insertItem(idx, line[:-1])
+
+        # Response to Clicking
+        list_widget1.itemClicked.connect(partial(selectedlistitem, list_widget1, list_widget2, self.dict_path))
+
+        self.layout.addWidget(list_widget1, 1, 0)
+        self.layout.addWidget(list_widget2, 1, 1)
+        # Add buttons
+        bt_layout = QVBoxLayout()
+        assign_bt = QPushButton('Assign', self)
+        assign_bt.clicked.connect(partial(assign, self.dict_path, list_widget1, list_widget2))
+        bt_layout.addWidget(assign_bt)
+
+        none_bt = QPushButton('Assign None')
+        none_bt.clicked.connect(partial(assign_none, self.dict_path, list_widget1))
+        bt_layout.addWidget(none_bt)
+
+        all_none_bt = QPushButton('Assign None to all')
+        all_none_bt.clicked.connect(partial(assign_all_none, self, self.dict_path, list_widget1))
+        bt_layout.addWidget(all_none_bt)
+
+        read_bt = QPushButton('Read', self)
+        read_bt.clicked.connect(partial(read, self.dict_path))
+        bt_layout.addWidget(read_bt)
+
+        delete_bt = QPushButton('Delete Last', self)
+        delete_bt.clicked.connect(partial(delete_last, self.dict_path))
+        bt_layout.addWidget(delete_bt)
+
+        ok_bt = QPushButton('OK', self)
+        ok_bt.clicked.connect(self.close)
+        bt_layout.addWidget(ok_bt)
+
+        self.layout.addLayout(bt_layout, 0, 2, 2, 1)
+        self.setLayout(self.layout)
+
+
+class BadChannelsSelect(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
 
 
 class MainWindow(QMainWindow):
@@ -66,6 +209,7 @@ class MainWindow(QMainWindow):
         self.platform = sys.platform
         if not exists(join(self.pipeline_path, '_pipeline_cache')):
             makedirs(join(self.pipeline_path, '_pipeline_cache'))
+
         # Get home_path
         if not exists(join(self.cache_path, 'paths.py')):
             hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
@@ -81,7 +225,7 @@ class MainWindow(QMainWindow):
                 self.home_path = path_dict[self.platform]
             else:
                 hp = QFileDialog.getExistingDirectory(self, 'New OS: Select the folder where '
-                                                      'you store your Pipeline-Projects')
+                                                            'you store your Pipeline-Projects')
                 if hp == '':
                     self.close()
                     raise RuntimeError('You canceled an important step, start over')
@@ -96,6 +240,21 @@ class MainWindow(QMainWindow):
             ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
         else:
             self.project_name = ut.read_dict_file('win_cache', self.cache_path)['project']
+
+        # Initiate other paths
+        self.project_path = join(self.home_path, self.project_name)
+        self.orig_data_path = join(self.project_path, 'meg')
+        self.data_path = join(self.project_path, 'Daten')
+        self.subjects_dir = join(self.home_path, 'Freesurfer')
+        self.pscripts_path = join(self.project_path, '_pipeline_scripts')
+        self.file_list_path = join(self.pscripts_path, 'file_list.py')
+        self.erm_list_path = join(self.pscripts_path, 'erm_list.py')
+        self.motor_erm_list_path = join(self.pscripts_path, 'motor_erm_list.py')
+        self.mri_sub_list_path = join(self.pscripts_path, 'mri_sub_list.py')
+        self.sub_dict_path = join(self.pscripts_path, 'sub_dict.py')
+        self.erm_dict_path = join(self.pscripts_path, 'erm_dict.py')
+        self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.py')
+        self.quality_dict_path = join(self.pscripts_path, 'quality.py')
 
         # Call methods
         self.create_menu()
@@ -160,24 +319,18 @@ class MainWindow(QMainWindow):
                                                              partial(self.add_project, project_menu, project_group))
         # Input
         input_menu = self.menuBar().addMenu('Input')
-        project_path = join(self.home_path, self.project_name)
-        orig_data_path = join(project_path, 'meg')
-        data_path = join(project_path, 'Daten')
-        subjects_dir = join(self.home_path, 'Freesurfer/Output')
-        pscripts_path = join(project_path, '_pipeline_scripts')
-        file_list_path = join(pscripts_path, 'file_list.py')
-        erm_list_path = join(pscripts_path, 'erm_list.py')
-        motor_erm_list_path = join(pscripts_path, 'motor_erm_list.py')
-        mri_sub_list_path = join(pscripts_path, 'mri_sub_list.py')
-        self.actions['add_subject'] = input_menu.addAction('Add Files', partial(suborg.add_files, file_list_path,
-                                                                                erm_list_path, motor_erm_list_path,
-                                                                                data_path, orig_data_path))
+
+        self.actions['add_subject'] = input_menu.addAction('Add Files', partial(suborg.add_files, self.file_list_path,
+                                                                                self.erm_list_path,
+                                                                                self.motor_erm_list_path,
+                                                                                self.data_path, self.orig_data_path))
         self.actions['add_mri_subject'] = input_menu.addAction('Add MRI-Subject',
-                                                               partial(suborg.add_mri_subjects, subjects_dir,
-                                                                       mri_sub_list_path, data_path))
+                                                               partial(suborg.add_mri_subjects, self.subjects_dir,
+                                                                       self.mri_sub_list_path, self.data_path))
         self.actions['add_sub_dict'] = input_menu.addAction('Assign File --> MRI-Subject',
-                                                            partial(self.add_sub_dict, file_list_path,
-                                                                    mri_sub_list_path))
+                                                            partial(SubDictDialog, self, 'mri'))
+        self.actions['add_erm_dict'] = input_menu.addAction('Assign File --> ERM-File',
+                                                            partial(SubDictDialog, self, 'erm'))
 
         # Setting
         setting_menu = self.menuBar().addMenu('Settings')
@@ -197,6 +350,7 @@ class MainWindow(QMainWindow):
     def change_project(self, project):
         self.project_name = project
         ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
+        self.__init__()
 
     def add_project(self, project_menu, project_group):
         project, ok = QInputDialog.getText(self, 'Project-Selection',
@@ -218,32 +372,6 @@ class MainWindow(QMainWindow):
         # self.actions['Add_Project'] = project_menu.addAction('Add Project',
         #                                                      partial(self.add_project, project_menu, project_group))
         # project_menu.update()
-
-    def add_sub_dict(self, file_list_path, mri_sub_list_path):
-        dlg = QDialog(self)
-        layout = QHBoxLayout()
-        list_widget1 = QListWidget()
-        list_widget2 = QListWidget()
-        with open(file_list_path, 'r') as sl:
-            for idx, line in enumerate(sl):
-                list_widget1.insertItem(idx, line[:-1])
-        with open(mri_sub_list_path, 'r') as msl:
-            for idx, line in enumerate(msl):
-                list_widget2.insertItem(idx, line[:-1])
-        layout.addWidget(list_widget1)
-        layout.addWidget(list_widget2)
-        bt_layout = QVBoxLayout()
-        assign_bt = QPushButton()
-        assign_bt.clicked.connect(bt_assign)
-        read_bt = QPushButton()
-        read_bt.clicked.connect(partial(bt_read, mri_sub_list_path))
-        bt_layout.addWidget(read_bt)
-        delete_bt = QPushButton()
-        delete_bt.clicked.connect(partial(bt_delet_last, mri_sub_list_path))
-        bt_layout.addWidget(delete_bt)
-        layout.addLayout(bt_layout)
-        dlg.setLayout(layout)
-        dlg.exec_()
 
     # Todo: Fix Dark-Mode
     def dark_mode(self):
@@ -406,7 +534,8 @@ class MainWindow(QMainWindow):
         main_bt_layout.addWidget(stop_bt)
 
         clear_bt.clicked.connect(self.clear)
-        start_bt.clicked.connect(self.start)
+        # start_bt.clicked.connect(self.start)
+        start_bt.clicked.connect(plot_test)
         stop_bt.clicked.connect(self.stop)
 
         self.general_layout.addLayout(main_bt_layout)
@@ -432,6 +561,13 @@ class MainWindow(QMainWindow):
         #         ut.dict_filehandler(act, 'win_cache', self.cache_path, 1, silent=True)
 
         event.accept()
+
+
+def plot_test():
+    name = 'pp1a_256_b'
+    save_dir = 'Z:/Promotion\Pin-Prick-Projekt\Daten\pp1a_256_b'
+    r = io.read_raw(name, save_dir)
+    r.plot()
 
 
 # for testing

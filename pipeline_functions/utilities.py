@@ -262,8 +262,11 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
     return file_dict
 
 
-def read_dict_file(file_name, sub_script_path):
-    file_path = join(sub_script_path, file_name + '.py')
+def read_dict_file(file_name, sub_script_path=None):
+    if sub_script_path is None:
+        file_path = file_name
+    else:
+        file_path = join(sub_script_path, file_name + '.py')
     file_dict = dict()
     with open(file_path, 'r') as file:
         for item in file:
