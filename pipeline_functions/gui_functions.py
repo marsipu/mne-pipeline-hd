@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
         self.general_layout = QVBoxLayout()
         self._centralWidget.setLayout(self.general_layout)
 
-        # Attributes for methods
+        # Attributes for class-methods
         self.actions = dict()
         self.func_dict = dict()
         self.bt_dict = dict()
@@ -289,8 +289,10 @@ class MainWindow(QMainWindow):
             self.showFullScreen()
 
     def change_home_path(self):
-        self.home_path = str(
+        new_home_path = str(
             QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects'))
+        if new_home_path is not None:
+            self.home_path = new_home_path
         ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
         self.project_name = None
         self.menuBar().clear()
