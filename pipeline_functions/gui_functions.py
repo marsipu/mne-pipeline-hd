@@ -27,8 +27,13 @@ def selectedlistitem(inst1, inst2, dict_path):
     choice = inst1.currentItem().text()
     existing_dict = suborg.read_sub_dict(dict_path)
     if choice in existing_dict:
-        it2 = inst2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
-        inst2.setCurrentItem(it2)
+        if existing_dict[choice] == 'None':
+            inst2.addItem('None')
+        try:
+            it2 = inst2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
+            inst2.setCurrentItem(it2)
+        except IndexError:
+            pass
 
 
 def assign(dict_path, list_widget1, list_widget2):
@@ -224,8 +229,17 @@ class MainWindow(QMainWindow):
             path_dict = ut.read_dict_file('paths', self.cache_path)
             if self.platform in path_dict:
                 self.home_path = path_dict[self.platform]
+                if not isdir(self.home_path):
+                    hp = QFileDialog.getExistingDirectory(self, 'Select the folder where '
+                                                                'you store your Pipeline-Projects')
+                    if hp == '':
+                        self.close()
+                        raise RuntimeError('You canceled an important step, start over')
+                    else:
+                        self.home_path = str(hp)
+                        ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
             else:
-                hp = QFileDialog.getExistingDirectory(self, 'New OS: Select the folder where '
+                hp = QFileDialog.getExistingDirectory(self, 'Select the folder where '
                                                             'you store your Pipeline-Projects')
                 if hp == '':
                     self.close()
@@ -235,12 +249,28 @@ class MainWindow(QMainWindow):
                     ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
         # Todo: Store everything in QSettings, make reading of project_name more reliable concerning existing projects
         # Get project_name
-        if not exists(join(self.cache_path, 'win_cache.py')):
-            self.project_name, ok = QInputDialog().getText(self, 'Project-Selection',
-                                                           'Enter a project-name for your first project')
-            ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
+        self.projects = [p for p in os.listdir(self.home_path) if isdir(join(self.home_path, p, 'Daten'))]
+        if len(self.projects) == 0:
+            self.project_name, ok = QInputDialog.getText(self, 'Project-Selection',
+                                                         'Enter a project-name for your first project')
+            if ok:
+                self.projects.append(self.project_name)
+                makedirs(join(self.home_path, self.project_name))
+                ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
+            else:
+                # Problem in Python Console, QInputDialog somehow stays in memory
+                self.close()
+                raise RuntimeError('You canceled an important step, start over')
         else:
-            self.project_name = ut.read_dict_file('win_cache', self.cache_path)['project']
+            # Read Last-loaded Project if available
+            try:
+                pre_project_name = ut.read_dict_file('win_cache', self.cache_path)['project']
+                if pre_project_name in self.projects:
+                    self.project_name = pre_project_name
+                else:
+                    self.project_name = self.projects[0]
+            except FileNotFoundError:
+                self.project_name = self.projects[0]
 
         # Initiate other paths
         self.project_path = join(self.home_path, self.project_name)
@@ -291,29 +321,8 @@ class MainWindow(QMainWindow):
         # Project
         project_menu = QMenu('Project')
         project_group = QActionGroup(project_menu)
-        try:
-            projects = [p for p in os.listdir(self.home_path) if isdir(join(self.home_path, p, 'Daten'))]
-        except FileNotFoundError:
-            print(f'{self.home_path} can not be found, choose another one!')
-            hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
-            if hp == '':
-                self.close()
-                raise RuntimeError('You canceled an important step, start over')
-            else:
-                self.home_path = str(hp)
-                ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
-            projects = [p for p in os.listdir(self.home_path) if isdir(join(self.home_path, p, 'Daten'))]
-        if len(projects) == 0:
-            self.project_name, ok = QInputDialog.getText(self, 'Project-Selection',
-                                                         'Enter a project-name for your first project')
-            if ok:
-                projects.append(self.project_name)
-                makedirs(join(self.home_path, self.project_name))
-            else:
-                # Problem in Python Console, QInputDialog somehow stays in memory
-                self.close()
-                raise RuntimeError('You canceled an important step, start over')
-        for project in projects:
+
+        for project in self.projects:
             action = QAction(project, project_menu)
             action.setCheckable(True)
             action.triggered.connect(partial(self.change_project, project))
@@ -322,11 +331,11 @@ class MainWindow(QMainWindow):
             project_group.addAction(action)
         project_group.setExclusive(True)
         # Toggle project from win_cache
-        if self.project_name in projects:
+        if self.project_name in self.projects:
             self.actions[self.project_name].toggle()
         else:
-            self.actions[projects[0]].toggle()
-            self.project_name = projects[0]
+            self.actions[self.projects[0]].toggle()
+            self.project_name = self.projects[0]
             ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
         self.menuBar().addMenu(project_menu)
 
