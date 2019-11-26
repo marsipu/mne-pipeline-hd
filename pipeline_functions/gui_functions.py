@@ -204,6 +204,7 @@ class MainWindow(QMainWindow):
         self.texts = ['which_file', 'quality', 'modality', 'which_mri_subject', 'which_erm_file',
                       'which_motor_erm_file']
 
+        # Pipeline-Paths
         self.pipeline_path = ut.get_pipeline_path(os.getcwd())
         self.cache_path = join(join(self.pipeline_path, '_pipeline_cache'))
         self.platform = sys.platform
@@ -232,7 +233,7 @@ class MainWindow(QMainWindow):
                 else:
                     self.home_path = str(hp)
                     ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
-        # Todo: Store evrything in QSettings
+        # Todo: Store everything in QSettings, make reading of project_name more reliable concerning existing projects
         # Get project_name
         if not exists(join(self.cache_path, 'win_cache.py')):
             self.project_name, ok = QInputDialog().getText(self, 'Project-Selection',
@@ -255,6 +256,21 @@ class MainWindow(QMainWindow):
         self.erm_dict_path = join(self.pscripts_path, 'erm_dict.py')
         self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.py')
         self.quality_dict_path = join(self.pscripts_path, 'quality.py')
+
+        path_lists = [self.subjects_dir, self.orig_data_path, self.data_path, self.pscripts_path]
+        file_lists = [self.file_list_path, self.erm_list_path, self.motor_erm_list_path, self.mri_sub_list_path,
+                      self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.quality_dict_path]
+
+        for path in path_lists:
+            if not exists(path):
+                os.makedirs(path)
+                print(f'{path} created')
+
+        for file in file_lists:
+            if not isfile(file):
+                with open(file, 'w') as fl:
+                    fl.write('')
+                print(f'{file} created')
 
         # Call methods
         self.create_menu()
@@ -314,9 +330,10 @@ class MainWindow(QMainWindow):
             ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
         self.menuBar().addMenu(project_menu)
 
-        project_menu.addSeparator()
         self.actions['Add_Project'] = project_menu.addAction('Add Project',
                                                              partial(self.add_project, project_menu, project_group))
+        # Todo: Separator Issue
+        # project_menu.insertSeparator(self.actions['Add_Project'])
         # Input
         input_menu = self.menuBar().addMenu('Input')
 
@@ -362,16 +379,11 @@ class MainWindow(QMainWindow):
             new_action.triggered.connect(partial(self.change_project, project))
             project_group.addAction(new_action)
             new_action.toggle()
+            new_action.trigger()
             project_menu.insertAction(self.actions['Add_Project'], new_action)
             project_menu.update()
         else:
             pass
-        # project_menu.clear()
-        # project_menu.addActions(project_group.actions())
-        # project_menu.addSeparator()
-        # self.actions['Add_Project'] = project_menu.addAction('Add Project',
-        #                                                      partial(self.add_project, project_menu, project_group))
-        # project_menu.update()
 
     # Todo: Fix Dark-Mode
     def dark_mode(self):
@@ -447,7 +459,7 @@ class MainWindow(QMainWindow):
     def subject_selection(self):
         stat_dict = ut.read_dict_file('win_cache', self.cache_path)
         subsel_layout = QHBoxLayout()
-
+        # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
         for t in self.texts:
             self.lines[t] = QLineEdit()
             self.lines[t].setPlaceholderText(t)

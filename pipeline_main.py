@@ -64,6 +64,7 @@ reload_all()
 # %%============================================================================
 # GUI CALL
 # ==============================================================================
+# Todo: Call functions from an own module and let the Main-Window stay open while execution
 # matplotlib.use("Qt5Agg")
 app_name = 'mne_pipeline_hd'
 if sys.platform.startswith("darwin"):
@@ -89,6 +90,7 @@ win.activateWindow()
 # app.lastWindowClosed.connect(app.quit)
 app.exec_()
 
+# Variables from the GUI
 home_path = win.home_path
 project_name = win.project_name
 project_path = join(home_path, project_name)
@@ -101,49 +103,28 @@ modality = [win.modality]
 which_mri_subject = win.which_mri_subject
 which_erm_file = win.which_erm_file
 which_motor_erm_file = win.which_motor_erm_file
+pscripts_path = win.pscripts_path
+orig_data_path = win.orig_data_path  # location of original-data
+subjects_dir = win.subjects_dir  # name of your Freesurfer-Directory
+mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
+data_path = win.data_path
+save_dir_averages = join(data_path, 'grand_averages')
+
+# add file_names, mri_subjects, sub_dict, bad_channels_dict
+file_list_path = win.file_list_path
+erm_list_path = win.erm_list_path
+motor_erm_list_path = win.motor_erm_list_path  # Special for Pinprick
+mri_sub_list_path = win.mri_sub_list_path
+sub_dict_path = win.sub_dict_path
+erm_dict_path = win.erm_dict_path
+bad_channels_dict_path = win.bad_channels_dict_path
+quality_dict_path = win.quality_dict_path
 
 # Needed to prevent exit code -1073741819 (0xC0000005) (probably memory error)
 #   after sequential running
 del app, win
 if make_it_stop:
     raise SystemExit(0)
-# %%============================================================================
-# PATHS
-# ==============================================================================
-pscripts_path = join(project_path, '_pipeline_scripts')
-orig_data_path = join(project_path, 'meg')  # location of original-data
-subjects_dir = join(home_path, 'Freesurfer')  # name of your Freesurfer
-data_path = join(project_path, 'Daten')
-mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
-save_dir_averages = join(data_path, 'grand_averages')
-
-# add file_names, mri_subjects, sub_dict, bad_channels_dict
-file_list_path = join(pscripts_path, 'file_list.py')
-erm_list_path = join(pscripts_path, 'erm_list.py')  # ERM means Empty-Room
-motor_erm_list_path = join(pscripts_path, 'motor_erm_list.py')  # Special for Pinprick
-mri_sub_list_path = join(pscripts_path, 'mri_sub_list.py')
-sub_dict_path = join(pscripts_path, 'sub_dict.py')
-erm_dict_path = join(pscripts_path, 'erm_dict.py')
-bad_channels_dict_path = join(pscripts_path, 'bad_channels_dict.py')
-quality_dict_path = join(pscripts_path, 'quality.py')
-
-path_lists = [subjects_dir, orig_data_path, data_path, pscripts_path]
-file_lists = [file_list_path, erm_list_path, motor_erm_list_path, mri_sub_list_path,
-              sub_dict_path, erm_dict_path, bad_channels_dict_path, quality_dict_path]
-
-if not exists(home_path):
-    print('Create home_path manually and set the variable accordingly')
-
-for path in path_lists:
-    if not exists(path):
-        os.makedirs(path)
-        print(f'{path} created')
-
-for file in file_lists:
-    if not isfile(file):
-        with open(file, 'w') as fl:
-            fl.write('')
-        print(f'{file} created')
 # %%============================================================================
 # LOAD PARAMETERS
 # ==============================================================================
