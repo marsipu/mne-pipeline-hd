@@ -2,10 +2,12 @@ import mne
 import numpy as np
 from os.path import join
 
-from pipeline_functions import io_functions as io
-from pipeline_functions import operations_functions as op
+from basic_functions import io_functions as io
+from basic_functions import operations_functions as op
+from pipeline_functions import decorators as decor
 
 
+@decor.topline
 def melofix_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
                            sub_script_path, save_plots, figures_path, exec_ops):
     events_name = name + '-eve.fif'

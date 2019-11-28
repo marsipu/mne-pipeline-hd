@@ -38,7 +38,7 @@ adjust_timeline_by_msec = 0  # custom delay to stimulus in ms
 etmin = -0.500  # start of epoch [s]
 etmax = 1.500  # end of epoch [s]
 baseline = (-0.500, 0)  # has to be a tuple [s]
-enable_ica = True  # Use ica-epochs, create 1Hz-Highpass-Raw if not existent
+enable_ica = False  # Use ica-epochs, create 1Hz-Highpass-Raw if not existent
 autoreject = False  # set True to use autoreject
 overwrite_ar = False  # if to calculate new thresholds or to use previously calculated
 reject = dict(grad=8e-10)  # default reject parameter if not reject with autoreject

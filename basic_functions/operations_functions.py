@@ -27,12 +27,11 @@ from functools import reduce
 from surfer import Brain
 import random
 import gc
-import re
 
-from . import io_functions as io
-from . import plot_functions as plot
-from . import utilities as ut
-from . import decorators as decor
+from basic_functions import io_functions as io
+from basic_functions import plot_functions as plot
+from pipeline_functions import decorators as decor
+from pipeline_functions import utilities as ut
 
 try:
     from autoreject import AutoReject

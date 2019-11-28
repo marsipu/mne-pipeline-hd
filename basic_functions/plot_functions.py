@@ -18,10 +18,10 @@ import matplotlib.ticker as ticker
 from matplotlib.lines import Line2D
 from mayavi import mlab
 from scipy import stats
-from . import io_functions as io
-from . import operations_functions as op
-from . import utilities as ut
-from . import decorators as decor
+from basic_functions import io_functions as io
+from basic_functions import operations_functions as op
+from pipeline_functions import decorators as decor
+from pipeline_functions import utilities as ut
 import numpy as np
 from surfer import Brain
 import gc
@@ -46,6 +46,7 @@ def print_info(name, save_dir):
     info = io.read_info(name, save_dir)
     print(info)
 
+
 # Todo: Plot Raw with block to mark bads on the fly, test on all OS (hangs on Spyder?!)
 @decor.topline
 def plot_raw(name, save_dir, bad_channels):
@@ -58,7 +59,6 @@ def plot_raw(name, save_dir, bad_channels):
                          scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
                          title=name)
     except (FileNotFoundError, AttributeError):
-        print('No events found')
         mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red',
                          scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
                          title=name)

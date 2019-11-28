@@ -5,11 +5,10 @@ import statistics as st
 from matplotlib import pyplot as plt
 from os.path import join
 
-from pipeline_functions import io_functions as io
-from pipeline_functions import operations_functions as op
-from pipeline_functions import plot_functions as plot
-from pipeline_functions import utilities as ut
-from pipeline_functions import decorators as decor
+from basic_functions import io_functions as io
+from basic_functions import operations_functions as op
+from basic_functions import plot_functions as plot
+from pipeline_functions import decorators as decor, utilities as ut
 
 
 @decor.topline

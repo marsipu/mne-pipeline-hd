@@ -17,7 +17,7 @@ except ImportError:
 import tkinter as t
 import re
 
-from . import operations_dict as opd
+from pipeline_functions import operations_dict as opd
 
 
 # Todo: If checked, change color
@@ -30,7 +30,7 @@ class TkFunctionWindow:
         self.var_dict = dict()
         self.pre_func_dict = dict()
         self.func_dict = dict()
-        self.c_path = './pipeline_functions/func_cache.py'
+        self.c_path = './basic_functions/func_cache.py'
 
         self.make_chkbs()
         self.huga = 12

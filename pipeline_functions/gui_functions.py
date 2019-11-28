@@ -1,34 +1,35 @@
 import sys
 import os
 from functools import partial
-from os import makedirs, listdir
+from os import makedirs
 from os.path import join, isfile, isdir, exists
 
 from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import (QWidget, QToolTip, QPushButton, QApplication, QMainWindow, QToolBar,
-                             QStatusBar, QInputDialog, QFileDialog, QLabel, QGridLayout, QDesktopWidget, QVBoxLayout,
-                             QHBoxLayout, QAction, QMenu, QActionGroup, QWidgetAction, QLineEdit, QDialog, QListWidget,
-                             QMessageBox)
+from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel, QGridLayout,
+                             QVBoxLayout,
+                             QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog, QListWidget,
+                             QMessageBox, QCheckBox)
 from PyQt5.QtCore import Qt, QSettings
 
-try:
-    from . import operations_dict as opd
-    from . import utilities as ut
-    from . import subject_organisation as suborg
-    from . import io_functions as io
-except ImportError:
-    from pipeline_functions import operations_dict as opd
-    from pipeline_functions import utilities as ut
-    from pipeline_functions import subject_organisation as suborg
-    from pipeline_functions import io_functions as io
+from pipeline_functions import subject_organisation as suborg
+from pipeline_functions import operations_dict as opd
+from pipeline_functions import utilities as ut
+from basic_functions import io_functions as io
+from basic_functions import plot_functions as plot
 
 
-def selectedlistitem(inst1, inst2, dict_path):
+def sub_dict_selected(inst1, inst2, dict_path):
     choice = inst1.currentItem().text()
     existing_dict = suborg.read_sub_dict(dict_path)
     if choice in existing_dict:
         if existing_dict[choice] == 'None':
-            inst2.addItem('None')
+            # Kind of bulky, improvable
+            enable_none_insert = True
+            for i in range(inst2.count()):
+                if inst2.item(i).text() == 'None':
+                    enable_none_insert = False
+            if enable_none_insert:
+                inst2.addItem('None')
         try:
             it2 = inst2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
             inst2.setCurrentItem(it2)
@@ -36,7 +37,7 @@ def selectedlistitem(inst1, inst2, dict_path):
             pass
 
 
-def assign(dict_path, list_widget1, list_widget2):
+def sub_dict_assign(dict_path, list_widget1, list_widget2):
     choice1 = list_widget1.currentItem().text()
     choice2 = list_widget2.currentItem().text()
     if not isfile(dict_path):
@@ -55,7 +56,7 @@ def assign(dict_path, list_widget1, list_widget2):
                 sd.write(f'{key}:{value}\n')
 
 
-def assign_none(dict_path, list_widget1):
+def sub_dict_assign_none(dict_path, list_widget1):
     choice = list_widget1.currentItem().text()
     if not isfile(dict_path):
         with open(dict_path, 'w') as sd:
@@ -73,7 +74,7 @@ def assign_none(dict_path, list_widget1):
                 sd.write(f'{key}:{value}\n')
 
 
-def assign_all_none(inst, dict_path, list_widget1):
+def sub_dict_assign_all_none(inst, dict_path, list_widget1):
     reply = QMessageBox.question(inst, 'Assign None to All?', 'Do you really want to assign none to all?',
                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
     if reply == QMessageBox.Yes:
@@ -149,22 +150,22 @@ class SubDictDialog(QDialog):
                 list_widget2.insertItem(idx, line[:-1])
 
         # Response to Clicking
-        list_widget1.itemClicked.connect(partial(selectedlistitem, list_widget1, list_widget2, self.dict_path))
+        list_widget1.itemClicked.connect(partial(sub_dict_selected, list_widget1, list_widget2, self.dict_path))
 
         self.layout.addWidget(list_widget1, 1, 0)
         self.layout.addWidget(list_widget2, 1, 1)
         # Add buttons
         bt_layout = QVBoxLayout()
         assign_bt = QPushButton('Assign', self)
-        assign_bt.clicked.connect(partial(assign, self.dict_path, list_widget1, list_widget2))
+        assign_bt.clicked.connect(partial(sub_dict_assign, self.dict_path, list_widget1, list_widget2))
         bt_layout.addWidget(assign_bt)
 
         none_bt = QPushButton('Assign None')
-        none_bt.clicked.connect(partial(assign_none, self.dict_path, list_widget1))
+        none_bt.clicked.connect(partial(sub_dict_assign_none, self.dict_path, list_widget1))
         bt_layout.addWidget(none_bt)
 
         all_none_bt = QPushButton('Assign None to all')
-        all_none_bt.clicked.connect(partial(assign_all_none, self, self.dict_path, list_widget1))
+        all_none_bt.clicked.connect(partial(sub_dict_assign_all_none, self, self.dict_path, list_widget1))
         bt_layout.addWidget(all_none_bt)
 
         read_bt = QPushButton('Read', self)
@@ -183,9 +184,98 @@ class SubDictDialog(QDialog):
         self.setLayout(self.layout)
 
 
+# Todo: Create BadChannelsSelect
 class BadChannelsSelect(QDialog):
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.main_win = main_win
+        self.file_list_path = main_win.file_list_path
+        self.bad_dict = suborg.read_bad_channels_dict(self.main_win.bad_channels_dict_path)
+        self.layout = QGridLayout()
+        self.channel_count = 122
+        self.bad_chkbts = {}
+
+        self.initui()
+        self.show()
+        self.activateWindow()
+        self.exec_()
+
+    def initui(self):
+        listwidget = QListWidget(self)
+        self.layout.addWidget(listwidget, 0, 0, self.channel_count // 10, 1)
+        with open(self.file_list_path, 'r') as sl:
+            for idx, line in enumerate(sl):
+                listwidget.insertItem(idx, line[:-1])
+                if line[:-1] in self.bad_dict:
+                    listwidget.item(idx).setBackground(QColor('green'))
+                    listwidget.item(idx).setForeground(QColor('white'))
+                else:
+                    listwidget.item(idx).setBackground(QColor('red'))
+                    listwidget.item(idx).setForeground(QColor('white'))
+
+        # Make Checkboxes for channels
+        for x in range(1, self.channel_count + 1):
+            ch_name = f'MEG {x:03}'
+            chkbt = QCheckBox(ch_name, self)
+            self.bad_chkbts.update({ch_name: chkbt})
+            r = 0 + (x - 1) // 10
+            c = 1 + (x - 1) % 10
+            self.layout.addWidget(chkbt, r, c)
+
+        # Response to Clicking
+        listwidget.itemClicked.connect(partial(self.bad_dict_selected, listwidget))
+
+        # Add Buttons
+        bt_layout = QVBoxLayout()
+        assign_bt = QPushButton('Assign', self)
+        assign_bt.clicked.connect(partial(self.bad_dict_assign, listwidget))
+        bt_layout.addWidget(assign_bt)
+
+        plot_bt = QPushButton('Plot Raw')
+        plot_bt.clicked.connect(partial(self.plot_raw_bad, listwidget))
+        bt_layout.addWidget(plot_bt)
+
+        ok_bt = QPushButton('OK', self)
+        ok_bt.clicked.connect(self.close)
+        bt_layout.addWidget(ok_bt)
+
+        self.layout.addLayout(bt_layout, 0, 11, self.channel_count // 10, 1)
+        self.setLayout(self.layout)
+
+    def bad_dict_selected(self, listwidget):
+        # First clear all entries
+        for bt in self.bad_chkbts:
+            self.bad_chkbts[bt].setChecked(False)
+        # Then load existing bads for choice
+        name = listwidget.currentItem().text()
+        if name in self.bad_dict:
+            for bad in self.bad_dict[name]:
+                self.bad_chkbts[bad].setChecked(True)
+
+    def bad_dict_assign(self, listwidget):
+        name = listwidget.currentItem().text()
+        listwidget.currentItem().setBackground(QColor('green'))
+        listwidget.currentItem().setForeground(QColor('white'))
+        bad_channels = []
+        second_list = []
+        for ch in self.bad_chkbts:
+            if self.bad_chkbts[ch].isChecked():
+                bad_channels.append(ch)
+                second_list.append(int(ch[-3:]))
+        self.bad_dict.update({name: bad_channels})
+        ut.dict_filehandler(name, 'bad_channels_dict', self.main_win.pscripts_path, values=second_list)
+
+    def plot_raw_bad(self, listwidget):
+        name = listwidget.currentItem().text()
+        raw = io.read_raw(name, join(self.main_win.data_path, name))
+        print(f'first: {raw.info["bads"]}')
+        # Todo: Make online bad-channel-selection work (mnelab-solution?)
+        raw.plot(n_channels=30, bad_color='red',
+                       scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), title=name)
+        print(f'second: {raw.info["bads"]}')
+        self.bad_dict.update({name: raw.info['bads']})
+        for ch in self.bad_dict[name]:
+            self.bad_chkbts[ch].setChecked(True)
 
 
 class MainWindow(QMainWindow):
@@ -357,6 +447,8 @@ class MainWindow(QMainWindow):
                                                             partial(SubDictDialog, self, 'mri'))
         self.actions['add_erm_dict'] = input_menu.addAction('Assign File --> ERM-File',
                                                             partial(SubDictDialog, self, 'erm'))
+        self.actions['add_bad_channels_dict'] = input_menu.addAction('Assign Bad-Channels --> File',
+                                                                     partial(BadChannelsSelect, self))
 
         # Setting
         setting_menu = self.menuBar().addMenu('Settings')
@@ -555,8 +647,8 @@ class MainWindow(QMainWindow):
         main_bt_layout.addWidget(stop_bt)
 
         clear_bt.clicked.connect(self.clear)
-        # start_bt.clicked.connect(self.start)
-        start_bt.clicked.connect(plot_test)
+        start_bt.clicked.connect(self.start)
+        # start_bt.clicked.connect(plot_test)
         stop_bt.clicked.connect(self.stop)
 
         self.general_layout.addLayout(main_bt_layout)

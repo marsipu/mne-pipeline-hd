@@ -20,11 +20,11 @@ import re
 
 def filter_string(highpass, lowpass):
     if highpass is not None and highpass != 0:
-        filter_string = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
+        fs = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
     else:
-        filter_string = '_' + str(lowpass) + '_Hz'
+        fs = '_' + str(lowpass) + '_Hz'
 
-    return filter_string
+    return fs
 
 
 # ==============================================================================

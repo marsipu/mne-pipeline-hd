@@ -12,22 +12,17 @@ Adapted to Melody Processing of Kim's data
 # ==============================================================================
 import sys
 import shutil
-import os
 import re
 import mne
-from os.path import join, isfile, exists
+from os.path import join, isfile
 from importlib import reload, util
 from PyQt5.QtWidgets import QApplication
-import matplotlib
 
-from pipeline_functions import io_functions as io
-from pipeline_functions import operations_functions as op
-from pipeline_functions import plot_functions as plot
-from pipeline_functions import subject_organisation as suborg
-from pipeline_functions import utilities as ut
-from pipeline_functions import operations_dict as opd
-from pipeline_functions import decorators as decor
-from pipeline_functions import gui_functions as guif
+from basic_functions import io_functions as io
+from basic_functions import operations_functions as op
+from basic_functions import plot_functions as plot
+from pipeline_functions import subject_organisation as suborg, operations_dict as opd, decorators as decor, \
+    gui_functions as guif, utilities as ut
 
 from custom_functions import pinprick_functions as ppf
 from custom_functions import melofix_functions as mff
@@ -358,7 +353,7 @@ for name in files:
             bad_channels = bad_channels_dict[name]
         except KeyError as k:
             print(f'No bad channels for {k}')
-            raise RuntimeError('Run again and run add_mri_dict')
+            raise RuntimeError('Run again and run add_bad_channels_dict')
 
     # ==========================================================================
     # FILTER RAW
@@ -400,44 +395,44 @@ for name in files:
     # ==========================================================================
     # SIGNAL SPACE PROJECTION
     # ==========================================================================
-    # if exec_ops['run_ssp_er']:
-    #     op.run_ssp_er(name, save_dir, p.highpass, p.lowpass, data_path, ermsub, bad_channels,
-    #                   p.overwrite)
-    #
-    # if exec_ops['apply_ssp_er']:
-    #     op.apply_ssp_er(name, save_dir, p.highpass, p.lowpass, p.overwrite)
-    #
-    # if exec_ops['run_ssp_clm']:
-    #     op.run_ssp_clm(name, save_dir, p.highpass, p.lowpass, bad_channels, p.overwrite)
-    #
-    # if exec_ops['apply_ssp_clm']:
-    #     op.apply_ssp_clm(name, save_dir, p.highpass, p.lowpass, p.overwrite)
-    #
-    # if exec_ops['run_ssp_eog']:
-    #     op.run_ssp_eog(name, save_dir, p.n_jobs, eog_channel,
-    #                    bad_channels, p.overwrite)
-    #
-    # if exec_ops['apply_ssp_eog']:
-    #     op.apply_ssp_eog(name, save_dir, p.highpass, p.lowpass, p.overwrite)
-    #
-    # if exec_ops['run_ssp_ecg']:
-    #     op.run_ssp_ecg(name, save_dir, p.n_jobs, p.ecg_channel,
-    #                    bad_channels, p.overwrite)
-    #
-    # if exec_ops['apply_ssp_ecg']:
-    #     op.apply_ssp_ecg(name, save_dir, p.highpass, p.lowpass, p.overwrite)
-    #
-    # if exec_ops['plot_ssp']:
-    #     plot.plot_ssp(name, save_dir, p.highpass, p.lowpass, p.save_plots,
-    #                   figures_path, ermsub)
-    #
-    # if exec_ops['plot_ssp_eog']:
-    #     plot.plot_ssp_eog(name, save_dir, p.highpass, p.lowpass, p.save_plots,
-    #                       figures_path)
-    #
-    # if exec_ops['plot_ssp_ecg']:
-    #     plot.plot_ssp_ecg(name, save_dir, p.highpass, p.lowpass, p.save_plots,
-    #                       figures_path)
+    if exec_ops['run_ssp_er']:
+        op.run_ssp_er(name, save_dir, p.highpass, p.lowpass, data_path, ermsub, bad_channels,
+                      p.overwrite)
+
+    if exec_ops['apply_ssp_er']:
+        op.apply_ssp_er(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+
+    if exec_ops['run_ssp_clm']:
+        op.run_ssp_clm(name, save_dir, p.highpass, p.lowpass, bad_channels, p.overwrite)
+
+    if exec_ops['apply_ssp_clm']:
+        op.apply_ssp_clm(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+
+    if exec_ops['run_ssp_eog']:
+        op.run_ssp_eog(name, save_dir, p.n_jobs, eog_channel,
+                       bad_channels, p.overwrite)
+
+    if exec_ops['apply_ssp_eog']:
+        op.apply_ssp_eog(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+
+    if exec_ops['run_ssp_ecg']:
+        op.run_ssp_ecg(name, save_dir, p.n_jobs, p.ecg_channel,
+                       bad_channels, p.overwrite)
+
+    if exec_ops['apply_ssp_ecg']:
+        op.apply_ssp_ecg(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+
+    if exec_ops['plot_ssp']:
+        plot.plot_ssp(name, save_dir, p.highpass, p.lowpass, p.save_plots,
+                      figures_path, ermsub)
+
+    if exec_ops['plot_ssp_eog']:
+        plot.plot_ssp_eog(name, save_dir, p.highpass, p.lowpass, p.save_plots,
+                          figures_path)
+
+    if exec_ops['plot_ssp_ecg']:
+        plot.plot_ssp_ecg(name, save_dir, p.highpass, p.lowpass, p.save_plots,
+                          figures_path)
 
     if exec_ops['run_ica']:
         op.run_ica(name, save_dir, p.highpass, p.lowpass, p.eog_channel, p.ecg_channel,
