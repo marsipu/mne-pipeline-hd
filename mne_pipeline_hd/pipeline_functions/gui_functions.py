@@ -299,7 +299,6 @@ class MainWindow(QMainWindow):
         self.general_layout = QGridLayout()
         self.centralWidget().setLayout(self.general_layout)
         QToolTip.setFont(QFont('SansSerif', 10))
-        self.setToolTip('This is the mne_pipeline_hd')
 
         # Attributes for class-methods
         self.actions = dict()

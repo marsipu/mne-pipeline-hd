@@ -679,6 +679,8 @@ def read_bad_channels_dict(bad_channels_dict_path):
 
 
 def file_selection(which_file, all_files):
+    if which_file == '':
+        raise RuntimeError('No file assigned, rerun and assign one')
     # Turn string input into according sub_list-Index
     try:
         if 'all' in which_file:
