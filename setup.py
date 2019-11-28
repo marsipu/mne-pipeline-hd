@@ -6,5 +6,7 @@ setup(name='mne_pipeline_hd',
       url='https://github.com/marsipu/mne_pipeline_hd.git',
       author='marsipu',
       author_email='martin.schulz@stud.uni-heidelberg.de',
+      python_requires='>=3.6',
+      install_requires=['mne', 'https://api.github.com/repos/autoreject/autoreject/zipball/master', 'imageio-ffmpeg'],
       license='GPL-3.0',
       packages=find_packages(exclude=['docs', 'tests']))
