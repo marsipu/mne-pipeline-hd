@@ -6,6 +6,7 @@ Install MNE-python as instructed on the website:
 https://www.martinos.org/mne/stable/install_mne_python.html
 
 Clone this repository with git from your terminal
+
 (Move to desired folder, call "git clone https://github.com/marsipu/mne_pipeline_hd.git")
 
 Open a terminal and navigate into the mne_pipeline_hd folder, then:
