@@ -370,6 +370,6 @@ def update_mne():
 
 # Todo: Update Pipeline-Function
 def update_pipeline(pipeline_path):
-    command = f'pip install --src {dirname(pipeline_path)} --upgrade ' \
-              f'-e git+https://github.com/marsipu/mne_pipeline_hd.git@origin/master#egg=mne_pipeline_hd'
+    command = f'pip install --upgrade --src={dirname(pipeline_path)} ' \
+              f'-e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd'
     run(command, shell=True)
