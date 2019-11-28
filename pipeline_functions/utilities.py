@@ -6,8 +6,9 @@ Created on Thu Jan 17 01:00:31 2019
 """
 import os
 from os import makedirs
-from os.path import join, isfile, exists
+from os.path import join, isfile, exists, dirname
 import sys
+from subprocess import run
 
 try:
     import autoreject as ar
@@ -366,4 +367,8 @@ def update_mne():
     command2 = 'conda env update --file environment.yml'
     command3 = 'pip install -r requirements.txt'
 
+
 # Todo: Update Pipeline-Function
+def update_pipeline(pscripts_path):
+    command = f'pip install --src{dirname(pscripts_path)} --upgrade -e git+https://github.com/marsipu/mne_pipeline_hd.git@origin/master#egg=mne_pipeline_hd'
+    run(command)
