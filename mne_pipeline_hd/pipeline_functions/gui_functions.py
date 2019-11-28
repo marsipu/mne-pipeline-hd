@@ -10,11 +10,8 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QI
                              QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
 from PyQt5.QtCore import Qt, QSettings
 
-from pipeline_functions import subject_organisation as suborg
-from pipeline_functions import operations_dict as opd
-from pipeline_functions import utilities as ut
-from basic_functions import io_functions as io
-from basic_functions import plot_functions as plot
+from mne_pipeline_hd.pipeline_functions import subject_organisation as suborg, operations_dict as opd, utilities as ut
+from mne_pipeline_hd.basic_functions import io_functions as io
 
 
 def sub_dict_selected(inst1, inst2, dict_path):

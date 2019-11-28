@@ -18,14 +18,13 @@ from os.path import join, isfile
 from importlib import reload, util
 from PyQt5.QtWidgets import QApplication
 
-from basic_functions import io_functions as io
-from basic_functions import operations_functions as op
-from basic_functions import plot_functions as plot
-from pipeline_functions import subject_organisation as suborg, operations_dict as opd, decorators as decor, \
-    gui_functions as guif, utilities as ut
+from mne_pipeline_hd.basic_functions import io_functions as io
+from mne_pipeline_hd.basic_functions import plot_functions as plot, operations_functions as op
+from mne_pipeline_hd.pipeline_functions import gui_functions as guif, subject_organisation as suborg, \
+    decorators as decor, operations_dict as opd, utilities as ut
 
-from custom_functions import pinprick_functions as ppf
-from custom_functions import melofix_functions as mff
+from mne_pipeline_hd.custom_functions import pinprick_functions as ppf
+from mne_pipeline_hd.custom_functions import melofix_functions as mff
 
 
 def reload_all():
@@ -124,7 +123,7 @@ if make_it_stop:
 # LOAD PARAMETERS
 # ==============================================================================
 if not isfile(join(project_path, f'parameters_{project_name}.py')):
-    from templates import parameters_template as p
+    from mne_pipeline_hd.templates import parameters_template as p
 
     shutil.copy2(join(pipeline_path, 'templates/parameters_template.py'),
                  join(project_path, f'parameters_{project_name}.py'))
