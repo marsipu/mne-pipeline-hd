@@ -360,15 +360,16 @@ def shutdown():
         os.system('sudo shutdown -h now')
 
 
-# Todo: Update MNE-Function
+# Todo: Update MNE-Function zum Funktionieren bringen
 def update_mne():
-    command = 'curl -O https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml'
-    # Update the environment-file from MNE and add pipeline-specific packages
-    command2 = 'conda env update --file environment.yml'
-    command3 = 'pip install -r requirements.txt'
+    command = ["curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml",
+               "conda env update --file environment.yml",
+               "pip install -r requirements.txt"]
+    run(command, shell=True)
 
 
 # Todo: Update Pipeline-Function
 def update_pipeline(pscripts_path):
-    command = f'pip install --src{dirname(pscripts_path)} --upgrade -e git+https://github.com/marsipu/mne_pipeline_hd.git@origin/master#egg=mne_pipeline_hd'
-    run(command)
+    command = f'pip install --src{dirname(pscripts_path)} --upgrade' \
+              f'-e git+https://github.com/marsipu/mne_pipeline_hd.git@origin/master#egg=mne_pipeline_hd'
+    run(command, shell=True)

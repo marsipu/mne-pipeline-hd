@@ -145,25 +145,25 @@ op.populate_directories(data_path, figures_path, p.event_id)
 # %%============================================================================
 # SUBJECT ORGANISATION (NOT TO SET)
 # ==============================================================================
-if exec_ops['add_files']:  # set 1 to run
-    suborg.add_files(file_list_path, erm_list_path, motor_erm_list_path,
-                     data_path, orig_data_path,
-                     p.unspecified_names, gui=False)
-
-if exec_ops['add_mri_subjects']:  # set 1 to run
-    suborg.add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False)
-
-if exec_ops['add_sub_dict']:  # set 1 to run
-    suborg.add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path)
-
-if exec_ops['add_erm_dict']:  # set 1 to run
-    suborg.add_erm_dict(erm_dict_path, file_list_path, erm_list_path, data_path)
-
-if exec_ops['add_bad_channels']:
-    suborg.add_bad_channels_dict(bad_channels_dict_path, file_list_path,
-                                 erm_list_path, motor_erm_list_path,
-                                 data_path, p.predefined_bads,
-                                 pscripts_path)
+# if exec_ops['add_files']:  # set 1 to run
+#     suborg.add_files(file_list_path, erm_list_path, motor_erm_list_path,
+#                      data_path, orig_data_path,
+#                      p.unspecified_names, gui=False)
+#
+# if exec_ops['add_mri_subjects']:  # set 1 to run
+#     suborg.add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False)
+#
+# if exec_ops['add_sub_dict']:  # set 1 to run
+#     suborg.add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path)
+#
+# if exec_ops['add_erm_dict']:  # set 1 to run
+#     suborg.add_erm_dict(erm_dict_path, file_list_path, erm_list_path, data_path)
+#
+# if exec_ops['add_bad_channels']:
+#     suborg.add_bad_channels_dict(bad_channels_dict_path, file_list_path,
+#                                  erm_list_path, motor_erm_list_path,
+#                                  data_path, p.predefined_bads,
+#                                  pscripts_path)
 
 # Subject-Functions
 all_files = suborg.read_files(file_list_path)
@@ -254,22 +254,23 @@ else:
 quality_dict = ut.read_dict_file('quality', pscripts_path)
 
 basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
-if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
-    silenced_files = set()
-    for file in files:
-        if 'all' not in quality:
-            file_quality = int(quality_dict[file])
-            if file_quality not in quality:
-                silenced_files.add(file)
-
-        if 'all' not in modality:
-            match = re.match(basic_pattern, file)
-            file_modality = match.group(2)
-            if file_modality not in modality:
-                silenced_files.add(file)
-
-    for df in silenced_files:
-        files.remove(df)
+# Todo: Remove Pinprick-specific parts
+# if not exec_ops['erm_analysis'] and not exec_ops['motor_erm_analysis']:
+#     silenced_files = set()
+#     for file in files:
+#         if 'all' not in quality and quality is not '':
+#             file_quality = int(quality_dict[file])
+#             if file_quality not in quality:
+#                 silenced_files.add(file)
+#
+#         if 'all' not in modality:
+#             match = re.match(basic_pattern, file)
+#             file_modality = match.group(2)
+#             if file_modality not in modality:
+#                 silenced_files.add(file)
+#
+#     for df in silenced_files:
+#         files.remove(df)
 
 if len(all_files) == 0:
     print('No files in file_list!')
@@ -409,7 +410,7 @@ for name in files:
         op.apply_ssp_clm(name, save_dir, p.highpass, p.lowpass, p.overwrite)
 
     if exec_ops['run_ssp_eog']:
-        op.run_ssp_eog(name, save_dir, p.n_jobs, eog_channel,
+        op.run_ssp_eog(name, save_dir, p.n_jobs, p.eog_channel,
                        bad_channels, p.overwrite)
 
     if exec_ops['apply_ssp_eog']:

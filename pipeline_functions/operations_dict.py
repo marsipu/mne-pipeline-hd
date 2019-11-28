@@ -5,11 +5,11 @@ Created on Mon Feb 11 03:11:47 2019
 @author: Martin Schulz
 """
 
-subject_operations = dict(add_files=0,
-                          add_mri_subjects=0,
-                          add_sub_dict=0,
-                          add_erm_dict=0,
-                          add_bad_channels=0)
+# subject_operations = dict(add_files=0,
+#                           add_mri_subjects=0,
+#                           add_sub_dict=0,
+#                           add_erm_dict=0,
+#                           add_bad_channels=0)
 
 basic_operations = dict(erm_analysis=0,
                         close_plots=1,
@@ -145,8 +145,8 @@ grand_average_plots = dict(
 
     pp_plot_latency_S1_corr=0)
 
-all_fs_gs = {'subject_operations': subject_operations,
-             'basic_operations': basic_operations,
+# 'subject_operations': subject_operations,
+all_fs_gs = {'basic_operations': basic_operations,
              'pinprick_functions': pinprick_functions,
              'melofix_functions': melofix_functions,
              'sensor_space_operations': sensor_space_operations,

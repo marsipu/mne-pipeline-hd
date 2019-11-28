@@ -4,11 +4,10 @@ from functools import partial
 from os import makedirs
 from os.path import join, isfile, isdir, exists
 
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel, QGridLayout,
-                             QVBoxLayout,
-                             QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog, QListWidget,
-                             QMessageBox, QCheckBox)
+from PyQt5.QtGui import QPalette, QColor, QFont
+from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
+                             QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
+                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
 from PyQt5.QtCore import Qt, QSettings
 
 from pipeline_functions import subject_organisation as suborg
@@ -271,7 +270,7 @@ class BadChannelsSelect(QDialog):
         print(f'first: {raw.info["bads"]}')
         # Todo: Make online bad-channel-selection work (mnelab-solution?)
         raw.plot(n_channels=30, bad_color='red',
-                       scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), title=name)
+                 scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), title=name)
         print(f'second: {raw.info["bads"]}')
         self.bad_dict.update({name: raw.info['bads']})
         for ch in self.bad_dict[name]:
@@ -283,12 +282,27 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.app = QApplication.instance()
         self.settings = QSettings()
+        self.platform = sys.platform
+
+        self.setGeometry(300, 300, 800, 600)  # default window size
+        if self.settings.value('geometry') is not None:
+            self.restoreGeometry(self.settings.value('geometry'))
+        if 'darwin' in self.platform:
+            self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
+        # Center Window
+        qr = self.frameGeometry()
+        print(qr)
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
         self.setWindowTitle('MNE-Pipeline HD')
         self._centralWidget = QWidget(self)
         self.setCentralWidget(self._centralWidget)
-        self.general_layout = QVBoxLayout()
-        self._centralWidget.setLayout(self.general_layout)
+        self.general_layout = QGridLayout()
+        self.centralWidget().setLayout(self.general_layout)
+        QToolTip.setFont(QFont('SansSerif', 10))
+        self.setToolTip('This is the mne_pipeline_hd')
 
         # Attributes for class-methods
         self.actions = dict()
@@ -296,13 +310,25 @@ class MainWindow(QMainWindow):
         self.bt_dict = dict()
         self.make_it_stop = False
         self.lines = dict()
-        self.texts = ['which_file', 'quality', 'modality', 'which_mri_subject', 'which_erm_file',
-                      'which_motor_erm_file']
+        sub_sel_example = "Examples:\n" \
+                          "'5' (One File)\n" \
+                          "'1,7,28' (Several Files)\n" \
+                          "'1-5' (From File x to File y)\n" \
+                          "'1-4,7,20-26' (The last two combined)\n" \
+                          "'1-20,!4-6' (1-20 except 4-6)\n" \
+                          "'all' (All files in file_list.py)\n" \
+                          "'all,!4-6' (All files except 4-6)"
+
+        self.sub_sel_tips = {'which_file': f'Choose files to process!\n{sub_sel_example}',
+                             'quality': f'Choose the quality!\n{sub_sel_example}',
+                             'modality': f'Pinprick-specific\n{sub_sel_example}',
+                             'which_mri_subject': f'Choose mri_files to process\n{sub_sel_example}',
+                             'which_erm_file': f'Choose erm_files to process\n{sub_sel_example}',
+                             'which_motor_erm_file': f'Pinprick-specific\n{sub_sel_example}'}
 
         # Pipeline-Paths
         self.pipeline_path = ut.get_pipeline_path(os.getcwd())
         self.cache_path = join(join(self.pipeline_path, '_pipeline_cache'))
-        self.platform = sys.platform
         if not exists(join(self.pipeline_path, '_pipeline_cache')):
             makedirs(join(self.pipeline_path, '_pipeline_cache'))
 
@@ -346,7 +372,8 @@ class MainWindow(QMainWindow):
             if ok:
                 self.projects.append(self.project_name)
                 makedirs(join(self.home_path, self.project_name))
-                ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
+                self.settings.setValue('project', self.project_name)
+                # ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
             else:
                 # Problem in Python Console, QInputDialog somehow stays in memory
                 self.close()
@@ -426,7 +453,8 @@ class MainWindow(QMainWindow):
         else:
             self.actions[self.projects[0]].toggle()
             self.project_name = self.projects[0]
-            ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
+            self.settings.setValue('project', self.project_name)
+            # ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
         self.menuBar().addMenu(project_menu)
 
         self.actions['Add_Project'] = project_menu.addAction('Add Project',
@@ -456,18 +484,26 @@ class MainWindow(QMainWindow):
         self.actions['Dark-Mode'].setCheckable(True)
         self.actions['Full-Screen'] = setting_menu.addAction('Full-Screen', self.full_screen)
         self.actions['Full-Screen'].setCheckable(True)
+        self.actions['Change_Func-Layout'] = setting_menu.addAction('Change Functions-Layout', self.change_func_layout)
+        self.actions['Change_Func-Layout'].setCheckable(True)
         self.actions['Change_Home-Path'] = setting_menu.addAction('Change Home-Path', self.change_home_path)
 
-        # Todo: Save Widget-State
-        # stat_dict = ut.read_dict_file('win_cache', self.cache_path)
-        # for act in self.actions:
-        #     if act in stat_dict:
-        #         if stat_dict[act]:
-        #             self.actions[act].setChecked()
+        # About
+        about_menu = self.menuBar().addMenu('About')
+        self.actions['Update_MNE-Python'] = about_menu.addAction('Update MNE-Python', ut.update_mne)
+        self.actions['Update_Pipeline'] = about_menu.addAction('Update Pipeline', partial(ut.update_pipeline,
+                                                                                          self.pscripts_path))
+        self.actions['About_QT'] = about_menu.addAction('About QT', self.about_qt)
+
+        # Get activated actions from last run
+        for act in self.actions:
+            if self.settings.value(act):
+                self.actions[act].setChecked(True)
 
     def change_project(self, project):
         self.project_name = project
-        ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
+        self.settings.setValue('project', self.project_name)
+        # ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
         self.__init__()
 
     def add_project(self, project_menu, project_group):
@@ -539,7 +575,8 @@ class MainWindow(QMainWindow):
         self.menuBar().clear()
         self.create_menu()
         self.update()
-        ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
+        self.settings.setValue('project', self.project_name)
+        # ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
 
     # # Todo: Make Center work, frameGeometry doesn't give the actual geometry after make_func_bts
     def center(self):
@@ -558,35 +595,35 @@ class MainWindow(QMainWindow):
         # print(self._centralWidget.geometry())
 
     def subject_selection(self):
-        stat_dict = ut.read_dict_file('win_cache', self.cache_path)
         subsel_layout = QHBoxLayout()
         # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
-        for t in self.texts:
+        for t in self.sub_sel_tips:
+            subsub_layout = QVBoxLayout()
             self.lines[t] = QLineEdit()
             self.lines[t].setPlaceholderText(t)
             self.lines[t].textChanged.connect(partial(self.update_subsel, t))
-            subsel_layout.addWidget(self.lines[t])
-            if t in stat_dict:
-                self.lines[t].setText(stat_dict[t])
+            self.lines[t].setToolTip(self.sub_sel_tips[t])
+            label = QLabel(f'<b>{t}</b>')
+            label.setTextFormat(Qt.RichText)
+            subsub_layout.addWidget(label)
+            subsub_layout.addWidget(self.lines[t])
+            subsel_layout.addLayout(subsub_layout)
+            # Get Selection from last run
+            self.lines[t].setText(self.settings.value(t))
 
-        self.general_layout.addLayout(subsel_layout)
+        self.general_layout.addLayout(subsel_layout, 0, 0)
 
     def update_subsel(self, t):
         setattr(self, t, self.lines[t].text())
-        # self.which_file = self.lines['which_file'].text()
-        # self.quality = self.lines['quality'].text()
-        # self.modality = self.lines['modality'].text()
-        # self.which_mri_subject = self.lines['which_mri_subject'].text()
-        # self.which_erm_file = self.lines['which_erm_file'].text()
-        # self.which_motor_erm_file = self.lines['which_motor_erm_file'].text()
 
     # Todo: Make Buttons more appealing
     def make_func_bts(self):
         r_cnt = 0
         c_cnt = 0
-        r_max = 25
-        func_layout = QGridLayout()
-
+        r_max = 20
+        self.all_func_widget = QWidget()
+        all_func_layout = QGridLayout()
+        self.tab_func_widget = QTabWidget()
         for f, v in opd.all_fs.items():
             self.func_dict.update({f: v})
 
@@ -608,11 +645,21 @@ class MainWindow(QMainWindow):
                         self.func_dict[f] = pre_func_dict[f]
 
         for function_group in opd.all_fs_gs:
-            if r_cnt > 25:
+            tab = QWidget()
+            tab_func_layout = QGridLayout()
+            if self.actions['Change_Func-Layout'].isChecked():
+                # Overwrite parameters for each new tab
                 r_cnt = 0
-            label = QLabel(function_group, self)
-            func_layout.addWidget(label, r_cnt, c_cnt)
-            r_cnt += 1
+                c_cnt = 0
+                r_max = 20
+            else:
+                if r_cnt > r_max:
+                    r_cnt = 0
+                label = QLabel(f'<b>{function_group}</b>', self)
+                label.setTextFormat(Qt.RichText)
+                all_func_layout.addWidget(label, r_cnt, c_cnt)
+                r_cnt += 1
+
             for function in opd.all_fs_gs[function_group]:
                 pb = QPushButton(function, self)
                 pb.setCheckable(True)
@@ -621,12 +668,22 @@ class MainWindow(QMainWindow):
                     pb.setChecked(True)
                     self.func_dict[function] = 1
                 pb.toggled.connect(partial(self.select_func, function))
-                func_layout.addWidget(pb, r_cnt, c_cnt)
+                if self.actions['Change_Func-Layout'].isChecked():
+                    tab_func_layout.addWidget(pb, r_cnt, c_cnt)
+                else:
+                    all_func_layout.addWidget(pb, r_cnt, c_cnt)
                 r_cnt += 1
                 if r_cnt >= r_max:
                     c_cnt += 1
                     r_cnt = 0
-        self.general_layout.addLayout(func_layout)
+            if self.actions['Change_Func-Layout'].isChecked():
+                tab.setLayout(tab_func_layout)
+                self.tab_func_widget.addTab(tab, function_group)
+        if self.actions['Change_Func-Layout'].isChecked():
+            self.general_layout.addWidget(self.tab_func_widget, 1, 0)
+        else:
+            self.all_func_widget.setLayout(all_func_layout)
+            self.general_layout.addWidget(self.all_func_widget, 1, 0)
 
     def select_func(self, function):
         if self.bt_dict[function].isChecked():
@@ -635,6 +692,25 @@ class MainWindow(QMainWindow):
         else:
             print(f'{function} deselected')
             self.func_dict[function] = 0
+
+    # Todo: Not working properly
+    def change_func_layout(self):
+        if self.actions['Change_Func-Layout'].isChecked():
+            # self.general_layout.addWidget(self.tab_func_widget, 1, 0)
+            # self.centralWidget().setLayout(self.general_layout)
+            self.general_layout.removeWidget(self.all_func_widget)
+            self.general_layout.removeWidget(self.tab_func_widget)
+            self.general_layout.update()
+            self.make_func_bts()
+            self.centralWidget().update()
+        else:
+            # self.general_layout.addWidget(self.all_func_widget, 1, 0)
+            # self.centralWidget().setLayout(self.general_layout)
+            self.general_layout.removeWidget(self.tab_func_widget)
+            self.general_layout.removeWidget(self.all_func_widget)
+            self.general_layout.update()
+            self.make_func_bts()
+            self.centralWidget().update()
 
     def add_main_bts(self):
         main_bt_layout = QHBoxLayout()
@@ -651,7 +727,7 @@ class MainWindow(QMainWindow):
         # start_bt.clicked.connect(plot_test)
         stop_bt.clicked.connect(self.stop)
 
-        self.general_layout.addLayout(main_bt_layout)
+        self.general_layout.addLayout(main_bt_layout, 2, 0)
 
     def clear(self):
         for x in self.bt_dict:
@@ -665,13 +741,22 @@ class MainWindow(QMainWindow):
         self.close()
         self.make_it_stop = True
 
+    def about_qt(self):
+        QMessageBox.aboutQt(self, 'About Qt')
+
     def closeEvent(self, event):
         self.settings.setValue('func_checked', self.func_dict)
         for ln in self.lines:
-            ut.dict_filehandler(ln, 'win_cache', self.cache_path, self.lines[ln].text(), silent=True)
-        # for act in self.actions:
-        #     if self.actions[act].checked():
-        #         ut.dict_filehandler(act, 'win_cache', self.cache_path, 1, silent=True)
+            self.settings.setValue(ln, self.lines[ln].text())
+            # ut.dict_filehandler(ln, 'win_cache', self.cache_path, self.lines[ln].text(), silent=True)
+        for act in self.actions:
+            if self.actions[act].isChecked():
+                self.settings.setValue(act, 1)
+                # ut.dict_filehandler(act, 'win_cache', self.cache_path, 1, silent=True)
+            else:
+                self.settings.setValue(act, 0)
+
+        self.settings.setValue('geometry', self.saveGeometry())
 
         event.accept()
 
