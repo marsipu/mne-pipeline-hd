@@ -488,7 +488,7 @@ class MainWindow(QMainWindow):
         about_menu = self.menuBar().addMenu('About')
         self.actions['Update_MNE-Python'] = about_menu.addAction('Update MNE-Python', ut.update_mne)
         self.actions['Update_Pipeline'] = about_menu.addAction('Update Pipeline', partial(ut.update_pipeline,
-                                                                                          self.pscripts_path))
+                                                                                          self.pipeline_path))
         self.actions['About_QT'] = about_menu.addAction('About QT', self.about_qt)
 
         # Get activated actions from last run
