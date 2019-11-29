@@ -284,8 +284,8 @@ class MainWindow(QMainWindow):
         self.setGeometry(300, 300, 800, 600)  # default window size
         if self.settings.value('geometry') is not None:
             self.restoreGeometry(self.settings.value('geometry'))
-        if 'darwin' in self.platform:
-            self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
+        # if 'darwin' in self.platform:
+        #     self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
         # Center Window
         qr = self.frameGeometry()
         print(qr)
@@ -364,6 +364,7 @@ class MainWindow(QMainWindow):
         self.projects = [p for p in os.listdir(self.home_path) if isdir(join(self.home_path, p, 'Daten'))]
         if len(self.projects) == 0:
             self.project_name, ok = QInputDialog.getText(self, 'Project-Selection',
+                                                         'No projects in {self.home_path} found\n'
                                                          'Enter a project-name for your first project')
             if ok:
                 self.projects.append(self.project_name)
@@ -689,7 +690,7 @@ class MainWindow(QMainWindow):
             print(f'{function} deselected')
             self.func_dict[function] = 0
 
-    # Todo: Not working properly
+    # Todo: Not working properly, maybe reinitialize window and
     def change_func_layout(self):
         if self.actions['Change_Func-Layout'].isChecked():
             # self.general_layout.addWidget(self.tab_func_widget, 1, 0)
@@ -759,7 +760,7 @@ class MainWindow(QMainWindow):
 
 def plot_test():
     name = 'pp1a_256_b'
-    save_dir = 'Z:/Promotion\Pin-Prick-Projekt\Daten\pp1a_256_b'
+    save_dir = 'Z:/Promotion/Pin-Prick-Projekt/Daten/pp1a_256_b'
     r = io.read_raw(name, save_dir)
     r.plot()
 
