@@ -746,12 +746,12 @@ class MainWindow(QMainWindow):
         for ln in self.lines:
             self.settings.setValue(ln, self.lines[ln].text())
             # ut.dict_filehandler(ln, 'win_cache', self.cache_path, self.lines[ln].text(), silent=True)
-        for act in self.actions:
-            if self.actions[act].isChecked():
-                self.settings.setValue(act, 1)
+        #for act in self.actions:
+            #if self.actions[act].isChecked():
+                #self.settings.setValue(act, 1)
                 # ut.dict_filehandler(act, 'win_cache', self.cache_path, 1, silent=True)
-            else:
-                self.settings.setValue(act, 0)
+            # else:
+                # self.settings.setValue(act, 0)
 
         self.settings.setValue('geometry', self.saveGeometry())
 
