@@ -27,6 +27,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
         pattern = r'.*'
 
     for f in all_fif_files:
+        #Todo: BugImmer noch Probleme  mit -raw.fif-Files
         fname = f[:-4]
         if fname[-4:] == '-raw':
             fdest = join(data_path, fname, fname + '.fif')

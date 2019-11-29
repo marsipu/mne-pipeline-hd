@@ -316,7 +316,7 @@ def order_the_dict(filename, sub_script_path, unspecified_names=False):
         order_list.append(order_dict1[key])
     order_list.sort()
 
-
+# Todo: Bug Mac findet Template-Ordner nicht
 def get_pipeline_path(path):
     match = re.search('mne_pipeline_hd', path)
     pipeline_path = path[:match.span()[1]]

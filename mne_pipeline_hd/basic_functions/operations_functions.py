@@ -707,7 +707,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
     if overwrite or not isfile(ica_path):
 
         try:
-            raw = io.read_filtered(name, save_dir, lowpass, 1)
+            raw = io.read_filtered(name, save_dir, 1, lowpass)
         except FileNotFoundError:
             raise RuntimeError(
                 'No Raw with Highpass=1-Filter found,set "enable_ica" to true and run "filter_raw" again')
@@ -1471,7 +1471,7 @@ def mri_coreg(name, save_dir, subtomri, subjects_dir):
     raw_path = join(save_dir, raw_name)
 
     # fids = mne.coreg.get_mni_fiducials(subtomri, subjects_dir)
-
+    # Todo: Problems with raw-reading
     mne.gui.coregistration(subject=subtomri, inst=raw_path,
                            subjects_dir=subjects_dir, guess_mri_subject=False,
                            advanced_rendering=True, mark_inside=True)
@@ -1544,7 +1544,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
 
             tmin, tmax = baseline
             noise_covariance = mne.compute_covariance(epochs, tmin=tmin, tmax=tmax,
-                                                      inverse_method='empirical', n_jobs=n_jobs)
+                                                      method='empirical', n_jobs=n_jobs)
 
             mne.cov.write_cov(covariance_path, noise_covariance)
 
