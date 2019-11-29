@@ -21,7 +21,8 @@ pinprick_functions = dict(pp_event_handling=0,
                           motor_erm_analysis=0,
                           plot_ab_combined=0)
 
-melofix_functions = dict(melofix_event_handling=0)
+custom_functions = dict(melofix_event_handling=0,
+                        kristin_event_handling=0)
 
 sensor_space_operations = dict(filter_raw=0,
                                find_events=0,
@@ -148,7 +149,7 @@ grand_average_plots = dict(
 # 'subject_operations': subject_operations,
 all_fs_gs = {'basic_operations': basic_operations,
              'pinprick_functions': pinprick_functions,
-             'melofix_functions': melofix_functions,
+             'custom_functions': custom_functions,
              'sensor_space_operations': sensor_space_operations,
              'mri_subject_operations': mri_subject_operations,
              'source_space_operations': source_space_operations,

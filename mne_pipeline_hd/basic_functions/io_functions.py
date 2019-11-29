@@ -31,7 +31,7 @@ def filter_string(highpass, lowpass):
 # IO FUNCTIONS
 # ==============================================================================
 def read_info(name, save_dir):
-    raw_name = name + '.fif'
+    raw_name = name + '-raw.fif'
     raw_path = join(save_dir, raw_name)
     info = mne.io.read_info(raw_path)
 

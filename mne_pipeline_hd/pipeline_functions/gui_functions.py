@@ -281,9 +281,9 @@ class MainWindow(QMainWindow):
         self.settings = QSettings()
         self.platform = sys.platform
 
-        self.setGeometry(300, 300, 800, 600)  # default window size
-        if self.settings.value('geometry') is not None:
-            self.restoreGeometry(self.settings.value('geometry'))
+        self.setGeometry(0, 0, 400, 300)  # default window size
+        #if self.settings.value('geometry') is not None:
+            #self.restoreGeometry(self.settings.value('geometry'))
         # if 'darwin' in self.platform:
         #     self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
         # Center Window

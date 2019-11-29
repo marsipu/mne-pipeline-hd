@@ -25,6 +25,7 @@ from mne_pipeline_hd.pipeline_functions import gui_functions as guif, subject_or
 
 from mne_pipeline_hd.custom_functions import pinprick_functions as ppf
 from mne_pipeline_hd.custom_functions import melofix_functions as mff
+from mne_pipeline_hd.custom_functions import kristins_functions as kf
 
 
 def reload_all():
@@ -38,6 +39,7 @@ def reload_all():
     reload(guif)
     reload(ppf)
     reload(mff)
+    reload(kf)
 
 
 reload_all()
@@ -377,6 +379,11 @@ for name in files:
 
     if exec_ops['melofix_event_handling']:
         mff.melofix_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
+                                   pscripts_path, p.save_plots, figures_path, exec_ops)
+
+
+    if exec_ops['kristin_event_handling']:
+        kf.kristin_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
                                    pscripts_path, p.save_plots, figures_path, exec_ops)
 
     if exec_ops['find_eog_events']:
