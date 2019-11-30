@@ -2,5 +2,5 @@
 *.pyc
 __pycache__/*
 cachedir/*
-/mne_pipeline_hd/_pipeline_cache/*
+/_pipeline_cache/*
 .idea/*

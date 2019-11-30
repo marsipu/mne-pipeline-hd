@@ -283,8 +283,8 @@ class MainWindow(QMainWindow):
         self.platform = sys.platform
 
         self.setGeometry(0, 0, 400, 300)  # default window size
-        #if self.settings.value('geometry') is not None:
-            #self.restoreGeometry(self.settings.value('geometry'))
+        # if self.settings.value('geometry') is not None:
+        # self.restoreGeometry(self.settings.value('geometry'))
         # if 'darwin' in self.platform:
         #     self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
         # Center Window
@@ -323,6 +323,22 @@ class MainWindow(QMainWindow):
                              'which_erm_file': f'Choose erm_files to process\n{sub_sel_example}',
                              'which_motor_erm_file': f'Pinprick-specific\n{sub_sel_example}'}
 
+        # Call methods
+        self.path_handling()
+        self.create_menu()
+        self.subject_selection()
+        self.make_func_bts()
+        self.add_main_bts()
+        self.center()
+
+        self.which_file = self.lines['which_file'].text()
+        self.quality = self.lines['quality'].text()
+        self.modality = self.lines['modality'].text()
+        self.which_mri_subject = self.lines['which_mri_subject'].text()
+        self.which_erm_file = self.lines['which_erm_file'].text()
+        self.which_motor_erm_file = self.lines['which_motor_erm_file'].text()
+
+    def path_handling(self):
         # Pipeline-Paths
         self.pipeline_path = ut.get_pipeline_path(os.getcwd())
         self.cache_path = join(join(self.pipeline_path, '_pipeline_cache'))
@@ -362,10 +378,10 @@ class MainWindow(QMainWindow):
                     ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
         # Todo: Store everything in QSettings, make reading of project_name more reliable concerning existing projects
         # Get project_name
-        self.projects = [p for p in os.listdir(self.home_path) if isdir(join(self.home_path, p, 'Daten'))]
+        self.projects = [p for p in os.listdir(self.home_path) if isdir(join(self.home_path, p, 'data'))]
         if len(self.projects) == 0:
             self.project_name, ok = QInputDialog.getText(self, 'Project-Selection',
-                                                         'No projects in {self.home_path} found\n'
+                                                         f'No projects in {self.home_path} found\n'
                                                          'Enter a project-name for your first project')
             if ok:
                 self.projects.append(self.project_name)
@@ -386,6 +402,10 @@ class MainWindow(QMainWindow):
                     self.project_name = self.projects[0]
             except FileNotFoundError:
                 self.project_name = self.projects[0]
+
+        print(f'Home-Path: {self.home_path}')
+        print(f'Project-Name: {self.project_name}')
+        print(self.projects)
 
         # Initiate other paths
         self.project_path = join(self.home_path, self.project_name)
@@ -417,20 +437,6 @@ class MainWindow(QMainWindow):
                 with open(file, 'w') as fl:
                     fl.write('')
                 print(f'{file} created')
-
-        # Call methods
-        self.create_menu()
-        self.subject_selection()
-        self.make_func_bts()
-        self.add_main_bts()
-        self.center()
-
-        self.which_file = self.lines['which_file'].text()
-        self.quality = self.lines['quality'].text()
-        self.modality = self.lines['modality'].text()
-        self.which_mri_subject = self.lines['which_mri_subject'].text()
-        self.which_erm_file = self.lines['which_erm_file'].text()
-        self.which_motor_erm_file = self.lines['which_motor_erm_file'].text()
 
     # Todo Mac-Bug Menu not selectable
     def create_menu(self):
@@ -572,6 +578,7 @@ class MainWindow(QMainWindow):
         ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
         self.project_name = None
         self.menuBar().clear()
+        self.path_handling()
         self.create_menu()
         self.update()
         self.settings.setValue('project', self.project_name)
@@ -749,12 +756,12 @@ class MainWindow(QMainWindow):
             self.settings.setValue(ln, self.lines[ln].text())
             # ut.dict_filehandler(ln, 'win_cache', self.cache_path, self.lines[ln].text(), silent=True)
         # Major Error: QAction not found on Mac!!!
-        #for act in self.actions:
-            #if self.actions[act].isChecked():
-                #self.settings.setValue(act, 1)
-                # ut.dict_filehandler(act, 'win_cache', self.cache_path, 1, silent=True)
-            # else:
-                # self.settings.setValue(act, 0)
+        # for act in self.actions:
+        # if self.actions[act].isChecked():
+        # self.settings.setValue(act, 1)
+        # ut.dict_filehandler(act, 'win_cache', self.cache_path, 1, silent=True)
+        #   else:
+        # self.settings.setValue(act, 0)
 
         self.settings.setValue('geometry', self.saveGeometry())
 
