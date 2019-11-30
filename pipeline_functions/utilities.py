@@ -18,7 +18,7 @@ except ImportError:
 import tkinter as t
 import re
 
-from mne_pipeline_hd.pipeline_functions import operations_dict as opd
+from pipeline_functions import operations_dict as opd
 
 
 # Todo: If checked, change color

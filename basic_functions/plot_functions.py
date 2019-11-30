@@ -18,9 +18,8 @@ import matplotlib.ticker as ticker
 from matplotlib.lines import Line2D
 from mayavi import mlab
 from scipy import stats
-from mne_pipeline_hd.basic_functions import io_functions as io
-from mne_pipeline_hd.basic_functions import operations_functions as op
-from mne_pipeline_hd.pipeline_functions import decorators as decor, utilities as ut
+from basic_functions import operations_functions as op, io_functions as io
+from pipeline_functions import decorators as decor, utilities as ut
 import numpy as np
 from surfer import Brain
 import gc

@@ -10,8 +10,9 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QI
                              QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
 from PyQt5.QtCore import Qt, QSettings
 
-from mne_pipeline_hd.pipeline_functions import subject_organisation as suborg, operations_dict as opd, utilities as ut
-from mne_pipeline_hd.basic_functions import io_functions as io
+from pipeline_functions import subject_organisation as suborg, operations_dict as opd
+from pipeline_functions import utilities as ut
+from basic_functions import io_functions as io
 
 
 def sub_dict_selected(inst1, inst2, dict_path):
@@ -389,7 +390,8 @@ class MainWindow(QMainWindow):
         # Initiate other paths
         self.project_path = join(self.home_path, self.project_name)
         self.orig_data_path = join(self.project_path, 'meg')
-        self.data_path = join(self.project_path, 'Daten')
+        self.data_path = join(self.project_path, 'data')
+        self.erm_path = join(self.data_path, 'empty_room_data')
         self.subjects_dir = join(self.home_path, 'Freesurfer')
         self.pscripts_path = join(self.project_path, '_pipeline_scripts')
         self.file_list_path = join(self.pscripts_path, 'file_list.py')
@@ -401,7 +403,7 @@ class MainWindow(QMainWindow):
         self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.py')
         self.quality_dict_path = join(self.pscripts_path, 'quality.py')
 
-        path_lists = [self.subjects_dir, self.orig_data_path, self.data_path, self.pscripts_path]
+        path_lists = [self.subjects_dir, self.orig_data_path, self.data_path, self.erm_path, self.pscripts_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.motor_erm_list_path, self.mri_sub_list_path,
                       self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.quality_dict_path]
 
@@ -746,6 +748,7 @@ class MainWindow(QMainWindow):
         for ln in self.lines:
             self.settings.setValue(ln, self.lines[ln].text())
             # ut.dict_filehandler(ln, 'win_cache', self.cache_path, self.lines[ln].text(), silent=True)
+        # Major Error: QAction not found on Mac!!!
         #for act in self.actions:
             #if self.actions[act].isChecked():
                 #self.settings.setValue(act, 1)

@@ -5,9 +5,8 @@ import statistics as st
 from matplotlib import pyplot as plt
 from os.path import join
 
-from mne_pipeline_hd.basic_functions import io_functions as io
-from mne_pipeline_hd.basic_functions import plot_functions as plot, operations_functions as op
-from mne_pipeline_hd.pipeline_functions import decorators as decor, utilities as ut
+from basic_functions import operations_functions as op, io_functions as io, plot_functions as plot
+from pipeline_functions import decorators as decor, utilities as ut
 
 
 @decor.topline
