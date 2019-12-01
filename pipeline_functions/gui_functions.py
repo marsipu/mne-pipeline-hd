@@ -302,7 +302,7 @@ class MainWindow(QMainWindow):
         QToolTip.setFont(QFont('SansSerif', 10))
 
         # Attributes for class-methods
-        self.actions = dict()
+        # self.actions = dict()
         self.func_dict = dict()
         self.bt_dict = dict()
         self.make_it_stop = False
@@ -442,68 +442,52 @@ class MainWindow(QMainWindow):
     def create_menu(self):
         # Project
         project_menu = QMenu('Project')
-        project_group = QActionGroup(project_menu)
-
-        for project in self.projects:
-            action = QAction(project, project_menu)
-            action.setCheckable(True)
-            action.triggered.connect(partial(self.change_project, project))
-            self.actions[project] = action
-            project_menu.addAction(action)
-            project_group.addAction(action)
-        project_group.setExclusive(True)
-        # Toggle project from win_cache
-        if self.project_name in self.projects:
-            self.actions[self.project_name].toggle()
-        else:
-            self.actions[self.projects[0]].toggle()
-            self.project_name = self.projects[0]
-            self.settings.setValue('project', self.project_name)
-            # ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
+        project_group = QActionGroup(self)
         self.menuBar().addMenu(project_menu)
 
-        self.actions['Add_Project'] = project_menu.addAction('Add Project',
-                                                             partial(self.add_project, project_menu, project_group))
+        for project in self.projects:
+            # action = QAction(project, self)
+            # action.setCheckable(True)
+            # action.triggered.connect(partial(self.change_project, project))
+            project_group.addAction(project)
+            print(f'Added {project}-action')
+            # project_menu.addAction(action)
+            # if project == self.project_name:
+            #     action.toggle()
+
         # Todo: Separator Issue
         # project_menu.insertSeparator(self.actions['Add_Project'])
+
         # Input
         input_menu = self.menuBar().addMenu('Input')
 
-        self.actions['add_subject'] = input_menu.addAction('Add Files', partial(suborg.add_files, self.file_list_path,
-                                                                                self.erm_list_path,
-                                                                                self.motor_erm_list_path,
-                                                                                self.data_path, self.orig_data_path))
-        self.actions['add_mri_subject'] = input_menu.addAction('Add MRI-Subject',
-                                                               partial(suborg.add_mri_subjects, self.subjects_dir,
-                                                                       self.mri_sub_list_path, self.data_path))
-        self.actions['add_sub_dict'] = input_menu.addAction('Assign File --> MRI-Subject',
-                                                            partial(SubDictDialog, self, 'mri'))
-        self.actions['add_erm_dict'] = input_menu.addAction('Assign File --> ERM-File',
-                                                            partial(SubDictDialog, self, 'erm'))
-        self.actions['add_bad_channels_dict'] = input_menu.addAction('Assign Bad-Channels --> File',
-                                                                     partial(BadChannelsSelect, self))
-
+        input_menu.addAction('Add Files', partial(suborg.add_files, self.file_list_path,
+                                                  self.erm_list_path,
+                                                  self.motor_erm_list_path,
+                                                  self.data_path, self.orig_data_path))
+        input_menu.addAction('Add MRI-Subject',
+                             partial(suborg.add_mri_subjects, self.subjects_dir,
+                                     self.mri_sub_list_path, self.data_path))
+        input_menu.addAction('Assign File --> MRI-Subject',
+                             partial(SubDictDialog, self, 'mri'))
+        input_menu.addAction('Assign File --> ERM-File',
+                             partial(SubDictDialog, self, 'erm'))
+        input_menu.addAction('Assign Bad-Channels --> File',
+                             partial(BadChannelsSelect, self))
         # Setting
         setting_menu = self.menuBar().addMenu('Settings')
-        self.actions['Dark-Mode'] = setting_menu.addAction('Dark-Mode', self.dark_mode)
-        self.actions['Dark-Mode'].setCheckable(True)
-        self.actions['Full-Screen'] = setting_menu.addAction('Full-Screen', self.full_screen)
-        self.actions['Full-Screen'].setCheckable(True)
-        self.actions['Change_Func-Layout'] = setting_menu.addAction('Change Functions-Layout', self.change_func_layout)
-        self.actions['Change_Func-Layout'].setCheckable(True)
-        self.actions['Change_Home-Path'] = setting_menu.addAction('Change Home-Path', self.change_home_path)
+        setting_menu.addAction('Dark-Mode', self.dark_mode).setCheckable(True)
+        setting_menu.addAction('Full-Screen', self.full_screen).setCheckable(True)
+        setting_menu.addAction('Change Functions-Layout', self.change_func_layout).setCheckable(True)
+        setting_menu.addAction('Add Project', self.add_project)
+        setting_menu.addAction('Change Home-Path', self.change_home_path).setCheckable(True)
 
         # About
         about_menu = self.menuBar().addMenu('About')
-        self.actions['Update_MNE-Python'] = about_menu.addAction('Update MNE-Python', ut.update_mne)
-        self.actions['Update_Pipeline'] = about_menu.addAction('Update Pipeline', partial(ut.update_pipeline,
-                                                                                          self.pipeline_path))
-        self.actions['About_QT'] = about_menu.addAction('About QT', self.about_qt)
-
-        # Get activated actions from last run
-        for act in self.actions:
-            if self.settings.value(act):
-                self.actions[act].setChecked(True)
+        about_menu.addAction('Update MNE-Python', ut.update_mne)
+        about_menu.addAction('Update Pipeline', partial(ut.update_pipeline,
+                                                        self.pipeline_path))
+        about_menu.addAction('About QT', self.about_qt)
 
     def change_project(self, project):
         self.project_name = project
@@ -511,25 +495,24 @@ class MainWindow(QMainWindow):
         # ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
         self.__init__()
 
-    def add_project(self, project_menu, project_group):
+    def add_project(self):
         project, ok = QInputDialog.getText(self, 'Project-Selection',
                                            'Enter a project-name for a new project')
         if ok:
             self.project_name = project
             new_action = QAction(project)
             new_action.setCheckable(True)
-            new_action.triggered.connect(partial(self.change_project, project))
             project_group.addAction(new_action)
-            new_action.toggle()
-            new_action.trigger()
-            project_menu.insertAction(self.actions['Add_Project'], new_action)
-            project_menu.update()
+            new_action.setChecked(True)
+            new_action.triggered.connect(partial(self.change_project, project))
+            project_menu.clear()
+            project_menu.addAction(new_action)
         else:
             pass
 
     # Todo: Fix Dark-Mode
-    def dark_mode(self):
-        if self.actions['Dark-Mode'].isChecked():
+    def dark_mode(self, state):
+        if state:
             dark_palette = QPalette()
             dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
             dark_palette.setColor(QPalette.WindowText, Qt.white)
@@ -624,6 +607,10 @@ class MainWindow(QMainWindow):
 
     # Todo: Make Buttons more appealing
     def make_func_bts(self):
+        layout_state = False
+        for act in self.actions():
+            if act.text() == 'Change_Func-Layout':
+                layout_state = act.isChecked()
         r_cnt = 0
         c_cnt = 0
         r_max = 20
@@ -653,7 +640,7 @@ class MainWindow(QMainWindow):
         for function_group in opd.all_fs_gs:
             tab = QWidget()
             tab_func_layout = QGridLayout()
-            if self.actions['Change_Func-Layout'].isChecked():
+            if layout_state:
                 # Overwrite parameters for each new tab
                 r_cnt = 0
                 c_cnt = 0
@@ -674,7 +661,7 @@ class MainWindow(QMainWindow):
                     pb.setChecked(True)
                     self.func_dict[function] = 1
                 pb.toggled.connect(partial(self.select_func, function))
-                if self.actions['Change_Func-Layout'].isChecked():
+                if layout_state:
                     tab_func_layout.addWidget(pb, r_cnt, c_cnt)
                 else:
                     all_func_layout.addWidget(pb, r_cnt, c_cnt)
@@ -682,10 +669,10 @@ class MainWindow(QMainWindow):
                 if r_cnt >= r_max:
                     c_cnt += 1
                     r_cnt = 0
-            if self.actions['Change_Func-Layout'].isChecked():
+            if layout_state:
                 tab.setLayout(tab_func_layout)
                 self.tab_func_widget.addTab(tab, function_group)
-        if self.actions['Change_Func-Layout'].isChecked():
+        if layout_state:
             self.general_layout.addWidget(self.tab_func_widget, 1, 0)
         else:
             self.all_func_widget.setLayout(all_func_layout)
@@ -700,8 +687,8 @@ class MainWindow(QMainWindow):
             self.func_dict[function] = 0
 
     # Todo: Not working properly, maybe reinitialize window and
-    def change_func_layout(self):
-        if self.actions['Change_Func-Layout'].isChecked():
+    def change_func_layout(self, state):
+        if state:
             # self.general_layout.addWidget(self.tab_func_widget, 1, 0)
             # self.centralWidget().setLayout(self.general_layout)
             self.general_layout.removeWidget(self.all_func_widget)
