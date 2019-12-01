@@ -4,11 +4,12 @@ from functools import partial
 from os import makedirs
 from os.path import join, isfile, isdir, exists
 
-from PyQt5.QtGui import QPalette, QColor, QFont
-from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
-                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
-from PyQt5.QtCore import Qt, QSettings
+import mne
+from PySide2.QtGui import QPalette, QColor, QFont
+from PySide2.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
+                               QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
+                               QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
+from PySide2.QtCore import Qt, QSettings
 
 from pipeline_functions import subject_organisation as suborg, operations_dict as opd
 from pipeline_functions import utilities as ut
@@ -157,7 +158,7 @@ class SubDictDialog(QDialog):
         assign_bt.clicked.connect(partial(sub_dict_assign, self.dict_path, list_widget1, list_widget2))
         bt_layout.addWidget(assign_bt)
 
-        none_bt = QPushButton('Assign None')
+        none_bt = QPushButton('Assign None', self)
         none_bt.clicked.connect(partial(sub_dict_assign_none, self.dict_path, list_widget1))
         bt_layout.addWidget(none_bt)
 
@@ -446,15 +447,15 @@ class MainWindow(QMainWindow):
         self.menuBar().addMenu(project_menu)
 
         for project in self.projects:
-            # action = QAction(project, self)
-            # action.setCheckable(True)
-            # action.triggered.connect(partial(self.change_project, project))
-            project_group.addAction(project)
+            action = QAction(project, self)
+            action.setCheckable(True)
+            action.triggered.connect(partial(self.change_project, project))
+            project_group.addAction(action)
             print(f'Added {project}-action')
-            # project_menu.addAction(action)
-            # if project == self.project_name:
-            #     action.toggle()
-
+            project_menu.addAction(action)
+            if project == self.project_name:
+                action.toggle()
+        project_menu.addAction('Add Project', partial(self.add_project, project_menu, project_group))
         # Todo: Separator Issue
         # project_menu.insertSeparator(self.actions['Add_Project'])
 
@@ -479,7 +480,6 @@ class MainWindow(QMainWindow):
         setting_menu.addAction('Dark-Mode', self.dark_mode).setCheckable(True)
         setting_menu.addAction('Full-Screen', self.full_screen).setCheckable(True)
         setting_menu.addAction('Change Functions-Layout', self.change_func_layout).setCheckable(True)
-        setting_menu.addAction('Add Project', self.add_project)
         setting_menu.addAction('Change Home-Path', self.change_home_path).setCheckable(True)
 
         # About
@@ -493,9 +493,8 @@ class MainWindow(QMainWindow):
         self.project_name = project
         self.settings.setValue('project', self.project_name)
         # ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
-        self.__init__()
 
-    def add_project(self):
+    def add_project(self, project_menu, project_group):
         project, ok = QInputDialog.getText(self, 'Project-Selection',
                                            'Enter a project-name for a new project')
         if ok:

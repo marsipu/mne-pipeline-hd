@@ -381,10 +381,9 @@ for name in files:
         mff.melofix_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
                                    pscripts_path, p.save_plots, figures_path, exec_ops)
 
-
     if exec_ops['kristin_event_handling']:
         kf.kristin_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
-                                   pscripts_path, p.save_plots, figures_path, exec_ops)
+                                  pscripts_path, p.save_plots, figures_path, exec_ops)
 
     if exec_ops['find_eog_events']:
         op.find_eog_events(name, save_dir, p.eog_channel)
