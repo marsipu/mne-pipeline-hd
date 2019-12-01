@@ -5,11 +5,11 @@ from os import makedirs
 from os.path import join, isfile, isdir, exists
 
 import mne
-from PySide2.QtGui import QPalette, QColor, QFont
-from PySide2.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
-                               QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
-                               QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
-from PySide2.QtCore import Qt, QSettings
+from PyQt5.QtGui import QPalette, QColor, QFont
+from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
+                             QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
+                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget, QComboBox)
+from PyQt5.QtCore import Qt, QSettings
 
 from pipeline_functions import subject_organisation as suborg, operations_dict as opd
 from pipeline_functions import utilities as ut
@@ -283,7 +283,7 @@ class MainWindow(QMainWindow):
         self.settings = QSettings()
         self.platform = sys.platform
 
-        self.setGeometry(0, 0, 400, 300)  # default window size
+        self.setGeometry(0, 0, 800, 600)  # default window size
         # if self.settings.value('geometry') is not None:
         # self.restoreGeometry(self.settings.value('geometry'))
         # if 'darwin' in self.platform:
@@ -396,7 +396,8 @@ class MainWindow(QMainWindow):
         else:
             # Read Last-loaded Project if available
             try:
-                pre_project_name = ut.read_dict_file('win_cache', self.cache_path)['project']
+                pre_project_name = self.settings.value('project')
+                # pre_project_name = ut.read_dict_file('win_cache', self.cache_path)['project']
                 if pre_project_name in self.projects:
                     self.project_name = pre_project_name
                 else:
@@ -441,23 +442,23 @@ class MainWindow(QMainWindow):
 
     # Todo Mac-Bug Menu not selectable
     def create_menu(self):
-        # Project
-        project_menu = QMenu('Project')
-        project_group = QActionGroup(self)
-        self.menuBar().addMenu(project_menu)
-
-        for project in self.projects:
-            action = QAction(project, self)
-            action.setCheckable(True)
-            action.triggered.connect(partial(self.change_project, project))
-            project_group.addAction(action)
-            print(f'Added {project}-action')
-            project_menu.addAction(action)
-            if project == self.project_name:
-                action.toggle()
-        project_menu.addAction('Add Project', partial(self.add_project, project_menu, project_group))
-        # Todo: Separator Issue
-        # project_menu.insertSeparator(self.actions['Add_Project'])
+        # # Project
+        # project_menu = QMenu('Project')
+        # project_group = QActionGroup(self)
+        # self.menuBar().addMenu(project_menu)
+        #
+        # for project in self.projects:
+        #     action = QAction(project, self)
+        #     action.setCheckable(True)
+        #     action.triggered.connect(partial(self.change_project, project))
+        #     project_group.addAction(action)
+        #     print(f'Added {project}-action')
+        #     project_menu.addAction(action)
+        #     if project == self.project_name:
+        #         action.toggle()
+        # setting_menu.addAction('Add Project', self.add_project)
+        # # Todo: Separator Issue
+        # # project_menu.insertSeparator(self.actions['Add_Project'])
 
         # Input
         input_menu = self.menuBar().addMenu('Input')
@@ -479,9 +480,9 @@ class MainWindow(QMainWindow):
         setting_menu = self.menuBar().addMenu('Settings')
         setting_menu.addAction('Dark-Mode', self.dark_mode).setCheckable(True)
         setting_menu.addAction('Full-Screen', self.full_screen).setCheckable(True)
-        setting_menu.addAction('Change Functions-Layout', self.change_func_layout).setCheckable(True)
-        setting_menu.addAction('Change Home-Path', self.change_home_path).setCheckable(True)
-
+        setting_menu.addAction('Change Functions-Layout', self.change_func_layout)
+        setting_menu.addAction('Change Home-Path', self.change_home_path)
+        setting_menu.addAction('Add Project', self.add_project)
         # About
         about_menu = self.menuBar().addMenu('About')
         about_menu.addAction('Update MNE-Python', ut.update_mne)
@@ -492,20 +493,31 @@ class MainWindow(QMainWindow):
     def change_project(self, project):
         self.project_name = project
         self.settings.setValue('project', self.project_name)
+        print(self.project_name)
+        self.path_handling()
         # ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
 
-    def add_project(self, project_menu, project_group):
+    # def add_project(self, project_menu, project_group):
+    #     project, ok = QInputDialog.getText(self, 'Project-Selection',
+    #                                        'Enter a project-name for a new project')
+    #     if ok:
+    #         self.project_name = project
+    #         new_action = QAction(project)
+    #         new_action.setCheckable(True)
+    #         project_group.addAction(new_action)
+    #         new_action.setChecked(True)
+    #         new_action.triggered.connect(partial(self.change_project, project))
+    #         project_menu.clear()
+    #         project_menu.addAction(new_action)
+    #     else:
+    #         pass
+
+    def add_project(self):
         project, ok = QInputDialog.getText(self, 'Project-Selection',
-                                           'Enter a project-name for a new project')
+                                               'Enter a project-name for a new project')
         if ok:
             self.project_name = project
-            new_action = QAction(project)
-            new_action.setCheckable(True)
-            project_group.addAction(new_action)
-            new_action.setChecked(True)
-            new_action.triggered.connect(partial(self.change_project, project))
-            project_menu.clear()
-            project_menu.addAction(new_action)
+            self.project_box.addItem(project)
         else:
             pass
 
@@ -584,6 +596,13 @@ class MainWindow(QMainWindow):
 
     def subject_selection(self):
         subsel_layout = QHBoxLayout()
+
+        self.project_box = QComboBox()
+        for project in self.projects:
+            self.project_box.addItem(project)
+        self.project_box.activated[str].connect(self.change_project)
+        subsel_layout.addWidget(self.project_box)
+
         # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
         for t in self.sub_sel_tips:
             subsub_layout = QVBoxLayout()
@@ -706,6 +725,7 @@ class MainWindow(QMainWindow):
 
     def add_main_bts(self):
         main_bt_layout = QHBoxLayout()
+
         clear_bt = QPushButton('Clear', self)
         start_bt = QPushButton('Start', self)
         stop_bt = QPushButton('Stop', self)
