@@ -359,17 +359,21 @@ def shutdown():
     if sys.platform == 'darwin':
         os.system('sudo shutdown -h now')
 
-
+import shlex
 # Todo: Update MNE-Function zum Funktionieren bringen
 def update_mne():
-    command = ["curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml",
-               "conda env update --file environment.yml",
-               "pip install -r requirements.txt"]
-    run(command, shell=True)
+    if sys.platform == 'win32':
+        command = "conda deactivate & conda env list"
+    else:
+        command = "conda deactivate; conda env list"
+    # command = ["curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml",
+    #            "conda env update --file environment.yml",
+    #            "pip install -r requirements.txt"]
+    run(command, shell=True) # shell is definitely needed on windows
 
 
 # Todo: Update Pipeline-Function
 def update_pipeline(pipeline_path):
-    command = f'pip install --upgrade --src={dirname(pipeline_path)} ' \
-              f'-e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd'
+    command = f"pip install --upgrade --src=E:/Stumpi/Desktop " \
+              f"-e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd"
     run(command, shell=True)
