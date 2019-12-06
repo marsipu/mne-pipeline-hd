@@ -5,11 +5,11 @@ from os import makedirs
 from os.path import join, isfile, isdir, exists
 
 import mne
-from PySide2.QtGui import QPalette, QColor, QFont
-from PySide2.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
-                               QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
-                               QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
-from PySide2.QtCore import Qt, QSettings
+from PyQt5.QtGui import QPalette, QColor, QFont
+from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
+                             QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
+                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
+from PyQt5.QtCore import Qt, QSettings
 
 from pipeline_functions import subject_organisation as suborg, operations_dict as opd
 from pipeline_functions import utilities as ut

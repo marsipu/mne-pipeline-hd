@@ -1,4 +1,3 @@
 # MNE-Python-Requirements
-# pip install <requirement>
 https://api.github.com/repos/autoreject/autoreject/zipball/master
 imageio-ffmpeg
