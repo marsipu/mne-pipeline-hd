@@ -325,7 +325,8 @@ class MainWindow(QMainWindow):
                              'which_motor_erm_file': f'Pinprick-specific\n{sub_sel_example}'}
 
         # Call methods
-        self.path_handling()
+        self.get_paths()
+        self.make_paths()
         self.create_menu()
         self.subject_selection()
         self.make_func_bts()
@@ -339,7 +340,7 @@ class MainWindow(QMainWindow):
         self.which_erm_file = self.lines['which_erm_file'].text()
         self.which_motor_erm_file = self.lines['which_motor_erm_file'].text()
 
-    def path_handling(self):
+    def get_paths(self):
         # Pipeline-Paths
         self.pipeline_path = ut.get_pipeline_path(os.getcwd())
         self.cache_path = join(join(self.pipeline_path, '_pipeline_cache'))
@@ -409,6 +410,7 @@ class MainWindow(QMainWindow):
         print(f'Project-Name: {self.project_name}')
         print(self.projects)
 
+    def make_paths(self):
         # Initiate other paths
         self.project_path = join(self.home_path, self.project_name)
         self.orig_data_path = join(self.project_path, 'meg')
@@ -494,7 +496,7 @@ class MainWindow(QMainWindow):
         self.project_name = project
         self.settings.setValue('project', self.project_name)
         print(self.project_name)
-        self.path_handling()
+        self.make_paths()
         # ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
 
     # def add_project(self, project_menu, project_group):
@@ -517,7 +519,9 @@ class MainWindow(QMainWindow):
                                                'Enter a project-name for a new project')
         if ok:
             self.project_name = project
+            self.settings.setValue('project', self.project_name)
             self.project_box.addItem(project)
+            self.make_paths()
         else:
             pass
 
@@ -572,7 +576,7 @@ class MainWindow(QMainWindow):
         ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
         self.project_name = None
         self.menuBar().clear()
-        self.path_handling()
+        self.get_paths()
         self.create_menu()
         self.update()
         self.settings.setValue('project', self.project_name)
@@ -597,11 +601,15 @@ class MainWindow(QMainWindow):
     def subject_selection(self):
         subsel_layout = QHBoxLayout()
 
+        proj_box_layout = QVBoxLayout()
+        proj_box_label = QLabel('<b>Project:<b>')
         self.project_box = QComboBox()
         for project in self.projects:
             self.project_box.addItem(project)
-        self.project_box.activated[str].connect(self.change_project)
-        subsel_layout.addWidget(self.project_box)
+        self.project_box.currentTextChanged.connect(self.change_project)
+        proj_box_layout.addWidget(proj_box_label)
+        proj_box_layout.addWidget(self.project_box)
+        subsel_layout.addLayout(proj_box_layout)
 
         # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
         for t in self.sub_sel_tips:
