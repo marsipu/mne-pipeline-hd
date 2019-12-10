@@ -283,18 +283,6 @@ class MainWindow(QMainWindow):
         self.settings = QSettings()
         self.platform = sys.platform
 
-        self.setGeometry(0, 0, 800, 600)  # default window size
-        # if self.settings.value('geometry') is not None:
-        # self.restoreGeometry(self.settings.value('geometry'))
-        # if 'darwin' in self.platform:
-        #     self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
-        # Center Window
-        qr = self.frameGeometry()
-        print(qr)
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
         self.setWindowTitle('MNE-Pipeline HD')
         self._centralWidget = QWidget(self)
         self.setCentralWidget(self._centralWidget)
@@ -331,6 +319,19 @@ class MainWindow(QMainWindow):
         self.subject_selection()
         self.make_func_bts()
         self.add_main_bts()
+
+        # Center Window
+        # Necessary because frameGeometry is dependent on number of function-buttons
+        newh = self.sizeHint().height()
+        neww = self.sizeHint().width()
+        self.setGeometry(0, 0, neww, newh)
+
+        if 'darwin' in self.platform:
+            self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
+
+        # This is also possible but does not center a widget with height < 480
+        # self.layout().update()
+        # self.layout().activate()
         self.center()
 
         self.which_file = self.lines['which_file'].text()
@@ -342,7 +343,7 @@ class MainWindow(QMainWindow):
 
     def get_paths(self):
         # Pipeline-Paths
-        self.pipeline_path = ut.get_pipeline_path(os.getcwd())
+        self.pipeline_path = os.getcwd()
         self.cache_path = join(join(self.pipeline_path, '_pipeline_cache'))
         if not exists(join(self.pipeline_path, '_pipeline_cache')):
             makedirs(join(self.pipeline_path, '_pipeline_cache'))
@@ -584,19 +585,10 @@ class MainWindow(QMainWindow):
 
     # # Todo: Make Center work, frameGeometry doesn't give the actual geometry after make_func_bts
     def center(self):
-        # qr = self.frameGeometry()
-        # print(qr)
-        # cp = QDesktopWidget().availableGeometry().center()
-        # qr.moveCenter(cp)
-        # self.move(qr.topLeft())
-        pass
-        # self.move(QApplication.desktop().screen().rect().center() - self.rect().center())
-        # print(f'Destop-Center: {QApplication.desktop().screen().rect().center()},
-        #       f'Window-Center: {self.rect().center()}'
-        #       f', Difference: {QApplication.desktop().screen().rect().center() - self.rect().center()}')
-        # print(self._centralWidget.geometry())
-        # self.updateGeometry()
-        # print(self._centralWidget.geometry())
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
     def subject_selection(self):
         subsel_layout = QHBoxLayout()

@@ -1,53 +1,82 @@
 import sys
 # Should be executed in MNE-Environment or base with MNE installed
 from PyQt5.QtWidgets import (QApplication, QLabel, QWidget, QPushButton, QHBoxLayout,
-                             QMainWindow)
+                             QMainWindow, QDesktopWidget, QVBoxLayout)
 import matplotlib
+import mne
+from mayavi import mlab
+
 matplotlib.use('QT5Agg')
 from matplotlib import pyplot as plt
 
-class Model:
+
+class TestWindow(QMainWindow):
     def __init__(self):
-        self.view = None
-        self.data = []
-
-
-class TestWindow(QWidget):
-    def __init__(self, model):
         super().__init__()
         self.setWindowTitle('QT-Test')
-        self.setGeometry(100, 100, 280, 80)
-        self.move(60, 15)
-        self.addbuttons()
+        self.setCentralWidget(QWidget(self))
+        self.main_layout = QVBoxLayout()
         self.addlabel()
-        self.wuga = 42
-        self.model = model
+        self.addbuttons()
+        self.centralWidget().setLayout(self.main_layout)
+
+        # Necessary because frameGeometry is dependent on number of function-buttons
+        newh = self.sizeHint().height()
+        neww = self.sizeHint().width()
+        self.setGeometry(0, 0, neww, newh)
+
+        # This is also possible but does not center a widget with height < 480
+        # self.layout().update()
+        # self.layout().activate()
+        self.center()
 
     def addbuttons(self):
         h_layout = QHBoxLayout()
         bt1 = QPushButton('Quit')
-        bt2 = QPushButton('Print')
+        bt2 = QPushButton('Matplotlib')
+        bt3 = QPushButton('MNE-Coreg')
+        bt4 = QPushButton('Mayavi')
         h_layout.addWidget(bt1)
         h_layout.addWidget(bt2)
+        h_layout.addWidget(bt3)
+        h_layout.addWidget(bt4)
+        for x in range(10):
+            h_layout.addWidget(QPushButton(str(x)))
         self.setLayout(h_layout)
 
         bt1.clicked.connect(app.quit)
-        bt2.clicked.connect(self.test_func)
+        bt2.clicked.connect(self.test_matplotlib)
+        bt3.clicked.connect(self.test_mne_coreg)
+        bt4.clicked.connect(self.test_mayavi)
+
+        self.main_layout.addLayout(h_layout)
 
     def addlabel(self):
         label = QLabel('Hello World!', self)
+        self.main_layout.addWidget(label)
 
-    def test_func(self):
-        plt.plot(self.model.data)
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def test_matplotlib(self):
+        plt.plot([1, 2, 3, 4])
+        plt.show()
+
+    def test_mne_coreg(self):
+        mne.gui.coregistration()
+
+    def test_mayavi(self):
+        mlab.figure()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    model = Model()
-    model.view = TestWindow(model)
-    a = model.view.wuga
+    view = TestWindow()
     # Program Mode
-    model.view.show()
+    view.show()
     sys.exit(app.exec_())
     # Debug Mode
     # app.lastWindowClosed.connect(app.quit)
