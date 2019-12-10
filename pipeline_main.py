@@ -17,6 +17,7 @@ import mne
 from os.path import join, isfile
 from importlib import reload, util
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import Qt
 
 from basic_functions import operations_functions as op, io_functions as io, plot_functions as plot
 from pipeline_functions import gui_functions as guif, subject_organisation as suborg, \
