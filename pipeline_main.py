@@ -79,6 +79,8 @@ if sys.platform.startswith("darwin"):
 app = QApplication(sys.argv)
 app.setApplicationName(app_name)
 app.setOrganizationName('marsipu')
+if 'darwin' in sys.platform:
+    app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
 win = guif.MainWindow()
 win.show()
 win.activateWindow()

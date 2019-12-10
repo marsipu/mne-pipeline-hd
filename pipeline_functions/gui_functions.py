@@ -327,7 +327,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(0, 0, neww, newh)
 
         if 'darwin' in self.platform:
-            self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
+            self.setGeometry(0, 0, self.width() * self.devicePixelRatio(), self.height() * self.devicePixelRatio())
 
         # This is also possible but does not center a widget with height < 480
         # self.layout().update()
@@ -517,7 +517,7 @@ class MainWindow(QMainWindow):
 
     def add_project(self):
         project, ok = QInputDialog.getText(self, 'Project-Selection',
-                                               'Enter a project-name for a new project')
+                                           'Enter a project-name for a new project')
         if ok:
             self.project_name = project
             self.settings.setValue('project', self.project_name)

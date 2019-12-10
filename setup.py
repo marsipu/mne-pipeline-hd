@@ -1,3 +1,4 @@
+import sys
 from setuptools import setup, find_packages
 
 setup(name='mne_pipeline_hd',
@@ -7,5 +8,7 @@ setup(name='mne_pipeline_hd',
       author='marsipu',
       author_email='martin.schulz@stud.uni-heidelberg.de',
       python_requires='>=3.6',
+      install_requirements=['mne', 'autoreject', 'imageio-ffmpeg',
+                            'pyobjc-framework-Cocoa; sys_platform == "darwin"'],
       license='GPL-3.0',
       packages=find_packages(exclude=['docs', 'tests']))

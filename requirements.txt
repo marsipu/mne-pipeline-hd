@@ -1,3 +1,5 @@
 # MNE-Python-Requirements
-https://api.github.com/repos/autoreject/autoreject/zipball/master
+mne
+autoreject
 imageio-ffmpeg
+pyobjc-framework-Cocoa; sys_platform == "darwin"
