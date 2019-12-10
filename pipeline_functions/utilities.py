@@ -316,6 +316,7 @@ def order_the_dict(filename, sub_script_path, unspecified_names=False):
         order_list.append(order_dict1[key])
     order_list.sort()
 
+
 # Todo: Bug Mac findet Template-Ordner nicht
 def get_pipeline_path(path):
     match = re.search('mne_pipeline_hd', path)
@@ -362,14 +363,18 @@ def shutdown():
 
 # Todo: Update MNE-Function zum Funktionieren bringen
 def update_mne():
-    command = ["curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml",
-               "conda env update --file environment.yml",
-               "pip install -r requirements.txt"]
-    run(command, shell=True)
+    if sys.platform == 'win32':
+        command = "conda deactivate & conda env list"
+    else:
+        command = "conda deactivate; conda env list"
+    # command = ["curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml",
+    #            "conda env update --file environment.yml",
+    #            "pip install -r requirements.txt"]
+    run(command, shell=True)  # shell is definitely needed on windows
 
 
 # Todo: Update Pipeline-Function
 def update_pipeline(pipeline_path):
-    command = f'pip install --upgrade --src={dirname(pipeline_path)} ' \
-              f'-e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd'
+    command = f"pip install --upgrade --src=E:/Stumpi/Desktop " \
+              f"-e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd"
     run(command, shell=True)

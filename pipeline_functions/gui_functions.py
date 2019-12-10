@@ -8,7 +8,7 @@ import mne
 from PyQt5.QtGui import QPalette, QColor, QFont
 from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
-                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget)
+                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget, QComboBox)
 from PyQt5.QtCore import Qt, QSettings
 
 from pipeline_functions import subject_organisation as suborg, operations_dict as opd
@@ -283,18 +283,6 @@ class MainWindow(QMainWindow):
         self.settings = QSettings()
         self.platform = sys.platform
 
-        self.setGeometry(0, 0, 400, 300)  # default window size
-        # if self.settings.value('geometry') is not None:
-        # self.restoreGeometry(self.settings.value('geometry'))
-        # if 'darwin' in self.platform:
-        #     self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
-        # Center Window
-        qr = self.frameGeometry()
-        print(qr)
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
         self.setWindowTitle('MNE-Pipeline HD')
         self._centralWidget = QWidget(self)
         self.setCentralWidget(self._centralWidget)
@@ -325,11 +313,25 @@ class MainWindow(QMainWindow):
                              'which_motor_erm_file': f'Pinprick-specific\n{sub_sel_example}'}
 
         # Call methods
-        self.path_handling()
+        self.get_paths()
+        self.make_paths()
         self.create_menu()
         self.subject_selection()
         self.make_func_bts()
         self.add_main_bts()
+
+        # Center Window
+        # Necessary because frameGeometry is dependent on number of function-buttons
+        newh = self.sizeHint().height()
+        neww = self.sizeHint().width()
+        self.setGeometry(0, 0, neww, newh)
+
+        if 'darwin' in self.platform:
+            self.setGeometry(0, 0, self.width()*self.devicePixelRatio(), self.height()*self.devicePixelRatio())
+
+        # This is also possible but does not center a widget with height < 480
+        # self.layout().update()
+        # self.layout().activate()
         self.center()
 
         self.which_file = self.lines['which_file'].text()
@@ -339,9 +341,9 @@ class MainWindow(QMainWindow):
         self.which_erm_file = self.lines['which_erm_file'].text()
         self.which_motor_erm_file = self.lines['which_motor_erm_file'].text()
 
-    def path_handling(self):
+    def get_paths(self):
         # Pipeline-Paths
-        self.pipeline_path = ut.get_pipeline_path(os.getcwd())
+        self.pipeline_path = os.getcwd()
         self.cache_path = join(join(self.pipeline_path, '_pipeline_cache'))
         if not exists(join(self.pipeline_path, '_pipeline_cache')):
             makedirs(join(self.pipeline_path, '_pipeline_cache'))
@@ -396,7 +398,8 @@ class MainWindow(QMainWindow):
         else:
             # Read Last-loaded Project if available
             try:
-                pre_project_name = ut.read_dict_file('win_cache', self.cache_path)['project']
+                pre_project_name = self.settings.value('project')
+                # pre_project_name = ut.read_dict_file('win_cache', self.cache_path)['project']
                 if pre_project_name in self.projects:
                     self.project_name = pre_project_name
                 else:
@@ -408,6 +411,7 @@ class MainWindow(QMainWindow):
         print(f'Project-Name: {self.project_name}')
         print(self.projects)
 
+    def make_paths(self):
         # Initiate other paths
         self.project_path = join(self.home_path, self.project_name)
         self.orig_data_path = join(self.project_path, 'meg')
@@ -441,23 +445,23 @@ class MainWindow(QMainWindow):
 
     # Todo Mac-Bug Menu not selectable
     def create_menu(self):
-        # Project
-        project_menu = QMenu('Project')
-        project_group = QActionGroup(self)
-        self.menuBar().addMenu(project_menu)
-
-        for project in self.projects:
-            action = QAction(project, self)
-            action.setCheckable(True)
-            action.triggered.connect(partial(self.change_project, project))
-            project_group.addAction(action)
-            print(f'Added {project}-action')
-            project_menu.addAction(action)
-            if project == self.project_name:
-                action.toggle()
-        project_menu.addAction('Add Project', partial(self.add_project, project_menu, project_group))
-        # Todo: Separator Issue
-        # project_menu.insertSeparator(self.actions['Add_Project'])
+        # # Project
+        # project_menu = QMenu('Project')
+        # project_group = QActionGroup(self)
+        # self.menuBar().addMenu(project_menu)
+        #
+        # for project in self.projects:
+        #     action = QAction(project, self)
+        #     action.setCheckable(True)
+        #     action.triggered.connect(partial(self.change_project, project))
+        #     project_group.addAction(action)
+        #     print(f'Added {project}-action')
+        #     project_menu.addAction(action)
+        #     if project == self.project_name:
+        #         action.toggle()
+        # setting_menu.addAction('Add Project', self.add_project)
+        # # Todo: Separator Issue
+        # # project_menu.insertSeparator(self.actions['Add_Project'])
 
         # Input
         input_menu = self.menuBar().addMenu('Input')
@@ -479,9 +483,9 @@ class MainWindow(QMainWindow):
         setting_menu = self.menuBar().addMenu('Settings')
         setting_menu.addAction('Dark-Mode', self.dark_mode).setCheckable(True)
         setting_menu.addAction('Full-Screen', self.full_screen).setCheckable(True)
-        setting_menu.addAction('Change Functions-Layout', self.change_func_layout).setCheckable(True)
-        setting_menu.addAction('Change Home-Path', self.change_home_path).setCheckable(True)
-
+        setting_menu.addAction('Change Functions-Layout', self.change_func_layout)
+        setting_menu.addAction('Change Home-Path', self.change_home_path)
+        setting_menu.addAction('Add Project', self.add_project)
         # About
         about_menu = self.menuBar().addMenu('About')
         about_menu.addAction('Update MNE-Python', ut.update_mne)
@@ -492,20 +496,33 @@ class MainWindow(QMainWindow):
     def change_project(self, project):
         self.project_name = project
         self.settings.setValue('project', self.project_name)
+        print(self.project_name)
+        self.make_paths()
         # ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
 
-    def add_project(self, project_menu, project_group):
+    # def add_project(self, project_menu, project_group):
+    #     project, ok = QInputDialog.getText(self, 'Project-Selection',
+    #                                        'Enter a project-name for a new project')
+    #     if ok:
+    #         self.project_name = project
+    #         new_action = QAction(project)
+    #         new_action.setCheckable(True)
+    #         project_group.addAction(new_action)
+    #         new_action.setChecked(True)
+    #         new_action.triggered.connect(partial(self.change_project, project))
+    #         project_menu.clear()
+    #         project_menu.addAction(new_action)
+    #     else:
+    #         pass
+
+    def add_project(self):
         project, ok = QInputDialog.getText(self, 'Project-Selection',
-                                           'Enter a project-name for a new project')
+                                               'Enter a project-name for a new project')
         if ok:
             self.project_name = project
-            new_action = QAction(project)
-            new_action.setCheckable(True)
-            project_group.addAction(new_action)
-            new_action.setChecked(True)
-            new_action.triggered.connect(partial(self.change_project, project))
-            project_menu.clear()
-            project_menu.addAction(new_action)
+            self.settings.setValue('project', self.project_name)
+            self.project_box.addItem(project)
+            self.make_paths()
         else:
             pass
 
@@ -560,7 +577,7 @@ class MainWindow(QMainWindow):
         ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
         self.project_name = None
         self.menuBar().clear()
-        self.path_handling()
+        self.get_paths()
         self.create_menu()
         self.update()
         self.settings.setValue('project', self.project_name)
@@ -568,22 +585,24 @@ class MainWindow(QMainWindow):
 
     # # Todo: Make Center work, frameGeometry doesn't give the actual geometry after make_func_bts
     def center(self):
-        # qr = self.frameGeometry()
-        # print(qr)
-        # cp = QDesktopWidget().availableGeometry().center()
-        # qr.moveCenter(cp)
-        # self.move(qr.topLeft())
-        pass
-        # self.move(QApplication.desktop().screen().rect().center() - self.rect().center())
-        # print(f'Destop-Center: {QApplication.desktop().screen().rect().center()},
-        #       f'Window-Center: {self.rect().center()}'
-        #       f', Difference: {QApplication.desktop().screen().rect().center() - self.rect().center()}')
-        # print(self._centralWidget.geometry())
-        # self.updateGeometry()
-        # print(self._centralWidget.geometry())
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
     def subject_selection(self):
         subsel_layout = QHBoxLayout()
+
+        proj_box_layout = QVBoxLayout()
+        proj_box_label = QLabel('<b>Project:<b>')
+        self.project_box = QComboBox()
+        for project in self.projects:
+            self.project_box.addItem(project)
+        self.project_box.currentTextChanged.connect(self.change_project)
+        proj_box_layout.addWidget(proj_box_label)
+        proj_box_layout.addWidget(self.project_box)
+        subsel_layout.addLayout(proj_box_layout)
+
         # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
         for t in self.sub_sel_tips:
             subsub_layout = QVBoxLayout()
@@ -706,6 +725,7 @@ class MainWindow(QMainWindow):
 
     def add_main_bts(self):
         main_bt_layout = QHBoxLayout()
+
         clear_bt = QPushButton('Clear', self)
         start_bt = QPushButton('Start', self)
         stop_bt = QPushButton('Stop', self)

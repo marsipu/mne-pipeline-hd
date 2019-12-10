@@ -116,6 +116,7 @@ erm_dict_path = win.erm_dict_path
 bad_channels_dict_path = win.bad_channels_dict_path
 quality_dict_path = win.quality_dict_path
 
+a = win.pipeline_path
 # Needed to prevent exit code -1073741819 (0xC0000005) (probably memory error)
 #   after sequential running
 del app, win

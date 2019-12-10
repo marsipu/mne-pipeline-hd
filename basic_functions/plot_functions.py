@@ -778,7 +778,7 @@ def plot_noise_covariance(name, save_dir, highpass, lowpass, save_plots, figures
     else:
         print('Not saving plots; set "save_plots" to "True" to save')
 
-
+# Todo: Bug with interactive-mode
 @decor.topline
 def plot_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
              inverse_method, mne_evoked_time, event_id, stc_interactive,
