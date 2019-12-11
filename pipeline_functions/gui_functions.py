@@ -277,9 +277,7 @@ class BadChannelsSelect(QDialog):
             self.bad_chkbts[ch].setChecked(True)
 
 
-def change_style(style_name):
-    QApplication.setStyle(QStyleFactory.create(style_name))
-    QApplication.setPalette(QApplication.style().standardPalette())
+
 
 
 class MainWindow(QMainWindow):
@@ -328,6 +326,7 @@ class MainWindow(QMainWindow):
         self.subject_selection()
         self.make_func_bts()
         self.add_main_bts()
+        self.change_style('Fusion')
 
         # Center Window
         # Necessary because frameGeometry is dependent on number of function-buttons
@@ -614,7 +613,7 @@ class MainWindow(QMainWindow):
         style_layout = QVBoxLayout()
         style_box = QComboBox()
         style_box.addItems(QStyleFactory.keys())
-        style_box.currentTextChanged.connect(change_style)
+        style_box.currentTextChanged.connect(self.change_style)
         stylelabel = QLabel('<b>Style:<b>')
         style_layout.addWidget(stylelabel)
         style_layout.addWidget(style_box)
@@ -641,6 +640,10 @@ class MainWindow(QMainWindow):
 
     def update_subsel(self, t):
         setattr(self, t, self.lines[t].text())
+
+    def change_style(self, style_name):
+        self.app.setStyle(QStyleFactory.create(style_name))
+        self.app.setPalette(QApplication.style().standardPalette())
 
     # Todo: Make Buttons more appealing
     def make_func_bts(self):
