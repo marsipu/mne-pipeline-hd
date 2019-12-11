@@ -8,7 +8,8 @@ import mne
 from PyQt5.QtGui import QPalette, QColor, QFont
 from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
-                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget, QComboBox)
+                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget, QComboBox,
+                             QStyleFactory)
 from PyQt5.QtCore import Qt, QSettings
 
 from pipeline_functions import subject_organisation as suborg, operations_dict as opd
@@ -274,6 +275,11 @@ class BadChannelsSelect(QDialog):
         self.bad_dict.update({name: raw.info['bads']})
         for ch in self.bad_dict[name]:
             self.bad_chkbts[ch].setChecked(True)
+
+
+def change_style(style_name):
+    QApplication.setStyle(QStyleFactory.create(style_name))
+    QApplication.setPalette(QApplication.style().standardPalette())
 
 
 class MainWindow(QMainWindow):
@@ -596,15 +602,25 @@ class MainWindow(QMainWindow):
     def subject_selection(self):
         subsel_layout = QHBoxLayout()
 
-        proj_box_layout = QVBoxLayout()
-        proj_box_label = QLabel('<b>Project:<b>')
+        proj_layout = QVBoxLayout()
         self.project_box = QComboBox()
         for project in self.projects:
             self.project_box.addItem(project)
         self.project_box.currentTextChanged.connect(self.change_project)
-        proj_box_layout.addWidget(proj_box_label)
-        proj_box_layout.addWidget(self.project_box)
-        subsel_layout.addLayout(proj_box_layout)
+        proj_box_label = QLabel('<b>Project:<b>')
+        proj_layout.addWidget(proj_box_label)
+        proj_layout.addWidget(self.project_box)
+
+        style_layout = QVBoxLayout()
+        style_box = QComboBox()
+        style_box.addItems(QStyleFactory.keys())
+        style_box.currentTextChanged.connect(change_style)
+        stylelabel = QLabel('<b>Style:<b>')
+        style_layout.addWidget(stylelabel)
+        style_layout.addWidget(style_box)
+
+        subsel_layout.addLayout(proj_layout)
+        subsel_layout.addLayout(style_layout)
 
         # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
         for t in self.sub_sel_tips:
