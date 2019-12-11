@@ -84,6 +84,7 @@ if 'darwin' in sys.platform:
     app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
 win = guif.MainWindow()
 win.show()
+win.raise_()
 win.activateWindow()
 # In Pycharm not working but needed for Spyder
 # app.lastWindowClosed.connect(app.quit)

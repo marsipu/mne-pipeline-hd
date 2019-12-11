@@ -290,6 +290,9 @@ class MainWindow(QMainWindow):
         self.centralWidget().setLayout(self.general_layout)
         QToolTip.setFont(QFont('SansSerif', 10))
 
+        # Workaround for MAC menu-bar-focusing issue
+        self.menuBar().setNativeMenuBar(False)
+
         # Attributes for class-methods
         # self.actions = dict()
         self.func_dict = dict()
