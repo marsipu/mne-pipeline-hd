@@ -158,6 +158,17 @@ all_fs_gs = {'basic_operations': basic_operations,
              'source_space_plots': source_space_plots,
              'grand_average_plots': grand_average_plots}
 
+calcplot_fs = {'Calculate': {'basic_operations': basic_operations,
+                        'pinprick_functions': pinprick_functions,
+                        'custom_functions': custom_functions,
+                        'sensor_space_operations': sensor_space_operations,
+                        'mri_subject_operations': mri_subject_operations,
+                        'source_space_operations': source_space_operations,
+                        'grand_average_operations': grand_average_operations},
+               'Plot': {'sensor_space_plots': sensor_space_plots,
+                        'source_space_plots': source_space_plots,
+                        'grand_average_plots': grand_average_plots}}
+
 all_fs = {}
 for fg in all_fs_gs:
     for f, v in all_fs_gs[fg].items():

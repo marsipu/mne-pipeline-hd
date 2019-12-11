@@ -491,7 +491,6 @@ class MainWindow(QMainWindow):
         setting_menu = self.menuBar().addMenu('Settings')
         setting_menu.addAction('Dark-Mode', self.dark_mode).setCheckable(True)
         setting_menu.addAction('Full-Screen', self.full_screen).setCheckable(True)
-        setting_menu.addAction('Change Functions-Layout', self.change_func_layout)
         setting_menu.addAction('Change Home-Path', self.change_home_path)
         setting_menu.addAction('Add Project', self.add_project)
         # About
@@ -647,16 +646,7 @@ class MainWindow(QMainWindow):
 
     # Todo: Make Buttons more appealing
     def make_func_bts(self):
-        layout_state = False
-        for act in self.actions():
-            if act.text() == 'Change_Func-Layout':
-                layout_state = act.isChecked()
-        r_cnt = 0
-        c_cnt = 0
-        r_max = 20
-        self.all_func_widget = QWidget()
-        all_func_layout = QGridLayout()
-        self.tab_func_widget = QTabWidget()
+        tab_func_widget = QTabWidget()
         for f, v in opd.all_fs.items():
             self.func_dict.update({f: v})
 
@@ -676,47 +666,36 @@ class MainWindow(QMainWindow):
                 if f in pre_func_dict:
                     if not self.func_dict[f]:
                         self.func_dict[f] = pre_func_dict[f]
-
-        for function_group in opd.all_fs_gs:
+        for tab_name in opd.calcplot_fs:
             tab = QWidget()
             tab_func_layout = QGridLayout()
-            if layout_state:
-                # Overwrite parameters for each new tab
-                r_cnt = 0
-                c_cnt = 0
-                r_max = 20
-            else:
+            r_cnt = 0
+            c_cnt = 0
+            r_max = 20
+            for function_group in opd.calcplot_fs[tab_name]:
                 if r_cnt > r_max:
                     r_cnt = 0
                 label = QLabel(f'<b>{function_group}</b>', self)
                 label.setTextFormat(Qt.RichText)
-                all_func_layout.addWidget(label, r_cnt, c_cnt)
+                tab_func_layout.addWidget(label, r_cnt, c_cnt)
                 r_cnt += 1
 
-            for function in opd.all_fs_gs[function_group]:
-                pb = QPushButton(function, self)
-                pb.setCheckable(True)
-                self.bt_dict[function] = pb
-                if self.func_dict[function]:
-                    pb.setChecked(True)
-                    self.func_dict[function] = 1
-                pb.toggled.connect(partial(self.select_func, function))
-                if layout_state:
+                for function in opd.calcplot_fs[tab_name][function_group]:
+                    pb = QPushButton(function, tab)
+                    pb.setCheckable(True)
+                    self.bt_dict[function] = pb
+                    if self.func_dict[function]:
+                        pb.setChecked(True)
+                        self.func_dict[function] = 1
+                    pb.toggled.connect(partial(self.select_func, function))
                     tab_func_layout.addWidget(pb, r_cnt, c_cnt)
-                else:
-                    all_func_layout.addWidget(pb, r_cnt, c_cnt)
-                r_cnt += 1
-                if r_cnt >= r_max:
-                    c_cnt += 1
-                    r_cnt = 0
-            if layout_state:
-                tab.setLayout(tab_func_layout)
-                self.tab_func_widget.addTab(tab, function_group)
-        if layout_state:
-            self.general_layout.addWidget(self.tab_func_widget, 1, 0)
-        else:
-            self.all_func_widget.setLayout(all_func_layout)
-            self.general_layout.addWidget(self.all_func_widget, 1, 0)
+                    r_cnt += 1
+                    if r_cnt >= r_max:
+                        c_cnt += 1
+                        r_cnt = 0
+            tab.setLayout(tab_func_layout)
+            tab_func_widget.addTab(tab, tab_name)
+        self.general_layout.addWidget(tab_func_widget, 1, 0)
 
     def select_func(self, function):
         if self.bt_dict[function].isChecked():
@@ -725,25 +704,6 @@ class MainWindow(QMainWindow):
         else:
             print(f'{function} deselected')
             self.func_dict[function] = 0
-
-    # Todo: Not working properly, maybe reinitialize window and
-    def change_func_layout(self, state):
-        if state:
-            # self.general_layout.addWidget(self.tab_func_widget, 1, 0)
-            # self.centralWidget().setLayout(self.general_layout)
-            self.general_layout.removeWidget(self.all_func_widget)
-            self.general_layout.removeWidget(self.tab_func_widget)
-            self.general_layout.update()
-            self.make_func_bts()
-            self.centralWidget().update()
-        else:
-            # self.general_layout.addWidget(self.all_func_widget, 1, 0)
-            # self.centralWidget().setLayout(self.general_layout)
-            self.general_layout.removeWidget(self.tab_func_widget)
-            self.general_layout.removeWidget(self.all_func_widget)
-            self.general_layout.update()
-            self.make_func_bts()
-            self.centralWidget().update()
 
     def add_main_bts(self):
         main_bt_layout = QHBoxLayout()
