@@ -277,15 +277,14 @@ class BadChannelsSelect(QDialog):
             self.bad_chkbts[ch].setChecked(True)
 
 
-
-
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.app = QApplication.instance()
         self.settings = QSettings()
         self.platform = sys.platform
+
+        self.app.setFont(QFont('Calibri', 9))
 
         self.setWindowTitle('MNE-Pipeline HD')
         self._centralWidget = QWidget(self)
@@ -671,7 +670,7 @@ class MainWindow(QMainWindow):
             tab_func_layout = QGridLayout()
             r_cnt = 0
             c_cnt = 0
-            r_max = 20
+            r_max = 15
             for function_group in opd.calcplot_fs[tab_name]:
                 if r_cnt > r_max:
                     r_cnt = 0
