@@ -284,14 +284,14 @@ class MainWindow(QMainWindow):
         self.settings = QSettings()
         self.platform = sys.platform
 
-        self.app.setFont(QFont('Calibri', 9))
+        self.app.setFont(QFont('Calibri', 10))
 
         self.setWindowTitle('MNE-Pipeline HD')
         self._centralWidget = QWidget(self)
         self.setCentralWidget(self._centralWidget)
         self.general_layout = QGridLayout()
         self.centralWidget().setLayout(self.general_layout)
-        QToolTip.setFont(QFont('SansSerif', 10))
+        QToolTip.setFont(QFont('SansSerif', 9))
 
         # Workaround for MAC menu-bar-focusing issue
         self.menuBar().setNativeMenuBar(False)
@@ -333,8 +333,9 @@ class MainWindow(QMainWindow):
         neww = self.sizeHint().width()
         self.setGeometry(0, 0, neww, newh)
 
-        if 'darwin' in self.platform:
-            self.setGeometry(0, 0, self.width() * self.devicePixelRatio(), self.height() * self.devicePixelRatio())
+        # Causes almost full-screen on mac
+        # if 'darwin' in self.platform:
+        #     self.setGeometry(0, 0, self.width() * self.devicePixelRatio(), self.height() * self.devicePixelRatio())
 
         # This is also possible but does not center a widget with height < 480
         # self.layout().update()
@@ -608,16 +609,16 @@ class MainWindow(QMainWindow):
         proj_layout.addWidget(proj_box_label)
         proj_layout.addWidget(self.project_box)
 
-        style_layout = QVBoxLayout()
-        style_box = QComboBox()
-        style_box.addItems(QStyleFactory.keys())
-        style_box.currentTextChanged.connect(self.change_style)
-        stylelabel = QLabel('<b>Style:<b>')
-        style_layout.addWidget(stylelabel)
-        style_layout.addWidget(style_box)
+        # style_layout = QVBoxLayout()
+        # style_box = QComboBox()
+        # style_box.addItems(QStyleFactory.keys())
+        # style_box.currentTextChanged.connect(self.change_style)
+        # stylelabel = QLabel('<b>Style:<b>')
+        # style_layout.addWidget(stylelabel)
+        # style_layout.addWidget(style_box)
 
         subsel_layout.addLayout(proj_layout)
-        subsel_layout.addLayout(style_layout)
+        # subsel_layout.addLayout(style_layout)
 
         # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
         for t in self.sub_sel_tips:
@@ -642,6 +643,7 @@ class MainWindow(QMainWindow):
     def change_style(self, style_name):
         self.app.setStyle(QStyleFactory.create(style_name))
         self.app.setPalette(QApplication.style().standardPalette())
+        self.center()
 
     # Todo: Make Buttons more appealing
     def make_func_bts(self):
