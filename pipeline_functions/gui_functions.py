@@ -1,20 +1,20 @@
-import sys
 import os
+import sys
 from functools import partial
 from os import makedirs
 from os.path import join, isfile, isdir, exists
+from subprocess import run
 
-import mne
+from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QPalette, QColor, QFont
 from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QAction, QMenu, QActionGroup, QLineEdit, QDialog,
+                             QGridLayout, QVBoxLayout, QHBoxLayout, QLineEdit, QDialog,
                              QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget, QComboBox,
                              QStyleFactory)
-from PyQt5.QtCore import Qt, QSettings
 
+from basic_functions import io_functions as io
 from pipeline_functions import subject_organisation as suborg, operations_dict as opd
 from pipeline_functions import utilities as ut
-from basic_functions import io_functions as io
 
 
 def sub_dict_selected(inst1, inst2, dict_path):
@@ -495,9 +495,8 @@ class MainWindow(QMainWindow):
         setting_menu.addAction('Add Project', self.add_project)
         # About
         about_menu = self.menuBar().addMenu('About')
-        about_menu.addAction('Update MNE-Python', ut.update_mne)
-        about_menu.addAction('Update Pipeline', partial(ut.update_pipeline,
-                                                        self.pipeline_path))
+        about_menu.addAction('Update Pipeline', self.update_pipeline)
+        about_menu.addAction('Update MNE-Python', self.update_mne)
         about_menu.addAction('About QT', self.about_qt)
 
     def change_project(self, project):
@@ -735,6 +734,83 @@ class MainWindow(QMainWindow):
     def stop(self):
         self.close()
         self.make_it_stop = True
+
+    def update_pipeline(self):
+        command = f"pip install --upgrade -e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd"
+        run(command, shell=True)
+
+        msg = QMessageBox(self)
+        msg.setText('Please restart the Pipeline-Program/Close the Console')
+        msg.setInformativeText('Do you want to restart?')
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.Yes)
+        msg.exec_()
+
+        if msg.Yes:
+            sys.exit()
+        else:
+            pass
+
+    def update_mne(self):
+        msg = QMessageBox(self)
+        msg.setText('You are going to update your conda-environment called mne, if none is found, one will be created')
+        msg.setInformativeText('Do you want to proceed? (May take a while, watch your console)')
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.Yes)
+        msg.exec_()
+
+        command_upd = "curl --remote-name " \
+                      "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml; " \
+                      "conda activate mne; " \
+                      "conda env update --file environment.yml; pip install -r requirements.txt; " \
+                      "conda install -c conda-forge pyqt=5.12"
+
+        command_upd_win = "curl --remote-name " \
+                          "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml & " \
+                          "conda activate mne & " \
+                          "conda env update --file environment.yml & pip install -r requirements.txt & " \
+                          "conda install -c conda-forge pyqt=5.12"
+
+        command_new = "curl --remote-name " \
+                      "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml; " \
+                      "conda env create --name mne --file environment.yml;" \
+                      "conda activate mne; pip install -r requirements.txt; " \
+                      "conda install -c conda-forge pyqt=5.12"
+
+        command_new_win = "curl --remote-name " \
+                          "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml & " \
+                          "conda env create --name mne_test --file environment.yml & " \
+                          "conda activate mne & pip install -r requirements.txt & " \
+                          "conda install -c conda-forge pyqt=5.12"
+
+        if msg.Yes:
+            result = run('conda env list', shell=True, capture_output=True, text=True)
+            if 'buba' in result.stdout:
+                if sys.platform == 'win32':
+                    command = command_upd_win
+                else:
+                    command = command_upd
+                result2 = run(command, shell=True, capture_output=True, text=True)
+                if result2.stderr != '':
+                    print(result2.stderr)
+                    if sys.platform == 'win32':
+                        command = command_new_win
+                    else:
+                        command = command_new
+                    result3 = run(command, shell=True, capture_output=True, text=True)
+                    print(result3.stdout)
+                else:
+                    print(result2.stdout)
+            else:
+                print('yeah')
+                if sys.platform == 'win32':
+                    command = command_new_win
+                else:
+                    command = command_new
+                result4 = run(command, shell=True)
+                # print(result4.stdout)
+        else:
+            pass
 
     def about_qt(self):
         QMessageBox.aboutQt(self, 'About Qt')
