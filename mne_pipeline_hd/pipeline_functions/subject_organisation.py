@@ -5,8 +5,8 @@ martin.schulz@stud.uni-heidelberg.de
 import os
 import shutil
 from os.path import join, isfile, isdir, exists
-from basic_functions import io_functions as io
-from pipeline_functions import utilities as ut
+from mne_pipeline_hd.basic_functions import io_functions as io
+from mne_pipeline_hd.pipeline_functions import utilities as ut
 import tkinter as t
 import re
 

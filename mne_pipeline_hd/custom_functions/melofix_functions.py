@@ -2,8 +2,9 @@ import mne
 import numpy as np
 from os.path import join
 
-from basic_functions import operations_functions as op, io_functions as io
-from pipeline_functions import decorators as decor
+from mne_pipeline_hd.basic_functions import io_functions as io
+from mne_pipeline_hd.basic_functions import operations_functions as op
+from mne_pipeline_hd.pipeline_functions import decorators as decor
 
 
 @decor.topline

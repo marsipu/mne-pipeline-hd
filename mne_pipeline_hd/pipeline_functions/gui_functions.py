@@ -12,9 +12,9 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QI
                              QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget, QComboBox,
                              QStyleFactory)
 
-from basic_functions import io_functions as io
-from pipeline_functions import subject_organisation as suborg, operations_dict as opd
-from pipeline_functions import utilities as ut
+from mne_pipeline_hd.basic_functions import io_functions as io
+from mne_pipeline_hd.pipeline_functions import subject_organisation as suborg, operations_dict as opd
+from mne_pipeline_hd.pipeline_functions import utilities as ut
 
 
 def sub_dict_selected(inst1, inst2, dict_path):

@@ -6,9 +6,8 @@ Created on Thu Jan 17 01:00:31 2019
 """
 import os
 from os import makedirs
-from os.path import join, isfile, exists, dirname
+from os.path import join, isfile, exists
 import sys
-from subprocess import run
 
 try:
     import autoreject as ar
@@ -18,7 +17,7 @@ except ImportError:
 import tkinter as t
 import re
 
-from pipeline_functions import operations_dict as opd
+from mne_pipeline_hd.pipeline_functions import operations_dict as opd
 
 
 # Todo: If checked, change color
@@ -282,6 +281,7 @@ def read_dict_file(file_name, sub_script_path=None):
     return file_dict
 
 
+# Todo: order-dict-function
 def order_the_dict(filename, sub_script_path, unspecified_names=False):
     file_path = join(sub_script_path, 'MotStart-LBT_diffs' + '.py')
     file_dict = dict()
@@ -312,17 +312,8 @@ def order_the_dict(filename, sub_script_path, unspecified_names=False):
         order_dict3.update(number3)
 
     for key in order_dict1:
-        order_list = []
         order_list.append(order_dict1[key])
     order_list.sort()
-
-
-# Todo: Bug Mac findet Template-Ordner nicht
-def get_pipeline_path(path):
-    match = re.search('mne_pipeline_hd', path)
-    pipeline_path = path[:match.span()[1]]
-
-    return pipeline_path
 
 
 def get_all_fif_files(dirname):

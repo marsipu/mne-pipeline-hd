@@ -19,14 +19,15 @@ from importlib import reload, util
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 
-from basic_functions import operations_functions as op, io_functions as io, plot_functions as plot
-from pipeline_functions import gui_functions as guif, subject_organisation as suborg, \
+from mne_pipeline_hd.basic_functions import io_functions as io, plot_functions as plot
+from mne_pipeline_hd.basic_functions import operations_functions as op
+from mne_pipeline_hd.pipeline_functions import subject_organisation as suborg, \
     operations_dict as opd
-from pipeline_functions import decorators as decor, utilities as ut
+from mne_pipeline_hd.pipeline_functions import utilities as ut
+from mne_pipeline_hd.pipeline_functions import decorators as decor, gui_functions as guif
 
-from custom_functions import pinprick_functions as ppf
-from custom_functions import melofix_functions as mff
-from custom_functions import kristins_functions as kf
+from mne_pipeline_hd.custom_functions import pinprick_functions as ppf, melofix_functions as mff
+from mne_pipeline_hd.custom_functions import kristins_functions as kf
 
 
 def reload_all():
@@ -128,9 +129,9 @@ if make_it_stop:
 # LOAD PARAMETERS
 # ==============================================================================
 if not isfile(join(project_path, f'parameters_{project_name}.py')):
-    from templates import parameters_template as p
+    from mne_pipeline_hd.resources import parameters_template as p
 
-    shutil.copy2(join(pipeline_path, 'templates/parameters_template.py'),
+    shutil.copy2(join(pipeline_path, 'resources/parameters_template.py'),
                  join(project_path, f'parameters_{project_name}.py'))
     print(f'parameters_{project_name}.py created in {project_path} from parameters_template.py')
 else:

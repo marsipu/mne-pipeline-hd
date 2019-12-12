@@ -28,8 +28,9 @@ from surfer import Brain
 import random
 import gc
 
-from basic_functions import io_functions as io, plot_functions as plot
-from pipeline_functions import decorators as decor, utilities as ut
+from mne_pipeline_hd.basic_functions import io_functions as io, plot_functions as plot
+from mne_pipeline_hd.pipeline_functions import utilities as ut
+from mne_pipeline_hd.pipeline_functions import decorators as decor
 
 try:
     from autoreject import AutoReject
