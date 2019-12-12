@@ -302,6 +302,8 @@ class MainWindow(QMainWindow):
         self.bt_dict = dict()
         self.make_it_stop = False
         self.lines = dict()
+        self.project_box = None
+        self.subsel_layout = QHBoxLayout()
         sub_sel_example = "Examples:\n" \
                           "'5' (One File)\n" \
                           "'1,7,28' (Several Files)\n" \
@@ -322,6 +324,7 @@ class MainWindow(QMainWindow):
         self.get_paths()
         self.make_paths()
         self.create_menu()
+        self.set_project_box()
         self.subject_selection()
         self.make_func_bts()
         self.add_main_bts()
@@ -528,6 +531,7 @@ class MainWindow(QMainWindow):
             self.project_name = project
             self.settings.setValue('project', self.project_name)
             self.project_box.addItem(project)
+            self.project_box.setCurrentText(project)
             self.make_paths()
         else:
             pass
@@ -576,37 +580,37 @@ class MainWindow(QMainWindow):
             self.showFullScreen()
 
     def change_home_path(self):
-        new_home_path = str(
-            QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects'))
-        if new_home_path is not None:
+        new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
+        if new_home_path is '':
+            pass
+        else:
             self.home_path = new_home_path
-        ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
-        self.project_name = None
-        self.menuBar().clear()
-        self.get_paths()
-        self.create_menu()
-        self.update()
-        self.settings.setValue('project', self.project_name)
-        # ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
+            ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
+            self.project_name = None
+            self.get_paths()
+            self.settings.setValue('project', self.project_name)
+            self.set_project_box()
 
-    # # Todo: Make Center work, frameGeometry doesn't give the actual geometry after make_func_bts
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def subject_selection(self):
-        subsel_layout = QHBoxLayout()
-
+    def set_project_box(self):
         proj_layout = QVBoxLayout()
-        self.project_box = QComboBox()
-        for project in self.projects:
-            self.project_box.addItem(project)
-        self.project_box.currentTextChanged.connect(self.change_project)
-        proj_box_label = QLabel('<b>Project:<b>')
-        proj_layout.addWidget(proj_box_label)
-        proj_layout.addWidget(self.project_box)
+        if self.project_box is None:
+            self.project_box = QComboBox()
+            for project in self.projects:
+                self.project_box.addItem(project)
+            self.project_box.currentTextChanged.connect(self.change_project)
+            proj_box_label = QLabel('<b>Project:<b>')
+            proj_layout.addWidget(proj_box_label)
+            proj_layout.addWidget(self.project_box)
+        else:
+            self.project_box.clear()
+            for project in self.projects:
+                self.project_box.addItem(project)
 
         # style_layout = QVBoxLayout()
         # style_box = QComboBox()
@@ -616,9 +620,10 @@ class MainWindow(QMainWindow):
         # style_layout.addWidget(stylelabel)
         # style_layout.addWidget(style_box)
 
-        subsel_layout.addLayout(proj_layout)
+        self.subsel_layout.addLayout(proj_layout)
         # subsel_layout.addLayout(style_layout)
 
+    def subject_selection(self):
         # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
         for t in self.sub_sel_tips:
             subsub_layout = QVBoxLayout()
@@ -630,11 +635,11 @@ class MainWindow(QMainWindow):
             label.setTextFormat(Qt.RichText)
             subsub_layout.addWidget(label)
             subsub_layout.addWidget(self.lines[t])
-            subsel_layout.addLayout(subsub_layout)
+            self.subsel_layout.addLayout(subsub_layout)
             # Get Selection from last run
             self.lines[t].setText(self.settings.value(t))
 
-        self.general_layout.addLayout(subsel_layout, 0, 0)
+        self.general_layout.addLayout(self.subsel_layout, 0, 0)
 
     def update_subsel(self, t):
         setattr(self, t, self.lines[t].text())
@@ -736,7 +741,7 @@ class MainWindow(QMainWindow):
         self.make_it_stop = True
 
     def update_pipeline(self):
-        command = f"pip install --upgrade -e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd"
+        command = f"pip install --upgrade git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd"
         run(command, shell=True)
 
         msg = QMessageBox(self)
@@ -808,7 +813,7 @@ class MainWindow(QMainWindow):
                 else:
                     command = command_new
                 result4 = run(command, shell=True)
-                # print(result4.stdout)
+                print(result4.stdout)
         else:
             pass
 
