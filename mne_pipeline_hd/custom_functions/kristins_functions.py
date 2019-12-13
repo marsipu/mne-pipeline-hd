@@ -1,10 +1,10 @@
-import mne
-import numpy as np
 from os.path import join
 
-from mne_pipeline_hd.basic_functions import io_functions as io
-from mne_pipeline_hd.basic_functions import operations_functions as op
-from mne_pipeline_hd.pipeline_functions import decorators as decor
+import mne
+import numpy as np
+
+from basic_functions import io_functions as io, operations_functions as op
+from pipeline_functions import decorators as decor
 
 
 @decor.topline

@@ -7,27 +7,21 @@ Adapted from Lau Møller Andersen
 @github: marsipu/mne_pipeline_hd
 Adapted to Melody Processing of Kim's data
 """
-# %%============================================================================
-# IMPORTS
-# ==============================================================================
-import sys
-import shutil
+import os
 import re
-import mne
-from os.path import join, isfile
+import shutil
+import sys
 from importlib import reload, util
-from PyQt5.QtWidgets import QApplication
+from os.path import isfile, join
+
+import mne
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
 
-from mne_pipeline_hd.basic_functions import io_functions as io, plot_functions as plot
-from mne_pipeline_hd.basic_functions import operations_functions as op
-from mne_pipeline_hd.pipeline_functions import subject_organisation as suborg, \
-    operations_dict as opd
-from mne_pipeline_hd.pipeline_functions import utilities as ut
-from mne_pipeline_hd.pipeline_functions import decorators as decor, gui_functions as guif
-
-from mne_pipeline_hd.custom_functions import pinprick_functions as ppf, melofix_functions as mff
-from mne_pipeline_hd.custom_functions import kristins_functions as kf
+from basic_functions import io_functions as io, operations_functions as op, plot_functions as plot
+from custom_functions import kristins_functions as kf, melofix_functions as mff, pinprick_functions as ppf
+from pipeline_functions import decorators as decor, gui_functions as guif, operations_dict as opd, \
+    subject_organisation as suborg, utilities as ut
 
 
 def reload_all():
@@ -65,35 +59,22 @@ reload_all()
 # Todo: Call functions from an own module and let the Main-Window stay open while execution
 # matplotlib.use("Qt5Agg")
 app_name = 'mne_pipeline_hd'
-if sys.platform.startswith("darwin"):
-    try:  # set bundle name on macOS (app name shown in the menu bar)
-        from Foundation import NSBundle
-
-        bundle = NSBundle.mainBundle()
-        if bundle:
-            info = (bundle.localizedInfoDictionary() or
-                    bundle.infoDictionary())
-            if info:
-                info["CFBundleName"] = app_name
-    except ImportError:
-        NSBundle = None
-        pass
+organization_name = 'marsipu'
 app = QApplication(sys.argv)
 app.setApplicationName(app_name)
-app.setOrganizationName('marsipu')
+app.setOrganizationName(organization_name)
 if 'darwin' in sys.platform:
     app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
 win = guif.MainWindow()
 win.show()
 # In Pycharm not working but needed for Spyder
-# app.lastWindowClosed.connect(app.quit)
+app.lastWindowClosed.connect(app.quit)
 app.exec_()
 
 # Variables from the GUI
 home_path = win.home_path
 project_name = win.project_name
 project_path = join(home_path, project_name)
-pipeline_path = win.pipeline_path
 exec_ops = win.func_dict
 make_it_stop = win.make_it_stop
 which_file = win.which_file
@@ -119,7 +100,6 @@ erm_dict_path = win.erm_dict_path
 bad_channels_dict_path = win.bad_channels_dict_path
 quality_dict_path = win.quality_dict_path
 
-a = win.pipeline_path
 # Needed to prevent exit code -1073741819 (0xC0000005) (probably memory error)
 #   after sequential running
 del app, win
@@ -129,9 +109,9 @@ if make_it_stop:
 # LOAD PARAMETERS
 # ==============================================================================
 if not isfile(join(project_path, f'parameters_{project_name}.py')):
-    from mne_pipeline_hd.resources import parameters_template as p
+    from resources import parameters_template as p
 
-    shutil.copy2(join(pipeline_path, 'resources/parameters_template.py'),
+    shutil.copy2(join(os.getcwd(), 'resources/parameters_template.py'),
                  join(project_path, f'parameters_{project_name}.py'))
     print(f'parameters_{project_name}.py created in {project_path} from parameters_template.py')
 else:

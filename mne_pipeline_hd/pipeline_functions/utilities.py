@@ -5,9 +5,9 @@ Created on Thu Jan 17 01:00:31 2019
 @author: 'Martin Schulz'
 """
 import os
-from os import makedirs
-from os.path import join, isfile, exists
 import sys
+from os import makedirs
+from os.path import exists, isfile, join
 
 try:
     import autoreject as ar
@@ -17,7 +17,7 @@ except ImportError:
 import tkinter as t
 import re
 
-from mne_pipeline_hd.pipeline_functions import operations_dict as opd
+from pipeline_functions import operations_dict as opd
 
 
 # Todo: If checked, change color

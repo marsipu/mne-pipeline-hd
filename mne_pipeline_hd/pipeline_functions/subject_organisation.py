@@ -3,12 +3,13 @@ subject_organisation by Martin Schulz
 martin.schulz@stud.uni-heidelberg.de
 """
 import os
-import shutil
-from os.path import join, isfile, isdir, exists
-from mne_pipeline_hd.basic_functions import io_functions as io
-from mne_pipeline_hd.pipeline_functions import utilities as ut
-import tkinter as t
 import re
+import shutil
+import tkinter as t
+from os.path import exists, isdir, isfile, join
+
+from pipeline_functions import utilities as ut
+from basic_functions import io_functions as io
 
 
 # Todo: Benamung verallgemeinern, -raw-Problematik lösen
@@ -16,6 +17,7 @@ import re
 def add_files(file_list_path, erm_list_path, motor_erm_list_path,
               data_path, orig_data_path, unspecified_names=True, gui=False):
     files = read_files(file_list_path)
+    pre_files = files
     erm_files = read_files(erm_list_path)
     motor_erm_files = read_files(motor_erm_list_path)
 
@@ -27,11 +29,11 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
         pattern = r'.*'
 
     for f in all_fif_files:
-        #Todo: BugImmer noch Probleme  mit -raw.fif-Files
-        fname = f[:-4]
+        fname = f[:-4] # name without .fif
         if fname[-4:] == '-raw':
             fdest = join(data_path, fname, fname + '.fif')
             ermdest = join(data_path, 'empty_room_data', fname + '.fif')
+            fname = fname[:-4]
         else:
             fdest = join(data_path, fname, fname + '-raw.fif')
             ermdest = join(data_path, 'empty_room_data', fname + '-raw.fif')
@@ -39,7 +41,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
         match = re.match(pattern, fname)
 
         # Copy Empty-Room-Files to their directory
-        if 'leer' in fname:
+        if 'leer' in fname or 'erm' in fname:
             if not isfile(ermdest):
                 print('-' * 60 + '\n' + fname)
                 print(f'Moving ERM_File from {paths[f]}')
@@ -113,6 +115,8 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
                 print(f'Moving File from {paths[f]}...')
                 shutil.move(paths[f], fdest)
                 print(f'Finished Copying to {fdest}')
+        else:
+            print(f'No .fif-files in {orig_data_path} found')
 
     if gui:
         def add_to_list():
@@ -196,7 +200,7 @@ def read_files(file_list_path):
 # MRI-Subjects
 def add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False):
     mri_subjects = read_mri_subjects(mri_sub_list_path)
-
+    pre_mri_subjects = mri_subjects
     folder_list = os.listdir(subjects_dir)
 
     for f in folder_list:
@@ -205,6 +209,12 @@ def add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False):
                 if f not in mri_subjects:
                     mri_subjects.append(f)
                     print(f'Added {f} to mri-subjects')
+
+    if len(mri_subjects) == 0:
+        print(f'No Freesurfer-Segmentations found in {mri_sub_list_path}')
+
+    if len(mri_subjects) == len(pre_mri_subjects):
+        print(f'No new Freesurfer-Segmentations found in {mri_sub_list_path}')
 
     with open(mri_sub_list_path, 'w') as slp:
         for ms in mri_subjects:

@@ -1,20 +1,17 @@
 import os
 import sys
 from functools import partial
-from os import makedirs
-from os.path import join, isfile, isdir, exists
+from os.path import exists, isdir, isfile, join
 from subprocess import run
 
-from PyQt5.QtCore import Qt, QSettings
-from PyQt5.QtGui import QPalette, QColor, QFont
-from PyQt5.QtWidgets import (QWidget, QPushButton, QApplication, QMainWindow, QInputDialog, QFileDialog, QLabel,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QLineEdit, QDialog,
-                             QListWidget, QMessageBox, QCheckBox, QTabWidget, QToolTip, QDesktopWidget, QComboBox,
-                             QStyleFactory)
+from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtGui import QColor, QFont, QPalette
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog, QGridLayout,
+                             QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget, QMainWindow, QMessageBox,
+                             QPushButton, QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 
-from mne_pipeline_hd.basic_functions import io_functions as io
-from mne_pipeline_hd.pipeline_functions import subject_organisation as suborg, operations_dict as opd
-from mne_pipeline_hd.pipeline_functions import utilities as ut
+from pipeline_functions import operations_dict as opd, subject_organisation as suborg, utilities as ut
+from basic_functions import io_functions as io
 
 
 def sub_dict_selected(inst1, inst2, dict_path):
@@ -324,7 +321,7 @@ class MainWindow(QMainWindow):
         self.get_paths()
         self.make_paths()
         self.create_menu()
-        self.set_project_box()
+        self.make_project_box()
         self.subject_selection()
         self.make_func_bts()
         self.add_main_bts()
@@ -353,45 +350,32 @@ class MainWindow(QMainWindow):
         self.which_motor_erm_file = self.lines['which_motor_erm_file'].text()
 
     def get_paths(self):
-        # Pipeline-Paths
-        self.pipeline_path = os.getcwd()
-        self.cache_path = join(join(self.pipeline_path, '_pipeline_cache'))
-        if not exists(join(self.pipeline_path, '_pipeline_cache')):
-            makedirs(join(self.pipeline_path, '_pipeline_cache'))
-
         # Get home_path
-        if not exists(join(self.cache_path, 'paths.py')):
+        self.home_path = self.settings.value('home_path')
+        if self.home_path is None:
             hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
             if hp == '':
                 self.close()
                 raise RuntimeError('You canceled an important step, start over')
             else:
                 self.home_path = str(hp)
-                ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
+                self.settings.setValue('home_path', self.home_path)
         else:
-            path_dict = ut.read_dict_file('paths', self.cache_path)
-            if self.platform in path_dict:
-                self.home_path = path_dict[self.platform]
-                if not isdir(self.home_path):
-                    hp = QFileDialog.getExistingDirectory(self, 'Select the folder where '
-                                                                'you store your Pipeline-Projects')
-                    if hp == '':
-                        self.close()
-                        raise RuntimeError('You canceled an important step, start over')
-                    else:
-                        self.home_path = str(hp)
-                        ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
-            else:
-                hp = QFileDialog.getExistingDirectory(self, 'Select the folder where '
-                                                            'you store your Pipeline-Projects')
+            if not isdir(self.home_path):
+                hp = QFileDialog.getExistingDirectory(self, f'{self.home_path} not found!\n'
+                                                            f'Select the folder where '
+                                                            f'you store your Pipeline-Projects')
                 if hp == '':
                     self.close()
                     raise RuntimeError('You canceled an important step, start over')
                 else:
                     self.home_path = str(hp)
-                    ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
-        # Todo: Store everything in QSettings, make reading of project_name more reliable concerning existing projects
+                    self.settings.setValue('home_path', self.home_path)
+            else:
+                pass
+
         # Get project_name
+        self.project_name = self.settings.value('project_name')
         self.projects = [p for p in os.listdir(self.home_path) if isdir(join(self.home_path, p, 'data'))]
         if len(self.projects) == 0:
             self.project_name, ok = QInputDialog.getText(self, 'Project-Selection',
@@ -399,28 +383,19 @@ class MainWindow(QMainWindow):
                                                          'Enter a project-name for your first project')
             if ok:
                 self.projects.append(self.project_name)
-                makedirs(join(self.home_path, self.project_name))
-                self.settings.setValue('project', self.project_name)
-                # ut.dict_filehandler('project', 'win_cache', self.cache_path, self.project_name, silent=True)
+                self.settings.setValue('project_name', self.project_name)
+                self.make_paths()
             else:
                 # Problem in Python Console, QInputDialog somehow stays in memory
                 self.close()
                 raise RuntimeError('You canceled an important step, start over')
-        else:
-            # Read Last-loaded Project if available
-            try:
-                pre_project_name = self.settings.value('project')
-                # pre_project_name = ut.read_dict_file('win_cache', self.cache_path)['project']
-                if pre_project_name in self.projects:
-                    self.project_name = pre_project_name
-                else:
-                    self.project_name = self.projects[0]
-            except FileNotFoundError:
-                self.project_name = self.projects[0]
+        elif self.project_name is None or self.project_name not in self.projects:
+            self.project_name = self.projects[0]
+            self.settings.setValue('project_name', self.project_name)
 
         print(f'Home-Path: {self.home_path}')
         print(f'Project-Name: {self.project_name}')
-        print(self.projects)
+        print(f'Projects-found: {self.projects}')
 
     def make_paths(self):
         # Initiate other paths
@@ -453,6 +428,51 @@ class MainWindow(QMainWindow):
                 with open(file, 'w') as fl:
                     fl.write('')
                 print(f'{file} created')
+
+    def change_home_path(self):
+        new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
+        if new_home_path is '':
+            pass
+        else:
+            self.home_path = new_home_path
+            self.settings.setValue('home_path', self.home_path)
+            self.get_paths()
+            self.update_project_box()
+
+    def add_project(self):
+        project, ok = QInputDialog.getText(self, 'Project-Selection',
+                                           'Enter a project-name for a new project')
+        if ok:
+            self.project_name = project
+            self.settings.setValue('project_name', self.project_name)
+            self.project_box.addItem(project)
+            self.project_box.setCurrentText(project)
+            self.make_paths()
+        else:
+            pass
+
+    def make_project_box(self):
+        proj_layout = QVBoxLayout()
+        self.project_box = QComboBox()
+        for project in self.projects:
+            self.project_box.addItem(project)
+        self.project_box.currentTextChanged.connect(self.change_project)
+        self.project_box.setCurrentText(self.project_name)
+        proj_box_label = QLabel('<b>Project:<b>')
+        proj_layout.addWidget(proj_box_label)
+        proj_layout.addWidget(self.project_box)
+        self.subsel_layout.addLayout(proj_layout)
+
+    def change_project(self, project):
+        self.project_name = project
+        self.settings.setValue('project_name', self.project_name)
+        print(self.project_name)
+        self.make_paths()
+
+    def update_project_box(self):
+        self.project_box.clear()
+        for project in self.projects:
+            self.project_box.addItem(project)
 
     # Todo Mac-Bug Menu not selectable
     def create_menu(self):
@@ -502,40 +522,6 @@ class MainWindow(QMainWindow):
         about_menu.addAction('Update MNE-Python', self.update_mne)
         about_menu.addAction('About QT', self.about_qt)
 
-    def change_project(self, project):
-        self.project_name = project
-        self.settings.setValue('project', self.project_name)
-        print(self.project_name)
-        self.make_paths()
-        # ut.dict_filehandler('project', 'win_cache', self.cache_path, project, silent=True)
-
-    # def add_project(self, project_menu, project_group):
-    #     project, ok = QInputDialog.getText(self, 'Project-Selection',
-    #                                        'Enter a project-name for a new project')
-    #     if ok:
-    #         self.project_name = project
-    #         new_action = QAction(project)
-    #         new_action.setCheckable(True)
-    #         project_group.addAction(new_action)
-    #         new_action.setChecked(True)
-    #         new_action.triggered.connect(partial(self.change_project, project))
-    #         project_menu.clear()
-    #         project_menu.addAction(new_action)
-    #     else:
-    #         pass
-
-    def add_project(self):
-        project, ok = QInputDialog.getText(self, 'Project-Selection',
-                                           'Enter a project-name for a new project')
-        if ok:
-            self.project_name = project
-            self.settings.setValue('project', self.project_name)
-            self.project_box.addItem(project)
-            self.project_box.setCurrentText(project)
-            self.make_paths()
-        else:
-            pass
-
     # Todo: Fix Dark-Mode
     def dark_mode(self, state):
         if state:
@@ -579,49 +565,11 @@ class MainWindow(QMainWindow):
         else:
             self.showFullScreen()
 
-    def change_home_path(self):
-        new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
-        if new_home_path is '':
-            pass
-        else:
-            self.home_path = new_home_path
-            ut.dict_filehandler(self.platform, 'paths', self.cache_path, self.home_path, silent=True)
-            self.project_name = None
-            self.get_paths()
-            self.settings.setValue('project', self.project_name)
-            self.set_project_box()
-
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
-
-    def set_project_box(self):
-        proj_layout = QVBoxLayout()
-        if self.project_box is None:
-            self.project_box = QComboBox()
-            for project in self.projects:
-                self.project_box.addItem(project)
-            self.project_box.currentTextChanged.connect(self.change_project)
-            proj_box_label = QLabel('<b>Project:<b>')
-            proj_layout.addWidget(proj_box_label)
-            proj_layout.addWidget(self.project_box)
-        else:
-            self.project_box.clear()
-            for project in self.projects:
-                self.project_box.addItem(project)
-
-        # style_layout = QVBoxLayout()
-        # style_box = QComboBox()
-        # style_box.addItems(QStyleFactory.keys())
-        # style_box.currentTextChanged.connect(self.change_style)
-        # stylelabel = QLabel('<b>Style:<b>')
-        # style_layout.addWidget(stylelabel)
-        # style_layout.addWidget(style_box)
-
-        self.subsel_layout.addLayout(proj_layout)
-        # subsel_layout.addLayout(style_layout)
 
     def subject_selection(self):
         # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
@@ -821,19 +769,12 @@ class MainWindow(QMainWindow):
         QMessageBox.aboutQt(self, 'About Qt')
 
     def closeEvent(self, event):
+        self.settings.setValue('geometry', self.saveGeometry())
+        self.settings.setValue('home_path', self.home_path)
+        self.settings.setValue('project_name', self.project_name)
         self.settings.setValue('func_checked', self.func_dict)
         for ln in self.lines:
             self.settings.setValue(ln, self.lines[ln].text())
-            # ut.dict_filehandler(ln, 'win_cache', self.cache_path, self.lines[ln].text(), silent=True)
-        # Major Error: QAction not found on Mac!!!
-        # for act in self.actions:
-        # if self.actions[act].isChecked():
-        # self.settings.setValue(act, 1)
-        # ut.dict_filehandler(act, 'win_cache', self.cache_path, 1, silent=True)
-        #   else:
-        # self.settings.setValue(act, 0)
-
-        self.settings.setValue('geometry', self.saveGeometry())
 
         event.accept()
 

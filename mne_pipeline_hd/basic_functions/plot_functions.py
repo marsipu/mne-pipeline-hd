@@ -10,23 +10,23 @@ martin@stud.uni-heidelberg.de
 """
 from __future__ import print_function
 
-import mne
-from os.path import join, exists
+import gc
+import re
+import statistics as st
 from os import makedirs
+from os.path import exists, join
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import mne
+import numpy as np
 from matplotlib.lines import Line2D
 from mayavi import mlab
 from scipy import stats
-from mne_pipeline_hd.basic_functions import io_functions as io
-from mne_pipeline_hd.basic_functions import operations_functions as op
-from mne_pipeline_hd.pipeline_functions import utilities as ut
-from mne_pipeline_hd.pipeline_functions import decorators as decor
-import numpy as np
 from surfer import Brain
-import gc
-import statistics as st
-import re
+
+from basic_functions import io_functions as io, operations_functions as op
+from pipeline_functions import decorators as decor, utilities as ut
 
 
 def filter_string(highpass, lowpass):

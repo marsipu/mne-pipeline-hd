@@ -10,12 +10,13 @@ martin@stud.uni-heidelberg.de
 """
 from __future__ import print_function
 
-import mne
+import pickle
+import re
 from os import listdir
 from os.path import join
-import pickle
+
+import mne
 import numpy as np
-import re
 
 
 def filter_string(highpass, lowpass):

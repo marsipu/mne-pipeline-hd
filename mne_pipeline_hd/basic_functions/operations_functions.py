@@ -10,27 +10,27 @@ martin@stud.uni-heidelberg.de
 """
 from __future__ import print_function
 
+import gc
+import pickle
+import random
+import subprocess
+import sys
+from collections import Counter
+from functools import reduce
+from itertools import combinations
+from os import environ, listdir, makedirs, remove
+from os.path import exists, isdir, isfile, join
+
 import mne
 import numpy as np
 from matplotlib import pyplot as plt
-from os import makedirs, listdir, environ, remove
-from os.path import join, isfile, isdir, exists
-from scipy import stats, signal
-import sys
-import pickle
-import subprocess
-from collections import Counter
-from nilearn.plotting import plot_anat
 from mayavi import mlab
-from itertools import combinations
-from functools import reduce
+from nilearn.plotting import plot_anat
+from scipy import signal, stats
 from surfer import Brain
-import random
-import gc
 
-from mne_pipeline_hd.basic_functions import io_functions as io, plot_functions as plot
-from mne_pipeline_hd.pipeline_functions import utilities as ut
-from mne_pipeline_hd.pipeline_functions import decorators as decor
+from basic_functions import io_functions as io, plot_functions as plot
+from pipeline_functions import decorators as decor, utilities as ut
 
 try:
     from autoreject import AutoReject
