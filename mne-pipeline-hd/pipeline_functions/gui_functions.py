@@ -689,7 +689,7 @@ class MainWindow(QMainWindow):
         self.make_it_stop = True
 
     def update_pipeline(self):
-        command = f"pip install --upgrade git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd"
+        command = f"pip install --upgrade git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd"
         run(command, shell=True)
 
         msg = QMessageBox(self)
@@ -760,10 +760,18 @@ class MainWindow(QMainWindow):
                     command = command_new_win
                 else:
                     command = command_new
-                result4 = run(command, shell=True)
+                result4 = run(command, shell=True, capture_output=True, text=True)
                 print(result4.stdout)
         else:
             pass
+
+    def get_upstream(self):
+        if 'win' in self.platform:
+            command = "git fetch upstream & git checkout master & git merge upstream/master"
+        else:
+            command = "git fetch upstream & git checkout master & git merge upstream/master"
+        result = run(command)
+        print(result.stdout)
 
     def about_qt(self):
         QMessageBox.aboutQt(self, 'About Qt')

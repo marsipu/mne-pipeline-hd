@@ -4,7 +4,7 @@ Pipeline for group analysis of MEG data
 Adapted from Lau Møller Andersen
 @author: Martin Schulz
 @email: martin.schulz@stud.uni-heidelberg.de
-@github: marsipu/mne_pipeline_hd
+@github: marsipu/mne-pipeline-hd
 Adapted to Melody Processing of Kim's data
 """
 import os
@@ -58,7 +58,7 @@ reload_all()
 # ==============================================================================
 # Todo: Call functions from an own module and let the Main-Window stay open while execution
 # matplotlib.use("Qt5Agg")
-app_name = 'mne_pipeline_hd'
+app_name = 'mne-pipeline-hd'
 organization_name = 'marsipu'
 app = QApplication(sys.argv)
 app.setApplicationName(app_name)
@@ -122,9 +122,9 @@ else:
     print(f'Read Parameters from parameters_{project_name}.py in {project_path}')
 
 if exec_ops['erm_analysis'] or exec_ops['motor_erm_analysis']:
-    figures_path = join(project_path, 'Figures/ERM_Figures')
+    figures_path = join(project_path, 'figures/erm_figures')
 else:
-    figures_path = join(project_path, f'Figures/{p.highpass}-{p.lowpass}_Hz')
+    figures_path = join(project_path, f'figures/{p.highpass}-{p.lowpass}_Hz')
 
 op.populate_directories(data_path, figures_path, p.event_id)
 # %%============================================================================

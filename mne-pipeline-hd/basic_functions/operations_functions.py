@@ -89,7 +89,7 @@ def populate_directories(data_path, figures_path, event_id):
             print(folder_path + ' has been created')
 
         # create erm_figure
-        erm_folders = join(figures_path, 'ERM_Figures', folder)
+        erm_folders = join(figures_path, 'erm_figures', folder)
         if not exists(erm_folders):
             makedirs(erm_folders)
             print(erm_folders + ' has been created')
@@ -112,7 +112,7 @@ def populate_directories(data_path, figures_path, event_id):
                 print(subfolder + ' has been created')
 
             # for erm
-            erm_subfolder = join(figures_path, 'ERM_Figures', tr, ev_id)
+            erm_subfolder = join(figures_path, 'erm_figures', tr, ev_id)
             if not exists(erm_subfolder):
                 makedirs(erm_subfolder)
                 print(erm_subfolder + ' has been created')

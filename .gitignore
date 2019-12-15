@@ -1,6 +1,4 @@
-
 *.pyc
 __pycache__/*
 cachedir/*
 /_pipeline_cache/*
-.idea/*
