@@ -1467,14 +1467,17 @@ def morph_labels_from_fsaverage(mri_subject, subjects_dir, overwrite):
 
 @decor.topline
 def mri_coreg(name, save_dir, subtomri, subjects_dir):
-    raw_name = name + '-raw.fif'
-    raw_path = join(save_dir, raw_name)
 
-    # fids = mne.coreg.get_mni_fiducials(subtomri, subjects_dir)
-    # Todo: Problems with raw-reading
-    mne.gui.coregistration(subject=subtomri, inst=raw_path,
-                           subjects_dir=subjects_dir, guess_mri_subject=False,
-                           advanced_rendering=True, mark_inside=True)
+    mne.gui.coregistration()
+
+    # raw_name = name + '-raw.fif'
+    # raw_path = join(save_dir, raw_name)
+    #
+    # # fids = mne.coreg.get_mni_fiducials(subtomri, subjects_dir)
+    # # Todo: Problems with raw-reading
+    # mne.gui.coregistration(subject=subtomri, inst=raw_path,
+    #                        subjects_dir=subjects_dir, guess_mri_subject=False,
+    #                        advanced_rendering=True, mark_inside=True)
 
 
 @decor.topline

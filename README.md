@@ -16,7 +16,7 @@ I would recommend to install in an own conda environment with:
 
 Start the pipeline from the command line with `python mne_pipeline_hd` (you have to be in ther first "mne_pipeline_hd" directory)
 
-or
+_or_
 
 Load the Pipeline-folder in an IDE like PyCharm, Spyder, Atom, etc. and run \__main\__.py
 

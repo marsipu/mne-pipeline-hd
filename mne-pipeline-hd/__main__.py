@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import sys
+import matplotlib
 from importlib import reload, util
 from os.path import isfile, join
 
@@ -57,7 +58,8 @@ reload_all()
 # GUI CALL
 # ==============================================================================
 # Todo: Call functions from an own module and let the Main-Window stay open while execution
-# matplotlib.use("Qt5Agg")
+if sys.platform == 'darwin':
+    matplotlib.use('MacOSX')
 app_name = 'mne-pipeline-hd'
 organization_name = 'marsipu'
 app = QApplication(sys.argv)
