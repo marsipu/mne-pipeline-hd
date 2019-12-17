@@ -7,10 +7,11 @@
 I would recommend to install in an own conda environment with:
 `conda env create -n mne -f environment.yml`
 2. `conda actiavte mne`
-3. Navigate to the folder within the command line where you want the pipeline-script to be installed
-4. `pip install -e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd`
-5. Navigate into the first mne_pipeline_hd folder
-6. `pip install -r requirements.txt`
+3. `conda install -c conda-forge pyqt=5.12`
+4. Navigate to the folder within the command line where you want the pipeline-script to be installed
+5. `pip install -e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd`
+6. Navigate into the first mne_pipeline_hd folder
+7. `pip install -r requirements.txt`
 
 **Start**
 
