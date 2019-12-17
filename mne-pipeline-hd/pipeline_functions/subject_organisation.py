@@ -41,7 +41,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
         match = re.match(pattern, fname)
 
         # Copy Empty-Room-Files to their directory
-        if 'leer' in fname or 'erm' in fname:
+        if 'leer' in fname or 'Leer' in fname or 'erm' in fname or 'ERM' in fname:
             if not isfile(ermdest):
                 print('-' * 60 + '\n' + fname)
                 print(f'Moving ERM_File from {paths[f]}')
