@@ -31,7 +31,7 @@ def add_files(file_list_path, erm_list_path, motor_erm_list_path,
     for f in all_fif_files:
         fname = f[:-4] # name without .fif
         if fname[-4:] == '-raw':
-            fdest = join(data_path, fname, fname + '.fif')
+            fdest = join(data_path, fname[:-4], fname + '.fif')
             ermdest = join(data_path, 'empty_room_data', fname + '.fif')
             fname = fname[:-4]
         else:
