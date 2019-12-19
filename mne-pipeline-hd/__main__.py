@@ -60,7 +60,6 @@ reload_all()
 # GUI CALL
 # ==============================================================================
 # Todo: Call functions from an own module and let the Main-Window stay open while execution
-
 app_name = 'mne-pipeline-hd'
 organization_name = 'marsipu'
 app = QApplication(sys.argv)
