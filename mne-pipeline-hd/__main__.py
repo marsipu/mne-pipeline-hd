@@ -828,12 +828,12 @@ if p.combine_ab:
                                      p.corr_threshold, p.combine_ab)
 
 if exec_ops['sub_func_label_analysis']:
-    plot.sub_func_label_analysis(p.lowpass, p.highpass, p.etmax, sub_files_dict,
+    plot.sub_func_label_analysis(p.highpass, p.lowpass, p.etmax, sub_files_dict,
                                  pscripts_path, p.label_origin, p.ev_ids_label_analysis, p.save_plots,
                                  figures_path, exec_ops)
 
 if exec_ops['all_func_label_analysis']:
-    plot.all_func_label_analysis(p.lowpass, p.highpass, p.etmax, files, pscripts_path,
+    plot.all_func_label_analysis(p.highpass, p.lowpass, p.etmax, files, pscripts_path,
                                  p.label_origin, p.ev_ids_label_analysis, p.save_plots,
                                  figures_path)
 
@@ -883,34 +883,34 @@ if exec_ops['grand_avg_func_labels']:
 # ================================================================================
 
 if exec_ops['plot_grand_avg_evokeds']:
-    plot.plot_grand_avg_evokeds(p.lowpass, p.highpass, save_dir_averages, grand_avg_dict,
+    plot.plot_grand_avg_evokeds(p.highpass, p.lowpass, save_dir_averages, grand_avg_dict,
                                 p.event_id, p.save_plots, figures_path, quality)
 
 if exec_ops['plot_grand_avg_evokeds_h1h2']:
-    plot.plot_grand_avg_evokeds_h1h2(p.lowpass, p.highpass, save_dir_averages, grand_avg_dict,
+    plot.plot_grand_avg_evokeds_h1h2(p.highpass, p.lowpass, save_dir_averages, grand_avg_dict,
                                      p.event_id, p.save_plots, figures_path, quality)
 
 if exec_ops['plot_evoked_compare']:
     plot.plot_evoked_compare(data_path, save_dir_averages, p.highpass, p.lowpass, comp_dict, p.combine_ab, p.event_id)
 
 if exec_ops['plot_grand_avg_tfr']:
-    plot.plot_grand_avg_tfr(p.lowpass, p.highpass, p.baseline, p.etmin, p.etmax,
+    plot.plot_grand_avg_tfr(p.highpass, p.lowpass, p.baseline, p.etmin, p.etmax,
                             save_dir_averages, grand_avg_dict,
                             p.event_id, p.save_plots, figures_path)
 
 if exec_ops['plot_grand_avg_stc']:
-    plot.plot_grand_avg_stc(p.lowpass, p.highpass, save_dir_averages,
+    plot.plot_grand_avg_stc(p.highpass, p.lowpass, save_dir_averages,
                             grand_avg_dict, p.mne_evoked_time, p.morph_to,
                             subjects_dir, p.event_id, p.save_plots,
                             figures_path)
 
 if exec_ops['plot_grand_avg_stc_anim']:
-    plot.plot_grand_avg_stc_anim(p.lowpass, p.highpass, save_dir_averages,
+    plot.plot_grand_avg_stc_anim(p.highpass, p.lowpass, save_dir_averages,
                                  grand_avg_dict, p.stc_animation, p.morph_to,
                                  subjects_dir, p.event_id, figures_path)
 
 if exec_ops['plot_grand_avg_connect']:
-    plot.plot_grand_avg_connect(p.lowpass, p.highpass, save_dir_averages,
+    plot.plot_grand_avg_connect(p.highpass, p.lowpass, save_dir_averages,
                                 grand_avg_dict, subjects_dir, p.morph_to, p.parcellation, p.con_methods, p.con_fmin,
                                 p.con_fmax,
                                 p.save_plots, figures_path, p.ev_ids_label_analysis, p.target_labels)
