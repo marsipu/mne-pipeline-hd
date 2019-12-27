@@ -12,18 +12,19 @@ import re
 import shutil
 import sys
 import matplotlib
+
 if sys.platform == 'darwin':
     matplotlib.use('MacOSX')
 from importlib import reload, util
 from os.path import isfile, join
 
 import mne
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication
 
-from basic_functions import io_functions as io, operations_functions as op, plot_functions as plot
-from custom_functions import kristins_functions as kf, melofix_functions as mff, pinprick_functions as ppf
-from pipeline_functions import decorators as decor, gui_functions as guif, operations_dict as opd, \
+from basic_functions import io, operations as op, plot as plot
+from custom_functions import kristin as kf, melofix as mff, pinprick as ppf
+from pipeline_functions import decorators as decor, gui, operations_dict as opd, \
     subject_organisation as suborg, utilities as ut
 
 
@@ -35,7 +36,7 @@ def reload_all():
     reload(ut)
     reload(opd)
     reload(decor)
-    reload(guif)
+    reload(gui)
     reload(ppf)
     reload(mff)
     reload(kf)
@@ -67,8 +68,14 @@ app.setApplicationName(app_name)
 app.setOrganizationName(organization_name)
 if 'darwin' in sys.platform:
     app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
-win = guif.MainWindow()
+win = gui.MainWindow()
 win.show()
+
+# Make Command-line Ctrl + C possible
+timer = QTimer()
+timer.timeout.connect(lambda: None)
+timer.start(100)
+
 # In Pycharm not working but needed for Spyder
 app.lastWindowClosed.connect(app.quit)
 app.exec_()
@@ -937,9 +944,9 @@ if exec_ops['statistics_source_space']:
 
 if exec_ops['plot_grand_averages_source_estimates_cluster_masked']:
     plot.plot_grand_averages_source_estimates_cluster_masked(
-        save_dir_averages, p.highpass, p.lowpass, subjects_dir, p.inverse_method, p.time_window,
-        p.save_plots, figures_path, p.independent_variable_1,
-        p.independent_variable_2, p.mne_evoked_time, p.p_threshold)
+            save_dir_averages, p.highpass, p.lowpass, subjects_dir, p.inverse_method, p.time_window,
+            p.save_plots, figures_path, p.independent_variable_1,
+            p.independent_variable_2, p.mne_evoked_time, p.p_threshold)
 # ==============================================================================
 # MISCELLANEOUS
 # ==============================================================================

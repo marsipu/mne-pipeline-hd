@@ -25,7 +25,7 @@ from mayavi import mlab
 from scipy import stats
 from surfer import Brain
 
-from basic_functions import io_functions as io, operations_functions as op
+from basic_functions import io, operations as op
 from pipeline_functions import decorators as decor, utilities as ut
 
 

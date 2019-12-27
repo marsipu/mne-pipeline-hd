@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDesktopWidget,
                              QPushButton, QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 
 from pipeline_functions import operations_dict as opd, subject_organisation as suborg, utilities as ut
-from basic_functions import io_functions as io
+from basic_functions import io
 
 
 def sub_dict_selected(inst1, inst2, dict_path):

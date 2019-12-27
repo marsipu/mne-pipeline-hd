@@ -6,7 +6,7 @@ import mne
 import numpy as np
 from matplotlib import pyplot as plt
 
-from basic_functions import io_functions as io, plot_functions as plot, operations_functions as op
+from basic_functions import io, plot as plot, operations as op
 from pipeline_functions import decorators as decor, utilities as ut
 
 

@@ -56,7 +56,7 @@ mri_subject_operations = dict(apply_watershed=0,
 
 source_space_operations = dict(mri_coreg=0,
                                create_forward_solution=0,
-                               # I disabled eeg here for pinprick, delete eeg=False in 398 operations_functions.py to reactivate
+                               # I disabled eeg here for pinprick, delete eeg=False in 398 operations.py to reactivate
                                estimate_noise_covariance=0,
                                create_inverse_operator=0,
                                source_estimate=0,

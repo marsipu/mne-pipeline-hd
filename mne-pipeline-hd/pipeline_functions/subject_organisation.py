@@ -9,7 +9,7 @@ import tkinter as t
 from os.path import exists, isdir, isfile, join
 
 from pipeline_functions import utilities as ut
-from basic_functions import io_functions as io
+from basic_functions import io
 
 
 # Todo: Benamung verallgemeinern, -raw-Problematik lösen
