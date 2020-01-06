@@ -1,5 +1,6 @@
 # MNE-Python-Requirements
 mne
+mayavi
 autoreject
 imageio-ffmpeg
 pyobjc-framework-Cocoa; sys_platform == "darwin"

@@ -1,13 +1,23 @@
 import sys
 # Should be executed in MNE-Environment or base with MNE installed
+from functools import partial
+
 from PyQt5.QtWidgets import (QApplication, QLabel, QWidget, QPushButton, QHBoxLayout,
-                             QMainWindow, QDesktopWidget, QVBoxLayout)
-import matplotlib
+                             QMainWindow, QDesktopWidget, QVBoxLayout, QDialog)
 import mne
 from mayavi import mlab
-
-matplotlib.use('QT5Agg')
 from matplotlib import pyplot as plt
+
+
+class Testsecwin(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(QLabel('Huga'))
+        self.setLayout(self.layout)
+        self.open()
+        # self.raise_()
+        # self.activateWindow()
 
 
 class TestWindow(QMainWindow):
@@ -36,10 +46,12 @@ class TestWindow(QMainWindow):
         bt2 = QPushButton('Matplotlib')
         bt3 = QPushButton('MNE-Coreg')
         bt4 = QPushButton('Mayavi')
+        bt5 = QPushButton('Second-Window')
         h_layout.addWidget(bt1)
         h_layout.addWidget(bt2)
         h_layout.addWidget(bt3)
         h_layout.addWidget(bt4)
+        h_layout.addWidget(bt5)
         for x in range(10):
             h_layout.addWidget(QPushButton(str(x)))
         self.setLayout(h_layout)
@@ -48,6 +60,7 @@ class TestWindow(QMainWindow):
         bt2.clicked.connect(self.test_matplotlib)
         bt3.clicked.connect(self.test_mne_coreg)
         bt4.clicked.connect(self.test_mayavi)
+        bt5.clicked.connect(partial(Testsecwin, self))
 
         self.main_layout.addLayout(h_layout)
 

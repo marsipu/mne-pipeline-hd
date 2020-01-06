@@ -1,8 +1,5 @@
 import numpy as np
 
-# %%============================================================================
-# PARAMETERS (TO SET)
-# ==============================================================================
 # OS
 n_jobs = -1  # number of processor-cores to use, -1 for auto
 enable_cuda = False  # Using CUDA on supported graphics card e.g. for filtering

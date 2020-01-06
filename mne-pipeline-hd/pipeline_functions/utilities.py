@@ -5,150 +5,11 @@ Created on Thu Jan 17 01:00:31 2019
 @author: 'Martin Schulz'
 """
 import os
-import sys
 from os import makedirs
 from os.path import exists, isfile, join
-
-try:
-    import autoreject as ar
-except ImportError:
-    print('#%§&$$ autoreject-Import-Bug is not corrected in latest dev')
-    ar = 0
-import tkinter as t
+import autoreject as ar
 import re
-
-from pipeline_functions import operations_dict as opd
-
-
-# Todo: If checked, change color
-class TkFunctionWindow:
-
-    def __init__(self, master):
-        self.master = master
-        master.title('Choose the functions to be executed')
-
-        self.var_dict = dict()
-        self.pre_func_dict = dict()
-        self.func_dict = dict()
-        self.c_path = './basic_functions/func_cache.py'
-
-        self.make_chkbs()
-        self.huga = 12
-
-        # # React to keyboard input
-        # frame = t.Frame(self.master, bg='green')
-        # frame.bind('<Return>', self.start)
-        # master.bind('<Return>', self.start())
-
-    def make_chkbs(self):
-        r_cnt = -1
-        c_cnt = 0
-        r_max = 25
-        for function_group in opd.all_fs_gs:
-            r_cnt += 1
-            if r_cnt > 25:
-                r_cnt = 0
-            label = t.Label(self.master, text=function_group,
-                            bg='blue', fg='white', relief=t.RAISED)
-            label.grid(row=r_cnt, column=c_cnt)
-            r_cnt += 1
-            for function in opd.all_fs_gs[function_group]:
-                var = t.IntVar()
-                self.var_dict.update({function: var})
-                self.func_dict.update({function: 0})
-                chk = t.Checkbutton(self.master, text=function, variable=var)
-                chk.grid(row=r_cnt, column=c_cnt, sticky=t.W)
-                r_cnt += 1
-                if r_cnt >= r_max:
-                    c_cnt += 1
-                    r_cnt = 0
-
-        # Preload existing checks
-        if isfile(self.c_path):
-            with open(self.c_path, 'r') as fc:
-                # Make sure that cache takes changes from operations_dict
-                self.pre_func_dict = eval(fc.read())
-                del_list = []
-                for k in self.pre_func_dict:
-                    if k not in self.func_dict:
-                        del_list.append(k)
-                if len(del_list) > 0:
-                    for d in del_list:
-                        del self.pre_func_dict[d]
-                        print(f'{d} from operations_cache deleted')
-                self.func_dict = self.pre_func_dict
-
-            for f in self.func_dict:
-                n = self.func_dict[f]
-                self.var_dict[f].set(n)
-
-        if r_cnt > r_max - 6:
-            r_cnt = 0
-            c_cnt += 1
-
-        bt_start = t.Button(self.master, text='Start',
-                            command=self.start, bg='green',
-                            activebackground='blue',
-                            fg='white', font=100,
-                            relief=t.RAISED)
-        bt_start.grid(row=int(r_cnt + (r_max - r_cnt) / 3), column=c_cnt,
-                      rowspan=int((r_max - r_cnt + 1) / 3),
-                      sticky=t.N + t.S + t.W + t.E)
-
-        bt_stop = t.Button(self.master, text='Stop',
-                           command=self.stop, bg='red',
-                           activebackground='yellow',
-                           fg='white', font=100,
-                           relief=t.RAISED)
-        bt_stop.grid(row=int(r_cnt + (r_max - r_cnt) * 2 / 3), column=c_cnt,
-                     rowspan=int((r_max - r_cnt + 1) / 3),
-                     sticky=t.N + t.S + t.W + t.E)
-
-        bt_clear = t.Button(self.master, text='Clear_all',
-                            command=self.clear_all, bg='magenta',
-                            activebackground='cyan',
-                            fg='white', font=100,
-                            relief=t.RAISED)
-
-        bt_clear.grid(row=r_cnt, column=c_cnt,
-                      rowspan=int((r_max - r_cnt + 1) / 3),
-                      sticky=t.N + t.S + t.W + t.E)
-
-    def clear_all(self):
-        for x in self.var_dict:
-            self.var_dict[x].set(0)
-
-    def start(self):
-        for f in self.var_dict:
-            n = self.var_dict[f].get()
-            self.func_dict[f] = n
-
-        with open(self.c_path, 'w') as fc:
-            fc.write(str(self.func_dict))
-
-        self.master.quit()
-        self.master.destroy()
-
-    def stop(self):
-        for f in self.var_dict:
-            n = self.var_dict[f].get()
-            self.func_dict[f] = n
-
-        with open(self.c_path, 'w') as fc:
-            fc.write(str(self.func_dict))
-
-        self.master.quit()
-        self.master.destroy()
-        # sys.exit() Not working for PyCharm, stopping the console
-        raise SystemExit(0)
-
-
-def choose_function():
-    master = t.Tk()
-    gui = TkFunctionWindow(master)
-    master.mainloop()
-
-    return gui.func_dict
+from pipeline_functions import iswin, ismac, islin
 
 
 def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwrite_ar=False,
@@ -316,23 +177,6 @@ def order_the_dict(filename, sub_script_path, unspecified_names=False):
     order_list.sort()
 
 
-def get_all_fif_files(dirname):
-    # create a list of file and sub directories
-    # names in the given directory
-    list_of_file = os.walk(dirname)
-    all_fif_files = list()
-    paths = dict()
-    # Iterate over all the entries
-    for dirpath, dirnames, filenames in list_of_file:
-
-        for file in filenames:
-            if file[-4:] == '.fif':
-                all_fif_files.append(file)
-                paths.update({file: join(dirpath, file)})
-
-    return all_fif_files, paths
-
-
 def delete_files(data_path, pattern):
     main_dir = os.walk(data_path)
     for dirpath, dirnames, filenames in main_dir:
@@ -344,9 +188,9 @@ def delete_files(data_path, pattern):
 
 
 def shutdown():
-    if sys.platform == 'win32':
+    if iswin:
         os.system('shutdown /s')
-    if sys.platform == 'linux':
+    if islin:
         os.system('sudo shutdown now')
-    if sys.platform == 'darwin':
+    if ismac:
         os.system('sudo shutdown -h now')

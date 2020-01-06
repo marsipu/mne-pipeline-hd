@@ -11,6 +11,11 @@ from pipeline_functions import decorators as decor, utilities as ut
 
 
 @decor.topline
+def add_motor_erm_files():
+    pass
+
+
+@decor.topline
 def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
                       sub_script_path, save_plots, figures_path, exec_ops):
     events_name = name + '-eve.fif'
@@ -614,6 +619,7 @@ def plot_latency_alignment(layer, lag, n1, n2,
     filename = join(figures_path, 'align_peaks', f'{layer}{op.filter_string(highpass, lowpass)}_xcorr.jpg')
     plt.savefig(filename)
 
+
 # def apply_alignment():
 #     # Apply alignment over changing the
 #     det_peaks = ut.read_dict_file('peak_alignment', sub_script_path)
@@ -632,6 +638,7 @@ def get_subject_groups(all_files, fuse_ab, unspecified_names):
     sub_files_dict = dict()
     cond_dict = dict()
 
+    # pattern = r'pp[0-9][0-9]*[a-z]*_[0-9]{0,3}t?_[a,b]$'
     basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
     for s in all_files:
         match = re.match(basic_pattern, s)
@@ -721,3 +728,28 @@ def get_subject_groups(all_files, fuse_ab, unspecified_names):
         grand_avg_dict.update({'Unspecified': all_files})
 
     return ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict
+
+
+def pp_file_selection():
+    mw = None
+    files = []
+    quality = None
+    modality = None
+    quality_dict = {}
+    basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
+    if not mw.func_dict['erm_analysis'] and not mw.func_dict['motor_erm_analysis']:
+        silenced_files = set()
+        for file in files:
+            if 'all' not in quality and quality is not '':
+                file_quality = int(quality_dict[file])
+                if file_quality not in quality:
+                    silenced_files.add(file)
+
+            if 'all' not in modality:
+                match = re.match(basic_pattern, file)
+                file_modality = match.group(2)
+                if file_modality not in modality:
+                    silenced_files.add(file)
+
+        for df in silenced_files:
+            files.remove(df)

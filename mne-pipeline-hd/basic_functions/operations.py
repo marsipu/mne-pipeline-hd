@@ -208,7 +208,7 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
 
     if ermsub != 'None':
         erm_name = ermsub + '-raw.fif'
-        erm_path = join(data_path, 'empty_room_data', erm_name)
+        erm_path = join(data_path, 'empty_room_data', ermsub, erm_name)
         erm_filter_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
         erm_filter_path = join(data_path, 'empty_room_data', erm_filter_name)
 
@@ -495,7 +495,7 @@ def run_ssp_er(name, save_dir, highpass, lowpass, data_path, ermsub, bad_channel
         pass
     else:
         erm_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
-        erm_path = join(data_path, 'empty_room_data', erm_name)
+        erm_path = join(data_path, 'empty_room_data', ermsub, erm_name)
 
         erm = mne.io.read_raw_fif(erm_path, preload=True)
         erm.pick_types(exclude=bad_channels)
@@ -1260,7 +1260,7 @@ def run_process_and_write_output(command, subjects_dir):
     environment = environ.copy()
     environment["SUBJECTS_DIR"] = subjects_dir
 
-    if sys.platform == 'win32':
+    if iswin:
         raise RuntimeError('mri_subject_functions are currently not working on Windows, please run them on Linux')
         # command.insert(0, 'wsl')
 
@@ -1563,7 +1563,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
         if overwrite or not isfile(covariance_path):
 
             erm_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
-            erm_path = join(data_path, 'empty_room_data', erm_name)
+            erm_path = join(data_path, 'empty_room_data', ermsub, erm_name)
 
             erm = mne.io.read_raw_fif(erm_path, preload=True)
             erm.pick_types(exclude=bad_channels)

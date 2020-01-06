@@ -7,36 +7,33 @@ Adapted from Lau Møller Andersen
 @github: marsipu/mne-pipeline-hd
 Adapted to Melody Processing of Kim's data
 """
-import os
-import re
-import shutil
 import sys
 import matplotlib
+from pipeline_functions import ismac
 
-if sys.platform == 'darwin':
+if ismac:
     matplotlib.use('MacOSX')
-from importlib import reload, util
-from os.path import isfile, join
 
-import mne
+from importlib import reload
+
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication
 
 from basic_functions import io, operations as op, plot as plot
 from custom_functions import kristin as kf, melofix as mff, pinprick as ppf
-from pipeline_functions import decorators as decor, gui, operations_dict as opd, \
-    subject_organisation as suborg, utilities as ut
+from pipeline_functions import decorators as decor, main_win, subjects as subs, utilities as ut
+from resources import operations_dict as opd
 
 
 def reload_all():
     reload(io)
     reload(op)
     reload(plot)
-    reload(suborg)
+    reload(subs)
     reload(ut)
     reload(opd)
     reload(decor)
-    reload(gui)
+    reload(main_win)
     reload(ppf)
     reload(mff)
     reload(kf)
@@ -61,16 +58,20 @@ reload_all()
 # GUI CALL
 # ==============================================================================
 # Todo: Call functions from an own module and let the Main-Window stay open while execution
+#   Needed: Controller, who takes gui-input (as project-name, paths) and initilializes the project,
+#   then a function, which is called on Start which calls the appropriate pipeline-functions
+#   plus a line for commands, which can be used for real-time debugging and quick use of the local variables
 app_name = 'mne-pipeline-hd'
 organization_name = 'marsipu'
 app = QApplication(sys.argv)
 app.setApplicationName(app_name)
 app.setOrganizationName(organization_name)
-if 'darwin' in sys.platform:
+app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)
+if ismac:
     app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
-win = gui.MainWindow()
+    app.setAttribute(Qt.AA_DontUseNativeMenuBar, True)
+win = main_win.MainWindow()
 win.show()
-
 # Make Command-line Ctrl + C possible
 timer = QTimer()
 timer.timeout.connect(lambda: None)
@@ -78,7 +79,7 @@ timer.start(100)
 
 # In Pycharm not working but needed for Spyder
 app.lastWindowClosed.connect(app.quit)
-app.exec_()
+sys.exit(app.exec_())
 
 # Variables from the GUI
 home_path = win.home_path
@@ -93,7 +94,6 @@ which_mri_subject = win.which_mri_subject
 which_erm_file = win.which_erm_file
 which_motor_erm_file = win.which_motor_erm_file
 pscripts_path = win.pscripts_path
-orig_data_path = win.orig_data_path  # location of original-data
 subjects_dir = win.subjects_dir  # name of your Freesurfer-Directory
 mne.utils.set_config("SUBJECTS_DIR", subjects_dir, set_env=True)
 data_path = win.data_path
@@ -109,11 +109,6 @@ erm_dict_path = win.erm_dict_path
 bad_channels_dict_path = win.bad_channels_dict_path
 quality_dict_path = win.quality_dict_path
 
-# Needed to prevent exit code -1073741819 (0xC0000005) (probably memory error)
-#   after sequential running
-del app, win
-if make_it_stop:
-    raise SystemExit(0)
 # %%============================================================================
 # LOAD PARAMETERS
 # ==============================================================================
@@ -136,37 +131,15 @@ else:
     figures_path = join(project_path, f'figures/{p.highpass}-{p.lowpass}_Hz')
 
 op.populate_directories(data_path, figures_path, p.event_id)
-# %%============================================================================
-# SUBJECT ORGANISATION (NOT TO SET)
-# ==============================================================================
-# if exec_ops['add_files']:  # set 1 to run
-#     suborg.add_files(file_list_path, erm_list_path, motor_erm_list_path,
-#                      data_path, orig_data_path,
-#                      p.unspecified_names, gui=False)
-#
-# if exec_ops['add_mri_subjects']:  # set 1 to run
-#     suborg.add_mri_subjects(subjects_dir, mri_sub_list_path, data_path, gui=False)
-#
-# if exec_ops['add_sub_dict']:  # set 1 to run
-#     suborg.add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path)
-#
-# if exec_ops['add_erm_dict']:  # set 1 to run
-#     suborg.add_erm_dict(erm_dict_path, file_list_path, erm_list_path, data_path)
-#
-# if exec_ops['add_bad_channels']:
-#     suborg.add_bad_channels_dict(bad_channels_dict_path, file_list_path,
-#                                  erm_list_path, motor_erm_list_path,
-#                                  data_path, p.predefined_bads,
-#                                  pscripts_path)
 
 # Subject-Functions
-all_files = suborg.read_files(file_list_path)
-all_mri_subjects = suborg.read_mri_subjects(mri_sub_list_path)
-erm_files = suborg.read_files(erm_list_path)
-motor_erm_files = suborg.read_files(motor_erm_list_path)
-sub_dict = suborg.read_sub_dict(sub_dict_path)
-erm_dict = suborg.read_sub_dict(erm_dict_path)  # add None if not available
-bad_channels_dict = suborg.read_bad_channels_dict(bad_channels_dict_path)
+all_files = subs.read_files(file_list_path)
+all_mri_subjects = subs.read_mri_subjects(mri_sub_list_path)
+erm_files = subs.read_files(erm_list_path)
+motor_erm_files = subs.read_files(motor_erm_list_path)
+sub_dict = subs.read_sub_dict(sub_dict_path)
+erm_dict = subs.read_sub_dict(erm_dict_path)  # add None if not available
+bad_channels_dict = subs.read_bad_channels_dict(bad_channels_dict_path)
 # %%========================================================================
 # MRI-Subjects (NOT TO SET)
 # ============================================================================
@@ -175,7 +148,7 @@ for msop in opd.mri_subject_operations:
     if exec_ops[msop]:
         run_mrisf = True
 if run_mrisf:
-    mri_subjects = suborg.file_selection(which_mri_subject, all_mri_subjects)
+    mri_subjects = subs.file_selection(which_mri_subject, all_mri_subjects)
 
     print(f'Selected {len(mri_subjects)} MRI-Subjects:')
     for i in mri_subjects:
@@ -239,11 +212,11 @@ if run_mrisf:
 # Files (NOT TO SET)
 # ===========================================================================
 if exec_ops['erm_analysis']:
-    files = suborg.file_selection(which_erm_file, erm_files)
+    files = subs.file_selection(which_erm_file, erm_files)
 elif exec_ops['motor_erm_analysis']:
-    files = suborg.file_selection(which_motor_erm_file, motor_erm_files)
+    files = subs.file_selection(which_motor_erm_file, motor_erm_files)
 else:
-    files = suborg.file_selection(which_file, all_files)
+    files = subs.file_selection(which_file, all_files)
 
 quality_dict = ut.read_dict_file('quality', pscripts_path)
 
@@ -268,8 +241,7 @@ basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
 
 if len(all_files) == 0:
     print('No files in file_list!')
-    print('Add some folders(the ones with the date containing fif-files) to your orig_data_path-folder and check '
-          '"add_files"')
+    print('Add some Files with "AddFiles" from the Input-Menu')
 else:
     print(f'Selected {len(files)} Subjects:')
     for f in files:
@@ -313,14 +285,14 @@ for name in files:
         except KeyError as k:
             print(f'No erm_measurement for {k}')
             ermsub = []
-            suborg.add_erm_dict(erm_dict_path, file_list_path, erm_list_path, data_path)
+            subs.add_erm_dict(erm_dict_path, file_list_path, erm_list_path, data_path)
 
         try:
             subtomri = sub_dict[prefix]
         except KeyError as k:
             print(f'No mri_subject assigned to {k}')
             subtomri = []
-            suborg.add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path)
+            subs.add_sub_dict(sub_dict_path, file_list_path, mri_sub_list_path, data_path)
         if exec_ops['plot_ab_combined']:
             bad_channels = []
         else:
@@ -329,10 +301,10 @@ for name in files:
             except KeyError as k:
                 print(f'No bad channels for {k}')
                 bad_channels = []
-                suborg.add_bad_channels_dict(bad_channels_dict_path, file_list_path,
-                                             erm_list_path, motor_erm_list_path,
-                                             data_path, p.predefined_bads,
-                                             pscripts_path)
+                subs.add_bad_channels_dict(bad_channels_dict_path, file_list_path,
+                                           erm_list_path, motor_erm_list_path,
+                                           data_path, p.predefined_bads,
+                                           pscripts_path)
     else:
         try:
             ermsub = erm_dict[name]
