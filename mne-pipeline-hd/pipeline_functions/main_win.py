@@ -4,15 +4,15 @@ from subprocess import run
 
 from qtpy.QtCore import QSettings, Qt
 from qtpy.QtGui import QColor, QFont, QPalette
-from qtpy.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout,
-                             QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox,
-                             QPushButton, QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget, QAction)
+from qtpy.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout, QHBoxLayout,
+                            QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox, QPushButton, QStyleFactory,
+                            QTabWidget, QToolTip, QVBoxLayout, QWidget)
 
 from basic_functions import io
 from pipeline_functions import iswin
-from resources import operations_dict as opd
 from pipeline_functions.project import MyProject
-from pipeline_functions.subjects import AddFiles, SubDictDialog, BadChannelsSelect, AddMRIFiles
+from pipeline_functions.subjects import AddFiles, AddMRIFiles, BadChannelsSelect, SubDictDialog
+from resources import operations_dict as opd
 
 
 # Todo: Create BadChannelsSelect
