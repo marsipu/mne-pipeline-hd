@@ -2,9 +2,9 @@ import sys
 from functools import partial
 from subprocess import run
 
-from PyQt5.QtCore import QSettings, Qt
-from PyQt5.QtGui import QColor, QFont, QPalette
-from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout,
+from qtpy.QtCore import QSettings, Qt
+from qtpy.QtGui import QColor, QFont, QPalette
+from qtpy.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout,
                              QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox,
                              QPushButton, QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget, QAction)
 
@@ -371,24 +371,28 @@ class MainWindow(QMainWindow):
 
         command_upd = "curl --remote-name " \
                       "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml; " \
+                      "conda update conda; " \
                       "conda activate mne; " \
                       "conda env update --file environment.yml; pip install -r requirements.txt; " \
                       "conda install -c conda-forge pyqt=5.12"
 
         command_upd_win = "curl --remote-name " \
                           "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml & " \
+                          "conda update conda & " \
                           "conda activate mne & " \
                           "conda env update --file environment.yml & pip install -r requirements.txt & " \
                           "conda install -c conda-forge pyqt=5.12"
 
         command_new = "curl --remote-name " \
                       "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml; " \
+                      "conda update conda; " \
                       "conda env create --name mne --file environment.yml;" \
                       "conda activate mne; pip install -r requirements.txt; " \
                       "conda install -c conda-forge pyqt=5.12"
 
         command_new_win = "curl --remote-name " \
                           "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml & " \
+                          "conda update conda & " \
                           "conda env create --name mne_test --file environment.yml & " \
                           "conda activate mne & pip install -r requirements.txt & " \
                           "conda install -c conda-forge pyqt=5.12"

@@ -1,0 +1,124 @@
+{
+    "CONNECTIONS": [
+        [
+            "nodeB.Battr1",
+            "nodeA.Aattr4"
+        ],
+        [
+            "nodeB.Battr2",
+            "nodeA.Aattr3"
+        ]
+    ],
+    "NODES": {
+        "nodeA": {
+            "alternate": true,
+            "attributes": [
+                {
+                    "dataType": "<class 'str'>",
+                    "name": "Aattr1",
+                    "plug": true,
+                    "plugMaxConnections": -1,
+                    "preset": "attr_preset_1",
+                    "socket": false,
+                    "socketMaxConnections": 1
+                },
+                {
+                    "dataType": "<class 'int'>",
+                    "name": "Aattr2",
+                    "plug": false,
+                    "plugMaxConnections": -1,
+                    "preset": "attr_preset_1",
+                    "socket": false,
+                    "socketMaxConnections": 1
+                },
+                {
+                    "dataType": "<class 'int'>",
+                    "name": "Aattr3",
+                    "plug": true,
+                    "plugMaxConnections": -1,
+                    "preset": "attr_preset_2",
+                    "socket": true,
+                    "socketMaxConnections": 1
+                },
+                {
+                    "dataType": "<class 'str'>",
+                    "name": "Aattr4",
+                    "plug": true,
+                    "plugMaxConnections": -1,
+                    "preset": "attr_preset_2",
+                    "socket": true,
+                    "socketMaxConnections": 1
+                },
+                {
+                    "dataType": "<class 'int'>",
+                    "name": "Aattr5",
+                    "plug": true,
+                    "plugMaxConnections": 1,
+                    "preset": "attr_preset_3",
+                    "socket": true,
+                    "socketMaxConnections": -1
+                },
+                {
+                    "dataType": "<class 'int'>",
+                    "name": "Aattr6",
+                    "plug": true,
+                    "plugMaxConnections": 1,
+                    "preset": "attr_preset_3",
+                    "socket": true,
+                    "socketMaxConnections": -1
+                }
+            ],
+            "position": [
+                899.0,
+                986.5
+            ],
+            "preset": "node_preset_1"
+        },
+        "nodeB": {
+            "alternate": true,
+            "attributes": [
+                {
+                    "dataType": "<class 'str'>",
+                    "name": "Battr1",
+                    "plug": true,
+                    "plugMaxConnections": -1,
+                    "preset": "attr_preset_1",
+                    "socket": false,
+                    "socketMaxConnections": 1
+                },
+                {
+                    "dataType": "<class 'int'>",
+                    "name": "Battr2",
+                    "plug": true,
+                    "plugMaxConnections": -1,
+                    "preset": "attr_preset_1",
+                    "socket": false,
+                    "socketMaxConnections": 1
+                },
+                {
+                    "dataType": "<class 'int'>",
+                    "name": "Battr3",
+                    "plug": true,
+                    "plugMaxConnections": -1,
+                    "preset": "attr_preset_2",
+                    "socket": false,
+                    "socketMaxConnections": 1
+                },
+                {
+                    "dataType": "<class 'int'>",
+                    "name": "Battr4",
+                    "plug": true,
+                    "plugMaxConnections": 1,
+                    "preset": "attr_preset_3",
+                    "socket": false,
+                    "socketMaxConnections": -1
+                }
+            ],
+            "position": [
+                899.0,
+                986.5
+            ],
+            "preset": "node_preset_1"
+        }
+    }
+}

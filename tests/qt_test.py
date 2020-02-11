@@ -2,8 +2,8 @@ import sys
 # Should be executed in MNE-Environment or base with MNE installed
 from functools import partial
 
-from PyQt5.QtWidgets import (QApplication, QLabel, QWidget, QPushButton, QHBoxLayout,
-                             QMainWindow, QDesktopWidget, QVBoxLayout, QDialog)
+from qtpy.QtWidgets import (QApplication, QLabel, QWidget, QPushButton, QHBoxLayout,
+                            QMainWindow, QDesktopWidget, QVBoxLayout, QDialog)
 import mne
 from mayavi import mlab
 from matplotlib import pyplot as plt

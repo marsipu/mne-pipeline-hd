@@ -6,7 +6,7 @@
 1. Install MNE-python as instructed on the [website](https://www.martinos.org/mne/stable/install_mne_python.html),
 I would recommend to install in an own conda environment with:
 `conda env create -n mne -f environment.yml`
-2. `conda actiavte mne`
+2. `conda activate mne`
 3. `conda install -c conda-forge pyqt=5.12`
 4. Navigate to the folder within the command line where you want the pipeline-script to be installed
 5. `pip install -e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd`

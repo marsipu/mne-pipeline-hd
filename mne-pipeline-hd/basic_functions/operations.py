@@ -39,6 +39,7 @@ except ImportError:
     AutoReject = 0
 
 
+# Todo: Change normal comments to docstrings
 # Naming Conventions
 def filter_string(highpass, lowpass):
     if highpass is not None and highpass != 0:
@@ -590,8 +591,8 @@ def run_ssp_eog(name, save_dir, n_jobs, eog_channel,
         raw = io.read_raw(name, save_dir)
 
         eog_proj, eog_events = mne.preprocessing.compute_proj_eog(
-            raw, n_grad=1, average=True, n_jobs=n_jobs, bads=bad_channels,
-            ch_name=eog_channel)
+                raw, n_grad=1, average=True, n_jobs=n_jobs, bads=bad_channels,
+                ch_name=eog_channel)
 
         if not isfile(eog_events_path):
             mne.event.write_events(eog_events_path, eog_events)
@@ -646,8 +647,8 @@ def run_ssp_ecg(name, save_dir, n_jobs, ecg_channel,
         raw = io.read_raw(name, save_dir)
 
         ecg_proj, ecg_events = mne.preprocessing.compute_proj_ecg(
-            raw, n_grad=1, average=True, n_jobs=n_jobs, bads=bad_channels,
-            ch_name=ecg_channel, reject={'eeg': 5e-3})
+                raw, n_grad=1, average=True, n_jobs=n_jobs, bads=bad_channels,
+                ch_name=ecg_channel, reject={'eeg': 5e-3})
 
         if not isfile(ecg_events_path):
             mne.event.write_events(ecg_events_path, ecg_events)
@@ -710,7 +711,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             raw = io.read_filtered(name, save_dir, 1, lowpass)
         except FileNotFoundError:
             raise RuntimeError(
-                'No Raw with Highpass=1-Filter found,set "enable_ica" to true and run "filter_raw" again')
+                    'No Raw with Highpass=1-Filter found,set "enable_ica" to true and run "filter_raw" again')
 
         epochs = io.read_epochs(name, save_dir, highpass, lowpass)
         picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
@@ -1326,15 +1327,15 @@ def apply_watershed(mri_subject, subjects_dir, overwrite):
     run_process_and_write_output(command, subjects_dir)
     # copy commands
     surfaces = dict(
-        inner_skull=dict(
-            origin=mri_subject + '_inner_skull_surface',
-            destination='inner_skull.surf'),
-        outer_skin=dict(origin=mri_subject + '_outer_skin_surface',
-                        destination='outer_skin.surf'),
-        outer_skull=dict(origin=mri_subject + '_outer_skull_surface',
-                         destination='outer_skull.surf'),
-        brain=dict(origin=mri_subject + '_brain_surface',
-                   destination='brain_surface.surf')
+            inner_skull=dict(
+                    origin=mri_subject + '_inner_skull_surface',
+                    destination='inner_skull.surf'),
+            outer_skin=dict(origin=mri_subject + '_outer_skin_surface',
+                            destination='outer_skin.surf'),
+            outer_skull=dict(origin=mri_subject + '_outer_skull_surface',
+                             destination='outer_skull.surf'),
+            brain=dict(origin=mri_subject + '_brain_surface',
+                       destination='brain_surface.surf')
     )
 
     for surface in surfaces:
@@ -1467,7 +1468,6 @@ def morph_labels_from_fsaverage(mri_subject, subjects_dir, overwrite):
 
 @decor.topline
 def mri_coreg(name, save_dir, subtomri, subjects_dir):
-
     mne.gui.coregistration()
 
     # raw_name = name + '-raw.fif'
@@ -2317,8 +2317,8 @@ def func_label_ctf_ps(name, save_dir, highpass, lowpass, subtomri,
     inverse_method = 'MNE'  # can be 'MNE', 'dSPM', or 'sLORETA'
 
     stc_psf_meg, _ = mne.minimum_norm.point_spread_function(
-        inverse_operator, forward, inverse_method=inverse_method, labels=labels,
-        lambda2=lambda2, pick_ori='normal', mode=mode, n_svd_comp=n_svd_comp)
+            inverse_operator, forward, inverse_method=inverse_method, labels=labels,
+            lambda2=lambda2, pick_ori='normal', mode=mode, n_svd_comp=n_svd_comp)
 
 
 @decor.topline
@@ -2347,8 +2347,8 @@ def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
                 #                    baseline_mode='percent', n_cycles=n_cycles, n_jobs=n_jobs)
 
                 power_ind, itc_ind = mne.minimum_norm.source_induced_power(
-                    epochs_induced, inverse_operator, freqs, label, baseline=baseline,
-                    baseline_mode='percent', n_cycles=n_cycles, n_jobs=n_jobs)
+                        epochs_induced, inverse_operator, freqs, label, baseline=baseline,
+                        baseline_mode='percent', n_cycles=n_cycles, n_jobs=n_jobs)
 
                 #                power = np.mean(power, axis=0)  # average over sources
                 #                itc = np.mean(itc, axis=0)  # average over sources
@@ -2568,8 +2568,8 @@ def source_space_connectivity(name, save_dir, highpass, lowpass,
 
         sfreq = info['sfreq']  # the sampling frequency
         con, freqs, times, n_epochs, n_tapers = mne.connectivity.spectral_connectivity(
-            label_ts, inverse_method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
-            fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
+                label_ts, inverse_method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
+                fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
 
         # con is a 3D array, get the connectivity for the first (and only) freq. band
         # for each con_method

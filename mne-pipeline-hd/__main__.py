@@ -16,8 +16,8 @@ if ismac:
 
 from importlib import reload
 
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QApplication
+from qtpy.QtCore import Qt, QTimer
+from qtpy.QtWidgets import QApplication
 
 from basic_functions import io, operations as op, plot as plot
 from custom_functions import kristin as kf, melofix as mff, pinprick as ppf

@@ -6,7 +6,7 @@ from custom_functions import kristin as kf, melofix as mff, pinprick as ppf
 from pipeline_functions import subjects as subs, utilities as ut
 from resources import operations_dict as opd
 
-# TODO: Ideas for function calling:
+# TODO: Ideas for improved function calling:
 #   1. Put Main-Window as only arg in all functions and get variables from attributes
 #   2. Make all Arguments as keyword-arguments and use module-attributes for calling
 

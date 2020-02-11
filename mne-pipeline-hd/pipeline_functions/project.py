@@ -2,7 +2,9 @@ from os import listdir, makedirs
 from os.path import isdir, join, exists, isfile
 
 import mne
-from PyQt5.QtWidgets import QFileDialog, QInputDialog
+from qtpy.QtWidgets import QFileDialog, QInputDialog
+
+from pipeline_functions import subjects as subs
 
 
 class MyProject:
@@ -97,3 +99,12 @@ class MyProject:
                 with open(file, 'w') as fl:
                     fl.write('')
                 print(f'{file} created')
+
+    def get_sub_lists(self):
+        self.all_files = subs.read_files(self.file_list_path)
+        self.all_mri_subjects = subs.read_files(self.mri_sub_list_path)
+        self.erm_files = subs.read_files(self.erm_list_path)
+        self.motor_erm_files = subs.read_files(self.motor_erm_list_path)
+        self.sub_dict = subs.read_sub_dict(self.sub_dict_path)
+        self.erm_dict = subs.read_sub_dict(self.erm_dict_path)
+        self.bad_channels_dict = subs.read_bad_channels_dict(self.bad_channels_dict_path)

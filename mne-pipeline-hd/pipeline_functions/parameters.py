@@ -2,9 +2,9 @@ import os
 import sys
 import shutil
 from os.path import isfile, join
-from importlib import reload, util
+from importlib import util
 
-from PyQt5.QtWidgets import QDialog, QGridLayout, QVBoxLayout, QDesktopWidget
+from qtpy.QtWidgets import QDialog, QGridLayout, QVBoxLayout, QDesktopWidget
 
 
 class ParameterGUI(QDialog):

@@ -1,3 +1,4 @@
+qtpy
 # MNE-Python-Requirements
 mne
 mayavi

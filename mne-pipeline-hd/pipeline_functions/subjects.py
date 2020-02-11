@@ -9,378 +9,15 @@ from functools import partial
 from os.path import isdir, isfile, join
 from pathlib import Path
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QColor
 
-from PyQt5.QtWidgets import QDialog, QFileDialog, QHBoxLayout, QListWidget, QPushButton, QVBoxLayout, QLabel, \
+from qtpy.QtWidgets import QDialog, QFileDialog, QHBoxLayout, QListWidget, QPushButton, QVBoxLayout, QLabel, \
     QProgressBar, QMessageBox, QGridLayout, QCheckBox
 
 # Todo: GUI erstellen(FolderDialog, Input for RegExp)
 from basic_functions import io
 from pipeline_functions import utilities as ut
-
-
-class AddFiles(QDialog):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.layout = QVBoxLayout()
-
-        self.files = list()
-        self.paths = dict()
-        self.file_types = dict()
-
-        self.init_ui()
-        self.setLayout(self.layout)
-        self.open()
-
-    def init_ui(self):
-        # Input Buttons
-        files_bt = QPushButton('File-Import', self)
-        files_bt.clicked.connect(self.get_files_path)
-        folder_bt = QPushButton('Folder-Import', self)
-        folder_bt.clicked.connect(self.get_folder_path)
-        input_bt_layout = QHBoxLayout()
-        input_bt_layout.addWidget(files_bt)
-        input_bt_layout.addWidget(folder_bt)
-        self.layout.addLayout(input_bt_layout)
-
-        list_label = QLabel('These .fif-Files can be imported \n'
-                            '(the empty-room-measurements should appear here too \n'
-                            ' and will be sorted, if name contains e.g. "empty", "leer", ...)', self)
-        self.layout.addWidget(list_label)
-        self.list_widget = QListWidget(self)
-        self.layout.addWidget(self.list_widget)
-        self.pgbar = QProgressBar(self)
-        self.pgbar.setMinimum(0)
-        self.layout.addWidget(self.pgbar)
-
-        main_bt_layout = QHBoxLayout()
-        import_bt = QPushButton('Import', self)
-        import_bt.clicked.connect(self.add_files)
-        main_bt_layout.addWidget(import_bt)
-        delete_bt = QPushButton('Delete File', self)
-        delete_bt.clicked.connect(self.delete_item)
-        main_bt_layout.addWidget(delete_bt)
-        ok_bt = QPushButton('OK', self)
-        ok_bt.clicked.connect(self.close)
-        main_bt_layout.addWidget(ok_bt)
-        self.layout.addLayout(main_bt_layout)
-
-    def populate_list_widget(self):
-        # List with checkable names
-        self.list_widget.clear()
-        self.list_widget.addItems(self.files)
-
-    def delete_item(self):
-        i = self.list_widget.currentRow()
-        if i >= 0:
-            name = self.list_widget.item(i).text()
-            self.list_widget.takeItem(i)
-            self.files.remove(name)
-
-    def get_files_path(self):
-        files_list = QFileDialog.getOpenFileNames(self, 'Choose a file/files to import', filter='fif-Files(*.fif)')[0]
-        if len(files_list) > 0:
-            for file_path in files_list:
-                p = Path(file_path)
-                file = p.stem
-                if file not in self.files:
-                    self.files.append(file)
-                if file not in self.paths:
-                    self.paths.update({file: file_path})
-                if file not in self.file_types:
-                    self.file_types.update({file: p.suffix})
-            self.populate_list_widget()
-        else:
-            pass
-
-    def get_folder_path(self):
-        folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder to import your fif-Files from (including '
-                                                             'subfolders)')
-        if folder_path != '':
-            # create a list of file and sub directories
-            # names in the given directory
-            list_of_file = os.walk(folder_path)
-            # Iterate over all the entries
-            for dirpath, dirnames, filenames in list_of_file:
-                for full_file in filenames:
-                    match = re.search(r'.fif', full_file)
-                    if match:
-                        file = full_file[:-len(match.group())]
-                        if not any(x in full_file for x in ['-eve.', '-epo.', '-ica.', '-ave.', '-tfr.', '-fwd.',
-                                                            '-cov.', '-inv.', '-src.', '-trans.', '-bem-sol.']):
-                            if file not in self.files:
-                                self.files.append(file)
-                            if file not in self.paths:
-                                self.paths.update({file: join(dirpath, full_file)})
-                            if file not in self.file_types:
-                                self.file_types.update({file: match.group()})
-            self.populate_list_widget()
-        else:
-            pass
-
-    def add_files(self):
-        existing_files = read_files(self.mw.pr.file_list_path)
-        existing_erm_files = read_files(self.mw.pr.erm_list_path)
-        self.pgbar.setMaximum(len(self.files))
-        step = 0
-        for fname in self.files:
-            forig = self.paths[fname]
-            # Make sure every raw-file got it's -raw appendix
-            if fname[-4:] == '-raw':
-                fdest = join(self.mw.pr.data_path, fname[:-4], fname + self.file_types[fname])
-                ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname[:-4], fname + self.file_types[fname])
-                fname = fname[:-4]
-            else:
-                fdest = join(self.mw.pr.data_path, fname, fname + '-raw' + self.file_types[fname])
-                ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname, fname + '-raw' + self.file_types[fname])
-
-            # Copy Empty-Room-Files to their directory
-            if any(x in fname for x in ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room']):
-                # Organize ERMs
-                if fname not in existing_erm_files:
-                    add_to_file_list(fname, self.mw.pr.erm_list_path)
-                # Copy empty-room-files to destination
-                move_file(forig, ermdest)
-            else:
-                # Organize sub_files
-                if fname not in existing_files:
-                    add_to_file_list(fname, self.mw.pr.file_list_path)
-                # Copy sub_files to destination
-                move_file(forig, fdest)
-            step += 1
-            self.pgbar.setValue(step)
-        self.list_widget.clear()
-        self.files = list()
-        self.paths = dict()
-        self.file_types = dict()
-
-
-def move_file(forig, fdest):
-    parent_dir = Path(fdest).parent
-    # Copy sub_files to destination
-    if not isfile(fdest):
-        os.makedirs(parent_dir, exist_ok=True)
-        print(f'Copying File from {forig}...')
-        shutil.copy2(forig, fdest)
-        print(f'Finished Copying to {fdest}')
-    else:
-        print(f'{fdest} already exists')
-        pass
-
-
-def add_to_file_list(fname, file_list_path):
-    if not isfile(file_list_path):
-        with open(file_list_path, 'w') as el1:
-            el1.write(fname + '\n')
-        print(f'{fname} was automatically added')
-    else:
-        with open(file_list_path, 'a') as sl2:
-            sl2.write(fname + '\n')
-        print(f'{fname} was automatically added')
-
-
-def read_files(file_list_path):
-    file_list = []
-
-    try:
-        with open(file_list_path, 'r') as sl:
-            for line in sl:
-                current_place = line[:-1]
-                file_list.append(current_place)
-
-    except FileNotFoundError:
-        print(f'{file_list_path} not yet created')
-        pass
-
-    return file_list
-
-
-class AddMRIFiles(QDialog):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.layout = QVBoxLayout()
-
-        self.folders = list()
-        self.paths = dict()
-        self.file_types = dict()
-
-        self.init_ui()
-        self.setLayout(self.layout)
-        self.open()
-
-    def init_ui(self):
-        bt_layout = QHBoxLayout()
-        folder_bt = QPushButton('Import 1 FS-Segmentation', self)
-        folder_bt.clicked.connect(self.import_mri_subject)
-        bt_layout.addWidget(folder_bt)
-        folders_bt = QPushButton('Import >1 FS-Segmentations', self)
-        folders_bt.clicked.connect(self.import_mri_subjects)
-        bt_layout.addWidget(folders_bt)
-        self.layout.addLayout(bt_layout)
-
-        list_label = QLabel('These Freesurfer-Segmentations can be imported:', self)
-        self.layout.addWidget(list_label)
-        self.list_widget = QListWidget(self)
-        self.layout.addWidget(self.list_widget)
-        self.pgbar = QProgressBar(self)
-        self.pgbar.setMinimum(0)
-        self.layout.addWidget(self.pgbar)
-
-        main_bt_layout = QHBoxLayout()
-        import_bt = QPushButton('Import', self)
-        import_bt.clicked.connect(self.add_mri_subjects)
-        main_bt_layout.addWidget(import_bt)
-        delete_bt = QPushButton('Delete File', self)
-        delete_bt.clicked.connect(self.delete_item)
-        main_bt_layout.addWidget(delete_bt)
-        ok_bt = QPushButton('Quit', self)
-        ok_bt.clicked.connect(self.close)
-        main_bt_layout.addWidget(ok_bt)
-        self.layout.addLayout(main_bt_layout)
-
-    def delete_item(self):
-        i = self.list_widget.currentRow()
-        if i >= 0:
-            name = self.list_widget.item(i).text()
-            self.list_widget.takeItem(i)
-            self.folders.remove(name)
-
-    def import_mri_subject(self):
-        mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
-        folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder with a subject\'s Freesurfe-Segmentation')
-
-        if folder_path != '':
-            if 'surf' in os.listdir(folder_path):
-                mri_sub = Path(folder_path).name
-                if mri_sub not in mri_subjects and mri_sub not in self.folders:
-                    self.folders.append(mri_sub)
-                    self.paths.update({mri_sub: folder_path})
-                    self.list_widget.addItem(mri_sub)
-                else:
-                    print(f'{mri_sub} already existing in <home_path>/Freesurfer')
-            else:
-                print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
-
-    def import_mri_subjects(self):
-        mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
-        parent_folder = QFileDialog.getExistingDirectory(self, 'Choose a folder containting several '
-                                                               'Freesurfer-Segmentations')
-        folder_list = os.listdir(parent_folder)
-
-        for mri_sub in folder_list:
-            folder_path = join(parent_folder, mri_sub)
-            if 'surf' in os.listdir(folder_path):
-                if mri_sub not in mri_subjects and mri_sub not in self.folders:
-                    self.folders.append(mri_sub)
-                    self.paths.update({mri_sub: folder_path})
-                    self.list_widget.addItem(mri_sub)
-                else:
-                    print(f'{mri_sub} already existing in <home_path>/Freesurfer')
-            else:
-                print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
-
-    def add_mri_subjects(self):
-        self.pgbar.setMaximum(len(self.folders))
-        step = 0
-        for mri_sub in self.folders:
-            src = self.paths[mri_sub]
-            dst = join(self.mw.pr.subjects_dir, mri_sub)
-            add_to_file_list(mri_sub, self.mw.pr.mri_sub_list_path)
-            move_folder(src, dst)
-            step += 1
-            self.pgbar.setValue(step)
-        self.list_widget.clear()
-        self.folders = list()
-        self.paths = dict()
-
-
-def move_folder(src, dst):
-    if not isdir(dst):
-        print(f'Copying Folder from {src}...')
-        shutil.copytree(src, dst)
-        print(f'Finished Copying to {dst}')
-    else:
-        print(f'{dst} already exists')
-
-
-def read_mri_subjects(mri_sub_list_path):
-    mri_sub_list = []
-    try:
-        with open(mri_sub_list_path, 'r') as sl:
-            for line in sl:
-                current_place = line[:-1]
-                mri_sub_list.append(current_place)
-
-    except FileNotFoundError:
-        print('mri_sub_list.py not yet created, add mri_subject')
-
-    return mri_sub_list
-
-
-def get_existing_mri_subjects(subjects_dir):
-    existing_mri_subs = list()
-    for mri_sub in os.listdir(subjects_dir):
-        if 'surf' in os.listdir(join(subjects_dir, mri_sub)):
-            existing_mri_subs.append(mri_sub)
-
-    return existing_mri_subs
-
-
-def read_sub_dict(sub_dict_path):
-    sub_dict = {}
-
-    try:
-        with open(sub_dict_path, 'r') as sd:
-            for item in sd:
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    value = value[:-1]
-                    sub_dict[key] = value
-
-    except FileNotFoundError:
-        print('sub_dict.py not yet created, run add_sub_dict')
-
-    return sub_dict
-
-
-def read_erm_dict(erm_dict_path):
-    erm_dict = {}
-
-    try:
-        with open(erm_dict_path, 'r') as sd:
-            for item in sd:
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    value = value[:-1]
-                    erm_dict[key] = value
-
-    except FileNotFoundError:
-        print('erm_dict.py not yet created, run add_erm_dict')
-
-    return erm_dict
-
-
-def read_bad_channels_dict(bad_channels_dict_path):
-    bad_channels_dict = {}
-
-    try:
-        with open(bad_channels_dict_path, 'r') as bd:
-            for item in bd:
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    value = value[:-1]
-                    value = eval(value)
-                    for i in value:
-                        value[value.index(i)] = 'MEG %03d' % i
-                    bad_channels_dict[key] = value
-
-    except FileNotFoundError:
-        print('bad_channels_dict.py not yet created, run add_bad_channels_dict')
-
-    return bad_channels_dict
 
 
 def file_selection(which_file, all_files):
@@ -462,6 +99,364 @@ def file_selection(which_file, all_files):
 
     except ValueError:
         raise ValueError(f'{which_file} makes a problem')
+
+
+def move_file(forig, fdest):
+    parent_dir = Path(fdest).parent
+    # Copy sub_files to destination
+    if not isfile(fdest):
+        os.makedirs(parent_dir, exist_ok=True)
+        print(f'Copying File from {forig}...')
+        shutil.copy2(forig, fdest)
+        print(f'Finished Copying to {fdest}')
+    else:
+        print(f'{fdest} already exists')
+        pass
+
+
+def write_file_list(fname, file_list_path):
+    if not isfile(file_list_path):
+        with open(file_list_path, 'w') as el1:
+            el1.write(fname + '\n')
+        print(f'{fname} was automatically added')
+    else:
+        with open(file_list_path, 'a') as sl2:
+            sl2.write(fname + '\n')
+        print(f'{fname} was automatically added')
+
+
+def read_files(file_list_path):
+    file_list = []
+    file_name = Path(file_list_path).name
+    try:
+        with open(file_list_path, 'r') as sl:
+            for line in sl:
+                current_place = line[:-1]
+                file_list.append(current_place)
+
+    except FileNotFoundError:
+        print(f'{file_name} not yet created')
+        pass
+
+    return file_list
+
+
+class AddFiles(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+        self.layout = QVBoxLayout()
+
+        self.files = list()
+        self.paths = dict()
+        self.file_types = dict()
+
+        self.init_ui()
+        self.setLayout(self.layout)
+        self.open()
+
+    def init_ui(self):
+        # Input Buttons
+        files_bt = QPushButton('File-Import', self)
+        files_bt.clicked.connect(self.get_files_path)
+        folder_bt = QPushButton('Folder-Import', self)
+        folder_bt.clicked.connect(self.get_folder_path)
+        input_bt_layout = QHBoxLayout()
+        input_bt_layout.addWidget(files_bt)
+        input_bt_layout.addWidget(folder_bt)
+        self.layout.addLayout(input_bt_layout)
+
+        list_label = QLabel('These .fif-Files can be imported \n'
+                            '(the empty-room-measurements should appear here too \n'
+                            ' and will be sorted, if name contains e.g. "empty", "leer", ...)', self)
+        self.layout.addWidget(list_label)
+        self.list_widget = QListWidget(self)
+        self.list_widget.itemChanged.connect(self.double_click_rename)
+        self.layout.addWidget(self.list_widget)
+        self.pgbar = QProgressBar(self)
+        self.pgbar.setMinimum(0)
+        self.layout.addWidget(self.pgbar)
+
+        main_bt_layout = QHBoxLayout()
+        import_bt = QPushButton('Import', self)
+        import_bt.clicked.connect(self.add_files)
+        main_bt_layout.addWidget(import_bt)
+        rename_bt = QPushButton('Rename File', self)
+        rename_bt.clicked.connect(self.rename_item)
+        main_bt_layout.addWidget(rename_bt)
+        delete_bt = QPushButton('Delete File', self)
+        delete_bt.clicked.connect(self.delete_item)
+        main_bt_layout.addWidget(delete_bt)
+        ok_bt = QPushButton('OK', self)
+        ok_bt.clicked.connect(self.close)
+        main_bt_layout.addWidget(ok_bt)
+        self.layout.addLayout(main_bt_layout)
+
+    def populate_list_widget(self):
+        # List with checkable names
+        self.list_widget.clear()
+        self.list_widget.addItems(self.files)
+
+        for index in range(self.list_widget.count()):
+            item = self.list_widget.item(index)
+            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable)
+
+    def delete_item(self):
+        i = self.list_widget.currentRow()
+        if i >= 0:  # Assert that an item is selected
+            name = self.list_widget.item(i).text()
+            self.list_widget.takeItem(i)
+            self.files.remove(name)
+
+    # Todo: Double-Clicking renaming not working
+    def rename_item(self):
+        r = self.list_widget.currentRow()
+        item = self.list_widget.currentItem()
+        if r >= 0:
+            old_name = self.list_widget.item(r).text()
+            self.list_widget.editItem(item)
+            new_name = self.list_widget.item(r).text()
+            repl_ind = self.files.index(old_name)
+            self.files[repl_ind] = new_name
+            self.paths[new_name] = self.paths[old_name]
+            self.file_types[new_name] = self.paths[old_name]
+
+    def get_files_path(self):
+        files_list = QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import', filter='fif-Files(*.fif)')[0]
+        if len(files_list) > 0:
+            for file_path in files_list:
+                p = Path(file_path)
+                file = p.stem
+                if file not in self.files:
+                    self.files.append(file)
+                if file not in self.paths:
+                    self.paths.update({file: file_path})
+                if file not in self.file_types:
+                    self.file_types.update({file: p.suffix})
+            self.populate_list_widget()
+        else:
+            pass
+
+    def get_folder_path(self):
+        folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder to import your raw-Files from (including '
+                                                             'subfolders)')
+        if folder_path != '':
+            # create a list of file and sub directories
+            # names in the given directory
+            list_of_file = os.walk(folder_path)
+            # Iterate over all the entries
+            for dirpath, dirnames, filenames in list_of_file:
+                for full_file in filenames:
+                    match = re.search(r'.fif', full_file)
+                    if match:
+                        file = full_file[:-len(match.group())]
+                        if not any(x in full_file for x in ['-eve.', '-epo.', '-ica.', '-ave.', '-tfr.', '-fwd.',
+                                                            '-cov.', '-inv.', '-src.', '-trans.', '-bem-sol.']):
+                            if file not in self.files:
+                                self.files.append(file)
+                            if file not in self.paths:
+                                self.paths.update({file: join(dirpath, full_file)})
+                            if file not in self.file_types:
+                                self.file_types.update({file: match.group()})
+            self.populate_list_widget()
+        else:
+            pass
+
+    def add_files(self):
+        existing_files = read_files(self.mw.pr.file_list_path)
+        existing_erm_files = read_files(self.mw.pr.erm_list_path)
+        self.pgbar.setMaximum(len(self.files))
+        step = 0
+        for fname in self.files:
+            forig = self.paths[fname]
+            # Make sure every raw-file got it's -raw appendix
+            if fname[-4:] == '-raw':
+                fdest = join(self.mw.pr.data_path, fname[:-4], fname + self.file_types[fname])
+                ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname[:-4], fname + self.file_types[fname])
+                fname = fname[:-4]
+            else:
+                fdest = join(self.mw.pr.data_path, fname, fname + '-raw' + self.file_types[fname])
+                ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname, fname + '-raw' + self.file_types[fname])
+
+            # Copy Empty-Room-Files to their directory
+            if any(x in fname for x in ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room']):
+                # Organize ERMs
+                if fname not in existing_erm_files:
+                    write_file_list(fname, self.mw.pr.erm_list_path)
+                # Copy empty-room-files to destination
+                move_file(forig, ermdest)
+            else:
+                # Organize sub_files
+                if fname not in existing_files:
+                    write_file_list(fname, self.mw.pr.file_list_path)
+                # Copy sub_files to destination
+                move_file(forig, fdest)
+            step += 1
+            self.pgbar.setValue(step)
+        self.list_widget.clear()
+        self.files = list()
+        self.paths = dict()
+        self.file_types = dict()
+
+
+def move_folder(src, dst):
+    if not isdir(dst):
+        print(f'Copying Folder from {src}...')
+        shutil.copytree(src, dst)
+        print(f'Finished Copying to {dst}')
+    else:
+        print(f'{dst} already exists')
+
+
+def get_existing_mri_subjects(subjects_dir):
+    existing_mri_subs = list()
+    for mri_sub in os.listdir(subjects_dir):
+        if 'surf' in os.listdir(join(subjects_dir, mri_sub)):
+            existing_mri_subs.append(mri_sub)
+
+    return existing_mri_subs
+
+class AddMRIFiles(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+        self.layout = QVBoxLayout()
+
+        self.folders = list()
+        self.paths = dict()
+        self.file_types = dict()
+
+        self.init_ui()
+        self.setLayout(self.layout)
+        self.open()
+
+    def init_ui(self):
+        bt_layout = QHBoxLayout()
+        folder_bt = QPushButton('Import 1 FS-Segmentation', self)
+        folder_bt.clicked.connect(self.import_mri_subject)
+        bt_layout.addWidget(folder_bt)
+        folders_bt = QPushButton('Import >1 FS-Segmentations', self)
+        folders_bt.clicked.connect(self.import_mri_subjects)
+        bt_layout.addWidget(folders_bt)
+        self.layout.addLayout(bt_layout)
+
+        list_label = QLabel('These Freesurfer-Segmentations can be imported:', self)
+        self.layout.addWidget(list_label)
+        self.list_widget = QListWidget(self)
+        self.list_widget.itemChanged.connect(self.double_click_rename)
+        self.layout.addWidget(self.list_widget)
+        self.pgbar = QProgressBar(self)
+        self.pgbar.setMinimum(0)
+        self.layout.addWidget(self.pgbar)
+
+        main_bt_layout = QHBoxLayout()
+        import_bt = QPushButton('Import', self)
+        import_bt.clicked.connect(self.add_mri_subjects)
+        main_bt_layout.addWidget(import_bt)
+        rename_bt = QPushButton('Rename File', self)
+        rename_bt.clicked.connect(self.rename_item)
+        main_bt_layout.addWidget(rename_bt)
+        delete_bt = QPushButton('Delete File', self)
+        delete_bt.clicked.connect(self.delete_item)
+        main_bt_layout.addWidget(delete_bt)
+        ok_bt = QPushButton('OK', self)
+        ok_bt.clicked.connect(self.close)
+        main_bt_layout.addWidget(ok_bt)
+        self.layout.addLayout(main_bt_layout)
+
+    def populate_list_widget(self):
+        # List with checkable names
+        self.list_widget.clear()
+        self.list_widget.addItems(self.folders)
+
+        for index in range(self.list_widget.count()):
+            item = self.list_widget.item(index)
+            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable)
+
+    def delete_item(self):
+        i = self.list_widget.currentRow()
+        if i >= 0:
+            name = self.list_widget.item(i).text()
+            self.list_widget.takeItem(i)
+            self.folders.remove(name)
+
+    def rename_item(self):
+        i = self.list_widget.currentRow()
+        if i >= 0:
+            old_name = self.list_widget.item(i).text()
+            self.list_widget.edit(i)
+            new_name = self.list_widget.item(i).text()
+            repl_ind = self.files.index(old_name)
+            self.folders[repl_ind] = new_name
+            self.paths[new_name] = self.paths[old_name]
+
+    def import_mri_subject(self):
+        mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
+        folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder with a subject\'s Freesurfe-Segmentation')
+
+        if folder_path != '':
+            if 'surf' in os.listdir(folder_path):
+                mri_sub = Path(folder_path).name
+                if mri_sub not in mri_subjects and mri_sub not in self.folders:
+                    self.folders.append(mri_sub)
+                    self.paths.update({mri_sub: folder_path})
+                    self.populate_list_widget()
+                else:
+                    print(f'{mri_sub} already existing in <home_path>/Freesurfer')
+            else:
+                print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
+
+    def import_mri_subjects(self):
+        mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
+        parent_folder = QFileDialog.getExistingDirectory(self, 'Choose a folder containting several '
+                                                               'Freesurfer-Segmentations')
+        folder_list = os.listdir(parent_folder)
+
+        for mri_sub in folder_list:
+            folder_path = join(parent_folder, mri_sub)
+            if 'surf' in os.listdir(folder_path):
+                if mri_sub not in mri_subjects and mri_sub not in self.folders:
+                    self.folders.append(mri_sub)
+                    self.paths.update({mri_sub: folder_path})
+                else:
+                    print(f'{mri_sub} already existing in <home_path>/Freesurfer')
+            else:
+                print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
+        self.populate_list_widget()
+
+    def add_mri_subjects(self):
+        self.pgbar.setMaximum(len(self.folders))
+        step = 0
+        for mri_sub in self.folders:
+            src = self.paths[mri_sub]
+            dst = join(self.mw.pr.subjects_dir, mri_sub)
+            write_file_list(mri_sub, self.mw.pr.mri_sub_list_path)
+            move_folder(src, dst)
+            step += 1
+            self.pgbar.setValue(step)
+        self.list_widget.clear()
+        self.folders = list()
+        self.paths = dict()
+
+
+
+
+def read_sub_dict(sub_dict_path):
+    sub_dict = {}
+    file_name = Path(sub_dict_path).name
+    try:
+        with open(sub_dict_path, 'r') as sd:
+            for item in sd:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    value = value[:-1]
+                    sub_dict[key] = value
+
+    except FileNotFoundError:
+        print(f'{file_name} not yet created, run add_sub_dict')
+
+    return sub_dict
+
 
 
 class SubDictDialog(QDialog):
@@ -635,6 +630,26 @@ def read(dict_path):
             print(rl.read())
     except FileNotFoundError:
         print('file not yet created, assign some files')
+
+
+def read_bad_channels_dict(bad_channels_dict_path):
+    bad_channels_dict = {}
+
+    try:
+        with open(bad_channels_dict_path, 'r') as bd:
+            for item in bd:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    value = value[:-1]
+                    value = eval(value)
+                    for i in value:
+                        value[value.index(i)] = 'MEG %03d' % i
+                    bad_channels_dict[key] = value
+
+    except FileNotFoundError:
+        print('bad_channels_dict.py not yet created, run add_bad_channels_dict')
+
+    return bad_channels_dict
 
 
 class BadChannelsSelect(QDialog):
