@@ -1,8 +1,8 @@
 from os import listdir, makedirs
-from os.path import isdir, join, exists, isfile
+from os.path import exists, isdir, isfile, join
 
 import mne
-from qtpy.QtWidgets import QFileDialog, QInputDialog
+from PyQt5.QtWidgets import QFileDialog, QInputDialog
 
 from pipeline_functions import subjects as subs
 
@@ -11,12 +11,13 @@ class MyProject:
     def __init__(self, mainwin):
         self.win = mainwin
 
-        self.which_file = None
-        self.quality = None
-        self.modality = None
-        self.which_mri_subject = None
-        self.which_erm_file = None
-        self.which_motor_erm_file = None
+        # Initiate some project-variables
+        self.sel_files = []
+        self.sel_mri_files = []
+
+        self.get_paths()
+        self.make_paths()
+        self.update_sub_lists()
 
     def get_paths(self):
         # Get home_path
@@ -100,7 +101,8 @@ class MyProject:
                     fl.write('')
                 print(f'{file} created')
 
-    def get_sub_lists(self):
+    def update_sub_lists(self):
+        self.projects = [p for p in listdir(self.home_path) if isdir(join(self.home_path, p, 'data'))]
         self.all_files = subs.read_files(self.file_list_path)
         self.all_mri_subjects = subs.read_files(self.mri_sub_list_path)
         self.erm_files = subs.read_files(self.erm_list_path)

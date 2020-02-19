@@ -1,4 +1,4 @@
-qtpy
+PyQt5
 # MNE-Python-Requirements
 mne
 mayavi

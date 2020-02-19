@@ -2,11 +2,12 @@ import sys
 # Should be executed in MNE-Environment or base with MNE installed
 from functools import partial
 
-from qtpy.QtWidgets import (QApplication, QLabel, QWidget, QPushButton, QHBoxLayout,
-                            QMainWindow, QDesktopWidget, QVBoxLayout, QDialog)
 import mne
-from mayavi import mlab
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import (QAction, QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMainWindow,
+                             QPushButton, QStyle, QVBoxLayout, QWidget)
 from matplotlib import pyplot as plt
+from mayavi import mlab
 
 
 class Testsecwin(QDialog):
@@ -26,6 +27,7 @@ class TestWindow(QMainWindow):
         self.setWindowTitle('QT-Test')
         self.setCentralWidget(QWidget(self))
         self.main_layout = QVBoxLayout()
+        self.addmenu()
         self.addlabel()
         self.addbuttons()
         self.centralWidget().setLayout(self.main_layout)
@@ -40,6 +42,12 @@ class TestWindow(QMainWindow):
         # self.layout().activate()
         self.center()
 
+    def addmenu(self):
+        first_menu = self.menuBar().addMenu(self.style().standardIcon(QStyle.SP_DialogCancelButton), '&First')
+        first_action = QAction(icon=self.style().standardIcon(QStyle.SP_DialogCancelButton), text='Second', parent=self)
+        first_action.triggered.connect(self.test_matplotlib)
+        first_menu.addAction(first_action)
+
     def addbuttons(self):
         h_layout = QHBoxLayout()
         bt1 = QPushButton('Quit')
@@ -47,13 +55,14 @@ class TestWindow(QMainWindow):
         bt3 = QPushButton('MNE-Coreg')
         bt4 = QPushButton('Mayavi')
         bt5 = QPushButton('Second-Window')
+        icon = QIcon(':/correct_icon.svg')
+        bt6 = QPushButton(icon=icon)
         h_layout.addWidget(bt1)
         h_layout.addWidget(bt2)
         h_layout.addWidget(bt3)
         h_layout.addWidget(bt4)
         h_layout.addWidget(bt5)
-        for x in range(10):
-            h_layout.addWidget(QPushButton(str(x)))
+        h_layout.addWidget(bt6)
         self.setLayout(h_layout)
 
         bt1.clicked.connect(app.quit)

@@ -1,30 +1,39 @@
+import shutil
 import sys
 from functools import partial
+from os.path import join
 from subprocess import run
 
-from qtpy.QtCore import QSettings, Qt
-from qtpy.QtGui import QColor, QFont, QPalette
-from qtpy.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout, QHBoxLayout,
-                            QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox, QPushButton, QStyleFactory,
-                            QTabWidget, QToolTip, QVBoxLayout, QWidget)
+from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtGui import QColor, QFont, QPalette
+from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QGridLayout,
+                             QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
+                             QPushButton, QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 
-from basic_functions import io
-from pipeline_functions import iswin
+from pipeline_functions import function_call as fc, iswin
 from pipeline_functions.project import MyProject
-from pipeline_functions.subjects import AddFiles, AddMRIFiles, BadChannelsSelect, SubDictDialog
+from pipeline_functions.subjects import AddFiles, AddMRIFiles, BadChannelsSelect, SubDictDialog, SubjectDock
 from resources import operations_dict as opd
 
 
-# Todo: Create BadChannelsSelect
+def get_upstream():
+    """
+    Get and merge the upstream branch from a repository (e.g. developement-branch of mne-pyhon)
+    :return: None
+    """
+    if iswin:
+        command = "git fetch upstream & git checkout master & git merge upstream/master"
+    else:
+        command = "git fetch upstream; git checkout master; git merge upstream/master"
+    result = run(command)
+    print(result.stdout)
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.app = QApplication.instance()
-        self.pr = MyProject(self)
         self.settings = QSettings()
-        self.platform = sys.platform
 
         self.app.setFont(QFont('Calibri', 10))
         self.setWindowTitle('MNE-Pipeline HD')
@@ -41,31 +50,17 @@ class MainWindow(QMainWindow):
         self.func_dict = dict()
         self.bt_dict = dict()
         self.make_it_stop = False
-        self.lines = dict()
         self.project_box = None
-        self.subsel_layout = QHBoxLayout()
-        sub_sel_example = "Examples:\n" \
-                          "'5' (One File)\n" \
-                          "'1,7,28' (Several Files)\n" \
-                          "'1-5' (From File x to File y)\n" \
-                          "'1-4,7,20-26' (The last two combined)\n" \
-                          "'1-20,!4-6' (1-20 except 4-6)\n" \
-                          "'all' (All files in file_list.py)\n" \
-                          "'all,!4-6' (All files except 4-6)"
 
-        self.sub_sel_tips = {'which_file': f'Choose files to process!\n{sub_sel_example}',
-                             'quality': f'Choose the quality!\n{sub_sel_example}',
-                             'which_mri_subject': f'Choose mri_files to process\n{sub_sel_example}',
-                             'which_erm_file': f'Choose erm_files to process\n{sub_sel_example}'}
+        # Call project-class
+        self.pr = MyProject(self)
 
-        # Call methods
-        self.pr.get_paths()
-        self.pr.make_paths()
+        # Call window-methods
         self.make_menu()
         self.make_toolbar()
         self.make_statusbar()
-        self.make_project_box()
-        self.subject_selection()
+        self.add_dock_windows()
+        self.project_tools()
         self.make_func_bts()
         self.add_main_bts()
         self.change_style('Fusion')
@@ -86,57 +81,13 @@ class MainWindow(QMainWindow):
         self.center()
         self.raise_win()
 
-    def change_home_path(self):
-        new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
-        if new_home_path is '':
-            pass
-        else:
-            self.pr.home_path = new_home_path
-            self.settings.setValue('home_path', self.pr.home_path)
-            self.pr.get_paths()
-            self.update_project_box()
-
-    def add_project(self):
-        project, ok = QInputDialog.getText(self, 'Project-Selection',
-                                           'Enter a project-name for a new project')
-        if ok:
-            self.pr.project_name = project
-            self.settings.setValue('project_name', self.pr.project_name)
-            self.project_box.addItem(project)
-            self.project_box.setCurrentText(project)
-            self.pr.make_paths()
-        else:
-            pass
-
-    def make_project_box(self):
-        proj_layout = QVBoxLayout()
-        self.project_box = QComboBox()
-        for project in self.pr.projects:
-            self.project_box.addItem(project)
-        self.project_box.currentTextChanged.connect(self.change_project)
-        self.project_box.setCurrentText(self.pr.project_name)
-        proj_box_label = QLabel('<b>Project:<b>')
-        proj_layout.addWidget(proj_box_label)
-        proj_layout.addWidget(self.project_box)
-        self.subsel_layout.addLayout(proj_layout)
-
-    def change_project(self, project):
-        self.pr.project_name = project
-        self.settings.setValue('project_name', self.pr.project_name)
-        print(self.pr.project_name)
-        self.pr.make_paths()
-
-    def update_project_box(self):
-        self.project_box.clear()
-        for project in self.pr.projects:
-            self.project_box.addItem(project)
-
     def make_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
         # Input
         input_menu = self.menuBar().addMenu('&Input')
 
-        aaddfiles = QAction('Add Files', self)
+        # aaddfiles = QAction('Add Files', self)
+        aaddfiles = QAction('Add Files', parent=self)
         aaddfiles.setShortcut('Ctrl+F')
         aaddfiles.setStatusTip('Add your MEG-Files here')
         aaddfiles.triggered.connect(partial(AddFiles, self))
@@ -154,13 +105,17 @@ class MainWindow(QMainWindow):
                              partial(SubDictDialog, self, 'erm'))
         input_menu.addAction('Assign Bad-Channels --> File',
                              partial(BadChannelsSelect, self))
+
+        # View
+        self.view_menu = self.menuBar().addMenu('&View')
+
         # Settings
-        settings_menu = self.menuBar().addMenu('&Settings')
-        self.adark_mode = settings_menu.addAction('&Dark-Mode', self.dark_mode)
+        self.settings_menu = self.menuBar().addMenu('&Settings')
+        self.adark_mode = self.settings_menu.addAction('&Dark-Mode', self.dark_mode)
         self.adark_mode.setCheckable(True)
-        settings_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
-        settings_menu.addAction('&Change Home-Path', self.change_home_path)
-        settings_menu.addAction('&Add Project', self.add_project)
+        self.settings_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
+        self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
+
         # About
         about_menu = self.menuBar().addMenu('About')
         about_menu.addAction('Update Pipeline', self.update_pipeline)
@@ -168,10 +123,108 @@ class MainWindow(QMainWindow):
         about_menu.addAction('About QT', self.about_qt)
 
     def make_toolbar(self):
-        pass
+        self.toolbar = self.addToolBar('Tools')
 
     def make_statusbar(self):
         self.statusBar().showMessage('Ready')
+
+    def add_dock_windows(self):
+        self.subject_dock = SubjectDock(self)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
+        self.view_menu.addAction(self.subject_dock.toggleViewAction())
+
+    def change_home_path(self):
+        new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
+        if new_home_path is '':
+            pass
+        else:
+            self.pr.home_path = new_home_path
+            self.settings.setValue('home_path', self.pr.home_path)
+            self.pr.get_paths()
+            self.update_project_box()
+
+    def add_project(self):
+        project, ok = QInputDialog.getText(self, 'Project-Selection',
+                                           'Enter a project-name for a new project')
+        if ok:
+            self.pr.project_name = project
+            self.pr.projects.append(project)
+            self.settings.setValue('project_name', self.pr.project_name)
+            self.project_box.addItem(project)
+            self.project_box.setCurrentText(project)
+            self.pr.make_paths()
+        else:
+            pass
+
+    def remove_project(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Remove Project')
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel('Select Project for Removal'))
+
+        plistw = QListWidget(self)
+        for project in self.pr.projects:
+            item = QListWidgetItem(project)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Unchecked)
+            plistw.addItem(item)
+        layout.addWidget(plistw)
+
+        def remove_selected():
+            rm_list = list()
+            for x in range(plistw.count()):
+                chk_item = plistw.item(x)
+                if chk_item.checkState() == Qt.Checked:
+                    rm_list.append(chk_item.text())
+
+            for rm_project in rm_list:
+                plistw.takeItem(plistw.row(plistw.findItems(rm_project, Qt.MatchExactly)[0]))
+                self.pr.projects.remove(rm_project)
+                shutil.rmtree(join(self.pr.home_path, rm_project))
+            self.update_project_box()
+
+        bt_layout = QHBoxLayout()
+        rm_bt = QPushButton('Remove', self)
+        rm_bt.clicked.connect(remove_selected)
+        bt_layout.addWidget(rm_bt)
+        close_bt = QPushButton('Close', self)
+        close_bt.clicked.connect(dialog.close)
+        bt_layout.addWidget(close_bt)
+        layout.addLayout(bt_layout)
+
+        dialog.setLayout(layout)
+        dialog.open()
+
+    def project_tools(self):
+        self.project_box = QComboBox()
+        self.project_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        for project in self.pr.projects:
+            self.project_box.addItem(project)
+        self.project_box.currentTextChanged.connect(self.project_changed)
+        self.project_box.setCurrentText(self.pr.project_name)
+        proj_box_label = QLabel('<b>Project: <b>')
+        self.toolbar.addWidget(proj_box_label)
+        self.toolbar.addWidget(self.project_box)
+
+        aadd = QAction('+', self)
+        aadd.triggered.connect(self.add_project)
+        self.toolbar.addAction(aadd)
+
+        arm = QAction('-', self)
+        arm.triggered.connect(self.remove_project)
+        self.toolbar.addAction(arm)
+
+    def project_changed(self, project):
+        self.pr.project_name = project
+        self.settings.setValue('project_name', self.pr.project_name)
+        print(f'{self.pr.project_name} selected')
+        self.pr.make_paths()
+        self.subject_dock.update_subjects_list()
+
+    def update_project_box(self):
+        self.project_box.clear()
+        for project in self.pr.projects:
+            self.project_box.addItem(project)
 
     # Todo: Fix Dark-Mode
     def dark_mode(self):
@@ -233,33 +286,13 @@ class MainWindow(QMainWindow):
             self.activateWindow()
             self.raise_()
 
-    def subject_selection(self):
-        # Todo: Default Selection for Lines, Tooltips for explanation, GUI-Button
-        for t in self.sub_sel_tips:
-            subsub_layout = QVBoxLayout()
-            self.lines[t] = QLineEdit()
-            self.lines[t].setPlaceholderText(t)
-            self.lines[t].textChanged.connect(partial(self.update_subsel, t))
-            self.lines[t].setToolTip(self.sub_sel_tips[t])
-            label = QLabel(f'<b>{t}</b>')
-            label.setTextFormat(Qt.RichText)
-            subsub_layout.addWidget(label)
-            subsub_layout.addWidget(self.lines[t])
-            self.subsel_layout.addLayout(subsub_layout)
-            # Get Selection from last run
-            self.lines[t].setText(self.settings.value(t))
-
-        self.general_layout.addLayout(self.subsel_layout, 0, 0)
-
-    def update_subsel(self, t):
-        setattr(self, t, self.lines[t].text())
-
     def change_style(self, style_name):
         self.app.setStyle(QStyleFactory.create(style_name))
         self.app.setPalette(QApplication.style().standardPalette())
         self.center()
 
-    # Todo: Make Buttons more appealing, mark when checked
+    # Todo: Make Buttons more appealing, mark when check
+    #   make button-dependencies
     def make_func_bts(self):
         tab_func_widget = QTabWidget()
         for f, v in opd.all_fs.items():
@@ -333,7 +366,7 @@ class MainWindow(QMainWindow):
 
         clear_bt.clicked.connect(self.clear)
         start_bt.clicked.connect(self.start)
-        stop_bt.clicked.connect(self.app.quit)
+        stop_bt.clicked.connect(self.close)
 
         self.general_layout.addLayout(main_bt_layout, 2, 0)
 
@@ -343,7 +376,12 @@ class MainWindow(QMainWindow):
             self.func_dict[x] = 0
 
     def start(self):
-        self.close()
+        # Todo: Cancel-Button, Progress-Bar for Progress
+        msg = QDialog(self)
+        msg.setWindowTitle('Executing Functions...')
+        msg.open()
+        fc.call_functions(self, self.pr)
+        msg.close()
 
     def update_pipeline(self):
         command = f"pip install --upgrade git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd"
@@ -426,14 +464,6 @@ class MainWindow(QMainWindow):
         else:
             pass
 
-    def get_upstream(self):
-        if 'win' in self.platform:
-            command = "git fetch upstream & git checkout master & git merge upstream/master"
-        else:
-            command = "git fetch upstream & git checkout master & git merge upstream/master"
-        result = run(command)
-        print(result.stdout)
-
     def about_qt(self):
         QMessageBox.aboutQt(self, 'About Qt')
 
@@ -444,33 +474,5 @@ class MainWindow(QMainWindow):
         self.settings.setValue('home_path', self.pr.home_path)
         self.settings.setValue('project_name', self.pr.project_name)
         self.settings.setValue('func_checked', self.func_dict)
-        for ln in self.lines:
-            self.settings.setValue(ln, self.lines[ln].text())
 
         event.accept()
-
-
-def plot_test():
-    name = 'pp1a_256_b'
-    save_dir = 'Z:/Promotion/Pin-Prick-Projekt/Daten/pp1a_256_b'
-    r = io.read_raw(name, save_dir)
-    r.plot()
-
-
-# for testing
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    win = MainWindow()
-    win.show()
-    # not working in PyCharm, needed for Spyder
-    # app.lastWindowClosed.connect(app.quit)
-    app.exec_()
-    # win.close()
-    make_it_stop = win.make_it_stop
-    del app, win
-    if make_it_stop:
-        raise SystemExit(0)
-    # sys.exit(app.exec_())
-    # Proper way would be sys.exit(app.exec_()), but this ends the console with exit code 0
-    # This is the way, when FunctionWindow acts as main window for the Pipeline and all functions
-    # are executed within. Need to resolve plot-problem (memory error 1073741819 (0xC0000005)) before

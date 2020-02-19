@@ -1,28 +1,40 @@
+import os
 import re
-from os.path import join
+import shutil
+import sys
+from importlib import util
+from os.path import isfile, join
 
 from basic_functions import io, operations as op, plot as plot
 from custom_functions import kristin as kf, melofix as mff, pinprick as ppf
 from pipeline_functions import subjects as subs, utilities as ut
 from resources import operations_dict as opd
 
+
 # TODO: Ideas for improved function calling:
 #   1. Put Main-Window as only arg in all functions and get variables from attributes
 #   2. Make all Arguments as keyword-arguments and use module-attributes for calling
 
 
-def call_functions(main_window):
-    print(main_window)
-    return main_window
-    # Subject-Loop
-    # Initiate Subject-Class
-    # Call Function with Parameters derived from main-class (with getattr())
-
-
-def call_functions_old(main_window, project, parameters):
+def call_functions(main_window, project):
     mw = main_window
     pr = project
-    p = parameters
+    # Read parameters
+    if not isfile(join(pr.project_path, f'parameters_{pr.project_name}.py')):
+        from resources import parameters_template as p
+
+        shutil.copy2(join(os.getcwd(), 'resources/parameters_template.py'),
+                     join(pr.project_path, f'parameters_{pr.project_name}.py'))
+        print(f'parameters_{pr.project_name}.py created in {pr.project_path}'
+              f' from parameters_template.py')
+    else:
+        spec = util.spec_from_file_location('parameters', join(pr.project_path,
+                                                               f'parameters_{pr.project_name}.py'))
+        p = util.module_from_spec(spec)
+        sys.modules['parameters'] = p
+        spec.loader.exec_module(p)
+        print(f'Read Parameters from parameters_{pr.project_name}.py in {pr.project_path}')
+
     if mw.func_dict['erm_analysis'] or mw.func_dict['motor_erm_analysis']:
         figures_path = join(pr.project_path, 'figures/erm_figures')
     else:
@@ -30,20 +42,15 @@ def call_functions_old(main_window, project, parameters):
 
     op.populate_directories(pr.data_path, figures_path, p.event_id)
 
-    all_files = subs.read_files(mw.file_list_path)
-    all_mri_subjects = subs.read_mri_subjects(mw.mri_sub_list_path)
-    erm_files = subs.read_files(mw.erm_list_path)
-    motor_erm_files = subs.read_files(mw.motor_erm_list_path)
-    sub_dict = subs.read_sub_dict(mw.sub_dict_path)
-    erm_dict = subs.read_sub_dict(mw.erm_dict_path)  # add None if not available
-    bad_channels_dict = subs.read_bad_channels_dict(mw.bad_channels_dict_path)
+    # Update the lists for changes made in Subject-GUIs
+    pr.update_sub_lists()
 
     run_mrisf = False
     for msop in opd.mri_subject_operations:
         if mw.func_dict[msop]:
             run_mrisf = True
     if run_mrisf:
-        mri_subjects = subs.file_selection(mw.which_mri_subject, all_mri_subjects)
+        mri_subjects = pr.sel_mri_files
 
         print(f'Selected {len(mri_subjects)} MRI-Subjects:')
         for i in mri_subjects:
@@ -106,96 +113,57 @@ def call_functions_old(main_window, project, parameters):
     # %%========================================================================
     # Files (NOT TO SET)
     # ===========================================================================
-    if mw.func_dict['erm_analysis']:
-        files = subs.file_selection(mw.which_erm_file, erm_files)
-    elif mw.func_dict['motor_erm_analysis']:
-        files = subs.file_selection(mw.which_motor_erm_file, motor_erm_files)
-    else:
-        files = subs.file_selection(mw.which_file, mw.all_files)
+    sel_files = pr.sel_files
 
     quality_dict = ut.read_dict_file('quality', mw.pr.pscripts_path)
 
-
-
-    if len(all_files) == 0:
-        print('No files in file_list!')
+    if len(pr.all_files) == 0:
+        print('No sel_files in file_list!')
         print('Add some Files with "AddFiles" from the Input-Menu')
     else:
-        print(f'Selected {len(files)} Subjects:')
-        for f in files:
+        print(f'Selected {len(sel_files)} Subjects:')
+        for f in sel_files:
             print(f)
 
-    # Get dicts grouping the files together depending on their names to allow grand_averaging:
-    ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict = ppf.get_subject_groups(files, p.combine_ab,
+    # Get dicts grouping the sel_files together depending on their names to allow grand_averaging:
+    ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict = ppf.get_subject_groups(sel_files, p.combine_ab,
                                                                                            p.unspecified_names)
     morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
     if mw.func_dict['plot_ab_combined']:
-        files = [f for f in ab_dict]
+        sel_files = [f for f in ab_dict]
 
-    for name in files:
+    for name in sel_files:
 
         # Print Subject Console Header
         print(60 * '=' + '\n' + name)
-        prog = round((files.index(name)) / len(files) * 100, 2)
+        prog = round((sel_files.index(name)) / len(sel_files) * 100, 2)
         print(f'Progress: {prog} %')
 
-        if mw.func_dict['erm_analysis'] or mw.func_dict['motor_erm_analysis']:
-            save_dir = join(pr.project_path, 'Daten/empty_room_data')
-            pr.data_path = join(pr.project_path, 'Daten/empty_room_data')
-        elif mw.func_dict['plot_ab_combined']:
-            save_dir = join(pr.save_dir_averages, 'ab_combined')
-        else:
-            save_dir = join(pr.data_path, name)
+        save_dir = join(pr.data_path, name)
 
         if p.print_info:
             info = io.read_info(name, save_dir)
             print(info)
-
-        # Use Regular Expressions to make ermsub and subtomri assignement easier
-        if not p.unspecified_names:
-            pattern = r'pp[0-9]+[a-z]?'
-            match = re.match(pattern, name)
-            prefix = match.group()
-
-            try:
-                ermsub = erm_dict[prefix]
-            except KeyError as k:
-                print(f'No erm_measurement for {k}')
-                ermsub = []
-                subs.SubDictDialog(mw, 'erm')
-
-            try:
-                subtomri = sub_dict[prefix]
-            except KeyError as k:
-                print(f'No mri_subject assigned to {k}')
-                subtomri = []
-                subs.SubDictDialog(mw, 'mri')
-            if mw.func_dict['plot_ab_combined']:
-                bad_channels = []
-            else:
-                try:
-                    bad_channels = bad_channels_dict[name]
-                except KeyError as k:
-                    print(f'No bad channels for {k}')
-                    bad_channels = []
-                    subs.BadChannelsSelect(mw)
-        else:
-            try:
-                ermsub = erm_dict[name]
-            except KeyError as k:
-                print(f'No erm_measurement for {k}')
-                raise RuntimeError('Run again and run add_erm_dict')
-            try:
-                subtomri = sub_dict[name]
-            except KeyError as k:
-                print(f'No mri_subject assigned to {k}')
-                raise RuntimeError('Run again and run add_mri_dict')
-            try:
-                bad_channels = bad_channels_dict[name]
-            except KeyError as k:
-                print(f'No bad channels for {k}')
-                raise RuntimeError('Run again and run add_bad_channels_dict')
+        # Todo: Somehow include check in Subject and manage pause execution (threading)
+        try:
+            ermsub = pr.erm_dict[name]
+        except KeyError as k:
+            print(f'No erm_measurement assigned for {k}')
+            subs.SubDictDialog(mw, 'erm')
+            break
+        try:
+            subtomri = pr.sub_dict[name]
+        except KeyError as k:
+            print(f'No mri_subject assigned to {k}')
+            subs.SubDictDialog(mw, 'mri')
+            break
+        try:
+            bad_channels = pr.bad_channels_dict[name]
+        except KeyError as k:
+            print(f'No bad channels for {k}')
+            subs.BadChannelsSelect(mw)
+            break
 
         # ==========================================================================
         # FILTER RAW
@@ -614,12 +582,12 @@ def call_functions_old(main_window, project, parameters):
     # All-Subject-Analysis
     # ==============================================================================
     if mw.func_dict['pp_alignment']:
-        ppf.pp_alignment(ab_dict, cond_dict, sub_dict, pr.data_path, p.highpass, p.lowpass, pr.pscripts_path,
+        ppf.pp_alignment(ab_dict, cond_dict, pr.sub_dict, pr.data_path, p.highpass, p.lowpass, pr.pscripts_path,
                          p.event_id, pr.subjects_dir, p.inverse_method, p.source_space_method,
                          p.parcellation, figures_path)
 
     if mw.func_dict['cmp_label_time_course']:
-        plot.cmp_label_time_course(pr.data_path, p.highpass, p.lowpass, sub_dict, comp_dict,
+        plot.cmp_label_time_course(pr.data_path, p.highpass, p.lowpass, pr.sub_dict, comp_dict,
                                    pr.subjects_dir, p.inverse_method, p.source_space_method, p.parcellation,
                                    p.target_labels, p.save_plots, figures_path,
                                    p.event_id, p.ev_ids_label_analysis, p.combine_ab,
@@ -637,7 +605,7 @@ def call_functions_old(main_window, project, parameters):
                         pattern = r'.*'
                     match = re.match(pattern, name[0])
                     prefix = match.group()
-                    subtomri = sub_dict[prefix]
+                    subtomri = pr.sub_dict[prefix]
                 else:
                     name = ab_dict[key][0]
                     save_dir = join(pr.data_path, name)
@@ -646,7 +614,7 @@ def call_functions_old(main_window, project, parameters):
                         pattern = r'.*'
                     match = re.match(pattern, name)
                     prefix = match.group()
-                    subtomri = sub_dict[prefix]
+                    subtomri = pr.sub_dict[prefix]
                 op.create_func_label(name, save_dir, p.highpass, p.lowpass,
                                      p.inverse_method, p.event_id, subtomri, pr.subjects_dir,
                                      p.source_space_method, p.label_origin,
@@ -666,7 +634,7 @@ def call_functions_old(main_window, project, parameters):
                         pattern = r'.*'
                     match = re.match(pattern, name[0])
                     prefix = match.group()
-                    subtomri = sub_dict[prefix]
+                    subtomri = pr.sub_dict[prefix]
                 else:
                     name = ab_dict[key][0]
                     save_dir = join(pr.data_path, name)
@@ -675,7 +643,7 @@ def call_functions_old(main_window, project, parameters):
                         pattern = r'.*'
                     match = re.match(pattern, name)
                     prefix = match.group()
-                    subtomri = sub_dict[prefix]
+                    subtomri = pr.sub_dict[prefix]
                 op.func_label_processing(name, save_dir, p.highpass, p.lowpass,
                                          p.save_plots, figures_path, subtomri, pr.subjects_dir,
                                          pr.pscripts_path, p.ev_ids_label_analysis,
@@ -687,7 +655,7 @@ def call_functions_old(main_window, project, parameters):
                                      figures_path, mw.func_dict)
 
     if mw.func_dict['all_func_label_analysis']:
-        plot.all_func_label_analysis(p.highpass, p.lowpass, p.etmax, files, pr.pscripts_path,
+        plot.all_func_label_analysis(p.highpass, p.lowpass, p.etmax, sel_files, pr.pscripts_path,
                                      p.label_origin, p.ev_ids_label_analysis, p.save_plots,
                                      figures_path)
 
@@ -800,7 +768,7 @@ def call_functions_old(main_window, project, parameters):
     # ==============================================================================
 
     if mw.func_dict['pp_plot_latency_S1_corr']:
-        plot.pp_plot_latency_s1_corr(pr.data_path, files, p.highpass, p.lowpass,
+        plot.pp_plot_latency_s1_corr(pr.data_path, sel_files, p.highpass, p.lowpass,
                                      p.save_plots, figures_path)
 
     # close all plots

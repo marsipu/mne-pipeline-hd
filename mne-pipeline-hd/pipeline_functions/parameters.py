@@ -1,10 +1,10 @@
 import os
-import sys
 import shutil
-from os.path import isfile, join
+import sys
 from importlib import util
+from os.path import isfile, join
 
-from qtpy.QtWidgets import QDialog, QGridLayout, QVBoxLayout, QDesktopWidget
+from PyQt5.QtWidgets import QDesktopWidget, QDialog, QGridLayout, QVBoxLayout
 
 
 class ParameterGUI(QDialog):
@@ -29,11 +29,8 @@ class ParameterGUI(QDialog):
     def init_ui(self):
         parameter_layout = QGridLayout()
 
-
-
     def import_parameters(self):
         if not isfile(join(self.mw.pr.project_path, f'parameters_{self.mw.pr.project_name}.py')):
-            from resources import parameters_template as p
 
             shutil.copy2(join(os.getcwd(), 'resources/parameters_template.py'),
                          join(self.mw.pr.project_path, f'parameters_{self.mw.pr.project_name}.py'))
