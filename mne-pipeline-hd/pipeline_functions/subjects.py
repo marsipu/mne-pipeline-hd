@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 from functools import partial
-from os.path import isdir, isfile, join
+from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
 import mne
@@ -21,7 +21,9 @@ from basic_functions import io
 from pipeline_functions import utilities as ut
 
 
-class CurrentFile:
+# Todo: Adapt File-Structure to (MEG)-BIDS-Standards
+
+class CurrentSubject:
     """ Class for File-Data in File-Loop"""
 
     def __init__(self, name, main_window):
@@ -56,7 +58,14 @@ class CurrentFile:
         self.bad_channels = self.pr.bad_channels_dict[self.name]
 
 
-def file_selection(which_file, all_files):
+class CurrentMRISubject:
+    def __init__(self, name, main_window):
+        self.mw = main_window
+        self.pr = main_window.pr
+        self.name = name
+
+
+def file_indexing(which_file, all_files):
     if which_file == '':
         return [], []
     else:
@@ -149,6 +158,7 @@ def update_sub_ist(qlist, files):
         qlist.addItem(item)
 
 
+# Todo: Delete Subjects from Dock and Project
 class SubjectDock(QDockWidget):
     def __init__(self, main_win):
         super().__init__('Subject-Selection', main_win)
@@ -260,7 +270,7 @@ class SubjectDock(QDockWidget):
 
     def update_sub_selection(self):
         which_file = self.sub_ledit.text()
-        self.mw.pr.sel_files, idxs = file_selection(which_file, self.mw.pr.all_files)
+        self.mw.pr.sel_files, idxs = file_indexing(which_file, self.mw.pr.all_files)
         if len(idxs) > 0:
             # Clear all check-states
             self.sub_clear_all()
@@ -271,7 +281,7 @@ class SubjectDock(QDockWidget):
 
     def update_mri_selection(self):
         which_file = self.mri_sub_ledit.text()
-        self.mw.pr.sel_mri_files, idxs = file_selection(which_file, self.mw.pr.all_mri_subjects)
+        self.mw.pr.sel_mri_files, idxs = file_indexing(which_file, self.mw.pr.all_mri_subjects)
 
     def sub_clear_all(self):
         for idx in range(self.sub_listw.count()):
@@ -456,12 +466,16 @@ class AddFiles(QDialog):
         else:
             pass
 
+    # Todo: Replace Progress-Window with working progressbar
     def add_files(self):
         # Todo: Store Info-Data in Dict after copying?
         existing_files = self.mw.pr.all_files
         existing_erm_files = self.mw.pr.erm_files
         self.pgbar.setMaximum(len(self.files))
         step = 0
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Copying...')
+        dialog.open()
         for fname in self.files:
             self.pgbar.setValue(step)
             self.pgbar.update()
@@ -492,6 +506,8 @@ class AddFiles(QDialog):
             step += 1
             self.pgbar.setValue(step)
             self.pgbar.update()
+
+        dialog.close()
         self.list_widget.clear()
         self.files = list()
         self.paths = dict()
@@ -517,8 +533,10 @@ def move_folder(src, dst):
 
 def get_existing_mri_subjects(subjects_dir):
     existing_mri_subs = list()
-    for mri_sub in os.listdir(subjects_dir):
-        if 'surf' in os.listdir(join(subjects_dir, mri_sub)):
+    # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
+    read_dir = sorted([f for f in os.listdir(subjects_dir) if not f.startswith('.')], key=str.lower)
+    for mri_sub in read_dir:
+        if exists(join(subjects_dir, mri_sub, 'surf')):
             existing_mri_subs.append(mri_sub)
 
     return existing_mri_subs
@@ -602,7 +620,7 @@ class AddMRIFiles(QDialog):
         folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder with a subject\'s Freesurfe-Segmentation')
 
         if folder_path != '':
-            if 'surf' in os.listdir(folder_path):
+            if exists(join(folder_path, 'surf')):
                 mri_sub = Path(folder_path).name
                 if mri_sub not in mri_subjects and mri_sub not in self.folders:
                     self.folders.append(mri_sub)
@@ -617,11 +635,11 @@ class AddMRIFiles(QDialog):
         mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
         parent_folder = QFileDialog.getExistingDirectory(self, 'Choose a folder containting several '
                                                                'Freesurfer-Segmentations')
-        folder_list = os.listdir(parent_folder)
+        folder_list = sorted([f for f in os.listdir(parent_folder) if not f.startswith('.')], key=str.lower)
 
         for mri_sub in folder_list:
             folder_path = join(parent_folder, mri_sub)
-            if 'surf' in os.listdir(folder_path):
+            if exists(join(folder_path, 'surf')):
                 if mri_sub not in mri_subjects and mri_sub not in self.folders:
                     self.folders.append(mri_sub)
                     self.paths.update({mri_sub: folder_path})
@@ -634,6 +652,9 @@ class AddMRIFiles(QDialog):
     def add_mri_subjects(self):
         self.pgbar.setMaximum(len(self.folders))
         step = 0
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Copying...')
+        dialog.open()
         for mri_sub in self.folders:
             src = self.paths[mri_sub]
             dst = join(self.mw.pr.subjects_dir, mri_sub)
@@ -644,6 +665,7 @@ class AddMRIFiles(QDialog):
         self.list_widget.clear()
         self.folders = list()
         self.paths = dict()
+        dialog.close()
 
     def closeEvent(self, event):
         self.mw.pr.update_sub_lists()
