@@ -4,6 +4,9 @@ Created on Mon Feb 11 03:11:47 2019
 
 @author: Martin Schulz
 """
+from os.path import join
+
+import pandas as pd
 
 # subject_operations = dict(add_files=0,
 #                           add_mri_subjects=0,
@@ -12,7 +15,7 @@ Created on Mon Feb 11 03:11:47 2019
 #                           add_bad_channels=0)
 
 basic_operations = dict(erm_analysis=0,
-                        close_plots=1,
+                        close_plots=0,
                         shutdown=0)
 
 pinprick_functions = dict(pp_event_handling=0,
@@ -127,24 +130,24 @@ source_space_plots = dict(plot_transformation=0,
                           plot_source_space_connectivity=0)
 
 grand_average_plots = dict(
-    # plotting sensor space (between subjects)
-    plot_grand_avg_evokeds=0,
-    plot_grand_avg_evokeds_h1h2=0,
-    plot_grand_avg_tfr=0,
+        # plotting sensor space (between subjects)
+        plot_grand_avg_evokeds=0,
+        plot_grand_avg_evokeds_h1h2=0,
+        plot_grand_avg_tfr=0,
 
-    # plotting source space (between subjects)
-    plot_grand_avg_stc=0,
-    plot_grand_avg_stc_anim=0,
-    plot_grand_avg_connect=0,
-    plot_grand_avg_label_power=0,
+        # plotting source space (between subjects)
+        plot_grand_avg_stc=0,
+        plot_grand_avg_stc_anim=0,
+        plot_grand_avg_connect=0,
+        plot_grand_avg_label_power=0,
 
-    # statistics in source space
-    statistics_source_space=0,
+        # statistics in source space
+        statistics_source_space=0,
 
-    # plot source space with statistics mask
-    plot_grand_averages_source_estimates_cluster_masked=0,
+        # plot source space with statistics mask
+        plot_grand_averages_source_estimates_cluster_masked=0,
 
-    pp_plot_latency_S1_corr=0)
+        pp_plot_latency_S1_corr=0)
 
 # 'subject_operations': subject_operations,
 all_fs_gs = {'basic_operations': basic_operations,
@@ -159,12 +162,12 @@ all_fs_gs = {'basic_operations': basic_operations,
              'grand_average_plots': grand_average_plots}
 
 calcplot_fs = {'Calculate': {'basic_operations': basic_operations,
-                        'pinprick_functions': pinprick_functions,
-                        'custom_functions': custom_functions,
-                        'sensor_space_operations': sensor_space_operations,
-                        'mri_subject_operations': mri_subject_operations,
-                        'source_space_operations': source_space_operations,
-                        'grand_average_operations': grand_average_operations},
+                             'pinprick_functions': pinprick_functions,
+                             'custom_functions': custom_functions,
+                             'sensor_space_operations': sensor_space_operations,
+                             'mri_subject_operations': mri_subject_operations,
+                             'source_space_operations': source_space_operations,
+                             'grand_average_operations': grand_average_operations},
                'Plot': {'sensor_space_plots': sensor_space_plots,
                         'source_space_plots': source_space_plots,
                         'grand_average_plots': grand_average_plots}}
@@ -173,3 +176,13 @@ all_fs = {}
 for fg in all_fs_gs:
     for f, v in all_fs_gs[fg].items():
         all_fs.update({f: v})
+
+f_dict = {'apply_watershed': {'alias': 'Watershed', 'group': 'mri_subject_operations', 'group_idx': 1},
+          'prepare_bem': {'alias': 'BEM-Preparation', 'group': 'mri_subject_operations', 'group_idx': 2}}
+
+f_params_dict = {}
+
+f = pd.DataFrame(data=f_dict).T
+desk_path = 'D:/Rächner/Desktop'
+f.to_csv(join(desk_path, 'test.csv'))
+a = pd.read_csv(join(desk_path, 'test_i.csv'), sep=';', index_col=0)

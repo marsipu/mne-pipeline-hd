@@ -4,11 +4,13 @@ from functools import partial
 from os.path import join
 from subprocess import run
 
+import qdarkstyle
 from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtGui import QColor, QFont, QPalette
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QGridLayout,
                              QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
-                             QPushButton, QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
+                             QPushButton, QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget, QStyle, QLineEdit,
+                             QSpinBox, QCheckBox)
 
 from pipeline_functions import function_call as fc, iswin
 from pipeline_functions.project import MyProject
@@ -41,10 +43,12 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self._centralWidget)
         self.general_layout = QGridLayout()
         self.centralWidget().setLayout(self.general_layout)
-        QToolTip.setFont(QFont('SansSerif', 9))
 
-        # # Workaround for MAC menu-bar-focusing issue
-        # self.menuBar().setNativeMenuBar(False)
+        QToolTip.setFont(QFont('SansSerif', 9))
+        self.change_style('Fusion')
+
+        # Prepare Dark-Mode
+        self.dark_sheet = qdarkstyle.load_stylesheet_pyqt5()
 
         # Attributes for class-methods
         self.func_dict = dict()
@@ -52,32 +56,34 @@ class MainWindow(QMainWindow):
         self.make_it_stop = False
         self.project_box = None
 
+        # Attributes to use in function-call later, default values overwritten by settings
+        self.n_jobs = -1
+        self.close_plots = False
+        self.save_plots = True
+        self.overwrite = True
+        self.enable_cuda = False
+        self.shutdown = False
+
         # Call project-class
         self.pr = MyProject(self)
 
+        # initiate Subject-Dock here to avoid AttributeError
+        self.subject_dock = SubjectDock(self)
+
         # Call window-methods
         self.make_menu()
+        self.add_dock_windows()
         self.make_toolbar()
         self.make_statusbar()
-        self.add_dock_windows()
-        self.project_tools()
         self.make_func_bts()
         self.add_main_bts()
-        self.change_style('Fusion')
+        self.get_prev_settings()
 
         # Center Window
         # Necessary because frameGeometry is dependent on number of function-buttons
         newh = self.sizeHint().height()
         neww = self.sizeHint().width()
         self.setGeometry(0, 0, neww, newh)
-
-        # Causes almost full-screen on mac
-        # if 'darwin' in self.platform:
-        #     self.setGeometry(0, 0, self.width() * self.devicePixelRatio(), self.height() * self.devicePixelRatio())
-
-        # This is also possible but does not center a widget with height < 480
-        # self.layout().update()
-        # self.layout().activate()
         self.center()
         self.raise_win()
 
@@ -108,13 +114,13 @@ class MainWindow(QMainWindow):
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
+        self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
+        self.adark_mode.setCheckable(True)
+        self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
+        self.view_menu.addAction('&Change Home-Path', self.change_home_path)
 
         # Settings
         self.settings_menu = self.menuBar().addMenu('&Settings')
-        self.adark_mode = self.settings_menu.addAction('&Dark-Mode', self.dark_mode)
-        self.adark_mode.setCheckable(True)
-        self.settings_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
-        self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
 
         # About
         about_menu = self.menuBar().addMenu('About')
@@ -124,12 +130,58 @@ class MainWindow(QMainWindow):
 
     def make_toolbar(self):
         self.toolbar = self.addToolBar('Tools')
+        # Add Project-Tools
+        self.project_tools()
+        self.toolbar.addSeparator()
+
+        self.toolbar.addWidget(QLabel('n_jobs: '))
+        self.n_jobs_sb = QSpinBox(self)
+        self.n_jobs_sb.setMinimum(0)
+        self.n_jobs_sb.setSpecialValueText('Auto')
+        self.n_jobs_sb.valueChanged.connect(self.n_jobs_changed)
+        self.toolbar.addWidget(self.n_jobs_sb)
+
+        self.toolbar.addSeparator()
+
+        self.close_plots_chkbx = QCheckBox('Close Plots', self)
+        self.close_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.close_plots_chkbx, 'close_plots'))
+        self.toolbar.addWidget(self.close_plots_chkbx)
+
+        self.save_plots_chkbx = QCheckBox('Save Plots', self)
+        self.save_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.save_plots_chkbx, 'save_plots'))
+        self.toolbar.addWidget(self.save_plots_chkbx)
+
+        self.overwrite_chkbx = QCheckBox('Overwrite', self)
+        self.overwrite_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.overwrite_chkbx, 'overwrite'))
+        self.toolbar.addWidget(self.overwrite_chkbx)
+
+        self.enable_cuda_chkbx = QCheckBox('Enable CUDA', self)
+        self.enable_cuda_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.enable_cuda_chkbx, 'enable_cuda'))
+        self.toolbar.addWidget(self.enable_cuda_chkbx)
+
+        self.shutdown_chkbx = QCheckBox('Shutdown', self)
+        self.shutdown_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.shutdown_chkbx, 'shutdown'))
+        self.toolbar.addWidget(self.shutdown_chkbx)
+
+    def n_jobs_changed(self, value):
+        # In MNE-Python -1 is automatic, for SpinBox 0 is already auto
+        if value == 0:
+            self.n_jobs = -1
+            self.settings.setValue('n_jobs', -1)
+        else:
+            self.n_jobs = value
+            self.settings.setValue('n_jobs', value)
+        print(self.n_jobs)
+
+    def chkbx_changed(self, chkbx, attribute):
+        setattr(self, attribute, chkbx.isChecked())
+        self.settings.setValue(attribute, chkbx.isChecked())
+        print(f'{attribute}: {chkbx.isChecked()}')
 
     def make_statusbar(self):
         self.statusBar().showMessage('Ready')
 
     def add_dock_windows(self):
-        self.subject_dock = SubjectDock(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
         self.view_menu.addAction(self.subject_dock.toggleViewAction())
 
@@ -206,11 +258,11 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(proj_box_label)
         self.toolbar.addWidget(self.project_box)
 
-        aadd = QAction('+', self)
+        aadd = QAction(parent=self, icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
         aadd.triggered.connect(self.add_project)
         self.toolbar.addAction(aadd)
 
-        arm = QAction('-', self)
+        arm = QAction(parent=self, icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
         arm.triggered.connect(self.remove_project)
         self.toolbar.addAction(arm)
 
@@ -226,42 +278,11 @@ class MainWindow(QMainWindow):
         for project in self.pr.projects:
             self.project_box.addItem(project)
 
-    # Todo: Fix Dark-Mode
     def dark_mode(self):
         if self.adark_mode.isChecked():
-            dark_palette = QPalette()
-            dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.WindowText, Qt.white)
-            dark_palette.setColor(QPalette.Base, QColor(25, 25, 25))
-            dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ToolTipBase, Qt.white)
-            dark_palette.setColor(QPalette.ToolTipText, Qt.white)
-            dark_palette.setColor(QPalette.Text, Qt.white)
-            dark_palette.setColor(QPalette.Button, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ButtonText, Qt.white)
-            dark_palette.setColor(QPalette.BrightText, Qt.red)
-            dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
-            dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-            dark_palette.setColor(QPalette.HighlightedText, Qt.black)
-            self.app.setPalette(dark_palette)
-            self.app.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }")
+            self.app.setStyleSheet(self.dark_sheet)
         else:
-            white_palette = QPalette()
-            white_palette.setColor(QPalette.Window, QColor(255, 255, 255))
-            white_palette.setColor(QPalette.WindowText, Qt.black)
-            white_palette.setColor(QPalette.Base, QColor(255, 255, 255))
-            white_palette.setColor(QPalette.AlternateBase, QColor(255, 255, 255))
-            white_palette.setColor(QPalette.ToolTipBase, Qt.black)
-            white_palette.setColor(QPalette.ToolTipText, Qt.black)
-            white_palette.setColor(QPalette.Text, Qt.black)
-            white_palette.setColor(QPalette.Button, QColor(255, 255, 255))
-            white_palette.setColor(QPalette.ButtonText, Qt.black)
-            white_palette.setColor(QPalette.BrightText, Qt.red)
-            white_palette.setColor(QPalette.Link, QColor(42, 130, 218))
-            white_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-            white_palette.setColor(QPalette.HighlightedText, Qt.white)
-            self.app.setPalette(white_palette)
-            self.app.setStyleSheet("QToolTip { color: #000000; background-color: #2a82da; border: 1px solid black; }")
+            self.app.setStyleSheet('')
 
     def full_screen(self):
         if self.isFullScreen():
@@ -298,7 +319,7 @@ class MainWindow(QMainWindow):
         for f, v in opd.all_fs.items():
             self.func_dict.update({f: v})
 
-        pre_func_dict = self.settings.value('func_checked')
+        pre_func_dict = self.settings.value('checked_funcs')
         del_list = []
         if pre_func_dict is not None:
             for k in pre_func_dict:
@@ -382,7 +403,28 @@ class MainWindow(QMainWindow):
         msg.open()
         fc.call_functions(self, self.pr)
         msg.close()
+        # Todo: Introduce logging and print Exceptions to Main-Window
 
+    def get_prev_settings(self):
+        # Get n_jobs from settings
+        self.n_jobs_sb.setValue(self.settings.value('n_jobs'))
+
+        # Checkboxes in Toolbar
+        chkbox_dict = {'close_plots_chkbx': 'close_plots', 'save_plots_chkbx': 'save_plots',
+                       'overwrite_chkbx': 'overwrite', 'enable_cuda_chkbx': 'enable_cuda', 'shutdown_chkbx': 'shutdown'}
+        for chkbox_name in chkbox_dict:
+            chkbox = getattr(self, chkbox_name)
+            try:
+                chkbox_value = self.settings.value(chkbox_dict[chkbox_name])
+                if chkbox_value == 'true':
+                    chkbox.setChecked(True)
+                else:
+                    chkbox.setChecked(False)
+            # Account for settings never have been set at first run
+            except TypeError:
+                pass
+
+    # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):
         command = f"pip install --upgrade git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd"
         run(command, shell=True)
@@ -473,6 +515,6 @@ class MainWindow(QMainWindow):
         self.settings.setValue('geometry', self.saveGeometry())
         self.settings.setValue('home_path', self.pr.home_path)
         self.settings.setValue('project_name', self.pr.project_name)
-        self.settings.setValue('func_checked', self.func_dict)
+        self.settings.setValue('checked_funcs', self.func_dict)
 
         event.accept()

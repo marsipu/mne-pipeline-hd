@@ -5,9 +5,12 @@ import sys
 from importlib import util
 from os.path import isfile, join
 
-from basic_functions import io, operations as op, plot as plot
-from custom_functions import kristin as kf, melofix as mff, pinprick as ppf
+import pandas as pd
+
+from basic_functions import io, operations, plot
+from custom_functions import kristin, melofix, pinprick
 from pipeline_functions import subjects as subs, utilities as ut
+from pipeline_functions.subjects import CurrentMRISubject
 from resources import operations_dict as opd
 
 
@@ -16,9 +19,62 @@ from resources import operations_dict as opd
 #   2. Make all Arguments as keyword-arguments and use module-attributes for calling
 
 
+def func_from_def(func_name, pd_funcs, subject, project, parameters):
+    module_name = pd_funcs[func_name]['module']
+
+    # Read Listitems from Strings from functions.csv
+    subarg_string = pd_funcs[func_name]['subject_arguments']
+    subarg_names = subarg_string.split(',')
+    proarg_string = pd_funcs[func_name]['project_arguments']
+    proarg_names = proarg_string.split(',')
+    addarg_string = pd_funcs[func_name]['arguments']
+    addarg_names = addarg_string.split(',')
+
+    # Get attributes from Subject/Project-Class
+    subject_attributes = vars(subject)
+    project_attributes = vars(project)
+
+    keyword_arguments = dict()
+
+    for subarg_name in subarg_names:
+        # Remove trailing spaces
+        subarg_name = subarg_name.replace(' ', '')
+        keyword_arguments.update({subarg_name: subject_attributes[subarg_name]})
+    for proarg_name in proarg_names:
+        # Remove trailing spaces
+        proarg_name = proarg_name.replace(' ', '')
+        keyword_arguments.update({proarg_name: project_attributes[proarg_name]})
+    for addarg_name in addarg_names:
+        # Remove trailing spaces
+        addarg_name = addarg_name.replace(' ', '')
+        keyword_arguments.update({addarg_name: parameters[addarg_name]})
+
+    # Get module, has to specified in functions.csv as it is imported
+    module = globals()[module_name]
+    # Call Function from specified module with arguments from unpacked list/dictionary
+    return_value = getattr(module, func_name)(**keyword_arguments)
+
+    return return_value
+
+
 def call_functions(main_window, project):
+    """
+    Call activated functions in main_window, read function-parameters from functions_empty.csv
+    :param main_window:
+    :param project:
+    :return:
+    """
     mw = main_window
     pr = project
+
+    # Read functions from csv (Transform -> in Excel better readable with functions as rows but shorter code in python
+    #   for iterating over functions as columns, separator ";" for editing with Excel)
+    pd_funcs = pd.read_csv(join(os.getcwd(), 'mne-pipeline-hd/resources/functions.csv'), sep=';', index_col=0).T
+
+    # Todo: Serialize parameters-dict with json
+    # Todo: Problem: Noch sind figures_path und mw.func_dict mit in subject-attributes dabei, die müssen irgendwie raus
+    #   (vielleicht doch keine Plots nach Filtern getrennt (nach Filtern in Ordnern trennen (optional)))
+    #
     # Read parameters
     if not isfile(join(pr.project_path, f'parameters_{pr.project_name}.py')):
         from resources import parameters_template as p
@@ -35,16 +91,12 @@ def call_functions(main_window, project):
         spec.loader.exec_module(p)
         print(f'Read Parameters from parameters_{pr.project_name}.py in {pr.project_path}')
 
-    if mw.func_dict['erm_analysis'] or mw.func_dict['motor_erm_analysis']:
-        figures_path = join(pr.project_path, 'figures/erm_figures')
-    else:
-        figures_path = join(pr.project_path, f'figures/{p.highpass}-{p.lowpass}_Hz')
-
-    op.populate_directories(pr.data_path, figures_path, p.event_id)
+    operations.populate_directories(pr.data_path, pr.figures_path, p.event_id)
 
     # Update the lists for changes made in Subject-GUIs
     pr.update_sub_lists()
 
+    # Find out, if a mri-subject-function is activated
     run_mrisf = False
     for msop in opd.mri_subject_operations:
         if mw.func_dict[msop]:
@@ -61,37 +113,41 @@ def call_functions(main_window, project):
             prog = round((mri_subjects.index(mri_subject)) / len(mri_subjects) * 100, 2)
             print(f'Progress: {prog} %')
 
+            msub = CurrentMRISubject(mri_subject, mw)
+            for mri_func in opd.mri_subject_operations:
+                if mw.func_dict[mri_func]:
+                    func_from_def(mri_func, pd_funcs)
             # ==========================================================================
             # BASH SCRIPTS
             # ==========================================================================
             if mw.func_dict['apply_watershed']:
-                op.apply_watershed(mri_subject, pr.subjects_dir, p.overwrite)
+                operations.apply_watershed(mri_subject, pr.subjects_dir, p.overwrite)
 
             if mw.func_dict['prepare_bem']:
-                op.prepare_bem(mri_subject, pr.subjects_dir)
+                operations.prepare_bem(mri_subject, pr.subjects_dir)
 
             if mw.func_dict['make_dense_scalp_surfaces']:
-                op.make_dense_scalp_surfaces(mri_subject, pr.subjects_dir, p.overwrite)
+                operations.make_dense_scalp_surfaces(mri_subject, pr.subjects_dir, p.overwrite)
 
             # ==========================================================================
             # Forward Modeling
             # ==========================================================================
             if mw.func_dict['setup_src']:
-                op.setup_src(mri_subject, pr.subjects_dir, p.source_space_method,
-                             p.overwrite, p.n_jobs)
+                operations.setup_src(mri_subject, pr.subjects_dir, p.source_space_method,
+                                     p.overwrite, p.n_jobs)
             if mw.func_dict['compute_src_distances']:
-                op.compute_src_distances(mri_subject, pr.subjects_dir,
-                                         p.source_space_method, p.n_jobs)
+                operations.compute_src_distances(mri_subject, pr.subjects_dir,
+                                                 p.source_space_method, p.n_jobs)
 
             if mw.func_dict['setup_vol_src']:
-                op.setup_vol_src(mri_subject, pr.subjects_dir)
+                operations.setup_vol_src(mri_subject, pr.subjects_dir)
 
             if mw.func_dict['morph_subject']:
-                op.morph_subject(mri_subject, pr.subjects_dir, p.morph_to,
-                                 p.source_space_method, p.overwrite)
+                operations.morph_subject(mri_subject, pr.subjects_dir, p.morph_to,
+                                         p.source_space_method, p.overwrite)
 
             if mw.func_dict['morph_labels_from_fsaverage']:
-                op.morph_labels_from_fsaverage(mri_subject, pr.subjects_dir, p.overwrite)
+                operations.morph_labels_from_fsaverage(mri_subject, pr.subjects_dir, p.overwrite)
             # ==========================================================================
             # PLOT SOURCE SPACES
             # ==========================================================================
@@ -126,8 +182,8 @@ def call_functions(main_window, project):
             print(f)
 
     # Get dicts grouping the sel_files together depending on their names to allow grand_averaging:
-    ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict = ppf.get_subject_groups(sel_files, p.combine_ab,
-                                                                                           p.unspecified_names)
+    ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict = pinprick.get_subject_groups(sel_files, p.combine_ab,
+                                                                                                p.unspecified_names)
     morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
     if mw.func_dict['plot_ab_combined']:
@@ -170,71 +226,71 @@ def call_functions(main_window, project):
         # ==========================================================================
 
         if mw.func_dict['filter_raw']:
-            op.filter_raw(name, save_dir, p.highpass, p.lowpass, ermsub,
-                          pr.data_path, p.n_jobs, p.enable_cuda, bad_channels, p.erm_t_limit,
-                          p.enable_ica, p.eog_digitized)
+            operations.filter_raw(name, save_dir, p.highpass, p.lowpass, ermsub,
+                                  pr.data_path, p.n_jobs, p.enable_cuda, bad_channels, p.erm_t_limit,
+                                  p.enable_ica, p.eog_digitized)
 
         # ==========================================================================
         # FIND EVENTS
         # ==========================================================================
 
         if mw.func_dict['find_events']:
-            op.find_events(name, save_dir, p.adjust_timeline_by_msec, p.overwrite, mw.func_dict)
+            operations.find_events(name, save_dir, p.adjust_timeline_by_msec, p.overwrite, mw.func_dict)
 
         if mw.func_dict['pp_event_handling']:
-            ppf.pp_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
-                                  pr.pscripts_path, p.save_plots, figures_path, mw.func_dict)
-
-        if mw.func_dict['melofix_event_handling']:
-            mff.melofix_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
+            pinprick.pp_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
                                        pr.pscripts_path, p.save_plots, figures_path, mw.func_dict)
 
+        if mw.func_dict['melofix_event_handling']:
+            melofix.melofix_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
+                                           pr.pscripts_path, p.save_plots, figures_path, mw.func_dict)
+
         if mw.func_dict['kristin_event_handling']:
-            kf.kristin_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
-                                      pr.pscripts_path, p.save_plots, figures_path, mw.func_dict)
+            kristin.kristin_event_handling(name, save_dir, p.adjust_timeline_by_msec, p.overwrite,
+                                           pr.pscripts_path, p.save_plots, figures_path, mw.func_dict)
 
         if mw.func_dict['find_eog_events']:
-            op.find_eog_events(name, save_dir, p.eog_channel)
+            operations.find_eog_events(name, save_dir, p.eog_channel)
 
         # ==========================================================================
         # EPOCHS
         # ==========================================================================
 
         if mw.func_dict['epoch_raw']:
-            op.epoch_raw(name, save_dir, p.highpass, p.lowpass, p.event_id, p.etmin, p.etmax,
-                         p.baseline, p.reject, p.flat, p.autoreject, p.overwrite_ar,
-                         pr.pscripts_path, bad_channels, p.decim,
-                         p.reject_eog_epochs, p.overwrite, mw.func_dict)
+            operations.epoch_raw(name, save_dir, p.highpass, p.lowpass, p.event_id, p.etmin, p.etmax,
+                                 p.baseline, p.reject, p.flat, p.autoreject, p.overwrite_ar,
+                                 pr.pscripts_path, bad_channels, p.decim,
+                                 p.reject_eog_epochs, p.overwrite, mw.func_dict)
 
         # ==========================================================================
         # SIGNAL SPACE PROJECTION
         # ==========================================================================
         if mw.func_dict['run_ssp_er']:
-            op.run_ssp_er(name, save_dir, p.highpass, p.lowpass, pr.data_path, ermsub, bad_channels,
-                          p.overwrite)
+            operations.run_ssp_er(name, save_dir, p.highpass, p.lowpass, pr.data_path, ermsub, bad_channels,
+                                  p.overwrite)
 
         if mw.func_dict['apply_ssp_er']:
-            op.apply_ssp_er(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+            operations.apply_ssp_er(name, save_dir, p.highpass, p.lowpass, p.overwrite)
 
         if mw.func_dict['run_ssp_clm']:
-            op.run_ssp_clm(name, save_dir, p.highpass, p.lowpass, bad_channels, p.overwrite)
+            operations.run_ssp_clm(name, save_dir, p.highpass, p.lowpass, bad_channels, p.overwrite)
 
         if mw.func_dict['apply_ssp_clm']:
-            op.apply_ssp_clm(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+            operations.apply_ssp_clm(name, save_dir, p.highpass, p.lowpass, p.overwrite)
 
         if mw.func_dict['run_ssp_eog']:
-            op.run_ssp_eog(name, save_dir, p.n_jobs, p.eog_channel,
-                           bad_channels, p.overwrite)
+            operations.run_ssp_eog(name, save_dir, p.n_jobs, p.eog_channel,
+                                   bad_channels, p.overwrite)
 
         if mw.func_dict['apply_ssp_eog']:
-            op.apply_ssp_eog(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+            operations.apply_ssp_eog(name, save_dir, p.highpass, p.lowpass, p.overwrite)
 
         if mw.func_dict['run_ssp_ecg']:
-            op.run_ssp_ecg(name, save_dir, p.n_jobs, p.ecg_channel,
-                           bad_channels, p.overwrite)
+            operations.run_ssp_ecg(name, save_dir, p.n_jobs, p.ecg_channel,
+                                   bad_channels, p.overwrite)
 
         if mw.func_dict['apply_ssp_ecg']:
-            op.apply_ssp_ecg(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+            operations.apply_ssp_ecg(name, save_dir, p.highpass, p.lowpass, p.overwrite)
 
         if mw.func_dict['plot_ssp']:
             plot.plot_ssp(name, save_dir, p.highpass, p.lowpass, p.save_plots,
@@ -249,47 +305,46 @@ def call_functions(main_window, project):
                               figures_path)
 
         if mw.func_dict['run_ica']:
-            op.run_ica(name, save_dir, p.highpass, p.lowpass, p.eog_channel, p.ecg_channel,
-                       p.reject, p.flat, bad_channels, p.overwrite, p.autoreject,
-                       p.save_plots, figures_path, pr.pscripts_path,
-                       mw.func_dict['erm_analysis'])
+            operations.run_ica(name, save_dir, p.highpass, p.lowpass, p.eog_channel, p.ecg_channel,
+                               p.reject, p.flat, bad_channels, p.overwrite, p.autoreject,
+                               p.save_plots, figures_path, pr.pscripts_path)
 
         # ==========================================================================
         # LOAD NON-ICA'ED EPOCHS AND APPLY ICA
         # ==========================================================================
 
         if mw.func_dict['apply_ica']:
-            op.apply_ica(name, save_dir, p.highpass, p.lowpass, p.overwrite)
+            operations.apply_ica(name, save_dir, p.highpass, p.lowpass, p.overwrite)
 
         # ==========================================================================
         # EVOKEDS
         # ==========================================================================
 
         if mw.func_dict['get_evokeds']:
-            op.get_evokeds(name, save_dir, p.highpass, p.lowpass, mw.func_dict, ermsub,
-                           p.detrend, p.enable_ica, p.overwrite)
+            operations.get_evokeds(name, save_dir, p.highpass, p.lowpass, mw.func_dict, ermsub,
+                                   p.detrend, p.enable_ica, p.overwrite)
 
         if mw.func_dict['get_h1h2_evokeds']:
-            op.get_h1h2_evokeds(name, save_dir, p.highpass, p.lowpass, p.enable_ica,
-                                mw.func_dict, ermsub, p.detrend)
+            operations.get_h1h2_evokeds(name, save_dir, p.highpass, p.lowpass, p.enable_ica,
+                                        mw.func_dict, ermsub, p.detrend)
 
         # ==========================================================================
         # TIME-FREQUENCY-ANALASYS
         # ==========================================================================
 
         if mw.func_dict['tfr']:
-            op.tfr(name, save_dir, p.highpass, p.lowpass, p.enable_ica, p.tfr_freqs, p.overwrite_tfr,
-                   p.tfr_method, p.multitaper_bandwith, p.stockwell_width, p.n_jobs)
+            operations.tfr(name, save_dir, p.highpass, p.lowpass, p.enable_ica, p.tfr_freqs, p.overwrite_tfr,
+                           p.tfr_method, p.multitaper_bandwith, p.stockwell_width, p.n_jobs)
 
         # ==========================================================================
         # NOISE COVARIANCE MATRIX
         # ==========================================================================
 
         if mw.func_dict['estimate_noise_covariance']:
-            op.estimate_noise_covariance(name, save_dir, p.highpass, p.lowpass, p.overwrite,
-                                         ermsub, pr.data_path, p.baseline, bad_channels,
-                                         p.n_jobs, p.erm_noise_cov, p.calm_noise_cov,
-                                         p.enable_ica, p.erm_ica)
+            operations.estimate_noise_covariance(name, save_dir, p.highpass, p.lowpass, p.overwrite,
+                                                 ermsub, pr.data_path, p.baseline, bad_channels,
+                                                 p.n_jobs, p.erm_noise_cov, p.calm_noise_cov,
+                                                 p.enable_ica, p.erm_ica)
 
         if mw.func_dict['plot_noise_covariance']:
             plot.plot_noise_covariance(name, save_dir, p.highpass, p.lowpass,
@@ -303,7 +358,7 @@ def call_functions(main_window, project):
         # use mne.gui.coregistration()
 
         if mw.func_dict['mri_coreg']:
-            op.mri_coreg(name, save_dir, subtomri, pr.subjects_dir)
+            operations.mri_coreg(name, save_dir, subtomri, pr.subjects_dir)
 
         if mw.func_dict['plot_transformation']:
             plot.plot_transformation(name, save_dir, subtomri, pr.subjects_dir,
@@ -318,71 +373,72 @@ def call_functions(main_window, project):
         # ==========================================================================
 
         if mw.func_dict['create_forward_solution']:
-            op.create_forward_solution(name, save_dir, subtomri, pr.subjects_dir,
-                                       p.source_space_method, p.overwrite,
-                                       p.n_jobs, p.eeg_fwd)
+            operations.create_forward_solution(name, save_dir, subtomri, pr.subjects_dir,
+                                               p.source_space_method, p.overwrite,
+                                               p.n_jobs, p.eeg_fwd)
 
         # ==========================================================================
         # CREATE INVERSE OPERATOR
         # ==========================================================================
 
         if mw.func_dict['create_inverse_operator']:
-            op.create_inverse_operator(name, save_dir, p.highpass, p.lowpass,
-                                       p.overwrite, ermsub, p.calm_noise_cov,
-                                       p.erm_noise_cov)
+            operations.create_inverse_operator(name, save_dir, p.highpass, p.lowpass,
+                                               p.overwrite, ermsub, p.calm_noise_cov,
+                                               p.erm_noise_cov)
 
         # ==========================================================================
         # SOURCE ESTIMATE MNE
         # ==========================================================================
 
         if mw.func_dict['source_estimate']:
-            op.source_estimate(name, save_dir, p.highpass, p.lowpass, p.inverse_method, p.toi,
-                               p.overwrite)
+            operations.source_estimate(name, save_dir, p.highpass, p.lowpass, p.inverse_method, p.toi,
+                                       p.overwrite)
 
         if mw.func_dict['vector_source_estimate']:
-            op.vector_source_estimate(name, save_dir, p.highpass, p.lowpass,
-                                      p.inverse_method, p.toi, p.overwrite)
+            operations.vector_source_estimate(name, save_dir, p.highpass, p.lowpass,
+                                              p.inverse_method, p.toi, p.overwrite)
 
         if mw.func_dict['mixed_norm_estimate']:
-            op.mixed_norm_estimate(name, save_dir, p.highpass, p.lowpass, p.toi, p.inverse_method, p.erm_noise_cov,
-                                   ermsub, p.calm_noise_cov, p.event_id, p.mixn_dip, p.overwrite)
+            operations.mixed_norm_estimate(name, save_dir, p.highpass, p.lowpass, p.toi, p.inverse_method,
+                                           p.erm_noise_cov,
+                                           ermsub, p.calm_noise_cov, p.event_id, p.mixn_dip, p.overwrite)
 
         if mw.func_dict['ecd_fit']:
-            op.ecd_fit(name, save_dir, p.highpass, p.lowpass, ermsub, pr.subjects_dir,
-                       subtomri, p.erm_noise_cov, p.calm_noise_cov, p.ecds,
-                       p.save_plots, figures_path)
+            operations.ecd_fit(name, save_dir, p.highpass, p.lowpass, ermsub, pr.subjects_dir,
+                               subtomri, p.erm_noise_cov, p.calm_noise_cov, p.ecds,
+                               p.save_plots, figures_path)
 
         if mw.func_dict['apply_morph']:
-            op.apply_morph(name, save_dir, p.highpass, p.lowpass,
-                           pr.subjects_dir, subtomri, p.inverse_method,
-                           p.overwrite, p.morph_to,
-                           p.source_space_method, p.event_id)
+            operations.apply_morph(name, save_dir, p.highpass, p.lowpass,
+                                   pr.subjects_dir, subtomri, p.inverse_method,
+                                   p.overwrite, p.morph_to,
+                                   p.source_space_method, p.event_id)
 
         if mw.func_dict['apply_morph_normal']:
-            op.apply_morph_normal(name, save_dir, p.highpass, p.lowpass,
-                                  pr.subjects_dir, subtomri, p.inverse_method,
-                                  p.overwrite, p.morph_to,
-                                  p.source_space_method, p.event_id)
+            operations.apply_morph_normal(name, save_dir, p.highpass, p.lowpass,
+                                          pr.subjects_dir, subtomri, p.inverse_method,
+                                          p.overwrite, p.morph_to,
+                                          p.source_space_method, p.event_id)
 
         if not p.combine_ab:
             if mw.func_dict['create_func_label']:
-                op.create_func_label(name, save_dir, p.highpass, p.lowpass,
-                                     p.inverse_method, p.event_id, subtomri, pr.subjects_dir,
-                                     p.source_space_method, p.label_origin,
-                                     p.parcellation_orig, p.ev_ids_label_analysis,
-                                     p.save_plots, figures_path, pr.pscripts_path,
-                                     p.n_std, p.combine_ab)
+                operations.create_func_label(name, save_dir, p.highpass, p.lowpass,
+                                             p.inverse_method, p.event_id, subtomri, pr.subjects_dir,
+                                             p.source_space_method, p.label_origin,
+                                             p.parcellation_orig, p.ev_ids_label_analysis,
+                                             p.save_plots, figures_path, pr.pscripts_path,
+                                             p.n_std, p.combine_ab)
 
         if not p.combine_ab:
             if mw.func_dict['func_label_processing']:
-                op.func_label_processing(name, save_dir, p.highpass, p.lowpass,
-                                         p.save_plots, figures_path, subtomri, pr.subjects_dir,
-                                         pr.pscripts_path, p.ev_ids_label_analysis,
-                                         p.corr_threshold, p.combine_ab)
+                operations.func_label_processing(name, save_dir, p.highpass, p.lowpass,
+                                                 p.save_plots, figures_path, subtomri, pr.subjects_dir,
+                                                 pr.pscripts_path, p.ev_ids_label_analysis,
+                                                 p.corr_threshold, p.combine_ab)
 
         if mw.func_dict['func_label_ctf_ps']:
-            op.func_label_ctf_ps(name, save_dir, p.highpass, p.lowpass, subtomri,
-                                 pr.subjects_dir, p.parcellation_orig)
+            operations.func_label_ctf_ps(name, save_dir, p.highpass, p.lowpass, subtomri,
+                                         pr.subjects_dir, p.parcellation_orig)
         # ==========================================================================
         # PRINT INFO
         # ==========================================================================
@@ -541,10 +597,10 @@ def call_functions(main_window, project):
         # ==========================================================================
 
         if mw.func_dict['label_power_phlck']:
-            op.label_power_phlck(name, save_dir, p.highpass, p.lowpass, p.baseline, p.tfr_freqs,
-                                 subtomri, p.target_labels, p.parcellation,
-                                 p.ev_ids_label_analysis, p.n_jobs,
-                                 save_dir, figures_path)
+            operations.label_power_phlck(name, save_dir, p.highpass, p.lowpass, p.baseline, p.tfr_freqs,
+                                         subtomri, p.target_labels, p.parcellation,
+                                         p.ev_ids_label_analysis, p.n_jobs,
+                                         save_dir, figures_path)
 
         if mw.func_dict['plot_label_power_phlck']:
             plot.plot_label_power_phlck(name, save_dir, p.highpass, p.lowpass, subtomri, p.parcellation,
@@ -552,12 +608,12 @@ def call_functions(main_window, project):
                                         p.target_labels, p.ev_ids_label_analysis)
 
         if mw.func_dict['source_space_connectivity']:
-            op.source_space_connectivity(name, save_dir, p.highpass, p.lowpass,
-                                         subtomri, pr.subjects_dir, p.parcellation,
-                                         p.target_labels, p.con_methods,
-                                         p.con_fmin, p.con_fmax,
-                                         p.n_jobs, p.overwrite, p.enable_ica,
-                                         p.ev_ids_label_analysis)
+            operations.source_space_connectivity(name, save_dir, p.highpass, p.lowpass,
+                                                 subtomri, pr.subjects_dir, p.parcellation,
+                                                 p.target_labels, p.con_methods,
+                                                 p.con_fmin, p.con_fmax,
+                                                 p.n_jobs, p.overwrite, p.enable_ica,
+                                                 p.ev_ids_label_analysis)
 
         if mw.func_dict['plot_source_space_connectivity']:
             plot.plot_source_space_connectivity(name, save_dir, p.highpass, p.lowpass,
@@ -570,8 +626,8 @@ def call_functions(main_window, project):
         # General Statistics
         # ==========================================================================
         if mw.func_dict['corr_ntr']:
-            op.corr_ntr(name, save_dir, p.highpass, p.lowpass, mw.func_dict,
-                        ermsub, subtomri, p.enable_ica, p.save_plots, figures_path)
+            operations.corr_ntr(name, save_dir, p.highpass, p.lowpass, mw.func_dict,
+                                ermsub, subtomri, p.enable_ica, p.save_plots, figures_path)
 
         # close all plots
         if mw.func_dict['close_plots']:
@@ -582,9 +638,9 @@ def call_functions(main_window, project):
     # All-Subject-Analysis
     # ==============================================================================
     if mw.func_dict['pp_alignment']:
-        ppf.pp_alignment(ab_dict, cond_dict, pr.sub_dict, pr.data_path, p.highpass, p.lowpass, pr.pscripts_path,
-                         p.event_id, pr.subjects_dir, p.inverse_method, p.source_space_method,
-                         p.parcellation, figures_path)
+        pinprick.pp_alignment(ab_dict, cond_dict, pr.sub_dict, pr.data_path, p.highpass, p.lowpass, pr.pscripts_path,
+                              p.event_id, pr.subjects_dir, p.inverse_method, p.source_space_method,
+                              p.parcellation, figures_path)
 
     if mw.func_dict['cmp_label_time_course']:
         plot.cmp_label_time_course(pr.data_path, p.highpass, p.lowpass, pr.sub_dict, comp_dict,
@@ -615,12 +671,12 @@ def call_functions(main_window, project):
                     match = re.match(pattern, name)
                     prefix = match.group()
                     subtomri = pr.sub_dict[prefix]
-                op.create_func_label(name, save_dir, p.highpass, p.lowpass,
-                                     p.inverse_method, p.event_id, subtomri, pr.subjects_dir,
-                                     p.source_space_method, p.label_origin,
-                                     p.parcellation_orig, p.ev_ids_label_analysis,
-                                     p.save_plots, figures_path, pr.pscripts_path,
-                                     p.n_std, p.combine_ab)
+                operations.create_func_label(name, save_dir, p.highpass, p.lowpass,
+                                             p.inverse_method, p.event_id, subtomri, pr.subjects_dir,
+                                             p.source_space_method, p.label_origin,
+                                             p.parcellation_orig, p.ev_ids_label_analysis,
+                                             p.save_plots, figures_path, pr.pscripts_path,
+                                             p.n_std, p.combine_ab)
 
     if p.combine_ab:
         if mw.func_dict['func_label_processing']:
@@ -644,10 +700,10 @@ def call_functions(main_window, project):
                     match = re.match(pattern, name)
                     prefix = match.group()
                     subtomri = pr.sub_dict[prefix]
-                op.func_label_processing(name, save_dir, p.highpass, p.lowpass,
-                                         p.save_plots, figures_path, subtomri, pr.subjects_dir,
-                                         pr.pscripts_path, p.ev_ids_label_analysis,
-                                         p.corr_threshold, p.combine_ab)
+                operations.func_label_processing(name, save_dir, p.highpass, p.lowpass,
+                                                 p.save_plots, figures_path, subtomri, pr.subjects_dir,
+                                                 pr.pscripts_path, p.ev_ids_label_analysis,
+                                                 p.corr_threshold, p.combine_ab)
 
     if mw.func_dict['sub_func_label_analysis']:
         plot.sub_func_label_analysis(p.highpass, p.lowpass, p.etmax, sub_files_dict,
@@ -664,41 +720,41 @@ def call_functions(main_window, project):
     # ==============================================================================
 
     if mw.func_dict['grand_avg_evokeds']:
-        op.grand_avg_evokeds(pr.data_path, grand_avg_dict, pr.save_dir_averages,
-                             p.highpass, p.lowpass, mw.func_dict, mw.quality,
-                             p.ana_h1h2)
+        operations.grand_avg_evokeds(pr.data_path, grand_avg_dict, pr.save_dir_averages,
+                                     p.highpass, p.lowpass, mw.func_dict, mw.quality,
+                                     p.ana_h1h2)
 
     if mw.func_dict['pp_combine_evokeds_ab']:
-        ppf.pp_combine_evokeds_ab(pr.data_path, pr.save_dir_averages, p.highpass, p.lowpass, ab_dict)
+        pinprick.pp_combine_evokeds_ab(pr.data_path, pr.save_dir_averages, p.highpass, p.lowpass, ab_dict)
 
     if mw.func_dict['grand_avg_tfr']:
-        op.grand_avg_tfr(pr.data_path, grand_avg_dict, pr.save_dir_averages,
-                         p.highpass, p.lowpass, p.tfr_method)
+        operations.grand_avg_tfr(pr.data_path, grand_avg_dict, pr.save_dir_averages,
+                                 p.highpass, p.lowpass, p.tfr_method)
 
     if mw.func_dict['grand_avg_morphed']:
-        op.grand_avg_morphed(grand_avg_dict, pr.data_path, p.inverse_method, pr.save_dir_averages,
-                             p.highpass, p.lowpass, p.event_id)
+        operations.grand_avg_morphed(grand_avg_dict, pr.data_path, p.inverse_method, pr.save_dir_averages,
+                                     p.highpass, p.lowpass, p.event_id)
 
     if mw.func_dict['grand_avg_normal_morphed']:
-        op.grand_avg_normal_morphed(grand_avg_dict, pr.data_path, p.inverse_method, pr.save_dir_averages,
-                                    p.highpass, p.lowpass, p.event_id)
+        operations.grand_avg_normal_morphed(grand_avg_dict, pr.data_path, p.inverse_method, pr.save_dir_averages,
+                                            p.highpass, p.lowpass, p.event_id)
 
     if mw.func_dict['grand_avg_connect']:
-        op.grand_avg_connect(grand_avg_dict, pr.data_path, p.con_methods,
-                             p.con_fmin, p.con_fmax, pr.save_dir_averages,
-                             p.lowpass, p.highpass)
+        operations.grand_avg_connect(grand_avg_dict, pr.data_path, p.con_methods,
+                                     p.con_fmin, p.con_fmax, pr.save_dir_averages,
+                                     p.lowpass, p.highpass)
 
     if mw.func_dict['grand_avg_label_power']:
-        op.grand_avg_label_power(grand_avg_dict, p.ev_ids_label_analysis,
-                                 pr.data_path, p.highpass, p.lowpass,
-                                 p.target_labels, pr.save_dir_averages)
+        operations.grand_avg_label_power(grand_avg_dict, p.ev_ids_label_analysis,
+                                         pr.data_path, p.highpass, p.lowpass,
+                                         p.target_labels, pr.save_dir_averages)
 
     if mw.func_dict['grand_avg_func_labels']:
-        op.grand_avg_func_labels(grand_avg_dict, p.highpass, p.lowpass,
-                                 pr.save_dir_averages, p.event_id, p.ev_ids_label_analysis,
-                                 pr.subjects_dir, p.source_space_method,
-                                 p.parcellation_orig, pr.pscripts_path, p.save_plots,
-                                 p.label_origin, figures_path, p.n_std)
+        operations.grand_avg_func_labels(grand_avg_dict, p.highpass, p.lowpass,
+                                         pr.save_dir_averages, p.event_id, p.ev_ids_label_analysis,
+                                         pr.subjects_dir, p.source_space_method,
+                                         p.parcellation_orig, pr.pscripts_path, p.save_plots,
+                                         p.label_origin, figures_path, p.n_std)
 
     # %%============================================================================
     # GRAND AVERAGES PLOTS (sensor space and source space)
@@ -748,11 +804,11 @@ def call_functions(main_window, project):
     # ==============================================================================
 
     if mw.func_dict['statistics_source_space']:
-        op.statistics_source_space(morphed_data_all, pr.save_dir_averages,
-                                   p.independent_variable_1,
-                                   p.independent_variable_2,
-                                   p.time_window, p.n_permutations, p.highpass, p.lowpass,
-                                   p.overwrite)
+        operations.statistics_source_space(morphed_data_all, pr.save_dir_averages,
+                                           p.independent_variable_1,
+                                           p.independent_variable_2,
+                                           p.time_window, p.n_permutations, p.highpass, p.lowpass,
+                                           p.overwrite)
 
     # ==============================================================================
     # PLOT GRAND AVERAGES OF SOURCE ESTIMATES WITH STATISTICS CLUSTER MASK

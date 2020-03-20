@@ -6,7 +6,7 @@ Pipeline for group analysis of MEG data - operations functions
 @github: https://github.com/ualsbombe/omission_frontiers.git
 
 Edited by Martin Schulz
-martin@stud.uni-heidelberg.de
+@author: martin@stud.uni-heidelberg.de
 """
 from __future__ import print_function
 
@@ -30,7 +30,7 @@ from scipy import signal, stats
 from surfer import Brain
 
 from basic_functions import io, plot as plot
-from pipeline_functions import decorators as decor, utilities as ut
+from pipeline_functions import decorators as decor, iswin, utilities as ut
 
 try:
     from autoreject import AutoReject
@@ -89,12 +89,6 @@ def populate_directories(data_path, figures_path, event_id):
             makedirs(folder_path)
             print(folder_path + ' has been created')
 
-        # create erm_figure
-        erm_folders = join(figures_path, 'erm_figures', folder)
-        if not exists(erm_folders):
-            makedirs(erm_folders)
-            print(erm_folders + ' has been created')
-
     # create subfolders for for event_ids
     trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
                        'epochs_image', 'epochs_topo', 'evoked_butterfly',
@@ -111,12 +105,6 @@ def populate_directories(data_path, figures_path, event_id):
             if not exists(subfolder):
                 makedirs(subfolder)
                 print(subfolder + ' has been created')
-
-            # for erm
-            erm_subfolder = join(figures_path, 'erm_figures', tr, ev_id)
-            if not exists(erm_subfolder):
-                makedirs(erm_subfolder)
-                print(erm_subfolder + ' has been created')
 
     # create grand average figures path
     grand_averages_figures_path = join(figures_path, 'grand_averages')
@@ -696,7 +684,7 @@ def apply_ssp_ecg(name, save_dir, highpass, lowpass, overwrite):
 @decor.topline
 def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             reject, flat, bad_channels, overwrite, autoreject,
-            save_plots, figures_path, sub_script_path, erm_analysis):
+            save_plots, figures_path, sub_script_path):
     info = io.read_info(name, save_dir)
 
     ica_dict = ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', sub_script_path,
@@ -728,7 +716,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
         ica.fit(raw, picks, reject=reject, flat=flat,
                 reject_by_annotation=True)
 
-        if name in ica_dict and ica_dict[name] != []:
+        if name in ica_dict and ica_dict[name] != [] and ica_dict[name] is not None:
             indices = ica_dict[name]
             ica.exclude += indices
             print(f'{indices} added to ica.exclude from ica_components.py')
@@ -759,7 +747,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
                 print('figure: ' + save_path + ' has been saved')
                 if not exists(join(figures_path, 'ica/evoked_overlay')):
                     makedirs(join(figures_path, 'ica/evoked_overlay'))
-                save_path = join(figures_path, 'ica/evoked_overlay', name + \
+                save_path = join(figures_path, 'ica/evoked_overlay', name +
                                  '_ica_ovl' + filter_string(highpass, lowpass) + '.jpg')
                 fig5.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
@@ -767,7 +755,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
 
-        elif 'EEG 001' in info['ch_names'] and not erm_analysis:
+        elif 'EEG 001' in info['ch_names']:
             eeg_picks = mne.pick_types(raw.info, meg=True, eeg=True, eog=True,
                                        stim=False, exclude=bad_channels)
 
@@ -788,18 +776,18 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
                     fig7 = ica.plot_overlay(eog_epochs.average(), exclude=eog_indices, title=name + '_eog')
                     if save_plots:
                         for f in fig2:
-                            save_path = join(figures_path, 'ica', name + \
-                                             '_ica_prop_eog' + filter_string(highpass, lowpass) + \
+                            save_path = join(figures_path, 'ica', name +
+                                             '_ica_prop_eog' + filter_string(highpass, lowpass) +
                                              f'_{fig2.index(f)}.jpg')
                             f.savefig(save_path, dpi=300)
                             print('figure: ' + save_path + ' has been saved')
 
-                        save_path = join(figures_path, 'ica', name + \
+                        save_path = join(figures_path, 'ica', name +
                                          '_ica_scor_eog' + filter_string(highpass, lowpass) + '.jpg')
                         fig3.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
 
-                        save_path = join(figures_path, 'ica', name + \
+                        save_path = join(figures_path, 'ica', name +
                                          '_ica_ovl_eog' + filter_string(highpass, lowpass) + '.jpg')
                         fig7.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
@@ -817,18 +805,18 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
                     fig8 = ica.plot_overlay(ecg_epochs.average(), exclude=ecg_indices, title=name + '_ecg')
                     if save_plots:
                         for f in fig9:
-                            save_path = join(figures_path, 'ica', name + \
-                                             '_ica_prop_ecg' + filter_string(highpass, lowpass) + \
+                            save_path = join(figures_path, 'ica', name +
+                                             '_ica_prop_ecg' + filter_string(highpass, lowpass) +
                                              f'_{fig9.index(f)}.jpg')
                             f.savefig(save_path, dpi=300)
                             print('figure: ' + save_path + ' has been saved')
 
-                        save_path = join(figures_path, 'ica', name + \
+                        save_path = join(figures_path, 'ica', name +
                                          '_ica_scor_ecg' + filter_string(highpass, lowpass) + '.jpg')
                         fig4.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
 
-                        save_path = join(figures_path, 'ica', name + \
+                        save_path = join(figures_path, 'ica', name +
                                          '_ica_ovl_ecg' + filter_string(highpass, lowpass) + '.jpg')
                         fig8.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
@@ -854,23 +842,23 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             fig10 = ica.plot_overlay(epochs.average(), title=name)
 
             if save_plots:
-                save_path = join(figures_path, 'ica', name + \
+                save_path = join(figures_path, 'ica', name +
                                  '_ica_comp' + filter_string(highpass, lowpass) + '.jpg')
                 fig1.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
                 if not exists(join(figures_path, 'ica/evoked_overlay')):
                     makedirs(join(figures_path, 'ica/evoked_overlay'))
-                save_path = join(figures_path, 'ica/evoked_overlay', name + \
+                save_path = join(figures_path, 'ica/evoked_overlay', name +
                                  '_ica_ovl' + filter_string(highpass, lowpass) + '.jpg')
                 fig10.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
-                save_path = join(figures_path, 'ica', name + \
+                save_path = join(figures_path, 'ica', name +
                                  '_ica_src' + filter_string(highpass, lowpass) + '_0.jpg')
                 fig5.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
-                save_path = join(figures_path, 'ica', name + \
+                save_path = join(figures_path, 'ica', name +
                                  '_ica_src' + filter_string(highpass, lowpass) + '_1.jpg')
                 fig6.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
@@ -896,17 +884,17 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
                                                image_args={'sigma': 1.})
                     fig6 = ica.plot_overlay(ecg_epochs.average(), exclude=ecg_indices, title=name + '_ecg')
 
-                    save_path = join(figures_path, 'ica', name + \
+                    save_path = join(figures_path, 'ica', name +
                                      '_ica_scor_ecg' + filter_string(highpass, lowpass) + '.jpg')
                     fig4.savefig(save_path, dpi=300)
                     print('figure: ' + save_path + ' has been saved')
                     for f in fig5:
-                        save_path = join(figures_path, 'ica', name + \
-                                         '_ica_prop_ecg' + filter_string(highpass, lowpass) \
+                        save_path = join(figures_path, 'ica', name +
+                                         '_ica_prop_ecg' + filter_string(highpass, lowpass)
                                          + f'_{fig5.index(f)}.jpg')
                         f.savefig(save_path, dpi=300)
                         print('figure: ' + save_path + ' has been saved')
-                    save_path = join(figures_path, 'ica', name + \
+                    save_path = join(figures_path, 'ica', name +
                                      '_ica_ovl_ecg' + filter_string(highpass, lowpass) + '.jpg')
                     fig6.savefig(save_path, dpi=300)
                     print('figure: ' + save_path + ' has been saved')
@@ -922,17 +910,17 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             fig3 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=name)
 
             if save_plots:
-                save_path = join(figures_path, 'ica', name + \
+                save_path = join(figures_path, 'ica', name +
                                  '_ica_comp' + filter_string(highpass, lowpass) + '.jpg')
                 fig1.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
-                save_path = join(figures_path, 'ica', name + \
+                save_path = join(figures_path, 'ica', name +
                                  '_ica_src' + filter_string(highpass, lowpass) + '_0.jpg')
                 fig2.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
 
-                save_path = join(figures_path, 'ica', name + \
+                save_path = join(figures_path, 'ica', name +
                                  '_ica_src' + filter_string(highpass, lowpass) + '_1.jpg')
                 fig3.savefig(save_path, dpi=300)
                 print('figure: ' + save_path + ' has been saved')
@@ -1125,8 +1113,8 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
                                        drop_bads=True)
                 ga.comment = trial
                 ga_path = join(save_dir_averages, 'evoked',
-                               key + '_' + trial + \
-                               filter_string(highpass, lowpass) + \
+                               key + '_' + trial +
+                               filter_string(highpass, lowpass) +
                                '_' + str(quality) + '-grand_avg-ave.fif')
                 ga.save(ga_path)
 
@@ -1137,8 +1125,8 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
                                        drop_bads=True)
                 ga.comment = trial
                 ga_path = join(save_dir_averages, 'evoked',
-                               key + '_' + trial + '_' + 'h1' + \
-                               filter_string(highpass, lowpass) + \
+                               key + '_' + trial + '_' + 'h1' +
+                               filter_string(highpass, lowpass) +
                                '_' + str(quality) + '-grand_avg-ave.fif')
                 ga.save(ga_path)
 
@@ -1149,8 +1137,8 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
                                        drop_bads=True)
                 ga.comment = trial
                 ga_path = join(save_dir_averages, 'evoked',
-                               key + '_' + trial + '_' + 'h2' + \
-                               filter_string(highpass, lowpass) + \
+                               key + '_' + trial + '_' + 'h2' +
+                               filter_string(highpass, lowpass) +
                                '_' + str(quality) + '-grand_avg-ave.fif')
                 ga.save(ga_path)
 
@@ -1244,8 +1232,8 @@ def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
                                        drop_bads=True)
                 ga.comment = trial
                 ga_path = join(save_dir_averages, 'tfr',
-                               key + '_' + trial + \
-                               filter_string(highpass, lowpass) + \
+                               key + '_' + trial +
+                               filter_string(highpass, lowpass) +
                                '-grand_avg-tfr.h5')
 
                 ga.save(ga_path)
@@ -1279,7 +1267,7 @@ def import_mri(dicom_path, mri_subject, subjects_dir, n_jobs_freesurfer):
     # check if import has already been done
     if not isdir(join(subjects_dir, mri_subject)):
         # run bash command
-        print('Importing MRI data for subject: ' + mri_subject + \
+        print('Importing MRI data for subject: ' + mri_subject +
               ' into FreeSurfer folder.\nBash output follows below.\n\n')
 
         command = ['recon-all',
@@ -1289,14 +1277,15 @@ def import_mri(dicom_path, mri_subject, subjects_dir, n_jobs_freesurfer):
 
         run_process_and_write_output(command, subjects_dir)
     else:
-        print('FreeSurfer folder for: ' + mri_subject + ' already exists.' + \
-              ' To import data from the beginning, you would have to ' + \
+        print('FreeSurfer folder for: ' + mri_subject + ' already exists.' +
+              ' To import data from the beginning, you would have to ' +
               "delete this subject's FreeSurfer folder")
 
 
+# Todo: Get Freesurfer-Functions ready
 def segment_mri(mri_subject, subjects_dir, n_jobs_freesurfer):
-    print('Segmenting MRI data for subject: ' + mri_subject + \
-          ' using the Freesurfer "recon-all" pipeline.' + \
+    print('Segmenting MRI data for subject: ' + mri_subject +
+          ' using the Freesurfer "recon-all" pipeline.' +
           'Bash output follows below.\n\n')
 
     command = ['recon-all',
@@ -1310,9 +1299,9 @@ def segment_mri(mri_subject, subjects_dir, n_jobs_freesurfer):
 def apply_watershed(mri_subject, subjects_dir, overwrite):
     # mne.bem.make_watershed_bem(mri_subject, subjects_dir)
 
-    print('Running Watershed algorithm for: ' + mri_subject + \
-          ". Output is written to the bem folder " + \
-          "of the subject's FreeSurfer folder.\n" + \
+    print('Running Watershed algorithm for: ' + mri_subject +
+          ". Output is written to the bem folder " +
+          "of the subject's FreeSurfer folder.\n" +
           'Bash output follows below.\n\n')
 
     if overwrite:
@@ -1352,10 +1341,10 @@ def apply_watershed(mri_subject, subjects_dir, overwrite):
 
 
 def make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite):
-    print('Making dense scalp surfacing easing co-registration for ' + \
-          'subject: ' + mri_subject + \
-          ". Output is written to the bem folder" + \
-          " of the subject's FreeSurfer folder.\n" + \
+    print('Making dense scalp surfacing easing co-registration for ' +
+          'subject: ' + mri_subject +
+          ". Output is written to the bem folder" +
+          " of the subject's FreeSurfer folder.\n" +
           'Bash output follows below.\n\n')
 
     if overwrite:
@@ -1529,7 +1518,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
             mne.cov.write_cov(covariance_path, noise_covariance)
 
         else:
-            print('noise covariance file: ' + covariance_path + \
+            print('noise covariance file: ' + covariance_path +
                   ' already exists')
 
     elif ermsub == 'None' or 'leer' in name or erm_noise_cov is False:
@@ -1552,7 +1541,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
             mne.cov.write_cov(covariance_path, noise_covariance)
 
         else:
-            print('noise covariance file: ' + covariance_path + \
+            print('noise covariance file: ' + covariance_path +
                   ' already exists')
 
     else:
@@ -1577,7 +1566,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
             mne.cov.write_cov(covariance_path, noise_covariance)
 
         else:
-            print('noise covariance file: ' + covariance_path + \
+            print('noise covariance file: ' + covariance_path +
                   ' already exists')
 
 
@@ -1600,7 +1589,7 @@ def create_inverse_operator(name, save_dir, highpass, lowpass,
         mne.minimum_norm.write_inverse_operator(inverse_operator_path, inverse_operator)
 
     else:
-        print('inverse operator file: ' + inverse_operator_path + \
+        print('inverse operator file: ' + inverse_operator_path +
               ' already exists')
 
 
@@ -1625,7 +1614,7 @@ def source_estimate(name, save_dir, highpass, lowpass, inverse_method, toi,
             stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, method=inverse_method)
             stc.save(stc_path)
         else:
-            print('source estimates for: ' + name + \
+            print('source estimates for: ' + name +
                   ' already exists')
 
         n_stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '_' + inverse_method + '-normal'
@@ -1635,7 +1624,7 @@ def source_estimate(name, save_dir, highpass, lowpass, inverse_method, toi,
                                                         method=inverse_method, pick_ori='normal')
             normal_stc.save(n_stc_path)
         else:
-            print('normal-source estimates for: ' + name + \
+            print('normal-source estimates for: ' + name +
                   ' already exists')
 
 
@@ -1723,7 +1712,7 @@ def mixed_norm_estimate(name, save_dir, highpass, lowpass, toi, inverse_method, 
             if overwrite or not isfile(mixn_stc_path + '-lh.stc'):
                 mixn.save(mixn_stc_path)
             else:
-                print('mixed-norm source estimates for: ' + name + \
+                print('mixed-norm source estimates for: ' + name +
                       ' already exists')
 
         mixn_res_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '-mixn-res-ave.fif'
@@ -1731,7 +1720,7 @@ def mixed_norm_estimate(name, save_dir, highpass, lowpass, toi, inverse_method, 
         if overwrite or not isfile(mixn_res_path):
             residual.save(mixn_res_path)
         else:
-            print('mixed-norm source estimate residual for: ' + name + \
+            print('mixed-norm source estimate residual for: ' + name +
                   ' already exists')
 
 
@@ -1888,7 +1877,7 @@ def create_func_label(name, save_dir, highpass, lowpass, inverse_method, event_i
         if label_origin == 'all':
             t_labels = labels
         else:
-            t_labels = [l for l in labels if l.name in label_origin]
+            t_labels = [lb for lb in labels if lb.name in label_origin]
 
         for prog, label in enumerate(t_labels):
             print(name)
@@ -2416,7 +2405,7 @@ def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
 
                 if save_plots:
                     save_path = join(figures_path, 'tf_source_space/label_power',
-                                     name + '_' + label.name + '_power_' + \
+                                     name + '_' + label.name + '_power_' +
                                      ev_id + filter_string(highpass, lowpass) + '.jpg')
                     plt.savefig(save_path, dpi=600)
                     print('figure: ' + save_path + ' has been saved')
@@ -2503,7 +2492,7 @@ def apply_morph(name, save_dir, highpass, lowpass, subjects_dir, subtomri,
             stc_morphed.save(stc_morphed_path)
 
         else:
-            print('morphed source estimates for: ' + stc_morphed_path + \
+            print('morphed source estimates for: ' + stc_morphed_path +
                   ' already exists')
 
 
@@ -2525,7 +2514,7 @@ def apply_morph_normal(name, save_dir, highpass, lowpass, subjects_dir, subtomri
             stc_morphed.save(stc_morphed_path)
 
         else:
-            print('morphed source estimates for: ' + stc_morphed_path + \
+            print('morphed source estimates for: ' + stc_morphed_path +
                   ' already exists')
 
 
@@ -2585,7 +2574,7 @@ def source_space_connectivity(name, save_dir, highpass, lowpass,
             if overwrite or not isfile(file_path):
                 np.save(file_path, con_res[con_method])
             else:
-                print('connectivity_measures for for: ' + file_path + \
+                print('connectivity_measures for for: ' + file_path +
                       ' already exists')
 
 
@@ -2642,8 +2631,8 @@ def grand_avg_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averag
                 trial_average.data /= n_subjects
                 trial_average.comment = trial
                 ga_path = join(save_dir_averages, 'stc',
-                               key + '_' + trial + \
-                               filter_string(highpass, lowpass) + \
+                               key + '_' + trial +
+                               filter_string(highpass, lowpass) +
                                '-grand_avg')
                 trial_average.save(ga_path)
         # clear memory
@@ -2703,8 +2692,8 @@ def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir
                 trial_average.data /= n_subjects
                 trial_average.comment = trial
                 ga_path = join(save_dir_averages, 'stc',
-                               key + '_' + trial + \
-                               filter_string(highpass, lowpass) + \
+                               key + '_' + trial +
+                               filter_string(highpass, lowpass) +
                                '-grand_avg-normal')
                 trial_average.save(ga_path)
         # clear memory
@@ -3132,8 +3121,8 @@ def grand_avg_connect(grand_avg_dict, data_path, con_methods,
                     average /= n_subjects
 
                     ga_path = join(save_dir_averages, 'connect',
-                                   key + '_' + inverse_method + \
-                                   filter_string(highpass, lowpass) + \
+                                   key + '_' + inverse_method +
+                                   filter_string(highpass, lowpass) +
                                    '-grand_avg_connect' + '-' + ev_id)
                     np.save(ga_path, average)
 
@@ -3184,12 +3173,11 @@ def statistics_source_space(morphed_data_all, save_dir_averages,
 
         statistics_list = [statistics_data_1, statistics_data_2]
 
-        t_obs, clusters, cluster_p_values, h0 = \
-            mne.stats.permutation_cluster_test(statistics_list,
-                                               n_permutations=n_permutations,
-                                               threshold=t_threshold,
-                                               seed=seed,
-                                               n_jobs=-1)
+        t_obs, clusters, cluster_p_values, h0 = mne.stats.permutation_cluster_test(statistics_list,
+                                                                                   n_permutations=n_permutations,
+                                                                                   threshold=t_threshold,
+                                                                                   seed=seed,
+                                                                                   n_jobs=-1)
 
         cluster_dict = dict(t_obs=t_obs, clusters=clusters,
                             cluster_p_values=cluster_p_values, h0=h0)
@@ -3200,7 +3188,7 @@ def statistics_source_space(morphed_data_all, save_dir_averages,
         print('finished saving cluster at path: ' + cluster_path)
 
     else:
-        print('cluster permutation: ' + cluster_path + \
+        print('cluster permutation: ' + cluster_path +
               ' already exists')
 
 
@@ -3275,8 +3263,8 @@ def corr_ntr(name, save_dir, highpass, lowpass, exec_ops, ermsub,
         plt.title(name)
 
         if save_plots:
-            save_path = join(figures_path, 'correlation_ntr', name + \
-                             filter_string(highpass, lowpass) + \
+            save_path = join(figures_path, 'correlation_ntr', name +
+                             filter_string(highpass, lowpass) +
                              '_' + l.name + '.jpg')
             plt.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
