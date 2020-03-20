@@ -71,6 +71,7 @@ class MyProject:
         # Initiate other paths
         self.project_path = join(self.home_path, self.project_name)
         self.data_path = join(self.project_path, 'data')
+        self.figures_path = join(self.project_path, 'figures')
         self.save_dir_averages = join(self.data_path, 'grand_averages')
         self.erm_data_path = join(self.data_path, 'empty_room_data')
         self.subjects_dir = join(self.home_path, 'Freesurfer')
