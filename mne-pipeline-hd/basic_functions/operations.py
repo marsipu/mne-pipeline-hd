@@ -195,7 +195,7 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
             print(f'raw file with Highpass = {1} Hz and Lowpass = {lowpass} Hz already exists')
             print('NO OVERWRITE FOR FILTERING, please change settings or delete files for new methods')
 
-    if ermsub != 'None':
+    if ermsub is 'None':
         erm_name = ermsub + '-raw.fif'
         erm_path = join(data_path, 'empty_room_data', ermsub, erm_name)
         erm_filter_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
@@ -230,13 +230,9 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
 
 
 @decor.topline
-def find_events(name, save_dir, adjust_timeline_by_msec, overwrite, exec_ops):
+def find_events(name, save_dir, adjust_timeline_by_msec, overwrite):
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
-
-    if exec_ops['erm_analysis']:
-        print('No events for erm-data')
-        return
 
     if overwrite or not isfile(events_path):
         raw = io.read_raw(name, save_dir)
@@ -391,10 +387,10 @@ def find_eog_events(name, save_dir, eog_channel):
 
 
 @decor.topline
-def epoch_raw(name, save_dir, highpass, lowpass, event_id, tmin, tmax,
+def epoch_raw(name, save_dir, highpass, lowpass, event_id, t_epoch,
               baseline, reject, flat, autoreject, overwrite_ar,
-              sub_script_path, bad_channels, decim,
-              reject_eog_epochs, overwrite, exec_ops):
+              pscripts_path, bad_channels, decim,
+              reject_eog_epochs, overwrite):
     epochs_name = name + filter_string(highpass, lowpass) + '-epo.fif'
     epochs_path = join(save_dir, epochs_name)
     if overwrite or not isfile(epochs_path):
@@ -402,18 +398,7 @@ def epoch_raw(name, save_dir, highpass, lowpass, event_id, tmin, tmax,
         raw = io.read_filtered(name, save_dir, highpass, lowpass)
         raw.info['bads'] = bad_channels
 
-        if exec_ops['erm_analysis']:
-            # create some artificial events similar to those in motor-erm
-            n_times = raw.n_times
-            sfreq = raw.info['sfreq']
-            step = (n_times - 10 * sfreq) / 200  # Numer of events in motor_erm
-            events = np.ndarray((200, 3), dtype='int32')
-            times = np.arange(5 * sfreq, n_times - 5 * sfreq, step)[:200]
-            events[:, 0] = times
-            events[:, 1] = 0
-            events[:, 2] = 1
-        else:
-            events = io.read_events(name, save_dir)
+        events = io.read_events(name, save_dir)
 
         # Choose only included event_ids
         actual_event_id = {}
@@ -445,12 +430,12 @@ def epoch_raw(name, save_dir, highpass, lowpass, event_id, tmin, tmax,
             raw.set_annotations(annotations)
             print(f'{n_blinks} blinks detected and annotated')
 
-        epochs = mne.Epochs(raw, events, actual_event_id, tmin, tmax, baseline,
+        epochs = mne.Epochs(raw, events, actual_event_id, t_epoch[0], t_epoch[1], baseline,
                             preload=True, picks=picks, proj=False, reject=None,
                             decim=decim, on_missing='ignore', reject_by_annotation=True)
 
         if autoreject:
-            reject = ut.autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwrite_ar=overwrite_ar)
+            reject = ut.autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite_ar=overwrite_ar)
 
         print(f'Rejection Threshold: {reject}')
 
@@ -470,7 +455,7 @@ def epoch_raw(name, save_dir, highpass, lowpass, event_id, tmin, tmax,
         c.insert(0, (len(epochs), epochs.drop_log_stats()))
 
         ut.dict_filehandler(name, f'reject_channels_{highpass}-{lowpass}_Hz',
-                            sub_script_path, values=c)
+                            pscripts_path, values=c)
 
     else:
         print('epochs file: ' + epochs_path + ' already exists')
@@ -479,7 +464,7 @@ def epoch_raw(name, save_dir, highpass, lowpass, event_id, tmin, tmax,
 @decor.topline
 def run_ssp_er(name, save_dir, highpass, lowpass, data_path, ermsub, bad_channels,
                overwrite):
-    if ermsub == 'None':
+    if ermsub is 'None':
         print('no empty_room_data found for' + name)
         pass
     else:
@@ -973,7 +958,7 @@ def autoreject_interpolation(name, save_dir, highpass, lowpass, ica_evokeds):
 
 
 @decor.topline
-def get_evokeds(name, save_dir, highpass, lowpass, exec_ops, ermsub,
+def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub,
                 detrend, enable_ica, overwrite):
     evokeds_name = name + filter_string(highpass, lowpass) + '-ave.fif'
     evokeds_path = join(save_dir, evokeds_name)
@@ -983,16 +968,16 @@ def get_evokeds(name, save_dir, highpass, lowpass, exec_ops, ermsub,
         if enable_ica:
             epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from ICA-Epochs')
-        elif exec_ops['apply_ssp_er'] and ermsub != 'None':
+        elif func_dict['apply_ssp_er'] and ermsub is not 'None':
             epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from SSP_ER-Epochs')
-        elif exec_ops['apply_ssp_clm']:
+        elif func_dict['apply_ssp_clm']:
             epochs = io.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds form SSP_Clm-Epochs')
-        elif exec_ops['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
+        elif func_dict['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
             epochs = io.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from SSP_EOG-Epochs')
-        elif exec_ops['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
+        elif func_dict['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
             epochs = io.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from SSP_ECG-Epochs')
         else:
@@ -1014,23 +999,23 @@ def get_evokeds(name, save_dir, highpass, lowpass, exec_ops, ermsub,
 
 
 @decor.topline
-def get_h1h2_evokeds(name, save_dir, highpass, lowpass, enable_ica, exec_ops, ermsub,
+def get_h1h2_evokeds(name, save_dir, highpass, lowpass, enable_ica, func_dict, ermsub,
                      detrend):
     info = io.read_info(name, save_dir)
 
     if enable_ica:
         epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from ICA-Epochs')
-    elif exec_ops['apply_ssp_er'] and ermsub != 'None':
+    elif func_dict['apply_ssp_er'] and ermsub is not 'None':
         epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ER-Epochs')
-    elif exec_ops['apply_ssp_clm']:
+    elif func_dict['apply_ssp_clm']:
         epochs = io.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds form SSP_Clm-Epochs')
-    elif exec_ops['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
+    elif func_dict['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
         epochs = io.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_EOG-Epochs')
-    elif exec_ops['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
+    elif func_dict['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
         epochs = io.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ECG-Epochs')
     else:
@@ -1069,14 +1054,14 @@ def calculate_gfp(evoked):
 
 @decor.topline
 def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
-                      highpass, lowpass, exec_ops, quality, ana_h1h2):
+                      highpass, lowpass, func_dict, quality, ana_h1h2):
     for key in grand_avg_dict:
         trial_dict = {}
         h1_dict = {}
         h2_dict = {}
         print(f'grand_average for {key}')
         for name in grand_avg_dict[key]:
-            if exec_ops['motor_erm_analysis']:
+            if func_dict['motor_erm_analysis']:
                 save_dir = data_path
             else:
                 save_dir = join(data_path, name)
@@ -1521,7 +1506,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
             print('noise covariance file: ' + covariance_path +
                   ' already exists')
 
-    elif ermsub == 'None' or 'leer' in name or erm_noise_cov is False:
+    elif ermsub is 'None' or 'leer' in name or erm_noise_cov is False:
 
         print('Noise Covariance on Epochs')
         covariance_name = name + filter_string(highpass, lowpass) + '-cov.fif'
@@ -3193,23 +3178,23 @@ def statistics_source_space(morphed_data_all, save_dir_averages,
 
 
 @decor.topline
-def corr_ntr(name, save_dir, highpass, lowpass, exec_ops, ermsub,
+def corr_ntr(name, save_dir, highpass, lowpass, func_dict, ermsub,
              subtomri, ica_evokeds, save_plots, figures_path):
     info = io.read_info(name, save_dir)
 
     if ica_evokeds:
         epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from ICA-Epochs after applied SSP')
-    elif exec_ops['apply_ssp_er'] and ermsub != 'None':
+    elif func_dict['apply_ssp_er'] and ermsub is not 'None':
         epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ER-Epochs')
-    elif exec_ops['apply_ssp_clm']:
+    elif func_dict['apply_ssp_clm']:
         epochs = io.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds form SSP_Clm-Epochs')
-    elif exec_ops['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
+    elif func_dict['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
         epochs = io.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_EOG-Epochs')
-    elif exec_ops['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
+    elif func_dict['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
         epochs = io.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ECG-Epochs')
     else:

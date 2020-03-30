@@ -5,6 +5,7 @@ martin.schulz@stud.uni-heidelberg.de
 import os
 import re
 import shutil
+from ast import literal_eval
 from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
@@ -29,40 +30,73 @@ class CurrentSubject:
     def __init__(self, name, main_window):
         self.name = name
         self.mw = main_window
-        self.pr = main_window.pr
-
-        self.save_dir = join(self.pr.data_path, name)
+        self.p = main_window.pr.parameters
+        self.dict_error = False
+        self.dialog_open = False
+        self.save_dir = join(self.mw.pr.data_path, name)
 
         try:
-            self.ermsub = self.pr.erm_dict[name]
+            self.ermsub = self.mw.pr.erm_dict[name]
         except KeyError as k:
             print(f'No erm_measurement assigned for {k}')
-            dialog = SubDictDialog(self.mw, 'erm')
-            dialog.list_widget1.setCurrentItem(dialog.list_widget1.findItems(str(k), Qt.MatchExactly)[0])
-            dialog.finished.connect(self.update_file_data())
+            self.dialog_open = True
+            erm_dict_dialog = SubDictDialog(self.mw, 'erm')
+            erm_dict_dialog.finished.connect(self.dialog_closed)
+            self.dict_error = True
         try:
-            self.subtomri = self.pr.sub_dict[name]
+            self.subtomri = self.mw.pr.sub_dict[name]
         except KeyError as k:
             print(f'No mri_subject assigned to {k}')
-            SubDictDialog(self.mw, 'mri')
+            self.dialog_open = True
+            mri_dict_dialog = SubDictDialog(self.mw, 'mri')
+            mri_dict_dialog.finished.connect(self.dialog_closed)
+            self.dict_error = True
         try:
-            self.bad_channels = self.pr.bad_channels_dict[name]
+            self.bad_channels = self.mw.pr.bad_channels_dict[name]
         except KeyError as k:
             print(f'No bad channels for {k}')
-            BadChannelsSelect(self.mw)
+            self.dialog_open = True
+            bad_chan_dialog = BadChannelsSelect(self.mw)
+            bad_chan_dialog.finished.connect(self.dialog_closed)
+            self.dict_error = True
+
+    def preload_data(self):
+        try:
+            self.info = io.read_info(self.name, self.save_dir)
+        except FileNotFoundError:
+            pass
+        try:
+            self.raw_filtered = io.read_filtered(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
+        except FileNotFoundError:
+            pass
+        try:
+            self.events = io.read_events(self.name, self.save_dir)
+        except FileNotFoundError:
+            pass
+        try:
+            self.epochs = io.read_epochs(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
+        except FileNotFoundError:
+            pass
+        try:
+            self.evokeds = io.read_evokeds(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
+        except FileNotFoundError:
+            pass
+
+    def dialog_closed(self):
+        self.dialog_open = False
 
     # Todo: Better solution for Current-File call and update together with function-call
     def update_file_data(self):
-        self.ermsub = self.pr.erm_dict[self.name]
-        self.subtomri = self.pr.sub_dict[self.name]
-        self.bad_channels = self.pr.bad_channels_dict[self.name]
+        self.ermsub = self.mw.pr.erm_dict[self.name]
+        self.subtomri = self.mw.pr.sub_dict[self.name]
+        self.bad_channels = self.mw.pr.bad_channels_dict[self.name]
 
 
 class CurrentMRISubject:
-    def __init__(self, name, main_window):
+    def __init__(self, mri_subject, main_window):
         self.mw = main_window
         self.pr = main_window.pr
-        self.name = name
+        self.mri_subject = mri_subject
 
 
 def file_indexing(which_file, all_files):
@@ -148,16 +182,6 @@ def file_indexing(which_file, all_files):
             return [], []
 
 
-def update_sub_ist(qlist, files):
-    qlist.clear()
-    for idx, file in enumerate(files):
-        idx += 1  # Let index start with 1
-        item = QListWidgetItem(f'{idx}: {file}')
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-        item.setCheckState(Qt.Unchecked)
-        qlist.addItem(item)
-
-
 # Todo: Delete Subjects from Dock and Project
 class SubjectDock(QDockWidget):
     def __init__(self, main_win):
@@ -194,17 +218,24 @@ class SubjectDock(QDockWidget):
         self.sub_ledit.setPlaceholderText('Subject-Index')
         self.sub_ledit.textEdited.connect(self.update_sub_selection)
         self.sub_ledit.setToolTip(idx_example)
-        self.sub_ledit_layout = QHBoxLayout()
-        self.sub_ledit_layout.addWidget(self.sub_ledit)
-        # self.sub_clear_bt = QPushButton(icon=QIcon(':/abort_icon.svg'))
+        self.sub_ledit_layout = QGridLayout()
+        self.sub_ledit_layout.addWidget(self.sub_ledit, 0, 0)
         self.sub_clear_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogCancelButton))
         self.sub_clear_bt.clicked.connect(self.sub_clear_all)
-        self.sub_ledit_layout.addWidget(self.sub_clear_bt)
+        self.sub_ledit_layout.addWidget(self.sub_clear_bt, 0, 1)
+
+        # Add and Remove-Buttons
+        file_add_bt = QPushButton('Add File/s')
+        file_add_bt.clicked.connect(partial(AddFiles, self.mw))
+        self.sub_ledit_layout.addWidget(file_add_bt, 1, 0)
+        file_rm_bt = QPushButton('Remove File/s')
+        file_rm_bt.clicked.connect(self.remove_files)
+        self.sub_ledit_layout.addWidget(file_rm_bt, 1, 1)
 
         self.sub_layout.addLayout(self.sub_ledit_layout)
         self.sub_widget.setLayout(self.sub_layout)
 
-        self.tab_widget.addTab(self.sub_widget, 'Subjects')
+        self.tab_widget.addTab(self.sub_widget, 'Files')
 
         # MRI-Subjects-List + Index-Line-Edit
         self.mri_widget = QWidget(self)
@@ -217,14 +248,21 @@ class SubjectDock(QDockWidget):
         self.mri_ledit.setPlaceholderText('MRI-Subject-Index')
         self.mri_ledit.textEdited.connect(self.update_mri_selection)
         self.mri_ledit.setToolTip(idx_example)
-        self.mri_ledit_layout = QHBoxLayout()
-        self.mri_ledit_layout.addWidget(self.mri_ledit)
+        self.mri_bt_layout = QGridLayout()
+        self.mri_bt_layout.addWidget(self.mri_ledit, 0, 0)
         self.mri_clear_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogCancelButton))
         # self.mri_clear_bt = QPushButton(icon=QIcon(':/abort_icon.svg'))
         self.mri_clear_bt.clicked.connect(self.mri_clear_all)
-        self.mri_ledit_layout.addWidget(self.mri_clear_bt)
+        self.mri_bt_layout.addWidget(self.mri_clear_bt, 0, 1)
+        # Add and Remove-Buttons
+        mri_add_bt = QPushButton('Add MRI-Subject/s')
+        mri_add_bt.clicked.connect(partial(AddMRIFiles, self.mw))
+        self.mri_bt_layout.addWidget(mri_add_bt, 1, 0)
+        mri_rm_bt = QPushButton('Remove MRI-Subject/s')
+        mri_rm_bt.clicked.connect(self.remove_mri_subjects)
+        self.mri_bt_layout.addWidget(mri_rm_bt, 1, 1)
 
-        self.mri_layout.addLayout(self.mri_ledit_layout)
+        self.mri_layout.addLayout(self.mri_bt_layout)
         self.mri_widget.setLayout(self.mri_layout)
 
         self.tab_widget.addTab(self.mri_widget, 'MRI-Subjects')
@@ -234,28 +272,41 @@ class SubjectDock(QDockWidget):
         self.setWidget(self.main_widget)
 
     def update_subjects_list(self):
-        qlist = self.sub_listw
-        files = read_files(self.mw.pr.file_list_path)
-        update_sub_ist(qlist, files)
+        self.sub_listw.clear()
+        for idx, file in enumerate(self.mw.pr.all_files):
+            idx += 1  # Let index start with 1
+            item = QListWidgetItem(f'{idx}: {file}')
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            if file in self.mw.pr.sel_files:
+                item.setCheckState(Qt.Checked)
+            else:
+                item.setCheckState(Qt.Unchecked)
+            self.sub_listw.addItem(item)
 
     def update_mri_subjects_list(self):
-        qlist = self.mri_listw
-        files = read_files(self.mw.pr.mri_sub_list_path)
         # Also get all freesurfe-directories from Freesurfer-Folder (maybe user added some manually)
         existing_dirs = get_existing_mri_subjects(self.mw.pr.subjects_dir)
         for edir in existing_dirs:
-            if edir not in files:
-                files.append(edir)
-                write_file_list(edir, self.mw.pr.mri_sub_list_path)
-        update_sub_ist(qlist, files)
-        self.mw.pr.update_sub_lists()
+            if edir not in self.mw.pr.all_mri_subjects:
+                self.mw.pr.all_mri_subjects.append(edir)
+        self.mri_listw.clear()
+        for idx, file in enumerate(self.mw.pr.all_mri_subjects):
+            idx += 1  # Let index start with 1
+            item = QListWidgetItem(f'{idx}: {file}')
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            if file in self.mw.pr.sel_mri_files:
+                item.setCheckState(Qt.Checked)
+            else:
+                item.setCheckState(Qt.Unchecked)
+            self.mri_listw.addItem(item)
+        self.mw.pr.load_sub_lists()
 
     def get_sub_selection(self):
         sel_files = []
         for idx in range(self.sub_listw.count()):
             item = self.sub_listw.item(idx)
             if item.checkState() == Qt.Checked:
-                # Index in front of name has to be deleted Todo: can be done bette (maybe QTableWidget?)
+                # Index in front of name has to be deleted Todo: can be done better (maybe QTableWidget?)
                 sel_files.append(item.text()[len(str(idx + 1)) + 2:])
         self.mw.pr.sel_files = sel_files
 
@@ -264,7 +315,7 @@ class SubjectDock(QDockWidget):
         for idx in range(self.mri_listw.count()):
             item = self.mri_listw.item(idx)
             if item.checkState() == Qt.Checked:
-                # Index in front of name has to be deleted Todo: can be done bette (maybe QTableWidget?)
+                # Index in front of name has to be deleted Todo: can be done better (maybe QTableWidget?)
                 sel_mri.append(item.text()[len(str(idx + 1)) + 2:])
         self.mw.pr.sel_mri_files = sel_mri
 
@@ -291,8 +342,78 @@ class SubjectDock(QDockWidget):
         for idx in range(self.mri_listw.count()):
             self.mri_listw.item(idx).setCheckState(Qt.Unchecked)
 
+    def remove_files(self):
+        if len(self.mw.pr.sel_files) > 0:
+            def remove_only_list():
+                for file in self.mw.pr.sel_files:
+                    self.mw.pr.all_files.remove(file)
+                self.mw.pr.sel_files = []
+                self.update_subjects_list()
+                self.sub_msg_box.close()
+
+            def remove_with_files():
+                for file in self.mw.pr.sel_files:
+                    self.mw.pr.all_files.remove(file)
+                    shutil.rmtree(join(self.mw.pr.data_path, file))
+                self.mw.pr.sel_files = []
+                self.update_subjects_list()
+                self.sub_msg_box.close()
+
+            self.sub_msg_box = QDialog(self.mw)
+            msg_box_layout = QGridLayout()
+            label = QLabel('Do you really want to remove the selected files?')
+            msg_box_layout.addWidget(label, 0, 0, 1, 3)
+            only_list_bt = QPushButton('Remove only from List')
+            only_list_bt.clicked.connect(remove_only_list)
+            msg_box_layout.addWidget(only_list_bt, 1, 0)
+            remove_files_bt = QPushButton('Remove with all Files')
+            remove_files_bt.clicked.connect(remove_with_files)
+            msg_box_layout.addWidget(remove_files_bt, 1, 1)
+            cancel_bt = QPushButton('Cancel')
+            cancel_bt.clicked.connect(self.sub_msg_box.close)
+            msg_box_layout.addWidget(cancel_bt, 1, 2)
+            self.sub_msg_box.setLayout(msg_box_layout)
+            self.sub_msg_box.open()
+        else:
+            pass
+
+    def remove_mri_subjects(self):
+        if len(self.mw.pr.sel_mri_files) > 0:
+            def remove_only_list():
+                for mri_subject in self.mw.pr.sel_mri_files:
+                    self.mw.pr.all_mri_subjects.remove(mri_subject)
+                self.mw.pr.sel_mri_files = []
+                self.update_mri_subjects_list()
+                self.mri_msg_box.close()
+
+            def remove_with_files():
+                for mri_subject in self.mw.pr.sel_mri_files:
+                    self.mw.pr.all_mri_subjects.remove(mri_subject)
+                    shutil.rmtree(join(self.mw.pr.subjects_dir, mri_subject))
+                self.mw.pr.sel_mri_files = []
+                self.update_mri_subjects_list()
+                self.mri_msg_box.close()
+
+            self.mri_msg_box = QDialog(self.mw)
+            msg_box_layout = QGridLayout()
+            label = QLabel('Do you really want to remove the selected mri_subjects?')
+            msg_box_layout.addWidget(label, 0, 0, 1, 3)
+            only_list_bt = QPushButton('Remove from List')
+            only_list_bt.clicked.connect(remove_only_list)
+            msg_box_layout.addWidget(only_list_bt, 1, 0)
+            remove_files_bt = QPushButton('Remove with Files')
+            remove_files_bt.clicked.connect(remove_with_files)
+            msg_box_layout.addWidget(remove_files_bt, 1, 1)
+            cancel_bt = QPushButton('Cancel')
+            cancel_bt.clicked.connect(self.mri_msg_box.close)
+            msg_box_layout.addWidget(cancel_bt, 1, 2)
+            self.mri_msg_box.setLayout(msg_box_layout)
+            self.mri_msg_box.open()
+        else:
+            pass
+
     def closeEvent(self, event):
-        self.mw.pr.update_sub_lists()
+        self.mw.pr.load_sub_lists()
         event.accept()
 
 
@@ -477,8 +598,6 @@ class AddFiles(QDialog):
         dialog.setWindowTitle('Copying...')
         dialog.open()
         for fname in self.files:
-            self.pgbar.setValue(step)
-            self.pgbar.update()
             forig = self.paths[fname]
             # Make sure every raw-file got it's -raw appendix
             if fname[-4:] == '-raw':
@@ -493,13 +612,13 @@ class AddFiles(QDialog):
             if any(x in fname for x in ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room']):
                 # Organize ERMs
                 if fname not in existing_erm_files:
-                    write_file_list(fname, self.mw.pr.erm_list_path)
+                    self.mw.pr.erm_files.append(fname)
                 # Copy empty-room-files to destination
                 move_file(forig, ermdest)
             else:
                 # Organize sub_files
                 if fname not in existing_files:
-                    write_file_list(fname, self.mw.pr.file_list_path)
+                    self.mw.pr.all_files.append(fname)
                 # Copy sub_files to destination
                 move_file(forig, fdest)
             # Todo: No response from Window while copying thus no progress-bar-update
@@ -514,7 +633,7 @@ class AddFiles(QDialog):
         self.file_types = dict()
 
     def closeEvent(self, event):
-        self.mw.pr.update_sub_lists()
+        self.mw.pr.load_sub_lists()
         self.mw.subject_dock.update_subjects_list()
         event.accept()
 
@@ -658,7 +777,7 @@ class AddMRIFiles(QDialog):
         for mri_sub in self.folders:
             src = self.paths[mri_sub]
             dst = join(self.mw.pr.subjects_dir, mri_sub)
-            write_file_list(mri_sub, self.mw.pr.mri_sub_list_path)
+            self.mw.pr.all_mri_subjects.append(mri_sub)
             move_folder(src, dst)
             step += 1
             self.pgbar.setValue(step)
@@ -668,7 +787,7 @@ class AddMRIFiles(QDialog):
         dialog.close()
 
     def closeEvent(self, event):
-        self.mw.pr.update_sub_lists()
+        self.mw.pr.load_sub_lists()
         self.mw.subject_dock.update_mri_subjects_list()
         event.accept()
 
@@ -690,7 +809,6 @@ def read_sub_dict(sub_dict_path):
     return sub_dict
 
 
-# Todo: make more class-functions
 class SubDictDialog(QDialog):
     """ A dialog to assign MRI-Subjects oder Empty-Room-Files to subject(s), depending on mode """
 
@@ -705,13 +823,11 @@ class SubDictDialog(QDialog):
         self.mode = mode
         if mode == 'mri':
             self.setWindowTitle('Assign files to their MRI-Subject')
-            self.path2 = main_win.pr.mri_sub_list_path
-            self.dict_path = main_win.pr.sub_dict_path
+            self.list2 = self.mw.pr.all_mri_subjects
             self.label2 = 'Choose a mri-subject'
-        elif mode == 'erm':
+        else:
             self.setWindowTitle('Assign files to their ERM-File')
-            self.path2 = main_win.pr.erm_list_path
-            self.dict_path = main_win.pr.erm_dict_path
+            self.list2 = self.mw.pr.erm_files
             self.label2 = 'Choose a erm-file'
 
         self.init_ui()
@@ -726,46 +842,51 @@ class SubDictDialog(QDialog):
         # ListWidgets
         self.list_widget1 = QListWidget(self)
         self.list_widget1.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        for idx, key in enumerate(self.mw.pr.all_files):
+            self.list_widget1.insertItem(idx, key)
+            if self.mode == 'mri':
+                if key in self.mw.pr.sub_dict:
+                    self.list_widget1.item(idx).setBackground(QColor('green'))
+                    self.list_widget1.item(idx).setForeground(QColor('white'))
+                else:
+                    self.list_widget1.item(idx).setBackground(QColor('red'))
+                    self.list_widget1.item(idx).setForeground(QColor('white'))
+            else:
+                if key in self.mw.pr.erm_dict:
+                    self.list_widget1.item(idx).setBackground(QColor('green'))
+                    self.list_widget1.item(idx).setForeground(QColor('white'))
+                else:
+                    self.list_widget1.item(idx).setBackground(QColor('red'))
+                    self.list_widget1.item(idx).setForeground(QColor('white'))
         self.list_widget2 = QListWidget(self)
-        with open(self.mw.pr.file_list_path, 'r') as sl:
-            for idx, line in enumerate(sl):
-                self.list_widget1.insertItem(idx, line[:-1])
-        with open(self.path2, 'r') as msl:
-            for idx, line in enumerate(msl):
-                self.list_widget2.insertItem(idx, line[:-1])
+        self.list_widget2.addItems(self.list2)
 
         # Response to Clicking
-        self.list_widget1.itemClicked.connect(
-                partial(sub_dict_selected, self.list_widget1, self.list_widget2, self.dict_path))
+        self.list_widget1.itemClicked.connect(self.sub_dict_selected)
 
         self.layout.addWidget(self.list_widget1, 1, 0)
         self.layout.addWidget(self.list_widget2, 1, 1)
         # Add buttons
         bt_layout = QVBoxLayout()
         assign_bt = QPushButton('Assign', self)
-        assign_bt.clicked.connect(partial(sub_dict_assign, self.dict_path, self.list_widget1, self.list_widget2))
+        assign_bt.clicked.connect(self.sub_dict_assign)
         bt_layout.addWidget(assign_bt)
 
         none_bt = QPushButton('Assign None', self)
-        none_bt.clicked.connect(partial(sub_dict_assign_none, self.dict_path, self.list_widget1))
+        none_bt.clicked.connect(self.sub_dict_assign_none)
         bt_layout.addWidget(none_bt)
 
         all_none_bt = QPushButton('Assign None to all')
-        all_none_bt.clicked.connect(partial(sub_dict_assign_all_none, self, self.dict_path, self.list_widget1))
+        all_none_bt.clicked.connect(self.sub_dict_assign_all_none)
         bt_layout.addWidget(all_none_bt)
 
         all_bt = QPushButton(f'Assign 1 {self.mode} to all')
-        all_bt.clicked.connect(
-                partial(sub_dict_assign_to_all, self, self.dict_path, self.list_widget1, self.list_widget2))
+        all_bt.clicked.connect(self.sub_dict_assign_to_all)
         bt_layout.addWidget(all_bt)
 
-        read_bt = QPushButton('Print Console', self)
-        read_bt.clicked.connect(partial(read, self.dict_path))
+        read_bt = QPushButton('Show Assignments', self)
+        read_bt.clicked.connect(self.show_assignments)
         bt_layout.addWidget(read_bt)
-
-        delete_bt = QPushButton('Undo Assign', self)
-        delete_bt.clicked.connect(partial(delete_last, self.dict_path))
-        bt_layout.addWidget(delete_bt)
 
         if self.mode == 'mri':
             group_box = QGroupBox('Template-Brains', self)
@@ -800,114 +921,135 @@ class SubDictDialog(QDialog):
         else:
             pass
 
-    def closeEvent(self, event):
-        self.mw.pr.update_sub_lists()
-        event.accept()
-
-
-def sub_dict_selected(inst1, inst2, dict_path):
-    choice = inst1.currentItem().text()
-    existing_dict = read_sub_dict(dict_path)
-    if choice in existing_dict:
-        if existing_dict[choice] == 'None':
-            # Kind of bulky, improvable
-            enable_none_insert = True
-            for i in range(inst2.count()):
-                if inst2.item(i).text() == 'None':
-                    enable_none_insert = False
-            if enable_none_insert:
-                inst2.addItem('None')
-        try:
-            it2 = inst2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
-            inst2.setCurrentItem(it2)
-        except IndexError:
-            pass
-    else:
-        if inst2.currentItem() is not None:
-            inst2.currentItem().setSelected(False)
-
-
-def sub_dict_assign(dict_path, list_widget1, list_widget2):
-    choices1 = list_widget1.selectedItems()
-    choice2 = list_widget2.currentItem().text()
-    for item in choices1:
-        choice1 = item.text()
-        if not isfile(dict_path):
-            with open(dict_path, 'w') as sd:
-                sd.write(f'{choice1}:{choice2}\n')
-            print(f'{dict_path} created')
-
+    def sub_dict_selected(self):
+        choice = self.list_widget1.currentItem().text()
+        if self.mode == 'mri':
+            existing_dict = self.mw.pr.sub_dict
         else:
-            existing_dict = read_sub_dict(dict_path)
+            existing_dict = self.mw.pr.erm_dict
+        if choice in existing_dict:
+            if existing_dict[choice] is None:
+                # Kind of bulky, improvable
+                enable_none_insert = True
+                for idx in range(self.list_widget2.count()):
+                    if self.list_widget2.item(idx).text() is None:
+                        enable_none_insert = False
+                if enable_none_insert:
+                    self.list_widget2.addItem('None')
+            try:
+                it2 = self.list_widget2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
+                self.list_widget2.setCurrentItem(it2)
+            except IndexError:
+                pass
+        else:
+            if self.list_widget2.currentItem() is not None:
+                self.list_widget2.currentItem().setSelected(False)
+
+    def sub_dict_assign(self):
+        choices1 = self.list_widget1.selectedItems()
+        choice2 = self.list_widget1.currentItem().text()
+        if self.mode == 'mri':
+            existing_dict = self.mw.pr.sub_dict
+        else:
+            existing_dict = self.mw.pr.erm_dict
+        for item in choices1:
+            choice1 = item.text()
             if choice1 in existing_dict:
                 existing_dict[choice1] = choice2
             else:
                 existing_dict.update({choice1: choice2})
-            with open(dict_path, 'w') as sd:
-                for key, value in existing_dict.items():
-                    sd.write(f'{key}:{value}\n')
-
-
-def sub_dict_assign_none(dict_path, list_widget1):
-    choices = list_widget1.selectedItems()
-    for item in choices:
-        choice = item.text()
-        if not isfile(dict_path):
-            with open(dict_path, 'w') as sd:
-                sd.write(f'{choice}:None\n')
-            print(f'{dict_path} created')
-
+        if self.mode == 'mri':
+            self.mw.pr.sub_dict = existing_dict
         else:
-            existing_dict = read_sub_dict(dict_path)
+            self.mw.pr.erm_dict = existing_dict
+
+    def sub_dict_assign_none(self):
+        choices = self.list_widget1.selectedItems()
+        if self.mode == 'mri':
+            existing_dict = self.mw.pr.sub_dict
+        else:
+            existing_dict = self.mw.pr.erm_dict
+        for item in choices:
+            choice = item.text()
             if choice in existing_dict:
-                existing_dict[choice] = None
+                existing_dict[choice] = 'None'
             else:
-                existing_dict.update({choice: None})
-            with open(dict_path, 'w') as sd:
-                for key, value in existing_dict.items():
-                    sd.write(f'{key}:{value}\n')
+                existing_dict.update({choice: 'None'})
+        if self.mode == 'mri':
+            self.mw.pr.sub_dict = existing_dict
+        else:
+            self.mw.pr.erm_dict = existing_dict
 
+    def sub_dict_assign_to_all(self):
+        try:
+            selected = self.list_widget2.currentItem().text()
+            reply = QMessageBox.question(self, f'Assign {selected} to All?',
+                                         f'Do you really want to assign {selected} to all?',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                all_items = dict()
+                for i in range(self.list_widget1.count()):
+                    all_items.update({self.list_widget1.item(i).text(): selected})
+                if self.mode == 'mri':
+                    self.mw.pr.sub_dict = all_items
+                elif self.mode == 'erm':
+                    self.mw.pr.erm_dict = all_items
+        except AttributeError:
+            # When no second item is selected
+            pass
 
-def sub_dict_assign_to_all(inst, dict_path, list_widget1, list_widget2):
-    selected = list_widget2.currentItem().text()
-    reply = QMessageBox.question(inst, f'Assign {selected} to All?', f'Do you really want to assign {selected} to all?',
-                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-    if reply == QMessageBox.Yes:
-        all_items = dict()
-        for i in range(list_widget1.count()):
-            all_items.update({list_widget1.item(i).text(): selected})
-        with open(dict_path, 'w') as sd:
-            for key, value in all_items.items():
-                sd.write(f'{key}:{value}\n')
+    def sub_dict_assign_all_none(self):
+        reply = QMessageBox.question(self, 'Assign None to All?', 'Do you really want to assign none to all?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            all_items = dict()
+            for i in range(self.list_widget1.count()):
+                all_items.update({self.list_widget1.item(i).text(): 'None'})
+            if self.mode == 'mri':
+                self.mw.pr.sub_dict = all_items
+            elif self.mode == 'erm':
+                self.mw.pr.erm_dict = all_items
 
+    def show_assignments(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Assignments')
+        layout = QGridLayout()
+        list_widget = QListWidget()
+        list_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        if self.mode == 'mri':
+            the_dict = self.mw.pr.sub_dict
+        else:
+            the_dict = self.mw.pr.erm_dict
+        item_list = []
+        for key, value in the_dict.items():
+            item_list.append(f'{key}: {value}')
+        list_widget.addItems(item_list)
+        layout.addWidget(list_widget, 0, 0, 1, 2)
 
-def sub_dict_assign_all_none(inst, dict_path, list_widget1):
-    reply = QMessageBox.question(inst, 'Assign None to All?', 'Do you really want to assign none to all?',
-                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-    if reply == QMessageBox.Yes:
-        all_items = dict()
-        for i in range(list_widget1.count()):
-            all_items.update({list_widget1.item(i).text(): None})
-        with open(dict_path, 'w') as sd:
-            for key, value in all_items.items():
-                sd.write(f'{key}:{value}\n')
+        delete_bt = QPushButton('Delete')
+        delete_bt.clicked.connect(partial(self.delete_assignment, list_widget))
+        layout.addWidget(delete_bt, 1, 0)
 
+        quit_bt = QPushButton('Quit')
+        quit_bt.clicked.connect(dialog.close)
+        layout.addWidget(quit_bt, 1, 1)
 
-def delete_last(dict_path):
-    with open(dict_path, 'r') as dl:
-        dlist = (dl.readlines())
+        dialog.setLayout(layout)
+        dialog.open()
 
-    with open(dict_path, 'w') as dl:
-        for listitem in dlist[:-1]:
-            dl.write(str(listitem))
+    def delete_assignment(self, list_widget):
+        choices = list_widget.selectedItems()
+        for item in choices:
+            list_widget.takeItem(list_widget.row(item))
+            item_text = item.text()
+            key_text = item_text[:item_text.find(':')]
+            if self.mode == 'mri':
+                self.mw.pr.sub_dict.pop(key_text, None)
+            else:
+                self.mw.pr.erm_dict.pop(key_text, None)
 
-
-def read(dict_path):
-    try:
-        with open(dict_path, 'r') as rl:
-            print(rl.read())
-    except FileNotFoundError:
-        print('file not yet created, assign some files')
+    def closeEvent(self, event):
+        self.done(1)
 
 
 def read_bad_channels_dict(bad_channels_dict_path):
@@ -919,7 +1061,7 @@ def read_bad_channels_dict(bad_channels_dict_path):
                 if ':' in item:
                     key, value = item.split(':', 1)
                     value = value[:-1]
-                    value = eval(value)
+                    value = literal_eval(value)
                     bad_channels_dict[key] = value
 
     except FileNotFoundError:
@@ -938,8 +1080,6 @@ class BadChannelsSelect(QDialog):
         super().__init__(main_win)
         self.mw = main_win
         self.setWindowTitle('Assign bad_channels for your files')
-        self.file_list_path = self.mw.pr.file_list_path
-        self.bad_dict = read_bad_channels_dict(self.mw.pr.bad_channels_dict_path)
         self.layout = QGridLayout()
         self.channel_count = 122
         self.bad_chkbts = {}
@@ -953,15 +1093,14 @@ class BadChannelsSelect(QDialog):
     def initui(self):
         self.listwidget = QListWidget(self)
         self.layout.addWidget(self.listwidget, 0, 0, self.channel_count // 10, 1)
-        with open(self.file_list_path, 'r') as sl:
-            for idx, line in enumerate(sl):
-                self.listwidget.insertItem(idx, line[:-1])
-                if line[:-1] in self.bad_dict:
-                    self.listwidget.item(idx).setBackground(QColor('green'))
-                    self.listwidget.item(idx).setForeground(QColor('white'))
-                else:
-                    self.listwidget.item(idx).setBackground(QColor('red'))
-                    self.listwidget.item(idx).setForeground(QColor('white'))
+        for idx, key in enumerate(self.mw.pr.all_files):
+            self.listwidget.insertItem(idx, key)
+            if key in self.mw.pr.bad_channels_dict:
+                self.listwidget.item(idx).setBackground(QColor('green'))
+                self.listwidget.item(idx).setForeground(QColor('white'))
+            else:
+                self.listwidget.item(idx).setBackground(QColor('red'))
+                self.listwidget.item(idx).setForeground(QColor('white'))
 
         # Make Checkboxes for channels
         for x in range(1, self.channel_count + 1):
@@ -1002,18 +1141,18 @@ class BadChannelsSelect(QDialog):
                 self.bad_chkbts[bt].setChecked(False)
             # Then load existing bads for choice
             self.name = self.listwidget.currentItem().text()
-            if self.name in self.bad_dict:
-                for bad in self.bad_dict[self.name]:
+            if self.name in self.mw.pr.bad_channels_dict:
+                for bad in self.mw.pr.bad_channels_dict[self.name]:
                     self.bad_chkbts[bad].setChecked(True)
 
         # Check for unsaved changes
-        if self.name is not None and self.name in self.bad_dict:
+        if self.name is not None and self.name in self.mw.pr.bad_channels_dict:
             test_dict = dict()
             test_dict2 = dict()
             for x in range(1, self.channel_count + 1):
                 test_dict.update({f'MEG {x:03}': 0})
                 test_dict2.update({f'MEG {x:03}': 0})
-            for bch in self.bad_dict[self.name]:
+            for bch in self.mw.pr.bad_channels_dict[self.name]:
                 test_dict[bch] = 1
             for bbt in self.bad_chkbts:
                 if self.bad_chkbts[bbt].isChecked():
@@ -1039,7 +1178,7 @@ class BadChannelsSelect(QDialog):
         for ch in self.bad_chkbts:
             if self.bad_chkbts[ch].isChecked():
                 bad_channels.append(ch)
-        self.bad_dict.update({self.name: bad_channels})
+        self.mw.pr.bad_channels_dict.update({self.name: bad_channels})
         ut.dict_filehandler(self.name, 'bad_channels_dict', self.mw.pr.pscripts_path, values=bad_channels)
 
     # Todo: Semi-Automatic bad-channel-detection
@@ -1049,8 +1188,8 @@ class BadChannelsSelect(QDialog):
         dialog.setWindowTitle('Opening...')
         dialog.open()
         self.raw = io.read_raw(self.name, join(self.mw.pr.data_path, self.name))
-        if self.name in self.bad_dict:
-            self.raw.info['bads'] = self.bad_dict[self.name]
+        if self.name in self.mw.pr.bad_channels_dict:
+            self.raw.info['bads'] = self.mw.pr.bad_channels_dict[self.name]
         self.raw_fig = self.raw.plot(n_channels=30, bad_color='red',
                                      scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), title=self.name)
         # Connect Closing of Matplotlib-Figure to assignment of bad-channels
@@ -1059,13 +1198,13 @@ class BadChannelsSelect(QDialog):
 
     def get_selected_bads(self, evt):
         print(evt)
-        self.bad_dict.update({self.name: self.raw.info['bads']})
+        self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
         ut.dict_filehandler(self.name, 'bad_channels_dict', self.mw.pr.pscripts_path,
                             values=self.raw.info['bads'])
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
-        for ch in self.bad_dict[self.name]:
+        for ch in self.mw.pr.bad_channels_dict[self.name]:
             self.bad_chkbts[ch].setChecked(True)
         self.listwidget.currentItem().setBackground(QColor('green'))
         self.listwidget.currentItem().setForeground(QColor('white'))
@@ -1073,21 +1212,23 @@ class BadChannelsSelect(QDialog):
     def closeEvent(self, event):
         def close_function():
             # Update u.a. bad_channels_dict in project-class
-            self.mw.pr.update_sub_lists()
+            self.mw.pr.load_sub_lists()
             if self.raw_fig is not None:
                 plt.close(self.raw_fig)
+                self.done(1)
                 event.accept()
             else:
+                self.done(1)
                 event.accept()
 
         # Check if unassigned changes are present
-        if self.name in self.bad_dict and self.name is not None:
+        if self.name in self.mw.pr.bad_channels_dict and self.name is not None:
             test_dict = dict()
             test_dict2 = dict()
             for x in range(1, self.channel_count + 1):
                 test_dict.update({f'MEG {x:03}': 0})
                 test_dict2.update({f'MEG {x:03}': 0})
-            for bch in self.bad_dict[self.name]:
+            for bch in self.mw.pr.bad_channels_dict[self.name]:
                 test_dict[bch] = 1
             for bbt in self.bad_chkbts:
                 if self.bad_chkbts[bbt].isChecked():

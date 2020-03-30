@@ -4,9 +4,6 @@ Created on Mon Feb 11 03:11:47 2019
 
 @author: Martin Schulz
 """
-from os.path import join
-
-import pandas as pd
 
 # subject_operations = dict(add_files=0,
 #                           add_mri_subjects=0,
@@ -81,7 +78,8 @@ grand_average_operations = dict(grand_avg_evokeds=0,  # sensor space
                                 grand_avg_connect=0,
                                 grand_avg_label_power=0,
                                 grand_avg_func_labels=0,
-                                grand_avg_func_labels_processing=0)  # source space
+                                grand_avg_func_labels_processing=0,
+                                statistics_source_space=0)  # source space
 
 sensor_space_plots = dict(plot_raw=0,
                           plot_sensors=0,
@@ -141,9 +139,6 @@ grand_average_plots = dict(
         plot_grand_avg_connect=0,
         plot_grand_avg_label_power=0,
 
-        # statistics in source space
-        statistics_source_space=0,
-
         # plot source space with statistics mask
         plot_grand_averages_source_estimates_cluster_masked=0,
 
@@ -179,10 +174,3 @@ for fg in all_fs_gs:
 
 f_dict = {'apply_watershed': {'alias': 'Watershed', 'group': 'mri_subject_operations', 'group_idx': 1},
           'prepare_bem': {'alias': 'BEM-Preparation', 'group': 'mri_subject_operations', 'group_idx': 2}}
-
-f_params_dict = {}
-
-f = pd.DataFrame(data=f_dict).T
-desk_path = 'D:/Rächner/Desktop'
-f.to_csv(join(desk_path, 'test.csv'))
-a = pd.read_csv(join(desk_path, 'test_i.csv'), sep=';', index_col=0)
