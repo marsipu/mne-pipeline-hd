@@ -5,11 +5,14 @@ Created on Thu Jan 17 01:00:31 2019
 @author: 'Martin Schulz'
 """
 import os
+import re
+from ast import literal_eval
 from os import makedirs
 from os.path import exists, isfile, join
+
 import autoreject as ar
-import re
-from pipeline_functions import iswin, ismac, islin
+
+from pipeline_functions import islin, ismac, iswin
 
 
 def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwrite_ar=False,
@@ -32,7 +35,7 @@ def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwri
             for item in rv:
                 if ':' in item:
                     key, value = item.split(':', 1)
-                    value = eval(value[:-1])
+                    value = literal_eval(value[:-1])
                     read_reject[key] = value
 
         if name in read_reject:
@@ -90,7 +93,10 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
             for item in file:
                 if ':' in item:
                     key, value = item.split(':', 1)
-                    value = eval(value)
+                    try:
+                        value = literal_eval(value)
+                    except ValueError:
+                        pass
                     file_dict[key] = value
 
         if not onlyread:
@@ -136,7 +142,10 @@ def read_dict_file(file_name, sub_script_path=None):
                 if value == '\n':
                     value = None
                 else:
-                    value = eval(value)
+                    try:
+                        value = literal_eval(value)
+                    except ValueError:
+                        pass
                 file_dict[key] = value
 
     return file_dict
@@ -155,7 +164,10 @@ def order_the_dict(filename, sub_script_path, unspecified_names=False):
         for item in file:
             if ':' in item:
                 key, value = item.split(':', 1)
-                value = eval(value)
+                try:
+                    value = literal_eval(value)
+                except ValueError:
+                    pass
                 file_dict[key] = value
 
     if not unspecified_names:

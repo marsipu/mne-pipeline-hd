@@ -12,8 +12,9 @@ Get functions from old function-call and copy them to pandas-DataFrame
 """
 
 parent_path = str(Path(os.getcwd()).parent)
-path = parent_path + '/resources/functions_empty.csv'  # Some problem with os.path.join and relative paths
-pd_funcs = pd.read_csv(path, sep=';', index_col=0)
+
+pd_funcs = pd.DataFrame([], index=['alias', 'group', 'group_idx', 'tab', 'dependencies', 'module', 'subject_args',
+                                   'project_args', 'additional_args', 'tooltip'])
 file = []
 lines = []
 func_call_pattern1 = r'([\w]+)\.([\w_]+)\((.+)'  # With Endline considered
@@ -67,8 +68,13 @@ for line in file:
                         subject_p_str = ','.join(subject_parameters)
                         project_p_str = ','.join(project_parameters)
                         param_str = ','.join(parameters)
-                        add_func = pd.DataFrame({'alias': match.group(2), 'group': func_group, 'module': match.group(1),
-                                                 'subject_arguments': subject_p_str, 'project_arguments': project_p_str,
-                                                 'additional_arguments': param_str}, index=[match.group(2)])
-                        pd_funcs = pd.concat([pd_funcs, add_func], sort=False)
+                        if 'plot' in func_group:
+                            tab = 'Plot'
+                        else:
+                            tab = 'Compute'
+                        pd_funcs[match.group(2)] = [match.group(2), func_group, '', tab, '', match.group(1),
+                                                    subject_p_str, project_p_str, param_str, '']
+# Transform to have better readability and groupby
+pd_funcs = pd_funcs.T
+
 pd_funcs.to_csv(dest_path, sep=';')

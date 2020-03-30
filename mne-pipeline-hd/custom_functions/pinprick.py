@@ -6,7 +6,7 @@ import mne
 import numpy as np
 from matplotlib import pyplot as plt
 
-from basic_functions import io, plot as plot, operations as op
+from basic_functions import io, operations as op, plot as plot
 from pipeline_functions import decorators as decor, utilities as ut
 
 
@@ -17,7 +17,7 @@ def add_motor_erm_files():
 
 @decor.topline
 def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
-                      sub_script_path, save_plots, figures_path, exec_ops):
+                      sub_script_path, save_plots, figures_path, func_dict):
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
 
@@ -25,7 +25,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
         events = io.read_events(name, save_dir)
     except FileNotFoundError:
         print('No events found, running find_events...')
-        op.find_events(name, save_dir, adjust_timeline_by_msec, overwrite, exec_ops)
+        op.find_events(name, save_dir, adjust_timeline_by_msec, overwrite, func_dict)
         events = io.read_events(name, save_dir)
 
     assert len(events) != 0, 'No events found'
@@ -105,7 +105,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
                         sub_script_path, values={'mean': diff1_mean,
                                                  'stdev': diff1_stdev})
 
-    if exec_ops['motor_erm_analysis']:
+    if func_dict['motor_erm_analysis']:
         for x in range(np.size(events, axis=0) - 3):
             if events[x, 2] == 2:
                 if events[x + 2, 2] == 4:

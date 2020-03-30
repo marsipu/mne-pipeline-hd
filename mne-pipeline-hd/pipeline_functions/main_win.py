@@ -1,21 +1,22 @@
+import os
 import shutil
 import sys
 from functools import partial
 from os.path import join
 from subprocess import run
 
+import pandas as pd
 import qdarkstyle
 from PyQt5.QtCore import QSettings, Qt
-from PyQt5.QtGui import QColor, QFont, QPalette
-from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QGridLayout,
-                             QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
-                             QPushButton, QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget, QStyle, QLineEdit,
-                             QSpinBox, QCheckBox)
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog,
+                             QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
+                             QMainWindow, QMessageBox, QPushButton, QScrollArea, QSizePolicy, QSpinBox, QStyle,
+                             QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 
-from pipeline_functions import function_call as fc, iswin
+from pipeline_functions import function_call as fc, iswin, parameters
 from pipeline_functions.project import MyProject
 from pipeline_functions.subjects import AddFiles, AddMRIFiles, BadChannelsSelect, SubDictDialog, SubjectDock
-from resources import operations_dict as opd
 
 
 def get_upstream():
@@ -39,10 +40,11 @@ class MainWindow(QMainWindow):
 
         self.app.setFont(QFont('Calibri', 10))
         self.setWindowTitle('MNE-Pipeline HD')
-        self._centralWidget = QWidget(self)
-        self.setCentralWidget(self._centralWidget)
-        self.general_layout = QGridLayout()
+        self.setCentralWidget(QWidget(self))
+        self.general_layout = QVBoxLayout()
         self.centralWidget().setLayout(self.general_layout)
+
+        self.setSizePolicy(QSizePolicy(0, 0))
 
         QToolTip.setFont(QFont('SansSerif', 9))
         self.change_style('Fusion')
@@ -51,18 +53,11 @@ class MainWindow(QMainWindow):
         self.dark_sheet = qdarkstyle.load_stylesheet_pyqt5()
 
         # Attributes for class-methods
+        self.pd_funcs = pd.read_csv(os.getcwd() + '/resources/functions.csv', sep=';', index_col=0)
+        self.pd_params = pd.read_csv(os.getcwd() + '/resources/parameters.csv', sep=';', index_col=0)
+        self.subject = None
         self.func_dict = dict()
         self.bt_dict = dict()
-        self.make_it_stop = False
-        self.project_box = None
-
-        # Attributes to use in function-call later, default values overwritten by settings
-        self.n_jobs = -1
-        self.close_plots = False
-        self.save_plots = True
-        self.overwrite = True
-        self.enable_cuda = False
-        self.shutdown = False
 
         # Call project-class
         self.pr = MyProject(self)
@@ -76,14 +71,22 @@ class MainWindow(QMainWindow):
         self.make_toolbar()
         self.make_statusbar()
         self.make_func_bts()
+        self.add_parameter_gui_tab()
         self.add_main_bts()
-        self.get_prev_settings()
+        self.get_toolbox_params()
 
         # Center Window
         # Necessary because frameGeometry is dependent on number of function-buttons
-        newh = self.sizeHint().height()
-        neww = self.sizeHint().width()
-        self.setGeometry(0, 0, neww, newh)
+        # newh = self.sizeHint().height()
+        # neww = self.sizeHint().width()
+        # self.setGeometry(0, 0, neww, newh)
+        # Set Geometry depending on screen-size and make it smaller about size-ratio
+        desk_geometry = self.app.desktop().screenGeometry()
+        self.size_ratio = 0.9
+        height = desk_geometry.height() * self.size_ratio
+        width = desk_geometry.width() * self.size_ratio
+        # self.setFixedSize(width, height)
+        self.setGeometry(0, 0, width, height)
         self.center()
         self.raise_win()
 
@@ -114,13 +117,36 @@ class MainWindow(QMainWindow):
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
+
         self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
         self.adark_mode.setCheckable(True)
+        if self.settings.value('dark_mode') == 'true':
+            self.adark_mode.setChecked(True)
+        else:
+            self.adark_mode.setChecked(False)
         self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
         self.view_menu.addAction('&Change Home-Path', self.change_home_path)
 
         # Settings
         self.settings_menu = self.menuBar().addMenu('&Settings')
+
+        self.asub_preload = QAction('Preload Subject-Data')
+        self.asub_preload.setCheckable(True)
+        if self.settings.value('sub_preload') == 'true':
+            self.asub_preload.setChecked(True)
+        else:
+            self.asub_preload.setChecked(False)
+        self.asub_preload.toggled.connect(partial(self.set_bool_setting, self.asub_preload, 'sub_preload'))
+        self.settings_menu.addAction(self.asub_preload)
+
+        self.pyfiles = QAction('Load .py-Files')
+        self.pyfiles.setCheckable(True)
+        if self.settings.value('load_py_files') == 'true':
+            self.pyfiles.setChecked(True)
+        else:
+            self.pyfiles.setChecked(False)
+        self.pyfiles.toggled.connect(partial(self.set_bool_setting, self.pyfiles, 'load_py_files'))
+        self.settings_menu.addAction(self.pyfiles)
 
         # About
         about_menu = self.menuBar().addMenu('About')
@@ -134,6 +160,13 @@ class MainWindow(QMainWindow):
         self.project_tools()
         self.toolbar.addSeparator()
 
+        self.pr.parameters.update({'n_jobs': -1})
+        self.pr.parameters.update({'close_plots': False})
+        self.pr.parameters.update({'save_plots': True})
+        self.pr.parameters.update({'overwrite': True})
+        self.pr.parameters.update({'enable_cuda': False})
+        self.pr.parameters.update({'shutdown': False})
+
         self.toolbar.addWidget(QLabel('n_jobs: '))
         self.n_jobs_sb = QSpinBox(self)
         self.n_jobs_sb.setMinimum(0)
@@ -145,38 +178,38 @@ class MainWindow(QMainWindow):
 
         self.close_plots_chkbx = QCheckBox('Close Plots', self)
         self.close_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.close_plots_chkbx, 'close_plots'))
+        self.close_plots_chkbx.setToolTip('Do you want to close all open plots after eacht subject-run?')
         self.toolbar.addWidget(self.close_plots_chkbx)
 
         self.save_plots_chkbx = QCheckBox('Save Plots', self)
         self.save_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.save_plots_chkbx, 'save_plots'))
+        self.save_plots_chkbx.setToolTip('Do you want to save the plots made to a file?')
         self.toolbar.addWidget(self.save_plots_chkbx)
 
         self.overwrite_chkbx = QCheckBox('Overwrite', self)
         self.overwrite_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.overwrite_chkbx, 'overwrite'))
+        self.overwrite_chkbx.setToolTip('Do you want to overwrite the already existing files?')
         self.toolbar.addWidget(self.overwrite_chkbx)
 
         self.enable_cuda_chkbx = QCheckBox('Enable CUDA', self)
         self.enable_cuda_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.enable_cuda_chkbx, 'enable_cuda'))
+        self.overwrite_chkbx.setToolTip('Do you want to enable CUDA? (system has to be setup for cuda)')
         self.toolbar.addWidget(self.enable_cuda_chkbx)
 
         self.shutdown_chkbx = QCheckBox('Shutdown', self)
         self.shutdown_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.shutdown_chkbx, 'shutdown'))
+        self.shutdown_chkbx.setToolTip('Do you want to shut your system down after execution of all subjects?')
         self.toolbar.addWidget(self.shutdown_chkbx)
 
     def n_jobs_changed(self, value):
         # In MNE-Python -1 is automatic, for SpinBox 0 is already auto
         if value == 0:
-            self.n_jobs = -1
-            self.settings.setValue('n_jobs', -1)
+            self.pr.parameters['n_jobs'] = -1
         else:
-            self.n_jobs = value
-            self.settings.setValue('n_jobs', value)
-        print(self.n_jobs)
+            self.pr.parameters['n_jobs'] = value
 
     def chkbx_changed(self, chkbx, attribute):
-        setattr(self, attribute, chkbx.isChecked())
-        self.settings.setValue(attribute, chkbx.isChecked())
-        print(f'{attribute}: {chkbx.isChecked()}')
+        self.pr.parameters[attribute] = chkbx.isChecked()
 
     def make_statusbar(self):
         self.statusBar().showMessage('Ready')
@@ -281,14 +314,19 @@ class MainWindow(QMainWindow):
     def dark_mode(self):
         if self.adark_mode.isChecked():
             self.app.setStyleSheet(self.dark_sheet)
+            self.settings.setValue('dark_mode', True)
         else:
             self.app.setStyleSheet('')
+            self.settings.setValue('dark_mode', False)
 
     def full_screen(self):
         if self.isFullScreen():
             self.showNormal()
         else:
             self.showFullScreen()
+
+    def set_bool_setting(self, action, setting_name):
+        self.settings.setValue(setting_name, action.isChecked())
 
     def center(self):
         qr = self.frameGeometry()
@@ -315,64 +353,96 @@ class MainWindow(QMainWindow):
     # Todo: Make Buttons more appealing, mark when check
     #   make button-dependencies
     def make_func_bts(self):
-        tab_func_widget = QTabWidget()
-        for f, v in opd.all_fs.items():
-            self.func_dict.update({f: v})
+        self.tab_func_widget = QTabWidget()
+        for func in self.pd_funcs.index:
+            self.func_dict.update({func: 0})
 
         pre_func_dict = self.settings.value('checked_funcs')
         del_list = []
         if pre_func_dict is not None:
+            # Check for functions, which have been deleted, but are still present in cache
             for k in pre_func_dict:
-                if k not in opd.all_fs:
+                if k not in self.pd_funcs.index:
                     del_list.append(k)
             if len(del_list) > 0:
                 for d in del_list:
                     del pre_func_dict[d]
                     print(f'{d} from func_cache deleted')
 
-            # Default selection from opd overwrites cache
+            # Get selected functions from last run
             for f in self.func_dict:
                 if f in pre_func_dict:
-                    if not self.func_dict[f]:
-                        self.func_dict[f] = pre_func_dict[f]
-        for tab_name in opd.calcplot_fs:
-            tab = QWidget()
+                    self.func_dict[f] = pre_func_dict[f]
+        # Todo: Gruppieren nach Tabs und nach Gruppen, außerdem Plot- mit Funktions-Knöpfen zusammenlegen
+        tabs_grouped = self.pd_funcs.groupby('tab')
+        for tab_name, group in tabs_grouped:
+            group_grouped = group.groupby('group')
+            tab = QScrollArea()
+            child_w = QWidget()
             tab_func_layout = QGridLayout()
             r_cnt = 0
             c_cnt = 0
-            r_max = 15
-            for function_group in opd.calcplot_fs[tab_name]:
-                if r_cnt > r_max:
+            r_max = 1
+            for function_group, _ in group_grouped:
+                group_box = QGroupBox(function_group, self)
+                setattr(self, f'{function_group}_gbox', group_box)
+                group_box.setCheckable(True)
+                group_box.toggled.connect(self.select_func)
+                group_box_layout = QVBoxLayout()
+
+                if r_cnt >= r_max:
+                    c_cnt += 1
                     r_cnt = 0
-                label = QLabel(f'<b>{function_group}</b>', self)
-                label.setTextFormat(Qt.RichText)
-                tab_func_layout.addWidget(label, r_cnt, c_cnt)
+                tab_func_layout.addWidget(group_box, r_cnt, c_cnt)
                 r_cnt += 1
 
-                for function in opd.calcplot_fs[tab_name][function_group]:
-                    pb = QPushButton(function, tab)
+                for function in group_grouped.groups[function_group]:
+                    pb = QPushButton(function, child_w)
                     pb.setCheckable(True)
                     self.bt_dict[function] = pb
                     if self.func_dict[function]:
                         pb.setChecked(True)
                         self.func_dict[function] = 1
-                    pb.toggled.connect(partial(self.select_func, function))
-                    tab_func_layout.addWidget(pb, r_cnt, c_cnt)
-                    r_cnt += 1
-                    if r_cnt >= r_max:
-                        c_cnt += 1
-                        r_cnt = 0
-            tab.setLayout(tab_func_layout)
-            tab_func_widget.addTab(tab, tab_name)
-        self.general_layout.addWidget(tab_func_widget, 1, 0)
+                    pb.toggled.connect(self.select_func)
+                    group_box_layout.addWidget(pb)
+                group_box.setLayout(group_box_layout)
+            child_w.setLayout(tab_func_layout)
+            tab.setWidget(child_w)
+            self.tab_func_widget.addTab(tab, tab_name)
+        self.general_layout.addWidget(self.tab_func_widget)
 
-    def select_func(self, function):
-        if self.bt_dict[function].isChecked():
-            self.func_dict[function] = 1
-            print(f'{function} selected')
-        else:
-            print(f'{function} deselected')
-            self.func_dict[function] = 0
+    def select_func(self):
+        for function in self.bt_dict:
+            if self.bt_dict[function].isChecked() and self.bt_dict[function].isEnabled():
+                self.func_dict[function] = 1
+            else:
+                self.func_dict[function] = 0
+
+    def add_parameter_gui_tab(self):
+        tab = QScrollArea()
+        child_w = QWidget()
+        layout = QHBoxLayout()
+        sub_layout = QVBoxLayout()
+        r_cnt = 0
+
+        for idx, parameter in self.pd_params.iterrows():
+            if r_cnt > 5:
+                layout.addLayout(sub_layout)
+                sub_layout = QVBoxLayout()
+                r_cnt = 0
+            else:
+                r_cnt += 1
+            gui = getattr(parameters, parameter['gui_type'])
+            # **literal_eval(parameter['gui_args']), except nan
+            if type(parameter['hint']) is float:
+                hint = ''
+            else:
+                hint = parameter['hint']
+            sub_layout.addWidget(gui(self, self.pr, idx, hint))
+
+        child_w.setLayout(layout)
+        tab.setWidget(child_w)
+        self.tab_func_widget.addTab(tab, 'Parameters')
 
     def add_main_bts(self):
         main_bt_layout = QHBoxLayout()
@@ -389,7 +459,7 @@ class MainWindow(QMainWindow):
         start_bt.clicked.connect(self.start)
         stop_bt.clicked.connect(self.close)
 
-        self.general_layout.addLayout(main_bt_layout, 2, 0)
+        self.general_layout.addLayout(main_bt_layout)
 
     def clear(self):
         for x in self.bt_dict:
@@ -401,28 +471,25 @@ class MainWindow(QMainWindow):
         msg = QDialog(self)
         msg.setWindowTitle('Executing Functions...')
         msg.open()
+
+        self.pr.func_dict = self.func_dict
+
         fc.call_functions(self, self.pr)
         msg.close()
         # Todo: Introduce logging and print Exceptions to Main-Window
 
-    def get_prev_settings(self):
+    def get_toolbox_params(self):
         # Get n_jobs from settings
-        self.n_jobs_sb.setValue(self.settings.value('n_jobs'))
+        self.n_jobs_sb.setValue(self.pr.parameters['n_jobs'])
 
         # Checkboxes in Toolbar
         chkbox_dict = {'close_plots_chkbx': 'close_plots', 'save_plots_chkbx': 'save_plots',
                        'overwrite_chkbx': 'overwrite', 'enable_cuda_chkbx': 'enable_cuda', 'shutdown_chkbx': 'shutdown'}
         for chkbox_name in chkbox_dict:
             chkbox = getattr(self, chkbox_name)
-            try:
-                chkbox_value = self.settings.value(chkbox_dict[chkbox_name])
-                if chkbox_value == 'true':
-                    chkbox.setChecked(True)
-                else:
-                    chkbox.setChecked(False)
-            # Account for settings never have been set at first run
-            except TypeError:
-                pass
+
+            chkbox_value = self.pr.parameters[chkbox_dict[chkbox_name]]
+            chkbox.setChecked(chkbox_value)
 
     # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):
@@ -512,9 +579,13 @@ class MainWindow(QMainWindow):
     # Todo: Make a developers command line input to access the local variables and use quickly some script on them
 
     def closeEvent(self, event):
+
+        # Save Parameters
+        self.pr.save_parameters()
+        self.pr.save_sub_lists()
+
+        # Save Main-Window-Settings
         self.settings.setValue('geometry', self.saveGeometry())
-        self.settings.setValue('home_path', self.pr.home_path)
-        self.settings.setValue('project_name', self.pr.project_name)
         self.settings.setValue('checked_funcs', self.func_dict)
 
         event.accept()

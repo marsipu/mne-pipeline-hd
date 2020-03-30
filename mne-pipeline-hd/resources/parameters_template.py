@@ -1,22 +1,8 @@
-import numpy as np
-
-# OS
-n_jobs = -1  # number of processor-cores to use, -1 for auto
-enable_cuda = False  # Using CUDA on supported graphics card e.g. for filtering
-# cupy and appropriate CUDA-Drivers have to be installed
-# https://mne-tools.github.io/dev/advanced_setup.html#advanced-setup
-
-# File I/O
-unspecified_names = True  # True if you don't use Regular Expressions to handle your filenames
-print_info = False  # Print the raw-info of each file in the console
-
-overwrite = True  # should files be overwritten in general
-save_plots = True  # should plots be saved
-
-# Pinprick-specific
-pinprick = False  # Events including Rating
-combine_ab = True  # pinprick-specific
-cmp_cond = ['high', 'tactile']  # Specify two conditions, which will be compared
+close_plots = False
+save_plots = True
+overwrite = True
+enable_cuda = False
+shutdown = False
 
 # raw
 predefined_bads = [6, 7, 8, 26, 27, 103]  # Default bad channels
@@ -38,8 +24,8 @@ baseline = (-0.500, 0)  # has to be a tuple [s]
 enable_ica = False  # Use ica-epochs, create 1Hz-Highpass-Raw if not existent
 autoreject = False  # set True to use autoreject
 overwrite_ar = False  # if to calculate new thresholds or to use previously calculated
-reject = dict(grad=8e-10)  # default reject parameter if not reject with autoreject
-flat = dict(grad=1e-15)  # default flat parameter
+reject = {'grad': 8e-10}  # default reject parameter if not reject with autoreject
+flat = {'grad': 1e-15}  # default flat parameter
 reject_eog_epochs = False  # function to reject eog_epochs after use of find_eog_events
 decim = 1  # downsampling factor
 event_id = {}  # dictionary to assign strings to the event_ids
@@ -49,7 +35,7 @@ detrend = True  # sometimes not working
 ana_h1h2 = True
 
 # Time-Frequency-Analysis
-tfr_freqs = np.arange(10, 100, 5)  # Frequencies to analyze
+tfr_freqs = [5, 10, 20, 30, 60, 90]  # Frequencies to analyze
 overwrite_tfr = True  # Recalculate and overwrite tfr
 tfr_method = 'morlet'
 multitaper_bandwith = 4.0
@@ -105,6 +91,10 @@ p_threshold = 1e-15  # 1e-15 is the smallest it can get for the way it is coded
 n_jobs_freesurfer = 4  # change according to amount of processors you have available
 
 target_labels = {'lh': ['postcentral-lh']}
+
+# Pinprick-specific
+combine_ab = True  # pinprick-specific
+cmp_cond = ['high', 'tactile']  # Specify two conditions, which will be compared
 
 # target_labels = {'lh': ['Somatosensory and Motor Cortex-lh',
 #                         'Posterior Opercular Cortex-lh',

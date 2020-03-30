@@ -13,6 +13,7 @@ from __future__ import print_function
 import gc
 import re
 import statistics as st
+from ast import literal_eval
 from os import makedirs
 from os.path import exists, join
 
@@ -201,33 +202,33 @@ def plot_power_spectra_topo(name, save_dir, highpass, lowpass, save_plots,
 
 
 @decor.topline
-def plot_tfr(name, save_dir, highpass, lowpass, tmin, tmax, baseline,
+def plot_tfr(name, save_dir, highpass, lowpass, t_epoch, baseline,
              tfr_method, save_plots, figures_path):
     powers = io.read_tfr_power(name, save_dir, highpass, lowpass, tfr_method)
     itcs = io.read_tfr_itc(name, save_dir, highpass, lowpass, tfr_method)
 
     for power in powers:
-        fig1 = power.plot(baseline=baseline, mode='logratio', tmin=tmin,
-                          tmax=tmax, title=f'{name}-{power.comment}')
-        fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=tmin,
-                               tmax=tmax, title=f'{name}-{power.comment}')
-        fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=tmin,
-                                tmax=tmax, title=f'{name}-{power.comment}')
+        fig1 = power.plot(baseline=baseline, mode='logratio', tmin=t_epoch[0],
+                          tmax=t_epoch[1], title=f'{name}-{power.comment}')
+        fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=t_epoch[0],
+                               tmax=t_epoch[1], title=f'{name}-{power.comment}')
+        fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=t_epoch[0],
+                                tmax=t_epoch[1], title=f'{name}-{power.comment}')
 
         fig4, axis = plt.subplots(1, 5, figsize=(15, 2))
-        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=5, fmax=8,
+        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=5, fmax=8,
                            baseline=(-0.5, 0), mode='logratio', axes=axis[0],
                            title='Theta 5-8 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=8, fmax=12,
+        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=8, fmax=12,
                            baseline=(-0.5, 0), mode='logratio', axes=axis[1],
                            title='Alpha 8-12 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=13, fmax=30,
+        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=13, fmax=30,
                            baseline=(-0.5, 0), mode='logratio', axes=axis[2],
                            title='Beta 13-30 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=31, fmax=60,
+        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=31, fmax=60,
                            baseline=(-0.5, 0), mode='logratio', axes=axis[3],
                            title='Low Gamma 30-60 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=61, fmax=100,
+        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=61, fmax=100,
                            baseline=(-0.5, 0), mode='logratio', axes=axis[4],
                            title='High Gamma 60-100 Hz', show=False)
         mne.viz.tight_layout()
@@ -278,7 +279,7 @@ def plot_tfr(name, save_dir, highpass, lowpass, tmin, tmax, baseline,
 
 
 @decor.topline
-def tfr_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
+def tfr_event_dynamics(name, save_dir, t_epoch, save_plots, figures_path,
                        bad_channels, n_jobs):
     iter_freqs = [
         ('Theta', 4, 7),
@@ -308,7 +309,7 @@ def tfr_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
         picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False,
                                eog=False, ecg=False, exclude=bad_channels)
 
-        epochs = mne.Epochs(raw, events, event_id, tmin, tmax, baseline=baseline,
+        epochs = mne.Epochs(raw, events, event_id, t_epoch[0], t_epoch[1], baseline=baseline,
                             picks=picks, reject=dict(grad=4000e-13), preload=True)
         # remove evoked response and get analytic signal (envelope)
         epochs.subtract_evoked()  # for this we need to construct new epochs.
@@ -337,7 +338,7 @@ def tfr_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
                     xy=(0.95, 0.8),
                     horizontalalignment='right',
                     xycoords='axes fraction')
-        ax.set_xlim(tmin * 1000, tmax * 1000)
+        ax.set_xlim(t_epoch[0] * 1000, t_epoch[0] * 1000)
 
     axes.ravel()[-1].set_xlabel('Time [ms]')
 
@@ -352,7 +353,7 @@ def tfr_event_dynamics(name, save_dir, tmin, tmax, save_plots, figures_path,
 @decor.topline
 def plot_ssp(name, save_dir, highpass, lowpass, save_plots,
              figures_path, ermsub):
-    if ermsub == 'None':
+    if ermsub is 'None':
         print('no empty_room_data found for' + name)
         pass
 
@@ -1065,14 +1066,17 @@ def plot_labels(mri_subject, save_plots, figures_path,
 @decor.topline
 def sub_func_label_analysis(highpass, lowpass, tmax, sub_files_dict,
                             sub_script_path, label_origin, ev_ids_label_analysis, save_plots,
-                            figures_path, exec_ops):
+                            figures_path, func_dict):
     lat_dict = {}
 
     with open(join(sub_script_path, 'func_label_lat.py'), 'r') as file:
         for item in file:
             if ':' in item:
                 key, value = item.split(':', 1)
-                value = eval(value)
+                try:
+                    value = literal_eval(value)
+                except ValueError:
+                    pass
                 lat_dict[key] = value
 
     for sub in sub_files_dict:
@@ -1159,7 +1163,7 @@ def sub_func_label_analysis(highpass, lowpass, tmax, sub_files_dict,
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
-        if exec_ops['close_plots']:
+        if func_dict['close_plots']:
             close_all()
 
 
@@ -1173,7 +1177,10 @@ def all_func_label_analysis(highpass, lowpass, tmax, files, sub_script_path,
         for item in file:
             if ':' in item:
                 key, value = item.split(':', 1)
-                value = eval(value)
+                try:
+                    value = literal_eval(value)
+                except ValueError:
+                    pass
                 lat_dict[key] = value
 
     fig, ax = plt.subplots(figsize=(18, 8))
@@ -1287,7 +1294,7 @@ def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
                           subjects_dir, inverse_method, source_space_method, parcellation,
                           target_labels, save_plots, figures_path,
                           event_id, ev_ids_label_analysis, combine_ab,
-                          sub_script_path, exec_ops):
+                          sub_script_path, func_dict):
     color_dict = {'low': 'g', 'middle': 'y', 'high': 'r', 't': 'b'}
 
     # Differentiate a and b
@@ -1394,7 +1401,7 @@ def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
 
                 ut.dict_filehandler(ab_key, f'ab_coef_label_time_course{filter_string(highpass, lowpass)}-{trial_type}',
                                     sub_script_path, values=corr_dict)
-            if exec_ops['close_plots']:
+            if func_dict['close_plots']:
                 close_all()
 
 
@@ -1468,7 +1475,7 @@ def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcella
 
 @decor.topline
 def plot_grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
-                               save_dir_averages, tfr_freqs, tmin, tmax, lowpass,
+                               save_dir_averages, tfr_freqs, t_epoch, lowpass,
                                highpass, save_plots, figures_path):
     ga_dict = io.read_ga_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
                                      save_dir_averages)
@@ -1480,7 +1487,7 @@ def plot_grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis, target_lab
                     power_ind = ga_dict[key][ev_id][label_name]['power']
                     itc_ind = ga_dict[key][ev_id][label_name]['itc']
 
-                    times = np.arange(tmin, tmax + 0.001, 0.001)
+                    times = np.arange(t_epoch[0], t_epoch[1] + 0.001, 0.001)
 
                     plt.figure(figsize=(18, 8))
                     plt.subplots_adjust(0.1, 0.08, 0.96, 0.94, 0.2, 0.43)
@@ -1741,7 +1748,7 @@ def plot_evoked_compare(data_path, save_dir_averages, highpass, lowpass, comp_di
 
 
 @decor.topline
-def plot_grand_avg_tfr(highpass, lowpass, baseline, tmin, tmax,
+def plot_grand_avg_tfr(highpass, lowpass, baseline, t_epoch,
                        save_dir_averages, grand_avg_dict,
                        event_id, save_plots, figures_path):
     ga_dict = io.read_grand_avg_tfr(highpass, lowpass, save_dir_averages,
@@ -1750,27 +1757,27 @@ def plot_grand_avg_tfr(highpass, lowpass, baseline, tmin, tmax,
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
             power = ga_dict[stim_type][trial]
-            fig1 = power.plot(baseline=baseline, mode='logratio', tmin=tmin,
-                              tmax=tmax, title=f'{stim_type}-{trial}')
-            fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=tmin,
-                                   tmax=tmax, title=f'{stim_type}-{trial}')
-            fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=tmin,
-                                    tmax=tmax, title=f'{stim_type}-{trial}')
+            fig1 = power.plot(baseline=baseline, mode='logratio', tmin=t_epoch[0],
+                              tmax=t_epoch[1], title=f'{stim_type}-{trial}')
+            fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=t_epoch[0],
+                                   tmax=t_epoch[1], title=f'{stim_type}-{trial}')
+            fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=t_epoch[0],
+                                    tmax=t_epoch[1], title=f'{stim_type}-{trial}')
 
             fig4, axis = plt.subplots(1, 5, figsize=(15, 2))
-            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=5, fmax=8,
+            power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=5, fmax=8,
                                baseline=(-0.5, 0), mode='logratio', axes=axis[0],
                                title='Theta 5-8 Hz', show=False)
-            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=8, fmax=12,
+            power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=8, fmax=12,
                                baseline=(-0.5, 0), mode='logratio', axes=axis[1],
                                title='Alpha 8-12 Hz', show=False)
-            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=13, fmax=30,
+            power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=13, fmax=30,
                                baseline=(-0.5, 0), mode='logratio', axes=axis[2],
                                title='Beta 13-30 Hz', show=False)
-            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=31, fmax=60,
+            power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=31, fmax=60,
                                baseline=(-0.5, 0), mode='logratio', axes=axis[3],
                                title='Low Gamma 30-60 Hz', show=False)
-            power.plot_topomap(ch_type='grad', tmin=tmin, tmax=tmax, fmin=61, fmax=100,
+            power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=61, fmax=100,
                                baseline=(-0.5, 0), mode='logratio', axes=axis[4],
                                title='High Gamma 60-100 Hz', show=False)
             mne.viz.tight_layout()
