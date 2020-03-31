@@ -19,7 +19,6 @@ from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QComboBox, QDialog, QD
 from matplotlib import pyplot as plt
 
 from basic_functions import io
-from pipeline_functions import utilities as ut
 
 
 # Todo: Adapt File-Structure to (MEG)-BIDS-Standards
@@ -299,7 +298,6 @@ class SubjectDock(QDockWidget):
             else:
                 item.setCheckState(Qt.Unchecked)
             self.mri_listw.addItem(item)
-        self.mw.pr.load_sub_lists()
 
     def get_sub_selection(self):
         sel_files = []
@@ -354,7 +352,10 @@ class SubjectDock(QDockWidget):
             def remove_with_files():
                 for file in self.mw.pr.sel_files:
                     self.mw.pr.all_files.remove(file)
-                    shutil.rmtree(join(self.mw.pr.data_path, file))
+                    try:
+                        shutil.rmtree(join(self.mw.pr.data_path, file))
+                    except FileNotFoundError:
+                        print(join(self.mw.pr.data_path, file) + ' not found!')
                 self.mw.pr.sel_files = []
                 self.update_subjects_list()
                 self.sub_msg_box.close()
@@ -389,7 +390,10 @@ class SubjectDock(QDockWidget):
             def remove_with_files():
                 for mri_subject in self.mw.pr.sel_mri_files:
                     self.mw.pr.all_mri_subjects.remove(mri_subject)
-                    shutil.rmtree(join(self.mw.pr.subjects_dir, mri_subject))
+                    try:
+                        shutil.rmtree(join(self.mw.pr.subjects_dir, mri_subject))
+                    except FileNotFoundError:
+                        print(join(self.mw.pr.subjects_dir, mri_subject) + ' not found!')
                 self.mw.pr.sel_mri_files = []
                 self.update_mri_subjects_list()
                 self.mri_msg_box.close()
@@ -411,10 +415,6 @@ class SubjectDock(QDockWidget):
             self.mri_msg_box.open()
         else:
             pass
-
-    def closeEvent(self, event):
-        self.mw.pr.load_sub_lists()
-        event.accept()
 
 
 def move_file(forig, fdest):
@@ -632,10 +632,7 @@ class AddFiles(QDialog):
         self.paths = dict()
         self.file_types = dict()
 
-    def closeEvent(self, event):
-        self.mw.pr.load_sub_lists()
         self.mw.subject_dock.update_subjects_list()
-        event.accept()
 
 
 def move_folder(src, dst):
@@ -786,10 +783,7 @@ class AddMRIFiles(QDialog):
         self.paths = dict()
         dialog.close()
 
-    def closeEvent(self, event):
-        self.mw.pr.load_sub_lists()
         self.mw.subject_dock.update_mri_subjects_list()
-        event.accept()
 
 
 def read_sub_dict(sub_dict_path):
@@ -928,11 +922,11 @@ class SubDictDialog(QDialog):
         else:
             existing_dict = self.mw.pr.erm_dict
         if choice in existing_dict:
-            if existing_dict[choice] is None:
+            if existing_dict[choice] is 'None':
                 # Kind of bulky, improvable
                 enable_none_insert = True
                 for idx in range(self.list_widget2.count()):
-                    if self.list_widget2.item(idx).text() is None:
+                    if self.list_widget2.item(idx).text() is 'None':
                         enable_none_insert = False
                 if enable_none_insert:
                     self.list_widget2.addItem('None')
@@ -1106,6 +1100,7 @@ class BadChannelsSelect(QDialog):
         for x in range(1, self.channel_count + 1):
             ch_name = f'MEG {x:03}'
             chkbt = QCheckBox(ch_name, self)
+            chkbt.clicked.connect(self.bad_dict_assign)
             self.bad_chkbts.update({ch_name: chkbt})
             r = 0 + (x - 1) // 10
             c = 1 + (x - 1) % 10
@@ -1115,10 +1110,7 @@ class BadChannelsSelect(QDialog):
         self.listwidget.itemClicked.connect(self.bad_dict_selected)
 
         # Add Buttons
-        bt_layout = QVBoxLayout()
-        assign_bt = QPushButton('Assign', self)
-        assign_bt.clicked.connect(self.bad_dict_assign)
-        bt_layout.addWidget(assign_bt)
+        bt_layout = QHBoxLayout()
 
         plot_bt = QPushButton('Plot Raw')
         plot_bt.clicked.connect(self.plot_raw_bad)
@@ -1128,11 +1120,12 @@ class BadChannelsSelect(QDialog):
         ok_bt.clicked.connect(self.close)
         bt_layout.addWidget(ok_bt)
 
-        self.layout.addLayout(bt_layout, 0, 11, self.channel_count // 10, 1)
+        self.layout.addLayout(bt_layout, self.channel_count // 10 + 1, 0, 1, self.channel_count // 10)
         self.setLayout(self.layout)
 
     def bad_dict_selected(self):
-        def load_new_checks():
+        # Check for unsaved changes
+        if self.name is not None:
             # Close current Plot-Window
             if self.raw_fig is not None:
                 plt.close(self.raw_fig)
@@ -1144,31 +1137,8 @@ class BadChannelsSelect(QDialog):
             if self.name in self.mw.pr.bad_channels_dict:
                 for bad in self.mw.pr.bad_channels_dict[self.name]:
                     self.bad_chkbts[bad].setChecked(True)
-
-        # Check for unsaved changes
-        if self.name is not None and self.name in self.mw.pr.bad_channels_dict:
-            test_dict = dict()
-            test_dict2 = dict()
-            for x in range(1, self.channel_count + 1):
-                test_dict.update({f'MEG {x:03}': 0})
-                test_dict2.update({f'MEG {x:03}': 0})
-            for bch in self.mw.pr.bad_channels_dict[self.name]:
-                test_dict[bch] = 1
-            for bbt in self.bad_chkbts:
-                if self.bad_chkbts[bbt].isChecked():
-                    test_dict2[bbt] = 1
-            if not test_dict == test_dict2:
-                answer = QMessageBox.question(self, 'Discard Changes?', 'Do you want to discard changes?',
-                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if answer == QMessageBox.No:
-                    old_item = self.listwidget.findItems(self.name, Qt.MatchExactly)[0]
-                    self.listwidget.setCurrentItem(old_item)
-                else:
-                    load_new_checks()
-            else:
-                load_new_checks()
         else:
-            load_new_checks()
+            pass
 
     def bad_dict_assign(self):
         self.name = self.listwidget.currentItem().text()
@@ -1179,7 +1149,6 @@ class BadChannelsSelect(QDialog):
             if self.bad_chkbts[ch].isChecked():
                 bad_channels.append(ch)
         self.mw.pr.bad_channels_dict.update({self.name: bad_channels})
-        ut.dict_filehandler(self.name, 'bad_channels_dict', self.mw.pr.pscripts_path, values=bad_channels)
 
     # Todo: Semi-Automatic bad-channel-detection
     def plot_raw_bad(self):
@@ -1199,8 +1168,7 @@ class BadChannelsSelect(QDialog):
     def get_selected_bads(self, evt):
         print(evt)
         self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
-        ut.dict_filehandler(self.name, 'bad_channels_dict', self.mw.pr.pscripts_path,
-                            values=self.raw.info['bads'])
+
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
@@ -1212,7 +1180,6 @@ class BadChannelsSelect(QDialog):
     def closeEvent(self, event):
         def close_function():
             # Update u.a. bad_channels_dict in project-class
-            self.mw.pr.load_sub_lists()
             if self.raw_fig is not None:
                 plt.close(self.raw_fig)
                 self.done(1)

@@ -1,7 +1,6 @@
 import os
 import shutil
 import sys
-import threading
 from functools import partial
 from os.path import join
 from subprocess import run
@@ -126,10 +125,11 @@ class MainWindow(QMainWindow):
         else:
             self.adark_mode.setChecked(False)
         self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
-        self.view_menu.addAction('&Change Home-Path', self.change_home_path)
 
         # Settings
         self.settings_menu = self.menuBar().addMenu('&Settings')
+
+        self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
 
         self.asub_preload = QAction('Preload Subject-Data')
         self.asub_preload.setCheckable(True)
@@ -220,6 +220,10 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(self.subject_dock.toggleViewAction())
 
     def change_home_path(self):
+        # First save the former projects-data
+        self.pr.save_sub_lists()
+        self.pr.save_parameters()
+
         new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
         if new_home_path is '':
             pass
@@ -227,9 +231,19 @@ class MainWindow(QMainWindow):
             self.pr.home_path = new_home_path
             self.settings.setValue('home_path', self.pr.home_path)
             self.pr.get_paths()
+            self.pr.make_paths()
+            self.pr.load_parameters()
+            self.pr.populate_directories()
+            self.pr.load_sub_lists()
             self.update_project_box()
+            self.subject_dock.update_subjects_list()
+            self.subject_dock.update_mri_subjects_list()
 
     def add_project(self):
+        # First save the former projects-data
+        self.pr.save_sub_lists()
+        self.pr.save_parameters()
+
         project, ok = QInputDialog.getText(self, 'Project-Selection',
                                            'Enter a project-name for a new project')
         if ok:
@@ -239,10 +253,19 @@ class MainWindow(QMainWindow):
             self.project_box.addItem(project)
             self.project_box.setCurrentText(project)
             self.pr.make_paths()
+            self.pr.load_parameters()
+            self.pr.populate_directories()
+            self.pr.load_sub_lists()
+            self.update_project_box()
+            self.subject_dock.update_subjects_list()
         else:
             pass
 
     def remove_project(self):
+        # First save the former projects-data
+        self.pr.save_sub_lists()
+        self.pr.save_parameters()
+
         dialog = QDialog(self)
         dialog.setWindowTitle('Remove Project')
         layout = QVBoxLayout()
@@ -301,11 +324,19 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(arm)
 
     def project_changed(self, project):
-        self.pr.project_name = project
-        self.settings.setValue('project_name', self.pr.project_name)
-        print(f'{self.pr.project_name} selected')
-        self.pr.make_paths()
-        self.subject_dock.update_subjects_list()
+        if project != '':
+            # First save the former projects-data
+            self.pr.save_sub_lists()
+            self.pr.save_parameters()
+
+            self.pr.project_name = project
+            self.settings.setValue('project_name', self.pr.project_name)
+            print(f'{self.pr.project_name} selected')
+            self.pr.make_paths()
+            self.pr.load_parameters()
+            self.pr.populate_directories()
+            self.pr.load_sub_lists()
+            self.subject_dock.update_subjects_list()
 
     def update_project_box(self):
         self.project_box.clear()
@@ -433,6 +464,9 @@ class MainWindow(QMainWindow):
                 r_cnt = 0
             else:
                 r_cnt += 1
+            gui_name = parameter['gui_type']
+            if gui_name != str:
+                gui_name = 'FuncGui'
             gui = getattr(parameters, parameter['gui_type'])
             # **literal_eval(parameter['gui_args']), except nan
             if type(parameter['hint']) is float:
@@ -468,15 +502,18 @@ class MainWindow(QMainWindow):
             self.func_dict[x] = 0
 
     def start(self):
+        # Save project-data before data being lost in errors
+        self.pr.save_parameters()
+        self.pr.save_sub_lists()
         # Todo: Cancel-Button, Progress-Bar for Progress
         msg = QDialog(self)
         msg.setWindowTitle('Executing Functions...')
         msg.open()
 
         self.pr.func_dict = self.func_dict
-
-        function_thread = threading.Thread(target=fc.call_functions, args=(self, self.pr))
-        function_thread.start()
+        fc.call_functions(self, self.pr)
+        # function_thread = threading.Thread(target=fc.call_functions, args=(self, self.pr))
+        # function_thread.start()
         msg.close()
         # Todo: Introduce logging and print Exceptions to Main-Window
 
