@@ -119,18 +119,26 @@ class MyProject:
             self.erm_dict = subs.read_sub_dict(join(self.pscripts_path, 'erm_dict.py'))
             self.bad_channels_dict = subs.read_bad_channels_dict(join(self.pscripts_path, 'bad_channels_dict.py'))
         else:
-            with open(self.file_list_path, 'r') as file:
-                self.all_files = json.load(file)
-            with open(self.mri_sub_list_path, 'r') as file:
-                self.all_mri_subjects = json.load(file)
-            with open(self.erm_list_path, 'r') as file:
-                self.erm_files = json.load(file)
-            with open(self.sub_dict_path, 'r') as file:
-                self.sub_dict = json.load(file)
-            with open(self.erm_dict_path, 'r') as file:
-                self.erm_dict = json.load(file)
-            with open(self.bad_channels_dict_path, 'r') as file:
-                self.bad_channels_dict = json.load(file)
+            try:
+                with open(self.file_list_path, 'r') as file:
+                    self.all_files = json.load(file)
+                with open(self.mri_sub_list_path, 'r') as file:
+                    self.all_mri_subjects = json.load(file)
+                with open(self.erm_list_path, 'r') as file:
+                    self.erm_files = json.load(file)
+                with open(self.sub_dict_path, 'r') as file:
+                    self.sub_dict = json.load(file)
+                with open(self.erm_dict_path, 'r') as file:
+                    self.erm_dict = json.load(file)
+                with open(self.bad_channels_dict_path, 'r') as file:
+                    self.bad_channels_dict = json.load(file)
+            except json.decoder.JSONDecodeError:
+                self.all_files = []
+                self.all_mri_subjects = []
+                self.erm_files = []
+                self.sub_dict = {}
+                self.erm_dict = {}
+                self.bad_channels_dict = {}
 
         self.sel_files = self.mw.settings.value('sel_files', defaultValue=[])
         self.sel_mri_files = self.mw.settings.value('sel_mri_files', defaultValue=[])

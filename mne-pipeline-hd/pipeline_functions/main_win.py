@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import threading
 from functools import partial
 from os.path import join
 from subprocess import run
@@ -474,7 +475,8 @@ class MainWindow(QMainWindow):
 
         self.pr.func_dict = self.func_dict
 
-        fc.call_functions(self, self.pr)
+        function_thread = threading.Thread(target=fc.call_functions, args=(self, self.pr))
+        function_thread.start()
         msg.close()
         # Todo: Introduce logging and print Exceptions to Main-Window
 
