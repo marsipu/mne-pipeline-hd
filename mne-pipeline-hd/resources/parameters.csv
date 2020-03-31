@@ -50,7 +50,7 @@ independent_variable_1;independent_variable_1;standard_3;;;StringGui;
 independent_variable_2;independent_variable_2;non_stimulation;;;StringGui;
 time_window;time_window;(0.05,0.06);;;TupleGui;
 n_permutations;n_permutations;10000;;specifyasinteger;IntGui;
-p_threshold;p_threshold;1,00E-15;;1e-15isthesmallestitcangetforthewayitiscoded;FloatGui;
+p_threshold;p_threshold;1;;;FloatGui;
 n_jobs_freesurfer;n_jobs_freesurfer;4;;changeaccordingtoamountofprocessorsyouhaveavailable;IntGui;
 target_labels;target_labels;{'lh':['postcentral-lh']};;;DictGui;
 combine_ab;combine_ab;True;;pinprick-specific;BoolGui;
@@ -298,3 +298,4 @@ label_origin;label_origin;"['bankssts_1-lh',
 'transversetemporal_1-lh',
 'transversetemporal_1-rh',
 'transversetemporal_2-lh']";;;ListGui;
+       
