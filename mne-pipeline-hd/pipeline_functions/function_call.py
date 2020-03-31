@@ -115,6 +115,7 @@ def call_functions(main_window, project):
         for f in sel_files:
             print(f)
 
+        # Todo: Progressbar freezes and doesn't show the progress
         # Show ProgressBar
         file_prog = QDialog(mw)
         file_prog_layout = QVBoxLayout()
