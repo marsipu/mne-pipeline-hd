@@ -353,7 +353,7 @@ def tfr_event_dynamics(name, save_dir, t_epoch, save_plots, figures_path,
 @decor.topline
 def plot_ssp(name, save_dir, highpass, lowpass, save_plots,
              figures_path, ermsub):
-    if ermsub is 'None':
+    if ermsub == 'None':
         print('no empty_room_data found for' + name)
         pass
 

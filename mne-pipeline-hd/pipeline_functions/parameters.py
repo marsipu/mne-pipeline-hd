@@ -1,52 +1,10 @@
-import os
-import shutil
 import sys
 from ast import literal_eval
-from importlib import util
-from os.path import isfile, join
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QDesktopWidget, QDialog, QDoubleSpinBox, QGridLayout, QGroupBox,
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QGridLayout, QGroupBox,
                              QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QListWidgetItem, QPushButton,
                              QSizePolicy, QSlider, QSpinBox, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
-
-
-class ParamFull(QDialog):
-    def __init__(self, mw):
-        super().__init__(mw)
-        self.mw = mw
-        self.layout = QVBoxLayout()
-
-        self.p = None
-
-        deskgeo = QDesktopWidget().availableGeometry()
-        param_width = int(deskgeo.width() * 0.75)
-        param_height = int(deskgeo.height() * 0.75)
-        self.setGeometry(0, 0, param_width, param_height)
-
-        self.import_parameters()
-        self.init_ui()
-
-        self.setLayout(self.layout)
-        self.open()
-
-    def init_ui(self):
-        parameter_layout = QGridLayout()
-
-    def import_parameters(self):
-        if not isfile(join(self.mw.pr.project_path, f'parameters_{self.mw.pr.project_name}.py')):
-
-            shutil.copy2(join(os.getcwd(), 'resources/parameters_template.py'),
-                         join(self.mw.pr.project_path, f'parameters_{self.mw.pr.project_name}.py'))
-            print(f'parameters_{self.mw.pr.project_name}.py created in {self.mw.pr.project_path}'
-                  f' from parameters_template.py')
-        else:
-            spec = util.spec_from_file_location('parameters', join(self.mw.pr.project_path,
-                                                                   f'parameters_{self.mw.pr.project_name}.py'))
-            p = util.module_from_spec(spec)
-            sys.modules['parameters'] = p
-            spec.loader.exec_module(p)
-            print(f'Read Parameters from parameters_{self.mw.pr.project_name}.py in {self.mw.pr.project_path}')
 
 
 class OneParam(QWidget):
@@ -54,12 +12,11 @@ class OneParam(QWidget):
     General GUI for single Parameter-GUIs, not to be called directly
     """
 
-    def __init__(self, parent, project):
+    def __init__(self, project):
         """
-        :param parent: Parent-Widget
         :param project: Project-Class called in main_win.py
         """
-        super().__init__(parent)
+        super().__init__()
         self.project = project
         self.param_name = 'Standard'
         self.param_value = None
@@ -106,8 +63,8 @@ class OneParam(QWidget):
 class IntGui(OneParam):
     """A GUI for Integer-Parameters"""
 
-    def __init__(self, parent, project, param_name, hint='', min_val=0, max_val=10, param_unit=None):
-        super().__init__(parent, project)
+    def __init__(self, project, param_name, hint='', min_val=0, max_val=100, param_unit=None):
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = 1  # Default Value
         self.param_widget = QSpinBox()
@@ -134,9 +91,9 @@ class IntGui(OneParam):
 class FloatGui(OneParam):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, parent, project, param_name, hint='', min_val=0., max_val=10.,
+    def __init__(self, project, param_name, hint='', min_val=0., max_val=100.,
                  step=1., decimals=2, param_unit=None):
-        super().__init__(parent, project)
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = 1.
         self.param_widget = QDoubleSpinBox()
@@ -169,8 +126,8 @@ class StringGui(OneParam):
     Input-Mask: Define a string as in https://doc.qt.io/qt-5/qlineedit.html#inputMask-prop
     """
 
-    def __init__(self, parent, project, param_name, hint='', input_mask=None):
-        super().__init__(parent, project)
+    def __init__(self, project, param_name, hint='', input_mask=None):
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = ''
         self.param_widget = QLineEdit()
@@ -195,8 +152,8 @@ class StringGui(OneParam):
 class FuncGui(OneParam):
     """A GUI for Parameters defined by small functions, e.g from numpy"""
 
-    def __init__(self, parent, project, param_name, hint=''):
-        super().__init__(parent, project)
+    def __init__(self, project, param_name, hint=''):
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = ''
         self.param_widget = QLineEdit()
@@ -247,8 +204,8 @@ class FuncGui(OneParam):
 class BoolGui(OneParam):
     """A GUI for Boolean-Parameters"""
 
-    def __init__(self, parent, project, param_name, hint=''):
-        super().__init__(parent, project)
+    def __init__(self, project, param_name, hint=''):
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = False
         self.param_widget = QCheckBox()
@@ -283,9 +240,9 @@ class BoolGui(OneParam):
 class TupleGui(OneParam):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, parent, project, param_name, hint='', min_val=-10., max_val=10.,
+    def __init__(self, project, param_name, hint='', min_val=-10., max_val=10.,
                  step=.1, decimals=2, param_unit=None):
-        super().__init__(parent, project)
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = (0, 1)
         self.param_widget1 = QDoubleSpinBox()
@@ -333,8 +290,8 @@ class TupleGui(OneParam):
 class ListGui(OneParam):
     """A GUI for List-Parameters"""
 
-    def __init__(self, parent, project, param_name, hint=''):
-        super().__init__(parent, project)
+    def __init__(self, project, param_name, hint=''):
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = list()
         self.param_widget = QListWidget()
@@ -381,8 +338,8 @@ class ListGui(OneParam):
 class DictGui(OneParam):
     """A GUI for Dictionary-Parameters"""
 
-    def __init__(self, parent, project, param_name, hint=''):
-        super().__init__(parent, project)
+    def __init__(self, project, param_name, hint=''):
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = dict()
         self.param_widget = QTableWidget(0, 2)
@@ -450,8 +407,8 @@ class DictGui(OneParam):
 class SliderGui(OneParam):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, parent, project, param_name, hint='', min_val=0., max_val=10., step=1.):
-        super().__init__(parent, project)
+    def __init__(self, project, param_name, hint='', min_val=0., max_val=10., step=1.):
+        super().__init__(project)
         self.param_name = param_name
         self.param_value = 1
         self.min_val = min_val
@@ -537,16 +494,16 @@ if __name__ == '__main__':
     main_layout = QHBoxLayout()
     main_win = QWidget()
     proj = TestProject()
-    a = IntGui(main_win, proj, 'TestInt', 'Bugibugi', -4, 10, 's')
-    b = ListGui(main_win, proj, 'TestList', 'Bugibugi')
-    c = DictGui(main_win, proj, 'TextDict', 'Bugibugi')
-    d = BoolGui(main_win, proj, 'Fugi?', 'Bugibugi')
-    e = FloatGui(main_win, proj, 'TestFloat', 'Bugibugi', -18, +64, 0.4, 6, 'flurbo')
-    f = StringGui(main_win, proj, 'TestString', 'Bugibugi', 'ppAAA.AA;_')
-    g = SliderGui(main_win, proj, 'TestSlider', 'Bugibugi', -10, 10, 1)
-    h = SliderGui(main_win, proj, 'TestSlider2', 'Bugigugi', 0, 20.25, 1.3)
-    i = FuncGui(main_win, proj, 'TestFunc', 'Hugabuga')
-    j = TupleGui(main_win, proj, 'Test_Tuple', 'Higiwigi', -10, 20, 1)
+    a = IntGui(proj, 'TestInt', 'Bugibugi', -4, 10, 's')
+    b = ListGui(proj, 'TestList', 'Bugibugi')
+    c = DictGui(proj, 'TextDict', 'Bugibugi')
+    d = BoolGui(proj, 'Fugi?', 'Bugibugi')
+    e = FloatGui(proj, 'TestFloat', 'Bugibugi', -18, +64, 0.4, 6, 'flurbo')
+    f = StringGui(proj, 'TestString', 'Bugibugi', 'ppAAA.AA;_')
+    g = SliderGui(proj, 'TestSlider', 'Bugibugi', -10, 10, 1)
+    h = SliderGui(proj, 'TestSlider2', 'Bugigugi', 0, 20.25, 1.3)
+    i = FuncGui(proj, 'TestFunc', 'Hugabuga')
+    j = TupleGui(proj, 'Test_Tuple', 'Higiwigi', -10, 20, 1)
     main_layout.addWidget(a)
     main_layout.addWidget(b)
     main_layout.addWidget(c)
