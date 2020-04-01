@@ -1,60 +1,60 @@
 ;alias;default;unit;hint;gui_type;gui_args
-predefined_bads;predefined_bads;[6,7,8,26,27,103];;Defaultbadchannels;ListGui;
-eog_digitized;eog_digitized;False;;SetTrue,ifthelast4digitizedpointswhereEOG;BoolGui;
-ch_types;ch_types;['grad'];;;ListGui;
-highpass;highpass;1;Hz;;IntGui;
-lowpass;lowpass;100;Hz;;IntGui;
-erm_t_limit;erm_t_limit;300;s;LimitsEmpty-Room-Measurement-Length[s];IntGui;
-adjust_timeline_by_msec;adjust_timeline_by_msec;0;ms;customdelaytostimulusinms;IntGui;
-t_epoch;DurationEpochs;(-0.5,1.5);s;startendendofepoch[s];TupleGui;
-baseline;baseline;(-0.5,0);s;hastobeatuple[s];TupleGui;
-enable_ica;enable_ica;False;;Useica-epochs,create1Hz-Highpass-Rawifnotexistent;BoolGui;
-autoreject;autoreject;False;;setTruetouseautoreject;BoolGui;
-overwrite_ar;overwrite_ar;False;;iftocalculatenewthresholdsortousepreviouslycalculated;BoolGui;
-reject;reject;{'grad':8e-10};;defaultrejectparameterifnotrejectwithautoreject;DictGui;
-flat;flat;{'grad':1e-15};;defaultflatparameter;DictGui;
-reject_eog_epochs;reject_eog_epochs;False;;functiontorejecteog_epochsafteruseoffind_eog_events;BoolGui;
-decim;decim;1;;downsamplingfactor;IntGui;
-event_id;event_id;{'Default':1};;dictionarytoassignstringstotheevent_ids;DictGui;
-detrend;detrend;True;;sometimesnotworking;BoolGui;
+predefined_bads;predefined_bads;[6,7,8,26,27,103];;Default bad channels;ListGui;
+eog_digitized;eog_digitized;False;;Set True, if the last 4 digitized points where EOG;BoolGui;
+ch_types;ch_types;['grad'];;Channel-Types used in data;ListGui;
+highpass;highpass;1;Hz;Highpass-Filter;IntGui;{'min_val': 0, 'max_val': 1000}
+lowpass;lowpass;100;Hz;Lowpass-Filter;IntGui;{'min_val': 0, 'max_val': 1000}
+erm_t_limit;erm_t_limit;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
+adjust_timeline_by_msec;adjust_timeline_by_msec;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':0, 'max_val': 10000}
+t_epoch;DurationEpochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
+baseline;baseline;(-0.5,0);s;start and end of baseline;TupleGui;
+enable_ica;enable_ica;False;;Use ica-epochs, create 1Hz-Highpass-Raw if not existent;BoolGui;
+autoreject;autoreject;False;;set True to use autoreject;BoolGui;
+overwrite_ar;overwrite_ar;False;;if to calculate new threshold sort ouse previously calculated;BoolGui;
+reject;reject;{'grad':8e-10};;default reject parameter if not reject with autoreject;DictGui;
+flat;flat;{'grad':1e-15};;default flat parameter;DictGui;
+reject_eog_epochs;reject_eog_epochs;False;;function to reject eog_epochs after use of find_eog_events;BoolGui;
+decim;decim;1;;down samplingfactor;IntGui;
+event_id;event_id;{'Default':1};;dictionary to assign strings to the event_ids;DictGui;
+detrend;detrend;True;;sometimes not working;BoolGui;
 ana_h1h2;ana_h1h2;True;;;BoolGui;
-tfr_freqs;tfr_freqs;[5,10,20,30,60,90];Hz;Frequenciestoanalyze;ListGui;
-overwrite_tfr;overwrite_tfr;True;;Recalculateandoverwritetfr;BoolGui;
+tfr_freqs;tfr_freqs;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
+overwrite_tfr;overwrite_tfr;True;;Recalculate and overwrite tfr;BoolGui;
 tfr_method;tfr_method;morlet;;;StringGui;
 multitaper_bandwith;multitaper_bandwith;4.0;;;FloatGui;
 stockwell_width;stockwell_width;1.0;;;FloatGui;
-eog_channel;eog_channel;EEG001;;SetVerticalEOG-Channel;StringGui;
-ecg_channel;ecg_channel;EEG003;;SetECG-Channel;StringGui;
-source_space_method;source_space_method;ico5;;SeetheMNE-Documentationforfurtherdetails;StringGui;
-eeg_fwd;eeg_fwd;False;;setTrueifworkingwithEEG-Data;BoolGui;
+eog_channel;eog_channel;EEG001;;Set Vertical EOG-Channel;StringGui;
+ecg_channel;ecg_channel;EEG003;;Set ECG-Channel;StringGui;
+source_space_method;source_space_method;ico5;;See the MNE-Documentation for further details;StringGui;
+eeg_fwd;eeg_fwd;False;;set True if working with EEG-Data;BoolGui;
 erm_noise_cov;erm_noise_cov;True;;;BoolGui;
-calm_noise_cov;calm_noise_cov;False;;Useofaspecifictimeintervalinameasurementfornoisecovariance;BoolGui;
-erm_ica;erm_ica;False;;Causessometimeserrors;BoolGui;
+calm_noise_cov;calm_noise_cov;False;;Use of a specific time interval in a measurement for noise-covariance;BoolGui;
+erm_ica;erm_ica;False;;Causes sometimes errors;BoolGui;
 inverse_method;inverse_method;dSPM;;;StringGui;
-toi;toi;[0,0.5];;TimeofInterestforanalysis;ListGui;
-mne_evoked_time;mne_evoked_time;[0.1,0.15,0.2];s;timepointstobedisplayedinseveralplots[s];ListGui;
-stc_interactive;stc_interactive;False;;interactivestc-plots;BoolGui;
+toi;toi;[0,0.5];;Time of Interest for analysis;ListGui;
+mne_evoked_time;mne_evoked_time;[0.1,0.15,0.2];s;time-points to be displayed in several plots[s];ListGui;
+stc_interactive;stc_interactive;False;;interactive stc-plots;BoolGui;
 mixn_dip;mixn_dip;True;;;BoolGui;
-stc_animation;stc_animation;(0,0.5);s;timespanforstc-animation[s];TupleGui;
+stc_animation;stc_animation;(0,0.5);s;time-span for stc-animation[s];TupleGui;
 parcellation;parcellation;aparc;;;StringGui;
 parcellation_orig;parcellation_orig;aparc_sub;;;StringGui;
 ev_ids_label_analysis;ev_ids_label_analysis;[];;;ListGui;
-n_std;n_std;4;;Determingtheamountofstandard-deviations,theprominencemusthave;IntGui;
+n_std;n_std;4;;Determing the amount of standard-deviations,the prominence must have;IntGui;
 corr_threshold;corr_threshold;0.95;;;FloatGui;
-con_methods;con_methods;['pli','wpli2_debiased','plv'];;methodsforconnectivityplots;ListGui;
-con_fmin;con_fmin;30;;fminforconnectivityplot;IntGui;
-con_fmax;con_fmax;80;;fmaxforconnectivityplot;IntGui;
+con_methods;con_methods;['pli','wpli2_debiased','plv'];;methods for connectivity plots;ListGui;
+con_fmin;con_fmin;30;;fmin for connectivity plot;IntGui;
+con_fmax;con_fmax;80;;fmax for connectivity plot;IntGui;
 ecds;ecds;{};;;DictGui;
-morph_to;morph_to;fsaverage;;nameofthefreesurfersubjecttobemorphedto;StringGui;
+morph_to;morph_to;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
 independent_variable_1;independent_variable_1;standard_3;;;StringGui;
 independent_variable_2;independent_variable_2;non_stimulation;;;StringGui;
 time_window;time_window;(0.05,0.06);;;TupleGui;
-n_permutations;n_permutations;10000;;specifyasinteger;IntGui;
+n_permutations;n_permutations;10000;;specify as integer;IntGui;
 p_threshold;p_threshold;1;;;FloatGui;
-n_jobs_freesurfer;n_jobs_freesurfer;4;;changeaccordingtoamountofprocessorsyouhaveavailable;IntGui;
+n_jobs_freesurfer;n_jobs_freesurfer;4;;change according to amount of processors you have available;IntGui;
 target_labels;target_labels;{'lh':['postcentral-lh']};;;DictGui;
 combine_ab;combine_ab;True;;pinprick-specific;BoolGui;
-cmp_cond;cmp_cond;['high','tactile'];;Specifytwoconditions,whichwillbecompared;ListGui;
+cmp_cond;cmp_cond;['high','tactile'];;Specify two conditions,which will be compared;ListGui;
 label_origin;label_origin;"['bankssts_1-lh',
 'bankssts_1-lh',
 'bankssts_1-rh',

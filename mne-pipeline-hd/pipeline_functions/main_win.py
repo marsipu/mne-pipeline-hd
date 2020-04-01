@@ -1,10 +1,12 @@
 import os
 import shutil
 import sys
+from ast import literal_eval
 from functools import partial
 from os.path import join
 from subprocess import run
 
+import mne
 import pandas as pd
 import qdarkstyle
 from PyQt5.QtCore import QSettings, Qt
@@ -75,14 +77,8 @@ class MainWindow(QMainWindow):
         self.add_main_bts()
         self.get_toolbox_params()
 
-        # Center Window
-        # Necessary because frameGeometry is dependent on number of function-buttons
-        # newh = self.sizeHint().height()
-        # neww = self.sizeHint().width()
-        # self.setGeometry(0, 0, neww, newh)
-        # Set Geometry depending on screen-size and make it smaller about size-ratio
         desk_geometry = self.app.desktop().screenGeometry()
-        self.size_ratio = 0.9
+        self.size_ratio = 0.8
         height = desk_geometry.height() * self.size_ratio
         width = desk_geometry.width() * self.size_ratio
         # self.setFixedSize(width, height)
@@ -114,6 +110,8 @@ class MainWindow(QMainWindow):
                              partial(SubDictDialog, self, 'erm'))
         input_menu.addAction('Assign Bad-Channels --> File',
                              partial(BadChannelsSelect, self))
+
+        input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
@@ -465,15 +463,19 @@ class MainWindow(QMainWindow):
             else:
                 r_cnt += 1
             gui_name = parameter['gui_type']
-            if gui_name != str:
+            if type(gui_name) != str:
                 gui_name = 'FuncGui'
-            gui = getattr(parameters, parameter['gui_type'])
+            gui = getattr(parameters, gui_name)
             # **literal_eval(parameter['gui_args']), except nan
             if type(parameter['hint']) is float:
                 hint = ''
             else:
                 hint = parameter['hint']
-            sub_layout.addWidget(gui(self, self.pr, idx, hint))
+            try:
+                gui_args = literal_eval(parameter['gui_args'])
+            except (SyntaxError, ValueError):
+                gui_args = {}
+            sub_layout.addWidget(gui(self.pr, idx, hint, **gui_args))
 
         child_w.setLayout(layout)
         tab.setWidget(child_w)
@@ -512,8 +514,6 @@ class MainWindow(QMainWindow):
 
         self.pr.func_dict = self.func_dict
         fc.call_functions(self, self.pr)
-        # function_thread = threading.Thread(target=fc.call_functions, args=(self, self.pr))
-        # function_thread.start()
         msg.close()
         # Todo: Introduce logging and print Exceptions to Main-Window
 

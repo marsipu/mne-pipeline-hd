@@ -254,7 +254,7 @@ def read_noise_covariance(name, save_dir, highpass, lowpass, erm_noise_cov, erms
         covariance_path = join(save_dir, covariance_name)
         noise_covariance = mne.read_cov(covariance_path)
         print('Reading Noise-Covariance from 1-min Calm in raw')
-    elif ermsub is 'None' or 'leer' in name or erm_noise_cov is False:
+    elif ermsub == 'None' or 'leer' in name or erm_noise_cov is False:
         covariance_name = name + filter_string(highpass, lowpass) + '-cov.fif'
         covariance_path = join(save_dir, covariance_name)
         noise_covariance = mne.read_cov(covariance_path)

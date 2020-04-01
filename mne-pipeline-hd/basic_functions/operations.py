@@ -195,7 +195,7 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
             print(f'raw file with Highpass = {1} Hz and Lowpass = {lowpass} Hz already exists')
             print('NO OVERWRITE FOR FILTERING, please change settings or delete files for new methods')
 
-    if ermsub is 'None':
+    if ermsub != 'None':
         erm_name = ermsub + '-raw.fif'
         erm_path = join(data_path, 'empty_room_data', ermsub, erm_name)
         erm_filter_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
@@ -464,7 +464,7 @@ def epoch_raw(name, save_dir, highpass, lowpass, event_id, t_epoch,
 @decor.topline
 def run_ssp_er(name, save_dir, highpass, lowpass, data_path, ermsub, bad_channels,
                overwrite):
-    if ermsub is 'None':
+    if ermsub == 'None':
         print('no empty_room_data found for' + name)
         pass
     else:
@@ -968,7 +968,7 @@ def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub,
         if enable_ica:
             epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from ICA-Epochs')
-        elif func_dict['apply_ssp_er'] and ermsub is not 'None':
+        elif func_dict['apply_ssp_er'] and ermsub != 'None':
             epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from SSP_ER-Epochs')
         elif func_dict['apply_ssp_clm']:
@@ -1006,7 +1006,7 @@ def get_h1h2_evokeds(name, save_dir, highpass, lowpass, enable_ica, func_dict, e
     if enable_ica:
         epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from ICA-Epochs')
-    elif func_dict['apply_ssp_er'] and ermsub is not 'None':
+    elif func_dict['apply_ssp_er'] and ermsub != 'None':
         epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ER-Epochs')
     elif func_dict['apply_ssp_clm']:
@@ -1480,7 +1480,7 @@ def create_forward_solution(name, save_dir, subtomri, subjects_dir,
 def estimate_noise_covariance(name, save_dir, highpass, lowpass,
                               overwrite, ermsub, data_path, baseline,
                               bad_channels, n_jobs, erm_noise_cov,
-                              calm_noise_cov, ica_evokeds, erm_ica):
+                              calm_noise_cov, enable_ica, erm_ica):
     if calm_noise_cov:
 
         print('Noise Covariance on 1-Minute-Calm')
@@ -1506,7 +1506,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
             print('noise covariance file: ' + covariance_path +
                   ' already exists')
 
-    elif ermsub is 'None' or 'leer' in name or erm_noise_cov is False:
+    elif ermsub == 'None' or 'leer' in name or erm_noise_cov is False:
 
         print('Noise Covariance on Epochs')
         covariance_name = name + filter_string(highpass, lowpass) + '-cov.fif'
@@ -1514,7 +1514,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
 
         if overwrite or not isfile(covariance_path):
 
-            if ica_evokeds:
+            if enable_ica:
                 epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
             else:
                 epochs = io.read_epochs(name, save_dir, highpass, lowpass)
@@ -3185,7 +3185,7 @@ def corr_ntr(name, save_dir, highpass, lowpass, func_dict, ermsub,
     if ica_evokeds:
         epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from ICA-Epochs after applied SSP')
-    elif func_dict['apply_ssp_er'] and ermsub is not 'None':
+    elif func_dict['apply_ssp_er'] and ermsub != 'None':
         epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from SSP_ER-Epochs')
     elif func_dict['apply_ssp_clm']:

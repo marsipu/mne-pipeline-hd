@@ -126,6 +126,7 @@ def call_functions(main_window, project):
         file_prog_layout.addWidget(file_pgbar)
         file_prog.setLayout(file_prog_layout)
         file_prog.open()
+
         count = 1
 
         for name in sel_files:

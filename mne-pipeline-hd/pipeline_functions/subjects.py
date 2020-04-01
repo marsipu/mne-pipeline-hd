@@ -38,25 +38,25 @@ class CurrentSubject:
             self.ermsub = self.mw.pr.erm_dict[name]
         except KeyError as k:
             print(f'No erm_measurement assigned for {k}')
-            self.dialog_open = True
-            erm_dict_dialog = SubDictDialog(self.mw, 'erm')
-            erm_dict_dialog.finished.connect(self.dialog_closed)
+            # self.dialog_open = True
+            # erm_dict_dialog = SubDictDialog(self.mw, 'erm')
+            # erm_dict_dialog.finished.connect(self.dialog_closed)
             self.dict_error = True
         try:
             self.subtomri = self.mw.pr.sub_dict[name]
         except KeyError as k:
             print(f'No mri_subject assigned to {k}')
-            self.dialog_open = True
-            mri_dict_dialog = SubDictDialog(self.mw, 'mri')
-            mri_dict_dialog.finished.connect(self.dialog_closed)
+            # self.dialog_open = True
+            # mri_dict_dialog = SubDictDialog(self.mw, 'mri')
+            # mri_dict_dialog.finished.connect(self.dialog_closed)
             self.dict_error = True
         try:
             self.bad_channels = self.mw.pr.bad_channels_dict[name]
         except KeyError as k:
             print(f'No bad channels for {k}')
-            self.dialog_open = True
-            bad_chan_dialog = BadChannelsSelect(self.mw)
-            bad_chan_dialog.finished.connect(self.dialog_closed)
+            # self.dialog_open = True
+            # bad_chan_dialog = BadChannelsSelect(self.mw)
+            # bad_chan_dialog.finished.connect(self.dialog_closed)
             self.dict_error = True
 
     def preload_data(self):
@@ -922,11 +922,11 @@ class SubDictDialog(QDialog):
         else:
             existing_dict = self.mw.pr.erm_dict
         if choice in existing_dict:
-            if existing_dict[choice] is 'None':
+            if existing_dict[choice] == 'None':
                 # Kind of bulky, improvable
                 enable_none_insert = True
                 for idx in range(self.list_widget2.count()):
-                    if self.list_widget2.item(idx).text() is 'None':
+                    if self.list_widget2.item(idx).text() == 'None':
                         enable_none_insert = False
                 if enable_none_insert:
                     self.list_widget2.addItem('None')
@@ -947,6 +947,8 @@ class SubDictDialog(QDialog):
         else:
             existing_dict = self.mw.pr.erm_dict
         for item in choices1:
+            item.setBackground(QColor('green'))
+            item.setForeground(QColor('white'))
             choice1 = item.text()
             if choice1 in existing_dict:
                 existing_dict[choice1] = choice2
@@ -964,6 +966,8 @@ class SubDictDialog(QDialog):
         else:
             existing_dict = self.mw.pr.erm_dict
         for item in choices:
+            item.setBackground(QColor('green'))
+            item.setForeground(QColor('white'))
             choice = item.text()
             if choice in existing_dict:
                 existing_dict[choice] = 'None'
@@ -983,6 +987,8 @@ class SubDictDialog(QDialog):
             if reply == QMessageBox.Yes:
                 all_items = dict()
                 for i in range(self.list_widget1.count()):
+                    self.list_widget1.item(i).setBackground(QColor('green'))
+                    self.list_widget1.item(i).setForeground(QColor('white'))
                     all_items.update({self.list_widget1.item(i).text(): selected})
                 if self.mode == 'mri':
                     self.mw.pr.sub_dict = all_items
@@ -998,6 +1004,8 @@ class SubDictDialog(QDialog):
         if reply == QMessageBox.Yes:
             all_items = dict()
             for i in range(self.list_widget1.count()):
+                self.list_widget1.item(i).setBackground(QColor('green'))
+                self.list_widget1.item(i).setForeground(QColor('white'))
                 all_items.update({self.list_widget1.item(i).text(): 'None'})
             if self.mode == 'mri':
                 self.mw.pr.sub_dict = all_items
@@ -1005,8 +1013,8 @@ class SubDictDialog(QDialog):
                 self.mw.pr.erm_dict = all_items
 
     def show_assignments(self):
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Assignments')
+        self.show_ass_dialog = QDialog(self)
+        self.show_ass_dialog.setWindowTitle('Assignments')
         layout = QGridLayout()
         list_widget = QListWidget()
         list_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -1025,11 +1033,11 @@ class SubDictDialog(QDialog):
         layout.addWidget(delete_bt, 1, 0)
 
         quit_bt = QPushButton('Quit')
-        quit_bt.clicked.connect(dialog.close)
+        quit_bt.clicked.connect(self.show_assignments_close)
         layout.addWidget(quit_bt, 1, 1)
 
-        dialog.setLayout(layout)
-        dialog.open()
+        self.show_ass_dialog.setLayout(layout)
+        self.show_ass_dialog.open()
 
     def delete_assignment(self, list_widget):
         choices = list_widget.selectedItems()
@@ -1041,6 +1049,10 @@ class SubDictDialog(QDialog):
                 self.mw.pr.sub_dict.pop(key_text, None)
             else:
                 self.mw.pr.erm_dict.pop(key_text, None)
+
+    def show_assignments_close(self):
+        self.init_ui()
+        self.show_ass_dialog.close()
 
     def closeEvent(self, event):
         self.done(1)
