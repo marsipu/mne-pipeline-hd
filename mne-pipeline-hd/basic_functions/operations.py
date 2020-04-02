@@ -669,10 +669,10 @@ def apply_ssp_ecg(name, save_dir, highpass, lowpass, overwrite):
 @decor.topline
 def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             reject, flat, bad_channels, overwrite, autoreject,
-            save_plots, figures_path, sub_script_path):
+            save_plots, figures_path, pscripts_path):
     info = io.read_info(name, save_dir)
 
-    ica_dict = ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', sub_script_path,
+    ica_dict = ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', pscripts_path,
                                    onlyread=True)
 
     ica_name = name + filter_string(highpass, lowpass) + '-ica.fif'
@@ -693,7 +693,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
         ica = mne.preprocessing.ICA(n_components=25, method='fastica', random_state=8)
 
         if autoreject:
-            reject = ut.autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwrite_ar=False,
+            reject = ut.autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite_ar=False,
                                            only_read=True)
 
         print('Rejection Threshold: %s' % reject)
@@ -814,7 +814,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             for i in exes:
                 indices.append(int(i))
 
-            ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', sub_script_path,
+            ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', pscripts_path,
                                 values=indices, overwrite=True)
 
             # Plot ICA integrated
@@ -884,7 +884,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
                     fig6.savefig(save_path, dpi=300)
                     print('figure: ' + save_path + ' has been saved')
 
-            ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', sub_script_path, values=[])
+            ut.dict_filehandler(name, f'ica_components{filter_string(highpass, lowpass)}', pscripts_path, values=[])
 
             ica.save(ica_path)
             comp_list = []
@@ -940,8 +940,8 @@ def apply_ica(name, save_dir, highpass, lowpass, overwrite):
 
 
 @decor.topline
-def autoreject_interpolation(name, save_dir, highpass, lowpass, ica_evokeds):
-    if ica_evokeds:
+def autoreject_interpolation(name, save_dir, highpass, lowpass, enable_ica):
+    if enable_ica:
         ica_epochs_name = name + filter_string(highpass, lowpass) + '-ica-epo.fif'
         save_path = join(save_dir, ica_epochs_name)
         epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
@@ -1129,7 +1129,7 @@ def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
 
 
 @decor.topline
-def tfr(name, save_dir, highpass, lowpass, ica_evokeds, tfr_freqs, overwrite_tfr,
+def tfr(name, save_dir, highpass, lowpass, enable_ica, tfr_freqs, overwrite_tfr,
         tfr_method, multitaper_bandwith, stockwell_width, n_jobs):
     power_name = name + filter_string(highpass, lowpass) + '_' + tfr_method + '_pw-tfr.h5'
     power_path = join(save_dir, power_name)
@@ -1141,7 +1141,7 @@ def tfr(name, save_dir, highpass, lowpass, ica_evokeds, tfr_freqs, overwrite_tfr
     itcs = []
 
     if overwrite_tfr or not isfile(power_path) or not isfile(itc_path):
-        if ica_evokeds:
+        if enable_ica:
             epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         else:
             epochs = io.read_epochs(name, save_dir, highpass, lowpass)
@@ -1797,7 +1797,7 @@ def ecd_fit(name, save_dir, highpass, lowpass, ermsub, subjects_dir,
 def create_func_label(name, save_dir, highpass, lowpass, inverse_method, event_id,
                       subtomri, subjects_dir, source_space_method, label_origin,
                       parcellation_orig, ev_ids_label_analysis,
-                      save_plots, figures_path, sub_script_path,
+                      save_plots, figures_path, pscripts_path,
                       n_std, combine_ab, grand_avg=False):
     print(name)
     if combine_ab and isinstance(name, tuple):
@@ -2095,10 +2095,10 @@ def create_func_label(name, save_dir, highpass, lowpass, inverse_method, event_i
             print('Not saving plots; set "save_plots" to "True" to save')
 
         if combine_ab and isinstance(name, tuple):
-            ut.dict_filehandler(name[0] + '-' + trial, 'func_label_lat', sub_script_path,
+            ut.dict_filehandler(name[0] + '-' + trial, 'func_label_lat', pscripts_path,
                                 values=save_dict)
         else:
-            ut.dict_filehandler(name + '-' + trial, 'func_label_lat', sub_script_path,
+            ut.dict_filehandler(name + '-' + trial, 'func_label_lat', pscripts_path,
                                 values=save_dict)
         plot.close_all()
 
@@ -2107,7 +2107,7 @@ def create_func_label(name, save_dir, highpass, lowpass, inverse_method, event_i
 @decor.topline
 def func_label_processing(name, save_dir, highpass, lowpass,
                           save_plots, figures_path, subtomri, subjects_dir,
-                          sub_script_path, ev_ids_label_analysis,
+                          pscripts_path, ev_ids_label_analysis,
                           corr_threshold, fuse_ab):
     #     Label looks for Labels with similar time in area and merges with them
     #     Use the time_course-coherence!!!
@@ -2117,7 +2117,7 @@ def func_label_processing(name, save_dir, highpass, lowpass,
     if fuse_ab and isinstance(name, tuple):
         save_dir = save_dir[1]
     func_labels_dict, lat_dict = io.read_func_labels(save_dir, subtomri,
-                                                     sub_script_path,
+                                                     pscripts_path,
                                                      ev_ids_label_analysis)
     aparc_labels = mne.read_labels_from_annot(subtomri, parc='aparc',
                                               subjects_dir=subjects_dir)
@@ -2507,9 +2507,9 @@ def apply_morph_normal(name, save_dir, highpass, lowpass, subjects_dir, subtomri
 def source_space_connectivity(name, save_dir, highpass, lowpass,
                               subtomri, subjects_dir, parcellation,
                               target_labels, con_methods, con_fmin, con_fmax,
-                              n_jobs, overwrite, ica_evokeds, ev_ids_label_analysis):
+                              n_jobs, overwrite, enable_ica, ev_ids_label_analysis):
     info = io.read_info(name, save_dir)
-    if ica_evokeds:
+    if enable_ica:
         all_epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
     else:
         all_epochs = io.read_epochs(name, save_dir, highpass, lowpass)
@@ -2689,7 +2689,7 @@ def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir
 def grand_avg_func_labels(grand_avg_dict, highpass, lowpass,
                           save_dir_averages, event_id, ev_ids_label_analysis,
                           subjects_dir, source_space_method,
-                          parcellation_orig, sub_script_path, save_plots,
+                          parcellation_orig, pscripts_path, save_plots,
                           label_origin, figures_path, n_std):
     global func_label
     figures_path_grand_averages = join(figures_path, 'grand_averages/source_space/stc')
@@ -2901,14 +2901,14 @@ def grand_avg_func_labels(grand_avg_dict, highpass, lowpass,
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
 
-            ut.dict_filehandler(key + '-' + ev_id, 'func_label_lat', sub_script_path,
+            ut.dict_filehandler(key + '-' + ev_id, 'func_label_lat', pscripts_path,
                                 values=save_dict)
             plot.close_all()
 
 
 def grand_avg_func_labels_processing(grand_avg_dict, highpass, lowpass,
                                      save_dir_averages, ev_ids_label_analysis,
-                                     subjects_dir, sub_script_path, save_plots,
+                                     subjects_dir, pscripts_path, save_plots,
                                      figures_path, corr_threshold,
                                      tmin, tmax):
     figures_path_grand_averages = join(figures_path, 'grand_averages/source_space/stc')
@@ -2916,7 +2916,7 @@ def grand_avg_func_labels_processing(grand_avg_dict, highpass, lowpass,
     for key in grand_avg_dict:
         save_dir_flabels = join(save_dir, 'func_labels', key)
         func_labels_dict, lat_dict = io.read_func_labels(save_dir_flabels, 'fsaverage',
-                                                         sub_script_path,
+                                                         pscripts_path,
                                                          ev_ids_label_analysis,
                                                          grand_avg=True)
         #            aparc_labels = mne.read_labels_from_annot('fsaverage', parc='aparc',
@@ -3179,10 +3179,10 @@ def statistics_source_space(morphed_data_all, save_dir_averages,
 
 @decor.topline
 def corr_ntr(name, save_dir, highpass, lowpass, func_dict, ermsub,
-             subtomri, ica_evokeds, save_plots, figures_path):
+             subtomri, enable_ica, save_plots, figures_path):
     info = io.read_info(name, save_dir)
 
-    if ica_evokeds:
+    if enable_ica:
         epochs = io.read_ica_epochs(name, save_dir, highpass, lowpass)
         print('Evokeds from ICA-Epochs after applied SSP')
     elif func_dict['apply_ssp_er'] and ermsub != 'None':
@@ -3257,7 +3257,7 @@ def corr_ntr(name, save_dir, highpass, lowpass, func_dict, ermsub,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-def get_meas_order(sub_files_dict, data_path, sub_script_path):
+def get_meas_order(sub_files_dict, data_path, pscripts_path):
     # Get measurement order in time
     for sub in sub_files_dict:
         ts = list()
@@ -3270,4 +3270,4 @@ def get_meas_order(sub_files_dict, data_path, sub_script_path):
             save_dir = join(data_path, name)
             i = io.read_info(name, save_dir)
             idx = ts.index(i['meas_date'][0])
-            ut.dict_filehandler(name, 'meas_order', sub_script_path, values=idx)
+            ut.dict_filehandler(name, 'meas_order', pscripts_path, values=idx)

@@ -17,7 +17,7 @@ def add_motor_erm_files():
 
 @decor.topline
 def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
-                      sub_script_path, save_plots, figures_path, func_dict):
+                      pscripts_path, save_plots, figures_path, func_dict):
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
 
@@ -102,7 +102,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
     diff1_mean = st.mean(l1)
     diff1_stdev = st.stdev(l1)
     ut.dict_filehandler(name, 'MotStart-LBT_diffs',
-                        sub_script_path, values={'mean': diff1_mean,
+                        pscripts_path, values={'mean': diff1_mean,
                                                  'stdev': diff1_stdev})
 
     if func_dict['motor_erm_analysis']:
@@ -113,7 +113,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
         diff2_mean = st.mean(l2)
         diff2_stdev = st.stdev(l2)
         ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
-                            sub_script_path, values={'mean': diff2_mean,
+                            pscripts_path, values={'mean': diff2_mean,
                                                      'stdev': diff2_stdev})
     else:
         for x in range(np.size(events, axis=0) - 3):
@@ -123,7 +123,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
         diff2_mean = st.mean(l2)
         diff2_stdev = st.stdev(l2)
         ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
-                            sub_script_path, values={'mean': diff2_mean,
+                            pscripts_path, values={'mean': diff2_mean,
                                                      'stdev': diff2_stdev})
 
     # Latency-Correction for Offset-Trigger[4]
@@ -175,7 +175,7 @@ def pp_combine_evokeds_ab(data_path, save_dir_averages, highpass, lowpass, ab_di
 
 
 @decor.topline
-def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, highpass, lowpass, sub_script_path,
+def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, highpass, lowpass, pscripts_path,
                  event_id, subjects_dir, inverse_method, source_space_method,
                  parcellation, figures_path):
     # Noch problematisch: pp9_64, pp19_64
@@ -346,7 +346,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, highpass, lowpass, sub
                 ab_ltc_max_dict[cond] = {title: l_ab_max}
 
             # Save lags to dict, ab_lag applies to data_b
-            ut.dict_filehandler(title, 'ab_lags', sub_script_path,
+            ut.dict_filehandler(title, 'ab_lags', pscripts_path,
                                 {'gfp_lag': ab_gmax_lag, 'gfp_val': round(ab_gmax_val, 2),
                                  'ltc_lag': ab_lmax_lag, 'ltc_val': round(ab_lmax_val, 2),
                                  'ab_lag': abl})
@@ -361,7 +361,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, highpass, lowpass, sub
             plot.close_all()
         else:
             print('No b-measurement available')
-            ut.dict_filehandler(title, 'ab_lags', sub_script_path,
+            ut.dict_filehandler(title, 'ab_lags', pscripts_path,
                                 {'gfp_lag': 0, 'gfp_val': 1, 'ltc_lag': 0, 'ltc_val': 1, 'ab_lag': 0})
             if cond in ab_gfp_avg_data:
                 ab_gfp_avg_data[cond].update({title: ab_gfp_data[names[0]]})
@@ -457,7 +457,7 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, highpass, lowpass, sub
             plot.close_all()
 
             # Save lags to dict, cond-lag applies to best-signal
-            ut.dict_filehandler(title, 'cond_lags', sub_script_path,
+            ut.dict_filehandler(title, 'cond_lags', pscripts_path,
                                 {'gfp_lag': cond_gmax_lag, 'gfp_val': round(cond_gmax_val, 2),
                                  'ltc_lag': cond_lmax_lag, 'ltc_val': round(cond_lmax_val, 2),
                                  'cond_lag': cl})
@@ -622,7 +622,7 @@ def plot_latency_alignment(layer, lag, n1, n2,
 
 # def apply_alignment():
 #     # Apply alignment over changing the
-#     det_peaks = ut.read_dict_file('peak_alignment', sub_script_path)
+#     det_peaks = ut.read_dict_file('peak_alignment', pscripts_path)
 #     for name in det_peaks:
 #         save_dir = join(data_path, name)
 

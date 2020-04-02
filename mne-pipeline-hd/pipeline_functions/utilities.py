@@ -15,9 +15,9 @@ import autoreject as ar
 from pipeline_functions import islin, ismac, iswin
 
 
-def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwrite_ar=False,
+def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite_ar=False,
                        only_read=False):
-    reject_value_path = join(sub_script_path, f'reject_values_{highpass}-{lowpass}_Hz.py')
+    reject_value_path = join(pscripts_path, f'reject_values_{highpass}-{lowpass}_Hz.py')
 
     if not isfile(reject_value_path):
         if only_read:
@@ -71,16 +71,16 @@ def autoreject_handler(name, epochs, highpass, lowpass, sub_script_path, overwri
     return reject
 
 
-def dict_filehandler(name, file_name, sub_script_path, values=None,
+def dict_filehandler(name, file_name, pscripts_path, values=None,
                      onlyread=False, overwrite=True, silent=False):
-    file_path = join(sub_script_path, file_name + '.py')
+    file_path = join(pscripts_path, file_name + '.py')
     file_dict = dict()
 
     if not isfile(file_path):
-        if not exists(sub_script_path):
-            makedirs(sub_script_path)
+        if not exists(pscripts_path):
+            makedirs(pscripts_path)
             if not silent:
-                print(sub_script_path + ' created')
+                print(pscripts_path + ' created')
         with open(file_path, 'w') as file:
             if type(values) == str:
                 file.write(f'{name}:"{values}"\n')
@@ -129,11 +129,11 @@ def dict_filehandler(name, file_name, sub_script_path, values=None,
     return file_dict
 
 
-def read_dict_file(file_name, sub_script_path=None):
-    if sub_script_path is None:
+def read_dict_file(file_name, pscripts_path=None):
+    if pscripts_path is None:
         file_path = file_name
     else:
-        file_path = join(sub_script_path, file_name + '.py')
+        file_path = join(pscripts_path, file_name + '.py')
     file_dict = dict()
     with open(file_path, 'r') as file:
         for item in file:
@@ -152,8 +152,8 @@ def read_dict_file(file_name, sub_script_path=None):
 
 
 # Todo: order-dict-function
-def order_the_dict(filename, sub_script_path, unspecified_names=False):
-    file_path = join(sub_script_path, 'MotStart-LBT_diffs' + '.py')
+def order_the_dict(filename, pscripts_path, unspecified_names=False):
+    file_path = join(pscripts_path, 'MotStart-LBT_diffs' + '.py')
     file_dict = dict()
     order_dict1 = dict()
     order_dict2 = dict()
