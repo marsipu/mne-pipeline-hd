@@ -513,7 +513,7 @@ class MainWindow(QMainWindow):
         msg.open()
 
         self.pr.func_dict = self.func_dict
-        fc.call_functions(self, self.pr)
+        fc.call_functions(self)
         msg.close()
         # Todo: Introduce logging and print Exceptions to Main-Window
 

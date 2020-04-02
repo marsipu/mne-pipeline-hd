@@ -498,7 +498,7 @@ def read_ga_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
     return ga_dict
 
 
-def read_func_labels(save_dir, subtomri, sub_script_path,
+def read_func_labels(save_dir, subtomri, pscripts_path,
                      ev_ids_label_analysis, grand_avg=False):
     if grand_avg:
         filenames = listdir(join(save_dir))

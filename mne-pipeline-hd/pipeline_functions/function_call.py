@@ -56,18 +56,16 @@ def func_from_def(func_name, pd_funcs, subject, project, parameters):
     return return_value
 
 
-def call_functions(main_window, project):
+def call_functions(main_window):
     """
     Call activated functions in main_window, read function-parameters from functions_empty.csv
     :param main_window:
-    :param project:
     :return:
     """
     mw = main_window
-    pr = project
 
     # Call the functions for selected MRI-subjects
-    mri_subjects = pr.sel_mri_files
+    mri_subjects = mw.pr.sel_mri_files
     mri_ops = mw.pd_funcs[mw.pd_funcs['group'] == 'mri_subject_operations'].T
     # Check if any mri_subject_operation is selected
     if any([mw.func_dict[mri_func] for mri_func in mri_ops]):
@@ -96,7 +94,7 @@ def call_functions(main_window, project):
                 msub = CurrentMRISubject(mri_subject, mw)
                 for mri_func in mri_ops:
                     if mw.func_dict[mri_func]:
-                        func_from_def(mri_func, mw.pd_funcs, msub, pr, pr.parameters)
+                        func_from_def(mri_func, mw.pd_funcs, msub, mw.pr, mw.pr.parameters)
 
                 mri_pgbar.setValue(count)
                 count += 1
@@ -105,10 +103,10 @@ def call_functions(main_window, project):
             print('No MRI-Subject selected')
 
     # Call the functions for selected Files
-    sel_files = pr.sel_files
+    sel_files = mw.pr.sel_files
     file_ops = mw.pd_funcs[mw.pd_funcs['group'] != 'mri_subject_operations'].T
 
-    if len(pr.all_files) == 0:
+    if len(mw.pr.all_files) == 0:
         print('No files found!\nAdd some Files with "AddFiles" from the Input-Menu')
     else:
         print(f'Selected {len(sel_files)} Subjects:')
@@ -146,7 +144,7 @@ def call_functions(main_window, project):
 
                 for file_func in file_ops:
                     if mw.func_dict[file_func]:
-                        func_from_def(file_func, mw.pd_funcs, mw.subject, pr, pr.parameters)
+                        func_from_def(file_func, mw.pd_funcs, mw.subject, mw.pr, mw.pr.parameters)
                 file_pgbar.setValue(count)
                 count += 1
         file_prog.close()

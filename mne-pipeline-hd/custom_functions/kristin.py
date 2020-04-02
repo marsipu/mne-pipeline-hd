@@ -9,7 +9,7 @@ from pipeline_functions import decorators as decor
 
 @decor.topline
 def kristin_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
-                           sub_script_path, save_plots, figures_path, func_dict):
+                           pscripts_path, save_plots, figures_path, func_dict):
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
 

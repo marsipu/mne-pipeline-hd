@@ -1065,11 +1065,11 @@ def plot_labels(mri_subject, save_plots, figures_path,
 
 @decor.topline
 def sub_func_label_analysis(highpass, lowpass, tmax, sub_files_dict,
-                            sub_script_path, label_origin, ev_ids_label_analysis, save_plots,
+                            pscripts_path, label_origin, ev_ids_label_analysis, save_plots,
                             figures_path, func_dict):
     lat_dict = {}
 
-    with open(join(sub_script_path, 'func_label_lat.py'), 'r') as file:
+    with open(join(pscripts_path, 'func_label_lat.py'), 'r') as file:
         for item in file:
             if ':' in item:
                 key, value = item.split(':', 1)
@@ -1168,12 +1168,12 @@ def sub_func_label_analysis(highpass, lowpass, tmax, sub_files_dict,
 
 
 @decor.topline
-def all_func_label_analysis(highpass, lowpass, tmax, files, sub_script_path,
+def all_func_label_analysis(highpass, lowpass, tmax, files, pscripts_path,
                             label_origin, ev_ids_label_analysis, save_plots,
                             figures_path):
     lat_dict = {}
 
-    with open(join(sub_script_path, 'func_label_lat.py'), 'r') as file:
+    with open(join(pscripts_path, 'func_label_lat.py'), 'r') as file:
         for item in file:
             if ':' in item:
                 key, value = item.split(':', 1)
@@ -1294,7 +1294,7 @@ def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
                           subjects_dir, inverse_method, source_space_method, parcellation,
                           target_labels, save_plots, figures_path,
                           event_id, ev_ids_label_analysis, combine_ab,
-                          sub_script_path, func_dict):
+                          pscripts_path, func_dict):
     color_dict = {'low': 'g', 'middle': 'y', 'high': 'r', 't': 'b'}
 
     # Differentiate a and b
@@ -1400,7 +1400,7 @@ def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
                             corr_dict.update({label: {trial: coef}})
 
                 ut.dict_filehandler(ab_key, f'ab_coef_label_time_course{filter_string(highpass, lowpass)}-{trial_type}',
-                                    sub_script_path, values=corr_dict)
+                                    pscripts_path, values=corr_dict)
             if func_dict['close_plots']:
                 close_all()
 
@@ -2063,11 +2063,11 @@ def pp_plot_latency_s1_corr(data_path, files, highpass, lowpass,
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-def plot_quality(sub_script_path, all_files, save_plots, figures_path, highpass, lowpass):
+def plot_quality(pscripts_path, all_files, save_plots, figures_path, highpass, lowpass):
     fig, ax = plt.subplots(figsize=(18, 8), gridspec_kw={'left': 0.05, 'right': 0.95})
     ax.xaxis.set_ticks(np.arange(len(all_files)))
 
-    quality_dict = ut.read_dict_file('quality', sub_script_path)
+    quality_dict = ut.read_dict_file('quality', pscripts_path)
 
     for idx, file in enumerate(all_files):
 
@@ -2095,10 +2095,10 @@ def plot_quality(sub_script_path, all_files, save_plots, figures_path, highpass,
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-def plot_lat_vs_quality(sub_script_path, all_files, save_plots, figures_path, highpass, lowpass):
-    quality_dict = ut.read_dict_file('quality', sub_script_path)
+def plot_lat_vs_quality(pscripts_path, all_files, save_plots, figures_path, highpass, lowpass):
+    quality_dict = ut.read_dict_file('quality', pscripts_path)
 
-    lat1_dict = ut.read_dict_file('MotStart-LBT_diffs', sub_script_path)
+    lat1_dict = ut.read_dict_file('MotStart-LBT_diffs', pscripts_path)
 
     fig1, ax1 = plt.subplots(figsize=(18, 8), gridspec_kw={'left': 0.05, 'right': 0.95})
     for file in all_files:
@@ -2127,9 +2127,9 @@ def plot_lat_vs_quality(sub_script_path, all_files, save_plots, figures_path, hi
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-def plot_evoked_peaks(sub_script_path, all_files, save_plots, figures_path, highpass, lowpass):
-    peak_dict = ut.read_dict_file('peak_detection', sub_script_path)
-    quality_dict = ut.read_dict_file('quality', sub_script_path)
+def plot_evoked_peaks(pscripts_path, all_files, save_plots, figures_path, highpass, lowpass):
+    peak_dict = ut.read_dict_file('peak_detection', pscripts_path)
+    quality_dict = ut.read_dict_file('quality', pscripts_path)
 
     fig, ax = plt.subplots(figsize=(18, 8), gridspec_kw={'left': 0.05, 'right': 0.95})
     ax.xaxis.set_ticks(np.arange(len(all_files)))
