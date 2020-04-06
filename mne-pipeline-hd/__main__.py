@@ -42,5 +42,4 @@ timer.start(100)
 
 # # In Pycharm not working but needed for Spyder
 app.lastWindowClosed.connect(app.quit)
-app.exec_()
-print('Finished')
+sys.exit(app.exec_())

@@ -220,7 +220,7 @@ def call_functions(main_window, project):
             bad_channels = pr.bad_channels_dict[name]
         except KeyError as k:
             print(f'No bad channels for {k}')
-            subs.BadChannelsSelect(mw)
+            subs.SubBadsDialog(mw)
             break
 
         # ==========================================================================
