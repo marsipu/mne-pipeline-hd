@@ -17,7 +17,7 @@ def add_motor_erm_files():
 
 @decor.topline
 def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
-                      pscripts_path, save_plots, figures_path, func_dict):
+                      pscripts_path, save_plots, figures_path):
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
 
@@ -25,7 +25,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
         events = io.read_events(name, save_dir)
     except FileNotFoundError:
         print('No events found, running find_events...')
-        op.find_events(name, save_dir, adjust_timeline_by_msec, overwrite, func_dict)
+        op.find_events(name, save_dir, adjust_timeline_by_msec, overwrite)
         events = io.read_events(name, save_dir)
 
     assert len(events) != 0, 'No events found'
@@ -105,26 +105,26 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
                         pscripts_path, values={'mean': diff1_mean,
                                                  'stdev': diff1_stdev})
 
-    if func_dict['motor_erm_analysis']:
-        for x in range(np.size(events, axis=0) - 3):
-            if events[x, 2] == 2:
-                if events[x + 2, 2] == 4:
-                    l2.append(events[x + 2, 0] - events[x, 0])
-        diff2_mean = st.mean(l2)
-        diff2_stdev = st.stdev(l2)
-        ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
-                            pscripts_path, values={'mean': diff2_mean,
-                                                     'stdev': diff2_stdev})
-    else:
-        for x in range(np.size(events, axis=0) - 3):
-            if events[x, 2] == 2:
-                if events[x + 3, 2] == 4:
-                    l2.append(events[x + 3, 0] - events[x, 0])
-        diff2_mean = st.mean(l2)
-        diff2_stdev = st.stdev(l2)
-        ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
-                            pscripts_path, values={'mean': diff2_mean,
-                                                     'stdev': diff2_stdev})
+    # if func_dict['motor_erm_analysis']:
+    #     for x in range(np.size(events, axis=0) - 3):
+    #         if events[x, 2] == 2:
+    #             if events[x + 2, 2] == 4:
+    #                 l2.append(events[x + 2, 0] - events[x, 0])
+    #     diff2_mean = st.mean(l2)
+    #     diff2_stdev = st.stdev(l2)
+    #     ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
+    #                         pscripts_path, values={'mean': diff2_mean,
+    #                                                  'stdev': diff2_stdev})
+    # else:
+    for x in range(np.size(events, axis=0) - 3):
+        if events[x, 2] == 2:
+            if events[x + 3, 2] == 4:
+                l2.append(events[x + 3, 0] - events[x, 0])
+    diff2_mean = st.mean(l2)
+    diff2_stdev = st.stdev(l2)
+    ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
+                        pscripts_path, values={'mean': diff2_mean,
+                                                 'stdev': diff2_stdev})
 
     # Latency-Correction for Offset-Trigger[4]
     for x in range(np.size(events, axis=0) - 3):
