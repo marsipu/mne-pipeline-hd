@@ -15,7 +15,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QComboBox, QDialog, QDockWidget, QFileDialog, QGridLayout, \
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QPushButton, \
-    QStyle, QTabWidget, QVBoxLayout, QWidget
+    QStyle, QTabWidget, QVBoxLayout, QWidget, QWizard, QWizardPage
 from matplotlib import pyplot as plt
 
 from basic_functions import io
@@ -225,7 +225,7 @@ class SubjectDock(QDockWidget):
 
         # Add and Remove-Buttons
         file_add_bt = QPushButton('Add File/s')
-        file_add_bt.clicked.connect(partial(AddFiles, self.mw))
+        file_add_bt.clicked.connect(partial(AddFilesDialog, self.mw))
         self.sub_ledit_layout.addWidget(file_add_bt, 1, 0)
         file_rm_bt = QPushButton('Remove File/s')
         file_rm_bt.clicked.connect(self.remove_files)
@@ -255,7 +255,7 @@ class SubjectDock(QDockWidget):
         self.mri_bt_layout.addWidget(self.mri_clear_bt, 0, 1)
         # Add and Remove-Buttons
         mri_add_bt = QPushButton('Add MRI-Subject/s')
-        mri_add_bt.clicked.connect(partial(AddMRIFiles, self.mw))
+        mri_add_bt.clicked.connect(partial(AddMRIDialog, self.mw))
         self.mri_bt_layout.addWidget(mri_add_bt, 1, 0)
         mri_rm_bt = QPushButton('Remove MRI-Subject/s')
         mri_rm_bt.clicked.connect(self.remove_mri_subjects)
@@ -457,9 +457,12 @@ def read_files(file_list_path):
     return file_list
 
 
+# ToDo: Grand-Average-Widget
+# ToDo: Event-ID-Widget (Subklassen und jetzt auch mit event_colors)
+
 # Todo: Enable Drag&Drop
 # Todo: RegExp-Wizard
-class AddFiles(QDialog):
+class AddFilesWidget(QWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
@@ -470,8 +473,6 @@ class AddFiles(QDialog):
         self.file_types = dict()
 
         self.init_ui()
-        self.setLayout(self.layout)
-        self.open()
 
     def init_ui(self):
         # Input Buttons
@@ -495,20 +496,19 @@ class AddFiles(QDialog):
         self.pgbar.setMinimum(0)
         self.layout.addWidget(self.pgbar)
 
-        main_bt_layout = QHBoxLayout()
+        self.main_bt_layout = QHBoxLayout()
         import_bt = QPushButton('Import', self)
         import_bt.clicked.connect(self.add_files)
-        main_bt_layout.addWidget(import_bt)
+        self.main_bt_layout.addWidget(import_bt)
         rename_bt = QPushButton('Rename File', self)
         rename_bt.clicked.connect(self.rename_item)
-        main_bt_layout.addWidget(rename_bt)
+        self.main_bt_layout.addWidget(rename_bt)
         delete_bt = QPushButton('Delete File', self)
         delete_bt.clicked.connect(self.delete_item)
-        main_bt_layout.addWidget(delete_bt)
-        ok_bt = QPushButton('Close', self)
-        ok_bt.clicked.connect(self.close)
-        main_bt_layout.addWidget(ok_bt)
-        self.layout.addLayout(main_bt_layout)
+        self.main_bt_layout.addWidget(delete_bt)
+        self.layout.addLayout(self.main_bt_layout)
+
+        self.setLayout(self.layout)
 
     def populate_list_widget(self):
         # List with checkable names
@@ -635,6 +635,29 @@ class AddFiles(QDialog):
         self.mw.subject_dock.update_subjects_list()
 
 
+class AddFilesDialog(AddFilesWidget):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+
+        self.dialog = QDialog(main_win)
+
+        test_layout = QHBoxLayout()
+
+        close_bt = QPushButton('Close', self)
+        close_bt.clicked.connect(self.dialog.close)
+        self.main_bt_layout.addWidget(close_bt)
+
+        test_layout.addWidget(self)
+
+        self.dialog.setLayout(test_layout)
+        self.dialog.open()
+
+
+class AddFilesWizPage(AddFilesWidget):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+
+
 def move_folder(src, dst):
     if not isdir(dst):
         print(f'Copying Folder from {src}...')
@@ -658,7 +681,7 @@ def get_existing_mri_subjects(subjects_dir):
     return existing_mri_subs
 
 
-class AddMRIFiles(QDialog):
+class AddMRIWidget(QWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
@@ -669,8 +692,6 @@ class AddMRIFiles(QDialog):
         self.file_types = dict()
 
         self.init_ui()
-        self.setLayout(self.layout)
-        self.open()
 
     def init_ui(self):
         bt_layout = QHBoxLayout()
@@ -690,20 +711,19 @@ class AddMRIFiles(QDialog):
         self.pgbar.setMinimum(0)
         self.layout.addWidget(self.pgbar)
 
-        main_bt_layout = QHBoxLayout()
+        self.main_bt_layout = QHBoxLayout()
         import_bt = QPushButton('Import', self)
         import_bt.clicked.connect(self.add_mri_subjects)
-        main_bt_layout.addWidget(import_bt)
+        self.main_bt_layout.addWidget(import_bt)
         rename_bt = QPushButton('Rename File', self)
         rename_bt.clicked.connect(self.rename_item)
-        main_bt_layout.addWidget(rename_bt)
+        self.main_bt_layout.addWidget(rename_bt)
         delete_bt = QPushButton('Delete File', self)
         delete_bt.clicked.connect(self.delete_item)
-        main_bt_layout.addWidget(delete_bt)
-        ok_bt = QPushButton('OK', self)
-        ok_bt.clicked.connect(self.close)
-        main_bt_layout.addWidget(ok_bt)
-        self.layout.addLayout(main_bt_layout)
+        self.main_bt_layout.addWidget(delete_bt)
+
+        self.layout.addLayout(self.main_bt_layout)
+        self.setLayout(self.layout)
 
     def populate_list_widget(self):
         # List with checkable names
@@ -803,8 +823,22 @@ def read_sub_dict(sub_dict_path):
     return sub_dict
 
 
-class SubDictDialog(QDialog):
-    """ A dialog to assign MRI-Subjects oder Empty-Room-Files to subject(s), depending on mode """
+class AddMRIDialog(AddMRIWidget):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        
+        self.dialog = QDialog(main_win)
+
+        close_bt = QPushButton('Close', self)
+        close_bt.clicked.connect(self.dialog.close)
+        self.main_bt_layout.addWidget(close_bt)
+
+        self.dialog.setLayout(self.layout)
+        self.dialog.open()
+
+
+class SubDictWidget(QWidget):
+    """ A widget to assign MRI-Subjects oder Empty-Room-Files to subject(s), depending on mode """
 
     def __init__(self, main_win, mode):
         """
@@ -825,7 +859,6 @@ class SubDictDialog(QDialog):
             self.label2 = 'Choose a erm-file'
 
         self.init_ui()
-        self.open()
 
     def init_ui(self):
         file_label = QLabel('Choose a file', self)
@@ -861,26 +894,26 @@ class SubDictDialog(QDialog):
         self.layout.addWidget(self.list_widget1, 1, 0)
         self.layout.addWidget(self.list_widget2, 1, 1)
         # Add buttons
-        bt_layout = QVBoxLayout()
+        self.bt_layout = QVBoxLayout()
         assign_bt = QPushButton('Assign', self)
         assign_bt.clicked.connect(self.sub_dict_assign)
-        bt_layout.addWidget(assign_bt)
+        self.bt_layout.addWidget(assign_bt)
 
         none_bt = QPushButton('Assign None', self)
         none_bt.clicked.connect(self.sub_dict_assign_none)
-        bt_layout.addWidget(none_bt)
+        self.bt_layout.addWidget(none_bt)
 
         all_none_bt = QPushButton('Assign None to all')
         all_none_bt.clicked.connect(self.sub_dict_assign_all_none)
-        bt_layout.addWidget(all_none_bt)
+        self.bt_layout.addWidget(all_none_bt)
 
         all_bt = QPushButton(f'Assign 1 {self.mode} to all')
         all_bt.clicked.connect(self.sub_dict_assign_to_all)
-        bt_layout.addWidget(all_bt)
+        self.bt_layout.addWidget(all_bt)
 
         read_bt = QPushButton('Show Assignments', self)
         read_bt.clicked.connect(self.show_assignments)
-        bt_layout.addWidget(read_bt)
+        self.bt_layout.addWidget(read_bt)
 
         if self.mode == 'mri':
             group_box = QGroupBox('Template-Brains', self)
@@ -897,13 +930,9 @@ class SubDictDialog(QDialog):
             tb_layout.addWidget(test_bt)
 
             group_box.setLayout(tb_layout)
-            bt_layout.addWidget(group_box)
+            self.bt_layout.addWidget(group_box)
 
-        ok_bt = QPushButton('OK', self)
-        ok_bt.clicked.connect(self.close)
-        bt_layout.addWidget(ok_bt)
-
-        self.layout.addLayout(bt_layout, 0, 2, 2, 1)
+        self.layout.addLayout(self.bt_layout, 0, 2, 2, 1)
         self.setLayout(self.layout)
 
     def add_template_brain(self):
@@ -1054,8 +1083,29 @@ class SubDictDialog(QDialog):
         self.init_ui()
         self.show_ass_dialog.close()
 
-    def closeEvent(self, event):
-        self.done(1)
+
+class SubDictDialog(SubDictWidget):
+    def __init__(self, main_win, mode):
+        super().__init__(main_win, mode)
+
+        self.dialog = QDialog(main_win)
+
+        close_bt = QPushButton('Close', self)
+        close_bt.clicked.connect(self.dialog.close)
+        self.bt_layout.addWidget(close_bt)
+
+        self.dialog.setLayout(self.layout)
+        self.dialog.open()
+
+
+def init_wizard_ui():
+    layout = QVBoxLayout()
+
+
+class SubDictWizPage(SubDictWidget, QWizardPage):
+    def __init__(self, main_win, mode):
+        SubDictWidget.__init__(self, main_win, mode)
+        QWizardPage.__init__(self, main_win)
 
 
 def read_bad_channels_dict(bad_channels_dict_path):
@@ -1076,7 +1126,7 @@ def read_bad_channels_dict(bad_channels_dict_path):
     return bad_channels_dict
 
 
-class BadChannelsSelect(QDialog):
+class SubBadsWidget(QWidget):
     """ A Dialog to select Bad-Channels for the files """
 
     def __init__(self, main_win):
@@ -1094,7 +1144,6 @@ class BadChannelsSelect(QDialog):
         self.raw_fig = None
 
         self.initui()
-        self.open()
 
     def initui(self):
         self.listwidget = QListWidget(self)
@@ -1122,17 +1171,13 @@ class BadChannelsSelect(QDialog):
         self.listwidget.itemClicked.connect(self.bad_dict_selected)
 
         # Add Buttons
-        bt_layout = QHBoxLayout()
+        self.bt_layout = QHBoxLayout()
 
         plot_bt = QPushButton('Plot Raw')
         plot_bt.clicked.connect(self.plot_raw_bad)
-        bt_layout.addWidget(plot_bt)
+        self.bt_layout.addWidget(plot_bt)
 
-        ok_bt = QPushButton('Close', self)
-        ok_bt.clicked.connect(self.close)
-        bt_layout.addWidget(ok_bt)
-
-        self.layout.addLayout(bt_layout, self.channel_count // 10 + 1, 0, 1, self.channel_count // 10)
+        self.layout.addLayout(self.bt_layout, self.channel_count // 10 + 1, 0, 1, self.channel_count // 10)
         self.setLayout(self.layout)
 
     def bad_dict_selected(self):
@@ -1235,3 +1280,23 @@ class BadChannelsSelect(QDialog):
                     event.ignore()
             else:
                 close_function()
+
+
+class SubBadsDialog(SubBadsWidget):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+
+        self.dialog = QDialog(main_win)
+
+        close_bt = QPushButton('Close', self)
+        close_bt.clicked.connect(self.dialog.close)
+        self.bt_layout.addWidget(close_bt)
+
+        self.dialog.setLayout(self.layout)
+        self.dialog.open()
+
+
+class SubjectWizard(QWizard):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win

@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
 
 from pipeline_functions import function_call as fc, iswin, parameters
 from pipeline_functions.project import MyProject
-from pipeline_functions.subjects import AddFiles, AddMRIFiles, BadChannelsSelect, SubDictDialog, SubjectDock
+from pipeline_functions.subjects import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock)
 
 
 def get_upstream():
@@ -95,13 +95,13 @@ class MainWindow(QMainWindow):
         aaddfiles = QAction('Add Files', parent=self)
         aaddfiles.setShortcut('Ctrl+F')
         aaddfiles.setStatusTip('Add your MEG-Files here')
-        aaddfiles.triggered.connect(partial(AddFiles, self))
+        aaddfiles.triggered.connect(partial(AddFilesDialog, self))
         input_menu.addAction(aaddfiles)
 
         aaddmri = QAction('Add MRI-Subject', self)
         aaddmri.setShortcut('Ctrl+M')
         aaddmri.setStatusTip('Add your Freesurfer-Files here')
-        aaddmri.triggered.connect(partial(AddMRIFiles, self))
+        aaddmri.triggered.connect(partial(AddMRIDialog, self))
         input_menu.addAction(aaddmri)
 
         input_menu.addAction('Assign File --> MRI-Subject',
@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
         input_menu.addAction('Assign File --> ERM-File',
                              partial(SubDictDialog, self, 'erm'))
         input_menu.addAction('Assign Bad-Channels --> File',
-                             partial(BadChannelsSelect, self))
+                             partial(SubBadsDialog, self))
 
         input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
 
@@ -129,6 +129,10 @@ class MainWindow(QMainWindow):
 
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
 
+        self.pyfiles = QAction('Load .py-Files')
+        self.pyfiles.toggled.connect(self.pr.load_py_lists)
+        self.settings_menu.addAction(self.pyfiles)
+
         self.asub_preload = QAction('Preload Subject-Data')
         self.asub_preload.setCheckable(True)
         if self.settings.value('sub_preload') == 'true':
@@ -137,15 +141,6 @@ class MainWindow(QMainWindow):
             self.asub_preload.setChecked(False)
         self.asub_preload.toggled.connect(partial(self.set_bool_setting, self.asub_preload, 'sub_preload'))
         self.settings_menu.addAction(self.asub_preload)
-
-        self.pyfiles = QAction('Load .py-Files')
-        self.pyfiles.setCheckable(True)
-        if self.settings.value('load_py_files') == 'true':
-            self.pyfiles.setChecked(True)
-        else:
-            self.pyfiles.setChecked(False)
-        self.pyfiles.toggled.connect(partial(self.set_bool_setting, self.pyfiles, 'load_py_files'))
-        self.settings_menu.addAction(self.pyfiles)
 
         # About
         about_menu = self.menuBar().addMenu('About')
@@ -515,6 +510,7 @@ class MainWindow(QMainWindow):
         self.pr.func_dict = self.func_dict
         fc.call_functions(self)
         msg.close()
+        print()
         # Todo: Introduce logging and print Exceptions to Main-Window
 
     def get_toolbox_params(self):
