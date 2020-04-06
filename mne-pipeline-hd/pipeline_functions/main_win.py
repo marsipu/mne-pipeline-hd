@@ -502,6 +502,9 @@ class MainWindow(QMainWindow):
         # Save project-data before data being lost in errors
         self.pr.save_parameters()
         self.pr.save_sub_lists()
+        # Save Main-Window-Settings
+        self.settings.setValue('geometry', self.saveGeometry())
+        self.settings.setValue('checked_funcs', self.func_dict)
         # Todo: Cancel-Button, Progress-Bar for Progress
         msg = QDialog(self)
         msg.setWindowTitle('Executing Functions...')
