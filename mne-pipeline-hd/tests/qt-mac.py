@@ -1,13 +1,13 @@
 import sys
 
 import matplotlib
+
+if ismac:
+    matplotlib.use('MacOSX')
 from matplotlib import pyplot as plt
 from mayavi import mlab
 
 from pipeline_functions import ismac
-
-if ismac:
-    matplotlib.use('MacOSX')
 
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer
@@ -34,9 +34,13 @@ class TestMainWindow(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
-        plt_test = QPushButton('Matplotlib-Test')
-        plt_test.clicked.connect(self.test_matplotlib)
+        plt_test = QPushButton('Plot-Test')
+        plt_test.clicked.connect(self.test_matplotlib_plot)
         self.general_layout.addWidget(plt_test)
+
+        figure_test = QPushButton('Figure-Test')
+        figure_test.clicked.connect(self.test_matplotlib_figure)
+        self.general_layout.addWidget(figure_test)
 
         mayavi_test = QPushButton('Mayavi-Test')
         mayavi_test.clicked.connect(self.test_mayavi)
@@ -48,9 +52,14 @@ class TestMainWindow(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def test_matplotlib(self):
+    def test_matplotlib_plot(self):
         plt.plot([1, 2, 3, 4])
         plt.show()
+
+    def test_matplotlib_figure(self):
+        figure = plt.figure()
+        plt.plot([1, 2, 3, 4], figure=figure)
+        figure.show()
 
     def test_mayavi(self):
         mlab.figure()
