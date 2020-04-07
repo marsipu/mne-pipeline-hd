@@ -13,7 +13,7 @@ from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
-                             QMainWindow, QMessageBox, QPushButton, QScrollArea, QSizePolicy, QSpinBox, QStyle,
+                             QMainWindow, QMessageBox, QPushButton, QScrollArea, QSpinBox, QStyle,
                              QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 
 from pipeline_functions import function_call as fc, iswin, parameters
@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         self.general_layout = QVBoxLayout()
         self.centralWidget().setLayout(self.general_layout)
 
-        self.setSizePolicy(QSizePolicy(0, 0))
+        # self.setSizePolicy(QSizePolicy(0, 0))
 
         QToolTip.setFont(QFont('SansSerif', 9))
         self.change_style('Fusion')

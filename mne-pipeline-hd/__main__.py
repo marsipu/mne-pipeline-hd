@@ -40,6 +40,5 @@ timer = QTimer()
 timer.timeout.connect(lambda: None)
 timer.start(100)
 
-# # In Pycharm not working but needed for Spyder
 app.lastWindowClosed.connect(app.quit)
 sys.exit(app.exec_())

@@ -449,7 +449,7 @@ class SliderGui(Param):
         self.max_val = max_val
         self.param_widget = QSlider()
         self.decimal_count = max([abs(Decimal(str(value)).as_tuple().exponent) for value in (min_val, max_val, step)])
-        if self.decimal_count != -1:
+        if self.decimal_count > 0:
             self.param_widget.setMinimum(self.min_val * 10 ** self.decimal_count)
             self.param_widget.setMaximum(self.max_val * 10 ** self.decimal_count)
         else:
@@ -485,13 +485,13 @@ class SliderGui(Param):
             new_value = ''
         if isinstance(new_value, int):
             self.param_value = new_value
-            self.decimal_count = -1
+            self.decimal_count = 0
             self.param_widget.setMinimum(self.min_val)
             self.param_widget.setMaximum(self.max_val)
             self.param_widget.setValue(self.param_value)
         elif isinstance(new_value, float):
-            new_decimal_count = str(new_value)[::-1].find('.')
-            if new_decimal_count != -1 and new_decimal_count != self.decimal_count:
+            new_decimal_count = abs(Decimal(str(new_value)).as_tuple().exponent)
+            if new_decimal_count > 0 and new_decimal_count != self.decimal_count:
                 self.decimal_count = new_decimal_count
                 self.param_widget.setMinimum(self.min_val * 10 ** self.decimal_count)
                 self.param_widget.setMaximum(self.max_val * 10 ** self.decimal_count)
@@ -501,12 +501,15 @@ class SliderGui(Param):
             pass
 
     def set_param(self):
-        self.param_widget.setValue(self.param_value)
+        if self.decimal_count > 0:
+            self.param_widget.setValue(self.param_value * 10 ** self.decimal_count)
+        else:
+            self.param_widget.setValue(self.param_value)
         self.display_widget.setText(str(self.param_value))
 
     def get_param(self):
         new_value = self.param_widget.value()
-        if self.decimal_count != -1:
+        if self.decimal_count > 0:
             new_value /= 10 ** self.decimal_count
         self.param_value = new_value
         self.display_widget.setText(str(self.param_value))
