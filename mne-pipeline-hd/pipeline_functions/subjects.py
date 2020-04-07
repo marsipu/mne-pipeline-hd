@@ -1098,14 +1098,13 @@ class SubDictDialog(SubDictWidget):
         self.dialog.open()
 
 
-def init_wizard_ui():
-    layout = QVBoxLayout()
-
-
 class SubDictWizPage(SubDictWidget, QWizardPage):
     def __init__(self, main_win, mode):
         SubDictWidget.__init__(self, main_win, mode)
         QWizardPage.__init__(self, main_win)
+
+    def init_wizard_ui(self):
+        layout = QVBoxLayout()
 
 
 def read_bad_channels_dict(bad_channels_dict_path):

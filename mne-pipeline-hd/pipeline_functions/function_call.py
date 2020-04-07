@@ -103,6 +103,7 @@ def call_functions(main_window):
             print('No MRI-Subject selected')
 
     # Call the functions for selected Files
+    # Todo: Account for call-order (idx, group-idx)
     sel_files = mw.pr.sel_files
     file_ops = mw.pd_funcs[mw.pd_funcs['group'] != 'mri_subject_operations'].T
 

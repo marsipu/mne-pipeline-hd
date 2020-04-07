@@ -247,8 +247,11 @@ class MyProject:
             for tr in trialed_folders:
                 subfolder = join(self.figures_path, tr, ev_id)
                 if not exists(subfolder):
-                    makedirs(subfolder)
-                    print(subfolder + ' has been created')
+                    try:
+                        makedirs(subfolder)
+                        print(subfolder + ' has been created')
+                    except OSError:
+                        print(subfolder + ': this event-id-name can\'t be used due to OS-Folder-Naming-Conventions')
 
         # create grand average figures path
         grand_averages_figures_path = join(self.figures_path, 'grand_averages')
