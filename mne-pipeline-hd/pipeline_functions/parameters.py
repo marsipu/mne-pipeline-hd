@@ -316,7 +316,7 @@ class ListGui(OneParam):
             param_text = self.param_widget.item(idx).text()
             try:
                 param_text = literal_eval(param_text)
-            except ValueError:
+            except (SyntaxError, ValueError):
                 pass
             param_list.append(param_text)
         self.param_value = param_list
@@ -325,14 +325,16 @@ class ListGui(OneParam):
         return self.param_value
 
     def add_item(self):
-        list_item = QListWidgetItem('<edit parameter>')
+        list_item = QListWidgetItem('_None_')
         list_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable)
         self.param_widget.addItem(list_item)
+        self.get_param()
 
     def remove_item(self):
         row = self.param_widget.currentRow()
         if row is not None:
             self.param_widget.takeItem(row)
+        self.get_param()
 
 
 class DictGui(OneParam):
@@ -394,8 +396,9 @@ class DictGui(OneParam):
 
     def add_item(self):
         row = self.param_widget.rowCount()
-        self.set_items(row, '<edit_key>', '<edit_value>')
+        self.set_items(row, '_None_key_', '_None_value_')
         self.param_widget.resizeColumnsToContents()
+        self.get_param()
 
     def remove_item(self):
         row = self.param_widget.currentRow()

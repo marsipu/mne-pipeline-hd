@@ -449,7 +449,6 @@ class MainWindow(QMainWindow):
         layout = QHBoxLayout()
         sub_layout = QVBoxLayout()
         r_cnt = 0
-
         for idx, parameter in self.pd_params.iterrows():
             if r_cnt > 5:
                 layout.addLayout(sub_layout)
@@ -505,6 +504,7 @@ class MainWindow(QMainWindow):
         # Save Main-Window-Settings
         self.settings.setValue('geometry', self.saveGeometry())
         self.settings.setValue('checked_funcs', self.func_dict)
+
         # Todo: Cancel-Button, Progress-Bar for Progress
         msg = QDialog(self)
         msg.setWindowTitle('Executing Functions...')
@@ -513,7 +513,7 @@ class MainWindow(QMainWindow):
         self.pr.func_dict = self.func_dict
         fc.call_functions(self)
         msg.close()
-        print()
+        print('Finished Execution')
         # Todo: Introduce logging and print Exceptions to Main-Window
 
     def get_toolbox_params(self):
