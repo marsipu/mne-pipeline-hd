@@ -16,6 +16,30 @@ def add_motor_erm_files():
 
 
 @decor.topline
+def pp_eog_digitize_handling(name, save_dir, highpass, lowpass, project):
+    raw = io.read_filtered(name, save_dir, highpass, lowpass)
+    eeg_in_data = False
+    for ch in raw.info['chs']:
+        if ch['kind'] == 2:
+            eeg_in_data = True
+
+    if project.parameters['eog_digitized'] and eeg_in_data:
+        digi = raw.info['dig']
+        if len(digi) >= 108:
+            if digi[-1]['kind'] != 3:
+                for i in digi[-4:]:
+                    i['kind'] = 3
+                raw.info['dig'] = digi
+                print('Set EOG-Digitization-Points to kind 3 and saved')
+            else:
+                print('EOG-Digitization-Points already set to kind 3')
+
+    filter_name = name + op.filter_string(highpass, lowpass) + '-raw.fif'
+    filter_path = join(save_dir, filter_name)
+    raw.save(filter_path, overwrite=True)
+
+
+@decor.topline
 def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
                       pscripts_path, save_plots, figures_path):
     events_name = name + '-eve.fif'
@@ -103,7 +127,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
     diff1_stdev = st.stdev(l1)
     ut.dict_filehandler(name, 'MotStart-LBT_diffs',
                         pscripts_path, values={'mean': diff1_mean,
-                                                 'stdev': diff1_stdev})
+                                               'stdev': diff1_stdev})
 
     # if func_dict['motor_erm_analysis']:
     #     for x in range(np.size(events, axis=0) - 3):
@@ -124,7 +148,7 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
     diff2_stdev = st.stdev(l2)
     ut.dict_filehandler(name, 'MotStart1-MotStart2_diffs',
                         pscripts_path, values={'mean': diff2_mean,
-                                                 'stdev': diff2_stdev})
+                                               'stdev': diff2_stdev})
 
     # Latency-Correction for Offset-Trigger[4]
     for x in range(np.size(events, axis=0) - 3):

@@ -150,22 +150,6 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
         raw.info['description'] = name
         raw.info['bads'] = bad_channels
 
-        eeg_in_data = False
-        for ch in raw.info['chs']:
-            if ch['kind'] == 2:
-                eeg_in_data = True
-
-        if eog_digitized and eeg_in_data:
-            digi = raw.info['dig']
-            if len(digi) >= 108:
-                if digi[-1]['kind'] != 3:
-                    for i in digi[-4:]:
-                        i['kind'] = 3
-                    raw.info['dig'] = digi
-                    print('Set EOG-Digitization-Points to kind 3 and saved')
-                else:
-                    print('EOG-Digitization-Points already set to kind 3')
-
         raw.save(filter_path, overwrite=True)
 
     else:
@@ -199,7 +183,7 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
         erm_name = ermsub + '-raw.fif'
         erm_path = join(data_path, 'empty_room_data', ermsub, erm_name)
         erm_filter_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
-        erm_filter_path = join(data_path, 'empty_room_data', erm_filter_name)
+        erm_filter_path = join(data_path, 'empty_room_data', ermsub, erm_filter_name)
 
         if not isfile(erm_filter_path):
             raw = io.read_raw(name, save_dir)
