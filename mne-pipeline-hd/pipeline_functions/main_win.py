@@ -422,7 +422,7 @@ class MainWindow(QMainWindow):
                 r_cnt += 1
 
                 for function in group_grouped.groups[function_group]:
-                    pb = QPushButton(function, child_w)
+                    pb = QPushButton(self.pd_funcs.loc[function]['alias'], child_w)
                     pb.setCheckable(True)
                     self.bt_dict[function] = pb
                     if self.func_dict[function]:
@@ -456,11 +456,11 @@ class MainWindow(QMainWindow):
                 r_cnt = 0
             else:
                 r_cnt += 1
+            param_alias = parameter['alias']
             gui_name = parameter['gui_type']
             if type(gui_name) != str:
                 gui_name = 'FuncGui'
             gui = getattr(parameters, gui_name)
-            # **literal_eval(parameter['gui_args']), except nan
             if type(parameter['hint']) is float:
                 hint = ''
             else:
@@ -469,7 +469,7 @@ class MainWindow(QMainWindow):
                 gui_args = literal_eval(parameter['gui_args'])
             except (SyntaxError, ValueError):
                 gui_args = {}
-            sub_layout.addWidget(gui(self.pr, idx, hint, **gui_args))
+            sub_layout.addWidget(gui(self.pr, idx, param_alias, hint, **gui_args))
 
         child_w.setLayout(layout)
         tab.setWidget(child_w)

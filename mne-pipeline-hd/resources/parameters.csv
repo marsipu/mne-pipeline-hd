@@ -1,13 +1,13 @@
 ;alias;default;unit;hint;gui_type;gui_args
-predefined_bads;predefined_bads;[6,7,8,26,27,103];;Default bad channels;ListGui;
+predefined_bads;Predefined Bad-Channels;[6,7,8,26,27,103];;Default bad channels;ListGui;
 eog_digitized;eog_digitized;False;;Set True, if the last 4 digitized points where EOG;BoolGui;
-ch_types;ch_types;['grad'];;Channel-Types used in data;ListGui;
-highpass;highpass;1;Hz;Highpass-Filter;IntGui;{'min_val': 0, 'max_val': 1000}
-lowpass;lowpass;100;Hz;Lowpass-Filter;IntGui;{'min_val': 0, 'max_val': 1000}
+ch_types;Channel-Types;['grad'];;Channel-Types used in data;ListGui;
+highpass;Highpass-Cutoff;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 0.1}
+lowpass;Lowpass-Cutoff;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 0.1}
 erm_t_limit;erm_t_limit;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
-adjust_timeline_by_msec;adjust_timeline_by_msec;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':0, 'max_val': 10000}
+adjust_timeline_by_msec;Adjust Time;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;DurationEpochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
-baseline;baseline;(-0.5,0);s;start and end of baseline;TupleGui;
+baseline;baseline;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val':0}
 enable_ica;enable_ica;False;;Use ica-epochs, create 1Hz-Highpass-Raw if not existent;BoolGui;
 autoreject;autoreject;False;;set True to use autoreject;BoolGui;
 overwrite_ar;overwrite_ar;False;;if to calculate new threshold sort ouse previously calculated;BoolGui;
