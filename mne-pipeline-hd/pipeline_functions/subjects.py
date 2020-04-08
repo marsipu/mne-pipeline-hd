@@ -276,8 +276,11 @@ class SubjectDock(QDockWidget):
             idx += 1  # Let index start with 1
             item = QListWidgetItem(f'{idx}: {file}')
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            if file in self.mw.pr.sel_files:
-                item.setCheckState(Qt.Checked)
+            if self.mw.pr.sel_files is not None:
+                if file in self.mw.pr.sel_files:
+                    item.setCheckState(Qt.Checked)
+                else:
+                    item.setCheckState(Qt.Unchecked)
             else:
                 item.setCheckState(Qt.Unchecked)
             self.sub_listw.addItem(item)
@@ -293,8 +296,11 @@ class SubjectDock(QDockWidget):
             idx += 1  # Let index start with 1
             item = QListWidgetItem(f'{idx}: {file}')
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            if file in self.mw.pr.sel_mri_files:
-                item.setCheckState(Qt.Checked)
+            if self.mw.pr.sel_mri_files is not None:
+                if file in self.mw.pr.sel_mri_files:
+                    item.setCheckState(Qt.Checked)
+                else:
+                    item.setCheckState(Qt.Unchecked)
             else:
                 item.setCheckState(Qt.Unchecked)
             self.mri_listw.addItem(item)
