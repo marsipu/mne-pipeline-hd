@@ -27,7 +27,10 @@ organization_name = 'marsipu'
 app = QApplication(sys.argv)
 app.setApplicationName(app_name)
 app.setOrganizationName(organization_name)
-app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)
+try:
+    app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)
+except AttributeError:
+    print('pyqt-Version is < 5.12')
 if ismac:
     app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
     # Workaround for MAC menu-bar-focusing issue

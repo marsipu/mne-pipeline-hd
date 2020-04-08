@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.add_main_bts()
         self.get_toolbox_params()
 
-        desk_geometry = self.app.desktop().screenGeometry()
+        desk_geometry = self.app.desktop().availableGeometry()
         self.size_ratio = 0.8
         height = desk_geometry.height() * self.size_ratio
         width = desk_geometry.width() * self.size_ratio
@@ -506,13 +506,13 @@ class MainWindow(QMainWindow):
         self.settings.setValue('checked_funcs', self.func_dict)
 
         # Todo: Cancel-Button, Progress-Bar for Progress
-        msg = QDialog(self)
-        msg.setWindowTitle('Executing Functions...')
-        msg.open()
+        # msg = QDialog(self)
+        # msg.setWindowTitle('Executing Functions...')
+        # msg.open()
 
         self.pr.func_dict = self.func_dict
         fc.call_functions(self)
-        msg.close()
+        # msg.close()
         print('Finished Execution')
         # Todo: Introduce logging and print Exceptions to Main-Window
 

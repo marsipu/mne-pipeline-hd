@@ -1,5 +1,3 @@
-from PyQt5.QtWidgets import QDialog, QLabel, QProgressBar, QVBoxLayout
-
 from basic_functions import io, operations, plot
 from custom_functions import kristin, melofix, pinprick
 from pipeline_functions.subjects import CurrentMRISubject, CurrentSubject
@@ -76,15 +74,15 @@ def call_functions(main_window):
                 print(i)
 
             # Show ProgressBar
-            mri_prog = QDialog(mw)
-            mri_prog_layout = QVBoxLayout()
-            mri_prog_label = QLabel('MRI-Subjects are processed, watch Terminal for more information')
-            mri_prog_layout.addWidget(mri_prog_label)
-            mri_pgbar = QProgressBar()
-            mri_pgbar.setMaximum(len(mri_subjects))
-            mri_prog_layout.addWidget(mri_pgbar)
-            mri_prog.setLayout(mri_prog_layout)
-            mri_prog.open()
+            # mri_prog = QDialog(mw)
+            # mri_prog_layout = QVBoxLayout()
+            # mri_prog_label = QLabel('MRI-Subjects are processed, watch Terminal for more information')
+            # mri_prog_layout.addWidget(mri_prog_label)
+            # mri_pgbar = QProgressBar()
+            # mri_pgbar.setMaximum(len(mri_subjects))
+            # mri_prog_layout.addWidget(mri_pgbar)
+            # mri_prog.setLayout(mri_prog_layout)
+            # mri_prog.open()
             count = 1
             for mri_subject in mri_subjects:
                 print('=' * 60 + '\n', mri_subject)
@@ -96,9 +94,9 @@ def call_functions(main_window):
                     if mw.func_dict[mri_func]:
                         func_from_def(mri_func, mw.pd_funcs, msub, mw.pr, mw.pr.parameters)
 
-                mri_pgbar.setValue(count)
+                # mri_pgbar.setValue(count)
                 count += 1
-            mri_prog.close()
+            # mri_prog.close()
         else:
             print('No MRI-Subject selected')
 
@@ -116,15 +114,15 @@ def call_functions(main_window):
 
         # Todo: Progressbar freezes and doesn't show the progress
         # Show ProgressBar
-        file_prog = QDialog(mw)
-        file_prog_layout = QVBoxLayout()
-        file_prog_label = QLabel('Files are processed, watch Terminal for more information')
-        file_prog_layout.addWidget(file_prog_label)
-        file_pgbar = QProgressBar()
-        file_pgbar.setMaximum(len(sel_files))
-        file_prog_layout.addWidget(file_pgbar)
-        file_prog.setLayout(file_prog_layout)
-        file_prog.open()
+        # file_prog = QDialog(mw)
+        # file_prog_layout = QVBoxLayout()
+        # file_prog_label = QLabel('Files are processed, watch Terminal for more information')
+        # file_prog_layout.addWidget(file_prog_label)
+        # file_pgbar = QProgressBar()
+        # file_pgbar.setMaximum(len(sel_files))
+        # file_prog_layout.addWidget(file_pgbar)
+        # file_prog.setLayout(file_prog_layout)
+        # file_prog.open()
 
         count = 1
 
@@ -146,6 +144,6 @@ def call_functions(main_window):
                 for file_func in file_ops:
                     if mw.func_dict[file_func]:
                         func_from_def(file_func, mw.pd_funcs, mw.subject, mw.pr, mw.pr.parameters)
-                file_pgbar.setValue(count)
+                # file_pgbar.setValue(count)
                 count += 1
-        file_prog.close()
+        # file_prog.close()

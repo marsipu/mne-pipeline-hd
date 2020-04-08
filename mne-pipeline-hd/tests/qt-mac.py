@@ -2,17 +2,18 @@ import sys
 
 import matplotlib
 
+from pipeline_functions import ismac
+
 if ismac:
     matplotlib.use('MacOSX')
 from matplotlib import pyplot as plt
 from mayavi import mlab
 
-from pipeline_functions import ismac
-
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QDesktopWidget, QPushButton, QVBoxLayout
 
+from basic_functions import plot
 
 class TestMainWindow(QMainWindow):
     def __init__(self):
@@ -57,9 +58,12 @@ class TestMainWindow(QMainWindow):
         plt.show()
 
     def test_matplotlib_figure(self):
-        figure = plt.figure()
-        plt.plot([1, 2, 3, 4], figure=figure)
-        figure.show()
+        name = ''
+        save_dir = ''
+        highpass = 1
+        lowpass = 100
+        figures_path = ''
+        figure = plot.plot_evoked_butterfly(name, save_dir, highpass, lowpass, True, figures_path)
 
     def test_mayavi(self):
         mlab.figure()
