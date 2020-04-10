@@ -14,8 +14,8 @@ import mne
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QComboBox, QDialog, QDockWidget, QFileDialog, QGridLayout, \
-    QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QPushButton, \
-    QStyle, QTabWidget, QVBoxLayout, QWidget, QWizard, QWizardPage
+    QGroupBox, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox, QProgressBar, \
+    QPushButton, QStyle, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage
 from matplotlib import pyplot as plt
 
 from basic_functions import io
@@ -207,13 +207,13 @@ class SubjectDock(QDockWidget):
                       "'all,!4-6' (All files except 4-6)"
 
         # Subjects-List + Index-Line-Edit
-        self.sub_widget = QWidget(self)
+        self.sub_widget = QWidget()
         self.sub_layout = QVBoxLayout()
-        self.sub_listw = QListWidget(self)
+        self.sub_listw = QListWidget()
         self.sub_listw.itemChanged.connect(self.get_sub_selection)
         self.sub_layout.addWidget(self.sub_listw)
 
-        self.sub_ledit = QLineEdit(self)
+        self.sub_ledit = QLineEdit()
         self.sub_ledit.setPlaceholderText('Subject-Index')
         self.sub_ledit.textEdited.connect(self.update_sub_selection)
         self.sub_ledit.setToolTip(idx_example)
@@ -237,13 +237,13 @@ class SubjectDock(QDockWidget):
         self.tab_widget.addTab(self.sub_widget, 'Files')
 
         # MRI-Subjects-List + Index-Line-Edit
-        self.mri_widget = QWidget(self)
+        self.mri_widget = QWidget()
         self.mri_layout = QVBoxLayout()
-        self.mri_listw = QListWidget(self)
+        self.mri_listw = QListWidget()
         self.mri_listw.itemChanged.connect(self.get_mri_selection)
         self.mri_layout.addWidget(self.mri_listw)
 
-        self.mri_ledit = QLineEdit(self)
+        self.mri_ledit = QLineEdit()
         self.mri_ledit.setPlaceholderText('MRI-Subject-Index')
         self.mri_ledit.textEdited.connect(self.update_mri_selection)
         self.mri_ledit.setToolTip(idx_example)
@@ -266,6 +266,9 @@ class SubjectDock(QDockWidget):
 
         self.tab_widget.addTab(self.mri_widget, 'MRI-Subjects')
 
+        self.ga_widget = GrandAvgWidget(self.mw)
+        self.tab_widget.addTab(self.ga_widget, 'Grand-Average')
+
         self.layout.addWidget(self.tab_widget)
         self.main_widget.setLayout(self.layout)
         self.setWidget(self.main_widget)
@@ -276,7 +279,7 @@ class SubjectDock(QDockWidget):
             idx += 1  # Let index start with 1
             item = QListWidgetItem(f'{idx}: {file}')
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            if self.mw.pr.sel_files is not None:
+            if self.mw.pr.sel_files:
                 if file in self.mw.pr.sel_files:
                     item.setCheckState(Qt.Checked)
                 else:
@@ -296,7 +299,7 @@ class SubjectDock(QDockWidget):
             idx += 1  # Let index start with 1
             item = QListWidgetItem(f'{idx}: {file}')
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            if self.mw.pr.sel_mri_files is not None:
+            if self.mw.pr.sel_mri_files:
                 if file in self.mw.pr.sel_mri_files:
                     item.setCheckState(Qt.Checked)
                 else:
@@ -463,7 +466,171 @@ def read_files(file_list_path):
     return file_list
 
 
-# ToDo: Grand-Average-Widget
+class GrandAvgWidget(QWidget):
+    def __init__(self, mw):
+        super().__init__()
+        self.mw = mw
+
+        self.init_layout()
+        self.update_treew()
+        self.get_treew()
+
+    def init_layout(self):
+        self.layout = QVBoxLayout()
+        self.treew = QTreeWidget()
+        self.treew.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.treew.setColumnCount(1)
+        self.treew.setHeaderLabel('Groups:')
+        self.layout.addWidget(self.treew)
+
+        self.bt_layout = QHBoxLayout()
+        add_g_bt = QPushButton('Add Group')
+        add_g_bt.clicked.connect(self.add_group)
+        self.bt_layout.addWidget(add_g_bt)
+        add_file_bt = QPushButton('Add Files')
+        add_file_bt.clicked.connect(self.add_files)
+        self.bt_layout.addWidget(add_file_bt)
+        self.rm_bt = QPushButton('Remove')
+        self.rm_bt.clicked.connect(self.remove_item)
+        self.bt_layout.addWidget(self.rm_bt)
+        self.layout.addLayout(self.bt_layout)
+
+        self.setLayout(self.layout)
+
+    def update_treew(self):
+        self.treew.clear()
+        top_items = []
+        for group in self.mw.pr.grand_avg_dict:
+            top_item = QTreeWidgetItem()
+            top_item.setText(0, group)
+            top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable)
+            if group in self.mw.pr.sel_ga_groups:
+                top_item.setCheckState(0, Qt.Checked)
+            else:
+                top_item.setCheckState(0, Qt.Unchecked)
+            for file in self.mw.pr.grand_avg_dict[group]:
+                sub_item = QTreeWidgetItem(top_item)
+                sub_item.setText(0, file)
+            top_items.append(top_item)
+        self.treew.addTopLevelItems(top_items)
+
+    def get_treew(self):
+        new_dict = {}
+        self.mw.pr.sel_ga_groups = []
+        for top_idx in range(self.treew.topLevelItemCount()):
+            top_item = self.treew.topLevelItem(top_idx)
+            top_text = top_item.text(0)
+            new_dict.update({top_text: []})
+            for child_idx in range(top_item.childCount()):
+                child_item = top_item.child(child_idx)
+                new_dict[top_text].append(child_item.text(0))
+            if top_item.checkState(0) == Qt.Checked:
+                self.mw.pr.sel_ga_groups.append(top_text)
+        self.mw.pr.grand_avg_dict = new_dict
+
+    def add_group(self):
+        text, ok = QInputDialog.getText(self, 'New Group', 'Enter the name for a new group:')
+        if ok and text:
+            top_item = QTreeWidgetItem()
+            top_item.setText(0, text)
+            top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable)
+            top_item.setCheckState(0, Qt.Checked)
+            self.treew.addTopLevelItem(top_item)
+        self.get_treew()
+
+    def add_files(self):
+        sel_group = self.treew.currentItem()
+        if sel_group:
+            # When file in group is selected
+            if sel_group.parent():
+                sel_group = sel_group.parent()
+            GrandAvgFileAdd(self.mw, sel_group, self)
+        else:
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle('Obacht!')
+            msg_box.setText('No group has been selected')
+            msg_box.open()
+
+    def remove_item(self):
+        items = self.treew.selectedItems()
+        if len(items) > 0:
+            for item in items:
+                if item.parent():
+                    item.parent().takeChild(item.parent().indexOfChild(item))
+                else:
+                    self.treew.takeTopLevelItem(self.treew.indexOfTopLevelItem(item))
+        self.get_treew()
+        self.treew.setCurrentItem(None, 0)
+
+
+class GrandAvgFileAdd(QDialog):
+    def __init__(self, mw, group, ga_widget):
+        super().__init__(ga_widget)
+        self.mw = mw
+        self.group = group
+        self.ga_widget = ga_widget
+        self.setWindowTitle('Select Files to add')
+
+        self.init_ui()
+
+    def init_ui(self):
+
+        dlg_layout = QGridLayout()
+        self.listw = QListWidget()
+        self.listw.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.listw.itemSelectionChanged.connect(self.sel_changed)
+        self.load_list()
+
+        dlg_layout.addWidget(self.listw, 0, 0, 1, 4)
+        add_bt = QPushButton('Add')
+        add_bt.clicked.connect(self.add)
+        dlg_layout.addWidget(add_bt, 1, 0)
+        all_bt = QPushButton('All')
+        all_bt.clicked.connect(self.sel_all)
+        dlg_layout.addWidget(all_bt, 1, 1)
+        clear_bt = QPushButton('Clear')
+        clear_bt.clicked.connect(self.clear)
+        dlg_layout.addWidget(clear_bt, 1, 2)
+        quit_bt = QPushButton('Quit')
+        quit_bt.clicked.connect(self.close)
+        dlg_layout.addWidget(quit_bt, 1, 3)
+
+        self.setLayout(dlg_layout)
+        self.open()
+
+    def sel_changed(self):
+        for list_i in self.listw.selectedItems():
+            list_i.setCheckState(Qt.Checked)
+
+    def add(self):
+        for idx in range(self.listw.count()):
+            list_item = self.listw.item(idx)
+            if list_item.checkState() == Qt.Checked:
+                tree_item = QTreeWidgetItem()
+                tree_item.setText(0, list_item.text())
+                self.group.insertChild(self.group.childCount(), tree_item)
+        self.group.setExpanded(True)
+        self.listw.clear()
+        self.ga_widget.get_treew()
+        self.load_list()
+
+    def load_list(self):
+        for item_name in self.mw.pr.all_files:
+            if item_name not in self.mw.pr.grand_avg_dict[self.group.text(0)]:
+                item = QListWidgetItem(item_name)
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                item.setCheckState(Qt.Unchecked)
+                self.listw.addItem(item)
+
+    def clear(self):
+        for idx in range(self.listw.count()):
+            self.listw.item(idx).setCheckState(Qt.Unchecked)
+
+    def sel_all(self):
+        for idx in range(self.listw.count()):
+            self.listw.item(idx).setCheckState(Qt.Checked)
+
+
 # ToDo: Event-ID-Widget (Subklassen und jetzt auch mit event_colors)
 
 # Todo: Enable Drag&Drop
@@ -832,7 +999,7 @@ def read_sub_dict(sub_dict_path):
 class AddMRIDialog(AddMRIWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
-        
+
         self.dialog = QDialog(main_win)
 
         close_bt = QPushButton('Close', self)
@@ -865,6 +1032,7 @@ class SubDictWidget(QWidget):
             self.label2 = 'Choose a erm-file'
 
         self.init_ui()
+        self.get_status()
 
     def init_ui(self):
         file_label = QLabel('Choose a file', self)
@@ -875,22 +1043,7 @@ class SubDictWidget(QWidget):
         # ListWidgets
         self.list_widget1 = QListWidget(self)
         self.list_widget1.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        for idx, key in enumerate(self.mw.pr.all_files):
-            self.list_widget1.insertItem(idx, key)
-            if self.mode == 'mri':
-                if key in self.mw.pr.sub_dict:
-                    self.list_widget1.item(idx).setBackground(QColor('green'))
-                    self.list_widget1.item(idx).setForeground(QColor('white'))
-                else:
-                    self.list_widget1.item(idx).setBackground(QColor('red'))
-                    self.list_widget1.item(idx).setForeground(QColor('white'))
-            else:
-                if key in self.mw.pr.erm_dict:
-                    self.list_widget1.item(idx).setBackground(QColor('green'))
-                    self.list_widget1.item(idx).setForeground(QColor('white'))
-                else:
-                    self.list_widget1.item(idx).setBackground(QColor('red'))
-                    self.list_widget1.item(idx).setForeground(QColor('white'))
+        self.list_widget1.addItems(self.mw.pr.all_files)
         self.list_widget2 = QListWidget(self)
         self.list_widget2.addItems(self.list2)
 
@@ -941,6 +1094,24 @@ class SubDictWidget(QWidget):
         self.layout.addLayout(self.bt_layout, 0, 2, 2, 1)
         self.setLayout(self.layout)
 
+    def get_status(self):
+        for idx in range(self.list_widget1.count()):
+            item_name = self.list_widget1.item(idx).text()
+            if self.mode == 'mri':
+                if item_name in self.mw.pr.sub_dict:
+                    self.list_widget1.item(idx).setBackground(QColor('green'))
+                    self.list_widget1.item(idx).setForeground(QColor('white'))
+                else:
+                    self.list_widget1.item(idx).setBackground(QColor('red'))
+                    self.list_widget1.item(idx).setForeground(QColor('white'))
+            else:
+                if item_name in self.mw.pr.erm_dict:
+                    self.list_widget1.item(idx).setBackground(QColor('green'))
+                    self.list_widget1.item(idx).setForeground(QColor('white'))
+                else:
+                    self.list_widget1.item(idx).setBackground(QColor('red'))
+                    self.list_widget1.item(idx).setForeground(QColor('white'))
+
     def add_template_brain(self):
         template_brain = self.template_box.currentText()
         if template_brain == 'fsaverage':
@@ -971,12 +1142,12 @@ class SubDictWidget(QWidget):
             except IndexError:
                 pass
         else:
-            if self.list_widget2.currentItem() is not None:
+            if self.list_widget2.currentItem():
                 self.list_widget2.currentItem().setSelected(False)
 
     def sub_dict_assign(self):
         choices1 = self.list_widget1.selectedItems()
-        choice2 = self.list_widget1.currentItem().text()
+        choice2 = self.list_widget2.currentItem().text()
         if self.mode == 'mri':
             existing_dict = self.mw.pr.sub_dict
         else:
@@ -1086,8 +1257,8 @@ class SubDictWidget(QWidget):
                 self.mw.pr.erm_dict.pop(key_text, None)
 
     def show_assignments_close(self):
-        self.init_ui()
         self.show_ass_dialog.close()
+        self.get_status()
 
 
 class SubDictDialog(SubDictWidget):
@@ -1122,8 +1293,15 @@ def read_bad_channels_dict(bad_channels_dict_path):
                 if ':' in item:
                     key, value = item.split(':', 1)
                     value = value[:-1]
-                    value = literal_eval(value)
-                    bad_channels_dict[key] = value
+                    eval_value = literal_eval(value)
+                    if 'MEG' not in value:
+                        new_list = []
+                        for ch in eval_value:
+                            ch_name = f'MEG {ch:03}'
+                            new_list.append(ch_name)
+                        bad_channels_dict[key] = new_list
+                    else:
+                        bad_channels_dict[key] = eval_value
 
     except FileNotFoundError:
         print('bad_channels_dict.py not yet created, run add_bad_channels_dict')
@@ -1186,16 +1364,16 @@ class SubBadsWidget(QWidget):
         self.setLayout(self.layout)
 
     def bad_dict_selected(self):
+        self.name = self.listwidget.currentItem().text()
         # Check for unsaved changes
-        if self.name is not None:
+        if self.name:
             # Close current Plot-Window
-            if self.raw_fig is not None:
+            if self.raw_fig:
                 plt.close(self.raw_fig)
             # First clear all entries
             for bt in self.bad_chkbts:
                 self.bad_chkbts[bt].setChecked(False)
             # Then load existing bads for choice
-            self.name = self.listwidget.currentItem().text()
             if self.name in self.mw.pr.bad_channels_dict:
                 for bad in self.mw.pr.bad_channels_dict[self.name]:
                     self.bad_chkbts[bad].setChecked(True)
@@ -1242,7 +1420,7 @@ class SubBadsWidget(QWidget):
     def closeEvent(self, event):
         def close_function():
             # Update u.a. bad_channels_dict in project-class
-            if self.raw_fig is not None:
+            if self.raw_fig:
                 plt.close(self.raw_fig)
                 self.done(1)
                 event.accept()
@@ -1251,7 +1429,7 @@ class SubBadsWidget(QWidget):
                 event.accept()
 
         # Check if unassigned changes are present
-        if self.name in self.mw.pr.bad_channels_dict and self.name is not None:
+        if self.name in self.mw.pr.bad_channels_dict and self.name:
             test_dict = dict()
             test_dict2 = dict()
             for x in range(1, self.channel_count + 1):

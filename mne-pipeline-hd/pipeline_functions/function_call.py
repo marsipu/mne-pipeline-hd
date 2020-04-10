@@ -6,7 +6,7 @@ from pipeline_functions.subjects import CurrentMRISubject, CurrentSubject
 all_func_modules = [io, operations, plot, kristin, melofix, pinprick]
 
 
-def func_from_def(func_name, pd_funcs, subject, project, parameters):
+def func_from_def(func_name, pd_funcs, subject, project, parameters, main_win):
     module_name = pd_funcs['module'][func_name]
 
     # Read Listitems from Strings from functions.csv
@@ -28,7 +28,10 @@ def func_from_def(func_name, pd_funcs, subject, project, parameters):
         addarg_names = []
 
     # Get attributes from Subject/Project-Class
-    subject_attributes = vars(subject)
+    if subject:
+        subject_attributes = vars(subject)
+    else:
+        subject_attributes = {}
     project_attributes = vars(project)
 
     keyword_arguments = dict()
@@ -36,15 +39,29 @@ def func_from_def(func_name, pd_funcs, subject, project, parameters):
     for subarg_name in subarg_names:
         # Remove trailing spaces
         subarg_name = subarg_name.replace(' ', '')
-        keyword_arguments.update({subarg_name: subject_attributes[subarg_name]})
+        if subarg_name == 'mw':
+            keyword_arguments.update({'mw': main_win})
+        elif subarg_name == 'pr':
+            keyword_arguments.update({'pr': project})
+        else:
+            try:
+                keyword_arguments.update({subarg_name: subject_attributes[subarg_name]})
+            except KeyError:
+                print(subarg_name + ' not as CurrentSubject-Class-Attributes')
     for proarg_name in proarg_names:
         # Remove trailing spaces
         proarg_name = proarg_name.replace(' ', '')
-        keyword_arguments.update({proarg_name: project_attributes[proarg_name]})
+        try:
+            keyword_arguments.update({proarg_name: project_attributes[proarg_name]})
+        except KeyError:
+            print(proarg_name + ' not in Project-Class-Attributes')
     for addarg_name in addarg_names:
         # Remove trailing spaces
         addarg_name = addarg_name.replace(' ', '')
-        keyword_arguments.update({addarg_name: parameters[addarg_name]})
+        try:
+            keyword_arguments.update({addarg_name: parameters[addarg_name]})
+        except KeyError:
+            print(addarg_name + ' not in Parameters')
 
     # Get module, has to specified in functions.csv as it is imported
     module = globals()[module_name]
@@ -92,7 +109,7 @@ def call_functions(main_window):
                 msub = CurrentMRISubject(mri_subject, mw)
                 for mri_func in mri_ops:
                     if mw.func_dict[mri_func]:
-                        func_from_def(mri_func, mw.pd_funcs, msub, mw.pr, mw.pr.parameters)
+                        func_from_def(mri_func, mw.pd_funcs, msub, mw.pr, mw.pr.parameters, mw)
 
                 # mri_pgbar.setValue(count)
                 count += 1
@@ -103,7 +120,8 @@ def call_functions(main_window):
     # Call the functions for selected Files
     # Todo: Account for call-order (idx, group-idx)
     sel_files = mw.pr.sel_files
-    file_ops = mw.pd_funcs[mw.pd_funcs['group'] != 'mri_subject_operations'].T
+    file_funcs = mw.pd_funcs[mw.pd_funcs['group'] != 'mri_subject_operations']
+    file_funcs = file_funcs[file_funcs['subject_loop'] == True].T
 
     if len(mw.pr.all_files) == 0:
         print('No files found!\nAdd some Files with "AddFiles" from the Input-Menu')
@@ -141,9 +159,15 @@ def call_functions(main_window):
                 prog = round((sel_files.index(name)) / len(sel_files) * 100, 2)
                 print(f'Progress: {prog} %')
 
-                for file_func in file_ops:
-                    if mw.func_dict[file_func]:
-                        func_from_def(file_func, mw.pd_funcs, mw.subject, mw.pr, mw.pr.parameters)
+                for func in file_funcs:
+                    if mw.func_dict[func]:
+                        func_from_def(func, mw.pd_funcs, mw.subject, mw.pr, mw.pr.parameters, mw)
                 # file_pgbar.setValue(count)
                 count += 1
         # file_prog.close()
+
+    # Call functions outside the subject-loop
+    grand_avg_funcs = mw.pd_funcs[mw.pd_funcs['subject_loop'] == False].T
+    for func in grand_avg_funcs:
+        if mw.func_dict[func]:
+            func_from_def(func, mw.pd_funcs, mw.subject, mw.pr, mw.pr.parameters, mw)

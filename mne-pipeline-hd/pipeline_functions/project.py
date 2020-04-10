@@ -93,10 +93,11 @@ class MyProject:
         self.sub_dict_path = join(self.pscripts_path, 'sub_dict.json')
         self.erm_dict_path = join(self.pscripts_path, 'erm_dict.json')
         self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.json')
+        self.grand_avg_dict_path = join(self.pscripts_path, 'grand_avg_dict.json')
 
         path_lists = [self.subjects_dir, self.data_path, self.erm_data_path, self.pscripts_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
-                      self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path]
+                      self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path]
 
         for path in path_lists:
             if not exists(path):
@@ -111,44 +112,30 @@ class MyProject:
 
     def load_sub_lists(self):
         self.projects = [p for p in listdir(self.home_path) if isdir(join(self.home_path, p, 'data'))]
-        try:
-            with open(self.file_list_path, 'r') as file:
-                self.all_files = json.load(file)
-        except json.decoder.JSONDecodeError:
-            self.all_files = []
-
-        try:
-            with open(self.mri_sub_list_path, 'r') as file:
-                self.all_mri_subjects = json.load(file)
-        except json.decoder.JSONDecodeError:
-            self.all_mri_subjects = []
-
-        try:
-            with open(self.erm_list_path, 'r') as file:
-                self.erm_files = json.load(file)
-        except json.decoder.JSONDecodeError:
-            self.erm_files = []
-
-        try:
-            with open(self.sub_dict_path, 'r') as file:
-                self.sub_dict = json.load(file)
-        except json.decoder.JSONDecodeError:
-            self.sub_dict = {}
-
-        try:
-            with open(self.erm_dict_path, 'r') as file:
-                self.erm_dict = json.load(file)
-        except json.decoder.JSONDecodeError:
-            self.erm_dict = {}
-
-        try:
-            with open(self.bad_channels_dict_path, 'r') as file:
-                self.bad_channels_dict = json.load(file)
-        except json.decoder.JSONDecodeError:
-            self.bad_channels_dict = {}
+        self.all_files = []
+        self.all_mri_subjects = []
+        self.erm_files = []
+        self.sub_dict = {}
+        self.erm_dict = {}
+        self.bad_channels_dict = {}
+        self.grand_avg_dict = {}
+        load_dict = {self.file_list_path: 'all_files',
+                     self.mri_sub_list_path: 'all_mri_subjects',
+                     self.erm_list_path: 'erm_files',
+                     self.sub_dict_path: 'sub_dict',
+                     self.erm_dict_path: 'erm_dict',
+                     self.bad_channels_dict_path: 'bad_channels_dict',
+                     self.grand_avg_dict_path: 'grand_avg_dict'}
+        for path in load_dict:
+            try:
+                with open(path, 'r') as file:
+                    setattr(self, load_dict[path], json.load(file))
+            except json.decoder.JSONDecodeError:
+                pass
 
         self.sel_files = self.mw.settings.value('sel_files', defaultValue=[])
         self.sel_mri_files = self.mw.settings.value('sel_mri_files', defaultValue=[])
+        self.sel_ga_groups = self.mw.settings.value('sel_ga_groups', defaultValue=[])
 
     def load_py_lists(self):
         self.all_files = subs.read_files(join(self.pscripts_path, 'file_list.py'))
@@ -158,24 +145,26 @@ class MyProject:
         self.erm_dict = subs.read_sub_dict(join(self.pscripts_path, 'erm_dict.py'))
         self.bad_channels_dict = subs.read_bad_channels_dict(join(self.pscripts_path, 'bad_channels_dict.py'))
 
+        self.mw.subject_dock.update_subjects_list()
+        self.mw.subject_dock.update_mri_subjects_list()
+
     def save_sub_lists(self):
         self.mw.settings.setValue('home_path', self.home_path)
         self.mw.settings.setValue('project_name', self.project_name)
         self.mw.settings.setValue('projects', self.projects)
         self.mw.settings.setValue('sel_files', self.sel_files)
         self.mw.settings.setValue('sel_mri_files', self.sel_mri_files)
-        with open(join(self.pscripts_path, 'file_list.json'), 'w') as file:
-            json.dump(self.all_files, file, indent=4)
-        with open(join(self.pscripts_path, 'erm_list.json'), 'w') as file:
-            json.dump(self.erm_files, file, indent=4)
-        with open(join(self.pscripts_path, 'mri_sub_list.json'), 'w') as file:
-            json.dump(self.all_mri_subjects, file, indent=4)
-        with open(join(self.pscripts_path, 'sub_dict.json'), 'w') as file:
-            json.dump(self.sub_dict, file, indent=4)
-        with open(join(self.pscripts_path, 'erm_dict.json'), 'w') as file:
-            json.dump(self.erm_dict, file, indent=4)
-        with open(join(self.pscripts_path, 'bad_channels_dict.json'), 'w') as file:
-            json.dump(self.bad_channels_dict, file, indent=4)
+        self.mw.settings.setValue('sel_ga_groups', self.sel_ga_groups)
+        save_dict = {self.file_list_path: self.all_files,
+                     self.erm_list_path: self.erm_files,
+                     self.mri_sub_list_path: self.all_mri_subjects,
+                     self.sub_dict_path: self.sub_dict,
+                     self.erm_dict_path: self.erm_dict,
+                     self.bad_channels_dict_path: self.bad_channels_dict,
+                     self.grand_avg_dict_path: self.grand_avg_dict}
+        for path in save_dict:
+            with open(path, 'w') as file:
+                json.dump(save_dict[path], file, indent=4)
 
     def load_parameters(self):
         try:

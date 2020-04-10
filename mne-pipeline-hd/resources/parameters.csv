@@ -2,8 +2,8 @@
 predefined_bads;Predefined Bad-Channels;[6,7,8,26,27,103];;Default bad channels;ListGui;
 eog_digitized;eog_digitized;False;;Set True, if the last 4 digitized points where EOG;BoolGui;
 ch_types;Channel-Types;['grad'];;Channel-Types used in data;ListGui;
-highpass;Highpass-Cutoff;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 0.1}
-lowpass;Lowpass-Cutoff;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 0.1}
+highpass;Highpass-Cutoff;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
+lowpass;Lowpass-Cutoff;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
 erm_t_limit;erm_t_limit;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
 adjust_timeline_by_msec;Adjust Time;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;DurationEpochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
@@ -17,7 +17,7 @@ reject_eog_epochs;reject_eog_epochs;False;;function to reject eog_epochs after u
 decim;decim;1;;down samplingfactor;IntGui;
 event_id;event_id;{'Default':1};;dictionary to assign strings to the event_ids;DictGui;
 detrend;detrend;True;;sometimes not working;BoolGui;
-ana_h1h2;ana_h1h2;True;;;BoolGui;
+ana_h1h2;ana_h1h2;False;;;BoolGui;
 tfr_freqs;tfr_freqs;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
 overwrite_tfr;overwrite_tfr;True;;Recalculate and overwrite tfr;BoolGui;
 tfr_method;tfr_method;morlet;;;StringGui;

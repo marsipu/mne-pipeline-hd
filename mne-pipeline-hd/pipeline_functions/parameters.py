@@ -73,7 +73,7 @@ class IntGui(Param):
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
         self.param_widget.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxValue = {max_val}')
-        if param_unit is not None:
+        if param_unit:
             self.param_widget.setSuffix(f' {param_unit}')
         self.param_widget.valueChanged.connect(self.get_param)
         self.read_param()
@@ -104,7 +104,7 @@ class FloatGui(Param):
         self.param_widget.setSingleStep(step)
         self.param_widget.setDecimals(decimals)
         self.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxVal = {max_val}')
-        if param_unit is not None:
+        if param_unit:
             self.param_widget.setSuffix(f' {param_unit}')
         self.param_widget.valueChanged.connect(self.get_param)
         self.read_param()
@@ -133,7 +133,7 @@ class StringGui(Param):
         self.param_name = param_name
         self.param_value = ''
         self.param_widget = QLineEdit()
-        if input_mask is not None:
+        if input_mask:
             self.param_widget.setInputMask(input_mask)
         self.param_widget.setToolTip(hint)
         self.param_widget.textChanged.connect(self.get_param)
@@ -255,7 +255,7 @@ class TupleGui(Param):
         self.param_widget1.setSingleStep(step)
         self.param_widget1.setDecimals(decimals)
         self.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxVal = {max_val}')
-        if param_unit is not None:
+        if param_unit:
             self.param_widget1.setSuffix(f' {param_unit}')
         self.param_widget1.valueChanged.connect(self.get_param)
 
@@ -265,7 +265,7 @@ class TupleGui(Param):
         self.param_widget2.setSingleStep(step)
         self.param_widget2.setDecimals(decimals)
         self.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxVal = {max_val}')
-        if param_unit is not None:
+        if param_unit:
             self.param_widget2.setSuffix(f' {param_unit}')
         self.param_widget2.valueChanged.connect(self.get_param)
         self.read_param()
@@ -362,7 +362,7 @@ class ListGui(Param):
 
     def remove_item(self):
         row = self.param_widget.currentRow()
-        if row is not None:
+        if row:
             self.param_widget.takeItem(row)
         self.get_param()
 
@@ -403,14 +403,14 @@ class DictGui(Param):
         for row in range(self.param_widget.rowCount()):
             row_item = self.param_widget.item(row, 0)
             value_item = self.param_widget.item(row, 1)
-            if row_item is not None:
+            if row_item:
                 try:
                     key = literal_eval(row_item.text())
                 except (ValueError, SyntaxError):
                     key = row_item.text()
             else:
                 key = None
-            if value_item is not None:
+            if value_item:
                 try:
                     value = literal_eval(value_item.text())
                 except (ValueError, SyntaxError):
@@ -432,7 +432,7 @@ class DictGui(Param):
 
     def remove_item(self):
         row = self.param_widget.currentRow()
-        if row is not None:
+        if row:
             self.param_widget.removeRow(row)
         self.get_param()
 
@@ -511,7 +511,6 @@ class SliderGui(Param):
         new_value = self.param_widget.value()
         if self.decimal_count > 0:
             new_value /= 10 ** self.decimal_count
-        self.param_value = new_value
         self.display_widget.setText(str(self.param_value))
         self.save_param()
 

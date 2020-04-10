@@ -30,15 +30,6 @@ from basic_functions import io, operations as op
 from pipeline_functions import decorators as decor, utilities as ut
 
 
-def filter_string(highpass, lowpass):
-    if highpass is not None and highpass != 0:
-        f_string = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
-    else:
-        f_string = '_' + str(lowpass) + '_Hz'
-
-    return f_string
-
-
 # ==============================================================================
 # PLOTTING FUNCTIONS
 # ==============================================================================
@@ -158,7 +149,7 @@ def plot_power_spectra(name, save_dir, highpass, lowpass, save_plots,
 
     if save_plots:
         save_path = join(figures_path, 'power_spectra_raw', name +
-                         '_psdr' + filter_string(highpass, lowpass) + '.jpg')
+                         '_psdr' + op.filter_string(highpass, lowpass) + '.jpg')
         psd_figure.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
     else:
@@ -177,7 +168,7 @@ def plot_power_spectra_epochs(name, save_dir, highpass, lowpass, save_plots,
 
         if save_plots:
             save_path = join(figures_path, 'power_spectra_epochs', trial_type, name + '_' +
-                             trial_type + '_psde' + filter_string(highpass, lowpass) + '.jpg')
+                             trial_type + '_psde' + op.filter_string(highpass, lowpass) + '.jpg')
             psd_figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -194,7 +185,7 @@ def plot_power_spectra_topo(name, save_dir, highpass, lowpass, save_plots,
 
         if save_plots:
             save_path = join(figures_path, 'power_spectra_topo', trial_type, name + '_' +
-                             trial_type + '_psdtop' + filter_string(highpass, lowpass) + '.jpg')
+                             trial_type + '_psdtop' + op.filter_string(highpass, lowpass) + '.jpg')
             psd_figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -238,25 +229,25 @@ def plot_tfr(name, save_dir, highpass, lowpass, t_epoch, baseline,
         if save_plots:
             save_path1 = join(figures_path, 'tf_sensor_space/plot',
                               power.comment, name + '_tf' +
-                              filter_string(highpass, lowpass) +
+                              op.filter_string(highpass, lowpass) +
                               '-' + power.comment + '.jpg')
             fig1.savefig(save_path1, dpi=600)
             print('figure: ' + save_path1 + ' has been saved')
             save_path2 = join(figures_path, 'tf_sensor_space/topo',
                               power.comment, name + '_tf_topo' +
-                              filter_string(highpass, lowpass) +
+                              op.filter_string(highpass, lowpass) +
                               '-' + power.comment + '.jpg')
             fig2.savefig(save_path2, dpi=600)
             print('figure: ' + save_path2 + ' has been saved')
             save_path3 = join(figures_path, 'tf_sensor_space/joint',
                               power.comment, name + '_tf_joint' +
-                              filter_string(highpass, lowpass) +
+                              op.filter_string(highpass, lowpass) +
                               '-' + power.comment + '.jpg')
             fig3.savefig(save_path3, dpi=600)
             print('figure: ' + save_path3 + ' has been saved')
             save_path4 = join(figures_path, 'tf_sensor_space/oscs',
                               power.comment, name + '_tf_oscs' +
-                              filter_string(highpass, lowpass) +
+                              op.filter_string(highpass, lowpass) +
                               '-' + power.comment + '.jpg')
             fig4.savefig(save_path4, dpi=600)
             print('figure: ' + save_path4 + ' has been saved')
@@ -270,7 +261,7 @@ def plot_tfr(name, save_dir, highpass, lowpass, t_epoch, baseline,
         if save_plots:
             save_path5 = join(figures_path, 'tf_sensor_space/itc',
                               power.comment, name + '_tf_itc' +
-                              filter_string(highpass, lowpass) +
+                              op.filter_string(highpass, lowpass) +
                               '-' + itc.comment + '.jpg')
             fig5.savefig(save_path5, dpi=600)
             print('figure: ' + save_path5 + ' has been saved')
@@ -364,7 +355,7 @@ def plot_ssp(name, save_dir, highpass, lowpass, save_plots,
 
         if save_plots:
             save_path = join(figures_path, 'ssp', name + '_ssp' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
             ssp_figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -384,7 +375,7 @@ def plot_ssp_eog(name, save_dir, highpass, lowpass, save_plots,
 
     if save_plots:
         save_path = join(figures_path, 'ssp', name + '_ssp_eog' +
-                         filter_string(highpass, lowpass) + '.jpg')
+                         op.filter_string(highpass, lowpass) + '.jpg')
         ssp_figure.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
     else:
@@ -404,7 +395,7 @@ def plot_ssp_ecg(name, save_dir, highpass, lowpass, save_plots,
 
     if save_plots:
         save_path = join(figures_path, 'ssp', name + '_ssp_ecg' +
-                         filter_string(highpass, lowpass) + '.jpg')
+                         op.filter_string(highpass, lowpass) + '.jpg')
         ssp_figure.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
     else:
@@ -423,7 +414,7 @@ def plot_epochs(name, save_dir, highpass, lowpass, save_plots,
 
         if save_plots:
             save_path = join(figures_path, 'epochs', trial_type, name + '_epochs' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
 
             epochs_image_full.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
@@ -441,7 +432,7 @@ def plot_epochs_image(name, save_dir, highpass, lowpass, save_plots,
 
         if save_plots:
             save_path = join(figures_path, 'epochs_image', trial_type, name + '_epochs_image' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
 
             epochs_image[0].savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
@@ -460,7 +451,7 @@ def plot_epochs_topo(name, save_dir, highpass, lowpass, save_plots,
 
         if save_plots:
             save_path = join(figures_path, 'epochs_topo', trial_type, name + '_epochs_topo' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
 
             epochs_topo.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
@@ -478,7 +469,7 @@ def plot_epochs_drop_log(name, save_dir, highpass, lowpass, save_plots,
 
     if save_plots:
         save_path = join(figures_path, 'epochs_drop_log', name + '_drop_log' +
-                         filter_string(highpass, lowpass) + '.jpg')
+                         op.filter_string(highpass, lowpass) + '.jpg')
 
         fig.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
@@ -496,7 +487,7 @@ def plot_evoked_topo(name, save_dir, highpass, lowpass, save_plots, figures_path
     if save_plots:
         save_path = join(figures_path, 'evoked_topo',
                          name + '_evk_topo' +
-                         filter_string(highpass, lowpass) + '.jpg')
+                         op.filter_string(highpass, lowpass) + '.jpg')
         evoked_figure.savefig(save_path, dpi=1200)
         print('figure: ' + save_path + ' has been saved')
     else:
@@ -513,7 +504,7 @@ def plot_evoked_topomap(name, save_dir, highpass, lowpass, save_plots, figures_p
         if save_plots:
             save_path = join(figures_path, 'evoked_topomap', evoked.comment,
                              name + '_' + evoked.comment + '_evoked_topomap' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
             evoked_figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -534,14 +525,14 @@ def plot_evoked_field(name, save_dir, highpass, lowpass,
                                        n_jobs=n_jobs)
         for t in mne_evoked_time:
             mne.viz.plot_evoked_field(evoked, surf_maps, time=t)
-            mlab.title(name + ' - ' + evoked.comment + filter_string(highpass, lowpass)
+            mlab.title(name + ' - ' + evoked.comment + op.filter_string(highpass, lowpass)
                        + '-' + str(t), height=0.9)
             mlab.view(azimuth=180)
 
             if save_plots:
                 save_path = join(figures_path, 'evoked_field', evoked.comment,
                                  name + '_' + evoked.comment + '_evoked_field' +
-                                 filter_string(highpass, lowpass) + '-' + str(t) + '.jpg')
+                                 op.filter_string(highpass, lowpass) + '-' + str(t) + '.jpg')
                 mlab.savefig(save_path)
                 print('figure: ' + save_path + ' has been saved')
             else:
@@ -560,7 +551,7 @@ def plot_evoked_joint(name, save_dir, highpass, lowpass, save_plots,
         if save_plots:
             save_path = join(figures_path, 'evoked_joint', evoked.comment,
                              name + '_' + evoked.comment + '_joint' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -586,7 +577,7 @@ def plot_evoked_butterfly(name, save_dir, highpass, lowpass, save_plots,
         if save_plots:
             save_path = join(figures_path, 'evoked_butterfly', evoked.comment,
                              name + '_' + evoked.comment + '_butterfly' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -612,7 +603,7 @@ def plot_evoked_white(name, save_dir, highpass, lowpass, save_plots, figures_pat
         if save_plots:
             save_path = join(figures_path, 'evoked_white', evoked.comment,
                              name + '_' + evoked.comment + '_white' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -630,7 +621,7 @@ def plot_evoked_image(name, save_dir, highpass, lowpass, save_plots, figures_pat
         if save_plots:
             save_path = join(figures_path, 'evoked_image', evoked.comment,
                              name + '_' + evoked.comment + '_image' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -663,7 +654,7 @@ def plot_evoked_h1h2(name, save_dir, highpass, lowpass, event_id,
         if save_plots:
             save_path = join(figures_path, 'evoked_h1h2', evoked_h1.comment,
                              name + '_' + evoked_h1.comment + '_h1h2' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
             figure[0].savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -683,7 +674,7 @@ def plot_gfp(name, save_dir, highpass, lowpass, save_plots, figures_path):
         plt.show()
         if save_plots:
             save_path = join(figures_path, 'gfp', trial_type,
-                             f'{name}-{trial_type}_gfp{filter_string(highpass, lowpass)}.jpg')
+                             f'{name}-{trial_type}_gfp{op.filter_string(highpass, lowpass)}.jpg')
             plt.savefig(save_path, dpi=600)
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
@@ -770,7 +761,7 @@ def plot_noise_covariance(name, save_dir, highpass, lowpass, save_plots, figures
 
     if save_plots:
         save_path = join(figures_path, 'noise_covariance', name +
-                         filter_string(highpass, lowpass) + '.jpg')
+                         op.filter_string(highpass, lowpass) + '.jpg')
         fig_cov[0].savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
     else:
@@ -804,7 +795,7 @@ def plot_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                 if save_plots:
                     save_path = join(figures_path, 'stcs', trial_type,
                                      name + '_' + trial_type +
-                                     filter_string(highpass, lowpass) + '_' + str(idx) + '.jpg')
+                                     op.filter_string(highpass, lowpass) + '_' + str(idx) + '.jpg')
                     brain.save_image(save_path)
                     print('figure: ' + save_path + ' has been saved')
 
@@ -838,7 +829,7 @@ def plot_normal_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
             if save_plots:
                 save_path = join(figures_path, 'stcs', trial_type,
                                  name + '_' + trial_type +
-                                 filter_string(highpass, lowpass) + '_normal_' + str(idx) + '.jpg')
+                                 op.filter_string(highpass, lowpass) + '_normal_' + str(idx) + '.jpg')
                 brain.save_image(save_path)
                 print('figure: ' + save_path + ' has been saved')
 
@@ -871,7 +862,7 @@ def plot_vector_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
             if save_plots:
                 save_path = join(figures_path, 'stcs', trial_type,
                                  name + '_' + trial_type +
-                                 filter_string(highpass, lowpass) + '_vector_' + str(idx) + '.jpg')
+                                 op.filter_string(highpass, lowpass) + '_vector_' + str(idx) + '.jpg')
                 brain.save_image(save_path)
                 print('figure: ' + save_path + ' has been saved')
 
@@ -906,7 +897,7 @@ def plot_mixn(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
             if save_plots:
                 save_path = join(figures_path, 'mxn_dipoles', trial_type,
                                  name + '_' + trial_type +
-                                 filter_string(highpass, lowpass) + '_mixn-amp.jpg')
+                                 op.filter_string(highpass, lowpass) + '_mixn-amp.jpg')
                 fig1.savefig(save_path)
 
             labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir,
@@ -925,7 +916,7 @@ def plot_mixn(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                 if save_plots:
                     save_path = join(figures_path, 'mxn_dipoles', trial_type,
                                      name + '_' + trial_type +
-                                     filter_string(highpass, lowpass) + '_mixn-dip-' + str(idx) + '.jpg')
+                                     op.filter_string(highpass, lowpass) + '_mixn-dip-' + str(idx) + '.jpg')
                     fig2.savefig(save_path)
 
                 brain = Brain(subtomri, hemi=hemi, surf='pial', views='lat')
@@ -936,7 +927,7 @@ def plot_mixn(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                 if save_plots:
                     save_path = join(figures_path, 'mxn_dipoles', trial_type,
                                      name + '_' + trial_type +
-                                     filter_string(highpass, lowpass) + '_mixn-srfdip-' + str(idx) + '.jpg')
+                                     op.filter_string(highpass, lowpass) + '_mixn-srfdip-' + str(idx) + '.jpg')
                     brain.save_image(save_path)
 
     else:
@@ -967,7 +958,7 @@ def plot_mixn_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
             if save_plots:
                 save_path = join(figures_path, 'mxne', trial_type,
                                  name + '_' + trial_type +
-                                 filter_string(highpass, lowpass) + '_mixn_' + str(idx) + '.jpg')
+                                 op.filter_string(highpass, lowpass) + '_mixn_' + str(idx) + '.jpg')
                 brain.save_image(save_path)
                 print('figure: ' + save_path + ' has been saved')
 
@@ -982,14 +973,14 @@ def plot_mixn_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
 @decor.topline
 def plot_mixn_res(name, save_dir, highpass, lowpass, event_id, save_plots, figures_path):
     for trial_type in event_id:
-        mixn_res_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '-mixn-res-ave.fif'
+        mixn_res_name = name + op.filter_string(highpass, lowpass) + '_' + trial_type + '-mixn-res-ave.fif'
         mixn_res_path = join(save_dir, mixn_res_name)
 
         fig = mne.read_evokeds(mixn_res_path)[0].plot(spatial_colors=True)
         if save_plots:
             save_path = join(figures_path, 'stcs', trial_type,
                              name + '_' + trial_type +
-                             filter_string(highpass, lowpass) + '_mixn-res.jpg')
+                             op.filter_string(highpass, lowpass) + '_mixn-res.jpg')
             fig.savefig(save_path)
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
@@ -1006,7 +997,7 @@ def plot_animated_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
         n_stc = n_stcs[ev_id]
 
         save_path = join(figures_path, 'stcs_movie', name +
-                         filter_string(highpass, lowpass) + '.mp4')
+                         op.filter_string(highpass, lowpass) + '.mp4')
 
         brain = mne.viz.plot_source_estimates(stc=n_stc, subject=subtomri, surface='inflated',
                                               subjects_dir=subjects_dir, size=(1600, 800),
@@ -1035,7 +1026,7 @@ def plot_snr(name, save_dir, highpass, lowpass, save_plots, figures_path, invers
         if save_plots:
             save_path = join(figures_path, 'snr', trial_type,
                              name + '_' + evoked.comment + '_snr' +
-                             filter_string(highpass, lowpass) + '.jpg')
+                             op.filter_string(highpass, lowpass) + '.jpg')
             figure.savefig(save_path, dpi=600)
             print('figure: ' + save_path + ' has been saved')
         else:
@@ -1116,7 +1107,7 @@ def sub_func_label_analysis(highpass, lowpass, tmax, sub_files_dict,
         plt.grid(True, which='both')
         plt.xlabel('Time (s)')
         plt.ylabel('Labels')
-        plt.title(f'Latency of Max-Peak in Labels for {sub}{filter_string(highpass, lowpass)}')
+        plt.title(f'Latency of Max-Peak in Labels for {sub}{op.filter_string(highpass, lowpass)}')
         plt.show()
         """
         # Label-Position-Analysis
@@ -1151,13 +1142,13 @@ def sub_func_label_analysis(highpass, lowpass, tmax, sub_files_dict,
             """if not exists(join(figures_path, 'func_labels', 'brain_plots_sub')):
                 makedirs(join(figures_path, 'func_labels', 'brain_plots_sub'))
             b_save_path = join(figures_path, 'func_labels', 'brain_plots_sub',
-                               f'{sub}-{filter_string(highpass, lowpass)}-b.jpg')
+                               f'{sub}-{op.filter_string(highpass, lowpass)}-b.jpg')
             brain.save_image(b_save_path)"""
 
             if not exists(join(figures_path, 'func_labels', 'latencies')):
                 makedirs(join(figures_path, 'func_labels', 'latencies'))
             save_path = join(figures_path, 'func_labels', 'latencies',
-                             f'{sub}{filter_string(highpass, lowpass)}-lat.jpg')
+                             f'{sub}{op.filter_string(highpass, lowpass)}-lat.jpg')
             plt.savefig(save_path, dpi=600)
 
         else:
@@ -1207,14 +1198,14 @@ def all_func_label_analysis(highpass, lowpass, tmax, files, pscripts_path,
     plt.grid(True, which='both')
     plt.xlabel('Time (s)')
     plt.ylabel('Labels')
-    plt.title(f'Latency of Max-Peak in Labels for all {filter_string(highpass, lowpass)}')
+    plt.title(f'Latency of Max-Peak in Labels for all {op.filter_string(highpass, lowpass)}')
     plt.show()
 
     if save_plots:
         if not exists(join(figures_path, 'func_labels', 'latencies')):
             makedirs(join(figures_path, 'func_labels', 'latencies'))
         save_path = join(figures_path, 'func_labels', 'latencies',
-                         f'all_{filter_string(highpass, lowpass)}-lat.jpg')
+                         f'all_{op.filter_string(highpass, lowpass)}-lat.jpg')
         plt.savefig(save_path, dpi=600)
 
     else:
@@ -1281,7 +1272,7 @@ def plot_label_time_course(name, save_dir, highpass, lowpass, subtomri,
 
                     if save_plots:
                         save_path = join(figures_path, 'label_time_course', trial, name +
-                                         filter_string(highpass, lowpass) + '_' +
+                                         op.filter_string(highpass, lowpass) + '_' +
                                          trial + '_' + l.name + '.jpg')
                         plt.savefig(save_path, dpi=600)
                         print('figure: ' + save_path + ' has been saved')
@@ -1381,7 +1372,7 @@ def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
                 if not exists(join(figures_path, 'label_time_course', 'comp_plots')):
                     makedirs(join(figures_path, 'label_time_course', 'comp_plots'))
                 save_path = join(figures_path, 'label_time_course', 'comp_plots',
-                                 ab_key + filter_string(highpass, lowpass) +
+                                 ab_key + op.filter_string(highpass, lowpass) +
                                  '_' + trial_type + '_' + 'label-cmp.jpg')
                 plt.savefig(save_path, dpi=600)
                 print('figure: ' + save_path + ' has been saved')
@@ -1399,7 +1390,8 @@ def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
                         else:
                             corr_dict.update({label: {trial: coef}})
 
-                ut.dict_filehandler(ab_key, f'ab_coef_label_time_course{filter_string(highpass, lowpass)}-{trial_type}',
+                ut.dict_filehandler(ab_key,
+                                    f'ab_coef_label_time_course{op.filter_string(highpass, lowpass)}-{trial_type}',
                                     pscripts_path, values=corr_dict)
             if func_dict['close_plots']:
                 close_all()
@@ -1466,7 +1458,7 @@ def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcella
 
                 if save_plots:
                     save_path = join(figures_path, 'tf_source_space/label_power', name + '_' + label.name + '_power_' +
-                                     ev_id + filter_string(highpass, lowpass) + '.jpg')
+                                     ev_id + op.filter_string(highpass, lowpass) + '.jpg')
                     plt.savefig(save_path, dpi=600)
                     print('figure: ' + save_path + ' has been saved')
                 else:
@@ -1475,8 +1467,8 @@ def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcella
 
 @decor.topline
 def plot_grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
-                               save_dir_averages, tfr_freqs, t_epoch, lowpass,
-                               highpass, save_plots, figures_path):
+                               save_dir_averages, tfr_freqs, t_epoch, highpass,
+                               lowpass, save_plots, figures_path):
     ga_dict = io.read_ga_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
                                      save_dir_averages)
     freqs = tfr_freqs
@@ -1514,7 +1506,7 @@ def plot_grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis, target_lab
 
                     if save_plots:
                         save_path = join(figures_path, 'grand_averages/source_space/tfr',
-                                         f'{key}_{ev_id}_{label_name}_{filter_string(highpass, lowpass)}_power.jpg')
+                                         f'{key}_{ev_id}_{label_name}_{op.filter_string(highpass, lowpass)}_power.jpg')
                         plt.savefig(save_path, dpi=600)
                         print('figure: ' + save_path + ' has been saved')
                     else:
@@ -1618,7 +1610,7 @@ def plot_source_space_connectivity(name, save_dir, highpass, lowpass,
                                                          fontsize_names=12)
             if save_plots:
                 save_path = join(figures_path, 'tf_source_space/connectivity', name +
-                                 filter_string(highpass, lowpass) +
+                                 op.filter_string(highpass, lowpass) +
                                  '_' + str(con_fmin) + '-' + str(con_fmax) + 'Hz' +
                                  '_' + con_method + '_' + ev_id + '.jpg')
                 fig.savefig(save_path, dpi=600, facecolor='k', edgecolor='k')
@@ -1630,9 +1622,9 @@ def plot_source_space_connectivity(name, save_dir, highpass, lowpass,
 # %% Grand-Average Plots
 @decor.topline
 def plot_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
-                           event_id, save_plots, figures_path, quality):
+                           event_id, save_plots, figures_path):
     ga_dict = io.read_grand_avg_evokeds(highpass, lowpass, save_dir_averages,
-                                        grand_avg_dict, event_id, quality)
+                                        grand_avg_dict, event_id)
 
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
@@ -1641,8 +1633,7 @@ def plot_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
             if save_plots:
                 save_path = join(figures_path, 'grand_averages/sensor_space/evoked',
                                  stim_type + '_' + trial +
-                                 filter_string(highpass, lowpass)
-                                 + '_' + str(quality) + '.jpg')
+                                 op.filter_string(highpass, lowpass) + '.jpg')
                 figure.savefig(save_path, dpi=600)
                 print('figure: ' + save_path + ' has been saved')
             else:
@@ -1651,9 +1642,9 @@ def plot_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
 
 @decor.topline
 def plot_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages, grand_avg_dict,
-                                event_id, save_plots, figures_path, quality):
+                                event_id, save_plots, figures_path):
     ga_dict = io.read_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages,
-                                             grand_avg_dict, event_id, quality)
+                                             grand_avg_dict, event_id)
 
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
@@ -1665,8 +1656,7 @@ def plot_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages, grand_avg_
             if save_plots:
                 save_path = join(figures_path, 'grand_averages/sensor_space/evoked',
                                  stim_type + '_' + trial + '_h1h2' +
-                                 filter_string(highpass, lowpass)
-                                 + '_' + str(quality) + '.jpg')
+                                 op.filter_string(highpass, lowpass) + '.jpg')
                 figure.savefig(save_path, dpi=600)
                 print('figure: ' + save_path + ' has been saved')
             else:
@@ -1787,22 +1777,22 @@ def plot_grand_avg_tfr(highpass, lowpass, baseline, t_epoch,
             if save_plots:
                 save_path1 = join(figures_path, 'grand_averages/sensor_space/tfr',
                                   stim_type + '_' + trial + '_tf' +
-                                  filter_string(highpass, lowpass) + '.jpg')
+                                  op.filter_string(highpass, lowpass) + '.jpg')
                 fig1.savefig(save_path1, dpi=600)
                 print('figure: ' + save_path1 + ' has been saved')
                 save_path2 = join(figures_path, 'grand_averages/sensor_space/tfr',
                                   stim_type + '_' + trial + '_tf_topo' +
-                                  filter_string(highpass, lowpass) + '.jpg')
+                                  op.filter_string(highpass, lowpass) + '.jpg')
                 fig2.savefig(save_path2, dpi=600)
                 print('figure: ' + save_path2 + ' has been saved')
                 save_path3 = join(figures_path, 'grand_averages/sensor_space/tfr',
                                   stim_type + '_' + trial + '_tf_joint' +
-                                  filter_string(highpass, lowpass) + '.jpg')
+                                  op.filter_string(highpass, lowpass) + '.jpg')
                 fig3.savefig(save_path3, dpi=600)
                 print('figure: ' + save_path3 + ' has been saved')
                 save_path4 = join(figures_path, 'grand_averages/sensor_space/tfr',
                                   stim_type + '_' + trial + '_tf_oscs' +
-                                  filter_string(highpass, lowpass) + '.jpg')
+                                  op.filter_string(highpass, lowpass) + '.jpg')
                 fig4.savefig(save_path4, dpi=600)
                 print('figure: ' + save_path4 + ' has been saved')
             else:
@@ -1819,19 +1809,48 @@ def plot_grand_avg_stc(highpass, lowpass, save_dir_averages,
     ga_dict = io.read_grand_avg_stcs(highpass, lowpass, save_dir_averages,
                                      grand_avg_dict, event_id)
 
-    for stim_type in ga_dict:
-        for trial in ga_dict[stim_type]:
+    for group in ga_dict:
+        for trial in ga_dict[group]:
             for idx, t in enumerate(mne_evoked_time):
-                brain = ga_dict[stim_type][trial].plot(subject=morph_to,
-                                                       subjects_dir=subjects_dir, size=(1600, 800),
-                                                       title=f'{stim_type}-{trial}', hemi='split',
-                                                       views='lat', initial_time=t)
-                brain.title = stim_type + '-' + trial
+                brain = ga_dict[group][trial].plot(subject=morph_to,
+                                                   subjects_dir=subjects_dir, size=(1600, 800),
+                                                   title=f'{group}-{trial}', hemi='split',
+                                                   views='lat', initial_time=t)
+                brain.title = group + '-' + trial
 
                 if save_plots:
                     save_path = join(figures_path, 'grand_averages/source_space/stc',
-                                     stim_type + '_' + trial +
-                                     filter_string(highpass, lowpass) +
+                                     group + '_' + trial +
+                                     op.filter_string(highpass, lowpass) +
+                                     '_' + str(idx) + '.jpg')
+                    brain.save_image(save_path)
+                    print('figure: ' + save_path + ' has been saved')
+
+                else:
+                    print('Not saving plots; set "save_plots" to "True" to save')
+
+
+@decor.topline
+def plot_grand_avg_stc_normal(highpass, lowpass, save_dir_averages,
+                              grand_avg_dict, mne_evoked_time, morph_to,
+                              subjects_dir, event_id, save_plots,
+                              figures_path):
+    ga_dict = io.read_grand_avg_stcs_normal(highpass, lowpass, save_dir_averages,
+                                            grand_avg_dict, event_id)
+
+    for group in ga_dict:
+        for trial in ga_dict[group]:
+            for idx, t in enumerate(mne_evoked_time):
+                brain = ga_dict[group][trial].plot(subject=morph_to,
+                                                   subjects_dir=subjects_dir, size=(1600, 800),
+                                                   title=f'{group}-{trial}', hemi='split',
+                                                   views='lat', initial_time=t)
+                brain.title = group + '-' + trial
+
+                if save_plots:
+                    save_path = join(figures_path, 'grand_averages/source_space/stc',
+                                     group + '_' + trial +
+                                     op.filter_string(highpass, lowpass) +
                                      '_' + str(idx) + '.jpg')
                     brain.save_image(save_path)
                     print('figure: ' + save_path + ' has been saved')
@@ -1859,7 +1878,7 @@ def plot_grand_avg_stc_anim(highpass, lowpass, save_dir_averages,
             print('Saving Video')
             save_path = join(figures_path, 'grand_averages/source_space/stc_movie',
                              stim_type + '_' + trial +
-                             filter_string(highpass, lowpass) + '.mp4')
+                             op.filter_string(highpass, lowpass) + '.mp4')
             brain.save_movie(save_path, time_dilation=30,
                              tmin=stc_animation[0], tmax=stc_animation[1], framerate=30)
             mlab.close()
@@ -1932,7 +1951,7 @@ def plot_grand_avg_connect(highpass, lowpass, save_dir_averages,
                                                              fontsize_names=16)
                 if save_plots:
                     save_path = join(figures_path, 'grand_averages/source_space/connectivity', stim_type +
-                                     filter_string(highpass, lowpass) +
+                                     op.filter_string(highpass, lowpass) +
                                      '_' + str(con_fmin) + '-' + str(con_fmax) +
                                      '_' + method + '-' + ev_id + '.jpg')
                     fig.savefig(save_path, dpi=600, facecolor='k', edgecolor='k')
@@ -1956,7 +1975,7 @@ def plot_grand_averages_source_estimates_cluster_masked(name,
     stcs = dict()
     for stc_type in independent_variables:
         filename = join(save_dir_averages,
-                        stc_type + filter_string(highpass, lowpass) +
+                        stc_type + op.filter_string(highpass, lowpass) +
                         '_morphed_data_' + inverse_method)
         stc = mne.read_source_estimate(filename)
         stc.comment = stc_type
@@ -2017,7 +2036,7 @@ def plot_grand_averages_source_estimates_cluster_masked(name,
         save_path = join(figures_path, 'grand_averages',
                          'source_space/statistics',
                          message + '_' + name +
-                         filter_string(highpass, lowpass) + '.jpg' + '_' + str(time * 1e3) +
+                         op.filter_string(highpass, lowpass) + '.jpg' + '_' + str(time * 1e3) +
                          '_msec.jpg')
         brain.save_single_image(save_path)
         print('figure: ' + save_path + ' has been saved')
@@ -2056,7 +2075,7 @@ def pp_plot_latency_s1_corr(data_path, files, highpass, lowpass,
     plt.ylabel('Latency S1')
     if save_plots:
         save_path = join(figures_path, 'statistics', 'MotStart-LBT_diff' +
-                         filter_string(highpass, lowpass) + '.jpg')
+                         op.filter_string(highpass, lowpass) + '.jpg')
         plt.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
     else:
@@ -2088,7 +2107,7 @@ def plot_quality(pscripts_path, all_files, save_plots, figures_path, highpass, l
 
     if save_plots:
         save_path = join(figures_path, 'Various', 'Quality' +
-                         filter_string(highpass, lowpass) + '.jpg')
+                         op.filter_string(highpass, lowpass) + '.jpg')
         plt.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
     else:
@@ -2116,11 +2135,11 @@ def plot_lat_vs_quality(pscripts_path, all_files, save_plots, figures_path, high
 
     if save_plots:
         save_path1 = join(figures_path, 'Various', 'Latency-std_vs_Quality_1' +
-                          filter_string(highpass, lowpass) + '.jpg')
+                          op.filter_string(highpass, lowpass) + '.jpg')
         fig1.savefig(save_path1, dpi=600)
         print('figure: ' + save_path1 + ' has been saved')
         save_path2 = join(figures_path, 'Various', 'Latency-mean_vs_Quality_2' +
-                          filter_string(highpass, lowpass) + '.jpg')
+                          op.filter_string(highpass, lowpass) + '.jpg')
         fig2.savefig(save_path2, dpi=600)
         print('figure: ' + save_path2 + ' has been saved')
     else:
@@ -2148,7 +2167,7 @@ def plot_evoked_peaks(pscripts_path, all_files, save_plots, figures_path, highpa
 
     if save_plots:
         save_path = join(figures_path, 'Various', 'Peaks' +
-                         filter_string(highpass, lowpass) + '.jpg')
+                         op.filter_string(highpass, lowpass) + '.jpg')
         plt.savefig(save_path, dpi=600)
         print('figure: ' + save_path + ' has been saved')
     else:
