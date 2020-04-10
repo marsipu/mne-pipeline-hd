@@ -42,7 +42,12 @@ except ImportError:
 # Todo: Change normal comments to docstrings
 # Naming Conventions
 def filter_string(highpass, lowpass):
-    if highpass is not None and highpass != 0:
+    # Check for .0
+    if '.0' in str(highpass):
+        highpass = int(highpass)
+    if '.0' in str(lowpass):
+        lowpass = int(lowpass)
+    if highpass and highpass != 0:
         fs = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
     else:
         fs = '_' + str(lowpass) + '_Hz'
@@ -685,7 +690,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
         ica.fit(raw, picks, reject=reject, flat=flat,
                 reject_by_annotation=True)
 
-        if name in ica_dict and ica_dict[name] != [] and ica_dict[name] is not None:
+        if name in ica_dict and ica_dict[name] != [] and ica_dict[name]:
             indices = ica_dict[name]
             ica.exclude += indices
             print(f'{indices} added to ica.exclude from ica_components.py')
@@ -1037,79 +1042,73 @@ def calculate_gfp(evoked):
 
 
 @decor.topline
-def grand_avg_evokeds(data_path, grand_avg_dict, save_dir_averages,
-                      highpass, lowpass, func_dict, quality, ana_h1h2):
+def grand_avg_evokeds(data_path, grand_avg_dict, sel_ga_groups, save_dir_averages,
+                      highpass, lowpass, ana_h1h2):
     for key in grand_avg_dict:
-        trial_dict = {}
-        h1_dict = {}
-        h2_dict = {}
-        print(f'grand_average for {key}')
-        for name in grand_avg_dict[key]:
-            if func_dict['motor_erm_analysis']:
-                save_dir = data_path
-            else:
+        if key in sel_ga_groups:
+            trial_dict = {}
+            h1_dict = {}
+            h2_dict = {}
+            print(f'grand_average for {key}')
+            for name in grand_avg_dict[key]:
                 save_dir = join(data_path, name)
-            print(f'Add {name} to grand_average')
-            evokeds = io.read_evokeds(name, save_dir, lowpass,
-                                      highpass)
-            for evoked in evokeds:
-                if evoked.nave != 0:
-                    if evoked.comment in trial_dict:
-                        trial_dict[evoked.comment].append(evoked)
+                print(f'Add {name} to grand_average')
+                evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+                for evoked in evokeds:
+                    if evoked.nave != 0:
+                        if evoked.comment in trial_dict:
+                            trial_dict[evoked.comment].append(evoked)
+                        else:
+                            trial_dict.update({evoked.comment: [evoked]})
                     else:
-                        trial_dict.update({evoked.comment: [evoked]})
-                else:
-                    print(f'{evoked.comment} for {name} got nave=0')
+                        print(f'{evoked.comment} for {name} got nave=0')
 
-            if ana_h1h2:
-                evokeds_dict = io.read_h1h2_evokeds(name, save_dir, highpass, lowpass)
-                for evoked in evokeds_dict['h1']:
-                    if evoked.comment in h1_dict:
-                        h1_dict[evoked.comment].append(evoked)
-                    else:
-                        h1_dict.update({evoked.comment: [evoked]})
+                if ana_h1h2:
+                    evokeds_dict = io.read_h1h2_evokeds(name, save_dir, highpass, lowpass)
+                    for evoked in evokeds_dict['h1']:
+                        if evoked.comment in h1_dict:
+                            h1_dict[evoked.comment].append(evoked)
+                        else:
+                            h1_dict.update({evoked.comment: [evoked]})
 
-                for evoked in evokeds_dict['h2']:
-                    if evoked.comment in h1_dict:
-                        h2_dict[evoked.comment].append(evoked)
-                    else:
-                        h2_dict.update({evoked.comment: [evoked]})
+                    for evoked in evokeds_dict['h2']:
+                        if evoked.comment in h1_dict:
+                            h2_dict[evoked.comment].append(evoked)
+                        else:
+                            h2_dict.update({evoked.comment: [evoked]})
 
-        for trial in trial_dict:
-            if len(trial_dict[trial]) != 0:
-                ga = mne.grand_average(trial_dict[trial],
-                                       interpolate_bads=True,
-                                       drop_bads=True)
-                ga.comment = trial
-                ga_path = join(save_dir_averages, 'evoked',
-                               key + '_' + trial +
-                               filter_string(highpass, lowpass) +
-                               '_' + str(quality) + '-grand_avg-ave.fif')
-                ga.save(ga_path)
+            for trial in trial_dict:
+                if len(trial_dict[trial]) != 0:
+                    ga = mne.grand_average(trial_dict[trial],
+                                           interpolate_bads=True,
+                                           drop_bads=True)
+                    ga.comment = trial
+                    ga_path = join(save_dir_averages, 'evoked',
+                                   key + '_' + trial +
+                                   filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
+                    ga.save(ga_path)
 
-        for trial in h1_dict:
-            if len(h1_dict[trial]) != 0:
-                ga = mne.grand_average(h1_dict[trial],
-                                       interpolate_bads=True,
-                                       drop_bads=True)
-                ga.comment = trial
-                ga_path = join(save_dir_averages, 'evoked',
-                               key + '_' + trial + '_' + 'h1' +
-                               filter_string(highpass, lowpass) +
-                               '_' + str(quality) + '-grand_avg-ave.fif')
-                ga.save(ga_path)
+            for trial in h1_dict:
+                if len(h1_dict[trial]) != 0:
+                    ga = mne.grand_average(h1_dict[trial],
+                                           interpolate_bads=True,
+                                           drop_bads=True)
+                    ga.comment = trial
+                    ga_path = join(save_dir_averages, 'evoked',
+                                   key + '_' + trial + '_' + 'h1' +
+                                   filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
+                    ga.save(ga_path)
 
-        for trial in h2_dict:
-            if len(h2_dict[trial]) != 0:
-                ga = mne.grand_average(h2_dict[trial],
-                                       interpolate_bads=True,
-                                       drop_bads=True)
-                ga.comment = trial
-                ga_path = join(save_dir_averages, 'evoked',
-                               key + '_' + trial + '_' + 'h2' +
-                               filter_string(highpass, lowpass) +
-                               '_' + str(quality) + '-grand_avg-ave.fif')
-                ga.save(ga_path)
+            for trial in h2_dict:
+                if len(h2_dict[trial]) != 0:
+                    ga = mne.grand_average(h2_dict[trial],
+                                           interpolate_bads=True,
+                                           drop_bads=True)
+                    ga.comment = trial
+                    ga_path = join(save_dir_averages, 'evoked',
+                                   key + '_' + trial + '_' + 'h2' +
+                                   filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
+                    ga.save(ga_path)
 
 
 @decor.topline
@@ -1171,8 +1170,8 @@ def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
         for name in grand_avg_dict[key]:
             save_dir = join(data_path, name)
             print(f'Add {name} to grand_average')
-            powers = io.read_tfr_power(name, save_dir, lowpass,
-                                       highpass, tfr_method)
+            powers = io.read_tfr_power(name, save_dir, highpass,
+                                       lowpass, tfr_method)
             for pw in powers:
                 if pw.nave != 0:
                     if pw.comment in trial_dict:
@@ -2548,64 +2547,65 @@ def source_space_connectivity(name, save_dir, highpass, lowpass,
 
 
 @decor.topline
-def grand_avg_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averages,
+def grand_avg_morphed(grand_avg_dict, sel_ga_groups, data_path, inverse_method, save_dir_averages,
                       highpass, lowpass, event_id):
     # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
     n_chunks = 8
     for key in grand_avg_dict:
-        print(f'grand_average for {key}')
-        # divide in chunks to save memory
-        fusion_dict = {}
-        for i in range(0, len(grand_avg_dict[key]), n_chunks):
-            sub_trial_dict = {}
-            ga_chunk = grand_avg_dict[key][i:i + n_chunks]
-            print(ga_chunk)
-            for name in ga_chunk:
-                save_dir = join(data_path, name)
-                print(f'Add {name} to grand_average')
-                stcs = io.read_morphed_source_estimates(name, save_dir, lowpass,
-                                                        highpass, inverse_method, event_id)
-                for trial_type in stcs:
-                    if trial_type in sub_trial_dict:
-                        sub_trial_dict[trial_type].append(stcs[trial_type])
-                    else:
-                        sub_trial_dict.update({trial_type: [stcs[trial_type]]})
+        if key in sel_ga_groups:
+            print(f'grand_average for {key}')
+            # divide in chunks to save memory
+            fusion_dict = {}
+            for i in range(0, len(grand_avg_dict[key]), n_chunks):
+                sub_trial_dict = {}
+                ga_chunk = grand_avg_dict[key][i:i + n_chunks]
+                print(ga_chunk)
+                for name in ga_chunk:
+                    save_dir = join(data_path, name)
+                    print(f'Add {name} to grand_average')
+                    stcs = io.read_morphed_source_estimates(name, save_dir, highpass,
+                                                            lowpass, inverse_method, event_id)
+                    for trial_type in stcs:
+                        if trial_type in sub_trial_dict:
+                            sub_trial_dict[trial_type].append(stcs[trial_type])
+                        else:
+                            sub_trial_dict.update({trial_type: [stcs[trial_type]]})
 
-            # Average chunks
-            for trial in sub_trial_dict:
-                if len(sub_trial_dict[trial]) != 0:
-                    print(f'grand_average for {trial}-chunk {i}-{i + n_chunks}')
-                    sub_trial_average = sub_trial_dict[trial][0].copy()
-                    n_subjects = len(sub_trial_dict[trial])
+                # Average chunks
+                for trial in sub_trial_dict:
+                    if len(sub_trial_dict[trial]) != 0:
+                        print(f'grand_average for {trial}-chunk {i}-{i + n_chunks}')
+                        sub_trial_average = sub_trial_dict[trial][0].copy()
+                        n_subjects = len(sub_trial_dict[trial])
+
+                        for trial_index in range(1, n_subjects):
+                            sub_trial_average.data += sub_trial_dict[trial][trial_index].data
+
+                        sub_trial_average.data /= n_subjects
+                        sub_trial_average.comment = trial
+                        if trial in fusion_dict:
+                            fusion_dict[trial].append(sub_trial_average)
+                        else:
+                            fusion_dict.update({trial: [sub_trial_average]})
+
+            for trial in fusion_dict:
+                if len(fusion_dict[trial]) != 0:
+                    print(f'grand_average for {key}-{trial}')
+                    trial_average = fusion_dict[trial][0].copy()
+                    n_subjects = len(fusion_dict[trial])
 
                     for trial_index in range(1, n_subjects):
-                        sub_trial_average.data += sub_trial_dict[trial][trial_index].data
+                        trial_average.data += fusion_dict[trial][trial_index].data
 
-                    sub_trial_average.data /= n_subjects
-                    sub_trial_average.comment = trial
-                    if trial in fusion_dict:
-                        fusion_dict[trial].append(sub_trial_average)
-                    else:
-                        fusion_dict.update({trial: [sub_trial_average]})
-
-        for trial in fusion_dict:
-            if len(fusion_dict[trial]) != 0:
-                print(f'grand_average for {key}-{trial}')
-                trial_average = fusion_dict[trial][0].copy()
-                n_subjects = len(fusion_dict[trial])
-
-                for trial_index in range(1, n_subjects):
-                    trial_average.data += fusion_dict[trial][trial_index].data
-
-                trial_average.data /= n_subjects
-                trial_average.comment = trial
-                ga_path = join(save_dir_averages, 'stc',
-                               key + '_' + trial +
-                               filter_string(highpass, lowpass) +
-                               '-grand_avg')
-                trial_average.save(ga_path)
-        # clear memory
-        gc.collect()
+                    trial_average.data /= n_subjects
+                    trial_average.comment = trial
+                    ga_path = join(save_dir_averages, 'stc',
+                                   key + '_' + trial +
+                                   filter_string(highpass, lowpass) +
+                                   '-grand_avg')
+                    trial_average.save(ga_path)
+            # clear memory
+            gc.collect()
 
 
 @decor.topline
@@ -2624,8 +2624,7 @@ def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir
             for name in ga_chunk:
                 save_dir = join(data_path, name)
                 print(f'Add {name} to grand_average')
-                stcs = io.read_morphed_normal_source_estimates(name, save_dir, lowpass,
-                                                               highpass, inverse_method, event_id)
+                stcs = io.read_morphed_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method, event_id)
                 for trial_type in stcs:
                     if trial_type in sub_trial_dict:
                         sub_trial_dict[trial_type].append(stcs[trial_type])
@@ -3068,8 +3067,8 @@ def grand_avg_connect(grand_avg_dict, data_path, con_methods,
                 save_dir = join(data_path, name)
                 print(f'Add {name} to grand_average')
 
-                con_dict = io.read_connect(name, save_dir, lowpass,
-                                           highpass, con_methods,
+                con_dict = io.read_connect(name, save_dir, highpass,
+                                           lowpass, con_methods,
                                            con_fmin, con_fmax, ev_ids_label_analysis)[ev_id]
 
                 for con_method in con_dict:

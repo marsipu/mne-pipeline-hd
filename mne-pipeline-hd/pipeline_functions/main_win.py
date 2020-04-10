@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
 
         # self.setSizePolicy(QSizePolicy(0, 0))
 
-        QToolTip.setFont(QFont('SansSerif', 9))
+        QToolTip.setFont(QFont('OldEnglish', 10))
         self.change_style('Fusion')
 
         # Prepare Dark-Mode
@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
 
         self.pyfiles = QAction('Load .py-Files')
-        self.pyfiles.toggled.connect(self.pr.load_py_lists)
+        self.pyfiles.triggered.connect(self.pr.load_py_lists)
         self.settings_menu.addAction(self.pyfiles)
 
         self.asub_preload = QAction('Preload Subject-Data')
@@ -231,6 +231,7 @@ class MainWindow(QMainWindow):
             self.update_project_box()
             self.subject_dock.update_subjects_list()
             self.subject_dock.update_mri_subjects_list()
+            self.subject_dock.ga_widget.update_treew()
 
     def add_project(self):
         # First save the former projects-data
@@ -251,6 +252,7 @@ class MainWindow(QMainWindow):
             self.pr.load_sub_lists()
             self.update_project_box()
             self.subject_dock.update_subjects_list()
+            self.subject_dock.ga_widget.update_treew()
         else:
             pass
 
@@ -330,6 +332,7 @@ class MainWindow(QMainWindow):
             self.pr.populate_directories()
             self.pr.load_sub_lists()
             self.subject_dock.update_subjects_list()
+            self.subject_dock.ga_widget.update_treew()
 
     def update_project_box(self):
         self.project_box.clear()
@@ -384,7 +387,7 @@ class MainWindow(QMainWindow):
 
         pre_func_dict = self.settings.value('checked_funcs')
         del_list = []
-        if pre_func_dict is not None:
+        if pre_func_dict:
             # Check for functions, which have been deleted, but are still present in cache
             for k in pre_func_dict:
                 if k not in self.pd_funcs.index:

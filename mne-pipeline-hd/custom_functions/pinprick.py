@@ -588,7 +588,7 @@ def plot_latency_alignment(layer, lag, n1, n2,
 
     axes[0, 0].plot(g1, label=n1a)
     axes[0, 0].plot(g2, label=n2)
-    if g_avg is not None:
+    if g_avg:
         axes[0, 0].plot(g_avg, label='ab_average')
     axes[0, 0].legend()
     axes[0, 0].set_title(f'GFP\'s')
@@ -600,7 +600,7 @@ def plot_latency_alignment(layer, lag, n1, n2,
     # Plot label-time-courses of postcentral-lh
     axes[1, 0].plot(l1, label=n1b)
     axes[1, 0].plot(l2, label=n2)
-    if l_avg is not None:
+    if l_avg:
         axes[1, 0].plot(l_avg, label='ab_average')
     axes[1, 0].legend()
     axes[1, 0].set_title(f'Label-Time-Course in postcentral-lh')
@@ -651,14 +651,14 @@ def plot_latency_alignment(layer, lag, n1, n2,
 #         save_dir = join(data_path, name)
 
 
-def get_subject_groups(all_files, fuse_ab, unspecified_names):
+def pp_get_subject_groups(mw, pr, all_files, combine_ab):
     files = list()
 
     pre_order_dict = dict()
     order_dict = dict()
     ab_dict = dict()
     comp_dict = dict()
-    grand_avg_dict = dict()
+    avg_dict = dict()
     sub_files_dict = dict()
     cond_dict = dict()
 
@@ -706,7 +706,7 @@ def get_subject_groups(all_files, fuse_ab, unspecified_names):
         match = re.match(basic_pattern, s)
         key = match.group(1) + '_' + match.group(3)
         sub_key = order_dict[key][match.group(2)]
-        if fuse_ab:
+        if combine_ab:
             key = match.group(1)
             if key in comp_dict:
                 if sub_key in comp_dict[key]:
@@ -730,14 +730,14 @@ def get_subject_groups(all_files, fuse_ab, unspecified_names):
     # Make a grand-avg-dict with all files of a modality in one list together
     for s in files:
         match = re.match(basic_pattern, s)
-        if fuse_ab:
+        if combine_ab:
             key = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)]
         else:
             key = order_dict[match.group(1) + '_' + match.group(3)][match.group(2)] + '_' + match.group(3)
-        if key in grand_avg_dict:
-            grand_avg_dict[key].append(s)
+        if key in avg_dict:
+            avg_dict[key].append(s)
         else:
-            grand_avg_dict.update({key: [s]})
+            avg_dict.update({key: [s]})
 
     # Make a dict with all the files for one subject
     for s in files:
@@ -748,10 +748,13 @@ def get_subject_groups(all_files, fuse_ab, unspecified_names):
         else:
             sub_files_dict.update({key: [s]})
 
-    if unspecified_names:
-        grand_avg_dict.update({'Unspecified': all_files})
+    pr.grand_avg_dict = avg_dict
+    pr.ab_dict = ab_dict
+    pr.comp_dict = comp_dict
+    pr.sub_files_dict = sub_files_dict
+    pr.cond_dict = cond_dict
 
-    return ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict
+    mw.subject_dock.ga_widget.update_treew()
 
 
 def pp_file_selection():
@@ -777,3 +780,18 @@ def pp_file_selection():
 
         for df in silenced_files:
             files.remove(df)
+
+
+def pp_load_old_sub_dicts(pr, all_files, sub_dict, erm_dict):
+    new_sub_dict = {}
+    new_erm_dict = {}
+    for file in all_files:
+        for key in sub_dict:
+            if key in file:
+                new_sub_dict.update({file: sub_dict[key]})
+        for key in erm_dict:
+            if key in file:
+                new_erm_dict.update({file: erm_dict[key]})
+
+    pr.sub_dict = new_sub_dict
+    pr.erm_dict = new_erm_dict

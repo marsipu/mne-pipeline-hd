@@ -184,8 +184,8 @@ def call_functions(main_window, project):
             print(f)
 
     # Get dicts grouping the sel_files together depending on their names to allow grand_averaging:
-    ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict = pinprick.get_subject_groups(sel_files, p.combine_ab,
-                                                                                                p.unspecified_names)
+    ab_dict, comp_dict, grand_avg_dict, sub_files_dict, cond_dict = pinprick.pp_get_subject_groups(sel_files, p.combine_ab,
+                                                                                                   p.unspecified_names)
     morphed_data_all = dict(LBT=[], offset=[], lower_R=[], same_R=[], higher_R=[])
 
     if mw.func_dict['plot_ab_combined']:
