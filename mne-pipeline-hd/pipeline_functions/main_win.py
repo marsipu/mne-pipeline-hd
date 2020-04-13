@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
 
         # self.setSizePolicy(QSizePolicy(0, 0))
 
-        QToolTip.setFont(QFont('OldEnglish', 10))
+        QToolTip.setFont(QFont('SansSerif', 10))
         self.change_style('Fusion')
 
         # Prepare Dark-Mode

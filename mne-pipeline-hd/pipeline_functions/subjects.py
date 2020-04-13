@@ -479,6 +479,7 @@ class GrandAvgWidget(QWidget):
         self.layout = QVBoxLayout()
         self.treew = QTreeWidget()
         self.treew.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.treew.itemChanged.connect(self.get_treew)
         self.treew.setColumnCount(1)
         self.treew.setHeaderLabel('Groups:')
         self.layout.addWidget(self.treew)
@@ -503,7 +504,7 @@ class GrandAvgWidget(QWidget):
         for group in self.mw.pr.grand_avg_dict:
             top_item = QTreeWidgetItem()
             top_item.setText(0, group)
-            top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable)
+            top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEditable)
             if group in self.mw.pr.sel_ga_groups:
                 top_item.setCheckState(0, Qt.Checked)
             else:
