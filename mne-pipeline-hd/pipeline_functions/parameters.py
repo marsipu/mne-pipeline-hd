@@ -511,6 +511,7 @@ class SliderGui(Param):
         new_value = self.param_widget.value()
         if self.decimal_count > 0:
             new_value /= 10 ** self.decimal_count
+        self.param_value = new_value
         self.display_widget.setText(str(self.param_value))
         self.save_param()
 
