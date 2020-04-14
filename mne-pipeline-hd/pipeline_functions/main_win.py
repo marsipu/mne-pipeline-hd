@@ -513,7 +513,6 @@ class MainWindow(QMainWindow):
         # msg.setWindowTitle('Executing Functions...')
         # msg.open()
 
-        self.pr.func_dict = self.func_dict
         fc.call_functions(self)
         # msg.close()
         print('Finished Execution')

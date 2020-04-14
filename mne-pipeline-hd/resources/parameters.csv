@@ -31,7 +31,6 @@ erm_noise_cov;erm_noise_cov;True;;;BoolGui;
 calm_noise_cov;calm_noise_cov;False;;Use of a specific time interval in a measurement for noise-covariance;BoolGui;
 erm_ica;erm_ica;False;;Causes sometimes errors;BoolGui;
 inverse_method;inverse_method;dSPM;;;StringGui;
-toi;toi;[0,0.5];;Time of Interest for analysis;ListGui;
 mne_evoked_time;mne_evoked_time;[0.1,0.15,0.2];s;time-points to be displayed in several plots[s];ListGui;
 stc_interactive;stc_interactive;False;;interactive stc-plots;BoolGui;
 mixn_dip;mixn_dip;True;;;BoolGui;

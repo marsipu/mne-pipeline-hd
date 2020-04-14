@@ -19,7 +19,6 @@ class MyProject:
 
         self.parameters = {}
         # Todo: Solution with func-dicts for functions not optimal
-        self.func_dict = mainwin.func_dict
 
         self.get_paths()
         self.make_paths()
