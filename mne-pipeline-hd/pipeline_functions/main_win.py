@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import sys
@@ -9,14 +10,15 @@ from subprocess import run
 import mne
 import pandas as pd
 import qdarkstyle
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import QSettings, QThreadPool, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
-                             QMainWindow, QMessageBox, QPushButton, QScrollArea, QSpinBox, QStyle,
+                             QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSpinBox, QStyle,
                              QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 
-from pipeline_functions import function_call as fc, iswin, parameters
+from pipeline_functions import iswin, parameter_widgets
+from pipeline_functions.function_utils import (Worker, call_functions)
 from pipeline_functions.project import MyProject
 from pipeline_functions.subjects import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock)
 
@@ -34,6 +36,9 @@ def get_upstream():
     print(result.stdout)
 
 
+def print_results(s):
+    print(s)
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -46,7 +51,9 @@ class MainWindow(QMainWindow):
         self.general_layout = QVBoxLayout()
         self.centralWidget().setLayout(self.general_layout)
 
-        # self.setSizePolicy(QSizePolicy(0, 0))
+        # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
+        self.threadpool = QThreadPool()
+        print(f'Multithreading with maximum {self.threadpool.maxThreadCount()} threads')
 
         QToolTip.setFont(QFont('SansSerif', 10))
         self.change_style('Fusion')
@@ -58,11 +65,15 @@ class MainWindow(QMainWindow):
         self.pd_funcs = pd.read_csv(os.getcwd() + '/resources/functions.csv', sep=';', index_col=0)
         self.pd_params = pd.read_csv(os.getcwd() + '/resources/parameters.csv', sep=';', index_col=0)
         self.subject = None
+        self.cancel_functions = False
         self.func_dict = dict()
         self.bt_dict = dict()
 
         # Call project-class
         self.pr = MyProject(self)
+
+        # Set logging
+        logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
 
         # initiate Subject-Dock here to avoid AttributeError
         self.subject_dock = SubjectDock(self)
@@ -463,7 +474,7 @@ class MainWindow(QMainWindow):
             gui_name = parameter['gui_type']
             if type(gui_name) != str:
                 gui_name = 'FuncGui'
-            gui = getattr(parameters, gui_name)
+            gui = getattr(parameter_widgets, gui_name)
             if type(parameter['hint']) is float:
                 hint = ''
             else:
@@ -508,15 +519,22 @@ class MainWindow(QMainWindow):
         self.settings.setValue('geometry', self.saveGeometry())
         self.settings.setValue('checked_funcs', self.func_dict)
 
-        # Todo: Cancel-Button, Progress-Bar for Progress
-        # msg = QDialog(self)
-        # msg.setWindowTitle('Executing Functions...')
-        # msg.open()
+        self.cancel_functions = False
 
-        fc.call_functions(self)
-        # msg.close()
-        print('Finished Execution')
+        self.run_dialog = RunDialog(self)
+
+        worker = Worker(call_functions, self)
+        worker.signals.result.connect(print_results)
+        worker.signals.finished.connect(self.thread_complete)
+        worker.signals.progress_n.connect(self.run_dialog.set_pgbar)
+        worker.signals.progress_s.connect(self.run_dialog.set_label)
+
+        self.threadpool.start(worker)
         # Todo: Introduce logging and print Exceptions to Main-Window
+
+    def thread_complete(self):
+        print('Finished')
+        self.run_dialog.close()
 
     def get_toolbox_params(self):
         # Get n_jobs from settings
@@ -629,3 +647,45 @@ class MainWindow(QMainWindow):
         self.settings.setValue('checked_funcs', self.func_dict)
 
         event.accept()
+
+
+class RunDialog(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+        self.setGeometry(0, 0, 400, 200)
+        self.init_ui()
+        self.center()
+
+        self.open()
+
+    def init_ui(self):
+        self.layout = QVBoxLayout()
+        self.pgbar = QProgressBar()
+        self.pgbar.setValue(0)
+        self.layout.addWidget(self.pgbar)
+        self.label = QLabel('Starting...')
+        self.layout.addWidget(self.label)
+        self.cancel_bt = QPushButton('Cancel')
+        self.cancel_bt.clicked.connect(self.cancel_funcs)
+        self.layout.addWidget(self.cancel_bt)
+        self.setLayout(self.layout)
+
+    def cancel_funcs(self):
+        self.mw.cancel_functions = True
+        self.label.setText('Terminating Pipeline...')
+        # Todo: Close Dialog after all Functions stopped
+        self.close()
+
+    def set_pgbar(self, pgbar_values):
+        self.pgbar.setMaximum(pgbar_values[1])
+        self.pgbar.setValue(pgbar_values[0])
+
+    def set_label(self, text):
+        self.label.setText(text)
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
