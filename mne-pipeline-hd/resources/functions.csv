@@ -39,9 +39,9 @@ plot_transformation;plot_transformation;source_space_plots;True;Plot;;plot;name,
 plot_sensitivity_maps;plot_sensitivity_maps;source_space_plots;True;Plot;;plot;name,save_dir;subjects_dir,figures_path;ch_types,save_plots;
 create_forward_solution;create_forward_solution;source_space_operations;True;Compute;;operations;name,save_dir,subtomri;subjects_dir;source_space_method,overwrite,n_jobs,eeg_fwd;
 create_inverse_operator;create_inverse_operator;source_space_operations;True;Compute;;operations;name,save_dir,ermsub;;highpass,lowpass,overwrite,calm_noise_cov,erm_noise_cov;
-source_estimate;source_estimate;source_space_operations;True;Compute;;operations;name,save_dir;;highpass,lowpass,inverse_method,toi,overwrite;
-vector_source_estimate;vector_source_estimate;source_space_operations;True;Compute;;operations;name,save_dir;;highpass,lowpass,inverse_method,toi,overwrite;
-mixed_norm_estimate;mixed_norm_estimate;source_space_operations;True;Compute;;operations;name,save_dir,ermsub;;highpass,lowpass,toi,inverse_method,erm_noise_cov,calm_noise_cov,event_id,mixn_dip,overwrite;
+source_estimate;source_estimate;source_space_operations;True;Compute;;operations;name,save_dir;;highpass,lowpass,inverse_method,overwrite;
+vector_source_estimate;vector_source_estimate;source_space_operations;True;Compute;;operations;name,save_dir;;highpass,lowpass,inverse_method,overwrite;
+mixed_norm_estimate;mixed_norm_estimate;source_space_operations;True;Compute;;operations;name,save_dir,ermsub;;highpass,lowpass,inverse_method,overwrite;
 ecd_fit;ecd_fit;source_space_operations;True;Compute;;operations;name,save_dir,ermsub,subtomri;subjects_dir,figures_path;highpass,lowpass,erm_noise_cov,calm_noise_cov,ecds,save_plots;
 apply_morph;apply_morph;source_space_operations;True;Compute;;operations;name,save_dir,subtomri;subjects_dir;highpass,lowpass,inverse_method,overwrite,morph_to,source_space_method,event_id;
 apply_morph_normal;apply_morph_normal;source_space_operations;True;Compute;;operations;name,save_dir,subtomri;subjects_dir;highpass,lowpass,inverse_method,overwrite,morph_to,source_space_method,event_id;

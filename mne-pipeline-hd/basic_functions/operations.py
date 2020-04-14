@@ -1563,8 +1563,7 @@ def create_inverse_operator(name, save_dir, highpass, lowpass,
 
 # noinspection PyShadowingNames
 @decor.topline
-def source_estimate(name, save_dir, highpass, lowpass, inverse_method, toi,
-                    overwrite):
+def source_estimate(name, save_dir, highpass, lowpass, inverse_method, overwrite):
     inverse_operator = io.read_inverse_operator(name, save_dir, highpass, lowpass)
     evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
 
@@ -1572,8 +1571,6 @@ def source_estimate(name, save_dir, highpass, lowpass, inverse_method, toi,
     lambda2 = 1.0 / snr ** 2
 
     for evoked in evokeds:
-        # Crop evoked to Time of Interest for Analysis
-        evoked = evoked.crop(toi[0], toi[1])
         trial_type = evoked.comment
 
         stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '_' + inverse_method
@@ -1597,7 +1594,7 @@ def source_estimate(name, save_dir, highpass, lowpass, inverse_method, toi,
 
 
 @decor.topline
-def vector_source_estimate(name, save_dir, highpass, lowpass, inverse_method, toi, overwrite):
+def vector_source_estimate(name, save_dir, highpass, lowpass, inverse_method, overwrite):
     inverse_operator = io.read_inverse_operator(name, save_dir, highpass, lowpass)
     evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
 
@@ -1606,7 +1603,6 @@ def vector_source_estimate(name, save_dir, highpass, lowpass, inverse_method, to
 
     for evoked in evokeds:
         # Crop evoked to Time of Interest for Analysis
-        evoked = evoked.crop(toi[0], toi[1])
         trial_type = evoked.comment
 
         v_stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '_' + inverse_method + '-vector'
@@ -1620,7 +1616,7 @@ def vector_source_estimate(name, save_dir, highpass, lowpass, inverse_method, to
 
 
 @decor.topline
-def mixed_norm_estimate(name, save_dir, highpass, lowpass, toi, inverse_method, erm_noise_cov,
+def mixed_norm_estimate(name, save_dir, highpass, lowpass, inverse_method, erm_noise_cov,
                         ermsub, calm_noise_cov, event_id, mixn_dip, overwrite):
     evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
     forward = io.read_forward(name, save_dir)
@@ -1636,8 +1632,6 @@ def mixed_norm_estimate(name, save_dir, highpass, lowpass, toi, inverse_method, 
         snr = 3.0
         lambda2 = 1.0 / snr ** 2
         for evoked in evokeds:
-            # Crop evoked to Time of Interest for Analysis
-            evoked = evoked.crop(toi[0], toi[1])
             trial_type = evoked.comment
             stcs[trial_type] = mne.minimum_norm.apply_inverse(evoked, inv_op, lambda2, method='dSPM')
             stc_name = name + filter_string(highpass, lowpass) + '_' + trial_type + '_' + inverse_method
@@ -1645,8 +1639,6 @@ def mixed_norm_estimate(name, save_dir, highpass, lowpass, toi, inverse_method, 
             stcs[trial_type].save(stc_path)
 
     for evoked in evokeds:
-        # Crop evoked to Time of Interest for Analysis
-        evoked = evoked.crop(toi[0], toi[1])
         trial_type = evoked.comment
         alpha = 30  # regularization parameter between 0 and 100 (100 is high)
         n_mxne_iter = 10  # if > 1 use L0.5/L2 reweighted mixed norm solver

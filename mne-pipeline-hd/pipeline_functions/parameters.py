@@ -462,7 +462,7 @@ class SliderGui(Param):
         self.param_widget.valueChanged.connect(self.get_param)
 
         self.display_widget = QLineEdit()
-        self.display_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.display_widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
         self.display_widget.setAlignment(Qt.AlignLeft)
         self.display_widget.editingFinished.connect(self.display_edited)
 
