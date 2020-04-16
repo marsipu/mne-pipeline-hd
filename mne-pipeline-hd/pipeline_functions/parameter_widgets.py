@@ -249,6 +249,9 @@ class TupleGui(Param):
         super().__init__(project, param_name, param_alias)
         self.param_name = param_name
         self.param_value = (0, 1)
+
+        self.label = QLabel(self.param_name)
+
         self.param_widget1 = QDoubleSpinBox()
         self.param_widget1.setMinimum(min_val)
         self.param_widget1.setMaximum(max_val)
@@ -268,14 +271,14 @@ class TupleGui(Param):
         if param_unit:
             self.param_widget2.setSuffix(f' {param_unit}')
         self.param_widget2.valueChanged.connect(self.get_param)
+
         self.read_param()
         self.set_param()
         self.init_tuple_layout()
 
     def init_tuple_layout(self):
         layout = QGridLayout()
-        label = QLabel(self.param_name)
-        layout.addWidget(label, 0, 0, 1, 2)
+        layout.addWidget(self.label, 0, 0, 1, 2)
         layout.addWidget(self.param_widget1, 1, 0)
         layout.addWidget(self.param_widget2, 1, 1)
         self.setLayout(layout)
@@ -297,28 +300,29 @@ class TupleGui(Param):
 class CheckTupleGui(TupleGui):
     def __init__(self, project, param_name, param_alias, hint='', min_val=-10., max_val=10.,
                  step=.1, decimals=2, param_unit=None, unchecked_value=None):
+        self.param_name = param_name
         self.unchecked_value = unchecked_value
+        self.param_chkbt = QCheckBox(self.param_name)
+        self.param_chkbt.stateChanged.connect(self.param_checked)
         super().__init__(project, param_name, param_alias, hint, min_val, max_val,
                          step, decimals, param_unit)
 
     def init_tuple_layout(self):
         layout = QGridLayout()
-        self.param_chkbt = QCheckBox(self.param_name)
-        self.param_chkbt.stateChanged.connect(self.param_checked)
         layout.addWidget(self.param_chkbt, 0, 0, 1, 2)
         layout.addWidget(self.param_widget1, 1, 0)
         layout.addWidget(self.param_widget2, 1, 1)
         self.setLayout(layout)
 
     def set_param(self):
-        if self.param_value == None:
+        if self.param_value is None:
             self.param_widget1.setEnabled(False)
             self.param_widget2.setEnabled(False)
         else:
             self.loaded_value = self.param_value
+            self.param_chkbt.setChecked(True)
             self.param_widget1.setValue(self.loaded_value[0])
             self.param_widget2.setValue(self.loaded_value[1])
-
 
     def param_checked(self, state):
         if state:
@@ -447,7 +451,7 @@ class DictGui(Param):
 
     def remove_item(self):
         row = self.param_widget.currentRow()
-        if row:
+        if row is not None:
             self.param_widget.removeRow(row)
         self.get_param()
 

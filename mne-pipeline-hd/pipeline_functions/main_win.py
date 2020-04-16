@@ -557,6 +557,7 @@ class MainWindow(QMainWindow):
         print('Finished')
         self.run_dialog.clear_marks()
         self.run_dialog.close_bt.setEnabled(True)
+        self.run_dialog.set_pgbar({'count': 1, 'max': 1})
 
     def get_toolbox_params(self):
         # Get n_jobs from settings
@@ -735,7 +736,7 @@ class RunDialog(QDialog):
         elif mode == 'file':
             self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
         elif mode == 'ga':
-            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_ga_funcs)
+            self.populate_listw(self.mw.pr.grand_avg_dict, self.mw.sel_ga_funcs)
         else:
             pass
 
