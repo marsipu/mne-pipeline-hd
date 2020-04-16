@@ -58,11 +58,11 @@ class TestMainWindow(QMainWindow):
         plt.show()
 
     def test_matplotlib_figure(self):
-        name = ''
-        save_dir = ''
-        highpass = 1
-        lowpass = 100
-        figures_path = ''
+        name = 'ar'
+        save_dir = '/Users/andrerupp/meg/mne/melody/data/ar'
+        highpass = 1.0
+        lowpass = 80.0
+        figures_path = '/Users/andrerupp/meg/mne/melody/figures'
         figure = plot.plot_evoked_butterfly(name, save_dir, highpass, lowpass, True, figures_path)
 
     def test_mayavi(self):

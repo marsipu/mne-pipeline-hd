@@ -32,6 +32,7 @@ run_ica;run_ica;sensor_space_operations;True;True;Compute;;operations;name,save_
 apply_ica;apply_ica;sensor_space_operations;True;True;Compute;;operations;name,save_dir;;highpass,lowpass,overwrite;
 get_evokeds;Get Evokeds;sensor_space_operations;True;True;Compute;;operations;name,save_dir,ermsub;func_dict;highpass,lowpass,detrend,enable_ica,overwrite;
 get_h1h2_evokeds;get_h1h2_evokeds;sensor_space_operations;True;True;Compute;;operations;name,save_dir,ermsub;func_dict;highpass,lowpass,enable_ica,detrend;
+evokeds_apply_baseline;Evokeds Apply Baseline;custom_functions;True;True;Compute;;melofix;name, save_dir;;highpass, lowpass;
 tfr;tfr;sensor_space_operations;True;True;Compute;;operations;name,save_dir;;highpass,lowpass,enable_ica,tfr_freqs,overwrite_tfr,tfr_method,multitaper_bandwith,stockwell_width,n_jobs;
 estimate_noise_covariance;estimate_noise_covariance;source_space_operations;True;True;Compute;;operations;name,save_dir,ermsub,bad_channels;data_path;highpass,lowpass,overwrite,baseline,n_jobs,erm_noise_cov,calm_noise_cov,enable_ica,erm_ica;
 plot_noise_covariance;plot_noise_covariance;source_space_plots;True;False;Plot;;plot;name,save_dir,ermsub;figures_path;highpass,lowpass,save_plots,erm_noise_cov,calm_noise_cov;

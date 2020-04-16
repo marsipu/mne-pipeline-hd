@@ -582,7 +582,7 @@ def plot_evoked_butterfly(name, save_dir, highpass, lowpass, save_plots,
             print('figure: ' + save_path + ' has been saved')
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
-
+        plt.close(figure)
 
 @decor.topline
 def plot_evoked_white(name, save_dir, highpass, lowpass, save_plots, figures_path, erm_noise_cov, ermsub,

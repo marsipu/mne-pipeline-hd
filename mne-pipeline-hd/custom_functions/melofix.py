@@ -25,7 +25,7 @@ def melofix_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite):
     for n in range(len(events)):
         if events[n, 2] == 58:
             # Fixed Paradigm
-            if events[n - 1, 2] == events[n-2, 2] == events[n-3, 2] == events[n-4, 2]:
+            if events[n - 1, 2] == events[n - 2, 2] == events[n - 3, 2] == events[n - 4, 2]:
                 # Fixed-Onset = 1
                 events[n - 4, 2] = 1
                 # Fixed 2-4
@@ -45,3 +45,14 @@ def melofix_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite):
     print('unique ID\'s assigned: ', ids)
 
     mne.event.write_events(events_path, events)
+
+@decor.topline
+def evokeds_apply_baseline(name, save_dir, highpass, lowpass):
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
+    new_evokeds = []
+    evokeds_name = name + op.filter_string(highpass, lowpass) + '-ave.fif'
+    evokeds_path = join(save_dir, evokeds_name)
+    for evoked in evokeds:
+        evoked = evoked.apply_baseline((-0.1, 0))
+        new_evokeds.append(evoked)
+    mne.write_evokeds(evokeds_path, new_evokeds)

@@ -7,7 +7,7 @@ lowpass;Lowpass-Cutoff;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val':
 erm_t_limit;erm_t_limit;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
 adjust_timeline_by_msec;Adjust Time;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;DurationEpochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
-baseline;baseline;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val':0}
+baseline;baseline;(-0.5,0);s;start and end of baseline;CheckTupleGui;{'max_val':0, 'unchecked_value': None}
 enable_ica;enable_ica;False;;Use ica-epochs, create 1Hz-Highpass-Raw if not existent;BoolGui;
 autoreject;autoreject;False;;set True to use autoreject;BoolGui;
 overwrite_ar;overwrite_ar;False;;if to calculate new threshold sort ouse previously calculated;BoolGui;

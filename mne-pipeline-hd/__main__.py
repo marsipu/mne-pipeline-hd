@@ -13,7 +13,9 @@ import matplotlib
 from pipeline_functions import ismac
 
 if ismac:
-    matplotlib.use('MacOSX')
+    matplotlib.use('macosx')
+from matplotlib import pyplot as plt
+# plt.ion()
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication
