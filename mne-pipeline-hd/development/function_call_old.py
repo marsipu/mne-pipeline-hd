@@ -7,7 +7,7 @@ from os.path import isfile, join
 
 import pandas as pd
 
-from basic_functions import io, operations, plot
+from basic_functions import loading, operations, plot
 from custom_functions import kristin, melofix, pinprick
 from pipeline_functions import subjects as subs, utilities as ut
 from pipeline_functions.subjects import CurrentMRISubject
@@ -201,7 +201,7 @@ def call_functions(main_window, project):
         save_dir = join(pr.data_path, name)
 
         if p.print_info:
-            info = io.read_info(name, save_dir)
+            info = loading.read_info(name, save_dir)
             print(info)
         # Todo: Somehow include check in Subject and manage pause execution (threading)
         try:

@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QComboBox, QDialog, QD
     QPushButton, QStyle, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage
 from matplotlib import pyplot as plt
 
-from basic_functions import io
+from basic_functions import loading
 
 
 # Todo: Adapt File-Structure to (MEG)-BIDS-Standards
@@ -38,46 +38,37 @@ class CurrentSubject:
             self.ermsub = self.mw.pr.erm_dict[name]
         except KeyError as k:
             print(f'No erm_measurement assigned for {k}')
-            # self.dialog_open = True
-            # erm_dict_dialog = SubDictDialog(self.mw, 'erm')
-            # erm_dict_dialog.finished.connect(self.dialog_closed)
-            self.dict_error = True
+            raise RuntimeError(f'No erm_measurement assigned for {k}')
         try:
             self.subtomri = self.mw.pr.sub_dict[name]
         except KeyError as k:
             print(f'No mri_subject assigned to {k}')
-            # self.dialog_open = True
-            # mri_dict_dialog = SubDictDialog(self.mw, 'mri')
-            # mri_dict_dialog.finished.connect(self.dialog_closed)
-            self.dict_error = True
+            raise RuntimeError(f'No mri_subject assigned to {k}')
         try:
             self.bad_channels = self.mw.pr.bad_channels_dict[name]
         except KeyError as k:
             print(f'No bad channels for {k}')
-            # self.dialog_open = True
-            # bad_chan_dialog = BadChannelsSelect(self.mw)
-            # bad_chan_dialog.finished.connect(self.dialog_closed)
-            self.dict_error = True
+            raise RuntimeError(f'No bad channels for {k}')
 
     def preload_data(self):
         try:
-            self.info = io.read_info(self.name, self.save_dir)
+            self.info = loading.read_info(self.name, self.save_dir)
         except FileNotFoundError:
             pass
         try:
-            self.raw_filtered = io.read_filtered(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
+            self.raw_filtered = loading.read_filtered(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
         except FileNotFoundError:
             pass
         try:
-            self.events = io.read_events(self.name, self.save_dir)
+            self.events = loading.read_events(self.name, self.save_dir)
         except FileNotFoundError:
             pass
         try:
-            self.epochs = io.read_epochs(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
+            self.epochs = loading.read_epochs(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
         except FileNotFoundError:
             pass
         try:
-            self.evokeds = io.read_evokeds(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
+            self.evokeds = loading.read_evokeds(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
         except FileNotFoundError:
             pass
 
@@ -1397,7 +1388,7 @@ class SubBadsWidget(QWidget):
         dialog = QDialog(self)
         dialog.setWindowTitle('Opening...')
         dialog.open()
-        self.raw = io.read_raw(self.name, join(self.mw.pr.data_path, self.name))
+        self.raw = loading.read_raw(self.name, join(self.mw.pr.data_path, self.name))
         if self.name in self.mw.pr.bad_channels_dict:
             self.raw.info['bads'] = self.mw.pr.bad_channels_dict[self.name]
         self.raw_fig = self.raw.plot(n_channels=30, bad_color='red',

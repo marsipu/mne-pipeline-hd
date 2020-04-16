@@ -4,12 +4,12 @@ import traceback
 
 from PyQt5.QtCore import QObject, QRunnable, pyqtSignal, pyqtSlot
 
-from basic_functions import io, operations, plot
+from basic_functions import loading, operations, plot
 from custom_functions import kristin, melofix, pinprick
 from pipeline_functions.subjects import CurrentMRISubject, CurrentSubject
 
 # Avoid deletion of import with "Customize Imports" from PyCharm
-all_func_modules = [io, operations, plot, kristin, melofix, pinprick]
+all_func_modules = [loading, operations, plot, kristin, melofix, pinprick]
 
 
 class WorkerSignals(QObject):
@@ -29,9 +29,11 @@ class WorkerSignals(QObject):
     """
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
-    result = pyqtSignal(object)
-    progress_n = pyqtSignal(tuple)
-    progress_s = pyqtSignal(str)
+    pgbar_n = pyqtSignal(dict)
+    pg_sub = pyqtSignal(str)
+    pg_func = pyqtSignal(str)
+    pg_which_loop = pyqtSignal(str)
+    func_sig = pyqtSignal(dict)
 
 
 class Worker(QRunnable):
@@ -58,8 +60,11 @@ class Worker(QRunnable):
         self.signals = WorkerSignals()
 
         # Add the callback to our kwargs
-        self.kwargs['progress_n'] = self.signals.progress_n
-        self.kwargs['progress_s'] = self.signals.progress_s
+        self.kwargs['pgbar_n'] = self.signals.pgbar_n
+        self.kwargs['pg_sub'] = self.signals.pg_sub
+        self.kwargs['pg_func'] = self.signals.pg_func
+        self.kwargs['pg_which_loop'] = self.signals.pg_which_loop
+        self.kwargs['func_sig'] = self.signals.func_sig
 
     @pyqtSlot()
     def run(self):
@@ -75,28 +80,26 @@ class Worker(QRunnable):
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, traceback.format_exc()))
-        else:
-            self.signals.result.emit(result)  # Return the result of the processing
         finally:
             self.signals.finished.emit()  # Done
 
 
-def func_from_def(func_name, pd_funcs, subject, project, parameters, main_win):
-    module_name = pd_funcs['module'][func_name]
+def func_from_def(func_name, subject, main_win):
+    module_name = main_win.pd_funcs['module'][func_name]
 
     # Read Listitems from Strings from functions.csv
-    subarg_string = pd_funcs['subject_args'][func_name]
+    subarg_string = main_win.pd_funcs['subject_args'][func_name]
     # nan (float) returned for empty csv-cells
     if type(subarg_string) is not float:
         subarg_names = subarg_string.split(',')
     else:
         subarg_names = []
-    proarg_string = pd_funcs['project_args'][func_name]
+    proarg_string = main_win.pd_funcs['project_args'][func_name]
     if type(proarg_string) is not float:
         proarg_names = proarg_string.split(',')
     else:
         proarg_names = []
-    addarg_string = pd_funcs['additional_args'][func_name]
+    addarg_string = main_win.pd_funcs['additional_args'][func_name]
     if type(addarg_string) is not float:
         addarg_names = addarg_string.split(',')
     else:
@@ -107,7 +110,7 @@ def func_from_def(func_name, pd_funcs, subject, project, parameters, main_win):
         subject_attributes = vars(subject)
     else:
         subject_attributes = {}
-    project_attributes = vars(project)
+    project_attributes = vars(main_win.pr)
 
     keyword_arguments = dict()
 
@@ -117,7 +120,7 @@ def func_from_def(func_name, pd_funcs, subject, project, parameters, main_win):
         if subarg_name == 'mw':
             keyword_arguments.update({'mw': main_win})
         elif subarg_name == 'pr':
-            keyword_arguments.update({'pr': project})
+            keyword_arguments.update({'pr': main_win.pr})
         else:
             try:
                 keyword_arguments.update({subarg_name: subject_attributes[subarg_name]})
@@ -134,7 +137,7 @@ def func_from_def(func_name, pd_funcs, subject, project, parameters, main_win):
         # Remove trailing spaces
         addarg_name = addarg_name.replace(' ', '')
         try:
-            keyword_arguments.update({addarg_name: parameters[addarg_name]})
+            keyword_arguments.update({addarg_name: main_win.pr.parameters[addarg_name]})
         except KeyError:
             print(addarg_name + ' not in Parameters')
 
@@ -146,49 +149,42 @@ def func_from_def(func_name, pd_funcs, subject, project, parameters, main_win):
     return return_value
 
 
-def call_functions(main_window, progress_n, progress_s):
+def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
     """
     Call activated functions in main_window, read function-parameters from functions_empty.csv
-    :param main_window: Main-Window-Instance
-    :param progress_n: Signal, which emits a tuple to show overall progress (current, max)
-    :param progress_s: Signal, which emits a string to show current executed function
-
+    :param main_win: Main-Window-Instance
+    :param pgbar_n: Signal, which emits a tuple to show overall progress (current, max)
+    :param pg_sub: Signal, which emitas a string to show current sub
+    :param pg_func: Signal, which emits a string to show current executed function
+    :param pg_which_loop: Signal, which emits a string to show RunDialog which files and funcs to display
+    :param func_sig: Signal, which is used to emit strings for calling plot-functions outside the QThread
     """
-    mw = main_window
 
-    # Call the functions for selected MRI-subjects
-    mri_subjects = mw.pr.sel_mri_files
-    mri_ops = mw.pd_funcs[mw.pd_funcs['group'] == 'mri_subject_operations'].T
-    sel_mri_funcs = [mf for mf in mri_ops if mw.func_dict[mf]]
+    # Determine steps in progress for all selected subjects and functions
+    mri_prog = len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs)
+    file_prog = len(main_win.pr.sel_files) * len(main_win.sel_file_funcs)
+    ga_prog = len(main_win.sel_grand_avg_funcs)
 
-    # Lists for File-Funcs
-    sel_files = mw.pr.sel_files
-    file_funcs = mw.pd_funcs[mw.pd_funcs['group'] != 'mri_subject_operations']
-    file_funcs = file_funcs[file_funcs['subject_loop'] == True].T
-    sel_file_funcs = [ff for ff in file_funcs if mw.func_dict[ff]]
-
-    grand_avg_funcs = mw.pd_funcs[mw.pd_funcs['subject_loop'] == False].T
-    sel_grand_avg_funcs = [gf for gf in grand_avg_funcs if mw.func_dict[gf]]
-
-    all_prog = len(mri_subjects) * len(sel_mri_funcs) + len(sel_files) * len(sel_file_funcs) + len(sel_grand_avg_funcs)
+    all_prog = mri_prog + file_prog + ga_prog
     count = 1
-    # Check if any mri_subject_operation is selected and any mri-subject is selected
-    if len(mri_subjects) * len(sel_mri_funcs) > 0:
-        print(f'Selected {len(mri_subjects)} MRI-Subjects:')
-        for i in mri_subjects:
-            print(i)
-        for mri_subject in mri_subjects:
-            if not mw.cancel_functions:
-                print('=' * 60 + '\n', mri_subject)
-                prog = round((mri_subjects.index(mri_subject)) / len(mri_subjects) * 100, 2)
-                print(f'Progress: {prog} %')
 
-                msub = CurrentMRISubject(mri_subject, mw)
-                for mri_func in sel_mri_funcs:
-                    if not mw.cancel_functions:
-                        progress_s.emit(f'{mri_subject}: {mri_func}')
-                        func_from_def(mri_func, mw.pd_funcs, msub, mw.pr, mw.pr.parameters, mw)
-                        progress_n.emit((count, all_prog))
+    # Check if any mri_subject_operation is selected and any mri-subject is selected
+    if mri_prog > 0:
+        pg_which_loop.emit('mri')
+        for mri_subject in main_win.pr.sel_mri_files:
+            if not main_win.cancel_functions:
+                msub = CurrentMRISubject(mri_subject, main_win)
+                # Print Subject Console Header
+                print('=' * 60 + '\n', mri_subject)
+                pg_sub.emit(mri_subject)
+                for mri_func in main_win.sel_mri_funcs:
+                    if not main_win.cancel_functions:
+                        pg_func.emit(mri_func)
+                        if main_win.pd_funcs.loc[mri_func]['QThreading']:
+                            func_from_def(mri_func, msub, main_win)
+                        else:
+                            func_sig.emit({'func_name': mri_func, 'subject': subject, 'main_win': main_win})
+                        pgbar_n.emit({'count': count, 'max': all_prog})
                         count += 1
                     else:
                         break
@@ -199,34 +195,29 @@ def call_functions(main_window, progress_n, progress_s):
 
     # Call the functions for selected Files
     # Todo: Account for call-order (idx, group-idx)
-    if len(sel_files) * len(sel_file_funcs) > 0:
-        print(f'Selected {len(sel_files)} Subjects:')
-        for f in sel_files:
-            print(f)
-        for name in sel_files:
-            if not mw.cancel_functions:
-                mw.subject = CurrentSubject(name, mw)
-                # Todo: Enable continuation of program after correction of missing Subject-Assignments
-                if mw.subject.dict_error:
-                    break
-                else:
-                    # Check preload-setting
-                    if mw.settings.value('sub_preload', defaultValue=False) == 'true':
-                        mw.subject.preload_data()
-
-                    # Print Subject Console Header
-                    print(60 * '=' + '\n' + name)
-                    prog = round((sel_files.index(name)) / len(sel_files) * 100, 2)
-                    print(f'Progress: {prog} %')
-
-                    for func in sel_file_funcs:
-                        if not mw.cancel_functions:
-                            progress_s.emit(f'{name}: {func}')
-                            func_from_def(func, mw.pd_funcs, mw.subject, mw.pr, mw.pr.parameters, mw)
-                            progress_n.emit((count, all_prog))
-                            count += 1
+    if file_prog > 0:
+        pg_which_loop.emit('file')
+        for name in main_win.pr.sel_files:
+            if not main_win.cancel_functions:
+                pg_sub.emit(name)
+                subject = CurrentSubject(name, main_win)
+                main_win.subject = subject
+                # Check preload-setting
+                if main_win.settings.value('sub_preload', defaultValue=False) == 'true':
+                    main_win.subject.preload_data()
+                # Print Subject Console Header
+                print(60 * '=' + '\n' + name)
+                for func in main_win.sel_file_funcs:
+                    if not main_win.cancel_functions:
+                        pg_func.emit(func)
+                        if main_win.pd_funcs.loc[func]['QThreading']:
+                            func_from_def(func, subject, main_win)
                         else:
-                            break
+                            func_sig.emit({'func_name': func, 'subject': subject, 'main_win': main_win})
+                        pgbar_n.emit({'count': count, 'max': all_prog})
+                        count += 1
+                    else:
+                        break
             else:
                 break
 
@@ -234,11 +225,16 @@ def call_functions(main_window, progress_n, progress_s):
         print('No Subject or Function selected')
 
     # Call functions outside the subject-loop
-    for func in sel_grand_avg_funcs:
-        if not mw.cancel_functions:
-            progress_n.emit((count, all_prog))
-            progress_s.emit(f'{func}')
-            func_from_def(func, mw.pd_funcs, mw.subject, mw.pr, mw.pr.parameters, mw)
-            count += 1
-        else:
-            break
+    if ga_prog > 0:
+        pg_which_loop.emit('ga')
+        for func in main_win.sel_grand_avg_funcs:
+            if not main_win.cancel_functions:
+                pg_func.emit(func)
+                if main_win.pd_funcs.loc[func]['QThreading']:
+                    func_from_def(func, None, main_win)
+                else:
+                    func_sig.emit({'func_name': func, 'subject': None, 'main_win': main_win})
+                pgbar_n.emit({'count': count, 'max': all_prog})
+                count += 1
+            else:
+                break

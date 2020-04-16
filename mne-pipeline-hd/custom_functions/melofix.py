@@ -3,7 +3,7 @@ from os.path import join
 import mne
 import numpy as np
 
-from basic_functions import io, operations as op
+from basic_functions import loading, operations as op
 from pipeline_functions import decorators as decor
 
 
@@ -13,11 +13,11 @@ def melofix_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite):
     events_path = join(save_dir, events_name)
 
     try:
-        events = io.read_events(name, save_dir)
+        events = loading.read_events(name, save_dir)
     except FileNotFoundError:
         print('No events found, running find_events...')
         op.find_events(name, save_dir, adjust_timeline_by_msec, overwrite)
-        events = io.read_events(name, save_dir)
+        events = loading.read_events(name, save_dir)
 
     assert len(events) != 0, 'No events found'
 
