@@ -163,7 +163,7 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
     # Determine steps in progress for all selected subjects and functions
     mri_prog = len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs)
     file_prog = len(main_win.pr.sel_files) * len(main_win.sel_file_funcs)
-    ga_prog = len(main_win.sel_grand_avg_funcs)
+    ga_prog = len(main_win.sel_ga_funcs)
 
     all_prog = mri_prog + file_prog + ga_prog
     count = 1
@@ -227,7 +227,7 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
     # Call functions outside the subject-loop
     if ga_prog > 0:
         pg_which_loop.emit('ga')
-        for func in main_win.sel_grand_avg_funcs:
+        for func in main_win.sel_ga_funcs:
             if not main_win.cancel_functions:
                 pg_func.emit(func)
                 if main_win.pd_funcs.loc[func]['QThreading']:

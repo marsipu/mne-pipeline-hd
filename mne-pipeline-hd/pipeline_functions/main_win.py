@@ -1,5 +1,4 @@
 import logging
-import logging
 import os
 import shutil
 import sys
@@ -53,9 +52,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(QWidget(self))
         self.general_layout = QVBoxLayout()
         self.centralWidget().setLayout(self.general_layout)
-
-        # Redirect stdout to capture it
-        sys.stdout = OutputStream()
 
         # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
         self.threadpool = QThreadPool()
@@ -538,9 +534,12 @@ class MainWindow(QMainWindow):
                                         & (self.pd_funcs['subject_loop'] == True)]
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.func_dict[ff]]
         self.grand_avg_funcs = self.pd_funcs[self.pd_funcs['subject_loop'] == False]
-        self.sel_grand_avg_funcs = [gf for gf in self.grand_avg_funcs.index if self.func_dict[gf]]
+        self.sel_ga_funcs = [gf for gf in self.grand_avg_funcs.index if self.func_dict[gf]]
 
         self.run_dialog = RunDialog(self)
+
+        # Redirect stdout to capture it
+        sys.stdout = OutputStream()
         sys.stdout.text_written.connect(self.run_dialog.update_label)
 
         worker = Worker(call_functions, self)
@@ -732,7 +731,7 @@ class RunDialog(QDialog):
 
     def populate(self, mode):
         if mode == 'mri':
-            self.populate_listw(self.mw.pr.sel_mri_files, self.self.mw.sel_mri_funcs)
+            self.populate_listw(self.mw.pr.sel_mri_files, self.mw.sel_mri_funcs)
         elif mode == 'file':
             self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
         elif mode == 'ga':
