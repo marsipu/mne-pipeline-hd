@@ -169,7 +169,7 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
     count = 1
 
     # Check if any mri_subject_operation is selected and any mri-subject is selected
-    if mri_prog > 0:
+    if len(main_win.pr.sel_mri_files) > 0:
         pg_which_loop.emit('mri')
         for mri_subject in main_win.pr.sel_mri_files:
             if not main_win.cancel_functions:
@@ -183,7 +183,7 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
                         if main_win.pd_funcs.loc[mri_func]['QThreading']:
                             func_from_def(mri_func, msub, main_win)
                         else:
-                            func_sig.emit({'func_name': mri_func, 'subject': subject, 'main_win': main_win})
+                            func_sig.emit({'func_name': mri_func, 'subject': msub, 'main_win': main_win})
                         pgbar_n.emit({'count': count, 'max': all_prog})
                         count += 1
                     else:
@@ -195,7 +195,7 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
 
     # Call the functions for selected Files
     # Todo: Account for call-order (idx, group-idx)
-    if file_prog > 0:
+    if len(main_win.pr.sel_files) > 0:
         pg_which_loop.emit('file')
         for name in main_win.pr.sel_files:
             if not main_win.cancel_functions:
