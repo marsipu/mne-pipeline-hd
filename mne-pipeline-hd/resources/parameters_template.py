@@ -5,7 +5,7 @@ enable_cuda = False
 shutdown = False
 
 # raw
-predefined_bads = [6, 7, 8, 26, 27, 103]  # Default bad channels
+predefined_bads = []  # Default bad channels
 eog_digitized = False  # Set True, if the last 4 digitized points where EOG
 ch_types = ['grad']
 lowpass = 100  # Hz
@@ -20,7 +20,7 @@ adjust_timeline_by_msec = 0  # custom delay to stimulus in ms
 # Leave baseline at -0.100 to allow shift
 etmin = -0.500  # start of epoch [s]
 etmax = 1.500  # end of epoch [s]
-baseline = (-0.500, 0)  # has to be a tuple [s]
+baseline = (-0.100, 0)  # has to be a tuple [s]
 enable_ica = False  # Use ica-epochs, create 1Hz-Highpass-Raw if not existent
 autoreject = False  # set True to use autoreject
 overwrite_ar = False  # if to calculate new thresholds or to use previously calculated
@@ -50,7 +50,7 @@ source_space_method = 'ico5'  # See the MNE-Documentation for further details
 eeg_fwd = False  # set True if working with EEG-Data
 
 # source reconstruction
-erm_noise_cov = True
+erm_noise_cov = False
 calm_noise_cov = False  # Use of a specific time interval in a measurement for noise covariance
 erm_ica = False  # Causes sometimes errors
 inverse_method = 'dSPM'

@@ -310,11 +310,26 @@ class CheckTupleGui(TupleGui):
         layout.addWidget(self.param_widget2, 1, 1)
         self.setLayout(layout)
 
+    def set_param(self):
+        if self.param_value == None:
+            self.param_widget1.setEnabled(False)
+            self.param_widget2.setEnabled(False)
+        else:
+            self.loaded_value = self.param_value
+            self.param_widget1.setValue(self.loaded_value[0])
+            self.param_widget2.setValue(self.loaded_value[1])
+
+
     def param_checked(self, state):
         if state:
-            pass
+            self.param_widget1.setEnabled(True)
+            self.param_widget2.setEnabled(True)
+            self.get_param()
         else:
+            self.param_widget1.setEnabled(False)
+            self.param_widget2.setEnabled(False)
             self.param_value = self.unchecked_value
+            self.save_param()
 
 
 class ListGui(Param):

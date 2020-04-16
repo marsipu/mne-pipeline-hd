@@ -558,7 +558,6 @@ class MainWindow(QMainWindow):
         print('Finished')
         self.run_dialog.clear_marks()
         self.run_dialog.close_bt.setEnabled(True)
-        sys.stdout = sys.__stdout__
 
     def get_toolbox_params(self):
         # Get n_jobs from settings
