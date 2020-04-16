@@ -1,4 +1,5 @@
 import logging
+import logging
 import os
 import shutil
 import sys
@@ -10,15 +11,16 @@ from subprocess import run
 import mne
 import pandas as pd
 import qdarkstyle
-from PyQt5.QtCore import QSettings, QThreadPool, Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
+from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
-                             QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSpinBox, QStyle,
-                             QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
+                             QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSpinBox,
+                             QStyle,
+                             QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 
 from pipeline_functions import iswin, parameter_widgets
-from pipeline_functions.function_utils import (Worker, call_functions)
+from pipeline_functions.function_utils import (Worker, call_functions, func_from_def)
 from pipeline_functions.project import MyProject
 from pipeline_functions.subjects import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock)
 
@@ -36,8 +38,9 @@ def get_upstream():
     print(result.stdout)
 
 
-def print_results(s):
-    print(s)
+def thread_func(kwargs):
+    func_from_def(**kwargs)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -50,6 +53,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(QWidget(self))
         self.general_layout = QVBoxLayout()
         self.centralWidget().setLayout(self.general_layout)
+
+        # Redirect stdout to capture it
+        sys.stdout = OutputStream()
 
         # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
         self.threadpool = QThreadPool()
@@ -496,6 +502,10 @@ class MainWindow(QMainWindow):
         start_bt = QPushButton('Start', self)
         stop_bt = QPushButton('Quit', self)
 
+        clear_bt.setFont(QFont('Times', 18))
+        start_bt.setFont(QFont('Times', 18))
+        stop_bt.setFont(QFont('Times', 18))
+
         main_bt_layout.addWidget(clear_bt)
         main_bt_layout.addWidget(start_bt)
         main_bt_layout.addWidget(stop_bt)
@@ -521,20 +531,34 @@ class MainWindow(QMainWindow):
 
         self.cancel_functions = False
 
+        # Lists of selected functions
+        self.mri_funcs = self.pd_funcs[self.pd_funcs['group'] == 'mri_subject_operations']
+        self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.func_dict[mf]]
+        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'mri_subject_operations')
+                                        & (self.pd_funcs['subject_loop'] == True)]
+        self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.func_dict[ff]]
+        self.grand_avg_funcs = self.pd_funcs[self.pd_funcs['subject_loop'] == False]
+        self.sel_grand_avg_funcs = [gf for gf in self.grand_avg_funcs.index if self.func_dict[gf]]
+
         self.run_dialog = RunDialog(self)
+        sys.stdout.text_written.connect(self.run_dialog.update_label)
 
         worker = Worker(call_functions, self)
-        worker.signals.result.connect(print_results)
+        worker.signals.error.connect(self.run_dialog.show_errors)
         worker.signals.finished.connect(self.thread_complete)
-        worker.signals.progress_n.connect(self.run_dialog.set_pgbar)
-        worker.signals.progress_s.connect(self.run_dialog.set_label)
+        worker.signals.pgbar_n.connect(self.run_dialog.set_pgbar)
+        worker.signals.pg_which_loop.connect(self.run_dialog.populate)
+        worker.signals.pg_sub.connect(self.run_dialog.mark_sub)
+        worker.signals.pg_func.connect(self.run_dialog.mark_func)
+        worker.signals.func_sig.connect(thread_func)
 
         self.threadpool.start(worker)
-        # Todo: Introduce logging and print Exceptions to Main-Window
 
     def thread_complete(self):
         print('Finished')
-        self.run_dialog.close()
+        self.run_dialog.clear_marks()
+        self.run_dialog.close_bt.setEnabled(True)
+        sys.stdout = sys.__stdout__
 
     def get_toolbox_params(self):
         # Get n_jobs from settings
@@ -653,39 +677,127 @@ class RunDialog(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
-        self.setGeometry(0, 0, 400, 200)
+
+        desk_geometry = self.mw.app.desktop().availableGeometry()
+        self.size_ratio = 0.6
+        height = desk_geometry.height() * self.size_ratio
+        width = desk_geometry.width() * self.size_ratio
+        self.setGeometry(0, 0, width, height)
+        self.center()
+
+        self.current_sub = None
+        self.current_func = None
+
         self.init_ui()
         self.center()
 
         self.open()
 
     def init_ui(self):
-        self.layout = QVBoxLayout()
+        self.layout = QGridLayout()
+
+        self.sub_listw = QListWidget()
+        self.layout.addWidget(self.sub_listw, 0, 0)
+        self.func_listw = QListWidget()
+        self.layout.addWidget(self.func_listw, 0, 1)
+        self.console_widget = QTextEdit()
+        self.console_widget.setReadOnly(True)
+        self.layout.addWidget(self.console_widget, 1, 0, 1, 2)
+
         self.pgbar = QProgressBar()
         self.pgbar.setValue(0)
-        self.layout.addWidget(self.pgbar)
-        self.label = QLabel('Starting...')
-        self.layout.addWidget(self.label)
+        self.layout.addWidget(self.pgbar, 2, 0, 1, 2)
+
         self.cancel_bt = QPushButton('Cancel')
+        self.cancel_bt.setFont(QFont('Times', 14))
         self.cancel_bt.clicked.connect(self.cancel_funcs)
-        self.layout.addWidget(self.cancel_bt)
+        self.layout.addWidget(self.cancel_bt, 3, 0)
+
+        self.close_bt = QPushButton('Close')
+        self.close_bt.setFont(QFont('Times', 14))
+        self.close_bt.setEnabled(False)
+        self.close_bt.clicked.connect(self.close)
+        self.layout.addWidget(self.close_bt, 3, 1)
+
         self.setLayout(self.layout)
 
     def cancel_funcs(self):
         self.mw.cancel_functions = True
-        self.label.setText('Terminating Pipeline...')
-        # Todo: Close Dialog after all Functions stopped
-        self.close()
+        self.console_widget.insertPlainText('Terminating Pipeline...')
+        self.console_widget.ensureCursorVisible()
+        self.close_bt.setEnabled(True)
 
     def set_pgbar(self, pgbar_values):
-        self.pgbar.setMaximum(pgbar_values[1])
-        self.pgbar.setValue(pgbar_values[0])
+        self.pgbar.setMaximum(pgbar_values['max'])
+        self.pgbar.setValue(pgbar_values['count'])
 
-    def set_label(self, text):
-        self.label.setText(text)
+    def populate(self, mode):
+        if mode == 'mri':
+            self.populate_listw(self.mw.pr.sel_mri_files, self.self.mw.sel_mri_funcs)
+        elif mode == 'file':
+            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
+        elif mode == 'ga':
+            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_ga_funcs)
+        else:
+            pass
+
+    def populate_listw(self, files, funcs):
+        for file in files:
+            item = QListWidgetItem(file)
+            item.setFlags(Qt.ItemIsEnabled)
+            self.sub_listw.addItem(item)
+        for func in funcs:
+            item = QListWidgetItem(func)
+            item.setFlags(Qt.ItemIsEnabled)
+            self.func_listw.addItem(item)
+
+    def mark_sub(self, sub):
+        if self.current_sub is not None:
+            self.current_sub.setBackground(QColor('white'))
+
+        self.current_sub = self.sub_listw.findItems(sub, Qt.MatchExactly)[0]
+        self.current_sub.setBackground(QColor('green'))
+
+    def mark_func(self, func):
+        if self.current_func is not None:
+            self.current_func.setBackground(QColor('white'))
+
+        self.current_func = self.func_listw.findItems(func, Qt.MatchExactly)[0]
+        self.current_func.setBackground(QColor('green'))
+
+    def clear_marks(self):
+        self.current_sub.setBackground(QColor('white'))
+        self.current_func.setBackground(QColor('white'))
+
+    def update_label(self, text):
+        self.console_widget.insertPlainText(text)
+        self.console_widget.ensureCursorVisible()
 
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+    def show_errors(self, err):
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle('An Error ocurred!')
+        msg_box.setTextFormat(Qt.AutoText)
+        msg_box.setText(f'<b><big>{err[1]}</b></big><br>'
+                        f'{err[2]}')
+        msg_box.open()
+
+
+class OutputStream(QObject):
+    text_written = pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def write(self, text):
+        sys.__stdout__.write(text)
+        self.text_written.emit(text)
+
+    def flush(self):
+        pass

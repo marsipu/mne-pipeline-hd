@@ -14,11 +14,12 @@ class MyProject:
     A class with attributes for all the paths and parameters of the selected project
     """
 
-    def __init__(self, mainwin):
-        self.mw = mainwin
+    def __init__(self, main_win):
+        self.mw = main_win
 
         self.parameters = {}
         # Todo: Solution with func-dicts for functions not optimal
+        self.func_dict = main_win.func_dict
 
         self.get_paths()
         self.make_paths()

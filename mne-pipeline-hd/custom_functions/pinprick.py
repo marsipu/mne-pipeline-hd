@@ -6,7 +6,7 @@ import mne
 import numpy as np
 from matplotlib import pyplot as plt
 
-from basic_functions import io, operations as op, plot as plot
+from basic_functions import loading, operations as op, plot as plot
 from pipeline_functions import decorators as decor, utilities as ut
 
 
@@ -17,7 +17,7 @@ def add_motor_erm_files():
 
 @decor.topline
 def pp_eog_digitize_handling(name, save_dir, highpass, lowpass, project):
-    raw = io.read_filtered(name, save_dir, highpass, lowpass)
+    raw = loading.read_filtered(name, save_dir, highpass, lowpass)
     eeg_in_data = False
     for ch in raw.info['chs']:
         if ch['kind'] == 2:
@@ -46,11 +46,11 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
     events_path = join(save_dir, events_name)
 
     try:
-        events = io.read_events(name, save_dir)
+        events = loading.read_events(name, save_dir)
     except FileNotFoundError:
         print('No events found, running find_events...')
         op.find_events(name, save_dir, adjust_timeline_by_msec, overwrite)
-        events = io.read_events(name, save_dir)
+        events = loading.read_events(name, save_dir)
 
     assert len(events) != 0, 'No events found'
 
@@ -174,7 +174,7 @@ def pp_combine_evokeds_ab(data_path, save_dir_averages, highpass, lowpass, ab_di
         trials = set()
         for name in ab_dict[title]:
             save_dir = join(data_path, name)
-            evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+            evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
             channels.append(set(evokeds[0].ch_names))
             for evoked in evokeds:
                 trial = evoked.comment
@@ -219,17 +219,17 @@ def pp_alignment(ab_dict, cond_dict, sub_dict, data_path, highpass, lowpass, psc
         match = re.match(pattern, title)
         prefix = match.group()
         subtomri = sub_dict[prefix]
-        src = io.read_source_space(subtomri, subjects_dir, source_space_method)
+        src = loading.read_source_space(subtomri, subjects_dir, source_space_method)
         cond = cond_dict[ab_dict[title][0]]
         for name in ab_dict[title]:
             # Assumes, that first evoked in evokeds is LBT
             save_dir = join(data_path, name)
-            e = io.read_evokeds(name, save_dir, highpass, lowpass)[0]
+            e = loading.read_evokeds(name, save_dir, highpass, lowpass)[0]
             e.crop(-0.1, 0.3)
             gfp = op.calculate_gfp(e)
             ab_gfp_data[name] = gfp
 
-            n_stc = io.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method, event_id)['LBT']
+            n_stc = loading.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method, event_id)['LBT']
             labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir, parc=parcellation)
             label = None
             for l in labels:

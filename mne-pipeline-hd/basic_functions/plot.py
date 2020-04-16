@@ -26,7 +26,7 @@ from mayavi import mlab
 from scipy import stats
 from surfer import Brain
 
-from basic_functions import io, operations as op
+from basic_functions import loading, operations as op
 from pipeline_functions import decorators as decor, utilities as ut
 
 
@@ -35,18 +35,18 @@ from pipeline_functions import decorators as decor, utilities as ut
 # ==============================================================================
 @decor.topline
 def print_info(name, save_dir):
-    info = io.read_info(name, save_dir)
+    info = loading.read_info(name, save_dir)
     print(info)
 
 
 # Todo: Plot Raw with block to mark bads on the fly, test on all OS (hangs on Spyder?!)
 @decor.topline
 def plot_raw(name, save_dir, bad_channels):
-    raw = io.read_raw(name, save_dir)
+    raw = loading.read_raw(name, save_dir)
     raw.info['bads'] = bad_channels
     print(f"Pre-Bads:, {raw.info['bads']}")
     try:
-        events = io.read_events(name, save_dir)
+        events = loading.read_events(name, save_dir)
         mne.viz.plot_raw(raw=raw, n_channels=30, bad_color='red', events=events,
                          scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
                          title=name)
@@ -58,11 +58,11 @@ def plot_raw(name, save_dir, bad_channels):
 
 @decor.topline
 def plot_filtered(name, save_dir, highpass, lowpass, bad_channels):
-    raw = io.read_filtered(name, save_dir, highpass, lowpass)
+    raw = loading.read_filtered(name, save_dir, highpass, lowpass)
 
     raw.info['bads'] = bad_channels
     try:
-        events = io.read_events(name, save_dir)
+        events = loading.read_events(name, save_dir)
         mne.viz.plot_raw(raw=raw, events=events, n_channels=30, bad_color='red',
                          scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
                          title=name + '_filtered')
@@ -75,13 +75,13 @@ def plot_filtered(name, save_dir, highpass, lowpass, bad_channels):
 
 @decor.topline
 def plot_sensors(name, save_dir):
-    info = io.read_info(name, save_dir)
+    info = loading.read_info(name, save_dir)
     mne.viz.plot_sensors(info, kind='topomap', title=name, show_names=True, ch_groups='position')
 
 
 @decor.topline
 def plot_events(name, save_dir, save_plots, figures_path, event_id):
-    events = io.read_events(name, save_dir)
+    events = loading.read_events(name, save_dir)
     actual_event_id = {}
     for i in event_id:
         if event_id[i] in np.unique(events[:, 2]):
@@ -101,7 +101,7 @@ def plot_events(name, save_dir, save_plots, figures_path, event_id):
 @decor.topline
 def plot_events_diff(name, save_dir, save_plots, figures_path):
     # plot the differences between different triggers over time
-    events = io.read_events(name, save_dir)
+    events = loading.read_events(name, save_dir)
     l1 = []
 
     for x in range(np.size(events, axis=0)):
@@ -126,9 +126,9 @@ def plot_events_diff(name, save_dir, save_plots, figures_path):
 
 @decor.topline
 def plot_eog_events(name, save_dir):
-    events = io.read_events(name, save_dir)
-    eog_events = io.read_eog_events(name, save_dir)
-    raw = io.read_raw(name, save_dir)
+    events = loading.read_events(name, save_dir)
+    eog_events = loading.read_eog_events(name, save_dir)
+    raw = loading.read_raw(name, save_dir)
     raw.pick_channels(['EEG 001', 'EEG 002'])
 
     comb_events = np.append(events, eog_events, axis=0)
@@ -139,7 +139,7 @@ def plot_eog_events(name, save_dir):
 @decor.topline
 def plot_power_spectra(name, save_dir, highpass, lowpass, save_plots,
                        figures_path, bad_channels):
-    raw = io.read_raw(name, save_dir)
+    raw = loading.read_raw(name, save_dir)
     raw.info['bads'] = bad_channels
     picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=False, ecg=False,
                            exclude='bads')
@@ -159,7 +159,7 @@ def plot_power_spectra(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_power_spectra_epochs(name, save_dir, highpass, lowpass, save_plots,
                               figures_path):
-    epochs = io.read_epochs(name, save_dir, highpass, lowpass)
+    epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
 
     for trial_type in epochs.event_id:
 
@@ -178,7 +178,7 @@ def plot_power_spectra_epochs(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_power_spectra_topo(name, save_dir, highpass, lowpass, save_plots,
                             figures_path):
-    epochs = io.read_epochs(name, save_dir, highpass, lowpass)
+    epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
     for trial_type in epochs.event_id:
         psd_figure = epochs[trial_type].plot_psd_topomap(n_jobs=-1)
         plt.title(name + '-' + trial_type)
@@ -195,8 +195,8 @@ def plot_power_spectra_topo(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_tfr(name, save_dir, highpass, lowpass, t_epoch, baseline,
              tfr_method, save_plots, figures_path):
-    powers = io.read_tfr_power(name, save_dir, highpass, lowpass, tfr_method)
-    itcs = io.read_tfr_itc(name, save_dir, highpass, lowpass, tfr_method)
+    powers = loading.read_tfr_power(name, save_dir, highpass, lowpass, tfr_method)
+    itcs = loading.read_tfr_itc(name, save_dir, highpass, lowpass, tfr_method)
 
     for power in powers:
         fig1 = power.plot(baseline=baseline, mode='logratio', tmin=t_epoch[0],
@@ -282,13 +282,13 @@ def tfr_event_dynamics(name, save_dir, t_epoch, save_plots, figures_path,
     event_id = {'1': 1}
     baseline = None
 
-    events = io.read_events(name, save_dir)
+    events = loading.read_events(name, save_dir)
 
     frequency_map = list()
 
     for band, fmin, fmax in iter_freqs:
         # (re)load the data to save memory
-        raw = io.read_raw(name, save_dir)
+        raw = loading.read_raw(name, save_dir)
 
         # bandpass filter and compute Hilbert
         raw.filter(fmin, fmax, n_jobs=n_jobs,  # use more jobs to speed up.
@@ -349,7 +349,7 @@ def plot_ssp(name, save_dir, highpass, lowpass, save_plots,
         pass
 
     else:
-        epochs = io.read_ssp_epochs(name, save_dir, highpass, lowpass)
+        epochs = loading.read_ssp_epochs(name, save_dir, highpass, lowpass)
 
         ssp_figure = epochs.plot_projs_topomap()
 
@@ -368,7 +368,7 @@ def plot_ssp_eog(name, save_dir, highpass, lowpass, save_plots,
     proj_name = name + '_eog-proj.fif'
     proj_path = join(save_dir, proj_name)
 
-    raw = io.read_raw(name, save_dir)
+    raw = loading.read_raw(name, save_dir)
     eog_projs = mne.read_proj(proj_path)
 
     ssp_figure = mne.viz.plot_projs_topomap(eog_projs, info=raw.info)
@@ -388,7 +388,7 @@ def plot_ssp_ecg(name, save_dir, highpass, lowpass, save_plots,
     proj_name = name + '_ecg-proj.fif'
     proj_path = join(save_dir, proj_name)
 
-    raw = io.read_raw(name, save_dir)
+    raw = loading.read_raw(name, save_dir)
     ecg_projs = mne.read_proj(proj_path)
 
     ssp_figure = mne.viz.plot_projs_topomap(ecg_projs, info=raw.info)
@@ -405,7 +405,7 @@ def plot_ssp_ecg(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_epochs(name, save_dir, highpass, lowpass, save_plots,
                 figures_path):
-    epochs = io.read_epochs(name, save_dir, highpass, lowpass)
+    epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
 
     for trial_type in epochs.event_id:
 
@@ -425,7 +425,7 @@ def plot_epochs(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_epochs_image(name, save_dir, highpass, lowpass, save_plots,
                       figures_path):
-    epochs = io.read_epochs(name, save_dir, highpass, lowpass)
+    epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
     for trial_type in epochs.event_id:
 
         epochs_image = mne.viz.plot_epochs_image(epochs[trial_type], title=name + '_' + trial_type)
@@ -444,7 +444,7 @@ def plot_epochs_image(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_epochs_topo(name, save_dir, highpass, lowpass, save_plots,
                      figures_path):
-    epochs = io.read_epochs(name, save_dir, highpass, lowpass)
+    epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
     for trial_type in epochs.event_id:
 
         epochs_topo = mne.viz.plot_topo_image_epochs(epochs, title=name)
@@ -463,7 +463,7 @@ def plot_epochs_topo(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_epochs_drop_log(name, save_dir, highpass, lowpass, save_plots,
                          figures_path):
-    epochs = io.read_epochs(name, save_dir, highpass, lowpass)
+    epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
 
     fig = epochs.plot_drop_log(subject=name)
 
@@ -480,7 +480,7 @@ def plot_epochs_drop_log(name, save_dir, highpass, lowpass, save_plots,
 
 @decor.topline
 def plot_evoked_topo(name, save_dir, highpass, lowpass, save_plots, figures_path):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
     evoked_figure = mne.viz.plot_evoked_topo(evokeds, title=name)
 
@@ -496,7 +496,7 @@ def plot_evoked_topo(name, save_dir, highpass, lowpass, save_plots, figures_path
 
 @decor.topline
 def plot_evoked_topomap(name, save_dir, highpass, lowpass, save_plots, figures_path):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
     for evoked in evokeds:
         evoked_figure = mne.viz.plot_evoked_topomap(evoked, times='auto',
                                                     title=name + '-' + evoked.comment)
@@ -515,8 +515,8 @@ def plot_evoked_topomap(name, save_dir, highpass, lowpass, save_plots, figures_p
 def plot_evoked_field(name, save_dir, highpass, lowpass,
                       subtomri, subjects_dir, save_plots,
                       figures_path, mne_evoked_time, n_jobs):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
-    trans = io.read_transformation(save_dir, subtomri)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
+    trans = loading.read_transformation(save_dir, subtomri)
 
     for evoked in evokeds:
 
@@ -542,7 +542,7 @@ def plot_evoked_field(name, save_dir, highpass, lowpass,
 @decor.topline
 def plot_evoked_joint(name, save_dir, highpass, lowpass, save_plots,
                       figures_path):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
     for evoked in evokeds:
         figure = mne.viz.plot_evoked_joint(evoked, times='peaks',
@@ -561,7 +561,7 @@ def plot_evoked_joint(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_evoked_butterfly(name, save_dir, highpass, lowpass, save_plots,
                           figures_path):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
     for evoked in evokeds:
         # ch_name, latency, amplitude = evoked.get_peak(tmin=-0.05, tmax=0.2, return_amplitude=True)
@@ -587,10 +587,10 @@ def plot_evoked_butterfly(name, save_dir, highpass, lowpass, save_plots,
 @decor.topline
 def plot_evoked_white(name, save_dir, highpass, lowpass, save_plots, figures_path, erm_noise_cov, ermsub,
                       calm_noise_cov):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
-    noise_covariance = io.read_noise_covariance(name, save_dir, highpass, lowpass,
-                                                erm_noise_cov, ermsub, calm_noise_cov)
+    noise_covariance = loading.read_noise_covariance(name, save_dir, highpass, lowpass,
+                                                     erm_noise_cov, ermsub, calm_noise_cov)
 
     for evoked in evokeds:
         # Check, if evokeds and noise covariance got the same channels
@@ -612,7 +612,7 @@ def plot_evoked_white(name, save_dir, highpass, lowpass, save_plots, figures_pat
 
 @decor.topline
 def plot_evoked_image(name, save_dir, highpass, lowpass, save_plots, figures_path):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
     for evoked in evokeds:
         figure = mne.viz.plot_evoked_image(evoked)
@@ -632,7 +632,7 @@ def plot_evoked_image(name, save_dir, highpass, lowpass, save_plots, figures_pat
 def plot_evoked_h1h2(name, save_dir, highpass, lowpass, event_id,
                      save_plots, figures_path):
     try:
-        evokeds_dict = io.read_h1h2_evokeds(name, save_dir, highpass, lowpass)
+        evokeds_dict = loading.read_h1h2_evokeds(name, save_dir, highpass, lowpass)
     except FileNotFoundError:
         raise RuntimeError('h1h2-Files not existent, set ana_h1h2 to true')
 
@@ -663,7 +663,7 @@ def plot_evoked_h1h2(name, save_dir, highpass, lowpass, event_id,
 
 @decor.topline
 def plot_gfp(name, save_dir, highpass, lowpass, save_plots, figures_path):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
     for evoked in evokeds:
         gfp = op.calculate_gfp(evoked)
         t = evoked.times
@@ -683,9 +683,9 @@ def plot_gfp(name, save_dir, highpass, lowpass, save_plots, figures_path):
 @decor.topline
 def plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots,
                         figures_path):
-    info = io.read_info(name, save_dir)
+    info = loading.read_info(name, save_dir)
 
-    trans = io.read_transformation(save_dir, subtomri)
+    trans = loading.read_transformation(save_dir, subtomri)
 
     mne.viz.plot_alignment(info, trans, subtomri, subjects_dir,
                            surfaces=['head-dense', 'inner_skull', 'brain'],
@@ -704,7 +704,7 @@ def plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots,
 
 @decor.topline
 def plot_source_space(mri_subject, subjects_dir, source_space_method, save_plots, figures_path):
-    source_space = io.read_source_space(mri_subject, subjects_dir, source_space_method)
+    source_space = loading.read_source_space(mri_subject, subjects_dir, source_space_method)
     source_space.plot()
     mlab.view(-90, 7)
 
@@ -720,8 +720,8 @@ def plot_source_space(mri_subject, subjects_dir, source_space_method, save_plots
 @decor.topline
 def plot_bem(mri_subject, subjects_dir, source_space_method, figures_path,
              save_plots):
-    source_space = io.read_source_space(mri_subject, subjects_dir, source_space_method)
-    vol_src = io.read_vol_source_space(mri_subject, subjects_dir)
+    source_space = loading.read_source_space(mri_subject, subjects_dir, source_space_method)
+    vol_src = loading.read_vol_source_space(mri_subject, subjects_dir)
     fig1 = mne.viz.plot_bem(mri_subject, subjects_dir, src=source_space)
     fig2 = mne.viz.plot_bem(mri_subject, subjects_dir, src=vol_src)
     if save_plots:
@@ -737,7 +737,7 @@ def plot_bem(mri_subject, subjects_dir, source_space_method, figures_path,
 
 @decor.topline
 def plot_sensitivity_maps(name, save_dir, subjects_dir, ch_types, save_plots, figures_path):
-    fwd = io.read_forward(name, save_dir)
+    fwd = loading.read_forward(name, save_dir)
 
     for ch_type in ch_types:
         sens_map = mne.sensitivity_map(fwd, ch_type=ch_type, mode='fixed')
@@ -752,10 +752,10 @@ def plot_sensitivity_maps(name, save_dir, subjects_dir, ch_types, save_plots, fi
 @decor.topline
 def plot_noise_covariance(name, save_dir, highpass, lowpass, save_plots, figures_path, erm_noise_cov, ermsub,
                           calm_noise_cov):
-    noise_covariance = io.read_noise_covariance(name, save_dir, highpass, lowpass,
-                                                erm_noise_cov, ermsub, calm_noise_cov)
+    noise_covariance = loading.read_noise_covariance(name, save_dir, highpass, lowpass,
+                                                     erm_noise_cov, ermsub, calm_noise_cov)
 
-    info = io.read_info(name, save_dir)
+    info = loading.read_info(name, save_dir)
 
     fig_cov = noise_covariance.plot(info, show_svd=False)
 
@@ -773,8 +773,8 @@ def plot_noise_covariance(name, save_dir, highpass, lowpass, save_plots, figures
 def plot_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
              inverse_method, mne_evoked_time, event_id, stc_interactive,
              save_plots, figures_path):
-    stcs = io.read_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
-                                    event_id)
+    stcs = loading.read_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
+                                         event_id)
     for trial_type in stcs:
         stc = stcs[trial_type]
         if stc_interactive:
@@ -810,8 +810,8 @@ def plot_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
 def plot_normal_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                     inverse_method, mne_evoked_time, event_id, stc_interactive,
                     save_plots, figures_path):
-    stcs = io.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
-                                           event_id)
+    stcs = loading.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
+                                                event_id)
     for trial_type in stcs:
         for idx, t in enumerate(mne_evoked_time):
             stc = stcs[trial_type]
@@ -843,8 +843,8 @@ def plot_normal_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
 def plot_vector_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                     inverse_method, mne_evoked_time, event_id, stc_interactive,
                     save_plots, figures_path):
-    stcs = io.read_vector_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
-                                           event_id)
+    stcs = loading.read_vector_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
+                                                event_id)
     for trial_type in stcs:
         for idx, t in enumerate(mne_evoked_time):
             stc = stcs[trial_type]
@@ -878,8 +878,8 @@ def plot_mixn(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
               mne_evoked_time, event_id, stc_interactive,
               save_plots, figures_path, mixn_dip, parcellation):
     if mixn_dip:
-        trans = io.read_transformation(save_dir, subtomri)
-        dipole_dict = io.read_mixn_dipoles(name, save_dir, highpass, lowpass, event_id)
+        trans = loading.read_transformation(save_dir, subtomri)
+        dipole_dict = loading.read_mixn_dipoles(name, save_dir, highpass, lowpass, event_id)
         for trial_type in event_id:
             dipoles = dipole_dict[trial_type]
             # Plot Dipole Amplitues (derived from Source Code with added legend)
@@ -940,7 +940,7 @@ def plot_mixn(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
 def plot_mixn_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                   mne_evoked_time, event_id, stc_interactive,
                   save_plots, figures_path):
-    stcs = io.read_mixn_source_estimates(name, save_dir, highpass, lowpass, event_id)
+    stcs = loading.read_mixn_source_estimates(name, save_dir, highpass, lowpass, event_id)
     for trial_type in stcs:
         for idx, t in enumerate(mne_evoked_time):
             stc = stcs[trial_type]
@@ -990,8 +990,8 @@ def plot_mixn_res(name, save_dir, highpass, lowpass, event_id, save_plots, figur
 def plot_animated_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                       inverse_method, stc_animation, event_id,
                       figures_path, ev_ids_label_analysis):
-    n_stcs = io.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
-                                             event_id)
+    n_stcs = loading.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
+                                                  event_id)
 
     for ev_id in ev_ids_label_analysis:
         n_stc = n_stcs[ev_id]
@@ -1012,9 +1012,9 @@ def plot_animated_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
 
 @decor.topline
 def plot_snr(name, save_dir, highpass, lowpass, save_plots, figures_path, inverse_method, event_id):
-    evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
-    inv = io.read_inverse_operator(name, save_dir, highpass, lowpass)
+    inv = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
     # stcs = io.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method, event_id)
 
     for evoked in evokeds:
@@ -1217,10 +1217,10 @@ def plot_label_time_course(name, save_dir, highpass, lowpass, subtomri,
                            subjects_dir, inverse_method, source_space_method,
                            target_labels, save_plots, figures_path,
                            parcellation, event_id, ev_ids_label_analysis):
-    stcs = io.read_normal_source_estimates(name, save_dir, highpass, lowpass,
-                                           inverse_method, event_id)
+    stcs = loading.read_normal_source_estimates(name, save_dir, highpass, lowpass,
+                                                inverse_method, event_id)
 
-    src = io.read_source_space(subtomri, subjects_dir, source_space_method)
+    src = loading.read_source_space(subtomri, subjects_dir, source_space_method)
 
     labels = mne.read_labels_from_annot(subtomri,
                                         subjects_dir=subjects_dir,
@@ -1304,7 +1304,7 @@ def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
                 only_a = True
 
         labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
-        src = io.read_source_space(subtomri, subjects_dir, source_space_method)
+        src = loading.read_source_space(subtomri, subjects_dir, source_space_method)
 
         nrows = len(target_labels)
         ncols = len(target_labels['lh'])
@@ -1332,8 +1332,8 @@ def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
                     print(name)
                     save_dir = join(data_path, name)
                     color = color_dict[trial]
-                    stcs = io.read_normal_source_estimates(name, save_dir, highpass, lowpass,
-                                                           inverse_method, event_id)
+                    stcs = loading.read_normal_source_estimates(name, save_dir, highpass, lowpass,
+                                                                inverse_method, event_id)
                     stc = stcs[trial_type]
 
                     # choose target labels
@@ -1408,8 +1408,8 @@ def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcella
     labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
 
     for ev_id in ev_ids_label_analysis:
-        epochs = io.read_epochs(name, save_dir, highpass, lowpass)[ev_id]
-        inverse_operator = io.read_inverse_operator(name, save_dir, highpass, lowpass)
+        epochs = loading.read_epochs(name, save_dir, highpass, lowpass)[ev_id]
+        inverse_operator = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
         # subtract the evoked response in order to exclude evoked activity
         epochs_induced = epochs.copy().subtract_evoked()
 
@@ -1469,8 +1469,8 @@ def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcella
 def plot_grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
                                save_dir_averages, tfr_freqs, t_epoch, highpass,
                                lowpass, save_plots, figures_path):
-    ga_dict = io.read_ga_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
-                                     save_dir_averages)
+    ga_dict = loading.read_ga_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
+                                          save_dir_averages)
     freqs = tfr_freqs
     for key in ga_dict:
         for ev_id in ev_ids_label_analysis:
@@ -1556,8 +1556,8 @@ def plot_source_space_connectivity(name, save_dir, highpass, lowpass,
                                    subtomri, subjects_dir, parcellation,
                                    target_labels, con_methods, con_fmin,
                                    con_fmax, save_plots, figures_path, ev_ids_label_analysis):
-    con_dict = io.read_connect(name, save_dir, highpass, lowpass, con_methods,
-                               con_fmin, con_fmax, ev_ids_label_analysis)
+    con_dict = loading.read_connect(name, save_dir, highpass, lowpass, con_methods,
+                                    con_fmin, con_fmax, ev_ids_label_analysis)
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
     labels = mne.read_labels_from_annot(subtomri, parc=parcellation,
                                         subjects_dir=subjects_dir)
@@ -1623,8 +1623,8 @@ def plot_source_space_connectivity(name, save_dir, highpass, lowpass,
 @decor.topline
 def plot_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
                            event_id, save_plots, figures_path):
-    ga_dict = io.read_grand_avg_evokeds(highpass, lowpass, save_dir_averages,
-                                        grand_avg_dict, event_id)
+    ga_dict = loading.read_grand_avg_evokeds(highpass, lowpass, save_dir_averages,
+                                             grand_avg_dict, event_id)
 
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
@@ -1643,8 +1643,8 @@ def plot_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
 @decor.topline
 def plot_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages, grand_avg_dict,
                                 event_id, save_plots, figures_path):
-    ga_dict = io.read_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages,
-                                             grand_avg_dict, event_id)
+    ga_dict = loading.read_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages,
+                                                  grand_avg_dict, event_id)
 
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
@@ -1674,14 +1674,14 @@ def plot_evoked_compare(data_path, save_dir_averages, highpass, lowpass, comp_di
                 try:
                     match = re.match(basic_pattern, comp_dict[file][cond][0])
                     title = match.group(1) + '_' + match.group(2)
-                    evokeds = io.read_evoked_combined_ab(title, save_dir_averages, highpass, lowpass)
+                    evokeds = loading.read_evoked_combined_ab(title, save_dir_averages, highpass, lowpass)
                     channels.append(set(evokeds[0].ch_names))
                 except FileNotFoundError:
                     print('You have to run "combine_evokeds_ab" first')
             else:
                 name = comp_dict[file][cond]
                 save_dir = join(data_path, name)
-                evokeds = io.read_evokeds(name, save_dir, highpass, lowpass)
+                evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
                 channels.append(set(evokeds[0].ch_names))
 
             for evoked in evokeds:
@@ -1741,8 +1741,8 @@ def plot_evoked_compare(data_path, save_dir_averages, highpass, lowpass, comp_di
 def plot_grand_avg_tfr(highpass, lowpass, baseline, t_epoch,
                        save_dir_averages, grand_avg_dict,
                        event_id, save_plots, figures_path):
-    ga_dict = io.read_grand_avg_tfr(highpass, lowpass, save_dir_averages,
-                                    grand_avg_dict, event_id)
+    ga_dict = loading.read_grand_avg_tfr(highpass, lowpass, save_dir_averages,
+                                         grand_avg_dict, event_id)
 
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
@@ -1806,8 +1806,8 @@ def plot_grand_avg_stc(highpass, lowpass, save_dir_averages,
                        grand_avg_dict, mne_evoked_time, morph_to,
                        subjects_dir, event_id, save_plots,
                        figures_path):
-    ga_dict = io.read_grand_avg_stcs(highpass, lowpass, save_dir_averages,
-                                     grand_avg_dict, event_id)
+    ga_dict = loading.read_grand_avg_stcs(highpass, lowpass, save_dir_averages,
+                                          grand_avg_dict, event_id)
 
     for group in ga_dict:
         for trial in ga_dict[group]:
@@ -1835,8 +1835,8 @@ def plot_grand_avg_stc_normal(highpass, lowpass, save_dir_averages,
                               grand_avg_dict, mne_evoked_time, morph_to,
                               subjects_dir, event_id, save_plots,
                               figures_path):
-    ga_dict = io.read_grand_avg_stcs_normal(highpass, lowpass, save_dir_averages,
-                                            grand_avg_dict, event_id)
+    ga_dict = loading.read_grand_avg_stcs_normal(highpass, lowpass, save_dir_averages,
+                                                 grand_avg_dict, event_id)
 
     for group in ga_dict:
         for trial in ga_dict[group]:
@@ -1864,8 +1864,8 @@ def plot_grand_avg_stc_anim(highpass, lowpass, save_dir_averages,
                             grand_avg_dict, stc_animation,
                             morph_to, subjects_dir, event_id,
                             figures_path):
-    ga_dict = io.read_grand_avg_stcs(highpass, lowpass, save_dir_averages,
-                                     grand_avg_dict, event_id)
+    ga_dict = loading.read_grand_avg_stcs(highpass, lowpass, save_dir_averages,
+                                          grand_avg_dict, event_id)
 
     for stim_type in ga_dict:
         for trial in ga_dict[stim_type]:
@@ -1889,9 +1889,9 @@ def plot_grand_avg_connect(highpass, lowpass, save_dir_averages,
                            grand_avg_dict, subjects_dir, morph_to, parcellation, con_methods, con_fmin, con_fmax,
                            save_plots, figures_path, ev_ids_label_analysis,
                            target_labels):
-    ga_dict = io.read_grand_avg_connect(highpass, lowpass, save_dir_averages,
-                                        grand_avg_dict, con_methods,
-                                        con_fmin, con_fmax, ev_ids_label_analysis)
+    ga_dict = loading.read_grand_avg_connect(highpass, lowpass, save_dir_averages,
+                                             grand_avg_dict, con_methods,
+                                             con_fmin, con_fmax, ev_ids_label_analysis)
 
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
     labels_parc = mne.read_labels_from_annot(morph_to, parc=parcellation,
@@ -1985,8 +1985,8 @@ def plot_grand_averages_source_estimates_cluster_masked(name,
 
     # load clusters
 
-    cluster_dict = io.read_clusters(save_dir_averages, independent_variable_1,
-                                    independent_variable_2, time_window, highpass, lowpass)
+    cluster_dict = loading.read_clusters(save_dir_averages, independent_variable_1,
+                                         independent_variable_2, time_window, highpass, lowpass)
     cluster_p_values = cluster_dict['cluster_p_values']
     clusters = cluster_dict['clusters']
     T_obs = cluster_dict['T_obs']
@@ -2054,13 +2054,13 @@ def pp_plot_latency_s1_corr(data_path, files, highpass, lowpass,
 
     for name in files:
         save_dir = join(data_path, name)
-        evoked = io.read_evokeds(name, save_dir, highpass, lowpass)[0]
+        evoked = loading.read_evokeds(name, save_dir, highpass, lowpass)[0]
         if not evoked.comment == 'LBT':
             raise RuntimeError(f'Wrong trigger {evoked.comment} for analysis')
         ch_name, latency, amplitude = evoked.get_peak(tmin=0, tmax=0.2, return_amplitude=True)
         s1_lat.append(latency)
 
-        events = io.read_events(name, save_dir)
+        events = loading.read_events(name, save_dir)
         l1 = []
         for x in range(np.size(events, axis=0)):
             if events[x, 2] == 2:
