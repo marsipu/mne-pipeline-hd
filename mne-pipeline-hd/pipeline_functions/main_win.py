@@ -764,8 +764,10 @@ class RunDialog(QDialog):
         self.current_func.setBackground(QColor('green'))
 
     def clear_marks(self):
-        self.current_sub.setBackground(QColor('white'))
-        self.current_func.setBackground(QColor('white'))
+        if self.current_sub != None:
+            self.current_sub.setBackground(QColor('white'))
+        if self.current_func != None:
+            self.current_func.setBackground(QColor('white'))
 
     def update_label(self, text):
         self.console_widget.insertPlainText(text)
