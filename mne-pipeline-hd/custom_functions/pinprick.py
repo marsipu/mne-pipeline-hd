@@ -103,7 +103,6 @@ def pp_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite,
 
             fig.tight_layout()
             plt.title(name + ' - rating')
-            fig.show()
 
             save_path = join(figures_path, 'events', name + '-ratings.jpg')
             fig.savefig(save_path, dpi=600, overwrite=True)

@@ -353,6 +353,7 @@ class ListGui(Param):
         self.init_bt_layout()
 
     def set_param(self):
+        self.param_widget.clear()
         if len(self.param_value) > 0:
             for item in self.param_value:
                 list_item = QListWidgetItem(str(item))
@@ -381,7 +382,7 @@ class ListGui(Param):
 
     def remove_item(self):
         row = self.param_widget.currentRow()
-        if row:
+        if row is not None:
             self.param_widget.takeItem(row)
         self.get_param()
 
@@ -403,7 +404,6 @@ class DictGui(Param):
         self.init_bt_layout()
 
     def set_items(self, row, key, value):
-        self.param_widget.insertRow(row)
         key_item = QTableWidgetItem(key)
         key_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
         value_item = QTableWidgetItem(value)
@@ -413,7 +413,9 @@ class DictGui(Param):
         self.param_widget.resizeColumnsToContents()
 
     def set_param(self):
+        self.param_widget.clear()
         if len(self.param_value) > 0:
+            self.param_widget.setRowCount(len(self.param_value))
             for row, (key, value) in enumerate(self.param_value.items()):
                 self.set_items(row, str(key), str(value))
 
@@ -422,21 +424,16 @@ class DictGui(Param):
         for row in range(self.param_widget.rowCount()):
             row_item = self.param_widget.item(row, 0)
             value_item = self.param_widget.item(row, 1)
-            if row_item:
+            if row_item and value_item:
                 try:
                     key = literal_eval(row_item.text())
                 except (ValueError, SyntaxError):
                     key = row_item.text()
-            else:
-                key = None
-            if value_item:
                 try:
                     value = literal_eval(value_item.text())
                 except (ValueError, SyntaxError):
                     value = value_item.text()
-            else:
-                value = None
-            param_dict.update({key: value})
+                param_dict.update({key: value})
         self.param_widget.resizeColumnsToContents()
         self.param_value = param_dict
         self.save_param()
@@ -445,6 +442,7 @@ class DictGui(Param):
 
     def add_item(self):
         row = self.param_widget.rowCount()
+        self.param_widget.insertRow(row)
         self.set_items(row, '_None_key_', '_None_value_')
         self.param_widget.resizeColumnsToContents()
         self.get_param()

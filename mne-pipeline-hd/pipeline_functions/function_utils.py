@@ -161,29 +161,37 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
     """
 
     # Determine steps in progress for all selected subjects and functions
-    mri_prog = len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs)
-    file_prog = len(main_win.pr.sel_files) * len(main_win.sel_file_funcs)
-    ga_prog = len(main_win.sel_ga_funcs)
+    all_prog = (len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs) +
+                len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_plot_funcs) +
+                len(main_win.pr.sel_files) * len(main_win.sel_file_funcs) +
+                len(main_win.pr.sel_files) * len(main_win.sel_file_plot_funcs) +
+                len(main_win.sel_ga_funcs) +
+                len(main_win.sel_ga_plot_funcs))
 
-    all_prog = mri_prog + file_prog + ga_prog
     count = 1
 
-    # Check if any mri_subject_operation is selected and any mri-subject is selected
+    # Check if any mri-subject is selected
     if len(main_win.pr.sel_mri_files) > 0:
         pg_which_loop.emit('mri')
         for mri_subject in main_win.pr.sel_mri_files:
             if not main_win.cancel_functions:
                 msub = CurrentMRISubject(mri_subject, main_win)
                 # Print Subject Console Header
-                print('=' * 60 + '\n', mri_subject)
+                print('=' * 60 + '\n', mri_subject + '\n')
                 pg_sub.emit(mri_subject)
                 for mri_func in main_win.sel_mri_funcs:
                     if not main_win.cancel_functions:
                         pg_func.emit(mri_func)
-                        if main_win.pd_funcs.loc[mri_func]['QThreading']:
-                            func_from_def(mri_func, msub, main_win)
-                        else:
-                            func_sig.emit({'func_name': mri_func, 'subject': msub, 'main_win': main_win})
+                        func_from_def(mri_func, msub, main_win)
+                        pgbar_n.emit({'count': count, 'max': all_prog})
+                        count += 1
+                    else:
+                        break
+                for mri_plot_func in main_win.sel_mri_plot_funcs:
+                    if not main_win.cancel_functions:
+                        pg_func.emit(mri_plot_func)
+                        # Plot functions need to be called in the main thread, information delivered by func_sig
+                        func_sig.emit({'func_name': mri_plot_func, 'subject': msub, 'main_win': main_win})
                         pgbar_n.emit({'count': count, 'max': all_prog})
                         count += 1
                     else:
@@ -191,7 +199,7 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
             else:
                 break
     else:
-        print('No MRI-Subject or MRI-Function selected')
+        print('No MRI-Subject selected')
 
     # Call the functions for selected Files
     # Todo: Account for call-order (idx, group-idx)
@@ -206,18 +214,25 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
                 if main_win.settings.value('sub_preload', defaultValue=False) == 'true':
                     main_win.subject.preload_data()
                 # Print Subject Console Header
-                print(60 * '=' + '\n' + name)
-                for func in main_win.sel_file_funcs:
+                print(60 * '=' + '\n' + name + '\n')
+                for ga_func in main_win.sel_file_funcs:
                     if not main_win.cancel_functions:
-                        pg_func.emit(func)
-                        if main_win.pd_funcs.loc[func]['QThreading']:
-                            func_from_def(func, subject, main_win)
-                        else:
-                            func_sig.emit({'func_name': func, 'subject': subject, 'main_win': main_win})
+                        pg_func.emit(ga_func)
+                        func_from_def(ga_func, subject, main_win)
                         pgbar_n.emit({'count': count, 'max': all_prog})
                         count += 1
                     else:
                         break
+                for plot_func in main_win.sel_file_plot_funcs:
+                    if not main_win.cancel_functions:
+                        pg_func.emit(plot_func)
+                        # Plot functions need to be called in the main thread, information delivered by func_sig
+                        func_sig.emit({'func_name': plot_func, 'subject': subject, 'main_win': main_win})
+                        pgbar_n.emit({'count': count, 'max': all_prog})
+                        count += 1
+                    else:
+                        break
+
             else:
                 break
 
@@ -225,15 +240,21 @@ def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
         print('No Subject or Function selected')
 
     # Call functions outside the subject-loop
-    if ga_prog > 0:
+    if len(main_win.sel_ga_funcs) > 0 or len(main_win.sel_ga_plot_funcs) > 0:
         pg_which_loop.emit('ga')
-        for func in main_win.sel_ga_funcs:
+        for ga_func in main_win.sel_ga_funcs:
             if not main_win.cancel_functions:
-                pg_func.emit(func)
-                if main_win.pd_funcs.loc[func]['QThreading']:
-                    func_from_def(func, None, main_win)
-                else:
-                    func_sig.emit({'func_name': func, 'subject': None, 'main_win': main_win})
+                pg_func.emit(ga_func)
+                func_from_def(ga_func, None, main_win)
+                pgbar_n.emit({'count': count, 'max': all_prog})
+                count += 1
+            else:
+                break
+        for plot_ga_func in main_win.sel_ga_plot_funcs:
+            if not main_win.cancel_functions:
+                pg_func.emit(plot_ga_func)
+                # Plot functions need to be called in the main thread, information delivered by func_sig
+                func_sig.emit({'func_name': plot_ga_func, 'subject': None, 'main_win': main_win})
                 pgbar_n.emit({'count': count, 'max': all_prog})
                 count += 1
             else:
