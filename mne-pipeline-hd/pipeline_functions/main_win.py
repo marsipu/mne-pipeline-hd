@@ -1,7 +1,9 @@
+import io
 import logging
 import os
 import shutil
 import sys
+import traceback
 from ast import literal_eval
 from functools import partial
 from os.path import join
@@ -37,10 +39,6 @@ def get_upstream():
     print(result.stdout)
 
 
-def thread_func(kwargs):
-    func_from_def(**kwargs)
-
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -64,12 +62,21 @@ class MainWindow(QMainWindow):
         self.dark_sheet = qdarkstyle.load_stylesheet_pyqt5()
 
         # Attributes for class-methods
-        self.pd_funcs = pd.read_csv(os.getcwd() + '/resources/functions.csv', sep=';', index_col=0)
-        self.pd_params = pd.read_csv(os.getcwd() + '/resources/parameters.csv', sep=';', index_col=0)
         self.subject = None
         self.cancel_functions = False
         self.func_dict = dict()
         self.bt_dict = dict()
+
+        # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
+        self.pd_funcs = pd.read_csv(os.getcwd() + '/resources/functions.csv', sep=';', index_col=0)
+        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
+                                       & (self.pd_funcs['subject_loop'] == True)]
+        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'mri_subject_operations')
+                                        & (self.pd_funcs['subject_loop'] == True)]
+        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)]
+
+        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
+        self.pd_params = pd.read_csv(os.getcwd() + '/resources/parameters.csv', sep=';', index_col=0)
 
         # Call project-class
         self.pr = MyProject(self)
@@ -171,7 +178,7 @@ class MainWindow(QMainWindow):
         self.toolbar.addSeparator()
 
         self.pr.parameters.update({'n_jobs': -1})
-        self.pr.parameters.update({'close_plots': False})
+        self.pr.parameters.update({'show_plots': False})
         self.pr.parameters.update({'save_plots': True})
         self.pr.parameters.update({'overwrite': True})
         self.pr.parameters.update({'enable_cuda': False})
@@ -186,10 +193,12 @@ class MainWindow(QMainWindow):
 
         self.toolbar.addSeparator()
 
-        self.close_plots_chkbx = QCheckBox('Close Plots', self)
-        self.close_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.close_plots_chkbx, 'close_plots'))
-        self.close_plots_chkbx.setToolTip('Do you want to close all open plots after eacht subject-run?')
-        self.toolbar.addWidget(self.close_plots_chkbx)
+        self.show_plots_chkbx = QCheckBox('Show Plots', self)
+        self.show_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed,
+                                                           self.show_plots_chkbx, 'show_plots'))
+        self.show_plots_chkbx.setToolTip('Do you want to show plots?\n'
+                                         '(or just save them without showing, checking "Save Plots")')
+        self.toolbar.addWidget(self.show_plots_chkbx)
 
         self.save_plots_chkbx = QCheckBox('Save Plots', self)
         self.save_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.save_plots_chkbx, 'save_plots'))
@@ -221,6 +230,7 @@ class MainWindow(QMainWindow):
     def chkbx_changed(self, chkbx, attribute):
         self.pr.parameters[attribute] = chkbx.isChecked()
 
+    # Todo: Statusbar with purpose
     def make_statusbar(self):
         self.statusBar().showMessage('Ready')
 
@@ -516,40 +526,16 @@ class MainWindow(QMainWindow):
 
         self.cancel_functions = False
 
-        # Lists of selected functions separated in execution groups (mri_subject, subject, grand-average)
-        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
-                                       & (self.pd_funcs['subject_loop'] == True)
-                                       & (self.pd_funcs['QThreading'] == True)]
+        # Lists of selected functions
         self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.func_dict[mf]]
-
-        self.mri_plot_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
-                                            & (self.pd_funcs['subject_loop'] == True)
-                                            & (self.pd_funcs['QThreading'] == False)]
-        self.sel_mri_plot_funcs = [mpf for mpf in self.mri_plot_funcs.index if self.func_dict[mpf]]
-
-        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'mri_subject_operations')
-                                        & (self.pd_funcs['subject_loop'] == True)
-                                        & (self.pd_funcs['QThreading'] == True)]
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.func_dict[ff]]
-
-        self.file_plot_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'mri_subject_operations')
-                                             & (self.pd_funcs['subject_loop'] == True)
-                                             & (self.pd_funcs['QThreading'] == False)]
-        self.sel_file_plot_funcs = [spf for spf in self.file_plot_funcs.index if self.func_dict[spf]]
-
-        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                      & (self.pd_funcs['QThreading'] == True)]
         self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.func_dict[gf]]
-
-        self.ga_plot_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                           & (self.pd_funcs['QThreading'] == False)]
-        self.sel_ga_plot_funcs = [gpf for gpf in self.ga_plot_funcs.index if self.func_dict[gpf]]
 
         self.run_dialog = RunDialog(self)
 
         # Redirect stdout to capture it
         sys.stdout = OutputStream()
-        sys.stdout.text_written.connect(self.run_dialog.update_label)
+        sys.stdout.signal.text_written.connect(self.run_dialog.update_label)
 
         worker = Worker(call_functions, self)
         worker.signals.error.connect(self.run_dialog.show_errors)
@@ -558,9 +544,19 @@ class MainWindow(QMainWindow):
         worker.signals.pg_which_loop.connect(self.run_dialog.populate)
         worker.signals.pg_sub.connect(self.run_dialog.mark_sub)
         worker.signals.pg_func.connect(self.run_dialog.mark_func)
-        worker.signals.func_sig.connect(thread_func)
+        worker.signals.func_sig.connect(self.thread_func)
 
         self.threadpool.start(worker)
+
+    def thread_func(self, kwargs):
+        try:
+            func_from_def(**kwargs)
+        except:
+            logging.error('Ups, something happened:')
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            err = (exctype, value, traceback.format_exc(limit=-10))
+            self.run_dialog.show_errors(err)
 
     def thread_complete(self):
         print('Finished')
@@ -573,13 +569,16 @@ class MainWindow(QMainWindow):
         self.n_jobs_sb.setValue(self.pr.parameters['n_jobs'])
 
         # Checkboxes in Toolbar
-        chkbox_dict = {'close_plots_chkbx': 'close_plots', 'save_plots_chkbx': 'save_plots',
+        chkbox_dict = {'show_plots_chkbx': 'show_plots', 'save_plots_chkbx': 'save_plots',
                        'overwrite_chkbx': 'overwrite', 'enable_cuda_chkbx': 'enable_cuda', 'shutdown_chkbx': 'shutdown'}
         for chkbox_name in chkbox_dict:
             chkbox = getattr(self, chkbox_name)
 
-            chkbox_value = self.pr.parameters[chkbox_dict[chkbox_name]]
-            chkbox.setChecked(chkbox_value)
+            try:
+                chkbox_value = self.pr.parameters[chkbox_dict[chkbox_name]]
+                chkbox.setChecked(chkbox_value)
+            except KeyError:
+                pass
 
     # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):
@@ -792,11 +791,11 @@ class RunDialog(QDialog):
 
     def populate(self, mode):
         if mode == 'mri':
-            self.populate_listw(self.mw.pr.sel_mri_files, self.mw.sel_mri_funcs + self.mw.sel_mri_plot_funcs)
+            self.populate_listw(self.mw.pr.sel_mri_files, self.mw.sel_mri_funcs)
         elif mode == 'file':
-            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs + self.mw.sel_file_plot_funcs)
+            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
         elif mode == 'ga':
-            self.populate_listw(self.mw.pr.grand_avg_dict, self.mw.sel_ga_funcs + self.mw.sel_ga_plot_funcs)
+            self.populate_listw(self.mw.pr.grand_avg_dict, self.mw.sel_ga_funcs)
         else:
             pass
 
@@ -813,16 +812,20 @@ class RunDialog(QDialog):
     def mark_sub(self, sub):
         if self.current_sub is not None:
             self.current_sub.setBackground(QColor('white'))
-
-        self.current_sub = self.sub_listw.findItems(sub, Qt.MatchExactly)[0]
-        self.current_sub.setBackground(QColor('green'))
+        try:
+            self.current_sub = self.sub_listw.findItems(sub, Qt.MatchExactly)[0]
+            self.current_sub.setBackground(QColor('green'))
+        except IndexError:
+            pass
 
     def mark_func(self, func):
         if self.current_func is not None:
             self.current_func.setBackground(QColor('white'))
-
-        self.current_func = self.func_listw.findItems(func, Qt.MatchExactly)[0]
-        self.current_func.setBackground(QColor('green'))
+        try:
+            self.current_func = self.func_listw.findItems(func, Qt.MatchExactly)[0]
+            self.current_func.setBackground(QColor('green'))
+        except IndexError:
+            pass
 
     def clear_marks(self):
         if self.current_sub is not None:
@@ -844,21 +847,22 @@ class RunDialog(QDialog):
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle('An Error ocurred!')
         msg_box.setTextFormat(Qt.AutoText)
+        formated_tb_text = err[2].replace('\n', '<br>')
         msg_box.setText(f'<b><big>{err[1]}</b></big><br>'
-                        f'{err[2]}')
+                        f'{formated_tb_text}')
         msg_box.open()
 
 
-class OutputStream(QObject):
+class OutputSignal(QObject):
     text_written = pyqtSignal(str)
+
+
+class OutputStream(io.TextIOBase):
 
     def __init__(self):
         super().__init__()
-        pass
+        self.signal = OutputSignal()
 
     def write(self, text):
         sys.__stdout__.write(text)
-        self.text_written.emit(text)
-
-    def flush(self):
-        pass
+        self.signal.text_written.emit(text)

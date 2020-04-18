@@ -8,19 +8,15 @@ Adapted by Martin Schulz from Lau Møller Andersen
 """
 import sys
 
-import matplotlib
-
-from pipeline_functions import ismac
-
-if ismac:
-    matplotlib.use('macosx')
-from matplotlib import pyplot as plt
-# plt.ion()
-
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication
 
+from pipeline_functions import ismac
 from pipeline_functions import main_win
+
+# import matplotlib
+# if ismac:
+#     matplotlib.use('macosx')
 
 # Todo: Command-Line start not working
 #   A line for commands, which can be used for real-time debugging and quick use of the local variables
