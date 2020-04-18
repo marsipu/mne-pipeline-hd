@@ -171,16 +171,19 @@ class MyProject:
             with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'r') as read_file:
                 self.parameters = json.load(read_file)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
-            string_params = dict(self.mw.pd_params['default'])
-            for param in string_params:
-                try:
-                    self.parameters[param] = literal_eval(string_params[param])
-                except (ValueError, SyntaxError):
-                    # Allow parameters to be defined by functions by numpy, etc.
-                    if self.mw.pd_params['gui_type'][param] == 'FuncGui':
-                        self.parameters[param] = eval(string_params[param])
-                    else:
-                        self.parameters[param] = string_params[param]
+            self.load_default_parameters()
+
+    def load_default_parameters(self):
+        string_params = dict(self.mw.pd_params['default'])
+        for param in string_params:
+            try:
+                self.parameters[param] = literal_eval(string_params[param])
+            except (ValueError, SyntaxError):
+                # Allow parameters to be defined by functions by numpy, etc.
+                if self.mw.pd_params['gui_type'][param] == 'FuncGui':
+                    self.parameters[param] = eval(string_params[param])
+                else:
+                    self.parameters[param] = string_params[param]
 
     def save_parameters(self):
         with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'w') as write_file:
@@ -222,25 +225,6 @@ class MyProject:
                 makedirs(folder_path)
                 print(folder_path + ' has been created')
 
-        # create subfolders for for event_ids
-        trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
-                           'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                           'evoked_field', 'evoked_topomap', 'evoked_image',
-                           'evoked_joint', 'evoked_white', 'gfp', 'label_time_course', 'ECD',
-                           'stcs', 'vec_stcs', 'stcs_movie', 'snr',
-                           'tf_sensor_space/plot', 'tf_sensor_space/topo',
-                           'tf_sensor_space/joint', 'tf_sensor_space/oscs',
-                           'tf_sensor_space/itc', 'evoked_h1h2', 'mxn_dipoles']
-
-        for ev_id in self.parameters['event_id']:
-            for tr in trialed_folders:
-                subfolder = join(self.figures_path, tr, ev_id)
-                if not exists(subfolder):
-                    try:
-                        makedirs(subfolder)
-                        print(subfolder + ' has been created')
-                    except OSError:
-                        print(subfolder + ': this event-id-name can\'t be used due to OS-Folder-Naming-Conventions')
 
         # create grand average figures path
         grand_averages_figures_path = join(self.figures_path, 'grand_averages')
@@ -254,3 +238,25 @@ class MyProject:
             if not exists(folder_path):
                 makedirs(folder_path)
                 print(folder_path + ' has been created')
+
+    def populate_evid_directories(self):
+        # create subfolders for for event_ids
+        trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
+                           'epochs_image', 'epochs_topo', 'evoked_butterfly',
+                           'evoked_field', 'evoked_topomap', 'evoked_image',
+                           'evoked_joint', 'evoked_white', 'gfp', 'label_time_course', 'ECD',
+                           'stcs', 'vec_stcs', 'stcs_movie', 'snr',
+                           'tf_sensor_space/plot', 'tf_sensor_space/topo',
+                           'tf_sensor_space/joint', 'tf_sensor_space/oscs',
+                           'tf_sensor_space/itc', 'evoked_h1h2', 'mxn_dipoles']
+
+        for ev_id in [e for e in self.parameters['event_id'] if e is not None]:
+            for tr in trialed_folders:
+                subfolder = join(self.figures_path, tr, ev_id)
+                if not exists(subfolder):
+                    try:
+                        makedirs(subfolder)
+                        print(subfolder + ' has been created')
+                    except OSError:
+                        print(subfolder + ': this event-id-name can\'t be used due to OS-Folder-Naming-Conventions')
+

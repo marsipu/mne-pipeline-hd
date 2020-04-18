@@ -74,12 +74,14 @@ class MainWindow(QMainWindow):
         # Call project-class
         self.pr = MyProject(self)
 
+        # Todo: Real logging
         # Set logging
         logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
 
         # initiate Subject-Dock here to avoid AttributeError
         self.subject_dock = SubjectDock(self)
 
+        # Todo: Structure Main-Win-Construction better
         # Call window-methods
         self.make_menu()
         self.add_dock_windows()
@@ -141,6 +143,7 @@ class MainWindow(QMainWindow):
         self.settings_menu = self.menuBar().addMenu('&Settings')
 
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
+        self.settings_menu.addAction('Reset Parameters', self.reset_parameters)
 
         self.pyfiles = QAction('Load .py-Files')
         self.pyfiles.triggered.connect(self.pr.load_py_lists)
@@ -239,6 +242,7 @@ class MainWindow(QMainWindow):
             self.pr.get_paths()
             self.pr.make_paths()
             self.pr.load_parameters()
+            self.qall_parameters.update_all_param_guis()
             self.pr.populate_directories()
             self.pr.load_sub_lists()
             self.update_project_box()
@@ -317,8 +321,8 @@ class MainWindow(QMainWindow):
         self.project_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         for project in self.pr.projects:
             self.project_box.addItem(project)
-        self.project_box.currentTextChanged.connect(self.project_changed)
         self.project_box.setCurrentText(self.pr.project_name)
+        self.project_box.currentTextChanged.connect(self.project_changed)
         proj_box_label = QLabel('<b>Project: <b>')
         self.toolbar.addWidget(proj_box_label)
         self.toolbar.addWidget(self.project_box)
@@ -340,9 +344,12 @@ class MainWindow(QMainWindow):
             self.pr.project_name = project
             self.settings.setValue('project_name', self.pr.project_name)
             print(f'{self.pr.project_name} selected')
+
             self.pr.make_paths()
             self.pr.load_parameters()
+            self.qall_parameters.update_all_param_guis()
             self.pr.populate_directories()
+
             self.pr.load_sub_lists()
             self.subject_dock.update_subjects_list()
             self.subject_dock.ga_widget.update_treew()
@@ -351,6 +358,14 @@ class MainWindow(QMainWindow):
         self.project_box.clear()
         for project in self.pr.projects:
             self.project_box.addItem(project)
+
+    def reset_parameters(self):
+        msgbox = QMessageBox.question(self, 'Reset all Parameters?',
+                                      'Do you really want to reset all parameters to their default?',
+                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if msgbox == QMessageBox.Yes:
+            self.pr.load_default_parameters()
+            self.qall_parameters.update_all_param_guis()
 
     def dark_mode(self):
         if self.adark_mode.isChecked():
@@ -461,34 +476,8 @@ class MainWindow(QMainWindow):
 
     def add_parameter_gui_tab(self):
         tab = QScrollArea()
-        child_w = QWidget()
-        layout = QHBoxLayout()
-        sub_layout = QVBoxLayout()
-        r_cnt = 0
-        for idx, parameter in self.pd_params.iterrows():
-            if r_cnt > 5:
-                layout.addLayout(sub_layout)
-                sub_layout = QVBoxLayout()
-                r_cnt = 0
-            else:
-                r_cnt += 1
-            param_alias = parameter['alias']
-            gui_name = parameter['gui_type']
-            if type(gui_name) != str:
-                gui_name = 'FuncGui'
-            gui = getattr(parameter_widgets, gui_name)
-            if type(parameter['hint']) is float:
-                hint = ''
-            else:
-                hint = parameter['hint']
-            try:
-                gui_args = literal_eval(parameter['gui_args'])
-            except (SyntaxError, ValueError):
-                gui_args = {}
-            sub_layout.addWidget(gui(self.pr, idx, param_alias, hint, **gui_args))
-
-        child_w.setLayout(layout)
-        tab.setWidget(child_w)
+        self.qall_parameters = QAllParameters(self)
+        tab.setWidget(self.qall_parameters)
         self.tab_func_widget.addTab(tab, 'Parameters')
 
     def add_main_bts(self):
@@ -498,9 +487,9 @@ class MainWindow(QMainWindow):
         start_bt = QPushButton('Start', self)
         stop_bt = QPushButton('Quit', self)
 
-        clear_bt.setFont(QFont('Times', 18))
-        start_bt.setFont(QFont('Times', 18))
-        stop_bt.setFont(QFont('Times', 18))
+        clear_bt.setFont(QFont('AnyStyle', 18))
+        start_bt.setFont(QFont('AnyStyle', 18))
+        stop_bt.setFont(QFont('AnyStyle', 18))
 
         main_bt_layout.addWidget(clear_bt)
         main_bt_layout.addWidget(start_bt)
@@ -527,14 +516,34 @@ class MainWindow(QMainWindow):
 
         self.cancel_functions = False
 
-        # Lists of selected functions
-        self.mri_funcs = self.pd_funcs[self.pd_funcs['group'] == 'mri_subject_operations']
+        # Lists of selected functions separated in execution groups (mri_subject, subject, grand-average)
+        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
+                                       & (self.pd_funcs['subject_loop'] == True)
+                                       & (self.pd_funcs['QThreading'] == True)]
         self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.func_dict[mf]]
+
+        self.mri_plot_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
+                                            & (self.pd_funcs['subject_loop'] == True)
+                                            & (self.pd_funcs['QThreading'] == False)]
+        self.sel_mri_plot_funcs = [mpf for mpf in self.mri_plot_funcs.index if self.func_dict[mpf]]
+
         self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'mri_subject_operations')
-                                        & (self.pd_funcs['subject_loop'] == True)]
+                                        & (self.pd_funcs['subject_loop'] == True)
+                                        & (self.pd_funcs['QThreading'] == True)]
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.func_dict[ff]]
-        self.grand_avg_funcs = self.pd_funcs[self.pd_funcs['subject_loop'] == False]
-        self.sel_ga_funcs = [gf for gf in self.grand_avg_funcs.index if self.func_dict[gf]]
+
+        self.file_plot_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'mri_subject_operations')
+                                             & (self.pd_funcs['subject_loop'] == True)
+                                             & (self.pd_funcs['QThreading'] == False)]
+        self.sel_file_plot_funcs = [spf for spf in self.file_plot_funcs.index if self.func_dict[spf]]
+
+        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+                                      & (self.pd_funcs['QThreading'] == True)]
+        self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.func_dict[gf]]
+
+        self.ga_plot_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+                                           & (self.pd_funcs['QThreading'] == False)]
+        self.sel_ga_plot_funcs = [gpf for gpf in self.ga_plot_funcs.index if self.func_dict[gpf]]
 
         self.run_dialog = RunDialog(self)
 
@@ -672,6 +681,57 @@ class MainWindow(QMainWindow):
         event.accept()
 
 
+class QAllParameters(QWidget):
+    def __init__(self, main_win):
+        super().__init__()
+        self.main_win = main_win
+        self.param_guis = {}
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QHBoxLayout()
+        sub_layout = QVBoxLayout()
+        r_cnt = 0
+        for idx, parameter in self.main_win.pd_params.iterrows():
+            if r_cnt > 5:
+                layout.addLayout(sub_layout)
+                sub_layout = QVBoxLayout()
+                r_cnt = 0
+            else:
+                r_cnt += 1
+            param_alias = parameter['alias']
+            gui_name = parameter['gui_type']
+            if type(gui_name) != str:
+                gui_name = 'FuncGui'
+            gui_handle = getattr(parameter_widgets, gui_name)
+            if type(parameter['hint']) is float:
+                hint = ''
+            else:
+                hint = parameter['hint']
+            try:
+                gui_args = literal_eval(parameter['gui_args'])
+            except (SyntaxError, ValueError):
+                gui_args = {}
+            self.param_guis[idx] = gui_handle(self.main_win.pr, idx, param_alias, hint, **gui_args)
+            sub_layout.addWidget(self.param_guis[idx])
+
+        if 0 < r_cnt <= 5:
+            layout.addLayout(sub_layout)
+
+        self.setLayout(layout)
+
+    def update_all_param_guis(self):
+        for gui_name in self.param_guis:
+            param_gui = self.param_guis[gui_name]
+            param_gui.read_param()
+            param_gui.set_param()
+
+    def update_param_gui(self, gui_name):
+        param_gui = self.param_guis[gui_name]
+        param_gui.read_param()
+        param_gui.set_param()
+
+
 class RunDialog(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -708,12 +768,12 @@ class RunDialog(QDialog):
         self.layout.addWidget(self.pgbar, 2, 0, 1, 2)
 
         self.cancel_bt = QPushButton('Cancel')
-        self.cancel_bt.setFont(QFont('Times', 14))
+        self.cancel_bt.setFont(QFont('AnyStyle', 14))
         self.cancel_bt.clicked.connect(self.cancel_funcs)
         self.layout.addWidget(self.cancel_bt, 3, 0)
 
         self.close_bt = QPushButton('Close')
-        self.close_bt.setFont(QFont('Times', 14))
+        self.close_bt.setFont(QFont('AnyStyle', 14))
         self.close_bt.setEnabled(False)
         self.close_bt.clicked.connect(self.close)
         self.layout.addWidget(self.close_bt, 3, 1)
@@ -732,11 +792,11 @@ class RunDialog(QDialog):
 
     def populate(self, mode):
         if mode == 'mri':
-            self.populate_listw(self.mw.pr.sel_mri_files, self.mw.sel_mri_funcs)
+            self.populate_listw(self.mw.pr.sel_mri_files, self.mw.sel_mri_funcs + self.mw.sel_mri_plot_funcs)
         elif mode == 'file':
-            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
+            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs + self.mw.sel_file_plot_funcs)
         elif mode == 'ga':
-            self.populate_listw(self.mw.pr.grand_avg_dict, self.mw.sel_ga_funcs)
+            self.populate_listw(self.mw.pr.grand_avg_dict, self.mw.sel_ga_funcs + self.mw.sel_ga_plot_funcs)
         else:
             pass
 
@@ -765,9 +825,9 @@ class RunDialog(QDialog):
         self.current_func.setBackground(QColor('green'))
 
     def clear_marks(self):
-        if self.current_sub != None:
+        if self.current_sub is not None:
             self.current_sub.setBackground(QColor('white'))
-        if self.current_func != None:
+        if self.current_func is not None:
             self.current_func.setBackground(QColor('white'))
 
     def update_label(self, text):

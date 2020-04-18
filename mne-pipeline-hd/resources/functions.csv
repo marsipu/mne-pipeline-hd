@@ -7,9 +7,9 @@ compute_src_distances;compute_src_distances;mri_subject_operations;True;True;MRI
 setup_vol_src;setup_vol_src;mri_subject_operations;True;True;MRI-Preprocessing;;operations;mri_subject;subjects_dir;;
 morph_subject;morph_subject;mri_subject_operations;True;True;MRI-Preprocessing;;operations;mri_subject;subjects_dir;morph_to,source_space_method,overwrite;
 morph_labels_from_fsaverage;morph_labels_from_fsaverage;mri_subject_operations;True;True;MRI-Preprocessing;;operations;mri_subject;subjects_dir;overwrite;
-plot_source_space;plot_source_space;mri_subject_operations;True;True;MRI-Preprocessing;;plot;mri_subject;subjects_dir,figures_path;source_space_method,save_plots;
-plot_bem;plot_bem;mri_subject_operations;True;True;MRI-Preprocessing;;plot;mri_subject;subjects_dir,figures_path;source_space_method,save_plots;
-plot_labels;plot_labels;mri_subject_operations;True;True;MRI-Preprocessing;;plot;mri_subject;figures_path;save_plots,parcellation;
+plot_source_space;plot_source_space;mri_subject_operations;True;False;MRI-Preprocessing;;plot;mri_subject;subjects_dir,figures_path;source_space_method,save_plots;
+plot_bem;plot_bem;mri_subject_operations;True;False;MRI-Preprocessing;;plot;mri_subject;subjects_dir,figures_path;source_space_method,save_plots;
+plot_labels;plot_labels;mri_subject_operations;True;False;MRI-Preprocessing;;plot;mri_subject;figures_path;save_plots,parcellation;
 filter_raw;Filter Raw;sensor_space_operations;True;True;Compute;;operations;name,save_dir,ermsub,bad_channels;data_path;highpass,lowpass,n_jobs,enable_cuda,erm_t_limit,enable_ica,eog_digitized;
 find_events;Find Events;sensor_space_operations;True;True;Compute;;operations;name,save_dir;;adjust_timeline_by_msec,overwrite;
 pp_event_handling;pp_event_handling;pinprick_functions;True;True;Compute;;pinprick;name,save_dir;pscripts_path,figures_path;adjust_timeline_by_msec,overwrite,save_plots;
@@ -42,7 +42,7 @@ create_forward_solution;create_forward_solution;source_space_operations;True;Tru
 create_inverse_operator;create_inverse_operator;source_space_operations;True;True;Compute;;operations;name,save_dir,ermsub;;highpass,lowpass,overwrite,calm_noise_cov,erm_noise_cov;
 source_estimate;source_estimate;source_space_operations;True;True;Compute;;operations;name,save_dir;;highpass,lowpass,inverse_method,overwrite;
 vector_source_estimate;vector_source_estimate;source_space_operations;True;True;Compute;;operations;name,save_dir;;highpass,lowpass,inverse_method,overwrite;
-mixed_norm_estimate;mixed_norm_estimate;source_space_operations;True;True;Compute;;operations;name,save_dir,ermsub;;highpass,lowpass,inverse_method,overwrite;
+mixed_norm_estimate;mixed_norm_estimate;source_space_operations;True;True;Compute;;operations;name,save_dir,ermsub;"";highpass,lowpass,inverse_method,overwrite,erm_noise_cov,ermsub,calm_noise_cov,event_id,mixn_dip;
 ecd_fit;ecd_fit;source_space_operations;True;False;Compute;;operations;name,save_dir,ermsub,subtomri;subjects_dir,figures_path;highpass,lowpass,erm_noise_cov,calm_noise_cov,ecds,save_plots;
 apply_morph;apply_morph;source_space_operations;True;True;Compute;;operations;name,save_dir,subtomri;subjects_dir;highpass,lowpass,inverse_method,overwrite,morph_to,source_space_method,event_id;
 apply_morph_normal;apply_morph_normal;source_space_operations;True;True;Compute;;operations;name,save_dir,subtomri;subjects_dir;highpass,lowpass,inverse_method,overwrite,morph_to,source_space_method,event_id;
