@@ -564,15 +564,9 @@ def plot_evoked_butterfly(name, save_dir, highpass, lowpass, save_plots,
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
     for evoked in evokeds:
-        # ch_name, latency, amplitude = evoked.get_peak(tmin=-0.05, tmax=0.2, return_amplitude=True)
-
         figure = evoked.plot(spatial_colors=True,
                              window_title=name + ' - ' + evoked.comment,
                              selectable=True, gfp=True, zorder='std')
-
-        # tp = abs(evoked.times[0]) + latency
-        # plt.plot(tp, amplitude, 'bo', figure=plt.gcf())
-        # plt.annotate(ch_name, (tp, amplitude))
 
         if save_plots:
             save_path = join(figures_path, 'evoked_butterfly', evoked.comment,
@@ -582,7 +576,7 @@ def plot_evoked_butterfly(name, save_dir, highpass, lowpass, save_plots,
             print('figure: ' + save_path + ' has been saved')
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
-        plt.close(figure)
+
 
 @decor.topline
 def plot_evoked_white(name, save_dir, highpass, lowpass, save_plots, figures_path, erm_noise_cov, ermsub,

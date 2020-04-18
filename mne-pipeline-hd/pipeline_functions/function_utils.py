@@ -2,6 +2,7 @@ import logging
 import sys
 import traceback
 
+import matplotlib
 from PyQt5.QtCore import QObject, QRunnable, pyqtSignal, pyqtSlot
 
 from basic_functions import loading, operations, plot
@@ -51,7 +52,7 @@ class Worker(QRunnable):
     """
 
     def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
+        super().__init__()
 
         # Store constructor arguments (re-used for processing)
         self.fn = fn
@@ -60,11 +61,11 @@ class Worker(QRunnable):
         self.signals = WorkerSignals()
 
         # Add the callback to our kwargs
-        self.kwargs['pgbar_n'] = self.signals.pgbar_n
-        self.kwargs['pg_sub'] = self.signals.pg_sub
-        self.kwargs['pg_func'] = self.signals.pg_func
-        self.kwargs['pg_which_loop'] = self.signals.pg_which_loop
-        self.kwargs['func_sig'] = self.signals.func_sig
+        self.kwargs['signals'] = {'pgbar_n': self.signals.pgbar_n,
+                                  'pg_sub': self.signals.pg_sub,
+                                  'pg_func': self.signals.pg_func,
+                                  'pg_which_loop': self.signals.pg_which_loop,
+                                  'func_sig': self.signals.func_sig}
 
     @pyqtSlot()
     def run(self):
@@ -79,7 +80,7 @@ class Worker(QRunnable):
             logging.error('Ups, something happened:')
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc()))
+            self.signals.error.emit((exctype, value, traceback.format_exc(limit=-10)))
         finally:
             self.signals.finished.emit()  # Done
 
@@ -149,113 +150,85 @@ def func_from_def(func_name, subject, main_win):
     return return_value
 
 
-def call_functions(main_win, pgbar_n, pg_sub, pg_func, pg_which_loop, func_sig):
+def subject_loop(main_win, signals, subject_type, selected_subjects, selected_functions, count, all_prog):
+    for name in selected_subjects:
+        if not main_win.cancel_functions:
+            if subject_type == 'mri':
+                subject = CurrentMRISubject(name, main_win)
+            elif subject_type == 'file':
+                subject = CurrentSubject(name, main_win)
+                main_win.subject = subject
+            else:
+                subject = None
+            # Print Subject Console Header
+            print('=' * 60 + '\n', name + '\n')
+            signals['pg_sub'].emit(name)
+            for func in selected_functions:
+                if not main_win.cancel_functions:
+                    if main_win.pd_funcs['Mayavi'][func]:
+                        signals['pg_func'].emit(func)
+                        # Mayavi-Plots need to be called in the main thread
+                        signals['func_sig'].emit({'func_name': func, 'subject': subject, 'main_win': main_win})
+                        signals['pgbar_n'].emit({'count': count, 'max': all_prog})
+                        count += 1
+                    elif main_win.pd_funcs['Matplotlib'][func] and main_win.pr.parameters['show_plots']:
+                        signals['pg_func'].emit(func)
+                        # Matplotlib-Plots can be called without showing (backend: agg),
+                        # but to be shown, they have to be called in the main thread
+                        signals['func_sig'].emit({'func_name': func, 'subject': subject, 'main_win': main_win})
+                        signals['pgbar_n'].emit({'count': count, 'max': all_prog})
+                        count += 1
+                    else:
+                        signals['pg_func'].emit(func)
+                        func_from_def(func, subject, main_win)
+                        signals['pgbar_n'].emit({'count': count, 'max': all_prog})
+                        count += 1
+                else:
+                    break
+        else:
+            break
+
+    return count
+
+
+def call_functions(main_win, signals):
     """
     Call activated functions in main_window, read function-parameters from functions_empty.csv
     :param main_win: Main-Window-Instance
-    :param pgbar_n: Signal, which emits a tuple to show overall progress (current, max)
-    :param pg_sub: Signal, which emitas a string to show current sub
-    :param pg_func: Signal, which emits a string to show current executed function
-    :param pg_which_loop: Signal, which emits a string to show RunDialog which files and funcs to display
-    :param func_sig: Signal, which is used to emit strings for calling plot-functions outside the QThread
+    :param signals: Signals to send into main-thread
     """
 
     # Determine steps in progress for all selected subjects and functions
     all_prog = (len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs) +
-                len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_plot_funcs) +
                 len(main_win.pr.sel_files) * len(main_win.sel_file_funcs) +
-                len(main_win.pr.sel_files) * len(main_win.sel_file_plot_funcs) +
-                len(main_win.sel_ga_funcs) +
-                len(main_win.sel_ga_plot_funcs))
+                len(main_win.sel_ga_funcs))
 
     count = 1
 
+    # Set non-interactive backend for plots to be runnable in QThread
+    if not main_win.pr.parameters['show_plots']:
+        matplotlib.use('agg')
+
     # Check if any mri-subject is selected
-    if len(main_win.pr.sel_mri_files) > 0:
-        pg_which_loop.emit('mri')
-        for mri_subject in main_win.pr.sel_mri_files:
-            if not main_win.cancel_functions:
-                msub = CurrentMRISubject(mri_subject, main_win)
-                # Print Subject Console Header
-                print('=' * 60 + '\n', mri_subject + '\n')
-                pg_sub.emit(mri_subject)
-                for mri_func in main_win.sel_mri_funcs:
-                    if not main_win.cancel_functions:
-                        pg_func.emit(mri_func)
-                        func_from_def(mri_func, msub, main_win)
-                        pgbar_n.emit({'count': count, 'max': all_prog})
-                        count += 1
-                    else:
-                        break
-                for mri_plot_func in main_win.sel_mri_plot_funcs:
-                    if not main_win.cancel_functions:
-                        pg_func.emit(mri_plot_func)
-                        # Plot functions need to be called in the main thread, information delivered by func_sig
-                        func_sig.emit({'func_name': mri_plot_func, 'subject': msub, 'main_win': main_win})
-                        pgbar_n.emit({'count': count, 'max': all_prog})
-                        count += 1
-                    else:
-                        break
-            else:
-                break
+    if len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs) > 0:
+        signals['pg_which_loop'].emit('mri')
+        count = subject_loop(main_win, signals, 'mri', main_win.pr.sel_mri_files,
+                             main_win.sel_mri_funcs, count, all_prog)
     else:
-        print('No MRI-Subject selected')
+        print('No MRI-Subject or MRI-Function selected')
 
     # Call the functions for selected Files
-    # Todo: Account for call-order (idx, group-idx)
     if len(main_win.pr.sel_files) > 0:
-        pg_which_loop.emit('file')
-        for name in main_win.pr.sel_files:
-            if not main_win.cancel_functions:
-                pg_sub.emit(name)
-                subject = CurrentSubject(name, main_win)
-                main_win.subject = subject
-                # Check preload-setting
-                if main_win.settings.value('sub_preload', defaultValue=False) == 'true':
-                    main_win.subject.preload_data()
-                # Print Subject Console Header
-                print(60 * '=' + '\n' + name + '\n')
-                for ga_func in main_win.sel_file_funcs:
-                    if not main_win.cancel_functions:
-                        pg_func.emit(ga_func)
-                        func_from_def(ga_func, subject, main_win)
-                        pgbar_n.emit({'count': count, 'max': all_prog})
-                        count += 1
-                    else:
-                        break
-                for plot_func in main_win.sel_file_plot_funcs:
-                    if not main_win.cancel_functions:
-                        pg_func.emit(plot_func)
-                        # Plot functions need to be called in the main thread, information delivered by func_sig
-                        func_sig.emit({'func_name': plot_func, 'subject': subject, 'main_win': main_win})
-                        pgbar_n.emit({'count': count, 'max': all_prog})
-                        count += 1
-                    else:
-                        break
-
-            else:
-                break
-
+        signals['pg_which_loop'].emit('file')
+        count = subject_loop(main_win, signals, 'file', main_win.pr.sel_files,
+                             main_win.sel_file_funcs, count, all_prog)
     else:
-        print('No Subject or Function selected')
+        print('No Subject selected')
 
     # Call functions outside the subject-loop
-    if len(main_win.sel_ga_funcs) > 0 or len(main_win.sel_ga_plot_funcs) > 0:
-        pg_which_loop.emit('ga')
-        for ga_func in main_win.sel_ga_funcs:
-            if not main_win.cancel_functions:
-                pg_func.emit(ga_func)
-                func_from_def(ga_func, None, main_win)
-                pgbar_n.emit({'count': count, 'max': all_prog})
-                count += 1
-            else:
-                break
-        for plot_ga_func in main_win.sel_ga_plot_funcs:
-            if not main_win.cancel_functions:
-                pg_func.emit(plot_ga_func)
-                # Plot functions need to be called in the main thread, information delivered by func_sig
-                func_sig.emit({'func_name': plot_ga_func, 'subject': None, 'main_win': main_win})
-                pgbar_n.emit({'count': count, 'max': all_prog})
-                count += 1
-            else:
-                break
+    if len(main_win.sel_ga_funcs) > 0:
+        signals['pg_which_loop'].emit('ga')
+        subject_loop(main_win, signals, 'ga', ['Grand-Average'],
+                     main_win.sel_ga_funcs, count, all_prog)
+    else:
+        print('No Grand-Average-Function selected')

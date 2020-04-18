@@ -126,11 +126,11 @@ def populate_directories(data_path, figures_path, event_id):
 @decor.topline
 def filter_raw(name, save_dir, highpass, lowpass, ermsub,
                data_path, n_jobs, enable_cuda, bad_channels, erm_t_limit,
-               enable_ica, eog_digitized):
+               enable_ica):
     filter_name = name + filter_string(highpass, lowpass) + '-raw.fif'
     filter_path = join(save_dir, filter_name)
 
-    ica_filter_name = name + filter_string(lowpass, 1) + '-raw.fif'
+    ica_filter_name = name + filter_string(1, lowpass) + '-raw.fif'
     ica_filter_path = join(save_dir, ica_filter_name)
 
     if not isfile(filter_path) or not isfile(ica_filter_path):
@@ -969,6 +969,7 @@ def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub,
         evokeds = []
 
         for trial_type in epochs.event_id:
+            print(f'Evoked for {trial_type}')
             evoked = epochs[trial_type].average()
             if detrend:
                 evoked = evoked.detrend(order=1)

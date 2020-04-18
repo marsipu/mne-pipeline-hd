@@ -50,6 +50,9 @@ class CurrentSubject:
             print(f'No bad channels for {k}')
             raise RuntimeError(f'No bad channels for {k}')
 
+        if main_window.settings.value('sub_preload', defaultValue=False) == 'true':
+            self.preload_data()
+
     def preload_data(self):
         try:
             self.info = loading.read_info(self.name, self.save_dir)
@@ -278,6 +281,7 @@ class SubjectDock(QDockWidget):
             else:
                 item.setCheckState(Qt.Unchecked)
             self.sub_listw.addItem(item)
+        self.get_sub_selection()
 
     def update_mri_subjects_list(self):
         # Also get all freesurfe-directories from Freesurfer-Folder (maybe user added some manually)
@@ -298,6 +302,7 @@ class SubjectDock(QDockWidget):
             else:
                 item.setCheckState(Qt.Unchecked)
             self.mri_listw.addItem(item)
+        self.get_mri_selection()
 
     def get_sub_selection(self):
         sel_files = []
@@ -1037,6 +1042,7 @@ class SubDictWidget(QWidget):
         self.list_widget1.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.list_widget1.addItems(self.mw.pr.all_files)
         self.list_widget2 = QListWidget(self)
+        self.list_widget2.addItem('None')
         self.list_widget2.addItems(self.list2)
 
         # Response to Clicking
@@ -1120,14 +1126,6 @@ class SubDictWidget(QWidget):
         else:
             existing_dict = self.mw.pr.erm_dict
         if choice in existing_dict:
-            if existing_dict[choice] == 'None':
-                # Kind of bulky, improvable
-                enable_none_insert = True
-                for idx in range(self.list_widget2.count()):
-                    if self.list_widget2.item(idx).text() == 'None':
-                        enable_none_insert = False
-                if enable_none_insert:
-                    self.list_widget2.addItem('None')
             try:
                 it2 = self.list_widget2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
                 self.list_widget2.setCurrentItem(it2)
@@ -1171,6 +1169,10 @@ class SubDictWidget(QWidget):
                 existing_dict[choice] = 'None'
             else:
                 existing_dict.update({choice: 'None'})
+
+            none_item = self.list_widget2.findItems('None', Qt.MatchExactly)[0]
+            self.list_widget2.setCurrentItem(none_item)
+
         if self.mode == 'mri':
             self.mw.pr.sub_dict = existing_dict
         else:
@@ -1205,6 +1207,10 @@ class SubDictWidget(QWidget):
                 self.list_widget1.item(i).setBackground(QColor('green'))
                 self.list_widget1.item(i).setForeground(QColor('white'))
                 all_items.update({self.list_widget1.item(i).text(): 'None'})
+
+            none_item = self.list_widget2.findItems('None', Qt.MatchExactly)[0]
+            self.list_widget2.setCurrentItem(none_item)
+
             if self.mode == 'mri':
                 self.mw.pr.sub_dict = all_items
             elif self.mode == 'erm':

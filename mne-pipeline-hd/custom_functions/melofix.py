@@ -46,6 +46,7 @@ def melofix_event_handling(name, save_dir, adjust_timeline_by_msec, overwrite):
 
     mne.event.write_events(events_path, events)
 
+
 @decor.topline
 def evokeds_apply_baseline(name, save_dir, highpass, lowpass):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
@@ -56,3 +57,30 @@ def evokeds_apply_baseline(name, save_dir, highpass, lowpass):
         evoked = evoked.apply_baseline((-0.1, 0))
         new_evokeds.append(evoked)
     mne.write_evokeds(evokeds_path, new_evokeds)
+
+
+@decor.topline
+def epoch_baseline_test(name, save_dir, highpass, lowpass, figures_path):
+    raw = loading.read_filtered(name, save_dir, highpass, lowpass)
+    events = loading.read_events(name, save_dir)
+    event_id1 = {'Test1': 1, 'Test2': 2, 'Test3': 3, 'Test4': 4}
+
+    picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False,
+                           eog=False, ecg=False, exclude='bads')
+
+    epo_g_mb = mne.Epochs(raw, events, event_id1, picks=picks, flat={'grad': 1e-15},
+                          reject={'grad': 8e-10}, tmin=-0.5, tmax=1.5, baseline=(-0.1, 0))
+    epo_g_ob = mne.Epochs(raw, events, event_id1, picks=picks, flat={'grad': 1e-15},
+                          reject={'grad': 8e-10}, tmin=-0.5, tmax=1.5, baseline=None)
+
+    for ev_id in epo_g_mb.event_id:
+        fig = epo_g_mb[ev_id].average().plot(spatial_colors=True, show=False)
+        save_path = join(figures_path, 'evoked_butterfly', ev_id + '_g_mb' +
+                         op.filter_string(highpass, lowpass) + '.jpg')
+        fig.savefig(save_path, dpi=600)
+
+    for ev_id in epo_g_ob.event_id:
+        fig = epo_g_ob[ev_id].average().plot(spatial_colors=True, show=False)
+        save_path = join(figures_path, 'evoked_butterfly', ev_id + '_g_ob' +
+                         op.filter_string(highpass, lowpass) + '.jpg')
+        fig.savefig(save_path, dpi=600)
