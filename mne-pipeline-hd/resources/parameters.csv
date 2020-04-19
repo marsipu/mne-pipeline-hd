@@ -16,7 +16,6 @@ flat;flat;{'grad':1e-15};;default flat parameter;DictGui;
 reject_eog_epochs;reject_eog_epochs;False;;function to reject eog_epochs after use of find_eog_events;BoolGui;
 decim;decim;1;;down samplingfactor;IntGui;
 event_id;event_id;{'Default':1};;dictionary to assign strings to the event_ids;DictGui;
-detrend;detrend;True;;sometimes not working;BoolGui;
 ana_h1h2;ana_h1h2;False;;;BoolGui;
 tfr_freqs;tfr_freqs;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
 overwrite_tfr;overwrite_tfr;True;;Recalculate and overwrite tfr;BoolGui;

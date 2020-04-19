@@ -1,5 +1,5 @@
 # mne_pipeline_hd
-### A MNE-python Pipeline for MEG-Lab Heidelberg
+### A [MNE-Python](https://mne.tools/stable/index.html) Pipeline for MEG-Lab Heidelberg
 ###### based on: [Andersen, L.M., 2018. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group Source Space Representation. Front. Neurosci. 12.](https://doi.org/10.3389/fnins.2018.00006)
 **Installation**
 
@@ -7,15 +7,14 @@
 I would recommend to install in an own conda environment with:
 `conda env create -n mne -f environment.yml`
 2. `conda activate mne`
-3. `conda install -c conda-forge pyqt=5.12`
-4. Navigate to the folder within the command line where you want the pipeline-script to be installed
-5. `pip install -e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd`
-6. Navigate into the first mne_pipeline_hd folder
-7. `pip install -r requirements.txt`
+3. Navigate to the folder within the command line where you want the pipeline-script to be installed
+4. `pip install -e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd`
+5. Navigate into the first mne_pipeline_hd folder
+6. `pip install -r requirements.txt`
 
 **Start**
 
-Start the pipeline from the command line with `python mne_pipeline_hd` (you have to be in ther first "mne_pipeline_hd" directory)
+Start the pipeline from the command line with `python mne_pipeline_hd` (you have to be in the first "mne_pipeline_hd" directory)
 
 _or_
 

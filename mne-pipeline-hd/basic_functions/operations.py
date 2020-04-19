@@ -940,8 +940,7 @@ def autoreject_interpolation(name, save_dir, highpass, lowpass, enable_ica):
 
 
 @decor.topline
-def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub,
-                detrend, enable_ica, overwrite):
+def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub, enable_ica, overwrite):
     evokeds_name = name + filter_string(highpass, lowpass) + '-ave.fif'
     evokeds_path = join(save_dir, evokeds_name)
     info = loading.read_info(name, save_dir)
@@ -967,12 +966,9 @@ def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub,
             print('Evokeds from (normal) Epochs')
 
         evokeds = []
-
         for trial_type in epochs.event_id:
             print(f'Evoked for {trial_type}')
             evoked = epochs[trial_type].average()
-            if detrend:
-                evoked = evoked.detrend(order=1)
             evokeds.append(evoked)
 
         mne.evoked.write_evokeds(evokeds_path, evokeds)
@@ -982,8 +978,7 @@ def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub,
 
 
 @decor.topline
-def get_h1h2_evokeds(name, save_dir, highpass, lowpass, enable_ica, func_dict, ermsub,
-                     detrend):
+def get_h1h2_evokeds(name, save_dir, highpass, lowpass, enable_ica, func_dict, ermsub):
     info = loading.read_info(name, save_dir)
 
     if enable_ica:
@@ -1017,9 +1012,6 @@ def get_h1h2_evokeds(name, save_dir, highpass, lowpass, enable_ica, func_dict, e
         pre_epochs = epochs[trial_type]
         h1_evoked = pre_epochs[:int(len(epochs[trial_type]) / 2)].average()
         h2_evoked = pre_epochs[int(len(epochs[trial_type]) / 2):].average()
-        if detrend:
-            h1_evoked = h1_evoked.detrend(order=1)
-            h2_evoked = h1_evoked.detrend(order=1)
         h1_evokeds.append(h1_evoked)
         h2_evokeds.append(h2_evoked)
 
@@ -2596,7 +2588,8 @@ def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir
             for name in ga_chunk:
                 save_dir = join(data_path, name)
                 print(f'Add {name} to grand_average')
-                stcs = loading.read_morphed_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method, event_id)
+                stcs = loading.read_morphed_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
+                                                                    event_id)
                 for trial_type in stcs:
                     if trial_type in sub_trial_dict:
                         sub_trial_dict[trial_type].append(stcs[trial_type])
