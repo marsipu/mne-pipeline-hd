@@ -23,7 +23,8 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
 from pipeline_functions import iswin, parameter_widgets
 from pipeline_functions.function_utils import (Worker, call_functions, func_from_def)
 from pipeline_functions.project import MyProject
-from pipeline_functions.subjects import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock)
+from pipeline_functions.subjects import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
+                                         SubjectWizard)
 
 
 def get_upstream():
@@ -100,7 +101,7 @@ class MainWindow(QMainWindow):
         self.get_toolbox_params()
 
         desk_geometry = self.app.desktop().availableGeometry()
-        self.size_ratio = 0.8
+        self.size_ratio = 0.9
         height = desk_geometry.height() * self.size_ratio
         width = desk_geometry.width() * self.size_ratio
         # self.setFixedSize(width, height)
@@ -113,7 +114,8 @@ class MainWindow(QMainWindow):
         # Input
         input_menu = self.menuBar().addMenu('&Input')
 
-        # aaddfiles = QAction('Add Files', self)
+        input_menu.addAction('Subject-Wizard', partial(SubjectWizard, self))
+
         aaddfiles = QAction('Add Files', parent=self)
         aaddfiles.setShortcut('Ctrl+F')
         aaddfiles.setStatusTip('Add your MEG-Files here')

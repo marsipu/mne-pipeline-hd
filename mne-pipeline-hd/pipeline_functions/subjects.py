@@ -13,7 +13,8 @@ from pathlib import Path
 import mne
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QComboBox, QDialog, QDockWidget, QFileDialog, QGridLayout, \
+from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog, \
+    QGridLayout, \
     QGroupBox, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox, QProgressBar, \
     QPushButton, QStyle, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage
 from matplotlib import pyplot as plt
@@ -822,12 +823,6 @@ class AddFilesDialog(AddFilesWidget):
         self.dialog.setLayout(test_layout)
         self.dialog.open()
 
-
-class AddFilesWizPage(AddFilesWidget):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-
-
 def move_folder(src, dst):
     if not isdir(dst):
         print(f'Copying Folder from {src}...')
@@ -1328,7 +1323,6 @@ class SubBadsWidget(QWidget):
 
     def initui(self):
         self.listwidget = QListWidget(self)
-        self.layout.addWidget(self.listwidget, 0, 0, self.channel_count // 10, 1)
         for idx, key in enumerate(self.mw.pr.all_files):
             self.listwidget.insertItem(idx, key)
             if key in self.mw.pr.bad_channels_dict:
@@ -1337,16 +1331,20 @@ class SubBadsWidget(QWidget):
             else:
                 self.listwidget.item(idx).setBackground(QColor('red'))
                 self.listwidget.item(idx).setForeground(QColor('white'))
+        self.listwidget.setMinimumWidth(self.listwidget.sizeHintForColumn(0))
+        self.layout.addWidget(self.listwidget, 0, 0, 2, 1)
 
         # Make Checkboxes for channels
-        for x in range(1, self.channel_count + 1):
+        self.chkb_layout = QGridLayout()
+        for x in range(self.channel_count):
             ch_name = f'MEG {x:03}'
             chkbt = QCheckBox(ch_name, self)
             chkbt.clicked.connect(self.bad_dict_assign)
             self.bad_chkbts.update({ch_name: chkbt})
-            r = 0 + (x - 1) // 10
-            c = 1 + (x - 1) % 10
-            self.layout.addWidget(chkbt, r, c)
+            r = x // 10
+            c = x % 10
+            self.chkb_layout.addWidget(chkbt, r, c)
+        self.layout.addLayout(self.chkb_layout, 0, 1)
 
         # Response to Clicking
         self.listwidget.itemClicked.connect(self.bad_dict_selected)
@@ -1358,7 +1356,7 @@ class SubBadsWidget(QWidget):
         plot_bt.clicked.connect(self.plot_raw_bad)
         self.bt_layout.addWidget(plot_bt)
 
-        self.layout.addLayout(self.bt_layout, self.channel_count // 10 + 1, 0, 1, self.channel_count // 10)
+        self.layout.addLayout(self.bt_layout, 1, 1)
         self.setLayout(self.layout)
 
     def bad_dict_selected(self):
@@ -1481,3 +1479,61 @@ class SubjectWizard(QWizard):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+
+        self.setWindowTitle('Subject-Wizard')
+        self.setWizardStyle(QWizard.ModernStyle)
+        self.setOption(QWizard.HaveHelpButton, False)
+        self.setOption(QWizard.IndependentPages, True)
+
+        desk_geometry = self.mw.app.desktop().availableGeometry()
+        self.size_ratio = 0.7
+        height = desk_geometry.height() * self.size_ratio
+        width = desk_geometry.width() * self.size_ratio
+        self.setGeometry(0, 0, width, height)
+        self.center()
+
+        self.add_pages()
+        self.open()
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def add_pages(self):
+        self.add_files_page = QWizardPage()
+        self.add_files_page.setTitle('Import .fif-Files')
+        layout = QVBoxLayout()
+        layout.addWidget(AddFilesWidget(self.mw))
+        self.add_files_page.setLayout(layout)
+
+        self.add_mri_page = QWizardPage()
+        self.add_mri_page.setTitle('Import MRI-Files')
+        layout = QVBoxLayout()
+        layout.addWidget(AddMRIWidget(self.mw))
+        self.add_mri_page.setLayout(layout)
+
+        self.assign_mri_page = QWizardPage()
+        self.assign_mri_page.setTitle('Assign File --> MRI-Subject')
+        layout = QVBoxLayout()
+        layout.addWidget(SubDictWidget(self.mw, 'mri'))
+        self.assign_mri_page.setLayout(layout)
+
+        self.assign_erm_page = QWizardPage()
+        self.assign_erm_page.setTitle('Assign File --> ERM')
+        layout = QVBoxLayout()
+        layout.addWidget(SubDictWidget(self.mw, 'erm'))
+        self.assign_erm_page.setLayout(layout)
+
+        self.assign_bad_channels_page = QWizardPage()
+        self.assign_bad_channels_page.setTitle('Assign Bad-Channels')
+        layout = QVBoxLayout()
+        layout.addWidget(SubBadsWidget(self.mw))
+        self.assign_bad_channels_page.setLayout(layout)
+
+        self.addPage(self.add_files_page)
+        self.addPage(self.add_mri_page)
+        self.addPage(self.assign_mri_page)
+        self.addPage(self.assign_erm_page)
+        self.addPage(self.assign_bad_channels_page)
