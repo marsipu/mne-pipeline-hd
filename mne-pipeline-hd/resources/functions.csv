@@ -24,8 +24,8 @@ run_ssp_ecg;run_ssp_ecg;sensor_space_operations;True;False;False;Compute;;operat
 apply_ssp_ecg;apply_ssp_ecg;sensor_space_operations;True;False;False;Compute;;operations;name,save_dir;;highpass,lowpass,overwrite;
 run_ica;run_ica;sensor_space_operations;True;False;False;Compute;;operations;name,save_dir,bad_channels;figures_path,pscripts_path;highpass,lowpass,eog_channel,ecg_channel,reject,flat,overwrite,autoreject,save_plots;
 apply_ica;apply_ica;sensor_space_operations;True;False;False;Compute;;operations;name,save_dir;;highpass,lowpass,overwrite;
-get_evokeds;Get Evokeds;sensor_space_operations;True;False;False;Compute;;operations;name,save_dir,ermsub;func_dict;highpass,lowpass,detrend,enable_ica,overwrite;
-get_h1h2_evokeds;get_h1h2_evokeds;sensor_space_operations;True;False;False;Compute;;operations;name,save_dir,ermsub;func_dict;highpass,lowpass,enable_ica,detrend;
+get_evokeds;Get Evokeds;sensor_space_operations;True;False;False;Compute;;operations;name,save_dir,ermsub;func_dict;highpass,lowpass,enable_ica,overwrite;
+get_h1h2_evokeds;get_h1h2_evokeds;sensor_space_operations;True;False;False;Compute;;operations;name,save_dir,ermsub;func_dict;highpass,lowpass,enable_ica;
 evokeds_apply_baseline;Evokeds Apply Baseline;custom_functions;True;False;False;Compute;;melofix;name, save_dir;;highpass, lowpass;
 tfr;tfr;sensor_space_operations;True;False;False;Compute;;operations;name,save_dir;;highpass,lowpass,enable_ica,tfr_freqs,overwrite_tfr,tfr_method,multitaper_bandwith,stockwell_width,n_jobs;
 estimate_noise_covariance;estimate_noise_covariance;source_space_operations;True;False;False;Compute;;operations;name,save_dir,ermsub,bad_channels;data_path;highpass,lowpass,overwrite,baseline,n_jobs,erm_noise_cov,calm_noise_cov,enable_ica,erm_ica;
