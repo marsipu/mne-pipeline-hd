@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from basic_functions import loading, operations as op, plot as plot
-from pipeline_functions import decorators as decor, utilities as ut
+from pipeline_functions import decorators as decor, pipeline_utils as ut
 
 
 @decor.topline

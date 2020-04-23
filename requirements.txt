@@ -1,17 +1,15 @@
 # MNE-Python-Requirements
-mne
 scipy
 nilearn
 numpy
 mayavi
 pandas
 matplotlib
+setuptools
+PyQt5>=5.10,<5.14; platform_system == "darwin"
 
 # Pipeline-Requirements
-# if PyQt5(pip) is installed parallel to pyqt(conda), Spyder4 is not starting (12.03.2020)
-# instead pyqt=5.12 from conda-forge
-# PyQt5 >= 5.12, < 5.13
+mne
 autoreject
-imageio-ffmpeg
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 qdarkstyle

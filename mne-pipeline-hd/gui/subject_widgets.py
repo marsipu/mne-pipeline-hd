@@ -11,15 +11,19 @@ from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
 import mne
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog, \
-    QGridLayout, \
-    QGroupBox, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox, QProgressBar, \
-    QPushButton, QStyle, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage
+from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
+                             QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
+                             QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton, QSizePolicy,
+                             QStyle, QTabWidget,
+                             QTableWidget,
+                             QTableWidgetItem, QTableWidgetSelectionRange, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
+                             QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
 from basic_functions import loading
+from pipeline_functions.function_utils import Worker
 
 
 # Todo: Adapt File-Structure to (MEG)-BIDS-Standards
@@ -30,9 +34,8 @@ class CurrentSubject:
     def __init__(self, name, main_window):
         self.name = name
         self.mw = main_window
+        self.pr = main_window.pr
         self.p = main_window.pr.parameters
-        self.dict_error = False
-        self.dialog_open = False
         self.save_dir = join(self.mw.pr.data_path, name)
 
         try:
@@ -76,9 +79,6 @@ class CurrentSubject:
         except FileNotFoundError:
             pass
 
-    def dialog_closed(self):
-        self.dialog_open = False
-
     # Todo: Better solution for Current-File call and update together with function-call
     def update_file_data(self):
         self.ermsub = self.mw.pr.erm_dict[self.name]
@@ -87,6 +87,7 @@ class CurrentSubject:
 
 
 class CurrentMRISubject:
+    # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?
     def __init__(self, mri_subject, main_window):
         self.mw = main_window
         self.pr = main_window.pr
@@ -351,6 +352,10 @@ class SubjectDock(QDockWidget):
             def remove_only_list():
                 for file in self.mw.pr.sel_files:
                     self.mw.pr.all_files.remove(file)
+                    self.mw.pr.erm_dict.pop(file, None)
+                    self.mw.pr.sub_dict.pop(file, None)
+                    self.mw.pr.info_dict.pop(file, None)
+                    self.mw.pr.bad_channels_dict.pop(file, None)
                 self.mw.pr.sel_files = []
                 self.update_subjects_list()
                 self.sub_msg_box.close()
@@ -358,6 +363,10 @@ class SubjectDock(QDockWidget):
             def remove_with_files():
                 for file in self.mw.pr.sel_files:
                     self.mw.pr.all_files.remove(file)
+                    self.mw.pr.erm_dict.pop(file, None)
+                    self.mw.pr.sub_dict.pop(file, None)
+                    self.mw.pr.info_dict.pop(file, None)
+                    self.mw.pr.bad_channels_dict.pop(file, None)
                     try:
                         shutil.rmtree(join(self.mw.pr.data_path, file))
                     except FileNotFoundError:
@@ -545,7 +554,8 @@ class GrandAvgWidget(QWidget):
             GrandAvgFileAdd(self.mw, sel_group, self)
         else:
             msg_box = QMessageBox(self)
-            msg_box.setWindowTitle('Obacht!')
+            msg_box.setWindowTitle('Warning')
+            msg_box.setIcon(QMessageBox.Warning)
             msg_box.setText('No group has been selected')
             msg_box.open()
 
@@ -631,8 +641,29 @@ class GrandAvgFileAdd(QDialog):
 
 # ToDo: Event-ID-Widget (Subklassen und jetzt auch mit event_colors)
 
+class AddFileSignals(QObject):
+    """
+    Defines the Signals for the Worker and add_files
+    """
+    # Worker Signals
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    # Signals for call_functions
+    pgbar_n = pyqtSignal(int)
+    which_sub = pyqtSignal(str)
+
+
+class AddFileWorker(Worker):
+    def __init__(self, fn, *args, **kwargs):
+        self.signal_class = AddFileSignals()
+        self.kwargs = kwargs
+        self.kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
+                                  'which_sub': self.signal_class.which_sub}
+
+        super().__init__(fn, self.signal_class, *args, **kwargs)
+
+
 # Todo: Enable Drag&Drop
-# Todo: RegExp-Wizard
 class AddFilesWidget(QWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -642,6 +673,10 @@ class AddFilesWidget(QWidget):
         self.files = list()
         self.paths = dict()
         self.file_types = dict()
+        self.is_erm = dict()
+        self.erm_keywords = ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room', 'raum', 'Raum']
+        self.supported_file_types = ['fif']
+        self.filter_qstring = 'Neuromag (*.fif*)'
 
         self.init_ui()
 
@@ -656,69 +691,95 @@ class AddFilesWidget(QWidget):
         input_bt_layout.addWidget(folder_bt)
         self.layout.addLayout(input_bt_layout)
 
-        list_label = QLabel('These .fif-Files can be imported \n'
-                            '(the empty-room-measurements should appear here too \n'
-                            ' and will be sorted, if name contains e.g. "empty", "leer", ...)', self)
-        self.layout.addWidget(list_label)
-        self.list_widget = QListWidget(self)
-        self.list_widget.itemChanged.connect(self.item_renamed)
-        self.layout.addWidget(self.list_widget)
-        self.pgbar = QProgressBar(self)
-        self.pgbar.setMinimum(0)
-        self.layout.addWidget(self.pgbar)
+        self.label = QLabel(f'Supported file-formats: {self.supported_file_types}')
+        self.layout.addWidget(self.label)
+
+        self.table_widget = QTableWidget(0, 4)
+        self.table_widget.itemChanged.connect(self.item_checked)
+        self.table_widget.cellClicked.connect(self.item_selected)
+        self.table_widget.setHorizontalHeaderLabels(['name', 'type', 'Empty-Room?', 'Path'])
+        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table_widget.setToolTip('These .fif-Files can be imported \n'
+                                     '(the Empty-Room-Measurements should appear here '
+                                     'too and will be sorted according to the ERM-Keywords)')
+        self.layout.addWidget(self.table_widget)
 
         self.main_bt_layout = QHBoxLayout()
         import_bt = QPushButton('Import', self)
-        import_bt.clicked.connect(self.add_files)
+        import_bt.clicked.connect(self.add_files_starter)
         self.main_bt_layout.addWidget(import_bt)
-        rename_bt = QPushButton('Rename File', self)
-        rename_bt.clicked.connect(self.rename_item)
-        self.main_bt_layout.addWidget(rename_bt)
-        delete_bt = QPushButton('Delete File', self)
+        delete_bt = QPushButton('Remove', self)
         delete_bt.clicked.connect(self.delete_item)
         self.main_bt_layout.addWidget(delete_bt)
+        erm_kw_bt = QPushButton('Empty-Room-Keywords')
+        erm_kw_bt.clicked.connect(self.show_erm_keywords)
+        self.main_bt_layout.addWidget(erm_kw_bt)
         self.layout.addLayout(self.main_bt_layout)
 
         self.setLayout(self.layout)
 
-    def populate_list_widget(self):
-        # List with checkable names
-        self.list_widget.clear()
-        self.list_widget.addItems(self.files)
+    def item_checked(self, item):
+        name = self.table_widget.item(self.table_widget.row(item), 0).text()
+        if self.table_widget.column(item) == 2:
+            if item.checkState() == Qt.Checked:
+                self.is_erm[name] = 1
+            else:
+                self.is_erm[name] = 0
 
-        for index in range(self.list_widget.count()):
-            item = self.list_widget.item(index)
-            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable)
+    def item_selected(self, row):
+        # Select only rows
+        self.table_widget.setRangeSelected(QTableWidgetSelectionRange(row, 0, row, 3), True)
+
+    def populate_table_widget(self):
+        row_count = self.table_widget.rowCount()
+        self.table_widget.setRowCount(row_count + len(self.files))
+        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        for file_name in self.files:
+            name_item = QTableWidgetItem(file_name)
+            self.table_widget.setItem(row_count, 0, name_item)
+            type_item = QTableWidgetItem(self.file_types[file_name])
+            self.table_widget.setItem(row_count, 1, type_item)
+            erm_item = QTableWidgetItem('')
+            erm_item.setFlags(erm_item.flags() | Qt.ItemIsUserCheckable)
+            if self.is_erm[file_name]:
+                erm_item.setCheckState(Qt.Checked)
+            else:
+                erm_item.setCheckState(Qt.Unchecked)
+            self.table_widget.setItem(row_count, 2, erm_item)
+            path_item = QTableWidgetItem(self.paths[file_name])
+            self.table_widget.setItem(row_count, 3, path_item)
+            row_count += 1
+        self.adjustSize()
 
     def delete_item(self):
-        i = self.list_widget.currentRow()
-        if i >= 0:  # Assert that an item is selected
-            name = self.list_widget.item(i).text()
-            self.list_widget.takeItem(i)
-            self.files.remove(name)
+        row = self.table_widget.currentRow()
+        if row >= 0:  # Assert that an item is selected
+            file_name = self.table_widget.item(row, 0).text()
 
-    # Todo: Double-Clicking renaming not working
-    def rename_item(self):
-        r = self.list_widget.currentRow()
-        item = self.list_widget.currentItem()
-        if r >= 0:
-            self.old_name = self.list_widget.item(r).text()
-            self.list_widget.editItem(item)
+            self.files.remove(file_name)
+            self.file_types.pop(file_name, None)
+            self.is_erm.pop(file_name, None)
+            self.paths.pop(file_name, None)
 
-    def item_renamed(self):
-        if self.list_widget.currentItem():
-            new_name = self.list_widget.currentItem().text()
-            repl_ind = self.files.index(self.old_name)
-            self.files[repl_ind] = new_name
-            self.paths[new_name] = self.paths[self.old_name]
-            self.paths.pop(self.old_name)
-            self.file_types[new_name] = self.file_types[self.old_name]
-            self.file_types.pop(self.old_name)
-        else:
-            pass
+            self.table_widget.removeRow(row)
+
+    def show_erm_keywords(self):
+        ErmKwDialog(self)
+
+    def update_erm_checks(self):
+        for file in self.files:
+            name_item = self.table_widget.findItems(file, Qt.MatchExactly)[0]
+            if name_item:
+                erm_item = self.table_widget.item(self.table_widget.row(name_item), 2)
+                if any(x in file for x in self.erm_keywords):
+                    self.is_erm[file] = 1
+                    erm_item.setCheckState(Qt.Checked)
+                else:
+                    self.is_erm[file] = 0
+                    erm_item.setCheckState(Qt.Unchecked)
 
     def get_files_path(self):
-        files_list = QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import', filter='fif-Files(*.fif)')[0]
+        files_list = QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import', filter=self.filter_qstring)[0]
         if len(files_list) > 0:
             for file_path in files_list:
                 p = Path(file_path)
@@ -729,7 +790,11 @@ class AddFilesWidget(QWidget):
                     self.paths.update({file: file_path})
                 if file not in self.file_types:
                     self.file_types.update({file: p.suffix})
-            self.populate_list_widget()
+                if any(x in file for x in self.erm_keywords):
+                    self.is_erm[file] = 1
+                else:
+                    self.is_erm[file] = 0
+            self.populate_table_widget()
         else:
             pass
 
@@ -743,67 +808,188 @@ class AddFilesWidget(QWidget):
             # Iterate over all the entries
             for dirpath, dirnames, filenames in list_of_file:
                 for full_file in filenames:
-                    match = re.match(r'(.+)(\.fif)', full_file)
-                    if match and len(match.group()) == len(full_file):
-                        file = match.group(1)
-                        if not any(x in full_file for x in ['-eve.', '-epo.', '-ica.', '-ave.', '-tfr.', '-fwd.',
-                                                            '-cov.', '-inv.', '-src.', '-trans.', '-bem-sol.']):
-                            if file not in self.files:
-                                self.files.append(file)
-                            if file not in self.paths:
-                                self.paths.update({file: join(dirpath, full_file)})
-                            if file not in self.file_types:
-                                self.file_types.update({file: match.group(2)})
-            self.populate_list_widget()
+                    for file_type in self.supported_file_types:
+                        match = re.match(rf'(.+)(\.{file_type})', full_file)
+                        if match and len(match.group()) == len(full_file):
+                            file = match.group(1)
+                            if not any(x in full_file for x in ['-eve.', '-epo.', '-ica.', '-ave.', '-tfr.', '-fwd.',
+                                                                '-cov.', '-inv.', '-src.', '-trans.', '-bem-sol.']):
+                                if file not in self.files:
+                                    self.files.append(file)
+                                if file not in self.paths:
+                                    self.paths.update({file: join(dirpath, full_file)})
+                                if file not in self.file_types:
+                                    self.file_types.update({file: match.group(2)})
+                                if any(x in file for x in self.erm_keywords):
+                                    self.is_erm[file] = 1
+                                else:
+                                    self.is_erm[file] = 0
+            self.populate_table_widget()
         else:
             pass
 
-    # Todo: Replace Progress-Window with working progressbar
-    def add_files(self):
-        # Todo: Store Info-Data in Dict after copying?
+    def add_files_starter(self):
+        self.addf_dialog = QProgressDialog(self)
+        self.addf_dialog.setLabelText('Copying Files...')
+        self.addf_dialog.setMaximum(len(self.files))
+        self.addf_dialog.open()
+
+        worker = AddFileWorker(self.add_files)
+        worker.signal_class.finished.connect(self.addf_finished)
+        worker.signal_class.error.connect(self.show_errors)
+        worker.signal_class.pgbar_n.connect(self.addf_dialog.setValue)
+        worker.signal_class.which_sub.connect(self.addf_dialog.setLabelText)
+        self.mw.threadpool.start(worker)
+
+    def show_errors(self, err):
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle('An Error ocurred!')
+        msg_box.setTextFormat(Qt.AutoText)
+        formated_tb_text = err[2].replace('\n', '<br>')
+        msg_box.setText(f'<b><big>{err[1]}</b></big><br>'
+                        f'{formated_tb_text}')
+        msg_box.open()
+
+    def add_files(self, signals):
         existing_files = self.mw.pr.all_files
         existing_erm_files = self.mw.pr.erm_files
-        self.pgbar.setMaximum(len(self.files))
-        step = 0
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Copying...')
-        dialog.open()
+        count = 1
+        # Todo: Structure differenciation between erm and file better
         for fname in self.files:
-            forig = self.paths[fname]
-            # Make sure every raw-file got it's -raw appendix
-            if fname[-4:] == '-raw':
-                fdest = join(self.mw.pr.data_path, fname[:-4], fname + self.file_types[fname])
-                ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname[:-4], fname + self.file_types[fname])
-                fname = fname[:-4]
-            else:
-                fdest = join(self.mw.pr.data_path, fname, fname + '-raw' + self.file_types[fname])
-                ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname, fname + '-raw' + self.file_types[fname])
+            if not self.addf_dialog.wasCanceled():
+                signals['which_sub'].emit(f'Copying {fname}')
+                forig = self.paths[fname]
+                # Make sure every raw-file got it's -raw appendix
+                if fname[-4:] == '-raw':
+                    fdest = join(self.mw.pr.data_path, fname[:-4], fname + self.file_types[fname])
+                    ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname[:-4], fname + self.file_types[fname])
+                    new_fname = fname[:-4]
+                else:
+                    fdest = join(self.mw.pr.data_path, fname, fname + '-raw' + self.file_types[fname])
+                    ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname,
+                                   fname + '-raw' + self.file_types[fname])
+                    new_fname = fname
 
-            # Copy Empty-Room-Files to their directory
-            if any(x in fname for x in ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room']):
-                # Organize ERMs
-                if fname not in existing_erm_files:
-                    self.mw.pr.erm_files.append(fname)
-                # Copy empty-room-files to destination
-                move_file(forig, ermdest)
-            else:
-                # Organize sub_files
-                if fname not in existing_files:
-                    self.mw.pr.all_files.append(fname)
-                # Copy sub_files to destination
-                move_file(forig, fdest)
-            # Todo: No response from Window while copying thus no progress-bar-update
-            step += 1
-            self.pgbar.setValue(step)
-            self.pgbar.update()
+                # Make sure, files don't exist already
+                if self.is_erm[fname] and isfile(ermdest):
+                    signals['pgbar_n'].emit(count)
+                    count += 1
+                    continue
+                elif isfile(fdest):
+                    signals['pgbar_n'].emit(count)
+                    count += 1
+                    continue
 
-        dialog.close()
-        self.list_widget.clear()
+                raw = self.load_file(fname, forig)
+                info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
+                             'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
+                             'helium_info']
+                self.mw.pr.info_dict[new_fname] = {}
+                for key in info_keys:
+                    self.mw.pr.info_dict[new_fname][key] = raw.info[key]
+                self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
+                self.mw.pr.info_dict[new_fname]['ch_types'] = raw.get_channel_types()
+                self.mw.pr.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
+                if not self.addf_dialog.wasCanceled():
+                    # Copy Empty-Room-Files to their directory
+                    if self.is_erm[fname]:
+                        # Organize ERMs
+                        if new_fname not in existing_erm_files:
+                            self.mw.pr.erm_files.append(new_fname)
+                        # Copy empty-room-files to destination
+                        parent_dir = Path(ermdest).parent
+                        os.makedirs(parent_dir, exist_ok=True)
+                        raw.save(ermdest)
+                    else:
+                        # Organize sub_files
+                        if fname not in existing_files:
+                            self.mw.pr.all_files.append(fname)
+                        # Copy sub_files to destination
+                        parent_dir = Path(fdest).parent
+                        os.makedirs(parent_dir, exist_ok=True)
+                        raw.save(fdest)
+                    signals['pgbar_n'].emit(count)
+                    count += 1
+                else:
+                    break
+            else:
+                break
+
+    def addf_finished(self):
+        all_rows = self.table_widget.rowCount()
+        while all_rows > 0:
+            self.table_widget.removeRow(0)
+            all_rows -= 1
         self.files = list()
         self.paths = dict()
         self.file_types = dict()
-
+        self.is_erm = dict()
         self.mw.subject_dock.update_subjects_list()
+
+    def load_file(self, fname, forig):
+        if self.file_types[fname] == '.fif':
+            raw = mne.io.read_raw_fif(forig, preload=True)
+        else:
+            raw = None
+        return raw
+
+
+class ErmKwDialog(QDialog):
+    def __init__(self, parent_win):
+        super().__init__(parent_win)
+        self.parent_win = parent_win
+        self.item_list = parent_win.erm_keywords
+
+        self.init_ui()
+        self.populate_listw()
+        self.open()
+
+    def init_ui(self):
+        self.layout = QGridLayout()
+        self.listw = QListWidget()
+        self.listw.itemChanged.connect(self.item_changed)
+        self.layout.addWidget(self.listw, 0, 0, 1, 3)
+
+        self.add_bt = QPushButton('Add')
+        self.add_bt.clicked.connect(self.add_item)
+        self.remove_bt = QPushButton('Remove')
+        self.remove_bt.clicked.connect(self.remove_item)
+        self.close_bt = QPushButton('Close')
+        self.close_bt.clicked.connect(self.close_dlg)
+        self.layout.addWidget(self.add_bt, 1, 0)
+        self.layout.addWidget(self.remove_bt, 1, 1)
+        self.layout.addWidget(self.close_bt, 1, 2)
+        self.setLayout(self.layout)
+
+    def populate_listw(self):
+        self.listw.addItems(self.parent_win.erm_keywords)
+        for idx in range(self.listw.count()):
+            item = self.listw.item(idx)
+            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable)
+
+    def item_changed(self):
+        new_list = []
+        for idx in range(self.listw.count()):
+            item_text = self.listw.item(idx).text()
+            if item_text != '':
+                new_list.append(item_text)
+        self.item_list = new_list
+
+    def add_item(self):
+        item = QListWidgetItem()
+        item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable)
+        self.listw.addItem(item)
+        self.listw.editItem(item)
+
+    def remove_item(self):
+        item = self.listw.currentItem()
+        self.item_list.remove(item.text())
+        self.listw.takeItem(self.listw.row(item))
+
+    def close_dlg(self):
+        self.parent_win.erm_keywords = self.item_list
+        self.parent_win.update_erm_checks()
+        self.close()
 
 
 class AddFilesDialog(AddFilesWidget):
@@ -811,17 +997,23 @@ class AddFilesDialog(AddFilesWidget):
         super().__init__(main_win)
 
         self.dialog = QDialog(main_win)
-
-        test_layout = QHBoxLayout()
+        self.dialog.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Minimum)
+        self.dialog.setGeometry(0, 0, self.mw.desk_geometry.width() * 0.5, self.mw.desk_geometry.height() * 0.5)
+        self.center()
 
         close_bt = QPushButton('Close', self)
         close_bt.clicked.connect(self.dialog.close)
         self.main_bt_layout.addWidget(close_bt)
 
-        test_layout.addWidget(self)
-
-        self.dialog.setLayout(test_layout)
+        self.dialog.setLayout(self.layout)
         self.dialog.open()
+
+    def center(self):
+        qr = self.dialog.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.dialog.move(qr.topLeft())
+
 
 def move_folder(src, dst):
     if not isdir(dst):
@@ -872,13 +1064,10 @@ class AddMRIWidget(QWidget):
         self.layout.addWidget(list_label)
         self.list_widget = QListWidget(self)
         self.layout.addWidget(self.list_widget)
-        self.pgbar = QProgressBar(self)
-        self.pgbar.setMinimum(0)
-        self.layout.addWidget(self.pgbar)
 
         self.main_bt_layout = QHBoxLayout()
         import_bt = QPushButton('Import', self)
-        import_bt.clicked.connect(self.add_mri_subjects)
+        import_bt.clicked.connect(self.add_mri_subjects_starter)
         self.main_bt_layout.addWidget(import_bt)
         rename_bt = QPushButton('Rename File', self)
         rename_bt.clicked.connect(self.rename_item)
@@ -950,23 +1139,46 @@ class AddMRIWidget(QWidget):
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
         self.populate_list_widget()
 
-    def add_mri_subjects(self):
-        self.pgbar.setMaximum(len(self.folders))
-        step = 0
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Copying...')
-        dialog.open()
+    def add_mri_subjects_starter(self):
+        self.add_mri_dialog = QProgressDialog(self)
+        self.add_mri_dialog.setLabelText('Copying Folders...')
+        self.add_mri_dialog.setMaximum(len(self.folders))
+        self.add_mri_dialog.open()
+
+        worker = AddFileWorker(self.add_mri_subjects)
+        worker.signal_class.finished.connect(self.add_mri_finished)
+        worker.signal_class.error.connect(self.show_errors)
+        worker.signal_class.pgbar_n.connect(self.add_mri_dialog.setValue)
+        worker.signal_class.which_sub.connect(self.add_mri_dialog.setLabelText)
+        self.mw.threadpool.start(worker)
+
+    def add_mri_subjects(self, signals):
+        count = 1
         for mri_sub in self.folders:
-            src = self.paths[mri_sub]
-            dst = join(self.mw.pr.subjects_dir, mri_sub)
-            self.mw.pr.all_mri_subjects.append(mri_sub)
-            move_folder(src, dst)
-            step += 1
-            self.pgbar.setValue(step)
+            if not self.add_mri_dialog.wasCanceled():
+                signals['which_sub'].emit(f'Copying {mri_sub}')
+                src = self.paths[mri_sub]
+                dst = join(self.mw.pr.subjects_dir, mri_sub)
+                self.mw.pr.all_mri_subjects.append(mri_sub)
+                move_folder(src, dst)
+                signals['pgbar_n'].emit(count)
+                count += 1
+            else:
+                break
+
+    def show_errors(self, err):
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle('An Error ocurred!')
+        msg_box.setTextFormat(Qt.AutoText)
+        formated_tb_text = err[2].replace('\n', '<br>')
+        msg_box.setText(f'<b><big>{err[1]}</b></big><br>'
+                        f'{formated_tb_text}')
+        msg_box.open()
+
+    def add_mri_finished(self):
         self.list_widget.clear()
         self.folders = list()
         self.paths = dict()
-        dialog.close()
 
         self.mw.subject_dock.update_mri_subjects_list()
 
@@ -1266,15 +1478,6 @@ class SubDictDialog(SubDictWidget):
 
         self.dialog.setLayout(self.layout)
         self.dialog.open()
-
-
-class SubDictWizPage(SubDictWidget, QWizardPage):
-    def __init__(self, main_win, mode):
-        SubDictWidget.__init__(self, main_win, mode)
-        QWizardPage.__init__(self, main_win)
-
-    def init_wizard_ui(self):
-        layout = QVBoxLayout()
 
 
 def read_bad_channels_dict(bad_channels_dict_path):

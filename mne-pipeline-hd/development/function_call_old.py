@@ -9,8 +9,9 @@ import pandas as pd
 
 from basic_functions import loading, operations, plot
 from custom_functions import kristin, melofix, pinprick
-from pipeline_functions import subjects as subs, utilities as ut
-from pipeline_functions.subjects import CurrentMRISubject
+from pipeline_functions import pipeline_utils as ut
+from gui import subject_widgets as subs
+from gui.subject_widgets import CurrentMRISubject
 from resources import operations_dict as opd
 
 

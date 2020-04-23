@@ -1,92 +1,44 @@
-import logging
-import sys
-import traceback
-
 import matplotlib
-from PyQt5.QtCore import QObject, QRunnable, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal
 
-from basic_functions import loading, operations, plot
-from custom_functions import kristin, melofix, pinprick
-from pipeline_functions.subjects import CurrentMRISubject, CurrentSubject
-
-# Avoid deletion of import with "Customize Imports" from PyCharm
-all_func_modules = [loading, operations, plot, kristin, melofix, pinprick]
+from gui.qt_utils import Worker
+from gui.subject_widgets import CurrentMRISubject, CurrentSubject
 
 
-class WorkerSignals(QObject):
+class FunctionWorkerSignals(QObject):
     """
-    Defines the signals available from a running worker thread.
-    Supported signals are:
-    finished
-        No data
-    error
-        `tuple` (exctype, value, traceback.format_exc() )
-    result
-        `object` data returned from processing, anything
-    progress
-        `int` indicating % progress
-
-
+    Defines the Signals for the Worker and call_functions
     """
+    # Worker-Signals
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
-    pgbar_n = pyqtSignal(dict)
+
+    # Signals for call_functions
+    pgbar_n = pyqtSignal(int)
     pg_sub = pyqtSignal(str)
     pg_func = pyqtSignal(str)
     pg_which_loop = pyqtSignal(str)
     func_sig = pyqtSignal(dict)
 
 
-class Worker(QRunnable):
-    """
-    Worker thread
-
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-
-    """
-
+class FunctionWorker(Worker):
     def __init__(self, fn, *args, **kwargs):
-        super().__init__()
-
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
+        self.signal_class = FunctionWorkerSignals()
         self.kwargs = kwargs
-        self.signals = WorkerSignals()
-
         # Add the callback to our kwargs
-        self.kwargs['signals'] = {'pgbar_n': self.signals.pgbar_n,
-                                  'pg_sub': self.signals.pg_sub,
-                                  'pg_func': self.signals.pg_func,
-                                  'pg_which_loop': self.signals.pg_which_loop,
-                                  'func_sig': self.signals.func_sig}
-
-    @pyqtSlot()
-    def run(self):
-        """
-        Initialise the runner function with passed args, kwargs.
-        """
-
-        # Retrieve args/kwargs here; and fire processing using them
-        try:
-            result = self.fn(*self.args, **self.kwargs)
-        except:
-            logging.error('Ups, something happened:')
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc(limit=-10)))
-        finally:
-            self.signals.finished.emit()  # Done
+        self.kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
+                                  'pg_sub': self.signal_class.pg_sub,
+                                  'pg_func': self.signal_class.pg_func,
+                                  'pg_which_loop': self.signal_class.pg_which_loop,
+                                  'func_sig': self.signal_class.func_sig}
+        super().__init__(fn, self.signal_class, *args, **kwargs)
 
 
 def func_from_def(func_name, subject, main_win):
+
+    # Get module, has to specified in functions.csv as it is imported
     module_name = main_win.pd_funcs['module'][func_name]
+    module = main_win.all_modules[module_name]
 
     # Read Listitems from Strings from functions.csv
     subarg_string = main_win.pd_funcs['subject_args'][func_name]
@@ -95,11 +47,13 @@ def func_from_def(func_name, subject, main_win):
         subarg_names = subarg_string.split(',')
     else:
         subarg_names = []
+
     proarg_string = main_win.pd_funcs['project_args'][func_name]
     if type(proarg_string) is not float:
         proarg_names = proarg_string.split(',')
     else:
         proarg_names = []
+
     addarg_string = main_win.pd_funcs['additional_args'][func_name]
     if type(addarg_string) is not float:
         addarg_names = addarg_string.split(',')
@@ -142,15 +96,13 @@ def func_from_def(func_name, subject, main_win):
         except KeyError:
             print(addarg_name + ' not in Parameters')
 
-    # Get module, has to specified in functions.csv as it is imported
-    module = globals()[module_name]
     # Call Function from specified module with arguments from unpacked list/dictionary
     return_value = getattr(module, func_name)(**keyword_arguments)
 
     return return_value
 
 
-def subject_loop(main_win, signals, subject_type, selected_subjects, selected_functions, count, all_prog):
+def subject_loop(main_win, signals, subject_type, selected_subjects, selected_functions, count):
     for name in selected_subjects:
         if not main_win.cancel_functions:
             if subject_type == 'mri':
@@ -169,19 +121,19 @@ def subject_loop(main_win, signals, subject_type, selected_subjects, selected_fu
                         signals['pg_func'].emit(func)
                         # Mayavi-Plots need to be called in the main thread
                         signals['func_sig'].emit({'func_name': func, 'subject': subject, 'main_win': main_win})
-                        signals['pgbar_n'].emit({'count': count, 'max': all_prog})
+                        signals['pgbar_n'].emit(count)
                         count += 1
                     elif main_win.pd_funcs['Matplotlib'][func] and main_win.pr.parameters['show_plots']:
                         signals['pg_func'].emit(func)
                         # Matplotlib-Plots can be called without showing (backend: agg),
                         # but to be shown, they have to be called in the main thread
                         signals['func_sig'].emit({'func_name': func, 'subject': subject, 'main_win': main_win})
-                        signals['pgbar_n'].emit({'count': count, 'max': all_prog})
+                        signals['pgbar_n'].emit(count)
                         count += 1
                     else:
                         signals['pg_func'].emit(func)
                         func_from_def(func, subject, main_win)
-                        signals['pgbar_n'].emit({'count': count, 'max': all_prog})
+                        signals['pgbar_n'].emit(count)
                         count += 1
                 else:
                     break
@@ -197,12 +149,6 @@ def call_functions(main_win, signals):
     :param main_win: Main-Window-Instance
     :param signals: Signals to send into main-thread
     """
-
-    # Determine steps in progress for all selected subjects and functions
-    all_prog = (len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs) +
-                len(main_win.pr.sel_files) * len(main_win.sel_file_funcs) +
-                len(main_win.sel_ga_funcs))
-
     count = 1
 
     # Set non-interactive backend for plots to be runnable in QThread
@@ -213,7 +159,7 @@ def call_functions(main_win, signals):
     if len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs) > 0:
         signals['pg_which_loop'].emit('mri')
         count = subject_loop(main_win, signals, 'mri', main_win.pr.sel_mri_files,
-                             main_win.sel_mri_funcs, count, all_prog)
+                             main_win.sel_mri_funcs, count)
     else:
         print('No MRI-Subject or MRI-Function selected')
 
@@ -221,7 +167,7 @@ def call_functions(main_win, signals):
     if len(main_win.pr.sel_files) > 0:
         signals['pg_which_loop'].emit('file')
         count = subject_loop(main_win, signals, 'file', main_win.pr.sel_files,
-                             main_win.sel_file_funcs, count, all_prog)
+                             main_win.sel_file_funcs, count)
     else:
         print('No Subject selected')
 
@@ -229,6 +175,6 @@ def call_functions(main_win, signals):
     if len(main_win.sel_ga_funcs) > 0:
         signals['pg_which_loop'].emit('ga')
         subject_loop(main_win, signals, 'ga', ['Grand-Average'],
-                     main_win.sel_ga_funcs, count, all_prog)
+                     main_win.sel_ga_funcs, count)
     else:
         print('No Grand-Average-Function selected')
