@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Pipeline for group analysis of MEG data
 Adapted by Martin Schulz from Lau Møller Andersen
@@ -12,7 +11,7 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication
 
 from pipeline_functions import ismac
-from pipeline_functions import main_win
+from gui import main_win
 
 # import matplotlib
 # if ismac:

@@ -27,7 +27,7 @@ from scipy import stats
 from surfer import Brain
 
 from basic_functions import loading, operations as op
-from pipeline_functions import decorators as decor, utilities as ut
+from pipeline_functions import decorators as decor, pipeline_utils as ut
 
 
 # ==============================================================================

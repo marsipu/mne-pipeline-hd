@@ -1,3 +1,6 @@
+# Authors: Clemens Brunner <clemens.brunner@gmail.com>
+#
+# License: BSD (3-clause)
 import io
 import logging
 import os
@@ -20,11 +23,14 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QStyle,
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 
-from pipeline_functions import iswin, parameter_widgets
-from pipeline_functions.function_utils import (Worker, call_functions, func_from_def)
+from pipeline_functions import iswin
+from gui import parameter_widgets
+import basic_functions
+import custom_functions
+from pipeline_functions.function_utils import (FunctionWorker, call_functions, func_from_def)
 from pipeline_functions.project import MyProject
-from pipeline_functions.subjects import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
-                                         SubjectWizard)
+from gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
+                                 SubjectWizard)
 
 
 def get_upstream():
@@ -68,6 +74,15 @@ class MainWindow(QMainWindow):
         self.func_dict = dict()
         self.bt_dict = dict()
 
+        # Load all modules in basic_functions and custom_functions
+        basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
+        custom_functions_list = [x for x in dir(custom_functions) if '__' not in x]
+        self.all_modules = {}
+        for module_name in basic_functions_list:
+            self.all_modules[module_name] = getattr(basic_functions, module_name)
+        for module_name in custom_functions_list:
+            self.all_modules[module_name] = getattr(custom_functions, module_name)
+
         # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
         self.pd_funcs = pd.read_csv(os.getcwd() + '/resources/functions.csv', sep=';', index_col=0)
         self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
@@ -100,11 +115,10 @@ class MainWindow(QMainWindow):
         self.add_main_bts()
         self.get_toolbox_params()
 
-        desk_geometry = self.app.desktop().availableGeometry()
+        self.desk_geometry = self.app.desktop().availableGeometry()
         self.size_ratio = 0.9
-        height = desk_geometry.height() * self.size_ratio
-        width = desk_geometry.width() * self.size_ratio
-        # self.setFixedSize(width, height)
+        height = self.desk_geometry.height() * self.size_ratio
+        width = self.desk_geometry.width() * self.size_ratio
         self.setGeometry(0, 0, width, height)
         self.center()
         self.raise_win()
@@ -169,8 +183,8 @@ class MainWindow(QMainWindow):
 
         # About
         about_menu = self.menuBar().addMenu('About')
-        about_menu.addAction('Update Pipeline', self.update_pipeline)
-        about_menu.addAction('Update MNE-Python', self.update_mne)
+        # about_menu.addAction('Update Pipeline', self.update_pipeline)
+        # about_menu.addAction('Update MNE-Python', self.update_mne)
         about_menu.addAction('About QT', self.about_qt)
 
     def make_toolbar(self):
@@ -533,20 +547,27 @@ class MainWindow(QMainWindow):
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.func_dict[ff]]
         self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.func_dict[gf]]
 
+        # Determine steps in progress for all selected subjects and functions
+        self.all_prog = (len(self.pr.sel_mri_files) * len(self.sel_mri_funcs) +
+                         len(self.pr.sel_files) * len(self.sel_file_funcs) +
+                         len(self.sel_ga_funcs))
+
         self.run_dialog = RunDialog(self)
+        self.run_dialog.pgbar.setMaximum(self.all_prog)
+        self.run_dialog.open()
 
         # Redirect stdout to capture it
         sys.stdout = OutputStream()
         sys.stdout.signal.text_written.connect(self.run_dialog.update_label)
 
-        worker = Worker(call_functions, self)
-        worker.signals.error.connect(self.run_dialog.show_errors)
-        worker.signals.finished.connect(self.thread_complete)
-        worker.signals.pgbar_n.connect(self.run_dialog.set_pgbar)
-        worker.signals.pg_which_loop.connect(self.run_dialog.populate)
-        worker.signals.pg_sub.connect(self.run_dialog.mark_sub)
-        worker.signals.pg_func.connect(self.run_dialog.mark_func)
-        worker.signals.func_sig.connect(self.thread_func)
+        worker = FunctionWorker(call_functions, self)
+        worker.signal_class.error.connect(self.run_dialog.show_errors)
+        worker.signal_class.finished.connect(self.thread_complete)
+        worker.signal_class.pgbar_n.connect(self.run_dialog.pgbar.setValue)
+        worker.signal_class.pg_which_loop.connect(self.run_dialog.populate)
+        worker.signal_class.pg_sub.connect(self.run_dialog.mark_sub)
+        worker.signal_class.pg_func.connect(self.run_dialog.mark_func)
+        worker.signal_class.func_sig.connect(self.thread_func)
 
         self.threadpool.start(worker)
 
@@ -554,7 +575,8 @@ class MainWindow(QMainWindow):
         try:
             func_from_def(**kwargs)
         except:
-            logging.error('Ups, something happened:')
+            # Todo: Logging
+            # logging.error('Ups, something happened:')
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             err = (exctype, value, traceback.format_exc(limit=-10))
@@ -564,7 +586,6 @@ class MainWindow(QMainWindow):
         print('Finished')
         self.run_dialog.clear_marks()
         self.run_dialog.close_bt.setEnabled(True)
-        self.run_dialog.set_pgbar({'count': 1, 'max': 1})
 
     def get_toolbox_params(self):
         # Get n_jobs from settings
@@ -751,8 +772,6 @@ class RunDialog(QDialog):
         self.init_ui()
         self.center()
 
-        self.open()
-
     def init_ui(self):
         self.layout = QGridLayout()
 
@@ -786,10 +805,6 @@ class RunDialog(QDialog):
         self.console_widget.insertPlainText('Terminating Pipeline...')
         self.console_widget.ensureCursorVisible()
         self.close_bt.setEnabled(True)
-
-    def set_pgbar(self, pgbar_values):
-        self.pgbar.setMaximum(pgbar_values['max'])
-        self.pgbar.setValue(pgbar_values['count'])
 
     def populate(self, mode):
         if mode == 'mri':

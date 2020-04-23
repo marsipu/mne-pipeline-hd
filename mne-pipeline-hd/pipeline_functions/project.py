@@ -4,9 +4,9 @@ from os import listdir, makedirs
 from os.path import exists, isdir, isfile, join
 
 import mne
-from PyQt5.QtWidgets import QFileDialog, QInputDialog
+from PyQt5.QtWidgets import QFileDialog, QInputDialog, QMessageBox
 
-from pipeline_functions import subjects as subs
+from gui import subject_widgets as subs
 
 
 class MyProject:
@@ -17,9 +17,20 @@ class MyProject:
     def __init__(self, main_win):
         self.mw = main_win
 
+        # Iniate Project-Lists and Dicts
         self.parameters = {}
-        # Todo: Solution with func-dicts for functions not optimal
+        self.info_dict = {}
+
+        # Todo: Solution with func-dicts for functions not optimal, wird gebraucht für functions mit func_dict
         self.func_dict = main_win.func_dict
+
+        self.all_files = []
+        self.all_mri_subjects = []
+        self.erm_files = []
+        self.sub_dict = {}
+        self.erm_dict = {}
+        self.bad_channels_dict = {}
+        self.grand_avg_dict = {}
 
         self.get_paths()
         self.make_paths()
@@ -34,24 +45,31 @@ class MyProject:
         if self.home_path is None:
             hp = QFileDialog.getExistingDirectory(self.mw, 'Select a folder to store your Pipeline-Projects')
             if hp == '':
-                self.mw.close()
-                raise RuntimeError('You canceled an important step, start over')
+                msg_box = QMessageBox(self.mw)
+                msg_box.setText("You can't cancel this step!")
+                msg_box.setIcon(QMessageBox.Warning)
+                ok = msg_box.exec()
+                if ok:
+                    self.get_paths()
+            else:
+                self.home_path = str(hp)
+                self.mw.settings.setValue('home_path', self.home_path)
+        elif not isdir(self.home_path):
+            hp = QFileDialog.getExistingDirectory(self.mw, f'{self.home_path} not found! '
+                                                           f'Select the folder where '
+                                                           f'you store your Pipeline-Projects')
+            if hp == '':
+                msg_box = QMessageBox(self.mw)
+                msg_box.setText("You can't cancel this step!")
+                msg_box.setIcon(QMessageBox.Warning)
+                ok = msg_box.exec()
+                if ok:
+                    self.get_paths()
             else:
                 self.home_path = str(hp)
                 self.mw.settings.setValue('home_path', self.home_path)
         else:
-            if not isdir(self.home_path):
-                hp = QFileDialog.getExistingDirectory(self.mw, f'{self.home_path} not found! '
-                                                               f'Select the folder where '
-                                                               f'you store your Pipeline-Projects')
-                if hp == '':
-                    self.mw.close()
-                    raise RuntimeError('You canceled an important step, start over')
-                else:
-                    self.home_path = str(hp)
-                    self.mw.settings.setValue('home_path', self.home_path)
-            else:
-                pass
+            pass
 
         # Get project_name
         self.project_name = self.mw.settings.value('project_name')
@@ -60,14 +78,18 @@ class MyProject:
             self.project_name, ok = QInputDialog.getText(self.mw, 'Project-Selection',
                                                          f'No projects in {self.home_path} found\n'
                                                          'Enter a project-name for your first project')
-            if ok:
+            if ok and self.project_name:
                 self.projects.append(self.project_name)
                 self.mw.settings.setValue('project_name', self.project_name)
                 self.make_paths()
             else:
                 # Problem in Python Console, QInputDialog somehow stays in memory
-                self.mw.close()
-                raise RuntimeError('You canceled an important step, start over')
+                msg_box = QMessageBox(self.mw)
+                msg_box.setText("You can't cancel this step!")
+                msg_box.setIcon(QMessageBox.Warning)
+                ok = msg_box.exec()
+                if ok:
+                    self.get_paths()
         elif self.project_name is None or self.project_name not in self.projects:
             self.project_name = self.projects[0]
             self.mw.settings.setValue('project_name', self.project_name)
@@ -94,10 +116,13 @@ class MyProject:
         self.erm_dict_path = join(self.pscripts_path, 'erm_dict.json')
         self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.json')
         self.grand_avg_dict_path = join(self.pscripts_path, 'grand_avg_dict.json')
+        self.info_dict_path = join(self.pscripts_path, 'info_dict.json')
+        self.ch_type_dict_path = join(self.pscripts_path, 'ch_type_dict.json')
 
         path_lists = [self.subjects_dir, self.data_path, self.erm_data_path, self.pscripts_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
-                      self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path]
+                      self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path,
+                      self.info_dict_path, self.ch_type_dict_path]
 
         for path in path_lists:
             if not exists(path):
@@ -112,20 +137,15 @@ class MyProject:
 
     def load_sub_lists(self):
         self.projects = [p for p in listdir(self.home_path) if isdir(join(self.home_path, p, 'data'))]
-        self.all_files = []
-        self.all_mri_subjects = []
-        self.erm_files = []
-        self.sub_dict = {}
-        self.erm_dict = {}
-        self.bad_channels_dict = {}
-        self.grand_avg_dict = {}
+
         load_dict = {self.file_list_path: 'all_files',
                      self.mri_sub_list_path: 'all_mri_subjects',
                      self.erm_list_path: 'erm_files',
                      self.sub_dict_path: 'sub_dict',
                      self.erm_dict_path: 'erm_dict',
                      self.bad_channels_dict_path: 'bad_channels_dict',
-                     self.grand_avg_dict_path: 'grand_avg_dict'}
+                     self.grand_avg_dict_path: 'grand_avg_dict',
+                     self.info_dict_path: 'info_dict'}
         for path in load_dict:
             try:
                 with open(path, 'r') as file:
@@ -161,7 +181,8 @@ class MyProject:
                      self.sub_dict_path: self.sub_dict,
                      self.erm_dict_path: self.erm_dict,
                      self.bad_channels_dict_path: self.bad_channels_dict,
-                     self.grand_avg_dict_path: self.grand_avg_dict}
+                     self.grand_avg_dict_path: self.grand_avg_dict,
+                     self.info_dict_path: self.info_dict}
         for path in save_dict:
             with open(path, 'w') as file:
                 json.dump(save_dict[path], file, indent=4)
@@ -225,7 +246,6 @@ class MyProject:
                 makedirs(folder_path)
                 print(folder_path + ' has been created')
 
-
         # create grand average figures path
         grand_averages_figures_path = join(self.figures_path, 'grand_averages')
         figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
@@ -259,4 +279,3 @@ class MyProject:
                         print(subfolder + ' has been created')
                     except OSError:
                         print(subfolder + ': this event-id-name can\'t be used due to OS-Folder-Naming-Conventions')
-

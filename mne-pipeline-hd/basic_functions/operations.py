@@ -31,7 +31,7 @@ from scipy import signal, stats
 from surfer import Brain
 
 from basic_functions import loading, plot as plot
-from pipeline_functions import decorators as decor, iswin, utilities as ut
+from pipeline_functions import decorators as decor, iswin, pipeline_utils as ut
 
 
 # Todo: Change normal comments to docstrings
