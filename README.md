@@ -33,4 +33,4 @@ You need a [GitHub-Account](https://github.com/), a working [MNE-Python-Environm
 7. Make "New pull request" from your new feature branch
 
 
-Please report bugs on GitHub or to me directly (martin.schulz@stud.uni-heidelberg.de)
+Please report bugs on GitHub or to me directly (mne.pipeline@gmail.com)

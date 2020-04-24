@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Pipeline for group analysis of MEG data - plotting functions
-@author: Lau Møller Andersen
-@email: lau.moller.andersen@ki.se | lau.andersen@cnru.dk
-@github: https://github.com/ualsbombe/omission_frontiers.git
-
-Edited by Martin Schulz
-martin@stud.uni-heidelberg.de
+Pipeline-GUI for Analysis of MEG data
+based on: https://doi.org/10.3389/fnins.2018.00006
+@author: Martin Schulz
+@email: mne.pipeline@gmail.com
+@github: marsipu/mne_pipeline_hd
 """
 from __future__ import print_function
 

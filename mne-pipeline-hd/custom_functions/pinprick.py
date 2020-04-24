@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+@author: Martin Schulz
+@email: mne.pipeline@gmail.com
+@github: marsipu/mne_pipeline_hd
+"""
 import re
 import statistics as st
 from os.path import join

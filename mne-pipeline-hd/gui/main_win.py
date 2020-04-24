@@ -1,6 +1,11 @@
-# Authors: Clemens Brunner <clemens.brunner@gmail.com>
-#
-# License: BSD (3-clause)
+# -*- coding: utf-8 -*-
+"""
+Pipeline-GUI for Analysis of MEG data
+based on: https://doi.org/10.3389/fnins.2018.00006
+@author: Martin Schulz
+@email: mne.pipeline@gmail.com
+@github: marsipu/mne_pipeline_hd
+"""
 import io
 import logging
 import os
@@ -23,14 +28,15 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QStyle,
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 
-from pipeline_functions import iswin
-from gui import parameter_widgets
 import basic_functions
 import custom_functions
-from pipeline_functions.function_utils import (FunctionWorker, call_functions, func_from_def)
-from pipeline_functions.project import MyProject
+from gui import parameter_widgets
+from gui.qt_utils import ErrorDialog
 from gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
                                  SubjectWizard)
+from pipeline_functions import iswin
+from pipeline_functions.function_utils import (FunctionWorker, call_functions, func_from_def)
+from pipeline_functions.project import MyProject
 
 
 def get_upstream():
@@ -120,8 +126,6 @@ class MainWindow(QMainWindow):
         height = self.desk_geometry.height() * self.size_ratio
         width = self.desk_geometry.width() * self.size_ratio
         self.setGeometry(0, 0, width, height)
-        self.center()
-        self.raise_win()
 
     def make_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
@@ -861,13 +865,7 @@ class RunDialog(QDialog):
         self.move(qr.topLeft())
 
     def show_errors(self, err):
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle('An Error ocurred!')
-        msg_box.setTextFormat(Qt.AutoText)
-        formated_tb_text = err[2].replace('\n', '<br>')
-        msg_box.setText(f'<b><big>{err[1]}</b></big><br>'
-                        f'{formated_tb_text}')
-        msg_box.open()
+        err_dlg = ErrorDialog(self, err)
 
 
 class OutputSignal(QObject):

@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Pipeline-GUI for Analysis of MEG data
+based on: https://doi.org/10.3389/fnins.2018.00006
+@author: Martin Schulz
+@email: mne.pipeline@gmail.com
+@github: marsipu/mne_pipeline_hd
+"""
 import json
 from ast import literal_eval
 from os import listdir, makedirs
@@ -156,6 +164,12 @@ class MyProject:
         self.sel_files = self.mw.settings.value('sel_files', defaultValue=[])
         self.sel_mri_files = self.mw.settings.value('sel_mri_files', defaultValue=[])
         self.sel_ga_groups = self.mw.settings.value('sel_ga_groups', defaultValue=[])
+        if not self.sel_files:
+            self.sel_files = []
+        if not self.sel_mri_files:
+            self.sel_mri_files = []
+        if not self.sel_ga_groups:
+            self.sel_ga_groups = []
 
     def load_py_lists(self):
         self.all_files = subs.read_files(join(self.pscripts_path, 'file_list.py'))

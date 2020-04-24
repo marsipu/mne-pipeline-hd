@@ -12,7 +12,7 @@ from custom_functions import kristin, melofix, pinprick
 from pipeline_functions import pipeline_utils as ut
 from gui import subject_widgets as subs
 from gui.subject_widgets import CurrentMRISubject
-from resources import operations_dict as opd
+from development import operations_dict as opd
 
 
 # TODO: Ideas for improved function calling:
@@ -78,7 +78,6 @@ def call_functions(main_window, project):
     #
     # Read parameters
     if not isfile(join(pr.project_path, f'parameters_{pr.project_name}.py')):
-        from resources import parameters_template as p
 
         shutil.copy2(join(os.getcwd(), 'resources/parameters_template.py'),
                      join(pr.project_path, f'parameters_{pr.project_name}.py'))
