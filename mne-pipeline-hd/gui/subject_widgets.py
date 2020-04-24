@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
 """
-subject_organisation by Martin Schulz
-martin.schulz@stud.uni-heidelberg.de
+Pipeline-GUI for Analysis of MEG data
+based on: https://doi.org/10.3389/fnins.2018.00006
+@author: Martin Schulz
+@email: mne.pipeline@gmail.com
+@github: marsipu/mne_pipeline_hd
 """
 import os
 import re
@@ -23,7 +27,7 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
 from matplotlib import pyplot as plt
 
 from basic_functions import loading
-from pipeline_functions.function_utils import Worker
+from gui.qt_utils import (Worker, ErrorDialog)
 
 
 # Todo: Adapt File-Structure to (MEG)-BIDS-Standards
@@ -842,13 +846,7 @@ class AddFilesWidget(QWidget):
         self.mw.threadpool.start(worker)
 
     def show_errors(self, err):
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle('An Error ocurred!')
-        msg_box.setTextFormat(Qt.AutoText)
-        formated_tb_text = err[2].replace('\n', '<br>')
-        msg_box.setText(f'<b><big>{err[1]}</b></big><br>'
-                        f'{formated_tb_text}')
-        msg_box.open()
+        err_dlg = ErrorDialog(self, err)
 
     def add_files(self, signals):
         existing_files = self.mw.pr.all_files
@@ -1167,13 +1165,7 @@ class AddMRIWidget(QWidget):
                 break
 
     def show_errors(self, err):
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle('An Error ocurred!')
-        msg_box.setTextFormat(Qt.AutoText)
-        formated_tb_text = err[2].replace('\n', '<br>')
-        msg_box.setText(f'<b><big>{err[1]}</b></big><br>'
-                        f'{formated_tb_text}')
-        msg_box.open()
+        err_dlg = ErrorDialog(self, err)
 
     def add_mri_finished(self):
         self.list_widget.clear()

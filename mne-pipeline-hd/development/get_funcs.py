@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from resources import operations_dict as opd
+from development import operations_dict as opd
 
 """
 Get functions from old function-call and copy them to pandas-DataFrame
