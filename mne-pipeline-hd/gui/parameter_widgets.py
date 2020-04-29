@@ -19,11 +19,12 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QGridLayou
 class Param(QWidget):
     """
     General GUI for single Parameter-GUIs, not to be called directly
+    Inherited Clases should have "Gui" in their name to get identified correctly
     """
 
     def __init__(self, project, param_name, param_alias):
         """
-        :param project: Project-Class called in main_win.py
+        :param project: Project-Class called in main_window.py
         """
         super().__init__()
         self.project = project
@@ -195,8 +196,8 @@ class FuncGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        self.param_widget.setText(self.param_value)
-        self.display_widget.setText(self.param_value)
+        self.param_widget.setText(str(self.param_value))
+        self.display_widget.setText(str(self.param_value))
 
     def get_param(self):
         string_param = self.param_widget.text()
@@ -252,7 +253,7 @@ class BoolGui(Param):
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint='', min_val=-10., max_val=10.,
+    def __init__(self, project, param_name, param_alias, hint='', min_val=-1000., max_val=1000.,
                  step=.1, decimals=2, param_unit=None):
         super().__init__(project, param_name, param_alias)
         self.param_name = param_name
@@ -306,7 +307,7 @@ class TupleGui(Param):
 
 
 class CheckTupleGui(TupleGui):
-    def __init__(self, project, param_name, param_alias, hint='', min_val=-10., max_val=10.,
+    def __init__(self, project, param_name, param_alias, hint='', min_val=-1000., max_val=1000.,
                  step=.1, decimals=2, param_unit=None, unchecked_value=None):
         self.param_name = param_name
         self.unchecked_value = unchecked_value
@@ -465,7 +466,7 @@ class DictGui(Param):
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint='', min_val=0., max_val=10., step=1.):
+    def __init__(self, project, param_name, param_alias, hint='', min_val=0., max_val=100., step=1.):
         super().__init__(project, param_name, param_alias)
         self.param_name = param_name
         self.param_alias = param_alias

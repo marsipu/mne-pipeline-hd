@@ -4,3 +4,5 @@ cachedir/*
 /_pipeline_cache/*
 .idea/*
 environment.yml
+.build
+.dist

@@ -35,11 +35,11 @@ from gui.qt_utils import (Worker, ErrorDialog)
 class CurrentSubject:
     """ Class for File-Data in File-Loop"""
 
-    def __init__(self, name, main_window):
+    def __init__(self, name, main_win):
         self.name = name
-        self.mw = main_window
-        self.pr = main_window.pr
-        self.p = main_window.pr.parameters
+        self.mw = main_win
+        self.pr = main_win.pr
+        self.p = main_win.pr.parameters
         self.save_dir = join(self.mw.pr.data_path, name)
 
         try:
@@ -58,7 +58,7 @@ class CurrentSubject:
             print(f'No bad channels for {k}')
             raise RuntimeError(f'No bad channels for {k}')
 
-        if main_window.settings.value('sub_preload', defaultValue=False) == 'true':
+        if main_win.settings.value('sub_preload', defaultValue=False) == 'true':
             self.preload_data()
 
     def preload_data(self):
@@ -92,9 +92,9 @@ class CurrentSubject:
 
 class CurrentMRISubject:
     # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?
-    def __init__(self, mri_subject, main_window):
-        self.mw = main_window
-        self.pr = main_window.pr
+    def __init__(self, mri_subject, main_win):
+        self.mw = main_win
+        self.pr = main_win.pr
         self.mri_subject = mri_subject
 
 
@@ -680,7 +680,7 @@ class AddFilesWidget(QWidget):
         self.is_erm = dict()
         self.erm_keywords = ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room', 'raum', 'Raum']
         self.supported_file_types = ['fif']
-        self.filter_qstring = 'Neuromag (*.fif*)'
+        self.filter_qstring = 'Neuromag (*.fif)'
 
         self.init_ui()
 
@@ -701,8 +701,8 @@ class AddFilesWidget(QWidget):
         self.table_widget = QTableWidget(0, 4)
         self.table_widget.itemChanged.connect(self.item_checked)
         self.table_widget.cellClicked.connect(self.item_selected)
-        self.table_widget.setHorizontalHeaderLabels(['name', 'type', 'Empty-Room?', 'Path'])
-        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table_widget.setHorizontalHeaderLabels(['File-Name', 'File-Type', 'Is Empty-Room?', 'Path'])
+        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table_widget.setToolTip('These .fif-Files can be imported \n'
                                      '(the Empty-Room-Measurements should appear here '
                                      'too and will be sorted according to the ERM-Keywords)')
@@ -737,7 +737,6 @@ class AddFilesWidget(QWidget):
     def populate_table_widget(self):
         row_count = self.table_widget.rowCount()
         self.table_widget.setRowCount(row_count + len(self.files))
-        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         for file_name in self.files:
             name_item = QTableWidgetItem(file_name)
             self.table_widget.setItem(row_count, 0, name_item)
@@ -753,7 +752,6 @@ class AddFilesWidget(QWidget):
             path_item = QTableWidgetItem(self.paths[file_name])
             self.table_widget.setItem(row_count, 3, path_item)
             row_count += 1
-        self.adjustSize()
 
     def delete_item(self):
         row = self.table_widget.currentRow()
@@ -1115,7 +1113,7 @@ class AddMRIWidget(QWidget):
                     self.paths.update({mri_sub: folder_path})
                     self.populate_list_widget()
                 else:
-                    print(f'{mri_sub} already existing in <home_path>/Freesurfer')
+                    print(f'{mri_sub} already existing in {self.mw.pr.subjects_dir}')
             else:
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
 
@@ -1132,7 +1130,7 @@ class AddMRIWidget(QWidget):
                     self.folders.append(mri_sub)
                     self.paths.update({mri_sub: folder_path})
                 else:
-                    print(f'{mri_sub} already existing in <home_path>/Freesurfer')
+                    print(f'{mri_sub} already existing in {self.mw.pr.subjects_dir}')
             else:
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
         self.populate_list_widget()
@@ -1165,7 +1163,7 @@ class AddMRIWidget(QWidget):
                 break
 
     def show_errors(self, err):
-        err_dlg = ErrorDialog(self, err)
+        ErrorDialog(self, err)
 
     def add_mri_finished(self):
         self.list_widget.clear()
