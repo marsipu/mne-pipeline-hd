@@ -8,7 +8,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 """
 import json
 from ast import literal_eval
-from os import listdir, makedirs
+from os import listdir, makedirs, mkdir
 from os.path import exists, isdir, isfile, join
 
 import mne
@@ -42,9 +42,6 @@ class MyProject:
 
         self.get_paths()
         self.make_paths()
-        self.load_parameters()
-        # After load_parameters, because event-id is needed
-        self.populate_directories()
         self.load_sub_lists()
 
     def get_paths(self):
@@ -81,7 +78,12 @@ class MyProject:
 
         # Get project_name
         self.project_name = self.mw.settings.value('project_name')
-        self.projects = [p for p in listdir(self.home_path) if isdir(join(self.home_path, p, 'data'))]
+        self.projects_path = join(self.home_path, 'projects')
+        if not isdir(self.projects_path):
+            mkdir(self.projects_path)
+            self.projects = []
+        else:
+            self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
         if len(self.projects) == 0:
             self.project_name, ok = QInputDialog.getText(self.mw, 'Project-Selection',
                                                          f'No projects in {self.home_path} found\n'
@@ -108,13 +110,14 @@ class MyProject:
 
     def make_paths(self):
         # Initiate other paths
-        self.project_path = join(self.home_path, self.project_name)
+        self.project_path = join(self.projects_path, self.project_name)
         self.data_path = join(self.project_path, 'data')
         self.figures_path = join(self.project_path, 'figures')
         self.save_dir_averages = join(self.data_path, 'grand_averages')
         self.erm_data_path = join(self.data_path, 'empty_room_data')
-        self.subjects_dir = join(self.home_path, 'Freesurfer')
+        self.subjects_dir = join(self.home_path, 'freesurfer')
         mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
+        self.custom_pkg_path = join(self.home_path, 'custom_functions')
         # Subject-List/Dict-Path
         self.pscripts_path = join(self.project_path, '_pipeline_scripts')
         self.file_list_path = join(self.pscripts_path, 'file_list.json')
@@ -127,7 +130,8 @@ class MyProject:
         self.info_dict_path = join(self.pscripts_path, 'info_dict.json')
         self.ch_type_dict_path = join(self.pscripts_path, 'ch_type_dict.json')
 
-        path_lists = [self.subjects_dir, self.data_path, self.erm_data_path, self.pscripts_path]
+        path_lists = [self.subjects_dir, self.data_path, self.erm_data_path,
+                      self.pscripts_path, self.custom_pkg_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
                       self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path,
                       self.info_dict_path, self.ch_type_dict_path]
@@ -144,7 +148,7 @@ class MyProject:
                 print(f'{file} created')
 
     def load_sub_lists(self):
-        self.projects = [p for p in listdir(self.home_path) if isdir(join(self.home_path, p, 'data'))]
+        self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
 
         load_dict = {self.file_list_path: 'all_files',
                      self.mri_sub_list_path: 'all_mri_subjects',
@@ -204,7 +208,11 @@ class MyProject:
     def load_parameters(self):
         try:
             with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'r') as read_file:
-                self.parameters = json.load(read_file)
+                loaded_parameters = json.load(read_file)
+                # Make sure, that only parameters, which exist in pd_params are loaded
+                for param in [p for p in loaded_parameters if p not in self.mw.pd_params.index]:
+                    loaded_parameters.pop(param)
+                self.parameters = loaded_parameters
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.load_default_parameters()
 
@@ -215,7 +223,7 @@ class MyProject:
                 self.parameters[param] = literal_eval(string_params[param])
             except (ValueError, SyntaxError):
                 # Allow parameters to be defined by functions by numpy, etc.
-                if self.mw.pd_params['gui_type'][param] == 'FuncGui':
+                if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
                     self.parameters[param] = eval(string_params[param])
                 else:
                     self.parameters[param] = string_params[param]

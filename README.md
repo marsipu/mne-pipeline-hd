@@ -26,11 +26,11 @@ If you want to customize the pipeline to fit your needs or want to fix bugs, do 
 You need a [GitHub-Account](https://github.com/), a working [MNE-Python-Environment](https://www.martinos.org/mne/stable/install_mne_python.html) and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed
 1. Fork this repository on GitHub
 2. Clone **your forked repository** with git from a terminal: `git clone <url you get from the green clone-button from your forked repository on GitHub>`
-3. Add upstream to git for updates: `git remote add upstream https://github.com/marsipu/mne_pipeline_hd.git`
+3. Add upstream to git for updates: `git remote add upstream git://github.com/marsipu/mne_pipeline_hd.git`
 4. Create a branch for changes: `git checkout -b <branch-name>`
 5. Commit changes: `git commit --all `
 6. Push changes to your forked repository on GitHub: `git push`
 7. Make "New pull request" from your new feature branch
 
 
-Please report bugs on GitHub or to me directly (mne.pipeline@gmail.com)
+Please report bugs on GitHub as an issue or to me directly (mne.pipeline@gmail.com)

@@ -1,4 +1,4 @@
-;alias;default;unit;hint;gui_type;gui_args
+;alias;default;unit;description;gui_type;gui_args
 predefined_bads;Predefined Bad-Channels;[6,7,8,26,27,103];;Default bad channels;ListGui;
 eog_digitized;eog_digitized;False;;Set True, if the last 4 digitized points where EOG;BoolGui;
 ch_types;Channel-Types;['grad'];;Channel-Types used in data;ListGui;

@@ -14,6 +14,7 @@ import sys
 import traceback
 from ast import literal_eval
 from functools import partial
+from importlib import util
 from os.path import join
 from subprocess import run
 
@@ -29,13 +30,12 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 
 import basic_functions
-import custom_functions
 from gui import parameter_widgets
 from gui.qt_utils import ErrorDialog
 from gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
                                  SubjectWizard)
 from pipeline_functions import iswin
-from pipeline_functions.function_utils import (FunctionWorker, call_functions, func_from_def)
+from pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, call_functions, func_from_def)
 from pipeline_functions.project import MyProject
 
 
@@ -80,28 +80,36 @@ class MainWindow(QMainWindow):
         self.func_dict = dict()
         self.bt_dict = dict()
 
-        # Load all modules in basic_functions and custom_functions
-        basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
-        custom_functions_list = [x for x in dir(custom_functions) if '__' not in x]
-        self.all_modules = {}
-        for module_name in basic_functions_list:
-            self.all_modules[module_name] = getattr(basic_functions, module_name)
-        for module_name in custom_functions_list:
-            self.all_modules[module_name] = getattr(custom_functions, module_name)
+        # Todo: Straighten confusing main_win.init() (Project vs. ModuleImport vs. pdDataFrames)
+        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
+        self.pd_params = pd.read_csv(os.getcwd() + '/resources/parameters.csv', sep=';', index_col=0)
+
+        # Get available parameter-guis
+        self.available_param_guis = [pg for pg in dir(parameter_widgets) if 'Gui' in pg and pg != 'QtGui']
+
+        # Call project-class
+        self.pr = MyProject(self)
 
         # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
         self.pd_funcs = pd.read_csv(os.getcwd() + '/resources/functions.csv', sep=';', index_col=0)
+
+        # Import the basic- and custom-function-modules
+        self.import_func_modules()
+
+        # Load project-parameters after import of func_modules
+        self.pr.load_parameters()
+        # After load_parameters, because event-id is needed
+        self.pr.populate_directories()
+
         self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
                                        & (self.pd_funcs['subject_loop'] == True)]
         self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'mri_subject_operations')
                                         & (self.pd_funcs['subject_loop'] == True)]
         self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)]
 
-        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
-        self.pd_params = pd.read_csv(os.getcwd() + '/resources/parameters.csv', sep=';', index_col=0)
-
-        # Call project-class
-        self.pr = MyProject(self)
+        # Get function-tabs and function-groups
+        self.f_tabs = set(self.pd_funcs['tab'])
+        self.f_groups = set(self.pd_funcs['group'])
 
         # Todo: Real logging
         # Set logging
@@ -110,7 +118,7 @@ class MainWindow(QMainWindow):
         # initiate Subject-Dock here to avoid AttributeError
         self.subject_dock = SubjectDock(self)
 
-        # Todo: Structure Main-Win-Construction better
+        # Todo: Structure Main-Win-Frontend-Construction better
         # Call window-methods
         self.make_menu()
         self.add_dock_windows()
@@ -126,6 +134,32 @@ class MainWindow(QMainWindow):
         height = self.desk_geometry.height() * self.size_ratio
         width = self.desk_geometry.width() * self.size_ratio
         self.setGeometry(0, 0, width, height)
+
+    def import_func_modules(self):
+        """
+        Load all modules in basic_functions and custom_functions
+        """
+        basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
+        self.all_modules = {}
+        # Load basic-modules
+        for module_name in basic_functions_list:
+            self.all_modules[module_name] = getattr(basic_functions, module_name)
+        # Load custom_modules
+        for dir_path, dir_names, file_names in os.walk(self.pr.custom_pkg_path):
+            for file_name in file_names:
+                if '.csv' in file_name and 'function' in file_name:
+                    read_pd_funcs = pd.read_csv(join(dir_path, file_name), sep=';', index_col=0)
+                    for idx in [ix for ix in read_pd_funcs.index if ix not in self.pd_funcs.index]:
+                        self.pd_funcs = self.pd_funcs.append(read_pd_funcs.loc[idx])
+                elif '.csv' in file_name and 'parameters' in file_name:
+                    read_pd_params = pd.read_csv(join(dir_path, file_name), sep=';', index_col=0)
+                    for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
+                        self.pd_params = self.pd_params.append(read_pd_params.loc[idx])
+                else:
+                    spec = util.spec_from_file_location(file_name, join(dir_path, file_name))
+                    module = util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    self.all_modules[file_name] = module
 
     def make_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
@@ -154,6 +188,10 @@ class MainWindow(QMainWindow):
                              partial(SubBadsDialog, self))
 
         input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
+
+        # Custom-Functions
+        self.customf_menu = self.menuBar().addMenu('&Custom Functions')
+        self.aadd_customf = self.customf_menu.addAction('&Add custom Functions', self.add_customf)
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
@@ -389,6 +427,9 @@ class MainWindow(QMainWindow):
         for project in self.pr.projects:
             self.project_box.addItem(project)
 
+    def add_customf(self):
+        self.cf_import = CustomFunctionImport(self)
+
     def reset_parameters(self):
         msgbox = QMessageBox.question(self, 'Reset all Parameters?',
                                       'Do you really want to reset all parameters to their default?',
@@ -446,14 +487,13 @@ class MainWindow(QMainWindow):
         pre_func_dict = self.settings.value('checked_funcs')
         del_list = []
         if pre_func_dict:
-            # Check for functions, which have been deleted, but are still present in cache
+            # Check for functions, which have been removed, but are still present in cache
             for k in pre_func_dict:
                 if k not in self.pd_funcs.index:
                     del_list.append(k)
             if len(del_list) > 0:
                 for d in del_list:
                     del pre_func_dict[d]
-                    print(f'{d} from func_cache deleted')
 
             # Get selected functions from last run
             for f in self.func_dict:
@@ -483,7 +523,11 @@ class MainWindow(QMainWindow):
                 r_cnt += 1
 
                 for function in group_grouped.groups[function_group]:
-                    pb = QPushButton(self.pd_funcs.loc[function]['alias'], child_w)
+                    if pd.notna(self.pd_funcs.loc[function, 'alias']):
+                        alias_name = self.pd_funcs.loc[function, 'alias']
+                    else:
+                        alias_name = function
+                    pb = QPushButton(alias_name)
                     pb.setCheckable(True)
                     self.bt_dict[function] = pb
                     if self.func_dict[function]:
@@ -496,6 +540,10 @@ class MainWindow(QMainWindow):
             tab.setWidget(child_w)
             self.tab_func_widget.addTab(tab, tab_name)
         self.general_layout.addWidget(self.tab_func_widget)
+
+    # Todo: Do in Place update of funcs and params
+    def update_func_bts(self):
+        pass
 
     def select_func(self):
         for function in self.bt_dict:
@@ -511,7 +559,7 @@ class MainWindow(QMainWindow):
         self.tab_func_widget.addTab(tab, 'Parameters')
 
     def add_main_bts(self):
-        main_bt_layout = QHBoxLayout()
+        self.main_bt_layout = QHBoxLayout()
 
         clear_bt = QPushButton('Clear', self)
         start_bt = QPushButton('Start', self)
@@ -521,15 +569,15 @@ class MainWindow(QMainWindow):
         start_bt.setFont(QFont('AnyStyle', 18))
         stop_bt.setFont(QFont('AnyStyle', 18))
 
-        main_bt_layout.addWidget(clear_bt)
-        main_bt_layout.addWidget(start_bt)
-        main_bt_layout.addWidget(stop_bt)
+        self.main_bt_layout.addWidget(clear_bt)
+        self.main_bt_layout.addWidget(start_bt)
+        self.main_bt_layout.addWidget(stop_bt)
 
         clear_bt.clicked.connect(self.clear)
         start_bt.clicked.connect(self.start)
         stop_bt.clicked.connect(self.close)
 
-        self.general_layout.addLayout(main_bt_layout)
+        self.general_layout.addLayout(self.main_bt_layout)
 
     def clear(self):
         for x in self.bt_dict:
@@ -725,19 +773,26 @@ class QAllParameters(QWidget):
                 r_cnt = 0
             else:
                 r_cnt += 1
-            param_alias = parameter['alias']
-            gui_name = parameter['gui_type']
-            if type(gui_name) != str:
-                gui_name = 'FuncGui'
-            gui_handle = getattr(parameter_widgets, gui_name)
-            if type(parameter['hint']) is float:
-                hint = ''
+
+            # Get Parameters for Gui-Call
+            if not pd.isna(parameter['alias']):
+                param_alias = parameter['alias']
             else:
-                hint = parameter['hint']
+                param_alias = idx
+            if not pd.isna(parameter['gui_type']):
+                gui_name = parameter['gui_type']
+            else:
+                gui_name = 'FuncGui'
+            if not pd.isna(parameter['description']):
+                hint = parameter['description']
+            else:
+                hint = ''
             try:
                 gui_args = literal_eval(parameter['gui_args'])
             except (SyntaxError, ValueError):
                 gui_args = {}
+
+            gui_handle = getattr(parameter_widgets, gui_name)
             self.param_guis[idx] = gui_handle(self.main_win.pr, idx, param_alias, hint, **gui_args)
             sub_layout.addWidget(self.param_guis[idx])
 
@@ -756,6 +811,11 @@ class QAllParameters(QWidget):
         param_gui = self.param_guis[gui_name]
         param_gui.read_param()
         param_gui.set_param()
+
+
+class CustomFSelection(QDialog):
+    # Todo: Nice Gui for PKG-Selection and maybe even GDrive-Down/Upload
+    pass
 
 
 class RunDialog(QDialog):
@@ -865,7 +925,7 @@ class RunDialog(QDialog):
         self.move(qr.topLeft())
 
     def show_errors(self, err):
-        err_dlg = ErrorDialog(self, err)
+        ErrorDialog(self, err)
 
 
 class OutputSignal(QObject):
