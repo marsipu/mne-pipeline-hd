@@ -14,7 +14,7 @@ from os.path import exists, isdir, isfile, join
 import mne
 from PyQt5.QtWidgets import QFileDialog, QInputDialog, QMessageBox
 
-from gui import subject_widgets as subs
+from mne_pipeline_hd.gui import subject_widgets as subs
 
 
 class MyProject:
@@ -280,6 +280,8 @@ class MyProject:
             if not exists(folder_path):
                 makedirs(folder_path)
                 print(folder_path + ' has been created')
+
+        self.populate_evid_directories()
 
     def populate_evid_directories(self):
         # create subfolders for for event_ids

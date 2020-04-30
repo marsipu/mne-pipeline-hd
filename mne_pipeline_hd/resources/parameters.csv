@@ -296,3 +296,8 @@ label_origin;label_origin;"['bankssts_1-lh',
 'transversetemporal_1-lh',
 'transversetemporal_1-rh',
 'transversetemporal_2-lh']";;;ListGui;
+show_plots;Show Plots;False;;Check, if you want the plots to be shown;BoolGui;
+save_plots;Save Plots;True;;Check, if you want to save each plot;BoolGui;
+overwrite;Overwrite;True;;Check, if you want to overwrite the saved files each time you run a function again;BoolGui;
+enable_cuda;Enable Cuda;False;;Check, if you want to enable cuda-support (Cuda has to be installed);BoolGui;
+shutdown;Shutdown System;False;;Check, if you want to shutdown your system after having run the pipeline;BoolGui;

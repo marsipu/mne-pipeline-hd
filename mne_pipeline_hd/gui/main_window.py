@@ -29,15 +29,15 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QStyle,
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 
-import basic_functions
-import resources
-from gui import parameter_widgets
-from gui.qt_utils import ErrorDialog
-from gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
+import mne_pipeline_hd.basic_functions
+import mne_pipeline_hd.resources
+from mne_pipeline_hd.gui import parameter_widgets
+from mne_pipeline_hd.gui.qt_utils import ErrorDialog
+from mne_pipeline_hd.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
                                  SubjectWizard)
-from pipeline_functions import iswin
-from pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, call_functions, func_from_def)
-from pipeline_functions.project import MyProject
+from mne_pipeline_hd.pipeline_functions import iswin
+from mne_pipeline_hd.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, call_functions, func_from_def)
+from mne_pipeline_hd.pipeline_functions.project import MyProject
 
 
 def get_upstream():
@@ -286,9 +286,11 @@ class MainWindow(QMainWindow):
             self.pr.parameters['n_jobs'] = -1
         else:
             self.pr.parameters['n_jobs'] = value
+        self.qall_parameters.update_param_gui('n_jobs')
 
-    def chkbx_changed(self, chkbx, attribute):
-        self.pr.parameters[attribute] = chkbx.isChecked()
+    def chkbx_changed(self, chkbx, param):
+        self.pr.parameters[param] = chkbx.isChecked()
+        self.qall_parameters.update_param_gui(param)
 
     # Todo: Statusbar with purpose
     def make_statusbar(self):
@@ -769,8 +771,9 @@ class QuickGuide(QDialog):
                '1. Use the Subject-Wizard to add Subjects and the Subject-Dicts<br>' \
                '2. Select the files you want to execute<br>' \
                '3. Select the functions to execute<br>' \
-               '4. If you want to show plots, set show_plots<br>' \
-               '5. For Source-Space-Operations, you need to run MRI-Coregistration from the Input-Menu'
+               '4. If you want to show plots, check Show Plots<br>' \
+               '5. For Source-Space-Operations, you need to run MRI-Coregistration from the Input-Menu<br>' \
+               '6. For Grand-Averages add a group and add the files, to which you want apply the grand-average'
 
         self.label = QLabel(text)
         layout.addWidget(self.label)
@@ -781,6 +784,7 @@ class QuickGuide(QDialog):
 
         self.setLayout(layout)
         self.open()
+
 
 class QAllParameters(QWidget):
     def __init__(self, main_win):

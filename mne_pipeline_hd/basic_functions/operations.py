@@ -28,8 +28,8 @@ from nilearn.plotting import plot_anat
 from scipy import signal, stats
 from surfer import Brain
 
-from basic_functions import loading, plot as plot
-from pipeline_functions import decorators as decor, iswin, pipeline_utils as ut
+from mne_pipeline_hd.basic_functions import loading, plot as plot
+from mne_pipeline_hd.pipeline_functions import decorators as decor, iswin, pipeline_utils as ut
 
 
 # Todo: Change normal comments to docstrings

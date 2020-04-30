@@ -27,10 +27,10 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
                              QScrollArea, QStyle, QTableWidget, QTableWidgetItem, QTableWidgetSelectionRange,
                              QVBoxLayout)
 
-from gui import parameter_widgets
-from gui.qt_utils import ErrorDialog, Worker
-from gui.subject_widgets import CurrentMRISubject, CurrentSubject
-from pipeline_functions import ismac
+from mne_pipeline_hd.gui import parameter_widgets
+from mne_pipeline_hd.gui.qt_utils import ErrorDialog, Worker
+from mne_pipeline_hd.gui.subject_widgets import CurrentMRISubject, CurrentSubject
+from mne_pipeline_hd.pipeline_functions import ismac
 
 
 class FunctionWorkerSignals(QObject):
