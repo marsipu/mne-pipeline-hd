@@ -6,6 +6,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @email: mne.pipeline@gmail.com
 @github: marsipu/mne_pipeline_hd
 """
+import io
 import logging
 import smtplib
 import ssl
@@ -14,7 +15,7 @@ import traceback
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from PyQt5.QtCore import QRunnable, Qt, pyqtSlot
+from PyQt5.QtCore import QObject, QRunnable, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QDesktopWidget, QDialog, QGridLayout, QLabel, QLineEdit, QMessageBox, QPushButton
 
 
@@ -156,3 +157,18 @@ class ErrorDialog(QDialog):
                                                              'Thank you for the Report!')
             except OSError:
                 QMessageBox.information(self, 'E-Mail not sent', 'Sending an E-Mail is not possible on your OS')
+
+
+class OutputSignal(QObject):
+    text_written = pyqtSignal(str)
+
+
+class OutputStream(io.TextIOBase):
+
+    def __init__(self):
+        super().__init__()
+        self.signal = OutputSignal()
+
+    def write(self, text):
+        sys.__stdout__.write(text)
+        self.signal.text_written.emit(text)

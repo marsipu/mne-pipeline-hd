@@ -6,7 +6,6 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @email: mne.pipeline@gmail.com
 @github: marsipu/mne_pipeline_hd
 """
-import io
 import logging
 import os
 import shutil
@@ -21,7 +20,7 @@ from subprocess import run
 import mne
 import pandas as pd
 import qdarkstyle
-from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
+from PyQt5.QtCore import QSettings, QThreadPool, Qt
 from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
@@ -32,7 +31,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
 from mne_pipeline_hd import basic_functions
 from mne_pipeline_hd import resources
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.qt_utils import ErrorDialog
+from mne_pipeline_hd.gui.qt_utils import ErrorDialog, OutputStream
 from mne_pipeline_hd.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                                                  SubjectDock,
                                                  SubjectWizard)
@@ -959,18 +958,3 @@ class RunDialog(QDialog):
 
     def show_errors(self, err):
         ErrorDialog(self, err)
-
-
-class OutputSignal(QObject):
-    text_written = pyqtSignal(str)
-
-
-class OutputStream(io.TextIOBase):
-
-    def __init__(self):
-        super().__init__()
-        self.signal = OutputSignal()
-
-    def write(self, text):
-        sys.__stdout__.write(text)
-        self.signal.text_written.emit(text)

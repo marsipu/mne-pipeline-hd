@@ -53,13 +53,14 @@ class FunctionWorkerSignals(QObject):
 class FunctionWorker(Worker):
     def __init__(self, fn, *args, **kwargs):
         self.signal_class = FunctionWorkerSignals()
-        self.kwargs = kwargs
+
         # Add the callback to our kwargs
-        self.kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
-                                  'pg_sub': self.signal_class.pg_sub,
-                                  'pg_func': self.signal_class.pg_func,
-                                  'pg_which_loop': self.signal_class.pg_which_loop,
-                                  'func_sig': self.signal_class.func_sig}
+        kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
+                             'pg_sub': self.signal_class.pg_sub,
+                             'pg_func': self.signal_class.pg_func,
+                             'pg_which_loop': self.signal_class.pg_which_loop,
+                             'func_sig': self.signal_class.func_sig}
+
         super().__init__(fn, self.signal_class, *args, **kwargs)
 
 
@@ -156,6 +157,8 @@ def call_functions(main_win, signals):
     count = 1
 
     # Set non-interactive backend for plots to be runnable in QThread
+    # This can be a problem with older versions from matplotlib, as you can set the backend only once there
+    # This could be solved with importing all the function-modules here, but you had to import them for each run then
     if not main_win.pr.parameters['show_plots']:
         matplotlib.use('agg')
     elif ismac:

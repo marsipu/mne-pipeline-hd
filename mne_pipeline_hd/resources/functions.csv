@@ -9,9 +9,6 @@ morph_subject;morph_subject;MRI-Preprocessing;mri_subject_operations;True;False;
 morph_labels_from_fsaverage;morph_labels_from_fsaverage;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,overwrite
 filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,ermsub,bad_channels,data_path,highpass,lowpass,n_jobs,enable_cuda,erm_t_limit,enable_ica
 find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,adjust_timeline_by_msec,overwrite
-pp_event_handling;pp_event_handling;Compute;pinprick_functions;True;False;False;;pinprick;name,save_dir,pscripts_path,figures_path,adjust_timeline_by_msec,overwrite,save_plots
-melofix_event_handling;melofix_event_handling;Compute;custom_functions;True;False;False;;melofix;name,save_dir,adjust_timeline_by_msec,overwrite
-kristin_event_handling;kristin_event_handling;Compute;custom_functions;True;False;False;;kristin;name,save_dir,adjust_timeline_by_msec,overwrite
 find_eog_events;find_eog_events;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,eog_channel
 epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,bad_channels,pscripts_path,highpass,lowpass,event_id,t_epoch,baseline,reject,flat,autoreject,overwrite_ar,decim,reject_eog_epochs,overwrite
 run_ssp_er;run_ssp_er;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,ermsub,bad_channels,data_path,highpass,lowpass,overwrite
@@ -26,7 +23,6 @@ run_ica;run_ica;Compute;sensor_space_operations;True;False;False;;operations;nam
 apply_ica;apply_ica;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,highpass,lowpass,overwrite
 get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,ermsub,func_dict,highpass,lowpass,enable_ica,overwrite
 get_h1h2_evokeds;get_h1h2_evokeds;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,ermsub,func_dict,highpass,lowpass,enable_ica
-evokeds_apply_baseline;Evokeds Apply Baseline;Compute;custom_functions;True;False;False;;melofix;name,save_dir,highpass,lowpass
 tfr;tfr;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,highpass,lowpass,enable_ica,tfr_freqs,overwrite_tfr,tfr_method,multitaper_bandwith,stockwell_width,n_jobs
 estimate_noise_covariance;estimate_noise_covariance;Compute;source_space_operations;True;False;False;;operations;name,save_dir,ermsub,bad_channels,data_path,highpass,lowpass,overwrite,baseline,n_jobs,erm_noise_cov,calm_noise_cov,enable_ica,erm_ica
 create_forward_solution;create_forward_solution;Compute;source_space_operations;True;False;False;;operations;name,save_dir,subtomri,subjects_dir,source_space_method,overwrite,n_jobs,eeg_fwd
@@ -38,18 +34,13 @@ apply_morph;apply_morph;Compute;source_space_operations;True;False;False;;operat
 apply_morph_normal;apply_morph_normal;Compute;source_space_operations;True;False;False;;operations;name,save_dir,subtomri,subjects_dir,highpass,lowpass,inverse_method,overwrite,morph_to,source_space_method,event_id
 func_label_ctf_ps;func_label_ctf_ps;Compute;source_space_operations;True;False;False;;operations;name,save_dir,subtomri,subjects_dir,highpass,lowpass,parcellation_orig
 source_space_connectivity;source_space_connectivity;Compute;source_space_operations;True;False;False;;operations;name,save_dir,subtomri,subjects_dir,highpass,lowpass,parcellation,target_labels,con_methods,con_fmin,con_fmax,n_jobs,overwrite,enable_ica,ev_ids_label_analysis
-pp_alignment;pp_alignment;Compute;pinprick_functions;False;False;False;;pinprick;ab_dict,cond_dict,sub_dict,data_path,pscripts_path,subjects_dir,figures_path,highpass,lowpass,event_id,inverse_method,source_space_method,parcellation
 grand_avg_evokeds;grand_avg_evokeds;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,sel_ga_groups,data_path,save_dir_averages,highpass,lowpass,ana_h1h2
-pp_combine_evokeds_ab;pp_combine_evokeds_ab;Compute;pinprick_functions;False;False;False;;pinprick;ab_dict,data_path,save_dir_averages,highpass,lowpass
 grand_avg_tfr;grand_avg_tfr;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,data_path,save_dir_averages,highpass,lowpass,tfr_method
 grand_avg_morphed;grand_avg_morphed;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,sel_ga_groups,data_path,save_dir_averages,inverse_method,highpass,lowpass,event_id
 grand_avg_normal_morphed;grand_avg_normal_morphed;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,data_path,save_dir_averages,inverse_method,highpass,lowpass,event_id
 grand_avg_connect;grand_avg_connect;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,data_path,save_dir_averages,con_methods,con_fmin,con_fmax,lowpass,highpass
 grand_avg_label_power;grand_avg_label_power;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,data_path,save_dir_averages,ev_ids_label_analysis,highpass,lowpass,target_labels
 statistics_source_space;statistics_source_space;Compute;grand_average_operations;False;False;False;;operations;morphed_data_all,save_dir_averages,independent_variable_1,independent_variable_2,time_window,n_permutations,highpass,lowpass,overwrite
-pp_load_old_sub_dicts;Pinprick-OldSub;Compute;pinprick_functions;False;False;False;;pinprick;pr,all_files,sub_dict,erm_dict
-pp_get_subject_groups;Pinprick-Groups;Compute;pinprick_functions;False;False;False;;pinprick;mw,pr,all_files,combine_ab
-epoch_baseline_test;Test Epoch Baseline;Compute;custom_functions;True;True;False;;melofix;name,save_dir,figures_path,highpass,lowpass
 plot_source_space;plot_source_space;MRI-Preprocessing;mri_subject_operations;True;True;True;;plot;mri_subject,subjects_dir,figures_path,source_space_method,save_plots
 plot_bem;plot_bem;MRI-Preprocessing;mri_subject_operations;True;True;False;;plot;mri_subject,subjects_dir,figures_path,source_space_method,save_plots
 plot_labels;plot_labels;MRI-Preprocessing;mri_subject_operations;True;True;True;;plot;mri_subject,figures_path,save_plots,parcellation

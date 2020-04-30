@@ -9,6 +9,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 import os
 import re
 import shutil
+import sys
 from ast import literal_eval
 from functools import partial
 from os.path import exists, isdir, isfile, join
@@ -22,12 +23,13 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
                              QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton, QSizePolicy,
                              QStyle, QTabWidget,
                              QTableWidget,
-                             QTableWidgetItem, QTableWidgetSelectionRange, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
+                             QTableWidgetItem, QTableWidgetSelectionRange, QTextEdit, QTreeWidget, QTreeWidgetItem,
+                             QVBoxLayout,
                              QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
 from mne_pipeline_hd.basic_functions import loading
-from mne_pipeline_hd.gui.qt_utils import (ErrorDialog, Worker)
+from mne_pipeline_hd.gui.qt_utils import (ErrorDialog, OutputStream, Worker)
 
 
 # Todo: Adapt File-Structure to (MEG)-BIDS-Standards
@@ -177,7 +179,6 @@ def file_indexing(which_file, all_files):
             return files, run
 
         except ValueError:
-            print(f'{which_file} is not working')
             return [], []
 
 
@@ -660,9 +661,8 @@ class AddFileSignals(QObject):
 class AddFileWorker(Worker):
     def __init__(self, fn, *args, **kwargs):
         self.signal_class = AddFileSignals()
-        self.kwargs = kwargs
-        self.kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
-                                  'which_sub': self.signal_class.which_sub}
+        kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
+                             'which_sub': self.signal_class.which_sub}
 
         super().__init__(fn, self.signal_class, *args, **kwargs)
 
@@ -844,7 +844,7 @@ class AddFilesWidget(QWidget):
         self.mw.threadpool.start(worker)
 
     def show_errors(self, err):
-        err_dlg = ErrorDialog(self, err)
+        ErrorDialog(self, err)
 
     def add_files(self, signals):
         existing_files = self.mw.pr.all_files
@@ -1204,6 +1204,41 @@ class AddMRIDialog(AddMRIWidget):
         self.dialog.open()
 
 
+class TmpBrainSignals(QObject):
+    """
+    Defines the Signals for the Worker and add_files
+    """
+    # Worker Signals
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    update_lists = pyqtSignal()
+
+
+class TmpBrainWorker(Worker):
+    def __init__(self, fn, *args, **kwargs):
+        self.signal_class = TmpBrainSignals()
+
+        kwargs['signals'] = {'update_lists': self.signal_class.update_lists}
+
+        super().__init__(fn, self.signal_class, *args, **kwargs)
+
+class TmpBrainDialog(QDialog):
+    def __init__(self, parent_w):
+        super().__init__(parent_w)
+
+        self.setWindowTitle('Loading Template-Brain...')
+        layout = QVBoxLayout()
+        self.text_edit = QTextEdit()
+        self.text_edit.setReadOnly(True)
+        layout.addWidget(self.text_edit)
+
+        self.setLayout(layout)
+        self.open()
+
+    def update_text_edit(self, text):
+        self.text_edit.insertPlainText(text)
+        self.text_edit.ensureCursorVisible()
+
 class SubDictWidget(QWidget):
     """ A widget to assign MRI-Subjects oder Empty-Room-Files to subject(s), depending on mode """
 
@@ -1218,14 +1253,13 @@ class SubDictWidget(QWidget):
         self.mode = mode
         if mode == 'mri':
             self.setWindowTitle('Assign files to their MRI-Subject')
-            self.list2 = self.mw.pr.all_mri_subjects
             self.label2 = 'Choose a mri-subject'
         else:
             self.setWindowTitle('Assign files to their ERM-File')
-            self.list2 = self.mw.pr.erm_files
             self.label2 = 'Choose a erm-file'
 
         self.init_ui()
+        self.populate_lists()
         self.get_status()
 
     def init_ui(self):
@@ -1237,10 +1271,7 @@ class SubDictWidget(QWidget):
         # ListWidgets
         self.list_widget1 = QListWidget(self)
         self.list_widget1.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.list_widget1.addItems(self.mw.pr.all_files)
         self.list_widget2 = QListWidget(self)
-        self.list_widget2.addItem('None')
-        self.list_widget2.addItems(self.list2)
 
         # Response to Clicking
         self.list_widget1.itemClicked.connect(self.sub_dict_selected)
@@ -1280,7 +1311,7 @@ class SubDictWidget(QWidget):
             tb_layout.addWidget(self.template_box)
 
             test_bt = QPushButton('Add Template-Brain')
-            test_bt.clicked.connect(self.add_template_brain)
+            test_bt.clicked.connect(self.add_template_brain_starter)
             tb_layout.addWidget(test_bt)
 
             group_box.setLayout(tb_layout)
@@ -1288,6 +1319,21 @@ class SubDictWidget(QWidget):
 
         self.layout.addLayout(self.bt_layout, 0, 2, 2, 1)
         self.setLayout(self.layout)
+
+    def populate_lists(self):
+        # Check, that item is not already present (for Wizard-Page)
+        for file in [f for f in self.mw.pr.all_files if len(self.list_widget1.findItems(f, Qt.MatchExactly)) == 0]:
+            self.list_widget1.addItem(file)
+        if len(self.list_widget2.findItems('None', Qt.MatchExactly)) == 0:
+            self.list_widget2.addItem('None')
+        if self.mode == 'mri':
+            for file in [f for f in self.mw.pr.all_mri_subjects
+                         if len(self.list_widget2.findItems(f, Qt.MatchExactly)) == 0]:
+                self.list_widget2.addItem(file)
+        else:
+            for file in [f for f in self.mw.pr.erm_files
+                         if len(self.list_widget2.findItems(f, Qt.MatchExactly)) == 0]:
+                self.list_widget2.addItem(file)
 
     def get_status(self):
         for idx in range(self.list_widget1.count()):
@@ -1307,12 +1353,31 @@ class SubDictWidget(QWidget):
                     self.list_widget1.item(idx).setBackground(QColor('red'))
                     self.list_widget1.item(idx).setForeground(QColor('white'))
 
-    def add_template_brain(self):
-        template_brain = self.template_box.currentText()
-        if template_brain == 'fsaverage':
+    def add_template_brain_starter(self):
+        self.template_brain = self.template_box.currentText()
+        self.tmpb_dlg = TmpBrainDialog(self)
+        # Redirect stdout to capture it
+        sys.stdout = OutputStream()
+        sys.stdout.signal.text_written.connect(self.tmpb_dlg.update_text_edit)
+
+        worker = TmpBrainWorker(self.add_template_brain)
+        worker.signal_class.finished.connect(self.tmpb_dlg.close)
+        worker.signal_class.error.connect(self.show_errors)
+        worker.signal_class.update_lists.connect(self.update_lists)
+        self.mw.threadpool.start(worker)
+
+    def show_errors(self, err):
+        ErrorDialog(self, err)
+
+    def update_lists(self):
+        if self.template_brain not in self.mw.pr.all_mri_subjects:
+            self.mw.subject_dock.update_mri_subjects_list()
+            self.list_widget2.addItem(self.template_brain)
+
+    def add_template_brain(self, signals):
+        if self.template_brain == 'fsaverage':
             mne.datasets.fetch_fsaverage(self.mw.pr.subjects_dir)
-            if 'fsaverage' not in self.mw.pr.all_mri_subjects:
-                self.mw.subject_dock.update_mri_subjects_list()
+            signals['update_lists'].emit()
         else:
             pass
 
@@ -1470,6 +1535,22 @@ class SubDictDialog(SubDictWidget):
         self.dialog.open()
 
 
+class SubDictWizPage(QWizardPage):
+    def __init__(self, main_win, mode, title):
+        super().__init__()
+
+        self.setTitle(title)
+
+        layout = QVBoxLayout()
+        self.sub_dict_w = SubDictWidget(main_win, mode)
+        layout.addWidget(self.sub_dict_w)
+        self.setLayout(layout)
+
+    def initializePage(self):
+        self.sub_dict_w.populate_lists()
+        self.sub_dict_w.get_status()
+
+
 def read_bad_channels_dict(bad_channels_dict_path):
     bad_channels_dict = {}
 
@@ -1515,35 +1596,26 @@ class SubBadsWidget(QWidget):
         self.raw_fig = None
 
         self.initui()
+        self.populate_listw()
 
     def initui(self):
         self.listwidget = QListWidget(self)
-        for idx, key in enumerate(self.mw.pr.all_files):
-            self.listwidget.insertItem(idx, key)
-            self.idx_dict[key] = idx
-            if key in self.mw.pr.bad_channels_dict:
-                self.listwidget.item(idx).setBackground(QColor('green'))
-                self.listwidget.item(idx).setForeground(QColor('white'))
-            else:
-                self.listwidget.item(idx).setBackground(QColor('red'))
-                self.listwidget.item(idx).setForeground(QColor('white'))
+        # Response to Selecting
+        self.listwidget.itemClicked.connect(self.bad_dict_selected)
         self.listwidget.setMinimumWidth(self.listwidget.sizeHintForColumn(0))
         self.layout.addWidget(self.listwidget, 0, 0, 2, 1)
 
         # Make Checkboxes for channels
         self.chkb_layout = QGridLayout()
-        for x in range(self.channel_count):
+        for x in range(1, self.channel_count + 1):
             ch_name = f'MEG {x:03}'
             chkbt = QCheckBox(ch_name, self)
             chkbt.clicked.connect(self.bad_dict_assign)
             self.bad_chkbts.update({ch_name: chkbt})
-            r = x // 10
-            c = x % 10
+            r = 0 + (x - 1) // 10
+            c = 1 + (x - 1) % 10
             self.chkb_layout.addWidget(chkbt, r, c)
         self.layout.addLayout(self.chkb_layout, 0, 1)
-
-        # Response to Clicking
-        self.listwidget.itemClicked.connect(self.bad_dict_selected)
 
         # Add Buttons
         self.bt_layout = QHBoxLayout()
@@ -1558,6 +1630,18 @@ class SubBadsWidget(QWidget):
 
         self.layout.addLayout(self.bt_layout, 1, 1)
         self.setLayout(self.layout)
+
+    def populate_listw(self):
+        for idx, key in enumerate([f for f in self.mw.pr.all_files
+                                   if len(self.listwidget.findItems(f, Qt.MatchExactly)) == 0]):
+            self.listwidget.insertItem(idx, key)
+            self.idx_dict[key] = idx
+            if key in self.mw.pr.bad_channels_dict:
+                self.listwidget.item(idx).setBackground(QColor('green'))
+                self.listwidget.item(idx).setForeground(QColor('white'))
+            else:
+                self.listwidget.item(idx).setBackground(QColor('red'))
+                self.listwidget.item(idx).setForeground(QColor('white'))
 
     def bad_dict_selected(self):
         self.name = self.listwidget.currentItem().text()
@@ -1602,6 +1686,8 @@ class SubBadsWidget(QWidget):
         dialog.close()
 
     def get_selected_bads(self, evt):
+        # evt has to be in parameters, otherwise it won't work
+        print(evt.name)
         self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
 
         # Clear all entries
@@ -1635,6 +1721,11 @@ class CopyBadsDialog(QDialog):
     def init_ui(self):
         layout = QGridLayout()
 
+        from_l = QLabel('Copy from:')
+        layout.addWidget(from_l, 0, 0)
+        to_l = QLabel('Copy to:')
+        layout.addWidget(to_l, 0, 1)
+
         self.listw1 = QListWidget()
         self.listw2 = QListWidget()
         self.listw2.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -1654,16 +1745,16 @@ class CopyBadsDialog(QDialog):
                 self.listw2.item(idx).setBackground(QColor('red'))
                 self.listw2.item(idx).setForeground(QColor('white'))
 
-        layout.addWidget(self.listw1, 0, 0)
-        layout.addWidget(self.listw2, 0, 1)
+        layout.addWidget(self.listw1, 1, 0)
+        layout.addWidget(self.listw2, 1, 1)
 
         copy_bt = QPushButton('Copy')
         copy_bt.clicked.connect(self.copy_bads)
-        layout.addWidget(copy_bt, 1, 0)
+        layout.addWidget(copy_bt, 2, 0)
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
-        layout.addWidget(close_bt, 1, 1)
+        layout.addWidget(close_bt, 2, 1)
 
         self.setLayout(layout)
 
@@ -1697,6 +1788,20 @@ class SubBadsDialog(SubBadsWidget):
         self.dialog.open()
 
 
+class SubBadsWizPage(QWizardPage):
+    def __init__(self, main_win, title):
+        super().__init__()
+        self.setTitle(title)
+
+        layout = QVBoxLayout()
+        self.sub_bad_w = SubBadsWidget(main_win)
+        layout.addWidget(self.sub_bad_w)
+        self.setLayout(layout)
+
+    def initializePage(self):
+        self.sub_bad_w.populate_listw()
+
+
 class SubjectWizard(QWizard):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -1705,7 +1810,6 @@ class SubjectWizard(QWizard):
         self.setWindowTitle('Subject-Wizard')
         self.setWizardStyle(QWizard.ModernStyle)
         self.setOption(QWizard.HaveHelpButton, False)
-        self.setOption(QWizard.IndependentPages, True)
 
         desk_geometry = self.mw.app.desktop().availableGeometry()
         self.size_ratio = 0.7
@@ -1736,23 +1840,9 @@ class SubjectWizard(QWizard):
         layout.addWidget(AddMRIWidget(self.mw))
         self.add_mri_page.setLayout(layout)
 
-        self.assign_mri_page = QWizardPage()
-        self.assign_mri_page.setTitle('Assign File --> MRI-Subject')
-        layout = QVBoxLayout()
-        layout.addWidget(SubDictWidget(self.mw, 'mri'))
-        self.assign_mri_page.setLayout(layout)
-
-        self.assign_erm_page = QWizardPage()
-        self.assign_erm_page.setTitle('Assign File --> ERM')
-        layout = QVBoxLayout()
-        layout.addWidget(SubDictWidget(self.mw, 'erm'))
-        self.assign_erm_page.setLayout(layout)
-
-        self.assign_bad_channels_page = QWizardPage()
-        self.assign_bad_channels_page.setTitle('Assign Bad-Channels')
-        layout = QVBoxLayout()
-        layout.addWidget(SubBadsWidget(self.mw))
-        self.assign_bad_channels_page.setLayout(layout)
+        self.assign_mri_page = SubDictWizPage(self.mw, 'mri', 'Assign File --> MRI')
+        self.assign_erm_page = SubDictWizPage(self.mw, 'erm', 'Assign File --> ERM')
+        self.assign_bad_channels_page = SubBadsWizPage(self.mw, 'Assign Bad-Channels')
 
         self.addPage(self.add_files_page)
         self.addPage(self.add_mri_page)
