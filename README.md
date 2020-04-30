@@ -1,8 +1,8 @@
 # mne_pipeline_hd
 ### A [MNE-Python](https://mne.tools/stable/index.html) Pipeline for MEG-Lab Heidelberg
 ###### based on: [Andersen, L.M., 2018. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group Source Space Representation. Front. Neurosci. 12.](https://doi.org/10.3389/fnins.2018.00006)
-**Installation**
 
+## Installation
 1. Install MNE-python as instructed on the [website](https://www.martinos.org/mne/stable/install_mne_python.html),
 I would recommend to install in a separate conda environment with:
 `conda env create -n mne_pipeline -f environment.yml`
@@ -13,20 +13,27 @@ I would recommend to install in a separate conda environment with:
  when you are in a directory where you want the mne_pipeline_hd-scripts installed)
 
 
-**Update**
-
+## Update
 Just run `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/master` again
 
-**Start**
+## Start
+Run `python -m mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_pipeline`)
+
+**or**
 
 Load the Pipeline-folder in an IDE like PyCharm, Spyder, Atom, etc. and run \_\_main\_\_.py
 
-**Contribute and build your own functions/fix bugs**
+## Bug-Report/Feature-Request
+Please report bugs on GitHub as an issue or to me (mne.pipeline@gmail.com) directly
+And if you got ideas on how to improve the pipeline or some feature-requests,
+you are welcome to open an issue too or send an e-mail (mne.pipeline@gmail.com)
 
-If you want to customize the pipeline to fit your needs or want to fix bugs, do it like this:
-You need a [GitHub-Account](https://github.com/), a working [MNE-Python-Environment](https://www.martinos.org/mne/stable/install_mne_python.html) 
-and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed.
-You start the pipeline by running \_\_main\_\_.py for example in an IDE.
+## Contribute and build your own functions/fix bugs
+
+If you want to help me with the development and/or customize the pipeline to fit your needs, do it like this:
+
+You need a [GitHub-Account](https://github.com/)
+and should have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed.
 
 1. Fork this repository on GitHub
 2. Move to the folder where you want to clone to
@@ -36,6 +43,3 @@ You start the pipeline by running \_\_main\_\_.py for example in an IDE.
 6. Commit changes: `git commit --all `
 7. Push changes to your forked repository on GitHub: `git push`
 8. Make "New pull request" from your new feature branch
-
-
-Please report bugs on GitHub as an issue or to me directly (mne.pipeline@gmail.com)

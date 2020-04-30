@@ -7,6 +7,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @github: marsipu/mne_pipeline_hd
 """
 import inspect
+import logging
 import shutil
 import sys
 import traceback
@@ -692,7 +693,15 @@ class CustomFunctionImport(QDialog):
                 file_path = Path(path_string)
                 spec = util.spec_from_file_location(file_path.stem, file_path)
                 module = util.module_from_spec(spec)
-                spec.loader.exec_module(module)
+                try:
+                    spec.loader.exec_module(module)
+                except:
+                    traceback.print_exc()
+                    traceback_str = traceback.format_exc(limit=-10)
+                    exctype, value = sys.exc_info()[:2]
+                    logging.error(f'{exc_type}: {exc}\n'
+                                  f'{traceback_str}')
+                    ErrorDialog(None, (exctype, value, traceback_str))
                 for func_key in module.__dict__:
                     # Check, if function is already existing
                     if func_key not in self.exst_functions:

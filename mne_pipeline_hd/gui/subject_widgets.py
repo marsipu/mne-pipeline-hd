@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
 from matplotlib import pyplot as plt
 
 from mne_pipeline_hd.basic_functions import loading
-from mne_pipeline_hd.gui.qt_utils import (Worker, ErrorDialog)
+from mne_pipeline_hd.gui.qt_utils import (ErrorDialog, Worker)
 
 
 # Todo: Adapt File-Structure to (MEG)-BIDS-Standards
@@ -1508,6 +1508,8 @@ class SubBadsWidget(QWidget):
         self.layout = QGridLayout()
         self.channel_count = 122
         self.bad_chkbts = {}
+        # To find the items reliable in the list, which should be immutable
+        self.idx_dict = {}
         self.name = None
         self.raw = None
         self.raw_fig = None
@@ -1518,6 +1520,7 @@ class SubBadsWidget(QWidget):
         self.listwidget = QListWidget(self)
         for idx, key in enumerate(self.mw.pr.all_files):
             self.listwidget.insertItem(idx, key)
+            self.idx_dict[key] = idx
             if key in self.mw.pr.bad_channels_dict:
                 self.listwidget.item(idx).setBackground(QColor('green'))
                 self.listwidget.item(idx).setForeground(QColor('white'))
@@ -1548,6 +1551,10 @@ class SubBadsWidget(QWidget):
         plot_bt = QPushButton('Plot Raw')
         plot_bt.clicked.connect(self.plot_raw_bad)
         self.bt_layout.addWidget(plot_bt)
+
+        copy_bt = QPushButton('Copy Bads')
+        copy_bt.clicked.connect(self.copy_bad_dlg)
+        self.bt_layout.addWidget(copy_bt)
 
         self.layout.addLayout(self.bt_layout, 1, 1)
         self.setLayout(self.layout)
@@ -1595,7 +1602,6 @@ class SubBadsWidget(QWidget):
         dialog.close()
 
     def get_selected_bads(self, evt):
-        print(evt)
         self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
 
         # Clear all entries
@@ -1606,52 +1612,75 @@ class SubBadsWidget(QWidget):
         self.listwidget.currentItem().setBackground(QColor('green'))
         self.listwidget.currentItem().setForeground(QColor('white'))
 
-    def closeEvent(self, event):
-        def close_function():
-            # Update u.a. bad_channels_dict in project-class
-            if self.raw_fig:
-                plt.close(self.raw_fig)
-                self.done(1)
-                event.accept()
-            else:
-                self.done(1)
-                event.accept()
+    def copy_bad_dlg(self):
+        CopyBadsDialog(self)
 
-        # Check if unassigned changes are present
-        if self.name in self.mw.pr.bad_channels_dict and self.name:
-            test_dict = dict()
-            test_dict2 = dict()
-            for x in range(1, self.channel_count + 1):
-                test_dict.update({f'MEG {x:03}': 0})
-                test_dict2.update({f'MEG {x:03}': 0})
-            for bch in self.mw.pr.bad_channels_dict[self.name]:
-                test_dict[bch] = 1
-            for bbt in self.bad_chkbts:
-                if self.bad_chkbts[bbt].isChecked():
-                    test_dict2[bbt] = 1
-            if not test_dict == test_dict2:
-                answer = QMessageBox.question(self, 'Discard Changes?', 'Do you want to discard changes?',
-                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if answer == QMessageBox.Yes:
-                    close_function()
-                else:
-                    event.ignore()
-            else:
-                close_function()
+    def closeEvent(self, event):
+        if self.raw_fig:
+            plt.close(self.raw_fig)
+            event.accept()
         else:
-            changes_made = False
-            for bbt in self.bad_chkbts:
-                if self.bad_chkbts[bbt].isChecked():
-                    changes_made = True
-            if changes_made:
-                answer = QMessageBox.question(self, 'Discard Changes?', 'Do you want to discard changes?',
-                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if answer == QMessageBox.Yes:
-                    close_function()
-                else:
-                    event.ignore()
+            event.accept()
+
+
+class CopyBadsDialog(QDialog):
+    def __init__(self, parent_w):
+        super().__init__(parent_w)
+
+        self.pw = parent_w
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QGridLayout()
+
+        self.listw1 = QListWidget()
+        self.listw2 = QListWidget()
+        self.listw2.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        # Insert items
+        for idx, key in enumerate(self.pw.mw.pr.all_files):
+            self.listw1.insertItem(idx, key)
+            self.listw2.insertItem(idx, key)
+            if key in self.pw.mw.pr.bad_channels_dict:
+                self.listw1.item(idx).setBackground(QColor('green'))
+                self.listw1.item(idx).setForeground(QColor('white'))
+                self.listw2.item(idx).setBackground(QColor('green'))
+                self.listw2.item(idx).setForeground(QColor('white'))
             else:
-                close_function()
+                self.listw1.item(idx).setBackground(QColor('red'))
+                self.listw1.item(idx).setForeground(QColor('white'))
+                self.listw2.item(idx).setBackground(QColor('red'))
+                self.listw2.item(idx).setForeground(QColor('white'))
+
+        layout.addWidget(self.listw1, 0, 0)
+        layout.addWidget(self.listw2, 0, 1)
+
+        copy_bt = QPushButton('Copy')
+        copy_bt.clicked.connect(self.copy_bads)
+        layout.addWidget(copy_bt, 1, 0)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt, 1, 1)
+
+        self.setLayout(layout)
+
+    def copy_bads(self):
+        copy_from = self.listw1.currentItem().text()
+        copy_to_list = self.listw2.selectedItems()
+
+        if copy_from and len(copy_to_list) > 0 and copy_from in self.pw.mw.pr.bad_channels_dict:
+            for copy_to in copy_to_list:
+                self.pw.mw.pr.bad_channels_dict[copy_to.text()] = self.pw.mw.pr.bad_channels_dict[copy_from]
+                idx = self.pw.idx_dict[copy_to.text()]
+                self.pw.listwidget.item(idx).setBackground(QColor('green'))
+                self.pw.listwidget.item(idx).setForeground(QColor('white'))
+                self.listw1.item(idx).setBackground(QColor('green'))
+                self.listw1.item(idx).setForeground(QColor('white'))
+                self.listw2.item(idx).setBackground(QColor('green'))
+                self.listw2.item(idx).setForeground(QColor('white'))
 
 
 class SubBadsDialog(SubBadsWidget):

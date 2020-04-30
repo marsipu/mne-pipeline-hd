@@ -6,6 +6,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @email: mne.pipeline@gmail.com
 @github: marsipu/mne_pipeline_hd
 """
+import logging
 import smtplib
 import ssl
 import sys
@@ -50,13 +51,20 @@ class Worker(QRunnable):
         try:
             result = self.fn(*self.args, **self.kwargs)
         except:
-            # Todo: Logging in Worker-Class
-            # logging.error('Ups, something happened:')
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
+            logging.error(f'{exctype}: {value}\n'
+                          f'traceback_str')
             self.signal_class.error.emit((exctype, value, traceback.format_exc(limit=-10)))
         finally:
             self.signal_class.finished.emit()  # Done
+
+
+def pipe_excepthook(exc_type, exc, tb):
+    tb.print_exc()
+    traceback_str = tb.format_exc(limit=-10)
+    logging.error(f'{exc_type}: {exc}\n'
+                  f'{traceback_str}')
 
 
 class ErrorDialog(QDialog):
