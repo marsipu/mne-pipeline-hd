@@ -19,10 +19,6 @@ Just run `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipba
 
 **Start**
 
-Start the pipeline in your terminal with `python mne_pipeline_hd`
-
-_or_
-
 Load the Pipeline-folder in an IDE like PyCharm, Spyder, Atom, etc. and run \_\_main\_\_.py
 
 **Contribute and build your own functions/fix bugs**
