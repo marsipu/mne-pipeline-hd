@@ -4,21 +4,18 @@
 **Installation**
 
 1. Install MNE-python as instructed on the [website](https://www.martinos.org/mne/stable/install_mne_python.html),
-I would recommend to install in an own conda environment with:
-`conda env create -n mne -f environment.yml`
-2. `conda activate mne`
-3. Navigate to the folder within the command line where you want the pipeline-script to be installed
-4. `pip install git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd`
-5. Navigate into the first mne_pipeline_hd folder
-6. `pip install -r requirements.txt`
+I would recommend to install in a separate conda environment with:
+`conda env create -n mne_pipeline -f environment.yml`
+2. `conda activate mne_pipeline`
+3. `pip install git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd`
 
 **Start**
 
-Start the pipeline from the command line with `python mne_pipeline_hd` (you have to be in the first "mne_pipeline_hd" directory)
+Start the pipeline in your terminal with `python mne_pipeline_hd`
 
 _or_
 
-Load the Pipeline-folder in an IDE like PyCharm, Spyder, Atom, etc. and run \__main\__.py
+Load the Pipeline-folder in an IDE like PyCharm, Spyder, Atom, etc. and run \_\_main\_\_.py
 
 **Contribute and build your own functions/fix bugs**
 
