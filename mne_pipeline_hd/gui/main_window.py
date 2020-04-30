@@ -168,7 +168,7 @@ class MainWindow(QMainWindow):
         input_menu = self.menuBar().addMenu('&Input')
 
         input_menu.addAction('Subject-Wizard', partial(SubjectWizard, self))
-
+        input_menu.addSeparator()
         aaddfiles = QAction('Add Files', parent=self)
         aaddfiles.setShortcut('Ctrl+F')
         aaddfiles.setStatusTip('Add your MEG-Files here')
@@ -187,7 +187,7 @@ class MainWindow(QMainWindow):
                              partial(SubDictDialog, self, 'erm'))
         input_menu.addAction('Assign Bad-Channels --> File',
                              partial(SubBadsDialog, self))
-
+        input_menu.addSeparator()
         input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
 
         # Custom-Functions
@@ -228,6 +228,7 @@ class MainWindow(QMainWindow):
         about_menu = self.menuBar().addMenu('About')
         # about_menu.addAction('Update Pipeline', self.update_pipeline)
         # about_menu.addAction('Update MNE-Python', self.update_mne)
+        about_menu.addAction('Quick-Guide', self.quick_guide)
         about_menu.addAction('About QT', self.about_qt)
 
     def make_toolbar(self):
@@ -738,6 +739,9 @@ class MainWindow(QMainWindow):
         else:
             pass
 
+    def quick_guide(self):
+        QuickGuide(self)
+
     def about_qt(self):
         QMessageBox.aboutQt(self, 'About Qt')
 
@@ -755,6 +759,28 @@ class MainWindow(QMainWindow):
 
         event.accept()
 
+
+class QuickGuide(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        layout = QVBoxLayout()
+
+        text = '<b>Guick-Guide</b><br>' \
+               '1. Use the Subject-Wizard to add Subjects and the Subject-Dicts<br>' \
+               '2. Select the files you want to execute<br>' \
+               '3. Select the functions to execute<br>' \
+               '4. If you want to show plots, set show_plots<br>' \
+               '5. For Source-Space-Operations, you need to run MRI-Coregistration from the Input-Menu'
+
+        self.label = QLabel(text)
+        layout.addWidget(self.label)
+
+        ok_bt = QPushButton('OK')
+        ok_bt.clicked.connect(self.close)
+        layout.addWidget(ok_bt)
+
+        self.setLayout(layout)
+        self.open()
 
 class QAllParameters(QWidget):
     def __init__(self, main_win):

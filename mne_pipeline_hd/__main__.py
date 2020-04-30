@@ -12,9 +12,9 @@ import traceback
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication
 
-from gui import main_window
-from gui.qt_utils import ErrorDialog
-from pipeline_functions import ismac
+from mne_pipeline_hd.gui import main_window
+from mne_pipeline_hd.gui.qt_utils import ErrorDialog
+from mne_pipeline_hd.pipeline_functions import ismac
 
 # import matplotlib
 # if ismac:
