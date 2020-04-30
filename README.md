@@ -8,7 +8,7 @@ I would recommend to install in an own conda environment with:
 `conda env create -n mne -f environment.yml`
 2. `conda activate mne`
 3. Navigate to the folder within the command line where you want the pipeline-script to be installed
-4. `pip install -e git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd`
+4. `pip install git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne_pipeline_hd`
 5. Navigate into the first mne_pipeline_hd folder
 6. `pip install -r requirements.txt`
 
@@ -23,14 +23,18 @@ Load the Pipeline-folder in an IDE like PyCharm, Spyder, Atom, etc. and run \__m
 **Contribute and build your own functions/fix bugs**
 
 If you want to customize the pipeline to fit your needs or want to fix bugs, do it like this:
-You need a [GitHub-Account](https://github.com/), a working [MNE-Python-Environment](https://www.martinos.org/mne/stable/install_mne_python.html) and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed
+You need a [GitHub-Account](https://github.com/), a working [MNE-Python-Environment](https://www.martinos.org/mne/stable/install_mne_python.html) 
+and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed.
+You start the pipeline by running \_\_main\_\_.py for example in an IDE.
+
 1. Fork this repository on GitHub
-2. Clone **your forked repository** with git from a terminal: `git clone <url you get from the green clone-button from your forked repository on GitHub>`
-3. Add upstream to git for updates: `git remote add upstream git://github.com/marsipu/mne_pipeline_hd.git`
-4. Create a branch for changes: `git checkout -b <branch-name>`
-5. Commit changes: `git commit --all `
-6. Push changes to your forked repository on GitHub: `git push`
-7. Make "New pull request" from your new feature branch
+2. Move to the folder where you want to clone to
+3. Clone **your forked repository** with git from a terminal: `git clone <url you get from the green clone-button from your forked repository on GitHub>`
+4. Add upstream to git for updates: `git remote add upstream git://github.com/marsipu/mne_pipeline_hd.git`
+5. Create a branch for changes: `git checkout -b <branch-name>`
+6. Commit changes: `git commit --all `
+7. Push changes to your forked repository on GitHub: `git push`
+8. Make "New pull request" from your new feature branch
 
 
 Please report bugs on GitHub as an issue or to me directly (mne.pipeline@gmail.com)

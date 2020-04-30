@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 
 import basic_functions
+import resources
 from gui import parameter_widgets
 from gui.qt_utils import ErrorDialog
 from gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
@@ -82,7 +83,7 @@ class MainWindow(QMainWindow):
 
         # Todo: Straighten confusing main_win.init() (Project vs. ModuleImport vs. pdDataFrames)
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
-        self.pd_params = pd.read_csv(os.getcwd() + '/resources/parameters.csv', sep=';', index_col=0)
+        self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
 
         # Get available parameter-guis
         self.available_param_guis = [pg for pg in dir(parameter_widgets) if 'Gui' in pg and pg != 'QtGui']
@@ -91,7 +92,7 @@ class MainWindow(QMainWindow):
         self.pr = MyProject(self)
 
         # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
-        self.pd_funcs = pd.read_csv(os.getcwd() + '/resources/functions.csv', sep=';', index_col=0)
+        self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
 
         # Import the basic- and custom-function-modules
         self.import_func_modules()
