@@ -70,7 +70,7 @@ def call_functions(main_window, project):
 
     # Read functions from csv (Transform -> in Excel better readable with functions as rows but shorter code in python
     #   for iterating over functions as columns, separator ";" for editing with Excel)
-    pd_funcs = pd.read_csv(join(os.getcwd(), 'mne-pipeline-hd/resources/functions.csv'), sep=';', index_col=0).T
+    pd_funcs = pd.read_csv(join(os.getcwd(), 'mne_pipeline_hd/resources/functions.csv'), sep=';', index_col=0).T
 
     # Todo: Serialize parameters-dict with json
     # Todo: Problem: Noch sind figures_path und mw.func_dict mit in subject-attributes dabei, die müssen irgendwie raus

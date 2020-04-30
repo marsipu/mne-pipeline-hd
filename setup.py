@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup(name='mne-pipeline-hd',
+setup(name='mne_pipeline_hd',
       version='0.2',
       description='A pipeline for brain-data analysis with MNE-Python',
       long_description=long_description,
@@ -27,7 +27,7 @@ setup(name='mne-pipeline-hd',
       include_package_data=True,
       entry_points={
           'gui_scripts': [
-              'mne-pipeline-hd=mne-pipelin-hd.__main__:main'
+              'mne_pipeline_hd=mne_pipeline_hd.__main__:main'
           ]
       }
 
