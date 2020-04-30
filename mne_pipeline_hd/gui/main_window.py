@@ -29,14 +29,16 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QStyle,
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 
-import mne_pipeline_hd.basic_functions
-import mne_pipeline_hd.resources
+from mne_pipeline_hd import basic_functions
+from mne_pipeline_hd import resources
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.qt_utils import ErrorDialog
-from mne_pipeline_hd.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog, SubjectDock,
-                                 SubjectWizard)
+from mne_pipeline_hd.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
+                                                 SubjectDock,
+                                                 SubjectWizard)
 from mne_pipeline_hd.pipeline_functions import iswin
-from mne_pipeline_hd.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, call_functions, func_from_def)
+from mne_pipeline_hd.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, call_functions,
+                                                               func_from_def)
 from mne_pipeline_hd.pipeline_functions.project import MyProject
 
 
