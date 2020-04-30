@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSpinBox,
                              QStyle,
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
+from mayavi import mlab
 
 from mne_pipeline_hd import basic_functions
 from mne_pipeline_hd import resources
@@ -631,6 +632,8 @@ class MainWindow(QMainWindow):
     def thread_func(self, kwargs):
         try:
             func_from_def(**kwargs)
+            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] == True and self.pr.parameters['show_plots'] == False:
+                mlab.close(all=True)
         except:
             # Todo: Logging
             # logging.error('Ups, something happened:')
