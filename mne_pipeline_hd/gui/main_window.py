@@ -15,6 +15,7 @@ from ast import literal_eval
 from functools import partial
 from importlib import util
 from os.path import join
+from pathlib import Path
 from subprocess import run
 
 import mne
@@ -162,7 +163,8 @@ class MainWindow(QMainWindow):
                     spec = util.spec_from_file_location(file_name, join(dir_path, file_name))
                     module = util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-                    self.all_modules[file_name] = module
+                    module_name = Path(file_name).stem
+                    self.all_modules[module_name] = module
 
     def make_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
