@@ -884,7 +884,11 @@ class AddFilesWidget(QWidget):
                 for key in info_keys:
                     self.mw.pr.info_dict[new_fname][key] = raw.info[key]
                 self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
-                self.mw.pr.info_dict[new_fname]['ch_types'] = raw.get_channel_types()
+                # Some raw-files don't have get_channel_types?
+                try:
+                    self.mw.pr.info_dict[new_fname]['ch_types'] = raw.get_channel_types()
+                except AttributeError:
+                    self.mw.pr.info_dict[new_fname]['ch_types'] = []
                 self.mw.pr.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
                 if not self.addf_dialog.wasCanceled():
                     # Copy Empty-Room-Files to their directory
