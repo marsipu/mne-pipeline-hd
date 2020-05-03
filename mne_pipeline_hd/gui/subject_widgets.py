@@ -924,6 +924,7 @@ class AddFilesWidget(QWidget):
         self.paths = dict()
         self.file_types = dict()
         self.is_erm = dict()
+        self.mw.pr.save_sub_lists()
         self.mw.subject_dock.update_subjects_list()
 
     def load_file(self, fname, forig):
@@ -1174,6 +1175,7 @@ class AddMRIWidget(QWidget):
         self.folders = list()
         self.paths = dict()
 
+        self.mw.pr.save_sub_lists()
         self.mw.subject_dock.update_mri_subjects_list()
 
 
@@ -1420,6 +1422,7 @@ class SubDictWidget(QWidget):
             self.mw.pr.sub_dict = existing_dict
         else:
             self.mw.pr.erm_dict = existing_dict
+        self.mw.pr.save_sub_lists()
 
     def sub_dict_assign_none(self):
         choices = self.list_widget1.selectedItems()
@@ -1443,6 +1446,7 @@ class SubDictWidget(QWidget):
             self.mw.pr.sub_dict = existing_dict
         else:
             self.mw.pr.erm_dict = existing_dict
+        self.mw.pr.save_sub_lists()
 
     def sub_dict_assign_to_all(self):
         try:
@@ -1460,6 +1464,7 @@ class SubDictWidget(QWidget):
                     self.mw.pr.sub_dict = all_items
                 elif self.mode == 'erm':
                     self.mw.pr.erm_dict = all_items
+            self.mw.pr.save_sub_lists()
         except AttributeError:
             # When no second item is selected
             pass
@@ -1481,6 +1486,7 @@ class SubDictWidget(QWidget):
                 self.mw.pr.sub_dict = all_items
             elif self.mode == 'erm':
                 self.mw.pr.erm_dict = all_items
+            self.mw.pr.save_sub_lists()
 
     def show_assignments(self):
         self.show_ass_dialog = QDialog(self)
@@ -1673,6 +1679,7 @@ class SubBadsWidget(QWidget):
             if self.bad_chkbts[ch].isChecked():
                 bad_channels.append(ch)
         self.mw.pr.bad_channels_dict.update({self.name: bad_channels})
+        self.mw.pr.save_sub_lists()
 
     # Todo: Semi-Automatic bad-channel-detection
     def plot_raw_bad(self):
@@ -1693,6 +1700,7 @@ class SubBadsWidget(QWidget):
         # evt has to be in parameters, otherwise it won't work
         print(evt.name)
         self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
+        self.mw.pr.save_sub_lists()
 
         # Clear all entries
         for bt in self.bad_chkbts:
