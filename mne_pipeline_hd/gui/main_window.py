@@ -159,7 +159,7 @@ class MainWindow(QMainWindow):
                     read_pd_params = pd.read_csv(join(dir_path, file_name), sep=';', index_col=0)
                     for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
                         self.pd_params = self.pd_params.append(read_pd_params.loc[idx])
-                else:
+                elif file_name != '.DS_Store':
                     spec = util.spec_from_file_location(file_name, join(dir_path, file_name))
                     module = util.module_from_spec(spec)
                     spec.loader.exec_module(module)
