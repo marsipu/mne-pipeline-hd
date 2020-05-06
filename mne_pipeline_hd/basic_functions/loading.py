@@ -9,8 +9,6 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 from __future__ import print_function
 
 import pickle
-import re
-from os import listdir
 from os.path import join
 
 import mne
@@ -92,70 +90,12 @@ def read_ica_epochs(name, save_dir, highpass, lowpass):
     return ica_epochs
 
 
-def read_ssp_epochs(name, save_dir, highpass, lowpass):
-    ssp_epochs_name = name + op.filter_string(highpass, lowpass) + '-ssp-epo.fif'
-    ssp_epochs_path = join(save_dir, ssp_epochs_name)
-    ssp_epochs = mne.read_epochs(ssp_epochs_path)
-
-    return ssp_epochs
-
-
-def read_ssp_clm_epochs(name, save_dir, highpass, lowpass):
-    ssp_epochs_name = name + op.filter_string(highpass, lowpass) + '-ssp_clm-epo.fif'
-    ssp_epochs_path = join(save_dir, ssp_epochs_name)
-    ssp_epochs = mne.read_epochs(ssp_epochs_path)
-
-    return ssp_epochs
-
-
-def read_ssp_eog_epochs(name, save_dir, highpass, lowpass):
-    ssp_epochs_name = name + op.filter_string(highpass, lowpass) + '-eog_ssp-epo.fif'
-    ssp_epochs_path = join(save_dir, ssp_epochs_name)
-    ssp_epochs = mne.read_epochs(ssp_epochs_path)
-
-    return ssp_epochs
-
-
-def read_ssp_ecg_epochs(name, save_dir, highpass, lowpass):
-    ssp_epochs_name = name + op.filter_string(highpass, lowpass) + '-ecg_ssp-epo.fif'
-    ssp_epochs_path = join(save_dir, ssp_epochs_name)
-    ssp_epochs = mne.read_epochs(ssp_epochs_path)
-
-    return ssp_epochs
-
-
 def read_evokeds(name, save_dir, highpass, lowpass):
     evokeds_name = name + op.filter_string(highpass, lowpass) + '-ave.fif'
     evokeds_path = join(save_dir, evokeds_name)
     evokeds = mne.read_evokeds(evokeds_path)
 
     return evokeds
-
-
-def read_evoked_combined_ab(title, save_dir_averages, highpass, lowpass):
-    evokeds_name = f'{title}{op.filter_string(highpass, lowpass)}-ave.fif'
-    evokeds_path = join(save_dir_averages, 'ab_combined', evokeds_name)
-    evokeds = mne.read_evokeds(evokeds_path)
-
-    return evokeds
-
-
-def read_h1h2_evokeds(name, save_dir, highpass, lowpass):
-    evokeds_dict = {}
-
-    h1_evokeds_name = name + op.filter_string(highpass, lowpass) + '_h1-ave.fif'
-    h1_evokeds_path = join(save_dir, h1_evokeds_name)
-
-    evokeds_h1 = mne.read_evokeds(h1_evokeds_path)
-    evokeds_dict.update({'h1': evokeds_h1})
-
-    h2_evokeds_name = name + op.filter_string(highpass, lowpass) + '_h2-ave.fif'
-    h2_evokeds_path = join(save_dir, h2_evokeds_name)
-
-    evokeds_h2 = mne.read_evokeds(h2_evokeds_path)
-    evokeds_dict.update({'h2': evokeds_h2})
-
-    return evokeds_dict
 
 
 def read_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
@@ -168,28 +108,6 @@ def read_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
                            op.filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
             evoked = mne.read_evokeds(ga_path)[0]
             trial_dict.update({trial: evoked})
-        ga_dict.update({key: trial_dict})
-        print(f'Add {key} to ga_dict')
-
-    return ga_dict
-
-
-def read_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages, grand_avg_dict,
-                                event_id):
-    ga_dict = {}
-    for key in grand_avg_dict:
-        trial_dict = {}
-        for trial in event_id:
-            h1h2_dict = {}
-            ga_path_h1 = join(save_dir_averages, 'evoked', key + '_' + trial +
-                              '_' + 'h1' + op.filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
-            ga_path_h2 = join(save_dir_averages, 'evoked', key + '_' + trial +
-                              '_' + 'h2' + op.filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
-            evoked_h1 = mne.read_evokeds(ga_path_h1)[0]
-            evoked_h2 = mne.read_evokeds(ga_path_h2)[0]
-            h1h2_dict.update({'h1': evoked_h1})
-            h1h2_dict.update({'h2': evoked_h2})
-            trial_dict.update({trial: h1h2_dict})
         ga_dict.update({key: trial_dict})
         print(f'Add {key} to ga_dict')
 
@@ -365,9 +283,9 @@ def read_mixn_dipoles(name, save_dir, highpass, lowpass, event_id):
 
 
 def read_connect(name, save_dir, highpass, lowpass, con_methods, con_fmin, con_fmax,
-                 ev_ids_label_analysis):
+                 event_id):
     con_dict = dict()
-    for ev_id in ev_ids_label_analysis:
+    for ev_id in event_id:
         trial_dict = {}
         for con_method in con_methods:
             file_name = name + op.filter_string(highpass, lowpass) + \
@@ -417,11 +335,11 @@ def read_grand_avg_stcs_normal(highpass, lowpass, save_dir_averages, grand_avg_d
 
 
 def read_grand_avg_connect(highpass, lowpass, save_dir_averages, grand_avg_dict,
-                           con_methods, con_fmin, con_fmax, ev_ids_label_analysis):
+                           con_methods, event_id):
     ga_dict = {}
     for key in grand_avg_dict:
         ev_id_dict = {}
-        for ev_id in ev_ids_label_analysis:
+        for ev_id in event_id:
             con_methods_dict = {}
             for con_method in con_methods:
                 ga_path = join(save_dir_averages, 'connect', key + '_' + con_method +
@@ -437,10 +355,10 @@ def read_grand_avg_connect(highpass, lowpass, save_dir_averages, grand_avg_dict,
 
 
 def read_label_power(name, save_dir, highpass, lowpass,
-                     ev_ids_label_analysis, target_labels):
+                     event_id, target_labels):
     power_dict = {}
 
-    for ev_id in ev_ids_label_analysis:
+    for ev_id in event_id:
         power_dict.update({ev_id: {}})
         for hemi in target_labels:
             for label_name in target_labels[hemi]:
@@ -463,12 +381,12 @@ def read_label_power(name, save_dir, highpass, lowpass,
     return power_dict
 
 
-def read_ga_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
+def read_ga_label_power(grand_avg_dict, event_id, target_labels,
                         save_dir_averages):
     ga_dict = {}
     for key in grand_avg_dict:
         ga_dict.update({key: {}})
-        for ev_id in ev_ids_label_analysis:
+        for ev_id in event_id:
             ga_dict[key].update({ev_id: {}})
             for hemi in target_labels:
                 for label_name in target_labels[hemi]:
@@ -486,38 +404,6 @@ def read_ga_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
 
     return ga_dict
 
-
-def read_func_labels(save_dir, subtomri, pscripts_path,
-                     ev_ids_label_analysis, grand_avg=False):
-    if grand_avg:
-        filenames = listdir(join(save_dir))
-    else:
-        filenames = listdir(join(save_dir, 'func_labels'))
-    labels_dict = {}
-    lat_dict = {}
-
-    pattern = r'[0-9]?\.[0-9]{0,3}s'
-    for file in filenames:
-        match = re.search(pattern, file)
-        if match:
-            lat = float(match.group(0)[:-1])
-            if grand_avg:
-                label_path = join(save_dir, file)
-            else:
-                label_path = join(save_dir, 'func_labels', file)
-            label = mne.read_label(label_path, subject=subtomri)
-            for ev_id in ev_ids_label_analysis:
-                if ev_id in file:
-                    if ev_id in labels_dict:
-                        labels_dict[ev_id].append(label)
-                    else:
-                        labels_dict.update({ev_id: [label]})
-                    if ev_id in lat_dict:
-                        lat_dict[ev_id].update({label.name: lat})
-                    else:
-                        lat_dict.update({ev_id: {label.name: lat}})
-
-    return labels_dict, lat_dict
 
 
 def read_source_space(subtomri, subjects_dir, source_space_method):

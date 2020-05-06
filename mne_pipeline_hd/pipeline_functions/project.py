@@ -250,17 +250,16 @@ class MyProject:
         # create figures path
         folders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
                    'power_spectra_raw', 'power_spectra_epochs',
-                   'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
+                   'power_spectra_topo', 'evoked_butterfly',
                    'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white', 'gfp',
-                   'ica', 'ssp', 'stcs', 'vec_stcs', 'mxne', 'transformation', 'source_space',
+                   'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
                    'noise_covariance', 'events', 'label_time_course', 'ECD',
-                   'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
+                   'stcs_movie', 'bem', 'snr', 'statistics',
                    'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
                    'tf_sensor_space/topo', 'tf_sensor_space/joint',
                    'tf_sensor_space/oscs', 'tf_sensor_space/itc',
                    'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
-                   'epochs_drop_log', 'func_labels', 'evoked_h1h2', 'Various',
-                   'sensitivity_maps', 'mxn_dipoles']
+                   'epochs_drop_log', 'sensitivity_maps', 'mxn_dipoles']
 
         for folder in folders:
             folder_path = join(self.figures_path, folder)
@@ -287,12 +286,12 @@ class MyProject:
         # create subfolders for for event_ids
         trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
                            'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                           'evoked_field', 'evoked_topomap', 'evoked_image',
+                           'evoked_topomap', 'evoked_image',
                            'evoked_joint', 'evoked_white', 'gfp', 'label_time_course', 'ECD',
                            'stcs', 'vec_stcs', 'stcs_movie', 'snr',
                            'tf_sensor_space/plot', 'tf_sensor_space/topo',
                            'tf_sensor_space/joint', 'tf_sensor_space/oscs',
-                           'tf_sensor_space/itc', 'evoked_h1h2', 'mxn_dipoles']
+                           'tf_sensor_space/itc', 'mxn_dipoles']
 
         for ev_id in [e for e in self.parameters['event_id'] if e is not None]:
             for tr in trialed_folders:

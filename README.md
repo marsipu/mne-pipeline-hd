@@ -23,6 +23,9 @@ Run `python -m mne_pipeline_hd` in your mne_pipeline-environment (`conda activat
 
 Load the Pipeline-folder in an IDE like PyCharm, Spyder, Atom, etc. and run \_\_main\_\_.py
 
+***When using the pipeline and its functions bear in mind that the pipeline is stil in development 
+and the functions are partly still adjusted to my analysis!***
+
 ## Bug-Report/Feature-Request
 Please report bugs on GitHub as an issue or to me (mne.pipeline@gmail.com) directly.
 And if you got ideas on how to improve the pipeline or some feature-requests,

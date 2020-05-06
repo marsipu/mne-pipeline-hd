@@ -74,7 +74,8 @@ class Param(QWidget):
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint='', min_val=0, max_val=100, param_unit=None):
+    def __init__(self, project, param_name, param_alias, hint='', min_val=0, max_val=100, special_value_text=None,
+                 param_unit=None):
         super().__init__(project, param_name, param_alias)
         self.param_name = param_name
         self.param_value = 1  # Default Value
@@ -82,6 +83,8 @@ class IntGui(Param):
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
         self.param_widget.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxValue = {max_val}')
+        if special_value_text:
+            self.param_widget.setSpecialValueText(special_value_text)
         if param_unit:
             self.param_widget.setSuffix(f' {param_unit}')
         self.param_widget.valueChanged.connect(self.get_param)

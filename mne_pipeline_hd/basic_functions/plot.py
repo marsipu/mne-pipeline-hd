@@ -10,23 +10,17 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 from __future__ import print_function
 
 import gc
-import re
-import statistics as st
-from ast import literal_eval
-from os import makedirs
-from os.path import exists, join
+from os.path import join
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import mne
 import numpy as np
-from matplotlib.lines import Line2D
 from mayavi import mlab
 from scipy import stats
 from surfer import Brain
 
 from mne_pipeline_hd.basic_functions import loading, operations as op
-from mne_pipeline_hd.pipeline_functions import decorators as decor, pipeline_utils as ut
+from mne_pipeline_hd.pipeline_functions import decorators as decor
 
 
 # ==============================================================================
@@ -98,37 +92,11 @@ def plot_events(name, save_dir, save_plots, figures_path, event_id):
 
 
 @decor.topline
-def plot_events_diff(name, save_dir, save_plots, figures_path):
-    # plot the differences between different triggers over time
-    events = loading.read_events(name, save_dir)
-    l1 = []
-
-    for x in range(np.size(events, axis=0)):
-        if events[x, 2] == 2:
-            if events[x + 1, 2] == 1:
-                l1.append(events[x + 1, 0] - events[x, 0])
-
-    diff_mean = st.mean(l1)
-    diff_stdev = st.stdev(l1)
-
-    figure = plt.figure()
-    plt.plot(l1)
-    plt.title(f'{name}_StartMot-LBT, mean={diff_mean}, stdev={diff_stdev}')
-
-    if save_plots:
-        save_path = join(figures_path, 'events', name + '_StartMot-LBT.jpg')
-        figure.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
-def plot_eog_events(name, save_dir):
+def plot_eog_events(name, save_dir, eog_channel):
     events = loading.read_events(name, save_dir)
     eog_events = loading.read_eog_events(name, save_dir)
     raw = loading.read_raw(name, save_dir)
-    raw.pick_channels(['EEG 001', 'EEG 002'])
+    raw.pick_channels([eog_channel])
 
     comb_events = np.append(events, eog_events, axis=0)
     eog_epochs = mne.Epochs(raw, eog_events)
@@ -143,7 +111,7 @@ def plot_power_spectra(name, save_dir, highpass, lowpass, save_plots,
     picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=False, ecg=False,
                            exclude='bads')
 
-    psd_figure = raw.plot_psd(fmax=lowpass, picks=picks, n_jobs=-1)
+    psd_figure = raw.plot_psd(fmax=lowpass, picks=picks, n_jobs=1)
     plt.title(name)
 
     if save_plots:
@@ -269,139 +237,6 @@ def plot_tfr(name, save_dir, highpass, lowpass, t_epoch, baseline,
 
 
 @decor.topline
-def tfr_event_dynamics(name, save_dir, t_epoch, save_plots, figures_path,
-                       bad_channels, n_jobs):
-    iter_freqs = [
-        ('Theta', 4, 7),
-        ('Alpha', 8, 12),
-        ('Beta', 13, 30),
-        ('l_Gamma', 30, 60)
-    ]
-
-    event_id = {'1': 1}
-    baseline = None
-
-    events = loading.read_events(name, save_dir)
-
-    frequency_map = list()
-
-    for band, fmin, fmax in iter_freqs:
-        # (re)load the data to save memory
-        raw = loading.read_raw(name, save_dir)
-
-        # bandpass filter and compute Hilbert
-        raw.filter(fmin, fmax, n_jobs=n_jobs,  # use more jobs to speed up.
-                   l_trans_bandwidth=1,  # make sure filter params are the same
-                   h_trans_bandwidth=1,  # in each band and skip "auto" option.
-                   fir_design='firwin')
-        raw.apply_hilbert(n_jobs=n_jobs, envelope=False)
-
-        picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False,
-                               eog=False, ecg=False, exclude=bad_channels)
-
-        epochs = mne.Epochs(raw, events, event_id, t_epoch[0], t_epoch[1], baseline=baseline,
-                            picks=picks, reject=dict(grad=4000e-13), preload=True)
-        # remove evoked response and get analytic signal (envelope)
-        epochs.subtract_evoked()  # for this we need to construct new epochs.
-        epochs = mne.EpochsArray(
-                data=np.abs(epochs.get_data()), info=epochs.info, tmin=epochs.tmin)
-        # now average and move on
-        frequency_map.append(((band, fmin, fmax), epochs.average()))
-
-    fig, axes = plt.subplots(4, 1, figsize=(10, 9), sharex=True, sharey=True)
-    colors = plt.get_cmap('winter_r')(np.linspace(0, 1, 4))
-    for ((freq_name, fmin, fmax), average), color, ax in zip(
-            frequency_map, colors, axes.ravel()[::-1]):
-        times = average.times * 1e3
-        gfp = np.sum(average.data ** 2, axis=0)
-        gfp = mne.baseline.rescale(gfp, times, baseline=(None, 0))
-        ax.plot(times, gfp, label=freq_name, color=color, linewidth=2.5)
-        ax.axhline(0, linestyle='--', color='grey', linewidth=2)
-        ci_low, ci_up = mne.stats._bootstrap_ci(average.data, random_state=0,
-                                                stat_fun=lambda x: np.sum(x ** 2, axis=0))
-        ci_low = mne.baseline.rescale(ci_low, average.times, baseline=(None, 0))
-        ci_up = mne.baseline.rescale(ci_up, average.times, baseline=(None, 0))
-        ax.fill_between(times, gfp + ci_up, gfp - ci_low, color=color, alpha=0.3)
-        ax.grid(True)
-        ax.set_ylabel('GFP')
-        ax.annotate('%s (%d-%dHz)' % (freq_name, fmin, fmax),
-                    xy=(0.95, 0.8),
-                    horizontalalignment='right',
-                    xycoords='axes fraction')
-        ax.set_xlim(t_epoch[0] * 1000, t_epoch[0] * 1000)
-
-    axes.ravel()[-1].set_xlabel('Time [ms]')
-
-    if save_plots:
-        save_path = join(figures_path, 'tf_sensor_space/dynamics', name + '_tf_dynamics' + '.jpg')
-        fig.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
-def plot_ssp(name, save_dir, highpass, lowpass, save_plots,
-             figures_path, ermsub):
-    if ermsub == 'None':
-        print('no empty_room_data found for' + name)
-        pass
-
-    else:
-        epochs = loading.read_ssp_epochs(name, save_dir, highpass, lowpass)
-
-        ssp_figure = epochs.plot_projs_topomap()
-
-        if save_plots:
-            save_path = join(figures_path, 'ssp', name + '_ssp' +
-                             op.filter_string(highpass, lowpass) + '.jpg')
-            ssp_figure.savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
-def plot_ssp_eog(name, save_dir, highpass, lowpass, save_plots,
-                 figures_path):
-    proj_name = name + '_eog-proj.fif'
-    proj_path = join(save_dir, proj_name)
-
-    raw = loading.read_raw(name, save_dir)
-    eog_projs = mne.read_proj(proj_path)
-
-    ssp_figure = mne.viz.plot_projs_topomap(eog_projs, info=raw.info)
-
-    if save_plots:
-        save_path = join(figures_path, 'ssp', name + '_ssp_eog' +
-                         op.filter_string(highpass, lowpass) + '.jpg')
-        ssp_figure.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
-def plot_ssp_ecg(name, save_dir, highpass, lowpass, save_plots,
-                 figures_path):
-    proj_name = name + '_ecg-proj.fif'
-    proj_path = join(save_dir, proj_name)
-
-    raw = loading.read_raw(name, save_dir)
-    ecg_projs = mne.read_proj(proj_path)
-
-    ssp_figure = mne.viz.plot_projs_topomap(ecg_projs, info=raw.info)
-
-    if save_plots:
-        save_path = join(figures_path, 'ssp', name + '_ssp_ecg' +
-                         op.filter_string(highpass, lowpass) + '.jpg')
-        ssp_figure.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
 def plot_epochs(name, save_dir, highpass, lowpass, save_plots,
                 figures_path):
     epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
@@ -511,34 +346,6 @@ def plot_evoked_topomap(name, save_dir, highpass, lowpass, save_plots, figures_p
 
 
 @decor.topline
-def plot_evoked_field(name, save_dir, highpass, lowpass,
-                      subtomri, subjects_dir, save_plots,
-                      figures_path, mne_evoked_time, n_jobs):
-    evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
-    trans = loading.read_transformation(save_dir, subtomri)
-
-    for evoked in evokeds:
-
-        surf_maps = mne.make_field_map(evoked, trans=trans, subject=subtomri,
-                                       subjects_dir=subjects_dir, meg_surf='head',
-                                       n_jobs=n_jobs)
-        for t in mne_evoked_time:
-            mne.viz.plot_evoked_field(evoked, surf_maps, time=t)
-            mlab.title(name + ' - ' + evoked.comment + op.filter_string(highpass, lowpass)
-                       + '-' + str(t), height=0.9)
-            mlab.view(azimuth=180)
-
-            if save_plots:
-                save_path = join(figures_path, 'evoked_field', evoked.comment,
-                                 name + '_' + evoked.comment + '_evoked_field' +
-                                 op.filter_string(highpass, lowpass) + '-' + str(t) + '.jpg')
-                mlab.savefig(save_path)
-                print('figure: ' + save_path + ' has been saved')
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
 def plot_evoked_joint(name, save_dir, highpass, lowpass, save_plots,
                       figures_path):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
@@ -620,38 +427,6 @@ def plot_evoked_image(name, save_dir, highpass, lowpass, save_plots, figures_pat
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
-
-@decor.topline
-def plot_evoked_h1h2(name, save_dir, highpass, lowpass, event_id,
-                     save_plots, figures_path):
-    try:
-        evokeds_dict = loading.read_h1h2_evokeds(name, save_dir, highpass, lowpass)
-    except FileNotFoundError:
-        raise RuntimeError('h1h2-Files not existent, set ana_h1h2 to true')
-
-    for trial_type in event_id:
-        plot_dict = {}
-        plot_list = []
-        for evoked_h1 in evokeds_dict['h1']:
-            if evoked_h1.comment == trial_type:
-                plot_dict.update({'h1': evoked_h1})
-
-        for evoked_h2 in evokeds_dict['h2']:
-            if evoked_h2.comment == trial_type:
-                plot_dict.update({'h2': evoked_h2})
-
-        figure = mne.viz.plot_compare_evokeds(plot_dict, picks='grad',
-                                              title=f'H1H2-comparision for {trial_type}-{name}',
-                                              combine='gfp')
-
-        if save_plots:
-            save_path = join(figures_path, 'evoked_h1h2', evoked_h1.comment,
-                             name + '_' + evoked_h1.comment + '_h1h2' +
-                             op.filter_string(highpass, lowpass) + '.jpg')
-            figure[0].savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
 
 
 @decor.topline
@@ -795,10 +570,7 @@ def plot_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                 else:
                     print('Not saving plots; set "save_plots" to "True" to save')
 
-        if not stc_interactive:
-            close_all()
-
-
+# Todo: Figure-Conflict when running consecutively with other mayavi-plots
 @decor.topline
 def plot_normal_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                     inverse_method, mne_evoked_time, event_id, stc_interactive,
@@ -829,10 +601,8 @@ def plot_normal_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
 
-        if not stc_interactive:
-            close_all()
 
-
+@decor.topline
 def plot_vector_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                     inverse_method, mne_evoked_time, event_id, stc_interactive,
                     save_plots, figures_path):
@@ -853,7 +623,7 @@ def plot_vector_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                                  size=(1600, 800), figure=figures_list)
             brain.title = f'{name}-{trial_type}_vector'
             if save_plots:
-                save_path = join(figures_path, 'stcs', trial_type,
+                save_path = join(figures_path, 'vec_stcs', trial_type,
                                  name + '_' + trial_type +
                                  op.filter_string(highpass, lowpass) + '_vector_' + str(idx) + '.jpg')
                 brain.save_image(save_path)
@@ -861,9 +631,6 @@ def plot_vector_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
 
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
-
-        if not stc_interactive:
-            close_all()
 
 
 @decor.topline
@@ -982,11 +749,11 @@ def plot_mixn_res(name, save_dir, highpass, lowpass, event_id, save_plots, figur
 @decor.topline
 def plot_animated_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                       inverse_method, stc_animation, event_id,
-                      figures_path, ev_ids_label_analysis):
+                      figures_path):
     n_stcs = loading.read_normal_source_estimates(name, save_dir, highpass, lowpass, inverse_method,
                                                   event_id)
 
-    for ev_id in ev_ids_label_analysis:
+    for ev_id in event_id:
         n_stc = n_stcs[ev_id]
 
         save_path = join(figures_path, 'stcs_movie', name +
@@ -1047,169 +814,12 @@ def plot_labels(mri_subject, save_plots, figures_path,
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
-def sub_func_label_analysis(highpass, lowpass, tmax, sub_files_dict,
-                            pscripts_path, label_origin, ev_ids_label_analysis, save_plots,
-                            figures_path, func_dict):
-    lat_dict = {}
-
-    with open(join(pscripts_path, 'func_label_lat.py'), 'r') as file:
-        for item in file:
-            if ':' in item:
-                key, value = item.split(':', 1)
-                try:
-                    value = literal_eval(value)
-                except ValueError:
-                    pass
-                lat_dict[key] = value
-
-    for sub in sub_files_dict:
-        print(sub)
-        fig, ax = plt.subplots(figsize=(18, 8))
-        ax.yaxis.set_ticks(np.arange(len(label_origin) + 1))
-        colormap = plt.cm.get_cmap(name='hsv', lut=len(sub_files_dict[sub]) + 1)
-        custom_lines = []
-        custom_line_names = []
-        marker_list = ['o', 'x', 's', 'd', 'v']
-        for i, file in enumerate(sub_files_dict[sub]):
-            for ev_id in ev_ids_label_analysis:
-                f_name = file + '-' + ev_id
-                lats = lat_dict[f_name]
-                color = colormap(i)
-                custom_lines.append(Line2D([0], [0], marker='o', color='w',
-                                           markerfacecolor=color))
-                custom_line_names.append(file)
-                for idx, label in enumerate(label_origin):
-                    if label in lats:
-                        if len(lats[label]) == 1:
-                            x = lats[label][0]
-                            y = idx + 1
-                            ax.plot(x, y, 'o', color=color)
-                        else:
-                            for idx2, lat in enumerate(lats[label]):
-                                x = lat
-                                y = idx + 1
-                                ax.plot(x, y, marker_list[idx2], color=color)
-                    else:
-                        continue
-        ax.set_yticklabels(['0'] + label_origin)
-        ax.set_xlim(0, tmax)
-        ax.xaxis.set_major_locator(ticker.MultipleLocator(0.1))
-        ax.xaxis.set_minor_locator(ticker.MultipleLocator(0.02))
-        fig.legend(custom_lines, custom_line_names, loc=4)
-        plt.grid(True, which='both')
-        plt.xlabel('Time (s)')
-        plt.ylabel('Labels')
-        plt.title(f'Latency of Max-Peak in Labels for {sub}{op.filter_string(highpass, lowpass)}')
-        plt.show()
-        """
-        # Label-Position-Analysis
-        subtomri = sub_dict[sub]
-        brain = Brain(subtomri, hemi='split', surf='inflated', title=sub,
-                      size=(1600,800), subjects_dir=subjects_dir)
-        labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir,
-                                            parc=parcellation)
-        for label in [l for l in labels if l.name in label_origin]:
-            brain.add_label(label, borders=True, color='k', hemi=label.hemi)
-        y_cnt = 0.02
-        x_cnt = 0.01
-        for i, name in enumerate(sub_files_dict[sub]):
-            color = colormap(i)
-            files = listdir(join(data_path, name, 'func_labels'))
-            for file in files:
-                label_path = join(data_path, name, 'func_labels', file)
-                f_label = mne.read_label(label_path, subtomri)
-                f_label.color = color
-                brain.add_label(f_label, hemi=label.hemi, borders=True)
-            brain.add_text(x=x_cnt, y=y_cnt, text=name,
-                           color=color, name=name, font_size=8, col=1)
-            if round(x_cnt,2) == 0.71:
-                x_cnt = 0.01
-                y_cnt +=0.02
-            else:
-                x_cnt += 0.35
-            if round(y_cnt,2) == 0.20:
-                y_cnt = 0.84"""
-
-        if save_plots:
-            """if not exists(join(figures_path, 'func_labels', 'brain_plots_sub')):
-                makedirs(join(figures_path, 'func_labels', 'brain_plots_sub'))
-            b_save_path = join(figures_path, 'func_labels', 'brain_plots_sub',
-                               f'{sub}-{op.filter_string(highpass, lowpass)}-b.jpg')
-            brain.save_image(b_save_path)"""
-
-            if not exists(join(figures_path, 'func_labels', 'latencies')):
-                makedirs(join(figures_path, 'func_labels', 'latencies'))
-            save_path = join(figures_path, 'func_labels', 'latencies',
-                             f'{sub}{op.filter_string(highpass, lowpass)}-lat.jpg')
-            plt.savefig(save_path, dpi=600)
-
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-
-        if func_dict['close_plots']:
-            close_all()
-
-
-@decor.topline
-def all_func_label_analysis(highpass, lowpass, tmax, files, pscripts_path,
-                            label_origin, ev_ids_label_analysis, save_plots,
-                            figures_path):
-    lat_dict = {}
-
-    with open(join(pscripts_path, 'func_label_lat.py'), 'r') as file:
-        for item in file:
-            if ':' in item:
-                key, value = item.split(':', 1)
-                try:
-                    value = literal_eval(value)
-                except ValueError:
-                    pass
-                lat_dict[key] = value
-
-    fig, ax = plt.subplots(figsize=(18, 8))
-    ax.yaxis.set_ticks(np.arange(len(label_origin) + 1))
-    colormap = plt.cm.get_cmap(name='hsv', lut=len(files) + 1)
-    for i, file in enumerate(files):
-        print(file)
-        for ev_id in ev_ids_label_analysis:
-            f_name = file + '-' + ev_id
-            lats = lat_dict[f_name]
-            color = colormap(i)
-
-            for idx, label in enumerate(label_origin):
-                if label in lats:
-                    x = lats[label][0]
-                    y = idx + 1
-                    ax.plot(x, y, 'o', color=color)
-                else:
-                    continue
-    ax.set_yticklabels(['0'] + label_origin)
-    ax.set_xlim(0, tmax)
-    ax.xaxis.set_major_locator(ticker.MultipleLocator(0.1))
-    ax.xaxis.set_minor_locator(ticker.MultipleLocator(0.02))
-    plt.grid(True, which='both')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Labels')
-    plt.title(f'Latency of Max-Peak in Labels for all {op.filter_string(highpass, lowpass)}')
-    plt.show()
-
-    if save_plots:
-        if not exists(join(figures_path, 'func_labels', 'latencies')):
-            makedirs(join(figures_path, 'func_labels', 'latencies'))
-        save_path = join(figures_path, 'func_labels', 'latencies',
-                         f'all_{op.filter_string(highpass, lowpass)}-lat.jpg')
-        plt.savefig(save_path, dpi=600)
-
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
 
 @decor.topline
 def plot_label_time_course(name, save_dir, highpass, lowpass, subtomri,
                            subjects_dir, inverse_method, source_space_method,
                            target_labels, save_plots, figures_path,
-                           parcellation, event_id, ev_ids_label_analysis):
+                           parcellation, event_id):
     stcs = loading.read_normal_source_estimates(name, save_dir, highpass, lowpass,
                                                 inverse_method, event_id)
 
@@ -1223,7 +833,7 @@ def plot_label_time_course(name, save_dir, highpass, lowpass, subtomri,
     bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
     arrowprops = dict(arrowstyle="->")
     kw = dict(xycoords='data', arrowprops=arrowprops, bbox=bbox_props)
-    for trial in ev_ids_label_analysis:
+    for trial in event_id:
         stc = stcs[trial]
         for hemi in target_labels:
             for l in labels:
@@ -1273,134 +883,18 @@ def plot_label_time_course(name, save_dir, highpass, lowpass, subtomri,
                         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
-def cmp_label_time_course(data_path, highpass, lowpass, sub_dict, comp_dict,
-                          subjects_dir, inverse_method, source_space_method, parcellation,
-                          target_labels, save_plots, figures_path,
-                          event_id, ev_ids_label_analysis, combine_ab,
-                          pscripts_path, func_dict):
-    color_dict = {'low': 'g', 'middle': 'y', 'high': 'r', 't': 'b'}
-
-    # Differentiate a and b
-    for ab_key in comp_dict:
-        print(ab_key)
-        pre_corr_dict = {}
-        corr_dict = {}
-        if combine_ab:
-            subtomri = sub_dict[ab_key]
-        else:
-            subtomri = sub_dict[ab_key[:-2]]
-
-        only_a = False
-        for k in comp_dict[ab_key]:
-            if len(comp_dict[ab_key][k]) < 2:
-                only_a = True
-
-        labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
-        src = loading.read_source_space(subtomri, subjects_dir, source_space_method)
-
-        nrows = len(target_labels)
-        ncols = len(target_labels['lh'])
-        for trial_type in ev_ids_label_analysis:
-            fig, axes = plt.subplots(nrows=nrows, ncols=ncols,
-                                     sharex='all', sharey='all',
-                                     gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
-                                                  'left': 0.05, 'right': 0.95,
-                                                  'top': 0.95, 'bottom': 0.05},
-                                     figsize=(18, 8))
-            # Nasty workaround to set label-titles on axes
-            # key in target_labels = row in plot
-            r_cnt = 0
-            for tl in target_labels:
-                c_cnt = 0
-                for t in target_labels[tl]:
-                    axes[r_cnt, c_cnt].set_title(t)
-                    c_cnt += 1
-                r_cnt += 1
-
-            # Trials(low,middle,high,t)
-            for trial in comp_dict[ab_key]:
-                print(trial)
-                for name in comp_dict[ab_key][trial]:
-                    print(name)
-                    save_dir = join(data_path, name)
-                    color = color_dict[trial]
-                    stcs = loading.read_normal_source_estimates(name, save_dir, highpass, lowpass,
-                                                                inverse_method, event_id)
-                    stc = stcs[trial_type]
-
-                    # choose target labels
-                    for hemi in target_labels:
-                        for labl in labels:
-                            if labl.name in target_labels[hemi]:
-                                print(labl.name)
-                                stc_label = stc.in_label(labl)
-                                pca = stc.extract_label_time_course(labl, src, mode='pca_flip')
-                                t = 1e3 * stc_label.times
-
-                                # Ensure, that plot gets in the axe with the right title
-                                axe = None
-                                for ax in axes.flatten():
-                                    if ax.get_title() == labl.name:
-                                        axe = ax
-                                axe.plot(t, pca.T, color, label=trial)
-
-                                if combine_ab and not only_a:
-                                    # Save Array for later Correlation-Analysis
-                                    if labl.name in pre_corr_dict:
-                                        if trial in pre_corr_dict[labl.name]:
-                                            pre_corr_dict[labl.name][trial].append(pca)
-                                        else:
-                                            pre_corr_dict[labl.name].update({trial: [pca]})
-                                    else:
-                                        pre_corr_dict.update({labl.name: {trial: [pca]}})
-
-            fig.suptitle(ab_key, size=16, weight=4)
-            fig.text(0.5, 0.01, 'Time [ms]', ha='center')
-            fig.text(0.01, 0.5, 'Source Amplitude', va='center', rotation='vertical')
-            plt.legend(loc=4)
-            plt.show()
-
-            if save_plots:
-                if not exists(join(figures_path, 'label_time_course', 'comp_plots')):
-                    makedirs(join(figures_path, 'label_time_course', 'comp_plots'))
-                save_path = join(figures_path, 'label_time_course', 'comp_plots',
-                                 ab_key + op.filter_string(highpass, lowpass) +
-                                 '_' + trial_type + '_' + 'label-cmp.jpg')
-                plt.savefig(save_path, dpi=600)
-                print('figure: ' + save_path + ' has been saved')
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
-
-            # Correlation between a and b
-            if combine_ab and not only_a:
-                for label in pre_corr_dict:
-                    for trial in pre_corr_dict[label]:
-                        labl = pre_corr_dict[label][trial]
-                        coef = abs(np.corrcoef(labl[0], labl[1])[0, 1])
-                        if label in corr_dict:
-                            corr_dict[label].update({trial: coef})
-                        else:
-                            corr_dict.update({label: {trial: coef}})
-
-                ut.dict_filehandler(ab_key,
-                                    f'ab_coef_label_time_course{op.filter_string(highpass, lowpass)}-{trial_type}',
-                                    pscripts_path, values=corr_dict)
-            if func_dict['close_plots']:
-                close_all()
-
 
 @decor.topline
 def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcellation,
                            baseline, tfr_freqs, save_plots, figures_path, n_jobs,
-                           target_labels, ev_ids_label_analysis):
+                           target_labels, event_id):
     # Compute a source estimate per frequency band including and excluding the
     # evoked response
     freqs = tfr_freqs  # define frequencies of interest
     n_cycles = freqs / 3.  # different number of cycle per frequency
     labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
 
-    for ev_id in ev_ids_label_analysis:
+    for ev_id in event_id:
         epochs = loading.read_epochs(name, save_dir, highpass, lowpass)[ev_id]
         inverse_operator = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
         # subtract the evoked response in order to exclude evoked activity
@@ -1459,14 +953,14 @@ def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcella
 
 
 @decor.topline
-def plot_grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
+def plot_grand_avg_label_power(grand_avg_dict, event_id, target_labels,
                                save_dir_averages, tfr_freqs, t_epoch, highpass,
                                lowpass, save_plots, figures_path):
-    ga_dict = loading.read_ga_label_power(grand_avg_dict, ev_ids_label_analysis, target_labels,
+    ga_dict = loading.read_ga_label_power(grand_avg_dict, event_id, target_labels,
                                           save_dir_averages)
     freqs = tfr_freqs
     for key in ga_dict:
-        for ev_id in ev_ids_label_analysis:
+        for ev_id in event_id:
             for hemi in target_labels:
                 for label_name in target_labels[hemi]:
                     power_ind = ga_dict[key][ev_id][label_name]['power']
@@ -1548,15 +1042,15 @@ def plot_grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis, target_lab
 def plot_source_space_connectivity(name, save_dir, highpass, lowpass,
                                    subtomri, subjects_dir, parcellation,
                                    target_labels, con_methods, con_fmin,
-                                   con_fmax, save_plots, figures_path, ev_ids_label_analysis):
+                                   con_fmax, save_plots, figures_path, event_id):
     con_dict = loading.read_connect(name, save_dir, highpass, lowpass, con_methods,
-                                    con_fmin, con_fmax, ev_ids_label_analysis)
+                                    con_fmin, con_fmax, event_id)
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
     labels = mne.read_labels_from_annot(subtomri, parc=parcellation,
                                         subjects_dir=subjects_dir)
 
-    actual_labels = [l for l in labels if l.name in target_labels['lh']
-                     or l.name in target_labels['rh']]
+    actual_labels = [lb for lb in labels if lb.name in target_labels['lh']
+                     or lb.name in target_labels['rh']]
 
     label_colors = [label.color for label in actual_labels]
 
@@ -1595,7 +1089,7 @@ def plot_source_space_connectivity(name, save_dir, highpass, lowpass,
 
     # Plot the graph using node colors from the FreeSurfer parcellation. We only
     # show the 300 strongest connections.
-    for ev_id in ev_ids_label_analysis:
+    for ev_id in event_id:
         for con_method in con_methods:
             fig, axes = mne.viz.plot_connectivity_circle(con_dict[ev_id][con_method], label_names, n_lines=300,
                                                          node_angles=node_angles, node_colors=label_colors,
@@ -1631,103 +1125,6 @@ def plot_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
                 print('figure: ' + save_path + ' has been saved')
             else:
                 print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
-def plot_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages, grand_avg_dict,
-                                event_id, save_plots, figures_path):
-    ga_dict = loading.read_grand_avg_evokeds_h1h2(highpass, lowpass, save_dir_averages,
-                                                  grand_avg_dict, event_id)
-
-    for stim_type in ga_dict:
-        for trial in ga_dict[stim_type]:
-            plot_list = [ga_dict[stim_type][trial]['h1'], ga_dict[stim_type][trial]['h2']]
-
-            figure = mne.viz.plot_compare_evokeds(plot_list, gfp=True,
-                                                  title=f'GA for H1H2-Comparision for {stim_type}-{trial}')
-
-            if save_plots:
-                save_path = join(figures_path, 'grand_averages/sensor_space/evoked',
-                                 stim_type + '_' + trial + '_h1h2' +
-                                 op.filter_string(highpass, lowpass) + '.jpg')
-                figure.savefig(save_path, dpi=600)
-                print('figure: ' + save_path + ' has been saved')
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
-def plot_evoked_compare(data_path, save_dir_averages, highpass, lowpass, comp_dict, combine_ab, event_id):
-    basic_pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
-    for file in comp_dict:
-        cond_dict = {}
-        channels = []
-        for cond in comp_dict[file]:
-            if combine_ab:
-                try:
-                    match = re.match(basic_pattern, comp_dict[file][cond][0])
-                    title = match.group(1) + '_' + match.group(2)
-                    evokeds = loading.read_evoked_combined_ab(title, save_dir_averages, highpass, lowpass)
-                    channels.append(set(evokeds[0].ch_names))
-                except FileNotFoundError:
-                    print('You have to run "combine_evokeds_ab" first')
-            else:
-                name = comp_dict[file][cond]
-                save_dir = join(data_path, name)
-                evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
-                channels.append(set(evokeds[0].ch_names))
-
-            for evoked in evokeds:
-                ev_trial = evoked.comment
-                for trial in event_id:
-                    if trial in ev_trial:
-                        if cond in cond_dict:
-                            cond_dict[cond].update({trial: evoked})
-                        else:
-                            cond_dict.update({cond: {trial: evoked}})
-
-        channels = list(set.intersection(*channels))
-
-        for trial in event_id:
-            evoked_dict = {}
-            for cond in cond_dict:
-                evoked = cond_dict[cond][trial]
-                evoked = evoked.pick_channels(channels)
-                evoked_dict.update({cond: evoked})
-            mne.viz.plot_compare_evokeds(evoked_dict, title=file, combine='gfp')
-
-            # Extract data: transpose because the cluster test requires channels to be last
-            # In this case, inference is done over items. In the same manner, we could
-            # also conduct the test over, e.g., subjects.
-            X = [evoked_x.get_data().transpose(0, 2, 1),
-                 evoked_y.get_data().transpose(0, 2, 1)]
-            tfce = dict(start=.2, step=.2)
-
-            t_obs, clusters, cluster_pv, h0 = mne.stats.spatio_temporal_cluster_1samp_test(
-                    X, tfce, n_permutations=10000)  # a more standard number would be 1000+
-            significant_points = cluster_pv.reshape(t_obs.shape).T < .05
-            print(str(significant_points.sum()) + " points selected by TFCE ...")
-
-            # We need an evoked object to plot the image to be masked
-            evoked = mne.combine_evoked([long_words.average(), -short_words.average()],
-                                        weights='equal')  # calculate difference wave
-            time_unit = dict(time_unit="s")
-            evoked.plot_joint(title="Long vs. short words", ts_args=time_unit,
-                              topomap_args=time_unit)  # show difference wave
-
-            # Create ROIs by checking channel labels
-            selections = make_1020_channel_selections(evoked.info, midline="12z")
-
-            # Visualize the results
-            fig, axes = plt.subplots(nrows=3, figsize=(8, 8))
-            axes = {sel: ax for sel, ax in zip(selections, axes.ravel())}
-            evoked.plot_image(axes=axes, group_by=selections, colorbar=False, show=False,
-                              mask=significant_points, show_names="all", titles=None,
-                              **time_unit)
-            plt.colorbar(axes["Left"].images[-1], ax=list(axes.values()), shrink=.3,
-                         label="uV")
-
-            plt.show()
 
 
 @decor.topline
@@ -1880,11 +1277,10 @@ def plot_grand_avg_stc_anim(highpass, lowpass, save_dir_averages,
 @decor.topline
 def plot_grand_avg_connect(highpass, lowpass, save_dir_averages,
                            grand_avg_dict, subjects_dir, morph_to, parcellation, con_methods, con_fmin, con_fmax,
-                           save_plots, figures_path, ev_ids_label_analysis,
+                           save_plots, figures_path, event_id,
                            target_labels):
     ga_dict = loading.read_grand_avg_connect(highpass, lowpass, save_dir_averages,
-                                             grand_avg_dict, con_methods,
-                                             con_fmin, con_fmax, ev_ids_label_analysis)
+                                             grand_avg_dict, con_methods, event_id)
 
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
     labels_parc = mne.read_labels_from_annot(morph_to, parc=parcellation,
@@ -1934,7 +1330,7 @@ def plot_grand_avg_connect(highpass, lowpass, save_dir_averages,
                                           group_boundaries=[0, len(label_names) / 2])
 
     for stim_type in ga_dict:
-        for ev_id in ev_ids_label_analysis:
+        for ev_id in event_id:
             for method in ga_dict[stim_type][ev_id]:
                 fig, axes = mne.viz.plot_connectivity_circle(ga_dict[stim_type][ev_id][method],
                                                              label_names, n_lines=300,
@@ -2036,140 +1432,6 @@ def plot_grand_averages_source_estimates_cluster_masked(name,
 
     else:
         print('Not saving plots; set "save_plots" to "True" to save')
-
-
-@decor.topline
-def pp_plot_latency_s1_corr(data_path, files, highpass, lowpass,
-                            save_plots, figures_path):
-    s1_lat = []
-    ev_lat = []
-    plt.figure()
-
-    for name in files:
-        save_dir = join(data_path, name)
-        evoked = loading.read_evokeds(name, save_dir, highpass, lowpass)[0]
-        if not evoked.comment == 'LBT':
-            raise RuntimeError(f'Wrong trigger {evoked.comment} for analysis')
-        ch_name, latency, amplitude = evoked.get_peak(tmin=0, tmax=0.2, return_amplitude=True)
-        s1_lat.append(latency)
-
-        events = loading.read_events(name, save_dir)
-        l1 = []
-        for x in range(np.size(events, axis=0)):
-            if events[x, 2] == 2:
-                if events[x + 1, 2] == 1:
-                    l1.append(events[x + 1, 0] - events[x, 0])
-        diff_mean = st.mean(l1)
-
-        ev_lat.append(diff_mean)
-
-        plt.plot(st.mean(l1), latency, 'bo')
-    plt.xlabel('Latency MotStart-LBT')
-    plt.ylabel('Latency S1')
-    if save_plots:
-        save_path = join(figures_path, 'statistics', 'MotStart-LBT_diff' +
-                         op.filter_string(highpass, lowpass) + '.jpg')
-        plt.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-
-def plot_quality(pscripts_path, all_files, save_plots, figures_path, highpass, lowpass):
-    fig, ax = plt.subplots(figsize=(18, 8), gridspec_kw={'left': 0.05, 'right': 0.95})
-    ax.xaxis.set_ticks(np.arange(len(all_files)))
-
-    quality_dict = ut.read_dict_file('quality', pscripts_path)
-
-    for idx, file in enumerate(all_files):
-
-        x = idx
-        y = quality_dict[file]
-        if y == 1:
-            ax.plot(x, y, 'go')
-
-        if y == 2:
-            ax.plot(x, y, 'yo')
-
-        if y == 3:
-            ax.plot(x, y, 'ro')
-
-    ax.set_xticklabels(all_files)
-    plt.xticks(rotation=90)
-    plt.title('Quality of all_files')
-
-    if save_plots:
-        save_path = join(figures_path, 'Various', 'Quality' +
-                         op.filter_string(highpass, lowpass) + '.jpg')
-        plt.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-
-def plot_lat_vs_quality(pscripts_path, all_files, save_plots, figures_path, highpass, lowpass):
-    quality_dict = ut.read_dict_file('quality', pscripts_path)
-
-    lat1_dict = ut.read_dict_file('MotStart-LBT_diffs', pscripts_path)
-
-    fig1, ax1 = plt.subplots(figsize=(18, 8), gridspec_kw={'left': 0.05, 'right': 0.95})
-    for file in all_files:
-        std = lat1_dict[file]['stdev']
-        qual = quality_dict[file]
-        ax1.plot(std, qual, 'gx')
-    ax1.set_title('Standard Deviation of Latency vs. Quality')
-
-    fig2, ax2 = plt.subplots(figsize=(18, 8), gridspec_kw={'left': 0.05, 'right': 0.95})
-    for file in all_files:
-        mean = lat1_dict[file]['mean']
-        qual = quality_dict[file]
-        ax2.plot(mean, qual, 'rx')
-    ax2.set_title('Mean of Latency vs. Quality')
-
-    if save_plots:
-        save_path1 = join(figures_path, 'Various', 'Latency-std_vs_Quality_1' +
-                          op.filter_string(highpass, lowpass) + '.jpg')
-        fig1.savefig(save_path1, dpi=600)
-        print('figure: ' + save_path1 + ' has been saved')
-        save_path2 = join(figures_path, 'Various', 'Latency-mean_vs_Quality_2' +
-                          op.filter_string(highpass, lowpass) + '.jpg')
-        fig2.savefig(save_path2, dpi=600)
-        print('figure: ' + save_path2 + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-
-def plot_evoked_peaks(pscripts_path, all_files, save_plots, figures_path, highpass, lowpass):
-    peak_dict = ut.read_dict_file('peak_detection', pscripts_path)
-    quality_dict = ut.read_dict_file('quality', pscripts_path)
-
-    fig, ax = plt.subplots(figsize=(18, 8), gridspec_kw={'left': 0.05, 'right': 0.95})
-    ax.xaxis.set_ticks(np.arange(len(all_files)))
-
-    for n, file in enumerate(all_files):
-        if quality_dict[file] == 1:
-            ax.plot(n, peak_dict[file], 'gx')
-        if quality_dict[file] == 2:
-            ax.plot(n, peak_dict[file], 'yx')
-        if quality_dict[file] == 3:
-            ax.plot(n, peak_dict[file], 'rx')
-
-    ax.set_xticklabels(all_files)
-    plt.xticks(rotation=90)
-    plt.title('Peaks detected in evoked')
-
-    if save_plots:
-        save_path = join(figures_path, 'Various', 'Peaks' +
-                         op.filter_string(highpass, lowpass) + '.jpg')
-        plt.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "save_plots" to "True" to save')
-
-
-# Todo: Rank vs. Quality
-def plot_rank_vs_quality():
-    pass
 
 
 @decor.topline

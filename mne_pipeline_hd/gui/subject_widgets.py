@@ -34,6 +34,7 @@ from mne_pipeline_hd.gui.qt_utils import (ErrorDialog, OutputStream, Worker)
 
 # Todo: Adapt File-Structure to (MEG)-BIDS-Standards
 
+# Todo: Subject-Classes: Is it working when called in QRunnable?
 class CurrentSubject:
     """ Class for File-Data in File-Loop"""
 
@@ -93,11 +94,14 @@ class CurrentSubject:
 
 
 class CurrentMRISubject:
-    # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?
-    def __init__(self, mri_subject, main_win):
-        self.mw = main_win
-        self.pr = main_win.pr
+    # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?)
+    def __init__(self, mri_subject):
         self.mri_subject = mri_subject
+
+
+class CurrentGAGroup:
+    def __init__(self, group_name):
+        self.group_name = group_name
 
 
 def file_indexing(which_file, all_files):

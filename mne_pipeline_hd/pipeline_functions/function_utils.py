@@ -10,6 +10,7 @@ import inspect
 import logging
 import shutil
 import sys
+import time
 import traceback
 import types
 from ast import literal_eval
@@ -30,38 +31,8 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
 
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.qt_utils import ErrorDialog, Worker
-from mne_pipeline_hd.gui.subject_widgets import CurrentMRISubject, CurrentSubject
+from mne_pipeline_hd.gui.subject_widgets import CurrentGAGroup, CurrentMRISubject, CurrentSubject
 from mne_pipeline_hd.pipeline_functions import ismac
-
-
-class FunctionWorkerSignals(QObject):
-    """
-    Defines the Signals for the Worker and call_functions
-    """
-    # Worker-Signals
-    finished = pyqtSignal()
-    error = pyqtSignal(tuple)
-
-    # Signals for call_functions
-    pgbar_n = pyqtSignal(int)
-    pg_sub = pyqtSignal(str)
-    pg_func = pyqtSignal(str)
-    pg_which_loop = pyqtSignal(str)
-    func_sig = pyqtSignal(dict)
-
-
-class FunctionWorker(Worker):
-    def __init__(self, fn, *args, **kwargs):
-        self.signal_class = FunctionWorkerSignals()
-
-        # Add the callback to our kwargs
-        kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
-                             'pg_sub': self.signal_class.pg_sub,
-                             'pg_func': self.signal_class.pg_func,
-                             'pg_which_loop': self.signal_class.pg_which_loop,
-                             'func_sig': self.signal_class.func_sig}
-
-        super().__init__(fn, self.signal_class, *args, **kwargs)
 
 
 def func_from_def(func_name, subject, main_win):
@@ -99,7 +70,7 @@ def func_from_def(func_name, subject, main_win):
         elif arg_name in main_win.pr.parameters:
             keyword_arguments.update({arg_name: main_win.pr.parameters[arg_name]})
         else:
-            raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
+            raise RuntimeError(f'{func_name}: {arg_name} could not be found in Subject, Project or Parameters')
 
     # Call Function from specified module with arguments from unpacked list/dictionary
     return_value = getattr(module, func_name)(**keyword_arguments)
@@ -107,88 +78,143 @@ def func_from_def(func_name, subject, main_win):
     return return_value
 
 
-def subject_loop(main_win, signals, subject_type, selected_subjects, selected_functions, count):
-    for name in selected_subjects:
-        if not main_win.cancel_functions:
-            if subject_type == 'mri':
-                subject = CurrentMRISubject(name, main_win)
-            elif subject_type == 'file':
-                subject = CurrentSubject(name, main_win)
-                main_win.subject = subject
-            else:
-                subject = None
-            # Print Subject Console Header
-            print('=' * 60 + '\n', name + '\n')
-            signals['pg_sub'].emit(name)
-            for func in selected_functions:
-                if not main_win.cancel_functions:
-                    if main_win.pd_funcs.loc[func, 'mayavi']:
-                        signals['pg_func'].emit(func)
-                        # Mayavi-Plots need to be called in the main thread
-                        signals['func_sig'].emit({'func_name': func, 'subject': subject, 'main_win': main_win})
-                        signals['pgbar_n'].emit(count)
-                        count += 1
-                    elif main_win.pd_funcs.loc[func, 'matplotlib'] and main_win.pr.parameters['show_plots']:
-                        signals['pg_func'].emit(func)
-                        # Matplotlib-Plots can be called without showing (backend: agg),
-                        # but to be shown, they have to be called in the main thread
-                        signals['func_sig'].emit({'func_name': func, 'subject': subject, 'main_win': main_win})
-                        signals['pgbar_n'].emit(count)
-                        count += 1
-                    else:
-                        signals['pg_func'].emit(func)
-                        func_from_def(func, subject, main_win)
-                        signals['pgbar_n'].emit(count)
-                        count += 1
-                else:
-                    break
+class FunctionWorkerSignals(QObject):
+    """
+    Defines the Signals for the Worker and call_functions
+    """
+    # Worker-Signals
+    # The Thread finished
+    finished = pyqtSignal()
+    # An Error occured
+    error = pyqtSignal(tuple)
+
+    # Signals for call_functions
+    # Returns an int for a progressbar
+    pgbar_n = pyqtSignal(int)
+    # Returns a tuple with strings about the current subject and function
+    pg_subfunc = pyqtSignal(tuple)
+    # Returns a string about the current loop (mri_subjects, files, grand_average)
+    pg_which_loop = pyqtSignal(str)
+    # Passes arguments into the main-thread for execution (important for functions with plot)
+    func_sig = pyqtSignal(dict)
+
+
+class FunctionWorker(Worker):
+    def __init__(self, main_win):
+        self.signals = FunctionWorkerSignals()
+        super().__init__(self.call_functions, self.signals)
+
+        self.mw = main_win
+        self.count = 1
+
+        # Signals received from main_win for canceling functions and
+        self.mw.mw_signals.cancel_functions.connect(self.check_cancel_functions)
+        self.mw.mw_signals.plot_running.connect(self.check_plot_running)
+        self.is_cancel_functions = False
+        self.is_plot_running = False
+
+    def check_cancel_functions(self, is_canceled):
+        if is_canceled:
+            self.is_cancel_functions = True
         else:
-            break
+            self.is_cancel_functions = False
 
-    return count
+    def check_plot_running(self, is_running):
+        if is_running:
+            self.is_plot_running = True
+        else:
+            self.is_plot_running = False
 
+    def call_functions(self):
+        """
+        Call activated functions in main_window, read function-parameters from functions_empty.csv
+        """
 
-def call_functions(main_win, signals):
-    """
-    Call activated functions in main_window, read function-parameters from functions_empty.csv
-    :param main_win: Main-Window-Instance
-    :param signals: Signals to send into main-thread
-    """
-    count = 1
+        # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
+        # from matplotlib, as you can set the backend only once there This could be solved with importing all the
+        # function-modules here, but you had to import them for each run then
 
-    # Set non-interactive backend for plots to be runnable in QThread
-    # This can be a problem with older versions from matplotlib, as you can set the backend only once there
-    # This could be solved with importing all the function-modules here, but you had to import them for each run then
-    if not main_win.pr.parameters['show_plots']:
-        matplotlib.use('agg')
-    elif ismac:
-        matplotlib.use('macosx')
-    else:
-        matplotlib.use('Qt5Agg')
+        # self.mw.mw_signals.cancel_functions.connect(self.check_cancel_functions)
+        # self.mw.mw_signals.plot_running.connect(self.check_plot_running)
 
-    # Check if any mri-subject is selected
-    if len(main_win.pr.sel_mri_files) * len(main_win.sel_mri_funcs) > 0:
-        signals['pg_which_loop'].emit('mri')
-        count = subject_loop(main_win, signals, 'mri', main_win.pr.sel_mri_files,
-                             main_win.sel_mri_funcs, count)
-    else:
-        print('No MRI-Subject or MRI-Function selected')
+        if not self.mw.pr.parameters['show_plots']:
+            matplotlib.use('agg')
+        elif ismac:
+            matplotlib.use('macosx')
+        else:
+            matplotlib.use('Qt5Agg')
 
-    # Call the functions for selected Files
-    if len(main_win.pr.sel_files) > 0:
-        signals['pg_which_loop'].emit('file')
-        count = subject_loop(main_win, signals, 'file', main_win.pr.sel_files,
-                             main_win.sel_file_funcs, count)
-    else:
-        print('No Subject selected')
+        # Check if any mri-subject is selected
+        if len(self.mw.pr.sel_mri_files) * len(self.mw.sel_mri_funcs) > 0:
+            self.signals.pg_which_loop.emit('mri')
+            self.subject_loop('mri')
+        else:
+            print('No MRI-Subject or MRI-Function selected')
 
-    # Call functions outside the subject-loop
-    if len(main_win.sel_ga_funcs) > 0:
-        signals['pg_which_loop'].emit('ga')
-        subject_loop(main_win, signals, 'ga', ['Grand-Average'],
-                     main_win.sel_ga_funcs, count)
-    else:
-        print('No Grand-Average-Function selected')
+        # Call the functions for selected Files
+        if len(self.mw.pr.sel_files) > 0:
+            self.signals.pg_which_loop.emit('file')
+            self.subject_loop('file')
+        else:
+            print('No Subject selected')
+
+        # Call functions outside the subject-loop
+        if len(self.mw.sel_ga_funcs) > 0:
+            self.signals.pg_which_loop.emit('ga')
+            self.subject_loop('ga')
+        else:
+            print('No Grand-Average-Function selected')
+
+    def subject_loop(self, subject_type):
+        if subject_type == 'mri':
+            selected_subjects = self.mw.pr.sel_mri_files
+            selected_functions = self.mw.sel_mri_funcs
+        elif subject_type == 'file':
+            selected_subjects = self.mw.pr.sel_files
+            selected_functions = self.mw.sel_file_funcs
+        else:
+            selected_subjects = self.mw.pr.sel_ga_groups
+            selected_functions = self.mw.sel_ga_funcs
+
+        for name in selected_subjects:
+            if not self.is_cancel_functions:
+                if subject_type == 'mri':
+                    subject = CurrentMRISubject(name)
+                elif subject_type == 'file':
+                    subject = CurrentSubject(name, self.mw)
+                    self.mw.subject = subject
+                else:
+                    subject = CurrentGAGroup(name)
+                # Print Subject Console Header
+                print('=' * 60 + '\n', name + '\n')
+                for func in selected_functions:
+                    # Wait for main-thread-function to finish
+                    while self.is_plot_running:
+                        time.sleep(1)
+                    if not self.is_cancel_functions:
+                        if self.mw.pd_funcs.loc[func, 'mayavi']:
+                            self.is_plot_running = True
+                            self.signals.pg_subfunc.emit((name, func))
+                            # Mayavi-Plots need to be called in the main thread
+                            self.signals.func_sig.emit({'func_name': func, 'subject': subject, 'main_win': self.mw})
+                            self.signals.pgbar_n.emit(self.count)
+                            self.count += 1
+                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and self.mw.pr.parameters['show_plots']:
+                            self.signals.pg_subfunc.emit((name, func))
+                            # Matplotlib-Plots can be called without showing (backend: agg),
+                            # but to be shown, they have to be called in the main thread
+                            self.signals.func_sig.emit({'func_name': func, 'subject': subject, 'main_win': self.mw})
+                            self.signals.pgbar_n.emit(self.count)
+                            self.count += 1
+                        else:
+                            self.signals.pg_subfunc.emit((name, func))
+                            func_from_def(func, subject, self.mw)
+                            self.signals.pgbar_n.emit(self.count)
+                            self.count += 1
+                    else:
+                        break
+            else:
+                break
 
 
 class CustomFunctionImport(QDialog):
@@ -418,8 +444,11 @@ class CustomFunctionImport(QDialog):
             self.param_setup_gbox.setEnabled(True)
             self.populate_param_tablew()
             self.current_parameter = self.param_tablew.item(0, 0).text()
+            self.update_exst_param_label()
             self.update_param_setup()
         else:
+            self.update_exst_param_label()
+            # Clear existing entries
             self.populate_param_tablew()
             self.palias_le.clear()
             self.default_le.clear()
@@ -480,12 +509,14 @@ class CustomFunctionImport(QDialog):
             self.myv_chbx.setChecked(False)
             self.myv_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
 
-    def update_param_setup(self):
+    def update_exst_param_label(self):
         if len(self.param_exst_dict[self.current_function]) > 0:
             self.exstparam_l.setText(f'Already existing Parameters: {self.param_exst_dict[self.current_function]}')
             self.exstparam_l.show()
         else:
             self.exstparam_l.hide()
+
+    def update_param_setup(self):
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'alias']):
             self.palias_le.setText(self.add_pd_params.loc[self.current_parameter, 'alias'])
         else:
@@ -702,7 +733,7 @@ class CustomFunctionImport(QDialog):
                     traceback.print_exc()
                     traceback_str = traceback.format_exc(limit=-10)
                     exctype, value = sys.exc_info()[:2]
-                    logging.error(f'{exc_type}: {exc}\n'
+                    logging.error(f'{exctype}: {value}\n'
                                   f'{traceback_str}')
                     ErrorDialog(None, (exctype, value, traceback_str))
                 for func_key in module.__dict__:
@@ -718,10 +749,12 @@ class CustomFunctionImport(QDialog):
                             # Append empty Series to Func-Data-Frame
                             func_series = pd.Series([], name=func_key, dtype='object')
                             self.add_pd_funcs = self.add_pd_funcs.append(func_series)
+                            self.add_pd_funcs.loc[func_key, 'module'] = module.__name__
                             # Get Parameters and divide them in existing and setup
                             signature = inspect.signature(func)
                             all_parameters = [signature.parameters[p].name for p in signature.parameters]
                             self.param_dict[func_key] = all_parameters
+                            self.add_pd_funcs.loc[func_key, 'func_args'] = ','.join(all_parameters)
                             self.param_exst_dict[func_key] = [p for p in all_parameters if p in self.exst_parameters]
                             self.param_setup_dict[func_key] = {}
                             for param in [p for p in all_parameters if p not in self.exst_parameters]:

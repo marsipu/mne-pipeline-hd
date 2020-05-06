@@ -21,7 +21,7 @@ from subprocess import run
 import mne
 import pandas as pd
 import qdarkstyle
-from PyQt5.QtCore import QSettings, QThreadPool, Qt
+from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
@@ -38,8 +38,7 @@ from mne_pipeline_hd.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, S
                                                  SubjectDock,
                                                  SubjectWizard)
 from mne_pipeline_hd.pipeline_functions import iswin
-from mne_pipeline_hd.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, call_functions,
-                                                               func_from_def)
+from mne_pipeline_hd.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, func_from_def)
 from mne_pipeline_hd.pipeline_functions.project import MyProject
 
 
@@ -54,6 +53,12 @@ def get_upstream():
         command = "git fetch upstream; git checkout master; git merge upstream/master"
     result = run(command)
     print(result.stdout)
+
+
+class MainWinSignals(QObject):
+    # Signals to send into QThread to control function execution
+    cancel_functions = pyqtSignal(bool)
+    plot_running = pyqtSignal(bool)
 
 
 class MainWindow(QMainWindow):
@@ -80,7 +85,7 @@ class MainWindow(QMainWindow):
 
         # Attributes for class-methods
         self.subject = None
-        self.cancel_functions = False
+        self.mw_signals = MainWinSignals()
         self.func_dict = dict()
         self.bt_dict = dict()
 
@@ -600,8 +605,6 @@ class MainWindow(QMainWindow):
         self.settings.setValue('geometry', self.saveGeometry())
         self.settings.setValue('checked_funcs', self.func_dict)
 
-        self.cancel_functions = False
-
         # Lists of selected functions
         self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.func_dict[mf]]
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.func_dict[ff]]
@@ -620,33 +623,39 @@ class MainWindow(QMainWindow):
         sys.stdout = OutputStream()
         sys.stdout.signal.text_written.connect(self.run_dialog.update_label)
 
-        worker = FunctionWorker(call_functions, self)
-        worker.signal_class.error.connect(self.run_dialog.show_errors)
-        worker.signal_class.finished.connect(self.thread_complete)
-        worker.signal_class.pgbar_n.connect(self.run_dialog.pgbar.setValue)
-        worker.signal_class.pg_which_loop.connect(self.run_dialog.populate)
-        worker.signal_class.pg_sub.connect(self.run_dialog.mark_sub)
-        worker.signal_class.pg_func.connect(self.run_dialog.mark_func)
-        worker.signal_class.func_sig.connect(self.thread_func)
+        self.fworker = FunctionWorker(self)
 
-        self.threadpool.start(worker)
+        self.fworker.signals.error.connect(self.run_dialog.show_errors)
+        self.fworker.signals.finished.connect(self.thread_complete)
+        self.fworker.signals.pgbar_n.connect(self.run_dialog.pgbar.setValue)
+        self.fworker.signals.pg_which_loop.connect(self.run_dialog.populate)
+        self.fworker.signals.pg_subfunc.connect(self.update_subfunc)
+        self.fworker.signals.func_sig.connect(self.thread_func)
+
+        self.threadpool.start(self.fworker)
+
+    def update_subfunc(self, subfunc):
+        self.run_dialog.mark_subfunc(subfunc)
+        self.statusBar().showMessage(f'{subfunc[0]}: {subfunc[1]}')
 
     def thread_func(self, kwargs):
         try:
+            # Todo: Solve Function-Stacking-Problem, maybe with QThread, which can accept Signals from main-thread
             func_from_def(**kwargs)
             if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] == True and self.pr.parameters['show_plots'] == False:
                 mlab.close(all=True)
         except:
-            # Todo: Logging
-            # logging.error('Ups, something happened:')
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
+            logging.error(f'{exctype}: {value}\n'
+                          f'traceback_str')
             err = (exctype, value, traceback.format_exc(limit=-10))
             self.run_dialog.show_errors(err)
+        # Send Signal to Function-Worker to continue execution after plot-function in main-thread finishes
+        self.mw_signals.plot_running.emit(False)
 
     def thread_complete(self):
         print('Finished')
-        self.run_dialog.clear_marks()
         self.run_dialog.close_bt.setEnabled(True)
 
     def get_toolbox_params(self):
@@ -902,10 +911,9 @@ class RunDialog(QDialog):
         self.setLayout(self.layout)
 
     def cancel_funcs(self):
-        self.mw.cancel_functions = True
-        self.console_widget.insertPlainText('Terminating Pipeline...')
+        self.mw.mw_signals.cancel_functions.emit(True)
+        self.console_widget.insertHtml('<b><big><center>---Terminating Pipeline...---</center></big></b><br>')
         self.console_widget.ensureCursorVisible()
-        self.close_bt.setEnabled(True)
 
     def populate(self, mode):
         if mode == 'mri':
@@ -927,20 +935,18 @@ class RunDialog(QDialog):
             item.setFlags(Qt.ItemIsEnabled)
             self.func_listw.addItem(item)
 
-    def mark_sub(self, sub):
+    def mark_subfunc(self, subfunc):
         if self.current_sub is not None:
             self.current_sub.setBackground(QColor('white'))
         try:
-            self.current_sub = self.sub_listw.findItems(sub, Qt.MatchExactly)[0]
+            self.current_sub = self.sub_listw.findItems(subfunc[0], Qt.MatchExactly)[0]
             self.current_sub.setBackground(QColor('green'))
         except IndexError:
             pass
-
-    def mark_func(self, func):
         if self.current_func is not None:
             self.current_func.setBackground(QColor('white'))
         try:
-            self.current_func = self.func_listw.findItems(func, Qt.MatchExactly)[0]
+            self.current_func = self.func_listw.findItems(subfunc[1], Qt.MatchExactly)[0]
             self.current_func.setBackground(QColor('green'))
         except IndexError:
             pass
@@ -963,3 +969,4 @@ class RunDialog(QDialog):
 
     def show_errors(self, err):
         ErrorDialog(self, err)
+        self.close_bt.setEnabled(True)

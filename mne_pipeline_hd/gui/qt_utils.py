@@ -40,7 +40,7 @@ class Worker(QRunnable):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
-        self.signal_class = signal_class
+        self.signals = signal_class
 
     @pyqtSlot()
     def run(self):
@@ -56,9 +56,9 @@ class Worker(QRunnable):
             exctype, value = sys.exc_info()[:2]
             logging.error(f'{exctype}: {value}\n'
                           f'traceback_str')
-            self.signal_class.error.emit((exctype, value, traceback.format_exc(limit=-10)))
-        finally:
-            self.signal_class.finished.emit()  # Done
+            self.signals.error.emit((exctype, value, traceback.format_exc(limit=-10)))
+        else:
+            self.signals.finished.emit()  # Done
 
 
 def pipe_excepthook(exc_type, exc, tb):
@@ -153,7 +153,7 @@ class ErrorDialog(QDialog):
                 with smtplib.SMTP_SSL('smtp.gmail.com', port, context=context) as server:
                     server.login('mne.pipeline@gmail.com', password)
                     server.sendmail(adress, adress, message.as_string())
-                QMessageBox.information(self, 'E-Mail sent', 'An E-Mail was sent to mne.pipeine@gmail.com\n'
+                QMessageBox.information(self, 'E-Mail sent', 'An E-Mail was sent to mne.pipeline@gmail.com\n'
                                                              'Thank you for the Report!')
             except OSError:
                 QMessageBox.information(self, 'E-Mail not sent', 'Sending an E-Mail is not possible on your OS')

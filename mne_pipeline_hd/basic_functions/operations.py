@@ -10,7 +10,6 @@ from __future__ import print_function
 
 import gc
 import pickle
-import random
 import subprocess
 import sys
 from collections import Counter
@@ -23,10 +22,8 @@ import mne
 import numpy as np
 from autoreject import AutoReject
 from matplotlib import pyplot as plt
-from mayavi import mlab
 from nilearn.plotting import plot_anat
-from scipy import signal, stats
-from surfer import Brain
+from scipy import stats
 
 from mne_pipeline_hd.basic_functions import loading, plot as plot
 from mne_pipeline_hd.pipeline_functions import decorators as decor, iswin, pipeline_utils as ut
@@ -46,76 +43,6 @@ def filter_string(highpass, lowpass):
         fs = '_' + str(lowpass) + '_Hz'
 
     return fs
-
-
-# ==============================================================================
-# OPERATING SYSTEM COMMANDS
-# ==============================================================================
-def populate_directories(data_path, figures_path, event_id):
-    # create grand averages path with a statistics folder
-    ga_folders = ['statistics', 'evoked', 'stc', 'tfr', 'connect']
-    for subfolder in ga_folders:
-        grand_average_path = join(data_path, 'grand_averages', subfolder)
-        if not exists(grand_average_path):
-            makedirs(grand_average_path)
-            print(grand_average_path + ' has been created')
-
-    # create erm(empty_room_measurements)paths
-    erm_path = join(data_path, 'empty_room_data')
-    if not exists(erm_path):
-        makedirs(erm_path)
-        print(erm_path + ' has been created')
-
-    # create figures path
-    folders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
-               'power_spectra_raw', 'power_spectra_epochs',
-               'power_spectra_topo', 'evoked_butterfly', 'evoked_field',
-               'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white', 'gfp',
-               'ica', 'ssp', 'stcs', 'vec_stcs', 'mxne', 'transformation', 'source_space',
-               'noise_covariance', 'events', 'label_time_course', 'ECD',
-               'stcs_movie', 'bem', 'snr', 'statistics', 'correlation_ntr',
-               'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
-               'tf_sensor_space/topo', 'tf_sensor_space/joint',
-               'tf_sensor_space/oscs', 'tf_sensor_space/itc',
-               'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
-               'epochs_drop_log', 'func_labels', 'evoked_h1h2', 'Various',
-               'sensitivity_maps', 'mxn_dipoles']
-
-    for folder in folders:
-        folder_path = join(figures_path, folder)
-        if not exists(folder_path):
-            makedirs(folder_path)
-            print(folder_path + ' has been created')
-
-    # create subfolders for for event_ids
-    trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
-                       'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                       'evoked_field', 'evoked_topomap', 'evoked_image',
-                       'evoked_joint', 'evoked_white', 'gfp', 'label_time_course', 'ECD',
-                       'stcs', 'vec_stcs', 'stcs_movie', 'snr',
-                       'tf_sensor_space/plot', 'tf_sensor_space/topo',
-                       'tf_sensor_space/joint', 'tf_sensor_space/oscs',
-                       'tf_sensor_space/itc', 'evoked_h1h2', 'mxn_dipoles']
-
-    for ev_id in event_id:
-        for tr in trialed_folders:
-            subfolder = join(figures_path, tr, ev_id)
-            if not exists(subfolder):
-                makedirs(subfolder)
-                print(subfolder + ' has been created')
-
-    # create grand average figures path
-    grand_averages_figures_path = join(figures_path, 'grand_averages')
-    figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
-                         'source_space/statistics', 'source_space/stc',
-                         'source_space/connectivity', 'source_space/stc_movie',
-                         'source_space/tfr']
-
-    for figure_subfolder in figure_subfolders:
-        folder_path = join(grand_averages_figures_path, figure_subfolder)
-        if not exists(folder_path):
-            makedirs(folder_path)
-            print(folder_path + ' has been created')
 
 
 # ==============================================================================
@@ -154,29 +81,7 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
         print(f'raw file with Highpass = {highpass} Hz and Lowpass = {lowpass} Hz already exists')
         print('NO OVERWRITE FOR FILTERING, please change settings or delete files for new methods')
 
-    # Make Raw-Version with 1 Hz Highpass-Filter if not existent
-    if enable_ica and highpass < 1:
-        ica_filter_name = name + filter_string(lowpass, 1) + '-raw.fif'
-        ica_filter_path = join(save_dir, ica_filter_name)
-
-        if not isfile(ica_filter_path):
-            if enable_cuda:  # use cuda for filtering
-                n_jobs = 'cuda'
-            raw.filter(1, lowpass, n_jobs=n_jobs)
-
-            filter_name = name + filter_string(lowpass, 1) + '-raw.fif'
-            filter_path = join(save_dir, filter_name)
-
-            # Save some data in the info-dictionary and finally save it
-            raw.info['description'] = name
-            raw.info['bads'] = bad_channels
-
-            raw.save(filter_path, overwrite=True)
-
-        else:
-            print(f'raw file with Highpass = {1} Hz and Lowpass = {lowpass} Hz already exists')
-            print('NO OVERWRITE FOR FILTERING, please change settings or delete files for new methods')
-
+    # Filter Empty-Room-Data too
     if ermsub != 'None':
         erm_name = ermsub + '-raw.fif'
         erm_path = join(data_path, 'empty_room_data', ermsub, erm_name)
@@ -343,29 +248,7 @@ def find_eog_events(name, save_dir, eog_channel):
     eog_events = mne.preprocessing.find_eog_events(raw, ch_name=eog_channel)
 
     mne.event.write_events(eog_events_path, eog_events)
-
-    # noinspection PyTypeChecker
     print(f'{np.size(eog_events)} detected')
-
-    """"
-    # quantitative analaysy of epoch contamination by eog-events
-    # before epoch rejection
-
-    events = io.read_events(name, save_dir)
-    counter = 0
-    all = np.append(events, eog_events, axis=0)
-    all.sort(0)
-
-    for n in range(0,np.size(eog_events,0)):
-        if np.any(eog_events[n,0]-events[:,0]<500):# if one eog_event occurs 500ms or less after an event
-            if np.any(eog_events[n,0]-events[:,0]>0):
-                counter + 1
-
-    contam = counter/np.size(events,0) * 100
-    eog_contamination.update({name:contam})
-
-    print(f'{contam} % of the epochs contaminated with eog events 500ms after the event')
-    """
 
 
 @decor.topline
@@ -443,210 +326,6 @@ def epoch_raw(name, save_dir, highpass, lowpass, event_id, t_epoch,
         print('epochs file: ' + epochs_path + ' already exists')
 
 
-@decor.topline
-def run_ssp_er(name, save_dir, highpass, lowpass, data_path, ermsub, bad_channels,
-               overwrite):
-    if ermsub == 'None':
-        print('no empty_room_data found for' + name)
-        pass
-    else:
-        erm_name = ermsub + filter_string(highpass, lowpass) + '-raw.fif'
-        erm_path = join(data_path, 'empty_room_data', ermsub, erm_name)
-
-        erm = mne.io.read_raw_fif(erm_path, preload=True)
-        erm.pick_types(exclude=bad_channels)
-        ssp_proj = mne.compute_proj_raw(erm)
-
-        proj_name = name + '_ssp-proj.fif'
-        proj_path = join(save_dir, proj_name)
-
-        if overwrite or not isfile(proj_path):
-            mne.write_proj(proj_path, ssp_proj)
-
-            print(proj_name + ' written')
-        else:
-            print(proj_name + ' already exists')
-
-
-@decor.topline
-def apply_ssp_er(name, save_dir, highpass, lowpass, overwrite):
-    proj_name = name + '_ssp-proj.fif'
-    proj_path = join(save_dir, proj_name)
-
-    if not isfile(proj_path):
-        print('no ssp_proj_file found for' + name)
-        pass
-    else:
-        projs = mne.read_proj(proj_path)
-        epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
-
-        ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ssp-epo.fif'
-        ssp_epochs_path = join(save_dir, ssp_epochs_name)
-
-        if overwrite or not isfile(ssp_epochs_path):
-
-            epochs.add_proj(projs)
-            epochs.save(ssp_epochs_path)
-
-        else:
-            print('ssp_epochs file: ' + ssp_epochs_path + ' already exists')
-
-
-@decor.topline
-def run_ssp_clm(name, save_dir, highpass, lowpass, bad_channels, overwrite):
-    raw = loading.read_filtered(name, save_dir, highpass, lowpass)
-    raw.pick_types(exclude=bad_channels)
-    raw.crop(tmin=5, tmax=50)
-
-    ssp_proj = mne.compute_proj_raw(raw)
-
-    proj_name = name + '_ssp_clm-proj.fif'
-    proj_path = join(save_dir, proj_name)
-
-    if overwrite or not isfile(proj_path):
-        mne.write_proj(proj_path, ssp_proj)
-
-        print(proj_name + ' written')
-    else:
-        print(proj_name + ' already exists')
-
-
-@decor.topline
-def apply_ssp_clm(name, save_dir, highpass, lowpass, overwrite):
-    proj_name = name + '_ssp_clm-proj.fif'
-    proj_path = join(save_dir, proj_name)
-
-    if not isfile(proj_path):
-        print('no ssp_proj_file found for' + name)
-        pass
-    else:
-        projs = mne.read_proj(proj_path)
-        epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
-
-        ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ssp_clm-epo.fif'
-        ssp_epochs_path = join(save_dir, ssp_epochs_name)
-
-        if overwrite or not isfile(ssp_epochs_path):
-
-            epochs.add_proj(projs)
-            epochs.save(ssp_epochs_path)
-
-        else:
-            print('ssp_epochs file: ' + ssp_epochs_path + ' already exists')
-
-
-@decor.topline
-def run_ssp_eog(name, save_dir, n_jobs, eog_channel,
-                bad_channels, overwrite):
-    info = loading.read_info(name, save_dir)
-    eog_events_name = name + '_eog-eve.fif'
-    eog_events_path = join(save_dir, eog_events_name)
-
-    if eog_channel in info['ch_names']:
-        raw = loading.read_raw(name, save_dir)
-
-        eog_proj, eog_events = mne.preprocessing.compute_proj_eog(
-                raw, n_grad=1, average=True, n_jobs=n_jobs, bads=bad_channels,
-                ch_name=eog_channel)
-
-        if not isfile(eog_events_path):
-            mne.event.write_events(eog_events_path, eog_events)
-
-        proj_name = name + '_eog-proj.fif'
-        proj_path = join(save_dir, proj_name)
-
-        if overwrite or not isfile(proj_path):
-            mne.write_proj(proj_path, eog_proj)
-
-            print(proj_name + ' written')
-        else:
-            print(proj_name + ' already exists')
-
-    else:
-        print('No EEG-Channels to read EOG from')
-        pass
-
-
-@decor.topline
-def apply_ssp_eog(name, save_dir, highpass, lowpass, overwrite):
-    proj_name = name + '_eog-proj.fif'
-    proj_path = join(save_dir, proj_name)
-
-    if not isfile(proj_path):
-        print('no ssp_proj_file found for' + name)
-        pass
-    else:
-        projs = mne.read_proj(proj_path)
-        epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
-
-        ssp_epochs_name = name + filter_string(highpass, lowpass) + '-eog_ssp-epo.fif'
-        ssp_epochs_path = join(save_dir, ssp_epochs_name)
-
-        if overwrite or not isfile(ssp_epochs_path):
-
-            epochs.add_proj(projs)
-            epochs.save(ssp_epochs_path)
-
-        else:
-            print('ssp_epochs file: ' + ssp_epochs_path + ' already exists')
-
-
-@decor.topline
-def run_ssp_ecg(name, save_dir, n_jobs, ecg_channel,
-                bad_channels, overwrite):
-    info = loading.read_info(name, save_dir)
-    ecg_events_name = name + '_ecg-eve.fif'
-    ecg_events_path = join(save_dir, ecg_events_name)
-
-    if ecg_channel in info['ch_names']:
-        raw = loading.read_raw(name, save_dir)
-
-        ecg_proj, ecg_events = mne.preprocessing.compute_proj_ecg(
-                raw, n_grad=1, average=True, n_jobs=n_jobs, bads=bad_channels,
-                ch_name=ecg_channel, reject={'eeg': 5e-3})
-
-        if not isfile(ecg_events_path):
-            mne.event.write_events(ecg_events_path, ecg_events)
-
-        proj_name = name + '_ecg-proj.fif'
-        proj_path = join(save_dir, proj_name)
-
-        if overwrite or not isfile(proj_path):
-            mne.write_proj(proj_path, ecg_proj)
-
-            print(proj_name + ' written')
-        else:
-            print(proj_name + ' already exists')
-
-    else:
-        print('No EEG-Channels to read EOG/EEG from')
-        pass
-
-
-@decor.topline
-def apply_ssp_ecg(name, save_dir, highpass, lowpass, overwrite):
-    proj_name = name + '_ecg-proj.fif'
-    proj_path = join(save_dir, proj_name)
-
-    if not isfile(proj_path):
-        print('no ssp_proj_file found for' + name)
-        pass
-    else:
-        projs = mne.read_proj(proj_path)
-        epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
-
-        ssp_epochs_name = name + filter_string(highpass, lowpass) + '-ecg_ssp-epo.fif'
-        ssp_epochs_path = join(save_dir, ssp_epochs_name)
-
-        if overwrite or not isfile(ssp_epochs_path):
-
-            epochs.add_proj(projs)
-            epochs.save(ssp_epochs_path)
-
-        else:
-            print('ssp_epochs file: ' + ssp_epochs_path + ' already exists')
-
-
 # TODO: Organize run_ica properly
 @decor.topline
 def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
@@ -662,11 +341,23 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
 
     if overwrite or not isfile(ica_path):
 
-        try:
-            raw = loading.read_filtered(name, save_dir, 1, lowpass)
-        except FileNotFoundError:
-            raise RuntimeError(
-                    'No Raw with Highpass=1-Filter found,set "enable_ica" to true and run "filter_raw" again')
+        # Make Raw-Version with 1 Hz Highpass-Filter if not existent
+        ica_filter_path = join(save_dir, name + filter_string(lowpass, 1) + '-raw.fif')
+
+        if highpass < 1 and not isfile(ica_filter_path):
+            raw = loading.read_raw(name, save_dir)
+            raw.filter(1, lowpass)
+
+            filter_name = name + filter_string(lowpass, 1) + '-raw.fif'
+            filter_path = join(save_dir, filter_name)
+
+            # Save some data in the info-dictionary and finally save it
+            raw.info['description'] = name
+            raw.info['bads'] = bad_channels
+
+            raw.save(filter_path, overwrite=True)
+
+        raw = loading.read_filtered(name, save_dir, 1, lowpass)
 
         epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
         picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
@@ -938,31 +629,17 @@ def autoreject_interpolation(name, save_dir, highpass, lowpass, enable_ica):
 
 
 @decor.topline
-def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub, enable_ica, overwrite):
+def get_evokeds(name, save_dir, highpass, lowpass, enable_ica, overwrite):
     evokeds_name = name + filter_string(highpass, lowpass) + '-ave.fif'
     evokeds_path = join(save_dir, evokeds_name)
-    info = loading.read_info(name, save_dir)
 
     if overwrite or not isfile(evokeds_path):
         if enable_ica:
             epochs = loading.read_ica_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from ICA-Epochs')
-        elif func_dict['apply_ssp_er'] and ermsub != 'None':
-            epochs = loading.read_ssp_epochs(name, save_dir, highpass, lowpass)
-            print('Evokeds from SSP_ER-Epochs')
-        elif func_dict['apply_ssp_clm']:
-            epochs = loading.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
-            print('Evokeds form SSP_Clm-Epochs')
-        elif func_dict['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
-            epochs = loading.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
-            print('Evokeds from SSP_EOG-Epochs')
-        elif func_dict['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
-            epochs = loading.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
-            print('Evokeds from SSP_ECG-Epochs')
         else:
             epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
             print('Evokeds from (normal) Epochs')
-
         evokeds = []
         for trial_type in epochs.event_id:
             print(f'Evoked for {trial_type}')
@@ -975,48 +652,6 @@ def get_evokeds(name, save_dir, highpass, lowpass, func_dict, ermsub, enable_ica
         print('evokeds file: ' + evokeds_path + ' already exists')
 
 
-@decor.topline
-def get_h1h2_evokeds(name, save_dir, highpass, lowpass, enable_ica, func_dict, ermsub):
-    info = loading.read_info(name, save_dir)
-
-    if enable_ica:
-        epochs = loading.read_ica_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from ICA-Epochs')
-    elif func_dict['apply_ssp_er'] and ermsub != 'None':
-        epochs = loading.read_ssp_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from SSP_ER-Epochs')
-    elif func_dict['apply_ssp_clm']:
-        epochs = loading.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds form SSP_Clm-Epochs')
-    elif func_dict['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
-        epochs = loading.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from SSP_EOG-Epochs')
-    elif func_dict['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
-        epochs = loading.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from SSP_ECG-Epochs')
-    else:
-        epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from (normal) Epochs')
-
-    h1_evokeds_name = name + filter_string(highpass, lowpass) + '_h1-ave.fif'
-    h1_evokeds_path = join(save_dir, h1_evokeds_name)
-    h2_evokeds_name = name + filter_string(highpass, lowpass) + '_h2-ave.fif'
-    h2_evokeds_path = join(save_dir, h2_evokeds_name)
-
-    h1_evokeds = []
-    h2_evokeds = []
-
-    for trial_type in epochs.event_id:
-        pre_epochs = epochs[trial_type]
-        h1_evoked = pre_epochs[:int(len(epochs[trial_type]) / 2)].average()
-        h2_evoked = pre_epochs[int(len(epochs[trial_type]) / 2):].average()
-        h1_evokeds.append(h1_evoked)
-        h2_evokeds.append(h2_evoked)
-
-    mne.evoked.write_evokeds(h1_evokeds_path, h1_evokeds)
-    mne.evoked.write_evokeds(h2_evokeds_path, h2_evokeds)
-
-
 @decor.small_func
 def calculate_gfp(evoked):
     d = evoked.data
@@ -1027,12 +662,10 @@ def calculate_gfp(evoked):
 
 @decor.topline
 def grand_avg_evokeds(data_path, grand_avg_dict, sel_ga_groups, save_dir_averages,
-                      highpass, lowpass, ana_h1h2):
+                      highpass, lowpass):
     for key in grand_avg_dict:
         if key in sel_ga_groups:
             trial_dict = {}
-            h1_dict = {}
-            h2_dict = {}
             print(f'grand_average for {key}')
             for name in grand_avg_dict[key]:
                 save_dir = join(data_path, name)
@@ -1047,20 +680,6 @@ def grand_avg_evokeds(data_path, grand_avg_dict, sel_ga_groups, save_dir_average
                     else:
                         print(f'{evoked.comment} for {name} got nave=0')
 
-                if ana_h1h2:
-                    evokeds_dict = loading.read_h1h2_evokeds(name, save_dir, highpass, lowpass)
-                    for evoked in evokeds_dict['h1']:
-                        if evoked.comment in h1_dict:
-                            h1_dict[evoked.comment].append(evoked)
-                        else:
-                            h1_dict.update({evoked.comment: [evoked]})
-
-                    for evoked in evokeds_dict['h2']:
-                        if evoked.comment in h1_dict:
-                            h2_dict[evoked.comment].append(evoked)
-                        else:
-                            h2_dict.update({evoked.comment: [evoked]})
-
             for trial in trial_dict:
                 if len(trial_dict[trial]) != 0:
                     ga = mne.grand_average(trial_dict[trial],
@@ -1069,28 +688,6 @@ def grand_avg_evokeds(data_path, grand_avg_dict, sel_ga_groups, save_dir_average
                     ga.comment = trial
                     ga_path = join(save_dir_averages, 'evoked',
                                    key + '_' + trial +
-                                   filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
-                    ga.save(ga_path)
-
-            for trial in h1_dict:
-                if len(h1_dict[trial]) != 0:
-                    ga = mne.grand_average(h1_dict[trial],
-                                           interpolate_bads=True,
-                                           drop_bads=True)
-                    ga.comment = trial
-                    ga_path = join(save_dir_averages, 'evoked',
-                                   key + '_' + trial + '_' + 'h1' +
-                                   filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
-                    ga.save(ga_path)
-
-            for trial in h2_dict:
-                if len(h2_dict[trial]) != 0:
-                    ga = mne.grand_average(h2_dict[trial],
-                                           interpolate_bads=True,
-                                           drop_bads=True)
-                    ga.comment = trial
-                    ga_path = join(save_dir_averages, 'evoked',
-                                   key + '_' + trial + '_' + 'h2' +
                                    filter_string(highpass, lowpass) + '-grand_avg-ave.fif')
                     ga.save(ga_path)
 
@@ -1103,7 +700,7 @@ def tfr(name, save_dir, highpass, lowpass, enable_ica, tfr_freqs, overwrite_tfr,
     itc_name = name + filter_string(highpass, lowpass) + '_' + tfr_method + '_itc-tfr.h5'
     itc_path = join(save_dir, itc_name)
 
-    n_cycles = tfr_freqs / 2.
+    n_cycles = [freq / 2 for freq in tfr_freqs]
     powers = []
     itcs = []
 
@@ -1433,7 +1030,7 @@ def create_forward_solution(name, save_dir, subtomri, subjects_dir,
 def estimate_noise_covariance(name, save_dir, highpass, lowpass,
                               overwrite, ermsub, data_path, baseline,
                               bad_channels, n_jobs, erm_noise_cov,
-                              calm_noise_cov, enable_ica, erm_ica):
+                              calm_noise_cov, enable_ica):
     if calm_noise_cov:
 
         print('Noise Covariance on 1-Minute-Calm')
@@ -1445,11 +1042,6 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
             raw = loading.read_filtered(name, save_dir, highpass, lowpass)
             raw.crop(tmin=5, tmax=50)
             raw.pick_types(exclude=bad_channels)
-
-            if erm_ica:
-                print('Applying ICA to ERM-Raw')
-                ica = loading.read_ica(name, save_dir, highpass, lowpass)
-                raw = ica.apply(raw)
 
             noise_covariance = mne.compute_raw_covariance(raw, n_jobs=n_jobs,
                                                           method='empirical')
@@ -1494,10 +1086,6 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
 
             erm = mne.io.read_raw_fif(erm_path, preload=True)
             erm.pick_types(exclude=bad_channels)
-            if erm_ica:
-                print('Applying ICA to ERM-Raw')
-                ica = loading.read_ica(name, save_dir, highpass, lowpass)
-                erm = ica.apply(erm)
 
             noise_covariance = mne.compute_raw_covariance(erm, n_jobs=n_jobs,
                                                           method='empirical')
@@ -1654,6 +1242,7 @@ def mixed_norm_estimate(name, save_dir, highpass, lowpass, inverse_method, erm_n
                   ' already exists')
 
 
+# Todo: Separate Plot-Functions (better responsivness of GUI during fit, when running in QThread)
 @decor.topline
 def ecd_fit(name, save_dir, highpass, lowpass, ermsub, subjects_dir,
             subtomri, erm_noise_cov, calm_noise_cov, ecds, save_plots, figures_path):
@@ -1738,527 +1327,24 @@ def ecd_fit(name, save_dir, highpass, lowpass, ermsub, subjects_dir,
         pass
 
 
-@decor.topline
-def create_func_label(name, save_dir, highpass, lowpass, inverse_method, event_id,
-                      subtomri, subjects_dir, source_space_method, label_origin,
-                      parcellation_orig, ev_ids_label_analysis,
-                      save_plots, figures_path, pscripts_path,
-                      n_std, combine_ab, grand_avg=False):
-    print(name)
-    if combine_ab and isinstance(name, tuple):
-        n_stcs_a = loading.read_normal_source_estimates(name[0], save_dir[0],
-                                                        highpass, lowpass,
-                                                        inverse_method, event_id)
-        n_stcs_b = loading.read_normal_source_estimates(name[1], save_dir[1],
-                                                        highpass, lowpass,
-                                                        inverse_method, event_id)
-        n_stcs = {}
-        print('Grand_Averaging a/b')
-        for trial in n_stcs_a:
-            n_stc_a = n_stcs_a[trial]
-            n_stc_b = n_stcs_b[trial]
-            n_stc_average = n_stc_a.copy()
-            n_stc_average.data += n_stc_b.data
-            n_stc_average /= 2
-            n_stc_average.comment = trial
-            n_stc_average.vertices = n_stc_b.vertices
-            n_stcs.update({trial: n_stc_average})
-
-    n_stcs = loading.read_normal_source_estimates(name, save_dir,
-                                                  highpass, lowpass,
-                                                  inverse_method, event_id)
-
-    src = loading.read_source_space(subtomri, subjects_dir, source_space_method)
-    labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir,
-                                        parc=parcellation_orig)
-
-    # Delete old func_labels:
-    if combine_ab and isinstance(name, tuple):
-        for sd in save_dir:
-            if not exists(join(sd, 'func_labels')):
-                makedirs(join(sd, 'func_labels'))
-            files = listdir(join(sd, 'func_labels'))
-            for file in files:
-                remove(join(sd, 'func_labels', file))
-    elif not grand_avg:
-        if not exists(join(save_dir, 'func_labels')):
-            makedirs(join(save_dir, 'func_labels'))
-        files = listdir(join(save_dir, 'func_labels'))
-        for file in files:
-            remove(join(save_dir, 'func_labels', file))
-
-    for trial in ev_ids_label_analysis:
-        # Grand-Avg only working with one ev_id
-        if not grand_avg:
-            n_stc = n_stcs[trial]
-        save_dict = {}
-        func_labels_dict = {}
-        if combine_ab and isinstance(name, tuple):
-            for sd in save_dir:
-                if not exists(join(sd, 'func_label_tc')):
-                    makedirs(join(sd, 'func_label_tc'))
-            # Dirty work around for problem with source space and averaged stcs
-            n_stc.subject = subtomri
-            n_stc.to_original_src(src, subject_orig=subtomri, subjects_dir=subjects_dir)
-        else:
-            if not exists(join(save_dir, 'func_label_tc')):
-                makedirs(join(save_dir, 'func_label_tc'))
-
-        if label_origin == 'all':
-            t_labels = labels
-        else:
-            t_labels = [lb for lb in labels if lb.name in label_origin]
-
-        for prog, label in enumerate(t_labels):
-            print(name)
-            print(label.name)
-            print(f'Progress: {round(prog / len(t_labels) * 100, 2)}%')
-
-            tc = n_stc.extract_label_time_course(label, src, mode='pca_flip')[0]
-            f = signal.savgol_filter(tc, 101, 5)
-            std = np.std(f)
-            mean = np.mean(f)
-            peaks, properties = signal.find_peaks(abs(f), height=n_std * std + mean, distance=10)
-            peaks = peaks[:1]  # !!!Discarded possibility of several peaks
-            if len(peaks) == 0:  # Only let significant peaks define a label
-                print(f'{label.name} doesn\'t wield a significant peak, current setting: prominence>{n_std}*std')
-                continue
-
-            # noinspection PyTypeChecker
-            fig, axes = plt.subplots(ncols=len(peaks), figsize=(18, 8), sharey=True,
-                                     gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
-                                                  'left': 0.05, 'right': 0.95,
-                                                  'top': 0.95, 'bottom': 0.05})
-
-            for idx, peak in enumerate(peaks):
-                max_t = round(n_stc.times[peak], 3)
-                tmin = round(max_t - 0.01, 3)
-                tmax = round(max_t + 0.01, 3)
-                if tmin < n_stc.tmin:
-                    diff = n_stc.tmin - tmin
-                    tmin += diff
-                    tmax += diff
-                    print(f'peak too close to start, correcting + {diff}')
-                if tmax > n_stc.times[-1]:
-                    diff = tmax - n_stc.times[-1]
-                    tmin -= diff
-                    tmax -= diff
-                    print(f'peak too close to start, correcting - {diff}')
-                print(f'{tmin} - {tmax}s')
-                # Make an STC in the time interval of interest and take the mean
-                stc_mean = n_stc.copy().crop(tmin, tmax).mean()
-
-                # use the stc_mean to generate a functional label
-                # region growing is halted at 60% of the peak value within the
-                # anatomical label / ROI specified by aparc_label_name
-                stc_mean_label = stc_mean.in_label(label)
-                data = np.abs(stc_mean_label.data)
-                stc_mean_label.data[data < 0.6 * np.max(data)] = 0.
-
-                func_labels = mne.stc_to_label(stc_mean_label, src=src, smooth=True,
-                                               subjects_dir=subjects_dir, connected=True,
-                                               verbose='DEBUG')
-
-                for i in func_labels:
-                    if len(i) > 0:
-                        func_label = i[0]
-                    else:
-                        continue
-                if combine_ab and isinstance(name, tuple):
-                    for sd, n in zip(save_dir, name):
-                        if not exists(join(sd, 'func_labels')):
-                            makedirs(join(sd, 'func_labels'))
-
-                        label_path = join(sd, 'func_labels', f'{n}_{label.name}_{max_t}s_{trial}_func.label')
-                        func_label.name = f'{n}_{label.name}_{max_t}s_{trial}_func'
-                        func_label.color = None
-                        mne.write_label(label_path, func_label)
-                else:
-                    if not exists(join(save_dir, 'func_labels')):
-                        makedirs(join(save_dir, 'func_labels'))
-
-                    label_path = join(save_dir, 'func_labels', f'{name}_{label.name}_{max_t}s_{trial}_func.label')
-                    func_label.name = f'{name}_{label.name}_{max_t}s_{trial}_func'
-                    func_label.color = None
-                    mne.write_label(label_path, func_label)
-
-                if label.name in save_dict:
-                    save_dict[label.name].append(max_t)
-                else:
-                    save_dict.update({label.name: [max_t]})
-
-                if label.name in func_labels_dict:
-                    func_labels_dict[label.name].append(func_label)
-                func_labels_dict.update({label.name: [func_label]})
-
-                stc_func_label = n_stc.in_label(func_label)
-                pca_func = n_stc.extract_label_time_course(func_label, src, mode='pca_flip')[0]
-
-                # flip the pca so that the max power between tmin and tmax is positive
-                tc *= np.sign(tc[np.argmax(np.abs(tc))])
-                pca_func *= np.sign(pca_func[np.argmax(np.abs(tc))])
-
-                # Filtering the data with a Savitzky-Golay filter
-                tc_f = signal.savgol_filter(tc, 101, 5)
-                pca_func_f = signal.savgol_filter(pca_func, 101, 5)
-
-                max_val = tc_f[peak]
-
-                # Save func_label_tc
-                if combine_ab and isinstance(name, tuple):
-                    for sd in save_dir:
-                        tc_path = join(sd, 'func_label_tc', func_label.name)
-                        np.save(tc_path, pca_func_f)
-                else:
-                    tc_path = join(save_dir, 'func_label_tc', func_label.name)
-                    np.save(tc_path, pca_func_f)
-
-                if len(peaks) == 1:
-                    plt.figure(2)
-                    plt.plot(1e3 * n_stc.times, tc_f, 'k',
-                             label=f'Anatomical {label.name}')
-                    save_path = join(figures_path, 'func_labels', 'label_time_course',
-                                     f'{name[0]}_{label.name}{filter_string(highpass, lowpass)}-0.jpg')
-                    plt.savefig(save_path, dpi=600)
-                    plt.figure(3)
-                    plt.plot(1e3 * stc_func_label.times, pca_func_f, 'b',
-                             label=f'Functional {label.name}')
-                    save_path = join(figures_path, 'func_labels', 'label_time_course',
-                                     f'{name[0]}_{label.name}{filter_string(highpass, lowpass)}-1.jpg')
-                    plt.savefig(save_path, dpi=600)
-                    axes.plot(1e3 * n_stc.times, tc_f, 'k',
-                              label=f'Anatomical {label.name}')
-                    axes.plot(1e3 * stc_func_label.times, pca_func_f, 'b',
-                              label=f'Functional {label.name}')
-                    axes.plot(1e3 * max_t, max_val, 'rX',
-                              label=f'{1e3 * max_t} ms used')
-                    axes.legend()
-                    axes.set_xlabel('time [ms]')
-                    axes.set_ylabel('source amplitude (normal orientation)')
-                    if combine_ab and isinstance(name, tuple):
-                        axes.set_title(f'{name[0]}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
-                    else:
-                        axes.set_title(f'{name}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
-                else:
-                    axes[idx].plot(1e3 * n_stc.times, tc_f, 'k',
-                                   label=f'Anatomical {label.name}')
-                    axes[idx].plot(1e3 * stc_func_label.times, pca_func_f, 'b',
-                                   label=f'Functional {label.name}')
-                    axes[idx].plot(1e3 * max_t, max_val, 'rX',
-                                   label=f'{1e3 * max_t} ms used')
-                    axes[idx].legend()
-                    axes[idx].set_xlabel('time [ms]')
-                    axes[0].set_ylabel('source amplitude (normal orientation)')
-                    if combine_ab and isinstance(name, tuple):
-                        axes[idx].set_title(f'{name[0]}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
-                    else:
-                        axes[idx].set_title(f'{name}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
-            plt.show()
-
-            if save_plots:
-                if not exists(join(figures_path, 'func_labels', 'label_time_course')):
-                    makedirs(join(figures_path, 'func_labels', 'label_time_course'))
-                if combine_ab and isinstance(name, tuple):
-                    save_path = join(figures_path, 'func_labels', 'label_time_course',
-                                     f'{name[0]}_{label.name}{filter_string(highpass, lowpass)}-tc.jpg')
-                else:
-                    save_path = join(figures_path, 'func_labels', 'label_time_course',
-                                     f'{name}_{label.name}{filter_string(highpass, lowpass)}-tc.jpg')
-                print(save_path)
-                fig.savefig(save_path, dpi=600)
-
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
-
-            plt.close('all')
-            print('')
-
-        if combine_ab and isinstance(name, tuple):
-            title = name[0] + '-' + trial
-        else:
-            title = name + '-' + trial
-
-        brain = Brain(subtomri, hemi='split', surf='inflated', title=title,
-                      size=(1600, 800), subjects_dir=subjects_dir)
-        colormap = plt.cm.get_cmap(name='hsv', lut=len(t_labels) + 1)
-        # plot the original-labels
-        #        for i, label in enumerate(t_labels):
-        #            brain.add_label(label, borders=True, color='k', hemi=label.hemi)
-
-        # plot the func_labels
-        lh_y_cnt = 0.02
-        rh_y_cnt = 0.02
-        lh_x_cnt = 0.01
-        rh_x_cnt = 0.01
-        for i, f_name in enumerate(func_labels_dict):
-            color = colormap(i)[:3]
-            f_labels = func_labels_dict[f_name]
-            for f_label in f_labels:
-                brain.add_label(f_label, hemi=f_label.hemi,
-                                color=color)
-            t = save_dict[f_name]
-            try:
-                if '-lh' in f_name:
-                    # noinspection PyTypeChecker
-                    brain.add_text(x=lh_x_cnt, y=lh_y_cnt, text=f_name + ':' + str(t),
-                                   color=color, name=f_name, font_size=8,
-                                   col=0)
-                    if round(lh_x_cnt, 2) == 0.71:
-                        lh_x_cnt = 0.01
-                        lh_y_cnt += 0.02
-                    else:
-                        lh_x_cnt += 0.35
-                    if round(lh_y_cnt, 2) == 0.24:
-                        lh_y_cnt = 0.72
-
-                if '-rh' in f_name:
-                    brain.add_text(x=rh_x_cnt, y=rh_y_cnt, text=f_name + ':' + str(t),
-                                   color=color, name=f_name, font_size=8,
-                                   col=1)
-                    if round(rh_x_cnt, 2) == 0.71:
-                        rh_x_cnt = 0.01
-                        rh_y_cnt += 0.02
-                    else:
-                        rh_x_cnt += 0.35
-                    if round(rh_y_cnt, 2) == 0.3:
-                        rh_y_cnt = 0.8
-
-            except ValueError:
-                print('Display Space for text exceeded')
-
-        if save_plots:
-            if not exists(join(figures_path, 'func_labels', 'brain_plots')):
-                makedirs(join(figures_path, 'func_labels', 'brain_plots'))
-            if combine_ab and isinstance(name, tuple):
-                b_save_path = join(figures_path, 'func_labels', 'brain_plots',
-                                   f'{name[0]}-{trial}{filter_string(highpass, lowpass)}-b.jpg')
-            else:
-                b_save_path = join(figures_path, 'func_labels', 'brain_plots',
-                                   f'{name}-{trial}{filter_string(highpass, lowpass)}-b.jpg')
-            brain.save_image(b_save_path)
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-
-        if combine_ab and isinstance(name, tuple):
-            ut.dict_filehandler(name[0] + '-' + trial, 'func_label_lat', pscripts_path,
-                                values=save_dict)
-        else:
-            ut.dict_filehandler(name + '-' + trial, 'func_label_lat', pscripts_path,
-                                values=save_dict)
-        plot.close_all()
-
-
-# noinspection PyTypeChecker
-@decor.topline
-def func_label_processing(name, save_dir, highpass, lowpass,
-                          save_plots, figures_path, subtomri, subjects_dir,
-                          pscripts_path, ev_ids_label_analysis,
-                          corr_threshold, fuse_ab):
-    #     Label looks for Labels with similar time in area and merges with them
-    #     Use the time_course-coherence!!!
-    #     The goal is to make locally distinguished and functionally determined labels
-    #     Further analysis with mne-source-space_coherence and connectivity
-
-    if fuse_ab and isinstance(name, tuple):
-        save_dir = save_dir[1]
-    func_labels_dict, lat_dict = loading.read_func_labels(save_dir, subtomri,
-                                                          pscripts_path,
-                                                          ev_ids_label_analysis)
-    aparc_labels = mne.read_labels_from_annot(subtomri, parc='aparc',
-                                              subjects_dir=subjects_dir)
-    for ev_id in ev_ids_label_analysis:
-        func_labels = {'lh': [], 'rh': []}
-        for f_label in func_labels_dict[ev_id]:
-            if f_label.hemi == 'lh':
-                func_labels['lh'].append(f_label)
-            if f_label.hemi == 'rh':
-                func_labels['rh'].append(f_label)
-
-        for hemi in func_labels:
-            corr_labels = []
-            tc_list = []
-            idx_dict = {}
-            # Adding the time course for each label and assuring the right assignment from idx to label
-            for idx, f_label in enumerate(func_labels[hemi]):
-                tc_path = join(save_dir, 'func_label_tc', f_label.name[:-3] + '.npy')
-                tc = np.load(tc_path)
-                tc_list.append(tc)
-                idx_dict.update({str(idx): f_label.name})
-            tc_array = np.asarray(tc_list)
-            corr_mat = np.corrcoef(tc_array)
-
-            # Make Diagonal and lower half = 0
-            np.fill_diagonal(corr_mat, 0)
-            for c in range(1, len(corr_mat)):
-                corr_mat[c, :c + 1] = 0
-
-            # Finding the correlated groups of subjects
-            # First with searching over two dimensions for correlations
-            for idx, x in enumerate(corr_mat):
-                x_set = set()
-                for y in range(len(x)):
-                    if x[y] > corr_threshold and idx != y:
-                        x_set.add(idx_dict[str(idx)])
-                        x_set.add(idx_dict[str(y)])
-                        for z_idx, z in enumerate(corr_mat[:, y]):
-                            if z > corr_threshold and idx != z_idx and y != z_idx:
-                                x_set.add(idx_dict[str(z_idx)])
-                if len(x_set) != 0:
-                    corr_labels.append(x_set)
-
-            merged = True
-            while merged:
-                merged = False
-                results = []
-                while corr_labels:
-                    # Here lies the Knackpunkt: When only one set is left, [1:] returns an empty list
-                    common, rest = corr_labels[0], corr_labels[1:]
-                    corr_labels = []
-                    for x in rest:
-                        if x.isdisjoint(common):
-                            corr_labels.append(x)
-                        else:
-                            merged = True
-                            common |= x
-                    results.append(common)
-                corr_labels = results
-
-            # Plotting
-            y_cnt = 0.02
-            x_cnt = 0.01
-            figure = mlab.figure(size=(800, 800))
-            brain = Brain(subject_id=subtomri, hemi=hemi, surf='inflated',
-                          subjects_dir=subjects_dir, figure=figure)
-            colormap = plt.cm.get_cmap(name='hsv', lut=len(corr_labels) + 1)
-            for i, l_group in enumerate(corr_labels):
-                plt.figure()
-                color = colormap(i)[:3]
-                final_list = []
-                for l in l_group:
-                    tc_path = join(save_dir, 'func_label_tc', l[:-3] + '.npy')
-                    tc = np.load(tc_path)
-                    plt.plot(tc, label=l)
-                    for label in func_labels[hemi]:
-                        if label.name == l:
-                            brain.add_label(label, color=color)
-                            final_list.append(label)
-
-                # Combine and Save the Label
-                while len(final_list) > 1:
-                    # !!! Here is a problem, labels seem to have sometimes different positions in the same source_space
-                    try:
-                        final_list[0] = final_list[0] + final_list[1]
-                        final_list.remove(final_list[1])
-                    except ValueError:
-                        final_list.remove(final_list[1])
-
-                final_label = final_list[0]
-                center = final_label.center_of_mass(subject=subtomri,
-                                                    restrict_vertices=True)
-                #                final_label.smooth(subject=subtomri, subjects_dir=subjects_dir,
-                #                                   n_jobs=-1)
-                #                brain.add_label(final_label)
-
-                for ap_label in aparc_labels:
-                    if center in ap_label.vertices:
-                        if fuse_ab and isinstance(name, tuple):
-                            final_label_name = f'{name[0]}_{ap_label.name}_final-func'
-                        else:
-                            final_label_name = f'{name}_{ap_label.name}_final-func'
-                        ap_name = ap_label.name
-
-                final_label_path = join(save_dir, 'func_labels',
-                                        final_label_name)
-                mne.write_label(final_label_path, final_label)
-
-                # noinspection PyTypeChecker
-                brain.add_text(x=x_cnt, y=y_cnt, text=ap_name,
-                               color=color, font_size=8, name=str(i))
-                if round(x_cnt, 2) == 0.71:
-                    x_cnt = 0.01
-                    y_cnt += 0.02
-                else:
-                    x_cnt += 0.35
-                if round(y_cnt, 2) == 0.24:
-                    y_cnt = 0.72
-                plt.title(final_label_name)
-                plt.legend()
-                plt.show()
-
-                # Saving the plots
-                if save_plots:
-                    if not exists(join(figures_path, 'func_labels', 'group_time_course')):
-                        makedirs(join(figures_path, 'func_labels', 'group_time_course'))
-                    if fuse_ab and isinstance(name, tuple):
-                        save_path = join(figures_path, 'func_labels', 'group_time_course',
-                                         f'{name[0]}-{ev_id}{filter_string(highpass, lowpass)}_{str(i)}-{hemi}-tc.jpg')
-                    else:
-                        save_path = join(figures_path, 'func_labels', 'group_time_course',
-                                         f'{name}-{ev_id}{filter_string(highpass, lowpass)}_{str(i)}-{hemi}-tc.jpg')
-                    plt.savefig(save_path, dpi=600)
-
-                else:
-                    print('Not saving plots; set "save_plots" to "True" to save')
-
-            if save_plots:
-                if not exists(join(figures_path, 'func_labels', 'group_brain_plots')):
-                    makedirs(join(figures_path, 'func_labels', 'group_brain_plots'))
-                if fuse_ab and isinstance(name, tuple):
-                    b_save_path = join(figures_path, 'func_labels', 'group_brain_plots',
-                                       f'{name[0]}-{ev_id}{filter_string(highpass, lowpass)}-{hemi}-b.jpg')
-                else:
-                    b_save_path = join(figures_path, 'func_labels', 'group_brain_plots',
-                                       f'{name}-{ev_id}{filter_string(highpass, lowpass)}-{hemi}-b.jpg')
-                brain.save_image(b_save_path)
-
-            plot.close_all()
-
-
-@decor.topline
-def func_label_ctf_ps(name, save_dir, highpass, lowpass, subtomri,
-                      subjects_dir, parcellation_orig):
-    label_origin = ['S_central-lh', 'S_central-rh', 'S_circular_insula_sup-lh',
-                    'S_circular_insula_sup-rh']
-
-    forward = loading.read_forward(name, save_dir)
-    labels = mne.read_labels_from_annot(subtomri, subjects_dir=subjects_dir,
-                                        parc=parcellation_orig)
-    inverse_operator = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
-    labels_list = []
-    for label in [l for l in labels if l.name in label_origin]:
-        labels_list.append(label)
-        print(labels_list)
-    snr = 3.0
-    lambda2 = 1.0 / snr ** 2
-    mode = 'svd'
-    n_svd_comp = 1
-
-    inverse_method = 'MNE'  # can be 'MNE', 'dSPM', or 'sLORETA'
-
-    stc_psf_meg, _ = mne.minimum_norm.point_spread_function(
-            inverse_operator, forward, inverse_method=inverse_method, labels=labels,
-            lambda2=lambda2, pick_ori='normal', mode=mode, n_svd_comp=n_svd_comp)
-
-
+# Todo: Not working, needs work (maybe shift in MNE-Examples-Package)
 @decor.topline
 def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
-                      subtomri, target_labels, parcellation,
-                      ev_ids_label_analysis, n_jobs,
+                      subtomri, target_labels, parcellation, event_id, n_jobs,
                       save_plots, figures_path):
     # Compute a source estimate per frequency band including and excluding the
     # evoked response
-    freqs = tfr_freqs  # define frequencies of interest
-    n_cycles = freqs / 3.  # different number of cycle per frequency
+    n_cycles = [freq / 3. for freq in tfr_freqs]  # different number of cycle per frequency
     labels = mne.read_labels_from_annot(subtomri, parc=parcellation)
     inverse_operator = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
 
-    for ev_id in ev_ids_label_analysis:
+    for ev_id in event_id:
         epochs = loading.read_epochs(name, save_dir, highpass, lowpass)[ev_id]
         # subtract the evoked response in order to exclude evoked activity
         epochs_induced = epochs.copy().subtract_evoked()
 
         for hemi in target_labels:
-            for label in [l for l in labels if l.name in target_labels[hemi]]:
+            for label in [lb for lb in labels if lb.name in target_labels[hemi]]:
                 print(label.name)
                 # compute the source space power and the inter-trial coherence
                 #                power, itc = mne.minimum_norm.source_induced_power(
@@ -2266,7 +1352,7 @@ def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
                 #                    baseline_mode='percent', n_cycles=n_cycles, n_jobs=n_jobs)
 
                 power_ind, itc_ind = mne.minimum_norm.source_induced_power(
-                        epochs_induced, inverse_operator, freqs, label, baseline=baseline,
+                        epochs_induced, inverse_operator, tfr_freqs, label, baseline=baseline,
                         baseline_mode='percent', n_cycles=n_cycles, n_jobs=n_jobs)
 
                 #                power = np.mean(power, axis=0)  # average over sources
@@ -2294,7 +1380,7 @@ def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
                 plt.subplots_adjust(0.1, 0.08, 0.96, 0.94, 0.2, 0.43)
                 plt.subplot(1, 2, 1)
                 plt.imshow(20 * power_ind,
-                           extent=[times[0], times[-1], freqs[0], freqs[-1]],
+                           extent=[times[0], times[-1], tfr_freqs[0], tfr_freqs[-1]],
                            aspect='auto', origin='lower', vmin=0., vmax=10., cmap='RdBu_r')
                 plt.xlabel('Time (s)')
                 plt.ylabel('Frequency (Hz)')
@@ -2303,7 +1389,7 @@ def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
 
                 plt.subplot(1, 2, 2)
                 plt.imshow(itc_ind,
-                           extent=[times[0], times[-1], freqs[0], freqs[-1]],
+                           extent=[times[0], times[-1], tfr_freqs[0], tfr_freqs[-1]],
                            aspect='auto', origin='lower', vmin=0, vmax=0.4,
                            cmap='RdBu_r')
                 plt.xlabel('Time (s)')
@@ -2343,65 +1429,6 @@ def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
                     print('Not saving plots; set "save_plots" to "True" to save')
 
                 plot.close_all()
-
-
-@decor.topline
-def grand_avg_label_power(grand_avg_dict, ev_ids_label_analysis,
-                          data_path, highpass, lowpass,
-                          target_labels, save_dir_averages):
-    for key in grand_avg_dict:
-        #        powers = {}
-        #        itcs = {}
-        powers_ind = {}
-        itcs_ind = {}
-
-        for ev_id in ev_ids_label_analysis:
-            #            powers.update({ev_id:{}})
-            #            itcs.update({ev_id:{}})
-            powers_ind.update({ev_id: {}})
-            itcs_ind.update({ev_id: {}})
-            for hemi in target_labels:
-                for label_name in target_labels[hemi]:
-                    #                    powers[ev_id].update({label_name:[]})
-                    #                    itcs[ev_id].update({label_name:[]})
-                    powers_ind[ev_id].update({label_name: []})
-                    itcs_ind[ev_id].update({label_name: []})
-
-        for name in grand_avg_dict[key]:
-            save_dir = join(data_path, name)
-            power_dict = loading.read_label_power(name, save_dir, highpass, lowpass,
-                                                  ev_ids_label_analysis, target_labels)
-            for ev_id in ev_ids_label_analysis:
-                for hemi in target_labels:
-                    for label_name in target_labels[hemi]:
-                        #                        powers[ev_id][label_name].append(power_dict[ev_id][label_name]['power'])
-                        #                        itcs[ev_id][label_name].append(power_dict[ev_id][label_name]['itc'])
-                        powers_ind[ev_id][label_name].append(power_dict[ev_id][label_name]['power_ind'])
-                        itcs_ind[ev_id][label_name].append(power_dict[ev_id][label_name]['itc_ind'])
-        for ev_id in ev_ids_label_analysis:
-            for hemi in target_labels:
-                for label_name in target_labels[hemi]:
-                    len_power = len(powers_ind[ev_id][label_name])
-                    power_average = powers_ind[ev_id][label_name][0]
-                    for n in range(1, len_power):
-                        power_average += powers_ind[ev_id][label_name][n]
-                    power_average /= len_power
-
-                    pw_ga_path = join(save_dir_averages, 'tfr',
-                                      f'{key}-{ev_id}_{label_name}_pw-ind.npy')
-
-                    np.save(pw_ga_path, power_average)
-
-                    len_itc = len(itcs_ind[ev_id][label_name])
-                    itc_average = itcs_ind[ev_id][label_name][0]
-                    for n in range(1, len_itc):
-                        itc_average += itcs_ind[ev_id][label_name][n]
-                    itc_average /= len_itc
-
-                    itc_ga_path = join(save_dir_averages, 'tfr',
-                                       f'{key}-{ev_id}_{label_name}_itc-ind.npy')
-
-                    np.save(itc_ga_path, itc_average)
 
 
 @decor.topline
@@ -2452,7 +1479,7 @@ def apply_morph_normal(name, save_dir, highpass, lowpass, subjects_dir, subtomri
 def source_space_connectivity(name, save_dir, highpass, lowpass,
                               subtomri, subjects_dir, parcellation,
                               target_labels, con_methods, con_fmin, con_fmax,
-                              n_jobs, overwrite, enable_ica, ev_ids_label_analysis):
+                              n_jobs, overwrite, enable_ica, event_id):
     info = loading.read_info(name, save_dir)
     if enable_ica:
         all_epochs = loading.read_ica_epochs(name, save_dir, highpass, lowpass)
@@ -2461,7 +1488,7 @@ def source_space_connectivity(name, save_dir, highpass, lowpass,
     inverse_operator = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
     src = inverse_operator['src']
 
-    for ev_id in ev_ids_label_analysis:
+    for ev_id in event_id:
         epochs = all_epochs[ev_id]
         # Compute inverse solution and for each epoch. By using "return_generator=True"
         # stcs will be a generator object instead of a list.
@@ -2475,8 +1502,8 @@ def source_space_connectivity(name, save_dir, highpass, lowpass,
         labels = mne.read_labels_from_annot(subtomri, parc=parcellation,
                                             subjects_dir=subjects_dir)
 
-        actual_labels = [l for l in labels if l.name in target_labels['lh']
-                         or l.name in target_labels['rh']]
+        actual_labels = [lb for lb in labels if lb.name in target_labels['lh']
+                         or lb.name in target_labels['rh']]
 
         # Average the source estimates within each label using sign-flips to reduce
         # signal cancellations, also here we return a generator
@@ -2487,14 +1514,14 @@ def source_space_connectivity(name, save_dir, highpass, lowpass,
 
         sfreq = info['sfreq']  # the sampling frequency
         con, freqs, times, n_epochs, n_tapers = mne.connectivity.spectral_connectivity(
-                label_ts, inverse_method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
+                label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
                 fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
 
         # con is a 3D array, get the connectivity for the first (and only) freq. band
         # for each con_method
         con_res = dict()
         for con_method, c in zip(con_methods, con):
-            con_res[con_method] = c[:, :, 0]
+            con_res[con_method] = c
 
             # save to .npy file
             file_name = name + filter_string(highpass, lowpass) + \
@@ -2631,399 +1658,63 @@ def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir
         gc.collect()
 
 
-# noinspection PyTypeChecker,PyTypeChecker
-def grand_avg_func_labels(grand_avg_dict, highpass, lowpass,
-                          save_dir_averages, event_id, ev_ids_label_analysis,
-                          subjects_dir, source_space_method,
-                          parcellation_orig, pscripts_path, save_plots,
-                          label_origin, figures_path, n_std):
-    global func_label
-    figures_path_grand_averages = join(figures_path, 'grand_averages/source_space/stc')
-    save_dir = join(save_dir_averages, 'stc')
-    ga_dict = loading.read_grand_avg_stcs_normal(highpass, lowpass, save_dir_averages, grand_avg_dict,
-                                                 event_id)
-
-    src = loading.read_source_space('fsaverage', subjects_dir, source_space_method)
-    labels = mne.read_labels_from_annot('fsaverage', subjects_dir=subjects_dir,
-                                        parc=parcellation_orig)
+@decor.topline
+def grand_avg_label_power(grand_avg_dict, event_id,
+                          data_path, highpass, lowpass,
+                          target_labels, save_dir_averages):
     for key in grand_avg_dict:
-        for ev_id in ev_ids_label_analysis:
-            n_stc = ga_dict[key][ev_id]
+        powers_ind = {}
+        itcs_ind = {}
 
-            save_dict = {}
-            func_labels_dict = {}
+        for ev_id in event_id:
+            powers_ind.update({ev_id: {}})
+            itcs_ind.update({ev_id: {}})
+            for hemi in target_labels:
+                for label_name in target_labels[hemi]:
+                    powers_ind[ev_id].update({label_name: []})
+                    itcs_ind[ev_id].update({label_name: []})
 
-            if not exists(join(save_dir, 'func_label_tc')):
-                makedirs(join(save_dir, 'func_label_tc'))
+        for name in grand_avg_dict[key]:
+            save_dir = join(data_path, name)
+            power_dict = loading.read_label_power(name, save_dir, highpass, lowpass,
+                                                  event_id, target_labels)
+            for ev_id in event_id:
+                for hemi in target_labels:
+                    for label_name in target_labels[hemi]:
+                        powers_ind[ev_id][label_name].append(power_dict[ev_id][label_name]['power_ind'])
+                        itcs_ind[ev_id][label_name].append(power_dict[ev_id][label_name]['itc_ind'])
+        for ev_id in event_id:
+            for hemi in target_labels:
+                for label_name in target_labels[hemi]:
+                    len_power = len(powers_ind[ev_id][label_name])
+                    power_average = powers_ind[ev_id][label_name][0]
+                    for n in range(1, len_power):
+                        power_average += powers_ind[ev_id][label_name][n]
+                    power_average /= len_power
 
-            if label_origin == 'all':
-                t_labels = labels
-            else:
-                t_labels = [l for l in labels if l.name in label_origin]
+                    pw_ga_path = join(save_dir_averages, 'tfr',
+                                      f'{key}-{ev_id}_{label_name}_pw-ind.npy')
 
-            for prog, label in enumerate(t_labels):
-                print(label.name)
-                print(f'Progress: {round(prog / len(t_labels) * 100, 2)}%')
+                    np.save(pw_ga_path, power_average)
 
-                tc = n_stc.extract_label_time_course(label, src, mode='pca_flip')[0]
-                f = signal.savgol_filter(tc, 101, 5)
-                std = np.std(f)
-                mean = np.mean(f)
-                peaks, properties = signal.find_peaks(abs(f), height=n_std * std + mean, distance=10)
-                peaks = peaks[:1]  # !!!Discarded possibility of several peaks
-                if len(peaks) == 0:  # Only let significant peaks define a label
-                    print(f'{label.name} doesn\'t wield a significant peak, current setting: prominence>{n_std}*std')
-                    continue
+                    len_itc = len(itcs_ind[ev_id][label_name])
+                    itc_average = itcs_ind[ev_id][label_name][0]
+                    for n in range(1, len_itc):
+                        itc_average += itcs_ind[ev_id][label_name][n]
+                    itc_average /= len_itc
 
-                # noinspection PyTypeChecker
-                fig, axes = plt.subplots(ncols=len(peaks), figsize=(18, 8), sharey=True,
-                                         gridspec_kw={'hspace': 0.1, 'wspace': 0.1,
-                                                      'left': 0.05, 'right': 0.95,
-                                                      'top': 0.95, 'bottom': 0.05})
+                    itc_ga_path = join(save_dir_averages, 'tfr',
+                                       f'{key}-{ev_id}_{label_name}_itc-ind.npy')
 
-                for idx, peak in enumerate(peaks):
-                    max_t = round(n_stc.times[peak], 3)
-                    tmin = round(max_t - 0.01, 3)
-                    tmax = round(max_t + 0.01, 3)
-                    if tmin < n_stc.tmin:
-                        diff = n_stc.tmin - tmin
-                        tmin += diff
-                        tmax += diff
-                        print(f'peak too close to start, correcting + {diff}')
-                    if tmax > n_stc.times[-1]:
-                        diff = tmax - n_stc.times[-1]
-                        tmin -= diff
-                        tmax -= diff
-                        print(f'peak too close to start, correcting - {diff}')
-                    print(f'{tmin} - {tmax}s')
-                    # Make an STC in the time interval of interest and take the mean
-                    stc_mean = n_stc.copy().crop(tmin, tmax).mean()
-
-                    # use the stc_mean to generate a functional label
-                    # region growing is halted at 60% of the peak value within the
-                    # anatomical label / ROI specified by aparc_label_name
-                    stc_mean_label = stc_mean.in_label(label)
-                    data = np.abs(stc_mean_label.data)
-                    stc_mean_label.data[data < 0.6 * np.max(data)] = 0.
-
-                    func_labels = mne.stc_to_label(stc_mean_label, src=src, smooth=True,
-                                                   subjects_dir=subjects_dir, connected=True,
-                                                   verbose='DEBUG')
-
-                    for i in func_labels:
-                        if len(i) > 0:
-                            func_label = i[0]
-                        else:
-                            continue
-
-                    if not exists(join(save_dir, 'func_labels', key)):
-                        makedirs(join(save_dir, 'func_labels', key))
-
-                    label_path = join(save_dir, 'func_labels', key, f'{key}_{label.name}_{max_t}s_{ev_id}_func.label')
-                    func_label.name = f'{key}_{label.name}_{max_t}s_{ev_id}_func'
-                    func_label.color = None
-                    mne.write_label(label_path, func_label)
-
-                    if label.name in save_dict:
-                        save_dict[label.name].append(max_t)
-                    else:
-                        save_dict.update({label.name: [max_t]})
-
-                    if label.name in func_labels_dict:
-                        func_labels_dict[label.name].append(func_label)
-                    func_labels_dict.update({label.name: [func_label]})
-
-                    stc_func_label = n_stc.in_label(func_label)
-                    pca_func = n_stc.extract_label_time_course(func_label, src, mode='pca_flip')[0]
-
-                    # flip the pca so that the max power between tmin and tmax is positive
-                    tc *= np.sign(tc[np.argmax(np.abs(tc))])
-                    pca_func *= np.sign(pca_func[np.argmax(np.abs(tc))])
-
-                    # Filtering the data with a Savitzky-Golay filter
-                    tc_f = signal.savgol_filter(tc, 101, 5)
-                    pca_func_f = signal.savgol_filter(pca_func, 101, 5)
-
-                    max_val = tc_f[peak]
-
-                    # Save func_label_tc
-                    if not exists(join(save_dir, 'func_label_tc', key)):
-                        makedirs(join(save_dir, 'func_label_tc', key))
-                    tc_path = join(save_dir, 'func_label_tc', key, func_label.name)
-                    np.save(tc_path, pca_func_f)
-
-                    if len(peaks) == 1:
-                        axes.plot(1e3 * n_stc.times, tc_f, 'k',
-                                  label=f'Anatomical {label.name}')
-                        axes.plot(1e3 * stc_func_label.times, pca_func_f, 'b',
-                                  label=f'Functional {label.name}')
-                        axes.plot(1e3 * max_t, max_val, 'rX',
-                                  label=f'{1e3 * max_t} ms used')
-                        axes.legend()
-                        axes.set_xlabel('time [ms]')
-                        axes.set_ylabel('source amplitude (normal orientation)')
-                        axes.set_title(f'{key}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
-                    else:
-                        axes[idx].plot(1e3 * n_stc.times, tc_f, 'k',
-                                       label=f'Anatomical {label.name}')
-                        axes[idx].plot(1e3 * stc_func_label.times, pca_func_f, 'b',
-                                       label=f'Functional {label.name}')
-                        axes[idx].plot(1e3 * max_t, max_val, 'rX',
-                                       label=f'{1e3 * max_t} ms used')
-                        axes[idx].legend()
-                        axes[idx].set_xlabel('time [ms]')
-                        axes[0].set_ylabel('source amplitude (normal orientation)')
-                        axes[idx].set_title(f'{key}_{label.name}_{max_t}s_{filter_string(highpass, lowpass)}')
-                plt.show()
-
-                if save_plots:
-                    if not exists(join(figures_path_grand_averages, 'func_labels', 'label_time_course')):
-                        makedirs(join(figures_path_grand_averages, 'func_labels', 'label_time_course'))
-                    save_path = join(figures_path_grand_averages, 'func_labels', 'label_time_course',
-                                     f'{key}_{label.name}{filter_string(highpass, lowpass)}-tc.jpg')
-                    print(save_path)
-                    fig.savefig(save_path, dpi=600)
-
-                else:
-                    print('Not saving plots; set "save_plots" to "True" to save')
-
-                plt.close('all')
-                print('')
-
-            title = key + '-' + ev_id
-
-            brain = Brain('fsaverage', hemi='split', surf='inflated', title=title,
-                          size=(1600, 800), subjects_dir=subjects_dir)
-            colormap = plt.cm.get_cmap(name='hsv', lut=len(t_labels) + 1)
-            # plot the original-labels
-            #        for i, label in enumerate(t_labels):
-            #            brain.add_label(label, borders=True, color='k', hemi=label.hemi)
-
-            # plot the func_labels
-            lh_y_cnt = 0.02
-            rh_y_cnt = 0.02
-            lh_x_cnt = 0.01
-            rh_x_cnt = 0.01
-            for i, f_name in enumerate(func_labels_dict):
-                color = colormap(i)[:3]
-                f_labels = func_labels_dict[f_name]
-                for f_label in f_labels:
-                    brain.add_label(f_label, hemi=f_label.hemi,
-                                    color=color)
-                try:
-                    if '-lh' in f_name:
-                        #                        brain.add_text(x=lh_x_cnt, y=lh_y_cnt, text=f_name+':'+str(t),
-                        #                                   color=color, name=f_name, font_size=8,
-                        #                                   col=0)
-                        if round(lh_x_cnt, 2) == 0.71:
-                            lh_x_cnt = 0.01
-                            lh_y_cnt += 0.02
-                        else:
-                            lh_x_cnt += 0.35
-                        if round(lh_y_cnt, 2) == 0.24:
-                            lh_y_cnt = 0.72
-
-                    if '-rh' in f_name:
-                        #                        brain.add_text(x=rh_x_cnt, y=rh_y_cnt, text=f_name+':'+str(t),
-                        #                                       color=color, name=f_name, font_size=8,
-                        #                                       col=1)
-                        if round(rh_x_cnt, 2) == 0.71:
-                            rh_x_cnt = 0.01
-                            rh_y_cnt += 0.02
-                        else:
-                            rh_x_cnt += 0.35
-                        if round(rh_y_cnt, 2) == 0.3:
-                            rh_y_cnt = 0.8
-
-                except ValueError:
-                    print('Display Space for text exceeded')
-
-            if save_plots:
-                if not exists(join(figures_path_grand_averages, 'func_labels', 'brain_plots')):
-                    makedirs(join(figures_path_grand_averages, 'func_labels', 'brain_plots'))
-                b_save_path = join(figures_path_grand_averages, 'func_labels', 'brain_plots',
-                                   f'{key}-{ev_id}{filter_string(highpass, lowpass)}-b.jpg')
-                brain.save_image(b_save_path)
-            else:
-                print('Not saving plots; set "save_plots" to "True" to save')
-
-            ut.dict_filehandler(key + '-' + ev_id, 'func_label_lat', pscripts_path,
-                                values=save_dict)
-            plot.close_all()
-
-
-def grand_avg_func_labels_processing(grand_avg_dict, highpass, lowpass,
-                                     save_dir_averages, ev_ids_label_analysis,
-                                     subjects_dir, pscripts_path, save_plots,
-                                     figures_path, corr_threshold,
-                                     tmin, tmax):
-    figures_path_grand_averages = join(figures_path, 'grand_averages/source_space/stc')
-    save_dir = join(save_dir_averages, 'stc')
-    for key in grand_avg_dict:
-        save_dir_flabels = join(save_dir, 'func_labels', key)
-        func_labels_dict, lat_dict = loading.read_func_labels(save_dir_flabels, 'fsaverage',
-                                                              pscripts_path,
-                                                              ev_ids_label_analysis,
-                                                              grand_avg=True)
-        #            aparc_labels = mne.read_labels_from_annot('fsaverage', parc='aparc',
-        #                                                      subjects_dir=subjects_dir)
-        for ev_id in ev_ids_label_analysis:
-            func_labels = {'lh': [], 'rh': []}
-            for f_label in func_labels_dict[ev_id]:
-                if f_label.hemi == 'lh':
-                    func_labels['lh'].append(f_label)
-                if f_label.hemi == 'rh':
-                    func_labels['rh'].append(f_label)
-
-            for hemi in func_labels:
-                corr_labels = []
-                tc_list = []
-                idx_dict = {}
-                # Adding the time course for each label and assuring the right assignment from idx to label
-                for idx, func_label in enumerate(func_labels[hemi]):
-                    tc_path = join(save_dir, 'func_label_tc', key, func_label.name[:-3] + '.npy')
-                    tc = np.load(tc_path)
-                    tc_list.append(tc)
-                    idx_dict.update({str(idx): func_label.name})
-                tc_array = np.asarray(tc_list)
-                corr_mat = np.corrcoef(tc_array)
-
-                # Make Diagonal and lower half = 0
-                np.fill_diagonal(corr_mat, 0)
-                for c in range(1, len(corr_mat)):
-                    corr_mat[c, :c + 1] = 0
-
-                # Finding the correlated groups of subjects
-                # First with searching over two dimensions for correlations
-                for idx, x in enumerate(corr_mat):
-                    x_set = set()
-                    for y in range(len(x)):
-                        if x[y] > corr_threshold and idx != y:
-                            x_set.add(idx_dict[str(idx)])
-                            x_set.add(idx_dict[str(y)])
-                            for z_idx, z in enumerate(corr_mat[:, y]):
-                                if z > corr_threshold and idx != z_idx and y != z_idx:
-                                    x_set.add(idx_dict[str(z_idx)])
-                    if len(x_set) != 0:
-                        corr_labels.append(x_set)
-
-                merged = True
-                while merged:
-                    merged = False
-                    results = []
-                    while corr_labels:
-                        # Here lies the Knackpunkt: When only one set is left, [1:] returns an empty list
-                        common, rest = corr_labels[0], corr_labels[1:]
-                        corr_labels = []
-                        for x in rest:
-                            if x.isdisjoint(common):
-                                corr_labels.append(x)
-                            else:
-                                merged = True
-                                common |= x
-                        results.append(common)
-                    corr_labels = results
-
-                # Plotting
-                #                    y_cnt = 0.02
-                #                    x_cnt = 0.01
-                figure = mlab.figure(size=(800, 800))
-                brain = Brain(subject_id='fsaverage', hemi=hemi, surf='inflated',
-                              subjects_dir=subjects_dir, figure=figure)
-                colormap = plt.cm.get_cmap(name='hsv', lut=len(corr_labels) + 1)
-                brain.add_annotation('aparc')
-                tc_avg_labels = []
-                for i, l_group in enumerate(corr_labels):
-                    #                        plt.figure()
-                    color = colormap(i)[:3]
-                    final_list = []
-                    tcs = []
-                    for l in l_group:
-                        tc_path = join(save_dir, 'func_label_tc', key, l[:-3] + '.npy')
-                        tc = np.load(tc_path)
-                        tcs.append(tc)
-                        for label in func_labels[hemi]:
-                            if label.name == l:
-                                final_list.append(label)
-                    tcs_avg = tcs[0]
-                    for r in range(1, len(tcs)):
-                        tcs_avg += tcs[r]
-                    tcs_avg /= len(tcs)
-                    tc_avg_labels.append(tcs_avg)
-
-                    # Combine and Save the Label
-                    while len(final_list) > 1:
-                        # !!! Here is a problem, labels seem to have sometimes different positions in same source_space
-                        try:
-                            final_list[0] = final_list[0] + final_list[1]
-                            final_list.remove(final_list[1])
-                        except ValueError:
-                            final_list.remove(final_list[1])
-
-                    final_label = final_list[0]
-                    brain.add_label(final_label, color=color)
-                #                        center = final_label.center_of_mass(subject='fsaverage',
-                #                                                            restrict_vertices=True)
-                #                        final_label.smooth(subject='fsaverage', subjects_dir=subjects_dir,
-                #                                           n_jobs=-1)
-                #                        brain.add_label(final_label)
-
-                #                        for ap_label in aparc_labels:
-                #                            if center in ap_label.vertices:
-                #                                final_label_name = f'{key}_{ap_label.name}_final-func'
-                #                                ap_name = ap_label.name
-
-                #                        final_label_path = join(save_dir, 'func_labels', key,
-                #                                                final_label.name)
-                #                        mne.write_label(final_label_path, final_label)
-
-                #                        brain.add_text(x=x_cnt, y=y_cnt, text=ap_name,
-                #                                       color=color, font_size=8, name=str(i))
-                #                        if round(x_cnt,2) == 0.71:
-                #                            x_cnt = 0.01
-                #                            y_cnt +=0.02
-                #                        else:
-                #                            x_cnt += 0.35
-                #                        if round(y_cnt,2) == 0.24:
-                #                            y_cnt = 0.72
-                #                        plt.title(final_label_name)
-                #                        plt.legend()
-                #                        plt.show()
-                plt.figure()
-                times = np.arange(tmin, tmax + 0.001, 0.001)
-                for i, tca in enumerate(tc_avg_labels):
-                    color = colormap(i)[:3]
-                    plt.plot(times, tca, color=color)
-                    plt.xlabel('Time [ms]')
-                    plt.ylabel('Source Amplitude')
-                    plt.title = hemi
-                # Saving the plots
-                if save_plots:
-                    if not exists(join(figures_path_grand_averages, 'func_labels', 'group_time_course')):
-                        makedirs(join(figures_path_grand_averages, 'func_labels', 'group_time_course'))
-                    save_path = join(figures_path_grand_averages, 'func_labels', 'group_time_course',
-                                     f'{key}-{ev_id}{filter_string(highpass, lowpass)}_{hemi}-tc.jpg')
-                    plt.savefig(save_path, dpi=600)
-
-                else:
-                    print('Not saving plots; set "save_plots" to "True" to save')
-
-                if save_plots:
-                    if not exists(join(figures_path_grand_averages, 'func_labels', 'group_brain_plots')):
-                        makedirs(join(figures_path_grand_averages, 'func_labels', 'group_brain_plots'))
-                    b_save_path = join(figures_path_grand_averages, 'func_labels', 'group_brain_plots',
-                                       f'{key}-{ev_id}{filter_string(highpass, lowpass)}-{hemi}-b.jpg')
-                    brain.save_image(b_save_path)
-
-                plot.close_all()
+                    np.save(itc_ga_path, itc_average)
 
 
 @decor.topline
 def grand_avg_connect(grand_avg_dict, data_path, con_methods,
                       con_fmin, con_fmax, save_dir_averages,
-                      highpass, lowpass, ev_ids_label_analysis):
+                      highpass, lowpass, event_id):
     for key in grand_avg_dict:
-        for ev_id in ev_ids_label_analysis:
+        for ev_id in event_id:
             con_methods_dict = {}
             print(f'grand_average for {key}')
             for name in grand_avg_dict[key]:
@@ -3032,7 +1723,7 @@ def grand_avg_connect(grand_avg_dict, data_path, con_methods,
 
                 con_dict = loading.read_connect(name, save_dir, highpass,
                                                 lowpass, con_methods,
-                                                con_fmin, con_fmax, ev_ids_label_analysis)[ev_id]
+                                                con_fmin, con_fmax, event_id)[ev_id]
 
                 for con_method in con_dict:
                     if con_method in con_methods_dict:
@@ -3121,99 +1812,3 @@ def statistics_source_space(morphed_data_all, save_dir_averages,
     else:
         print('cluster permutation: ' + cluster_path +
               ' already exists')
-
-
-@decor.topline
-def corr_ntr(name, save_dir, highpass, lowpass, func_dict, ermsub,
-             subtomri, enable_ica, save_plots, figures_path):
-    info = loading.read_info(name, save_dir)
-
-    if enable_ica:
-        epochs = loading.read_ica_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from ICA-Epochs after applied SSP')
-    elif func_dict['apply_ssp_er'] and ermsub != 'None':
-        epochs = loading.read_ssp_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from SSP_ER-Epochs')
-    elif func_dict['apply_ssp_clm']:
-        epochs = loading.read_ssp_clm_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds form SSP_Clm-Epochs')
-    elif func_dict['apply_ssp_eog'] and 'EEG 001' in info['ch_names']:
-        epochs = loading.read_ssp_eog_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from SSP_EOG-Epochs')
-    elif func_dict['apply_ssp_ecg'] and 'EEG 001' in info['ch_names']:
-        epochs = loading.read_ssp_ecg_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from SSP_ECG-Epochs')
-    else:
-        epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from (normal) Epochs')
-    # Analysis for each trial_type
-    labels = mne.read_labels_from_annot(subtomri, parc='aparc.a2009s')
-    target_labels = ['S_central-lh']
-    ch_labels = []
-
-    for label in labels:
-        if label.name in target_labels:
-            ch_labels.append(label)
-
-    inv_op = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
-    src = inv_op['src']
-
-    for l in ch_labels:
-        ep_tr = epochs[0]
-        ep_tr.crop(0, 0.3)
-        ep_len = len(ep_tr) // 2 * 2  # Make sure ep_len is even
-        idxs = range(ep_len)
-
-        y = []
-        x = []
-
-        # select randomly k epochs for t times
-
-        for k in range(1, int(ep_len / 2)):  # Compare k epochs
-
-            print(f'Iteration {k} of {int(ep_len / 2)}')
-            ep_rand = ep_tr[random.sample(idxs, k * 2)]
-            ep1 = ep_rand[:k]
-            ep2 = ep_rand[k:]
-            avg1 = ep1.average()
-            avg2 = ep2.average()
-            x.append(k)
-
-            stc1 = mne.minimum_norm.apply_inverse(avg1, inv_op, inverse_method='dSPM', pick_ori='normal')
-            stc2 = mne.minimum_norm.apply_inverse(avg2, inv_op, inverse_method='dSPM', pick_ori='normal')
-
-            print(f'Label:{l.name}')
-            mean1 = stc1.extract_label_time_course(l, src, mode='pca_flip')
-            mean2 = stc2.extract_label_time_course(l, src, mode='pca_flip')
-
-            coef = abs(np.corrcoef(mean1, mean2)[0, 1])
-            y.append(coef)
-
-        plt.figure()
-        plt.plot(x, y)
-        plt.title(name)
-
-        if save_plots:
-            save_path = join(figures_path, 'correlation_ntr', name +
-                             filter_string(highpass, lowpass) +
-                             '_' + l.name + '.jpg')
-            plt.savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-
-
-def get_meas_order(sub_files_dict, data_path, pscripts_path):
-    # Get measurement order in time
-    for sub in sub_files_dict:
-        ts = list()
-        for name in sub_files_dict[sub]:
-            save_dir = join(data_path, name)
-            i = loading.read_info(name, save_dir)
-            ts.append(i['meas_date'][0])
-        ts.sort()
-        for name in sub_files_dict[sub]:
-            save_dir = join(data_path, name)
-            i = loading.read_info(name, save_dir)
-            idx = ts.index(i['meas_date'][0])
-            ut.dict_filehandler(name, 'meas_order', pscripts_path, values=idx)
