@@ -755,16 +755,24 @@ class AddFilesWidget(QWidget):
             row_count += 1
 
     def delete_item(self):
-        row = self.table_widget.currentRow()
-        if row >= 0:  # Assert that an item is selected
+        idxs = self.table_widget.selectedIndexes()
+        rows = set()
+        for idx in idxs:
+            rows.add(idx.row())
+        for row in rows:
             file_name = self.table_widget.item(row, 0).text()
 
             self.files.remove(file_name)
             self.file_types.pop(file_name, None)
             self.is_erm.pop(file_name, None)
             self.paths.pop(file_name, None)
-
-            self.table_widget.removeRow(row)
+        count = len(rows)
+        # I don't trust the unordered set here (reasonable?)
+        row_list = list(rows)
+        row_list.sort()
+        while count > 0:
+            self.table_widget.removeRow(row_list[0])
+            count -= 1
 
     def show_erm_keywords(self):
         ErmKwDialog(self)
