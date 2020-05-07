@@ -20,20 +20,20 @@ from scipy import stats
 from surfer import Brain
 
 from mne_pipeline_hd.basic_functions import loading, operations as op
-from mne_pipeline_hd.pipeline_functions import decorators as decor
+from mne_pipeline_hd.pipeline_functions.decorators import topline
 
 
 # ==============================================================================
 # PLOTTING FUNCTIONS
 # ==============================================================================
-@decor.topline
+@topline
 def print_info(name, save_dir):
     info = loading.read_info(name, save_dir)
     print(info)
 
 
 # Todo: Plot Raw with block to mark bads on the fly, test on all OS (hangs on Spyder?!)
-@decor.topline
+@topline
 def plot_raw(name, save_dir, bad_channels):
     raw = loading.read_raw(name, save_dir)
     raw.info['bads'] = bad_channels
@@ -49,7 +49,7 @@ def plot_raw(name, save_dir, bad_channels):
                          title=name)
 
 
-@decor.topline
+@topline
 def plot_filtered(name, save_dir, highpass, lowpass, bad_channels):
     raw = loading.read_filtered(name, save_dir, highpass, lowpass)
 
@@ -66,13 +66,13 @@ def plot_filtered(name, save_dir, highpass, lowpass, bad_channels):
                          title=name + '_filtered')
 
 
-@decor.topline
+@topline
 def plot_sensors(name, save_dir):
     info = loading.read_info(name, save_dir)
     mne.viz.plot_sensors(info, kind='topomap', title=name, show_names=True, ch_groups='position')
 
 
-@decor.topline
+@topline
 def plot_events(name, save_dir, save_plots, figures_path, event_id):
     events = loading.read_events(name, save_dir)
     actual_event_id = {}
@@ -91,7 +91,7 @@ def plot_events(name, save_dir, save_plots, figures_path, event_id):
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_eog_events(name, save_dir, eog_channel):
     events = loading.read_events(name, save_dir)
     eog_events = loading.read_eog_events(name, save_dir)
@@ -103,7 +103,7 @@ def plot_eog_events(name, save_dir, eog_channel):
     eog_epochs.plot(events=comb_events, title=name)
 
 
-@decor.topline
+@topline
 def plot_power_spectra(name, save_dir, highpass, lowpass, save_plots,
                        figures_path, bad_channels):
     raw = loading.read_raw(name, save_dir)
@@ -123,7 +123,7 @@ def plot_power_spectra(name, save_dir, highpass, lowpass, save_plots,
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_power_spectra_epochs(name, save_dir, highpass, lowpass, save_plots,
                               figures_path):
     epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
@@ -142,7 +142,7 @@ def plot_power_spectra_epochs(name, save_dir, highpass, lowpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_power_spectra_topo(name, save_dir, highpass, lowpass, save_plots,
                             figures_path):
     epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
@@ -159,7 +159,7 @@ def plot_power_spectra_topo(name, save_dir, highpass, lowpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_tfr(name, save_dir, highpass, lowpass, t_epoch, baseline,
              tfr_method, save_plots, figures_path):
     powers = loading.read_tfr_power(name, save_dir, highpass, lowpass, tfr_method)
@@ -236,7 +236,7 @@ def plot_tfr(name, save_dir, highpass, lowpass, t_epoch, baseline,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_epochs(name, save_dir, highpass, lowpass, save_plots,
                 figures_path):
     epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
@@ -256,7 +256,7 @@ def plot_epochs(name, save_dir, highpass, lowpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_epochs_image(name, save_dir, highpass, lowpass, save_plots,
                       figures_path):
     epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
@@ -275,7 +275,7 @@ def plot_epochs_image(name, save_dir, highpass, lowpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_epochs_topo(name, save_dir, highpass, lowpass, save_plots,
                      figures_path):
     epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
@@ -294,7 +294,7 @@ def plot_epochs_topo(name, save_dir, highpass, lowpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_epochs_drop_log(name, save_dir, highpass, lowpass, save_plots,
                          figures_path):
     epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
@@ -312,7 +312,7 @@ def plot_epochs_drop_log(name, save_dir, highpass, lowpass, save_plots,
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_evoked_topo(name, save_dir, highpass, lowpass, save_plots, figures_path):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
@@ -328,7 +328,7 @@ def plot_evoked_topo(name, save_dir, highpass, lowpass, save_plots, figures_path
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_evoked_topomap(name, save_dir, highpass, lowpass, save_plots, figures_path):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
     for evoked in evokeds:
@@ -345,7 +345,7 @@ def plot_evoked_topomap(name, save_dir, highpass, lowpass, save_plots, figures_p
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_evoked_joint(name, save_dir, highpass, lowpass, save_plots,
                       figures_path):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
@@ -364,7 +364,7 @@ def plot_evoked_joint(name, save_dir, highpass, lowpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_evoked_butterfly(name, save_dir, highpass, lowpass, save_plots,
                           figures_path):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
@@ -384,7 +384,7 @@ def plot_evoked_butterfly(name, save_dir, highpass, lowpass, save_plots,
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_evoked_white(name, save_dir, highpass, lowpass, save_plots, figures_path, erm_noise_cov, ermsub,
                       calm_noise_cov):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
@@ -410,7 +410,7 @@ def plot_evoked_white(name, save_dir, highpass, lowpass, save_plots, figures_pat
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_evoked_image(name, save_dir, highpass, lowpass, save_plots, figures_path):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
@@ -429,7 +429,7 @@ def plot_evoked_image(name, save_dir, highpass, lowpass, save_plots, figures_pat
 
 
 
-@decor.topline
+@topline
 def plot_gfp(name, save_dir, highpass, lowpass, save_plots, figures_path):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
     for evoked in evokeds:
@@ -448,7 +448,7 @@ def plot_gfp(name, save_dir, highpass, lowpass, save_plots, figures_path):
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots,
                         figures_path):
     info = loading.read_info(name, save_dir)
@@ -470,7 +470,7 @@ def plot_transformation(name, save_dir, subtomri, subjects_dir, save_plots,
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_source_space(mri_subject, subjects_dir, source_space_method, save_plots, figures_path):
     source_space = loading.read_source_space(mri_subject, subjects_dir, source_space_method)
     source_space.plot()
@@ -485,7 +485,7 @@ def plot_source_space(mri_subject, subjects_dir, source_space_method, save_plots
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_bem(mri_subject, subjects_dir, source_space_method, figures_path,
              save_plots):
     source_space = loading.read_source_space(mri_subject, subjects_dir, source_space_method)
@@ -503,7 +503,7 @@ def plot_bem(mri_subject, subjects_dir, source_space_method, figures_path,
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_sensitivity_maps(name, save_dir, subjects_dir, ch_types, save_plots, figures_path):
     fwd = loading.read_forward(name, save_dir)
 
@@ -517,7 +517,7 @@ def plot_sensitivity_maps(name, save_dir, subjects_dir, ch_types, save_plots, fi
             brain.save_image(save_path)
 
 
-@decor.topline
+@topline
 def plot_noise_covariance(name, save_dir, highpass, lowpass, save_plots, figures_path, erm_noise_cov, ermsub,
                           calm_noise_cov):
     noise_covariance = loading.read_noise_covariance(name, save_dir, highpass, lowpass,
@@ -537,7 +537,7 @@ def plot_noise_covariance(name, save_dir, highpass, lowpass, save_plots, figures
 
 
 # Todo: Bug with interactive-mode
-@decor.topline
+@topline
 def plot_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
              inverse_method, mne_evoked_time, event_id, stc_interactive,
              save_plots, figures_path):
@@ -571,7 +571,7 @@ def plot_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                     print('Not saving plots; set "save_plots" to "True" to save')
 
 # Todo: Figure-Conflict when running consecutively with other mayavi-plots
-@decor.topline
+@topline
 def plot_normal_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                     inverse_method, mne_evoked_time, event_id, stc_interactive,
                     save_plots, figures_path):
@@ -602,7 +602,7 @@ def plot_normal_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                 print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_vector_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                     inverse_method, mne_evoked_time, event_id, stc_interactive,
                     save_plots, figures_path):
@@ -633,7 +633,7 @@ def plot_vector_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                 print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_mixn(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
               mne_evoked_time, event_id, stc_interactive,
               save_plots, figures_path, mixn_dip, parcellation):
@@ -730,7 +730,7 @@ def plot_mixn_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
 
 
 # Todo: Ordner anpassen
-@decor.topline
+@topline
 def plot_mixn_res(name, save_dir, highpass, lowpass, event_id, save_plots, figures_path):
     for trial_type in event_id:
         mixn_res_name = name + op.filter_string(highpass, lowpass) + '_' + trial_type + '-mixn-res-ave.fif'
@@ -746,7 +746,7 @@ def plot_mixn_res(name, save_dir, highpass, lowpass, event_id, save_plots, figur
             print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_animated_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
                       inverse_method, stc_animation, event_id,
                       figures_path):
@@ -770,7 +770,7 @@ def plot_animated_stc(name, save_dir, highpass, lowpass, subtomri, subjects_dir,
         mlab.close()
 
 
-@decor.topline
+@topline
 def plot_snr(name, save_dir, highpass, lowpass, save_plots, figures_path, inverse_method, event_id):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
 
@@ -797,7 +797,7 @@ def plot_snr(name, save_dir, highpass, lowpass, save_plots, figures_path, invers
         # stc.estimate_snr(evoked.info)
 
 
-@decor.topline
+@topline
 def plot_labels(mri_subject, save_plots, figures_path,
                 parcellation):
     brain = Brain(mri_subject, hemi='lh', surf='inflated', views='lat')
@@ -815,7 +815,7 @@ def plot_labels(mri_subject, save_plots, figures_path,
 
 
 
-@decor.topline
+@topline
 def plot_label_time_course(name, save_dir, highpass, lowpass, subtomri,
                            subjects_dir, inverse_method, source_space_method,
                            target_labels, save_plots, figures_path,
@@ -884,7 +884,7 @@ def plot_label_time_course(name, save_dir, highpass, lowpass, subtomri,
 
 
 
-@decor.topline
+@topline
 def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcellation,
                            baseline, tfr_freqs, save_plots, figures_path, n_jobs,
                            target_labels, event_id):
@@ -952,7 +952,7 @@ def plot_label_power_phlck(name, save_dir, highpass, lowpass, subtomri, parcella
                     print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_grand_avg_label_power(grand_avg_dict, event_id, target_labels,
                                save_dir_averages, tfr_freqs, t_epoch, highpass,
                                lowpass, save_plots, figures_path):
@@ -1038,7 +1038,7 @@ def plot_grand_avg_label_power(grand_avg_dict, event_id, target_labels,
 #                            c_cnt += 1
 #                        r_cnt += 1
 
-@decor.topline
+@topline
 def plot_source_space_connectivity(name, save_dir, highpass, lowpass,
                                    subtomri, subjects_dir, parcellation,
                                    target_labels, con_methods, con_fmin,
@@ -1107,7 +1107,7 @@ def plot_source_space_connectivity(name, save_dir, highpass, lowpass,
 
 
 # %% Grand-Average Plots
-@decor.topline
+@topline
 def plot_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
                            event_id, save_plots, figures_path):
     ga_dict = loading.read_grand_avg_evokeds(highpass, lowpass, save_dir_averages,
@@ -1127,7 +1127,7 @@ def plot_grand_avg_evokeds(highpass, lowpass, save_dir_averages, grand_avg_dict,
                 print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_grand_avg_tfr(highpass, lowpass, baseline, t_epoch,
                        save_dir_averages, grand_avg_dict,
                        event_id, save_plots, figures_path):
@@ -1191,7 +1191,7 @@ def plot_grand_avg_tfr(highpass, lowpass, baseline, t_epoch,
             close_all()
 
 
-@decor.topline
+@topline
 def plot_grand_avg_stc(highpass, lowpass, save_dir_averages,
                        grand_avg_dict, mne_evoked_time, morph_to,
                        subjects_dir, event_id, save_plots,
@@ -1220,7 +1220,7 @@ def plot_grand_avg_stc(highpass, lowpass, save_dir_averages,
                     print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_grand_avg_stc_normal(highpass, lowpass, save_dir_averages,
                               grand_avg_dict, mne_evoked_time, morph_to,
                               subjects_dir, event_id, save_plots,
@@ -1249,7 +1249,7 @@ def plot_grand_avg_stc_normal(highpass, lowpass, save_dir_averages,
                     print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def plot_grand_avg_stc_anim(highpass, lowpass, save_dir_averages,
                             grand_avg_dict, stc_animation,
                             morph_to, subjects_dir, event_id,
@@ -1274,7 +1274,7 @@ def plot_grand_avg_stc_anim(highpass, lowpass, save_dir_averages,
             mlab.close()
 
 
-@decor.topline
+@topline
 def plot_grand_avg_connect(highpass, lowpass, save_dir_averages,
                            grand_avg_dict, subjects_dir, morph_to, parcellation, con_methods, con_fmin, con_fmax,
                            save_plots, figures_path, event_id,
@@ -1350,7 +1350,7 @@ def plot_grand_avg_connect(highpass, lowpass, save_dir_averages,
             close_all()
 
 
-@decor.topline
+@topline
 def plot_grand_averages_source_estimates_cluster_masked(name,
                                                         save_dir_averages, highpass, lowpass,
                                                         subjects_dir, inverse_method, time_window,
@@ -1434,7 +1434,7 @@ def plot_grand_averages_source_estimates_cluster_masked(name,
         print('Not saving plots; set "save_plots" to "True" to save')
 
 
-@decor.topline
+@topline
 def close_all():
     plt.close('all')
     mlab.close(all=True)

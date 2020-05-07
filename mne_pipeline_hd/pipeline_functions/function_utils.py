@@ -133,10 +133,6 @@ class FunctionWorker(Worker):
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
         # from matplotlib, as you can set the backend only once there This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
-
-        # self.mw.mw_signals.cancel_functions.connect(self.check_cancel_functions)
-        # self.mw.mw_signals.plot_running.connect(self.check_plot_running)
-
         if not self.mw.pr.parameters['show_plots']:
             matplotlib.use('agg')
         elif ismac:
@@ -987,6 +983,9 @@ class SavePkgDialog(QDialog):
             copy_modules.add(self.cf.path_dict[func])
         if not isdir(self.pkg_path):
             mkdir(self.pkg_path)
+        # Create __init__.py to make it a package
+        with open(join(self.pkg_path, '__init__.py'), 'w') as f:
+            f.write('')
         for ori_path in copy_modules:
             shutil.copy2(ori_path, join(self.pkg_path, Path(ori_path).name))
         # Drop all functions with unfinished setup and add them to the main_window-DataFrame

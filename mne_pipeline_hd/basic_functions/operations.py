@@ -26,7 +26,8 @@ from nilearn.plotting import plot_anat
 from scipy import stats
 
 from mne_pipeline_hd.basic_functions import loading, plot as plot
-from mne_pipeline_hd.pipeline_functions import decorators as decor, iswin, pipeline_utils as ut
+from mne_pipeline_hd.pipeline_functions import iswin, pipeline_utils as ut
+from mne_pipeline_hd.pipeline_functions.decorators import small_func, topline
 
 
 # Todo: Change normal comments to docstrings
@@ -48,7 +49,7 @@ def filter_string(highpass, lowpass):
 # ==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
-@decor.topline
+@topline
 def filter_raw(name, save_dir, highpass, lowpass, ermsub,
                data_path, n_jobs, enable_cuda, bad_channels, erm_t_limit,
                enable_ica):
@@ -116,8 +117,8 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
         print('no erm_file assigned')
 
 
-@decor.topline
-def find_events(name, save_dir, adjust_timeline_by_msec, overwrite):
+@topline
+def pipe_find_events(name, save_dir, adjust_timeline_by_msec, overwrite):
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
 
@@ -239,7 +240,7 @@ def find_events(name, save_dir, adjust_timeline_by_msec, overwrite):
         print('event file: ' + events_path + ' already exists')
 
 
-@decor.topline
+@topline
 def find_eog_events(name, save_dir, eog_channel):
     eog_events_name = name + '_eog-eve.fif'
     eog_events_path = join(save_dir, eog_events_name)
@@ -251,7 +252,7 @@ def find_eog_events(name, save_dir, eog_channel):
     print(f'{np.size(eog_events)} detected')
 
 
-@decor.topline
+@topline
 def epoch_raw(name, save_dir, highpass, lowpass, event_id, t_epoch,
               baseline, reject, flat, autoreject, overwrite_ar,
               pscripts_path, bad_channels, decim,
@@ -327,7 +328,7 @@ def epoch_raw(name, save_dir, highpass, lowpass, event_id, t_epoch,
 
 
 # TODO: Organize run_ica properly
-@decor.topline
+@topline
 def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
             reject, flat, bad_channels, overwrite, autoreject,
             save_plots, figures_path, pscripts_path):
@@ -590,7 +591,7 @@ def run_ica(name, save_dir, highpass, lowpass, eog_channel, ecg_channel,
         print('ica file: ' + ica_path + ' already exists')
 
 
-@decor.topline
+@topline
 def apply_ica(name, save_dir, highpass, lowpass, overwrite):
     ica_epochs_name = name + filter_string(highpass, lowpass) + '-ica-epo.fif'
     ica_epochs_path = join(save_dir, ica_epochs_name)
@@ -610,7 +611,7 @@ def apply_ica(name, save_dir, highpass, lowpass, overwrite):
         print('ica epochs file: ' + ica_epochs_path + ' already exists')
 
 
-@decor.topline
+@topline
 def autoreject_interpolation(name, save_dir, highpass, lowpass, enable_ica):
     if enable_ica:
         ica_epochs_name = name + filter_string(highpass, lowpass) + '-ica-epo.fif'
@@ -628,7 +629,7 @@ def autoreject_interpolation(name, save_dir, highpass, lowpass, enable_ica):
     epochs_clean.save(save_path, overwrite=True)
 
 
-@decor.topline
+@topline
 def get_evokeds(name, save_dir, highpass, lowpass, enable_ica, overwrite):
     evokeds_name = name + filter_string(highpass, lowpass) + '-ave.fif'
     evokeds_path = join(save_dir, evokeds_name)
@@ -652,7 +653,7 @@ def get_evokeds(name, save_dir, highpass, lowpass, enable_ica, overwrite):
         print('evokeds file: ' + evokeds_path + ' already exists')
 
 
-@decor.small_func
+@small_func
 def calculate_gfp(evoked):
     d = evoked.data
     gfp = np.sqrt((d * d).mean(axis=0))
@@ -660,7 +661,7 @@ def calculate_gfp(evoked):
     return gfp
 
 
-@decor.topline
+@topline
 def grand_avg_evokeds(data_path, grand_avg_dict, sel_ga_groups, save_dir_averages,
                       highpass, lowpass):
     for key in grand_avg_dict:
@@ -692,7 +693,7 @@ def grand_avg_evokeds(data_path, grand_avg_dict, sel_ga_groups, save_dir_average
                     ga.save(ga_path)
 
 
-@decor.topline
+@topline
 def tfr(name, save_dir, highpass, lowpass, enable_ica, tfr_freqs, overwrite_tfr,
         tfr_method, multitaper_bandwith, stockwell_width, n_jobs):
     power_name = name + filter_string(highpass, lowpass) + '_' + tfr_method + '_pw-tfr.h5'
@@ -742,7 +743,7 @@ def tfr(name, save_dir, highpass, lowpass, enable_ica, tfr_freqs, overwrite_tfr,
         mne.time_frequency.write_tfrs(itc_path, itcs, overwrite=True)
 
 
-@decor.topline
+@topline
 def grand_avg_tfr(data_path, grand_avg_dict, save_dir_averages,
                   highpass, lowpass, tfr_method):
     for key in grand_avg_dict:
@@ -911,7 +912,7 @@ def make_dense_scalp_surfaces(mri_subject, subjects_dir, overwrite):
 # ==============================================================================
 # MNE SOURCE RECONSTRUCTIONS
 # ==============================================================================
-@decor.topline
+@topline
 def setup_src(mri_subject, subjects_dir, source_space_method, n_jobs,
               overwrite):
     src_name = mri_subject + '_' + source_space_method + '-src.fif'
@@ -924,7 +925,7 @@ def setup_src(mri_subject, subjects_dir, source_space_method, n_jobs,
         src.save(src_path, overwrite=True)
 
 
-@decor.topline
+@topline
 def compute_src_distances(mri_subject, subjects_dir, source_space_method,
                           n_jobs):
     src = loading.read_source_space(mri_subject, subjects_dir, source_space_method)
@@ -936,7 +937,7 @@ def compute_src_distances(mri_subject, subjects_dir, source_space_method,
     src_computed.save(src_path, overwrite=True)
 
 
-@decor.topline
+@topline
 def prepare_bem(mri_subject, subjects_dir):
     bem_model_name = mri_subject + '-bem.fif'
     bem_model_path = join(subjects_dir, mri_subject, 'bem', bem_model_name)
@@ -951,7 +952,7 @@ def prepare_bem(mri_subject, subjects_dir):
     print(solution_path + ' written')
 
 
-@decor.topline
+@topline
 def setup_vol_src(mri_subject, subjects_dir):
     bem = loading.read_bem_solution(mri_subject, subjects_dir)
     vol_src = mne.setup_volume_source_space(mri_subject, bem=bem, pos=5.0, subjects_dir=subjects_dir)
@@ -960,7 +961,7 @@ def setup_vol_src(mri_subject, subjects_dir):
     vol_src.save(vol_src_path, overwrite=True)
 
 
-@decor.topline
+@topline
 def morph_subject(mri_subject, subjects_dir, morph_to, source_space_method,
                   overwrite):
     morph_name = mri_subject + '--to--' + morph_to + '-' + source_space_method
@@ -976,7 +977,7 @@ def morph_subject(mri_subject, subjects_dir, morph_to, source_space_method,
         print(f'{morph_path} written')
 
 
-@decor.topline
+@topline
 def morph_labels_from_fsaverage(mri_subject, subjects_dir, overwrite):
     parcellations = ['aparc_sub', 'HCPMMP1_combined', 'HCPMMP1']
     if not isfile(join(subjects_dir, 'fsaverage/label',
@@ -1004,7 +1005,7 @@ def morph_labels_from_fsaverage(mri_subject, subjects_dir, overwrite):
         print(f'{parcellations} already exist')
 
 
-@decor.topline
+@topline
 def create_forward_solution(name, save_dir, subtomri, subjects_dir,
                             source_space_method, overwrite, n_jobs, eeg_fwd):
     forward_name = name + '-fwd.fif'
@@ -1026,7 +1027,7 @@ def create_forward_solution(name, save_dir, subtomri, subjects_dir,
         print('forward solution: ' + forward_path + ' already exists')
 
 
-@decor.topline
+@topline
 def estimate_noise_covariance(name, save_dir, highpass, lowpass,
                               overwrite, ermsub, data_path, baseline,
                               bad_channels, n_jobs, erm_noise_cov,
@@ -1096,7 +1097,7 @@ def estimate_noise_covariance(name, save_dir, highpass, lowpass,
                   ' already exists')
 
 
-@decor.topline
+@topline
 def create_inverse_operator(name, save_dir, highpass, lowpass,
                             overwrite, ermsub, calm_noise_cov, erm_noise_cov):
     inverse_operator_name = name + filter_string(highpass, lowpass) + '-inv.fif'
@@ -1120,7 +1121,7 @@ def create_inverse_operator(name, save_dir, highpass, lowpass,
 
 
 # noinspection PyShadowingNames
-@decor.topline
+@topline
 def source_estimate(name, save_dir, highpass, lowpass, inverse_method, overwrite):
     inverse_operator = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
@@ -1151,7 +1152,7 @@ def source_estimate(name, save_dir, highpass, lowpass, inverse_method, overwrite
                   ' already exists')
 
 
-@decor.topline
+@topline
 def vector_source_estimate(name, save_dir, highpass, lowpass, inverse_method, overwrite):
     inverse_operator = loading.read_inverse_operator(name, save_dir, highpass, lowpass)
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
@@ -1173,7 +1174,7 @@ def vector_source_estimate(name, save_dir, highpass, lowpass, inverse_method, ov
             print('vector source estimates for: ' + name + ' already exists')
 
 
-@decor.topline
+@topline
 def mixed_norm_estimate(name, save_dir, highpass, lowpass, inverse_method, erm_noise_cov,
                         ermsub, calm_noise_cov, event_id, mixn_dip, overwrite):
     evokeds = loading.read_evokeds(name, save_dir, highpass, lowpass)
@@ -1243,7 +1244,7 @@ def mixed_norm_estimate(name, save_dir, highpass, lowpass, inverse_method, erm_n
 
 
 # Todo: Separate Plot-Functions (better responsivness of GUI during fit, when running in QThread)
-@decor.topline
+@topline
 def ecd_fit(name, save_dir, highpass, lowpass, ermsub, subjects_dir,
             subtomri, erm_noise_cov, calm_noise_cov, ecds, save_plots, figures_path):
     try:
@@ -1328,7 +1329,7 @@ def ecd_fit(name, save_dir, highpass, lowpass, ermsub, subjects_dir,
 
 
 # Todo: Not working, needs work (maybe shift in MNE-Examples-Package)
-@decor.topline
+@topline
 def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
                       subtomri, target_labels, parcellation, event_id, n_jobs,
                       save_plots, figures_path):
@@ -1431,7 +1432,7 @@ def label_power_phlck(name, save_dir, highpass, lowpass, baseline, tfr_freqs,
                 plot.close_all()
 
 
-@decor.topline
+@topline
 def apply_morph(name, save_dir, highpass, lowpass, subjects_dir, subtomri,
                 inverse_method, overwrite, morph_to, source_space_method,
                 event_id):
@@ -1453,7 +1454,7 @@ def apply_morph(name, save_dir, highpass, lowpass, subjects_dir, subtomri,
                   ' already exists')
 
 
-@decor.topline
+@topline
 def apply_morph_normal(name, save_dir, highpass, lowpass, subjects_dir, subtomri,
                        inverse_method, overwrite, morph_to, source_space_method,
                        event_id):
@@ -1475,7 +1476,7 @@ def apply_morph_normal(name, save_dir, highpass, lowpass, subjects_dir, subtomri
                   ' already exists')
 
 
-@decor.topline
+@topline
 def source_space_connectivity(name, save_dir, highpass, lowpass,
                               subtomri, subjects_dir, parcellation,
                               target_labels, con_methods, con_fmin, con_fmax,
@@ -1535,7 +1536,7 @@ def source_space_connectivity(name, save_dir, highpass, lowpass,
                       ' already exists')
 
 
-@decor.topline
+@topline
 def grand_avg_morphed(grand_avg_dict, sel_ga_groups, data_path, inverse_method, save_dir_averages,
                       highpass, lowpass, event_id):
     # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
@@ -1597,7 +1598,7 @@ def grand_avg_morphed(grand_avg_dict, sel_ga_groups, data_path, inverse_method, 
             gc.collect()
 
 
-@decor.topline
+@topline
 def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir_averages,
                              highpass, lowpass, event_id):
     # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
@@ -1658,7 +1659,7 @@ def grand_avg_normal_morphed(grand_avg_dict, data_path, inverse_method, save_dir
         gc.collect()
 
 
-@decor.topline
+@topline
 def grand_avg_label_power(grand_avg_dict, event_id,
                           data_path, highpass, lowpass,
                           target_labels, save_dir_averages):
@@ -1709,7 +1710,7 @@ def grand_avg_label_power(grand_avg_dict, event_id,
                     np.save(itc_ga_path, itc_average)
 
 
-@decor.topline
+@topline
 def grand_avg_connect(grand_avg_dict, data_path, con_methods,
                       con_fmin, con_fmax, save_dir_averages,
                       highpass, lowpass, event_id):
@@ -1752,7 +1753,7 @@ def grand_avg_connect(grand_avg_dict, data_path, con_methods,
 # ==============================================================================
 # STATISTICS
 # ==============================================================================
-@decor.topline
+@topline
 def statistics_source_space(morphed_data_all, save_dir_averages,
                             independent_variable_1,
                             independent_variable_2,

@@ -162,8 +162,12 @@ class MyProject:
             try:
                 with open(path, 'r') as file:
                     setattr(self, load_dict[path], json.load(file))
+            # Either empty file or no file
             except json.decoder.JSONDecodeError:
-                pass
+                if 'dict' in path:
+                    setattr(self, load_dict[path], {})
+                else:
+                    setattr(self, load_dict[path], [])
 
         self.sel_files = self.mw.settings.value('sel_files', defaultValue=[])
         self.sel_mri_files = self.mw.settings.value('sel_mri_files', defaultValue=[])

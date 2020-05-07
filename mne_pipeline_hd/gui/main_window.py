@@ -8,6 +8,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 """
 import logging
 import os
+import re
 import shutil
 import sys
 import traceback
@@ -144,32 +145,49 @@ class MainWindow(QMainWindow):
         width = self.desk_geometry.width() * self.size_ratio
         self.setGeometry(0, 0, width, height)
 
+    # Todo: Import (maybe as custom-packages), which makes import across custom-packages possible
     def import_func_modules(self):
         """
         Load all modules in basic_functions and custom_functions
         """
         basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
         self.all_modules = {}
+        self.custom_packages = {}
         # Load basic-modules
         for module_name in basic_functions_list:
             self.all_modules[module_name] = getattr(basic_functions, module_name)
         # Load custom_modules
+        pd_functions_pattern = r'.*_functions\.csv'
+        pd_parameters_pattern = r'.*_parameters\.csv'
+        custom_module_pattern = r'(.+)(\.py)'
         for dir_path, dir_names, file_names in os.walk(self.pr.custom_pkg_path):
             for file_name in file_names:
-                if '.csv' in file_name and 'function' in file_name:
+                functions_match = re.match(pd_functions_pattern, file_name)
+                parameters_match = re.match(pd_parameters_pattern, file_name)
+                custom_module_match = re.match(custom_module_pattern, file_name)
+                if functions_match:
                     read_pd_funcs = pd.read_csv(join(dir_path, file_name), sep=';', index_col=0)
                     for idx in [ix for ix in read_pd_funcs.index if ix not in self.pd_funcs.index]:
                         self.pd_funcs = self.pd_funcs.append(read_pd_funcs.loc[idx])
-                elif '.csv' in file_name and 'parameters' in file_name:
+                elif parameters_match:
                     read_pd_params = pd.read_csv(join(dir_path, file_name), sep=';', index_col=0)
                     for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
                         self.pd_params = self.pd_params.append(read_pd_params.loc[idx])
-                elif file_name != '.DS_Store':
-                    spec = util.spec_from_file_location(file_name, join(dir_path, file_name))
-                    module = util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    module_name = Path(file_name).stem
-                    self.all_modules[module_name] = module
+                elif custom_module_match:
+                    module_name = custom_module_match.group(1)
+                    if module_name != '__init__':
+                        spec = util.spec_from_file_location(file_name, join(dir_path, file_name))
+                        module = util.module_from_spec(spec)
+                        spec.loader.exec_module(module)
+                        # Add Module to dictionary
+                        self.all_modules[module_name] = module
+                        # Assign Module-Names to their Package
+                        if dir_path != self.pr.custom_pkg_path:
+                            pkg_name = Path(dir_path).name
+                            if pkg_name in self.custom_packages:
+                                self.custom_packages[pkg_name].append(module_name)
+                            else:
+                                self.custom_packages.update({pkg_name: [module_name]})
 
     def make_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
@@ -321,15 +339,9 @@ class MainWindow(QMainWindow):
             self.pr.home_path = new_home_path
             self.settings.setValue('home_path', self.pr.home_path)
             self.pr.get_paths()
-            self.pr.make_paths()
-            self.pr.load_parameters()
-            self.qall_parameters.update_all_param_guis()
-            self.pr.populate_directories()
-            self.pr.load_sub_lists()
             self.update_project_box()
-            self.subject_dock.update_subjects_list()
+            self.change_project(self.pr.projects[0])
             self.subject_dock.update_mri_subjects_list()
-            self.subject_dock.ga_widget.update_treew()
 
     def add_project(self):
         # First save the former projects-data
@@ -344,16 +356,11 @@ class MainWindow(QMainWindow):
             self.settings.setValue('project_name', self.pr.project_name)
             self.project_box.addItem(project)
             self.project_box.setCurrentText(project)
-            self.pr.make_paths()
-            self.pr.load_parameters()
-            self.pr.populate_directories()
-            self.pr.load_sub_lists()
-            self.update_project_box()
-            self.subject_dock.update_subjects_list()
-            self.subject_dock.ga_widget.update_treew()
+            self.change_project(project)
         else:
             pass
-
+    # Todo: Weird behaviour when changing and deleting projects (project remains in combobox, all_files is somehow
+    #  transferred to new project)
     def remove_project(self):
         # First save the former projects-data
         self.pr.save_sub_lists()
@@ -382,14 +389,20 @@ class MainWindow(QMainWindow):
             for rm_project in rm_list:
                 plistw.takeItem(plistw.row(plistw.findItems(rm_project, Qt.MatchExactly)[0]))
                 self.pr.projects.remove(rm_project)
-                shutil.rmtree(join(self.pr.home_path, rm_project))
-            self.update_project_box()
+                self.project_box.removeItem(self.project_box.findText(rm_project, Qt.MatchExactly))
+                if rm_project == self.pr.project_name:
+                    self.change_project(self.pr.projects[0])
+                    self.project_box.setCurrentText(self.pr.projects[0])
+                try:
+                    shutil.rmtree(join(self.pr.projects_path, rm_project))
+                except OSError:
+                    pass
 
         bt_layout = QHBoxLayout()
-        rm_bt = QPushButton('Remove', self)
+        rm_bt = QPushButton('Remove')
         rm_bt.clicked.connect(remove_selected)
         bt_layout.addWidget(rm_bt)
-        close_bt = QPushButton('Close', self)
+        close_bt = QPushButton('Close')
         close_bt.clicked.connect(dialog.close)
         bt_layout.addWidget(close_bt)
         layout.addLayout(bt_layout)
@@ -403,7 +416,7 @@ class MainWindow(QMainWindow):
         for project in self.pr.projects:
             self.project_box.addItem(project)
         self.project_box.setCurrentText(self.pr.project_name)
-        self.project_box.currentTextChanged.connect(self.project_changed)
+        self.project_box.activated.connect(self.project_changed)
         proj_box_label = QLabel('<b>Project: <b>')
         self.toolbar.addWidget(proj_box_label)
         self.toolbar.addWidget(self.project_box)
@@ -416,24 +429,29 @@ class MainWindow(QMainWindow):
         arm.triggered.connect(self.remove_project)
         self.toolbar.addAction(arm)
 
-    def project_changed(self, project):
-        if project != '':
-            # First save the former projects-data
-            self.pr.save_sub_lists()
-            self.pr.save_parameters()
+    def project_changed(self, idx):
+        # First save the former projects-data
+        self.pr.save_sub_lists()
+        self.pr.save_parameters()
 
-            self.pr.project_name = project
-            self.settings.setValue('project_name', self.pr.project_name)
-            print(f'{self.pr.project_name} selected')
+        self.change_project(self.project_box.itemText(idx))
 
-            self.pr.make_paths()
-            self.pr.load_parameters()
-            self.qall_parameters.update_all_param_guis()
-            self.pr.populate_directories()
+    def change_project(self, project):
+        self.pr.project_name = project
+        self.settings.setValue('project_name', self.pr.project_name)
+        print(f'{self.pr.project_name} selected')
 
-            self.pr.load_sub_lists()
-            self.subject_dock.update_subjects_list()
-            self.subject_dock.ga_widget.update_treew()
+        # Set new logging
+        logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
+
+        self.pr.make_paths()
+        self.pr.load_parameters()
+        self.qall_parameters.update_all_param_guis()
+        self.pr.populate_directories()
+
+        self.pr.load_sub_lists()
+        self.subject_dock.update_subjects_list()
+        self.subject_dock.ga_widget.update_treew()
 
     def update_project_box(self):
         self.project_box.clear()

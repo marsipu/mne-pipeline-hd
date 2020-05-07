@@ -8,7 +8,7 @@ setup_vol_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operat
 morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,morph_to,source_space_method,overwrite
 morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,overwrite
 filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,ermsub,bad_channels,data_path,highpass,lowpass,n_jobs,enable_cuda,erm_t_limit,enable_ica
-find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,adjust_timeline_by_msec,overwrite
+pipe_find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,adjust_timeline_by_msec,overwrite
 find_eog_events;;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,eog_channel
 epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,bad_channels,pscripts_path,highpass,lowpass,event_id,t_epoch,baseline,reject,flat,autoreject,overwrite_ar,decim,reject_eog_epochs,overwrite
 run_ica;;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,bad_channels,figures_path,pscripts_path,highpass,lowpass,eog_channel,ecg_channel,reject,flat,overwrite,autoreject,save_plots

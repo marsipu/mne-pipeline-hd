@@ -296,10 +296,7 @@ class SubjectDock(QDockWidget):
 
     def update_mri_subjects_list(self):
         # Also get all freesurfe-directories from Freesurfer-Folder (maybe user added some manually)
-        existing_dirs = get_existing_mri_subjects(self.mw.pr.subjects_dir)
-        for edir in existing_dirs:
-            if edir not in self.mw.pr.all_mri_subjects:
-                self.mw.pr.all_mri_subjects.append(edir)
+        self.mw.pr.all_mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
         self.mri_listw.clear()
         for idx, file in enumerate(self.mw.pr.all_mri_subjects):
             idx += 1  # Let index start with 1
