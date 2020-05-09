@@ -118,7 +118,7 @@ def filter_raw(name, save_dir, highpass, lowpass, ermsub,
 
 
 @topline
-def pipe_find_events(name, save_dir, adjust_timeline_by_msec, overwrite):
+def find_events(name, save_dir, adjust_timeline_by_msec, overwrite):
     events_name = name + '-eve.fif'
     events_path = join(save_dir, events_name)
 
