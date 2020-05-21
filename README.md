@@ -17,7 +17,7 @@ I would recommend to install in a separate conda environment with:
 Just run `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/master` again
 
 ## Start
-Run `python -m mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_pipeline`)
+Run `python mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_pipeline`)
 
 **or**
 
