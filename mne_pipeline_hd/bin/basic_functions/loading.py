@@ -14,7 +14,7 @@ from os.path import join
 import mne
 import numpy as np
 
-from mne_pipeline_hd.basic_functions import operations as op
+from bin.basic_functions import operations as op
 
 
 # ==============================================================================

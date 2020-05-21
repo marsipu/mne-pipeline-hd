@@ -11,8 +11,8 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
-from mne_pipeline_hd.gui import main_window
-from mne_pipeline_hd.pipeline_functions import ismac
+from bin.gui import main_window
+from bin.pipeline_functions import ismac
 
 
 def main():

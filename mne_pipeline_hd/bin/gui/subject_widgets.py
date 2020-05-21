@@ -28,8 +28,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
                              QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
-from mne_pipeline_hd.basic_functions import loading
-from mne_pipeline_hd.gui.qt_utils import (ErrorDialog, OutputStream, Worker)
+from bin.basic_functions import loading
+from bin.gui.qt_utils import (ErrorDialog, OutputStream, Worker)
 
 
 # Todo: Adapt File-Structure to (MEG)-BIDS-Standards

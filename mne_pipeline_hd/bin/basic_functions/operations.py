@@ -25,9 +25,10 @@ from matplotlib import pyplot as plt
 from nilearn.plotting import plot_anat
 from scipy import stats
 
-from mne_pipeline_hd.basic_functions import loading, plot as plot
-from mne_pipeline_hd.pipeline_functions import iswin, pipeline_utils as ut
-from mne_pipeline_hd.pipeline_functions.decorators import small_func, topline
+from bin.basic_functions import loading
+from bin.basic_functions import plot as plot
+from bin.pipeline_functions import iswin, pipeline_utils as ut
+from bin.pipeline_functions.decorators import small_func, topline
 
 
 # Todo: Change normal comments to docstrings

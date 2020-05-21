@@ -19,8 +19,8 @@ from mayavi import mlab
 from scipy import stats
 from surfer import Brain
 
-from mne_pipeline_hd.basic_functions import loading, operations as op
-from mne_pipeline_hd.pipeline_functions.decorators import topline
+from bin.basic_functions import loading, operations as op
+from bin.pipeline_functions.decorators import topline
 
 
 # ==============================================================================

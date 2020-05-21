@@ -31,16 +31,15 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 from mayavi import mlab
 
-from mne_pipeline_hd import basic_functions
-from mne_pipeline_hd import resources
-from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.qt_utils import ErrorDialog, OutputStream
-from mne_pipeline_hd.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
-                                                 SubjectDock,
-                                                 SubjectWizard)
-from mne_pipeline_hd.pipeline_functions import iswin
-from mne_pipeline_hd.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, func_from_def)
-from mne_pipeline_hd.pipeline_functions.project import MyProject
+from bin import basic_functions, resources
+from bin.gui import parameter_widgets
+from bin.gui.qt_utils import ErrorDialog, OutputStream
+from bin.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
+                                     SubjectDock,
+                                     SubjectWizard)
+from bin.pipeline_functions import iswin
+from bin.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, func_from_def)
+from bin.pipeline_functions.project import MyProject
 
 
 def get_upstream():

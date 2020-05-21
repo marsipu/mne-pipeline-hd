@@ -14,7 +14,7 @@ from os.path import exists, isdir, isfile, join
 import mne
 from PyQt5.QtWidgets import QFileDialog, QInputDialog, QMessageBox
 
-from mne_pipeline_hd.gui import subject_widgets as subs
+from bin.gui import subject_widgets as subs
 
 
 class MyProject:
