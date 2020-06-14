@@ -33,7 +33,7 @@ from mayavi import mlab
 
 from bin import basic_functions, resources
 from bin.gui import parameter_widgets
-from bin.gui.qt_utils import ErrorDialog, OutputStream
+from bin.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
 from bin.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                                      SubjectDock,
                                      SubjectWizard)
@@ -84,8 +84,8 @@ class MainWindow(QMainWindow):
         self.dark_sheet = qdarkstyle.load_stylesheet_pyqt5()
 
         # Attributes for class-methods
-        self.subject = None
         self.mw_signals = MainWinSignals()
+        self.module_err_dlg = None
         self.func_dict = dict()
         self.bt_dict = dict()
 
@@ -105,8 +105,14 @@ class MainWindow(QMainWindow):
         # Import the basic- and custom-function-modules
         self.import_func_modules()
 
+        # Load last parameter-preset
+        self.pr.p_preset = self.settings.value('parameter_preset') or 'Default'
+        if self.pr.p_preset not in self.pr.parameters:
+            self.pr.p_preset = 'Default'
         # Load project-parameters after import of func_modules
         self.pr.load_parameters()
+        # Load file_parameters-Data-Frame, because it needs the loaded parameters
+        self.pr.load_file_parameters()
         # After load_parameters, because event-id is needed
         self.pr.populate_directories()
 
@@ -132,7 +138,7 @@ class MainWindow(QMainWindow):
         self.make_menu()
         self.add_dock_windows()
         self.make_toolbar()
-        self.make_statusbar()
+        self.update_statusbar()
         self.make_func_bts()
         self.add_parameter_gui_tab()
         self.add_main_bts()
@@ -177,16 +183,22 @@ class MainWindow(QMainWindow):
                     if module_name != '__init__':
                         spec = util.spec_from_file_location(file_name, join(dir_path, file_name))
                         module = util.module_from_spec(spec)
-                        spec.loader.exec_module(module)
-                        # Add Module to dictionary
-                        self.all_modules[module_name] = module
-                        # Assign Module-Names to their Package
-                        if dir_path != self.pr.custom_pkg_path:
-                            pkg_name = Path(dir_path).name
-                            if pkg_name in self.custom_packages:
-                                self.custom_packages[pkg_name].append(module_name)
-                            else:
-                                self.custom_packages.update({pkg_name: [module_name]})
+                        try:
+                            spec.loader.exec_module(module)
+                        except:
+                            exc_tuple = get_exception_tuple()
+                            self.module_err_dlg = ErrorDialog(self, exc_tuple,
+                                                              title=f'Error in custom-module: {module_name}')
+                        else:
+                            # Add Module to dictionary
+                            self.all_modules[module_name] = module
+                            # Assign Module-Names to their Package
+                            if dir_path != self.pr.custom_pkg_path:
+                                pkg_name = Path(dir_path).name
+                                if pkg_name in self.custom_packages:
+                                    self.custom_packages[pkg_name].append(module_name)
+                                else:
+                                    self.custom_packages.update({pkg_name: [module_name]})
 
     def make_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
@@ -263,13 +275,6 @@ class MainWindow(QMainWindow):
         self.project_tools()
         self.toolbar.addSeparator()
 
-        self.pr.parameters.update({'n_jobs': -1})
-        self.pr.parameters.update({'show_plots': False})
-        self.pr.parameters.update({'save_plots': True})
-        self.pr.parameters.update({'overwrite': True})
-        self.pr.parameters.update({'enable_cuda': False})
-        self.pr.parameters.update({'shutdown': False})
-
         self.toolbar.addWidget(QLabel('n_jobs: '))
         self.n_jobs_sb = QSpinBox(self)
         self.n_jobs_sb.setMinimum(0)
@@ -309,18 +314,19 @@ class MainWindow(QMainWindow):
     def n_jobs_changed(self, value):
         # In MNE-Python -1 is automatic, for SpinBox 0 is already auto
         if value == 0:
-            self.pr.parameters['n_jobs'] = -1
+            self.pr.parameters[self.pr.p_preset]['n_jobs'] = -1
         else:
-            self.pr.parameters['n_jobs'] = value
+            self.pr.parameters[self.pr.p_preset]['n_jobs'] = value
         self.qall_parameters.update_param_gui('n_jobs')
 
     def chkbx_changed(self, chkbx, param):
-        self.pr.parameters[param] = chkbx.isChecked()
+        self.pr.parameters[self.pr.p_preset][param] = chkbx.isChecked()
         self.qall_parameters.update_param_gui(param)
 
     # Todo: Statusbar with purpose
-    def make_statusbar(self):
-        self.statusBar().showMessage('Ready')
+    def update_statusbar(self):
+        self.statusBar().showMessage(f'Home-Path: {self.pr.home_path}, Project: {self.pr.project_name},'
+                                     f'Parameter-Preset: {self.pr.p_preset}')
 
     def add_dock_windows(self):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
@@ -332,7 +338,7 @@ class MainWindow(QMainWindow):
         self.pr.save_parameters()
 
         new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
-        if new_home_path is '':
+        if new_home_path == '':
             pass
         else:
             self.pr.home_path = new_home_path
@@ -347,7 +353,7 @@ class MainWindow(QMainWindow):
         self.pr.save_sub_lists()
         self.pr.save_parameters()
 
-        project, ok = QInputDialog.getText(self, 'Project-Selection',
+        project, ok = QInputDialog.getText(self, 'New Project',
                                            'Enter a project-name for a new project')
         if ok:
             self.pr.project_name = project
@@ -358,8 +364,8 @@ class MainWindow(QMainWindow):
             self.change_project(project)
         else:
             pass
-    # Todo: Weird behaviour when changing and deleting projects (project remains in combobox, all_files is somehow
-    #  transferred to new project)
+
+    # Todo: Replace with Model/View-Template
     def remove_project(self):
         # First save the former projects-data
         self.pr.save_sub_lists()
@@ -368,7 +374,7 @@ class MainWindow(QMainWindow):
         dialog = QDialog(self)
         dialog.setWindowTitle('Remove Project')
         layout = QVBoxLayout()
-        layout.addWidget(QLabel('Select Project for Removal'))
+        layout.addWidget(QLabel('Select Project for removal'))
 
         plistw = QListWidget(self)
         for project in self.pr.projects:
@@ -437,6 +443,7 @@ class MainWindow(QMainWindow):
 
     def change_project(self, project):
         self.pr.project_name = project
+        self.pr.p_preset = 'Default'
         self.settings.setValue('project_name', self.pr.project_name)
         print(f'{self.pr.project_name} selected')
 
@@ -451,6 +458,8 @@ class MainWindow(QMainWindow):
         self.pr.load_sub_lists()
         self.subject_dock.update_subjects_list()
         self.subject_dock.ga_widget.update_treew()
+
+        self.update_statusbar()
 
     def update_project_box(self):
         self.project_box.clear()
@@ -497,10 +506,17 @@ class MainWindow(QMainWindow):
             self.showMinimized()
             self.setWindowState(Qt.WindowActive)
             self.showNormal()
+            if self.module_err_dlg:
+                self.module_err_dlg.showMinimized()
+                self.module_err_dlg.setWindowState(Qt.WindowActive)
+                self.module_err_dlg.showNormal()
         else:
             # on osx we can raise the window. on unity the icon in the tray will just flash.
             self.activateWindow()
             self.raise_()
+            if self.module_err_dlg:
+                self.module_err_dlg.activateWindow()
+                self.module_err_dlg.raise_()
 
     def change_style(self, style_name):
         self.app.setStyle(QStyleFactory.create(style_name))
@@ -582,11 +598,110 @@ class MainWindow(QMainWindow):
             else:
                 self.func_dict[function] = 0
 
+    # Todo: Replace with Model/View-Template
     def add_parameter_gui_tab(self):
-        tab = QScrollArea()
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Add Parameter-Preset-Combobox
+        sublayout = QHBoxLayout()
+        p_preset_l = QLabel('Parameter-Presets: ')
+        sublayout.addWidget(p_preset_l)
+        self.p_preset_cmbx = QComboBox()
+        self.p_preset_cmbx.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        for p_preset in self.pr.parameters:
+            self.p_preset_cmbx.addItem(p_preset)
+        self.p_preset_cmbx.activated.connect(self.p_preset_changed)
+        sublayout.addWidget(self.p_preset_cmbx)
+
+        add_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
+        add_bt.clicked.connect(self.add_p_preset)
+        sublayout.addWidget(add_bt)
+
+        rm_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
+        rm_bt.clicked.connect(self.remove_p_preset)
+        sublayout.addWidget(rm_bt)
+
+        sublayout.addStretch(stretch=2)
+
+        reset_bt = QPushButton('Reset')
+        reset_bt.clicked.connect(self.reset_parameters)
+        sublayout.addWidget(reset_bt)
+
+        layout.addLayout(sublayout)
+
+        param_scroll = QScrollArea()
         self.qall_parameters = QAllParameters(self)
-        tab.setWidget(self.qall_parameters)
+        param_scroll.setWidget(self.qall_parameters)
+
+        layout.addWidget(param_scroll)
+        tab.setLayout(layout)
         self.tab_func_widget.addTab(tab, 'Parameters')
+
+    def update_p_preset_project(self):
+        self.qall_parameters.update_all_param_guis()
+        self.pr.populate_directories()
+
+    def p_preset_changed(self, idx):
+        self.pr.p_preset = self.p_preset_cmbx.itemText(idx)
+        self.update_p_preset_project()
+
+    def add_p_preset(self):
+        preset_name, ok = QInputDialog.getText(self, 'New Parameter-Preset',
+                                               'Enter a name for a new Parameter-Preset')
+        if ok:
+            self.pr.p_preset = preset_name
+            self.pr.load_default_parameters()
+            self.settings.setValue('parameter_preset', preset_name)
+            self.p_preset_cmbx.addItem(preset_name)
+            self.p_preset_cmbx.setCurrentText(preset_name)
+            self.update_p_preset_project()
+        else:
+            pass
+
+    def remove_p_preset(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Remove Parameter-Preset')
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel('Select Parameter-Presets for removal'))
+
+        plistw = QListWidget(self)
+        for p_preset in [p for p in self.pr.parameters if p != 'Default']:
+            item = QListWidgetItem(p_preset)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Unchecked)
+            plistw.addItem(item)
+        layout.addWidget(plistw)
+
+        def remove_selected():
+            rm_list = []
+            for x in range(plistw.count()):
+                chk_item = plistw.item(x)
+                if chk_item.checkState() == Qt.Checked:
+                    rm_list.append(chk_item.text())
+            # Remove the selected preset from list, dict and combobox
+            for rm_p_preset in rm_list:
+                plistw.takeItem(plistw.row(plistw.findItems(rm_p_preset, Qt.MatchExactly)[0]))
+                self.pr.parameters.pop(rm_p_preset)
+                self.p_preset_cmbx.removeItem(self.p_preset_cmbx.findText(rm_p_preset, Qt.MatchExactly))
+                if rm_p_preset == self.pr.p_preset:
+                    self.pr.p_preset = list(self.pr.parameters.keys())[0]
+                    self.settings.setValue('parameter_preset', self.pr.p_preset)
+                    self.p_preset_cmbx.setCurrentText(self.pr.p_preset)
+            # Update Param-GUIs for new Parameter-Preset
+            self.self.update_p_preset_project()
+
+        bt_layout = QHBoxLayout()
+        rm_bt = QPushButton('Remove')
+        rm_bt.clicked.connect(remove_selected)
+        bt_layout.addWidget(rm_bt)
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(dialog.close)
+        bt_layout.addWidget(close_bt)
+        layout.addLayout(bt_layout)
+
+        dialog.setLayout(layout)
+        dialog.open()
 
     def add_main_bts(self):
         self.main_bt_layout = QHBoxLayout()
@@ -659,7 +774,8 @@ class MainWindow(QMainWindow):
         try:
             # Todo: Solve Function-Stacking-Problem, maybe with QThread, which can accept Signals from main-thread
             func_from_def(**kwargs)
-            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] == True and self.pr.parameters['show_plots'] == False:
+            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] == True \
+                    and self.pr.parameters[self.pr.p_preset]['show_plots'] == False:
                 mlab.close(all=True)
         except:
             traceback.print_exc()
@@ -677,16 +793,16 @@ class MainWindow(QMainWindow):
 
     def get_toolbox_params(self):
         # Get n_jobs from settings
-        self.n_jobs_sb.setValue(self.pr.parameters['n_jobs'])
+        self.n_jobs_sb.setValue(self.pr.parameters[self.pr.p_preset]['n_jobs'])
 
-        # Checkboxes in Toolbar
+        # Aliases for Checkboxes in Toolbar
         chkbox_dict = {'show_plots_chkbx': 'show_plots', 'save_plots_chkbx': 'save_plots',
                        'overwrite_chkbx': 'overwrite', 'enable_cuda_chkbx': 'enable_cuda', 'shutdown_chkbx': 'shutdown'}
         for chkbox_name in chkbox_dict:
             chkbox = getattr(self, chkbox_name)
 
             try:
-                chkbox_value = self.pr.parameters[chkbox_dict[chkbox_name]]
+                chkbox_value = self.pr.parameters[self.pr.p_preset][chkbox_dict[chkbox_name]]
                 chkbox.setChecked(chkbox_value)
             except KeyError:
                 pass
@@ -790,6 +906,7 @@ class MainWindow(QMainWindow):
         # Save Main-Window-Settings
         self.settings.setValue('geometry', self.saveGeometry())
         self.settings.setValue('checked_funcs', self.func_dict)
+        self.settings.setValue('parameter_preset', self.pr.p_preset)
 
         event.accept()
 

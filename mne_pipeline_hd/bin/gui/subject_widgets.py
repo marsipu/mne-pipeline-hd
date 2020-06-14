@@ -32,78 +32,6 @@ from bin.basic_functions import loading
 from bin.gui.qt_utils import (ErrorDialog, OutputStream, Worker)
 
 
-# Todo: Adapt File-Structure to (MEG)-BIDS-Standards
-
-# Todo: Subject-Classes: Is it working when called in QRunnable?
-class CurrentSubject:
-    """ Class for File-Data in File-Loop"""
-
-    def __init__(self, name, main_win):
-        self.name = name
-        self.mw = main_win
-        self.pr = main_win.pr
-        self.p = main_win.pr.parameters
-        self.save_dir = join(self.mw.pr.data_path, name)
-
-        try:
-            self.ermsub = self.mw.pr.erm_dict[name]
-        except KeyError as k:
-            print(f'No erm_measurement assigned for {k}')
-            raise RuntimeError(f'No erm_measurement assigned for {k}')
-        try:
-            self.subtomri = self.mw.pr.sub_dict[name]
-        except KeyError as k:
-            print(f'No mri_subject assigned to {k}')
-            raise RuntimeError(f'No mri_subject assigned to {k}')
-        try:
-            self.bad_channels = self.mw.pr.bad_channels_dict[name]
-        except KeyError as k:
-            print(f'No bad channels for {k}')
-            raise RuntimeError(f'No bad channels for {k}')
-
-        if main_win.settings.value('sub_preload', defaultValue=False) == 'true':
-            self.preload_data()
-
-    def preload_data(self):
-        try:
-            self.info = loading.read_info(self.name, self.save_dir)
-        except FileNotFoundError:
-            pass
-        try:
-            self.raw_filtered = loading.read_filtered(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
-        except FileNotFoundError:
-            pass
-        try:
-            self.events = loading.read_events(self.name, self.save_dir)
-        except FileNotFoundError:
-            pass
-        try:
-            self.epochs = loading.read_epochs(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
-        except FileNotFoundError:
-            pass
-        try:
-            self.evokeds = loading.read_evokeds(self.name, self.save_dir, self.p['highpass'], self.p['lowpass'])
-        except FileNotFoundError:
-            pass
-
-    # Todo: Better solution for Current-File call and update together with function-call
-    def update_file_data(self):
-        self.ermsub = self.mw.pr.erm_dict[self.name]
-        self.subtomri = self.mw.pr.sub_dict[self.name]
-        self.bad_channels = self.mw.pr.bad_channels_dict[self.name]
-
-
-class CurrentMRISubject:
-    # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?)
-    def __init__(self, mri_subject):
-        self.mri_subject = mri_subject
-
-
-class CurrentGAGroup:
-    def __init__(self, group_name):
-        self.group_name = group_name
-
-
 def file_indexing(which_file, all_files):
     if which_file == '':
         return [], []
@@ -186,7 +114,18 @@ def file_indexing(which_file, all_files):
             return [], []
 
 
-# Todo: Delete Subjects from Dock and Project
+def get_existing_mri_subjects(subjects_dir):
+    existing_mri_subs = list()
+    # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
+    read_dir = sorted([f for f in os.listdir(subjects_dir) if not f.startswith('.')], key=str.lower)
+    for mri_sub in read_dir:
+        if exists(join(subjects_dir, mri_sub, 'surf')):
+            existing_mri_subs.append(mri_sub)
+
+    return existing_mri_subs
+
+
+# Todo: Subject-Selection according to having or not specified Files (Combobox)
 class SubjectDock(QDockWidget):
     def __init__(self, main_win):
         super().__init__('Subject-Selection', main_win)
@@ -229,17 +168,17 @@ class SubjectDock(QDockWidget):
         self.sub_ledit_layout.addWidget(self.sub_clear_bt, 0, 1)
 
         # Add and Remove-Buttons
-        file_add_bt = QPushButton('Add File/s')
+        file_add_bt = QPushButton('Add')
         file_add_bt.clicked.connect(partial(AddFilesDialog, self.mw))
         self.sub_ledit_layout.addWidget(file_add_bt, 1, 0)
-        file_rm_bt = QPushButton('Remove File/s')
+        file_rm_bt = QPushButton('Remove')
         file_rm_bt.clicked.connect(self.remove_files)
         self.sub_ledit_layout.addWidget(file_rm_bt, 1, 1)
 
         self.sub_layout.addLayout(self.sub_ledit_layout)
         self.sub_widget.setLayout(self.sub_layout)
 
-        self.tab_widget.addTab(self.sub_widget, 'Files')
+        self.tab_widget.addTab(self.sub_widget, 'MEG/EEG')
 
         # MRI-Subjects-List + Index-Line-Edit
         self.mri_widget = QWidget()
@@ -269,7 +208,7 @@ class SubjectDock(QDockWidget):
         self.mri_layout.addLayout(self.mri_bt_layout)
         self.mri_widget.setLayout(self.mri_layout)
 
-        self.tab_widget.addTab(self.mri_widget, 'MRI-Subjects')
+        self.tab_widget.addTab(self.mri_widget, 'MRI')
 
         self.ga_widget = GrandAvgWidget(self.mw)
         self.tab_widget.addTab(self.ga_widget, 'Grand-Average')
@@ -436,46 +375,6 @@ class SubjectDock(QDockWidget):
             self.mri_msg_box.open()
         else:
             pass
-
-
-def move_file(forig, fdest):
-    parent_dir = Path(fdest).parent
-    # Copy sub_files to destination
-    if not isfile(fdest):
-        os.makedirs(parent_dir, exist_ok=True)
-        print(f'Copying File from {forig}...')
-        shutil.copy2(forig, fdest)
-        print(f'Finished Copying to {fdest}')
-    else:
-        print(f'{fdest} already exists')
-        pass
-
-
-def write_file_list(fname, file_list_path):
-    if not isfile(file_list_path):
-        with open(file_list_path, 'w') as el1:
-            el1.write(fname + '\n')
-        print(f'{fname} was automatically added')
-    else:
-        with open(file_list_path, 'a') as sl2:
-            sl2.write(fname + '\n')
-        print(f'{fname} was automatically added')
-
-
-def read_files(file_list_path):
-    file_list = []
-    file_name = Path(file_list_path).name
-    try:
-        with open(file_list_path, 'r') as sl:
-            for line in sl:
-                current_place = line[:-1]
-                file_list.append(current_place)
-
-    except FileNotFoundError:
-        print(f'{file_name} not yet created')
-        pass
-
-    return file_list
 
 
 class GrandAvgWidget(QWidget):
@@ -669,6 +568,7 @@ class AddFileWorker(Worker):
 
 
 # Todo: Enable Drag&Drop
+# Todo: Model/View, should solve many problems
 class AddFilesWidget(QWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -736,6 +636,8 @@ class AddFilesWidget(QWidget):
         self.table_widget.setRangeSelected(QTableWidgetSelectionRange(row, 0, row, 3), True)
 
     def populate_table_widget(self):
+        # Todo: When adding files sequentially, there seems to be an overtake from previous addition, thus duplicates
+        #   hopefully, this can be removed with Model/View
         row_count = self.table_widget.rowCount()
         self.table_widget.setRowCount(row_count + len(self.files))
         for file_name in self.files:
@@ -892,6 +794,13 @@ class AddFilesWidget(QWidget):
                 self.mw.pr.info_dict[new_fname] = {}
                 for key in info_keys:
                     self.mw.pr.info_dict[new_fname][key] = raw.info[key]
+                # Add arrays of digitization-points and save it to json to make the trans-file-management possible
+                # (same digitization = same trans-file)
+                dig_arrays = []
+                if raw.info['dig'] is not None:
+                    for dig_point in raw.info['dig']:
+                        dig_arrays.append([float(cd) for cd in dig_point['r']])
+                    self.mw.pr.info_dict[new_fname]['dig'] = dig_arrays
                 self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
                 # Some raw-files don't have get_channel_types?
                 try:
@@ -1025,29 +934,6 @@ class AddFilesDialog(AddFilesWidget):
         self.dialog.move(qr.topLeft())
 
 
-def move_folder(src, dst):
-    if not isdir(dst):
-        print(f'Copying Folder from {src}...')
-        try:
-            shutil.copytree(src, dst)
-        except shutil.Error:  # surfaces with .H and .K at the end can't be copied
-            pass
-        print(f'Finished Copying to {dst}')
-    else:
-        print(f'{dst} already exists')
-
-
-def get_existing_mri_subjects(subjects_dir):
-    existing_mri_subs = list()
-    # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
-    read_dir = sorted([f for f in os.listdir(subjects_dir) if not f.startswith('.')], key=str.lower)
-    for mri_sub in read_dir:
-        if exists(join(subjects_dir, mri_sub, 'surf')):
-            existing_mri_subs.append(mri_sub)
-
-    return existing_mri_subs
-
-
 class AddMRIWidget(QWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -1170,7 +1056,15 @@ class AddMRIWidget(QWidget):
                 src = self.paths[mri_sub]
                 dst = join(self.mw.pr.subjects_dir, mri_sub)
                 self.mw.pr.all_mri_subjects.append(mri_sub)
-                move_folder(src, dst)
+                if not isdir(dst):
+                    print(f'Copying Folder from {src}...')
+                    try:
+                        shutil.copytree(src, dst)
+                    except shutil.Error:  # surfaces with .H and .K at the end can't be copied
+                        pass
+                    print(f'Finished Copying to {dst}')
+                else:
+                    print(f'{dst} already exists')
                 signals['pgbar_n'].emit(count)
                 count += 1
             else:
@@ -1186,23 +1080,6 @@ class AddMRIWidget(QWidget):
 
         self.mw.pr.save_sub_lists()
         self.mw.subject_dock.update_mri_subjects_list()
-
-
-def read_sub_dict(sub_dict_path):
-    sub_dict = {}
-    file_name = Path(sub_dict_path).name
-    try:
-        with open(sub_dict_path, 'r') as sd:
-            for item in sd:
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    value = value[:-1]
-                    sub_dict[key] = value
-
-    except FileNotFoundError:
-        print(f'{file_name} not yet created, run add_sub_dict')
-
-    return sub_dict
 
 
 class AddMRIDialog(AddMRIWidget):
@@ -1237,6 +1114,7 @@ class TmpBrainWorker(Worker):
 
         super().__init__(fn, self.signal_class, *args, **kwargs)
 
+
 class TmpBrainDialog(QDialog):
     def __init__(self, parent_w):
         super().__init__(parent_w)
@@ -1253,6 +1131,7 @@ class TmpBrainDialog(QDialog):
     def update_text_edit(self, text):
         self.text_edit.insertPlainText(text)
         self.text_edit.ensureCursorVisible()
+
 
 class SubDictWidget(QWidget):
     """ A widget to assign MRI-Subjects oder Empty-Room-Files to subject(s), depending on mode """
@@ -1570,31 +1449,6 @@ class SubDictWizPage(QWizardPage):
         self.sub_dict_w.get_status()
 
 
-def read_bad_channels_dict(bad_channels_dict_path):
-    bad_channels_dict = {}
-
-    try:
-        with open(bad_channels_dict_path, 'r') as bd:
-            for item in bd:
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    value = value[:-1]
-                    eval_value = literal_eval(value)
-                    if 'MEG' not in value:
-                        new_list = []
-                        for ch in eval_value:
-                            ch_name = f'MEG {ch:03}'
-                            new_list.append(ch_name)
-                        bad_channels_dict[key] = new_list
-                    else:
-                        bad_channels_dict[key] = eval_value
-
-    except FileNotFoundError:
-        print('bad_channels_dict.py not yet created, run add_bad_channels_dict')
-
-    return bad_channels_dict
-
-
 class SubBadsWidget(QWidget):
     """ A Dialog to select Bad-Channels for the files """
 
@@ -1707,7 +1561,6 @@ class SubBadsWidget(QWidget):
 
     def get_selected_bads(self, evt):
         # evt has to be in parameters, otherwise it won't work
-        print(evt.name)
         self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
         self.mw.pr.save_sub_lists()
 
@@ -1870,3 +1723,61 @@ class SubjectWizard(QWizard):
         self.addPage(self.assign_mri_page)
         self.addPage(self.assign_erm_page)
         self.addPage(self.assign_bad_channels_page)
+
+
+def read_files(file_list_path):
+    file_list = []
+    file_name = Path(file_list_path).name
+    try:
+        with open(file_list_path, 'r') as sl:
+            for line in sl:
+                current_place = line[:-1]
+                file_list.append(current_place)
+
+    except FileNotFoundError:
+        print(f'{file_name} not yet created')
+        pass
+
+    return file_list
+
+
+def read_sub_dict(sub_dict_path):
+    sub_dict = {}
+    file_name = Path(sub_dict_path).name
+    try:
+        with open(sub_dict_path, 'r') as sd:
+            for item in sd:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    value = value[:-1]
+                    sub_dict[key] = value
+
+    except FileNotFoundError:
+        print(f'{file_name} not yet created, run add_sub_dict')
+
+    return sub_dict
+
+
+def read_bad_channels_dict(bad_channels_dict_path):
+    bad_channels_dict = {}
+
+    try:
+        with open(bad_channels_dict_path, 'r') as bd:
+            for item in bd:
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    value = value[:-1]
+                    eval_value = literal_eval(value)
+                    if 'MEG' not in value:
+                        new_list = []
+                        for ch in eval_value:
+                            ch_name = f'MEG {ch:03}'
+                            new_list.append(ch_name)
+                        bad_channels_dict[key] = new_list
+                    else:
+                        bad_channels_dict[key] = eval_value
+
+    except FileNotFoundError:
+        print('bad_channels_dict.py not yet created, run add_bad_channels_dict')
+
+    return bad_channels_dict

@@ -1,74 +1,63 @@
 ;alias;tab;group;subject_loop;matplotlib;mayavi;dependencies;module;func_args
-apply_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,overwrite
-prepare_bem;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir
-make_dense_scalp_surfaces;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,overwrite
-setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,source_space_method,overwrite,n_jobs
-compute_src_distances;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,source_space_method,n_jobs
-setup_vol_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir
-morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,morph_to,source_space_method,overwrite
-morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_subject,subjects_dir,overwrite
-filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,ermsub,bad_channels,data_path,highpass,lowpass,n_jobs,enable_cuda,erm_t_limit,enable_ica
-find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,adjust_timeline_by_msec,overwrite
-find_eog_events;;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,eog_channel
-epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,bad_channels,pscripts_path,highpass,lowpass,event_id,t_epoch,baseline,reject,flat,autoreject,overwrite_ar,decim,reject_eog_epochs,overwrite
-run_ica;;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,bad_channels,figures_path,pscripts_path,highpass,lowpass,eog_channel,ecg_channel,reject,flat,overwrite,autoreject,save_plots
-apply_ica;;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,highpass,lowpass,overwrite
-get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,highpass,lowpass,enable_ica,overwrite
-tfr;;Compute;sensor_space_operations;True;False;False;;operations;name,save_dir,highpass,lowpass,enable_ica,tfr_freqs,overwrite_tfr,tfr_method,multitaper_bandwith,stockwell_width,n_jobs
-estimate_noise_covariance;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,ermsub,bad_channels,data_path,highpass,lowpass,overwrite,baseline,n_jobs,erm_noise_cov,calm_noise_cov,enable_ica
-create_forward_solution;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,subtomri,subjects_dir,source_space_method,overwrite,n_jobs,eeg_fwd
-create_inverse_operator;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,ermsub,highpass,lowpass,overwrite,calm_noise_cov,erm_noise_cov
-source_estimate;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,highpass,lowpass,inverse_method,overwrite
-vector_source_estimate;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,highpass,lowpass,inverse_method,overwrite
-mixed_norm_estimate;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,ermsub,highpass,lowpass,inverse_method,overwrite,erm_noise_cov,ermsub,calm_noise_cov,event_id,mixn_dip
-apply_morph;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,subtomri,subjects_dir,highpass,lowpass,inverse_method,overwrite,morph_to,source_space_method,event_id
-apply_morph_normal;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,subtomri,subjects_dir,highpass,lowpass,inverse_method,overwrite,morph_to,source_space_method,event_id
-ecd_fit;;Compute;source_space_operations;True;True;True;;operations;name,save_dir,ermsub,subtomri,subjects_dir,figures_path,highpass,lowpass,erm_noise_cov,calm_noise_cov,ecds,save_plots
-source_space_connectivity;;Compute;source_space_operations;True;False;False;;operations;name,save_dir,subtomri,subjects_dir,highpass,lowpass,parcellation,target_labels,con_methods,con_fmin,con_fmax,n_jobs,overwrite,enable_ica, event_id
-grand_avg_evokeds;;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,sel_ga_groups,data_path,save_dir_averages,highpass,lowpass
-grand_avg_tfr;;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,data_path,save_dir_averages,highpass,lowpass,tfr_method
-grand_avg_morphed;;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,sel_ga_groups,data_path,save_dir_averages,inverse_method,highpass,lowpass,event_id
-grand_avg_normal_morphed;;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,data_path,save_dir_averages,inverse_method,highpass,lowpass,event_id
-grand_avg_connect;;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,data_path,save_dir_averages,con_methods,con_fmin,con_fmax,lowpass,highpass,event_id
-grand_avg_label_power;;Compute;grand_average_operations;False;False;False;;operations;grand_avg_dict,data_path,save_dir_averages,event_id,highpass,lowpass,target_labels
-plot_source_space;;MRI-Preprocessing;mri_subject_operations;True;True;True;;plot;mri_subject,subjects_dir,figures_path,source_space_method,save_plots
-plot_bem;;MRI-Preprocessing;mri_subject_operations;True;True;False;;plot;mri_subject,subjects_dir,figures_path,source_space_method,save_plots
-plot_labels;;MRI-Preprocessing;mri_subject_operations;True;True;True;;plot;mri_subject,figures_path,save_plots,parcellation
-plot_noise_covariance;;Plot;source_space_plots;True;True;False;;plot;name,save_dir,ermsub,figures_path,highpass,lowpass,save_plots,erm_noise_cov,calm_noise_cov
-plot_transformation;;Plot;source_space_plots;True;True;True;;plot;name,save_dir,subtomri,subjects_dir,figures_path,save_plots
-plot_sensitivity_maps;;Plot;source_space_plots;True;True;True;;plot;name,save_dir,subjects_dir,figures_path,ch_types,save_plots
-plot_sensors;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir
-plot_raw;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,bad_channels
-plot_filtered;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,bad_channels,highpass,lowpass
-plot_events;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,save_plots,event_id
-plot_eog_events;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,eog_channel
-plot_power_spectra;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,bad_channels,figures_path,highpass,lowpass,save_plots
-plot_power_spectra_epochs;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_power_spectra_topo;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_tfr;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,t_epoch,baseline,tfr_method,save_plots
-plot_epochs;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_epochs_image;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_epochs_topo;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_epochs_drop_log;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_evoked_topo;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_evoked_topomap;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_evoked_butterfly;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_evoked_joint;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_evoked_white;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,ermsub,figures_path,highpass,lowpass,save_plots,erm_noise_cov,calm_noise_cov
-plot_evoked_image;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_gfp;;Plot;sensor_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots
-plot_stc;;Plot;source_space_plots;True;True;True;;plot;name,save_dir,subtomri,subjects_dir,figures_path,highpass,lowpass,inverse_method,mne_evoked_time,event_id,stc_interactive,save_plots
-plot_normal_stc;;Plot;source_space_plots;True;True;True;;plot;name,save_dir,subtomri,subjects_dir,figures_path,highpass,lowpass,inverse_method,mne_evoked_time,event_id,stc_interactive,save_plots
-plot_vector_stc;;Plot;source_space_plots;True;True;True;;plot;name,save_dir,subtomri,subjects_dir,figures_path,highpass,lowpass,inverse_method,mne_evoked_time,event_id,stc_interactive,save_plots
-plot_mixn;;Plot;source_space_plots;True;True;True;;plot;name,save_dir,subtomri,subjects_dir,figures_path,highpass,lowpass,mne_evoked_time,event_id,stc_interactive,save_plots,mixn_dip,parcellation
-plot_animated_stc;;Plot;source_space_plots;True;True;True;;plot;name,save_dir,subtomri,subjects_dir,figures_path,highpass,lowpass,inverse_method,stc_animation,event_id
-plot_snr;;Plot;source_space_plots;True;True;False;;plot;name,save_dir,figures_path,highpass,lowpass,save_plots,inverse_method,event_id
-plot_label_time_course;;Plot;source_space_plots;True;True;False;;plot;name,save_dir,subtomri,subjects_dir,figures_path,highpass,lowpass,inverse_method,source_space_method,target_labels,save_plots,parcellation,event_id
-plot_source_space_connectivity;;Plot;source_space_plots;True;True;False;;plot;name,save_dir,subtomri,subjects_dir,figures_path,highpass,lowpass,parcellation,target_labels,con_methods,con_fmin,con_fmax,save_plots,event_id
-plot_grand_avg_evokeds;;Plot;grand_average_plots;False;True;False;;plot;grand_avg_dict,save_dir_averages,figures_path,highpass,lowpass,event_id,save_plots
-plot_grand_avg_tfr;;Plot;grand_average_plots;False;True;False;;plot;grand_avg_dict,save_dir_averages,figures_path,highpass,lowpass,baseline,t_epoch,event_id,save_plots
-plot_grand_avg_stc;;Plot;grand_average_plots;False;True;True;;plot;grand_avg_dict,save_dir_averages,subjects_dir,figures_path,highpass,lowpass,mne_evoked_time,morph_to,event_id,save_plots
-plot_grand_avg_stc_normal;;Plot;grand_average_plots;False;True;True;;plot;grand_avg_dict,save_dir_averages,subjects_dir,figures_path,highpass,lowpass,mne_evoked_time,morph_to,event_id,save_plots
-plot_grand_avg_stc_anim;;Plot;grand_average_plots;False;True;True;;plot;grand_avg_dict,save_dir_averages,subjects_dir,figures_path,highpass,lowpass,stc_animation,morph_to,event_id
-plot_grand_avg_connect;;Plot;grand_average_plots;False;True;False;;plot;grand_avg_dict,save_dir_averages,subjects_dir,figures_path,highpass,lowpass,morph_to,parcellation,con_methods,con_fmin,con_fmax,save_plots,event_id,target_labels
-plot_grand_avg_label_power;;Plot;grand_average_plots;False;True;False;;plot;grand_avg_dict,save_dir_averages,figures_path,event_id,target_labels,tfr_freqs,t_epoch,lowpass,highpass,save_plots
+apply_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
+prepare_bem;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
+make_dense_scalp_surfaces;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
+setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, source_space_spacing, n_jobs, overwrite
+compute_src_distances;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, n_jobs
+setup_vol_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
+morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, morph_to, overwrite
+morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
+filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit
+find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;sub, adjust_timeline_by_msec, overwrite
+epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject, overwrite_ar, decim, overwrite
+run_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, overwrite, autoreject, save_plots, figures_path, pscripts_path
+apply_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, overwrite
+get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica, overwrite
+tfr;;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica, tfr_freqs, overwrite_tfr, tfr_method, multitaper_bandwith, stockwell_width, n_jobs
+estimate_noise_covariance;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite, baseline, n_jobs, erm_noise_cov, calm_noise_cov, enable_ica
+create_forward_solution;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite, n_jobs, eeg_fwd
+create_inverse_operator;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite
+source_estimate;;Compute;source_space_operations;True;False;False;;operations;sub, inverse_method, pick_ori, lambda2, overwrite
+mixed_norm_estimate;;Compute;source_space_operations;True;False;False;;operations;sub, pick_ori, overwrite
+apply_morph;;Compute;source_space_operations;True;False;False;;operations;sub
+ecd_fit;;Compute;source_space_operations;True;True;True;;operations;sub, ecd_times, ecd_positions, ecd_orientations
+source_space_connectivity;;Compute;source_space_operations;True;False;False;;operations;sub, parcellation, target_labels, inverse_method, lambda2, con_methods, con_fmin, con_fmax, n_jobs, enable_ica
+grand_avg_evokeds;;Compute;grand_average_operations;False;False;False;;operations;ga_group
+grand_avg_tfr;;Compute;grand_average_operations;False;False;False;;operations;ga_group
+grand_avg_morphed;;Compute;grand_average_operations;False;False;False;;operations;ga_group
+grand_avg_connect;;Compute;grand_average_operations;False;False;False;;operations;ga_group
+plot_source_space;;MRI-Preprocessing;mri_subject_operations;True;True;True;;plot;mri_sub
+plot_bem;;MRI-Preprocessing;mri_subject_operations;True;True;False;;plot;mri_sub
+plot_labels;;MRI-Preprocessing;mri_subject_operations;True;True;True;;plot;mri_sub, parcellation
+plot_noise_covariance;;Plot;source_space_plots;True;True;False;;plot;sub
+plot_transformation;;Plot;source_space_plots;True;True;True;;plot;sub
+plot_sensitivity_maps;;Plot;source_space_plots;True;True;True;;plot;sub, ch_types
+plot_sensors;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_filtered;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_events;;Plot;sensor_space_plots;True;True;False;;plot;sub, save_plots, figures_path, event_id
+plot_power_spectra;;Plot;sensor_space_plots;True;True;False;;plot;sub, save_plots, figures_path
+plot_power_spectra_epochs;;Plot;sensor_space_plots;True;True;False;;plot;sub, save_plots, figures_path
+plot_power_spectra_topo;;Plot;sensor_space_plots;True;True;False;;plot;sub, save_plots, figures_path
+plot_tfr;;Plot;sensor_space_plots;True;True;False;;plot;sub, t_epoch, baseline, save_plots, figures_path
+plot_epochs;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_epochs_image;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_epochs_topo;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_epochs_drop_log;;Plot;sensor_space_plots;True;True;False;;sub
+plot_evoked_topo;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_evoked_topomap;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_evoked_butterfly;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_evoked_joint;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_evoked_white;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_evoked_image;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_gfp;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_stc;Plot Source-Estimate;Plot;source_space_plots;True;True;True;;plot;sub, stc_interactive, mne_evoked_time
+plot_mixn;Plot Mixed-Norm-Solution;Plot;source_space_plots;True;True;True;;plot;sub, mne_evoked_time, stc_interactive, parcellation
+plot_animated_stc;Plot Source-Estimate Video;Plot;source_space_plots;True;True;True;;plot;sub, stc_animation
+plot_snr;;Plot;source_space_plots;True;True;False;;plot;sub
+plot_label_time_course;;Plot;source_space_plots;True;True;False;;plot;sub, target_labels, parcellation
+plot_source_space_connectivity;;Plot;source_space_plots;True;True;False;;plot;sub, target_labels, con_fmin, con_fmax
+plot_grand_avg_evokeds;;Plot;grand_average_plots;False;True;False;;plot;ga_group
+plot_grand_avg_tfr;;Plot;grand_average_plots;False;True;False;;plot;ga_group, baseline, t_epoch
+plot_grand_avg_stc;;Plot;grand_average_plots;False;True;True;;plot;ga_group, morph_to, mne_evoked_time, stc_interactive
+plot_grand_avg_stc_anim;;Plot;grand_average_plots;False;True;True;;plot;ga_group, stc_animation, morph_to
+plot_grand_avg_connect;;Plot;grand_average_plots;False;True;False;;plot;ga_group, con_fmin, con_fmax, parcellation, target_labels, morph_to

@@ -12,36 +12,41 @@ autoreject;;False;;set True to use autoreject;BoolGui;
 overwrite_ar;;False;;if to calculate new threshold sort ouse previously calculated;BoolGui;
 reject;;{'grad':8e-10};;default reject parameter if not reject with autoreject;DictGui;
 flat;;{'grad':1e-15};;default flat parameter;DictGui;
-reject_eog_epochs;;False;;function to reject eog_epochs after use of find_eog_events;BoolGui;
 decim;;1;;down samplingfactor;IntGui;
 event_id;;{'Default':1};;dictionary to assign strings to the event_ids;DictGui;
 tfr_freqs;;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
-overwrite_tfr;;True;;Recalculate and overwrite tfr;BoolGui;
-tfr_method;;morlet;;;StringGui;
+overwrite_tfr;;True;;Recalculate and overwrite Time-Frequency-Data;BoolGui;
+tfr_method;;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}
 multitaper_bandwith;;4.0;;;FloatGui;
 stockwell_width;;1.0;;;FloatGui;
 eog_channel;;EEG 001;;Set Vertical EOG-Channel;StringGui;
 ecg_channel;;EEG 003;;Set ECG-Channel;StringGui;
-source_space_method;;ico5;;See the MNE-Documentation for further details;StringGui;
+source_space_spacing;;ico5;;See the MNE-Documentation for further details;StringGui;
+vol_source_space_spacing;;5.0;;Spacing between sources in 3D-Grid;FloatGui;
 eeg_fwd;;False;;set True if working with EEG-Data;BoolGui;
 erm_noise_cov;;True;;;BoolGui;
 calm_noise_cov;;False;;Use of a specific time interval in a measurement for noise-covariance;BoolGui;
-inverse_method;;dSPM;;;StringGui;
+inverse_method;Inverse-Method;MNE;;Choose the Inverse-Method for Source-Estimate;ComboGui;{'options': ['MNE', 'dSPM', 'sLORETA', 'eLORETA']}
+pick_ori;Dipole-Orientation;None;;Choose the Dipole-Orientation for Source-Estimate;ComboGui;{'options': [None, 'normal', 'vector'], 'options_mapping': {None: 'free'}}
+lambda2;;1.0 / 3.0 ** 2;;lambda2 for Source-Estimate;FuncGui;
 mne_evoked_time;;[0.1,0.15,0.2];s;time-points to be displayed in several plots[s];ListGui;
 stc_interactive;;False;;interactive stc-plots;BoolGui;
-mixn_dip;;True;;;BoolGui;
 stc_animation;;(0,0.5);s;time-span for stc-animation[s];TupleGui;
 parcellation;;aparc;;;StringGui;
 target_labels;;{'lh':[],'rh':[]};;;DictGui;
-con_methods;;['pli','wpli2_debiased','plv'];;methods for connectivity plots;ListGui;
+con_methods;;{'coh': 0, 'cohy': 0, 'imcoh': 0, 'plv': 0, 'ciplv': 0, 'ppc': 0, 'pli': 0, 'pli2_unbiased': 0, 'wpli': 0, 'wpli2_debiased': 0};;methods for connectivity plots;CheckListGui;{'options_mapping': {'coh': 'Coherence', 'cohy': 'Coherency', 'imcoh': 'Imaginary Coherence', 'plv': 'Phase-Locking Value', 'ciplv': 'Corrected Imaginary PLV', 'ppc': 'Pairwise Phase Consistency', 'pli': 'Phase Lag Index', 'pli2_unbiased': 'Unbiased estimator of squared PLI', 'wpli': 'Weighted Phase Lag Index', 'wpli2_debiased': 'Debiased estimator of squared WPLI'}}
 con_fmin;;30;;fmin for connectivity plot;IntGui;
 con_fmax;;80;;fmax for connectivity plot;IntGui;
-ecds;;{};;;DictGui;
+ecd_times;;{};;;DictGui;
+ecd_positions;;{};;;DictGui;
+ecd_orientations;;{};;;DictGui;
 morph_to;;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
 n_jobs_freesurfer;;4;;change according to amount of processors you have available;IntGui;
 show_plots;Show Plots;False;;Check, if you want the plots to be shown;BoolGui;
 save_plots;Save Plots;True;;Check, if you want to save each plot;BoolGui;
+img_format;Image-Format;'.png';;Set Image-Format for Plot-Images;ComboGui;{'options': ['.png', '.jpg', '.bmp', '.tiff']}
 overwrite;Overwrite;True;;Check, if you want to overwrite the saved files each time you run a function again;BoolGui;
 enable_cuda;Enable Cuda;False;;Check, if you want to enable cuda-support (Cuda has to be installed);BoolGui;
 shutdown;Shutdown System;False;;Check, if you want to shutdown your system after having run the pipeline;BoolGui;
 n_jobs;n_jobs;-1;jobs;Enter number of threads, your processor can handle;IntGui;{'min_val': -1, 'special_value_text': 'auto'}
+save_storage;Save Storage;False;;Check, if you don't want to save a file for each step in the pipeline. As a consequence, you have to repeat each step each run.;BoolGui;

@@ -29,13 +29,13 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
                              QScrollArea, QStyle, QTableWidget, QTableWidgetItem, QTableWidgetSelectionRange,
                              QVBoxLayout)
 
+from bin.basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
 from bin.gui import parameter_widgets
 from bin.gui.qt_utils import ErrorDialog, Worker
-from bin.gui.subject_widgets import CurrentGAGroup, CurrentMRISubject, CurrentSubject
 from bin.pipeline_functions import ismac
 
 
-def func_from_def(func_name, subject, main_win):
+def func_from_def(func_name, sub, main_win):
     # Get module, has to specified in functions.csv as it is imported
     module_name = main_win.pd_funcs['module'][func_name]
     module = main_win.all_modules[module_name]
@@ -47,11 +47,6 @@ def func_from_def(func_name, subject, main_win):
     else:
         arg_names = []
 
-    # Get attributes from Subject/Project-Class
-    if subject:
-        subject_attributes = vars(subject)
-    else:
-        subject_attributes = {}
     project_attributes = vars(main_win.pr)
 
     keyword_arguments = dict()
@@ -63,12 +58,16 @@ def func_from_def(func_name, subject, main_win):
             keyword_arguments.update({'mw': main_win})
         elif arg_name == 'pr':
             keyword_arguments.update({'pr': main_win.pr})
-        elif arg_name in subject_attributes:
-            keyword_arguments.update({arg_name: subject_attributes[arg_name]})
+        elif arg_name == 'sub':
+            keyword_arguments.update({'sub': sub})
+        elif arg_name == 'mri_sub':
+            keyword_arguments.update({'mri_sub': sub})
+        elif arg_name == 'ga_group':
+            keyword_arguments.update({'ga_group': sub})
         elif arg_name in project_attributes:
             keyword_arguments.update({arg_name: project_attributes[arg_name]})
-        elif arg_name in main_win.pr.parameters:
-            keyword_arguments.update({arg_name: main_win.pr.parameters[arg_name]})
+        elif arg_name in main_win.pr.parameters[main_win.pr.p_preset]:
+            keyword_arguments.update({arg_name: main_win.pr.parameters[main_win.pr.p_preset][arg_name]})
         else:
             raise RuntimeError(f'{func_name}: {arg_name} could not be found in Subject, Project or Parameters')
 
@@ -133,7 +132,7 @@ class FunctionWorker(Worker):
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
         # from matplotlib, as you can set the backend only once there This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
-        if not self.mw.pr.parameters['show_plots']:
+        if not self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
             matplotlib.use('agg')
         elif ismac:
             matplotlib.use('macosx')
@@ -172,15 +171,25 @@ class FunctionWorker(Worker):
             selected_subjects = self.mw.pr.sel_ga_groups
             selected_functions = self.mw.sel_ga_funcs
 
+        running_mri_sub = None
         for name in selected_subjects:
             if not self.is_cancel_functions:
                 if subject_type == 'mri':
-                    subject = CurrentMRISubject(name)
+                    sub = CurrentMRISub(name, self.mw)
+                    running_mri_sub = sub
+                    self.mw.subject = sub
                 elif subject_type == 'file':
-                    subject = CurrentSubject(name, self.mw)
-                    self.mw.subject = subject
+                    # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
+                    if running_mri_sub and running_mri_sub.name == self.mw.pr.sub_dict[name]:
+                        sub = CurrentSub(name, self.mw, mri_sub=running_mri_sub)
+                    else:
+                        sub = CurrentSub(name, self.mw)
+                    running_mri_sub = sub.mri_sub
+                    self.mw.subject = sub
                 else:
-                    subject = CurrentGAGroup(name)
+                    sub = CurrentGAGroup(name, self.mw)
+                    self.mw.subject = sub
+
                 # Print Subject Console Header
                 print('=' * 60 + '\n', name + '\n')
                 for func in selected_functions:
@@ -192,19 +201,20 @@ class FunctionWorker(Worker):
                             self.is_plot_running = True
                             self.signals.pg_subfunc.emit((name, func))
                             # Mayavi-Plots need to be called in the main thread
-                            self.signals.func_sig.emit({'func_name': func, 'subject': subject, 'main_win': self.mw})
+                            self.signals.func_sig.emit({'func_name': func, 'sub': sub, 'main_win': self.mw})
                             self.signals.pgbar_n.emit(self.count)
                             self.count += 1
-                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and self.mw.pr.parameters['show_plots']:
+                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and \
+                                self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
                             self.signals.pg_subfunc.emit((name, func))
                             # Matplotlib-Plots can be called without showing (backend: agg),
                             # but to be shown, they have to be called in the main thread
-                            self.signals.func_sig.emit({'func_name': func, 'subject': subject, 'main_win': self.mw})
+                            self.signals.func_sig.emit({'func_name': func, 'sub': sub, 'main_win': self.mw})
                             self.signals.pgbar_n.emit(self.count)
                             self.count += 1
                         else:
                             self.signals.pg_subfunc.emit((name, func))
-                            func_from_def(func, subject, self.mw)
+                            func_from_def(func, sub, self.mw)
                             self.signals.pgbar_n.emit(self.count)
                             self.count += 1
                     else:
@@ -231,10 +241,11 @@ class CustomFunctionImport(QDialog):
 
         self.exst_functions = list(self.mw.pd_funcs.index)
         # Todo: Better solution to include subject-attributes
-        exst_sub_attributes = ['name', 'save_dir', 'ermsub', 'bad_channels', 'info', 'raw_filtered', 'events', 'epochs',
-                               'evokeds']
+        exst_attributes = ['mw', 'pr', 'sub', 'mri_sub', 'ga_group', 'name', 'save_dir', 'ermsub', 'bad_channels']
         exst_proj_attributes = vars(self.mw.pr)
-        self.exst_parameters = exst_sub_attributes + list(exst_proj_attributes) + list(self.mw.pr.parameters)
+        self.exst_parameters = exst_attributes + \
+                               list(exst_proj_attributes) + \
+                               list(self.mw.pr.parameters[self.mw.pr.p_preset])
 
         self.add_pd_funcs = pd.DataFrame(columns=['alias', 'tab', 'group', 'subject_loop', 'matplotlib', 'mayavi',
                                                   'dependencies', 'module', 'func_args'])

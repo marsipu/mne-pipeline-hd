@@ -7,12 +7,16 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @github: marsipu/mne_pipeline_hd
 """
 import json
+import os
+import re
 from ast import literal_eval
 from os import listdir, makedirs, mkdir
 from os.path import exists, isdir, isfile, join
 
 import mne
-from PyQt5.QtWidgets import QFileDialog, QInputDialog, QMessageBox
+import pandas as pd
+from PyQt5.QtWidgets import QDialog, QFileDialog, QInputDialog, QMessageBox, QVBoxLayout
+from pandas.errors import EmptyDataError
 
 from bin.gui import subject_widgets as subs
 
@@ -25,8 +29,23 @@ class MyProject:
     def __init__(self, main_win):
         self.mw = main_win
 
-        # Iniate Project-Lists and Dicts
-        self.parameters = {}
+        # Initiate Project-Lists and Dicts
+        # Parameter-Dict, contains parameters for each parameter-preset
+        self.parameters = {'Default': {}}
+
+        # Default-Parameter-Preset
+        self.p_preset = 'Default'
+
+        # Stores parameters for each file saved to disk from the current run (know, what you did to your data)
+        self.file_parameters = pd.DataFrame([])
+
+        # paths to existing files
+        self.file_orga_paths = {}
+
+        # checks in file-categories for each sub
+        self.file_orga_checks = {}
+
+        # Stores selected info-parameters on file-import for later retrival
         self.info_dict = {}
 
         # Todo: Solution with func-dicts for functions not optimal, wird gebraucht für functions mit func_dict
@@ -112,7 +131,7 @@ class MyProject:
         # Initiate other paths
         self.project_path = join(self.projects_path, self.project_name)
         self.data_path = join(self.project_path, 'data')
-        self.figures_path = join(self.project_path, 'figures')
+        self.figures_path = join(self.project_path, 'figures', self.p_preset)
         self.save_dir_averages = join(self.data_path, 'grand_averages')
         self.erm_data_path = join(self.data_path, 'empty_room_data')
         self.subjects_dir = join(self.home_path, 'freesurfer')
@@ -128,13 +147,13 @@ class MyProject:
         self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.json')
         self.grand_avg_dict_path = join(self.pscripts_path, 'grand_avg_dict.json')
         self.info_dict_path = join(self.pscripts_path, 'info_dict.json')
-        self.ch_type_dict_path = join(self.pscripts_path, 'ch_type_dict.json')
+        self.file_parameters_path = join(self.pscripts_path, 'file_parameters.csv')
 
         path_lists = [self.subjects_dir, self.data_path, self.erm_data_path,
                       self.pscripts_path, self.custom_pkg_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
                       self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path,
-                      self.info_dict_path, self.ch_type_dict_path]
+                      self.info_dict_path, self.file_parameters_path]
 
         for path in path_lists:
             if not exists(path):
@@ -162,12 +181,9 @@ class MyProject:
             try:
                 with open(path, 'r') as file:
                     setattr(self, load_dict[path], json.load(file))
-            # Either empty file or no file
+            # Either empty file or no file, take default from __init__
             except json.decoder.JSONDecodeError:
-                if 'dict' in path:
-                    setattr(self, load_dict[path], {})
-                else:
-                    setattr(self, load_dict[path], [])
+                pass
 
         self.sel_files = self.mw.settings.value('sel_files', defaultValue=[])
         self.sel_mri_files = self.mw.settings.value('sel_mri_files', defaultValue=[])
@@ -209,32 +225,104 @@ class MyProject:
             with open(path, 'w') as file:
                 json.dump(save_dict[path], file, indent=4)
 
+        # Save Pandas-CSV (separator=; for Excel)
+        self.file_parameters.to_csv(self.file_parameters_path, sep=';')
+
     def load_parameters(self):
         try:
             with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'r') as read_file:
                 loaded_parameters = json.load(read_file)
-                # Make sure, that only parameters, which exist in pd_params are loaded
-                for param in [p for p in loaded_parameters if p not in self.mw.pd_params.index]:
-                    loaded_parameters.pop(param)
+                # Avoid errors for old parameter-files
+                if 'Default' not in loaded_parameters:
+                    loaded_parameters = {'Default': loaded_parameters}
+
+                for p_preset in loaded_parameters:
+                    # Make sure, that only parameters, which exist in pd_params are loaded
+                    for param in [p for p in loaded_parameters[p_preset] if p not in self.mw.pd_params.index]:
+                        loaded_parameters[p_preset].pop(param)
+                    # Add parameters, which exist in resources/parameters.csv,
+                    # but not in loaded-parameters (e.g. added in development)
+                    for param in [p for p in self.mw.pd_params.index if p not in loaded_parameters[p_preset]]:
+                        try:
+                            eval_param = literal_eval(self.mw.pd_params.loc[param, 'default'])
+                        except (ValueError, SyntaxError):
+                            # Allow parameters to be defined by functions e.g. by numpy, etc.
+                            if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
+                                eval_param = eval(self.mw.pd_params.loc[param, 'default'])
+                            else:
+                                eval_param = self.mw.pd_params.loc[param, 'default']
+                        loaded_parameters[p_preset].update({param: eval_param})
+
                 self.parameters = loaded_parameters
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.load_default_parameters()
 
     def load_default_parameters(self):
         string_params = dict(self.mw.pd_params['default'])
+        # Empty the dict
+        self.parameters[self.p_preset] = {}
         for param in string_params:
             try:
-                self.parameters[param] = literal_eval(string_params[param])
+                self.parameters[self.p_preset][param] = literal_eval(string_params[param])
             except (ValueError, SyntaxError):
-                # Allow parameters to be defined by functions by numpy, etc.
+                # Allow parameters to be defined by functions e.g. by numpy, etc.
                 if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
-                    self.parameters[param] = eval(string_params[param])
+                    self.parameters[self.p_preset][param] = eval(string_params[param])
                 else:
-                    self.parameters[param] = string_params[param]
+                    self.parameters[self.p_preset][param] = string_params[param]
 
     def save_parameters(self):
         with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'w') as write_file:
             json.dump(self.parameters, write_file, indent=4)
+
+    def load_file_parameters(self):
+        # Load Pandas-CSV (separator=; for Excel)
+        try:
+            self.file_parameters = pd.read_csv(self.file_parameters_path, sep=';', index_col=0)
+        except EmptyDataError:
+            self.file_parameters = pd.DataFrame([], columns=[p for p in self.parameters[self.p_preset].keys()])
+
+    def find_files(self):
+        # Order files under tags which correspond to columns in the DataFrame below
+        file_tags = {'Events': ['-eve.fif'], 'Epochs': ['-epo.fif'], 'ICA': ['-ica-epo.fif'], 'Evokeds': ['-ave.fif'],
+                     'Forward': ['-fwd.fif'], 'NoiseCov': ['-cov.fif', '-erm-cov.fif', '-clm-cov.fif'],
+                     'Inverse': ['-inv.fif']}
+        for p_preset in self.parameters:
+            self.file_orga_paths[p_preset] = {}
+            self.file_orga_checks[p_preset] = pd.DataFrame([], columns=['Events', 'Epochs', 'ICA', 'Evokeds',
+                                                                        'Forward', 'NoiseCov', 'Inverse'], dtype='bool')
+            for sub in self.all_files:
+                print(f'Doing: {sub}')
+                self.file_orga_paths[p_preset][sub] = []
+                # Todo: Some File-I/O has to be changed to make '-' the only delimiter for format
+                # Todo: Filter-String can be removed from regexp-pattern
+                #  when everyone switched with files to parameter-presets
+                file_pattern = rf'{sub}(_\w*_)?(\w*)([\-a-z]+.[a-z]*)'
+                save_dir = join(self.data_path, sub)
+
+                try:
+                    for file_name in os.listdir(save_dir):
+                        match = re.match(file_pattern, file_name)
+                        if match:
+                            if p_preset == match.group(1):
+                                # Add paths to dict for each subject under each parameter-preset
+                                self.file_orga_paths[p_preset][sub].append(file_name)
+                                # Set True for sub, when tag is matching the file
+                                for tag in file_tags:
+                                    if any(x == match.group(4) for x in file_tags[tag]):
+                                        self.file_orga_checks[p_preset].loc[sub, tag] = True
+                            # Concerns files, which were created befor
+                            elif not match.group(1):
+                                if file_name not in self.file_orga_paths['Default'][sub]:
+                                    # Add paths to dict for each subject under default parameter-preset
+                                    self.file_orga_paths['Default'][sub].append(file_name)
+                                # Set True for sub, when tag is matching the file
+                                for tag in file_tags:
+                                    if any(x == match.group(4) for x in file_tags[tag]):
+                                        self.file_orga_checks['Default'].loc[sub, tag] = True
+
+                except FileNotFoundError:
+                    print(f'{sub} not found in {self.data_path}')
 
     def populate_directories(self):
         # create grand averages path with a statistics folder
@@ -251,8 +339,10 @@ class MyProject:
             makedirs(erm_path)
             print(erm_path + ' has been created')
 
+        # Update figures_path for new parameter-preset
+        self.figures_path = join(self.project_path, 'figures', self.p_preset)
         # create figures path
-        folders = ['epochs', 'epochs_image', 'epochs_topo', 'evoked_image',
+        folders = ['epochs_image', 'epochs_topo', 'evoked_image',
                    'power_spectra_raw', 'power_spectra_epochs',
                    'power_spectra_topo', 'evoked_butterfly',
                    'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white', 'gfp',
@@ -288,7 +378,7 @@ class MyProject:
 
     def populate_evid_directories(self):
         # create subfolders for for event_ids
-        trialed_folders = ['epochs', 'power_spectra_epochs', 'power_spectra_topo',
+        trialed_folders = ['power_spectra_epochs', 'power_spectra_topo',
                            'epochs_image', 'epochs_topo', 'evoked_butterfly',
                            'evoked_topomap', 'evoked_image',
                            'evoked_joint', 'evoked_white', 'gfp', 'label_time_course', 'ECD',
@@ -297,7 +387,7 @@ class MyProject:
                            'tf_sensor_space/joint', 'tf_sensor_space/oscs',
                            'tf_sensor_space/itc', 'mxn_dipoles']
 
-        for ev_id in [e for e in self.parameters['event_id'] if e is not None]:
+        for ev_id in [e for e in self.parameters[self.p_preset]['event_id'] if e is not None]:
             for tr in trialed_folders:
                 subfolder = join(self.figures_path, tr, ev_id)
                 if not exists(subfolder):
@@ -306,3 +396,15 @@ class MyProject:
                         print(subfolder + ' has been created')
                     except OSError:
                         print(subfolder + ': this event-id-name can\'t be used due to OS-Folder-Naming-Conventions')
+
+
+class FileManagement(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        self.layout = QVBoxLayout()

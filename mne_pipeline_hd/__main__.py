@@ -8,7 +8,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 """
 import sys
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication
 
 from bin.gui import main_window
@@ -37,6 +37,12 @@ def main():
     mw = main_window.MainWindow()
     mw.center()
     mw.show()
+    mw.raise_win()
+
+    # Command-Line interrupt with Ctrl+C possible
+    timer = QTimer()
+    timer.timeout.connect(lambda: None)
+    timer.start(500)
 
     # For Spyder to make console accessible again
     app.lastWindowClosed.connect(app.quit)
