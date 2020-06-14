@@ -19,6 +19,16 @@ from PyQt5.QtCore import QObject, QRunnable, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QDesktopWidget, QDialog, QGridLayout, QLabel, QLineEdit, QMessageBox, QPushButton
 
 
+def get_exception_tuple():
+    traceback.print_exc()
+    exctype, value = sys.exc_info()[:2]
+    traceback_str = traceback.format_exc(limit=-10)
+    logging.error(f'{exctype}: {value}\n'
+                  f'{traceback_str}')
+
+    return exctype, value, traceback_str
+
+
 class Worker(QRunnable):
     """
     Worker thread
@@ -50,13 +60,10 @@ class Worker(QRunnable):
 
         # Retrieve args/kwargs here; and fire processing using them
         try:
-            result = self.fn(*self.args, **self.kwargs)
+            self.fn(*self.args, **self.kwargs)
         except:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            logging.error(f'{exctype}: {value}\n'
-                          f'traceback_str')
-            self.signals.error.emit((exctype, value, traceback.format_exc(limit=-10)))
+            exc_tuple = get_exception_tuple()
+            self.signals.error.emit(exc_tuple)
         else:
             self.signals.finished.emit()  # Done
 
@@ -69,13 +76,17 @@ def pipe_excepthook(exc_type, exc, tb):
 
 
 class ErrorDialog(QDialog):
-    def __init__(self, parent, err):
+    def __init__(self, parent, err, title=None):
         if parent:
             super().__init__(parent)
         else:
             super().__init__()
         self.err = err
-        self.setWindowTitle('An Error ocurred!')
+        self.title = title
+        if self.title:
+            self.setWindowTitle(self.title)
+        else:
+            self.setWindowTitle('An Error ocurred!')
 
         self.init_ui()
         if parent:
@@ -90,7 +101,13 @@ class ErrorDialog(QDialog):
 
         self.label = QLabel()
         self.formated_tb_text = self.err[2].replace('\n', '<br>')
-        self.html_text = f'<b><big>{self.err[1]}</b></big><br>{self.formated_tb_text}'
+        if self.title:
+            self.html_text = f'<h1>{self.title}</h1>' \
+                             f'<h2>{self.err[1]}</h2>' \
+                             f'{self.formated_tb_text}'
+        else:
+            self.html_text = f'<h1>{self.err[1]}</h1>' \
+                             f'{self.formated_tb_text}'
         self.label.setText(self.html_text)
         layout.addWidget(self.label, 0, 0, 1, 2)
 

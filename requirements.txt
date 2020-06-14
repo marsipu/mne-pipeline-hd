@@ -10,6 +10,7 @@ PyQt5>=5.10,<5.14; platform_system == "darwin"
 
 # Pipeline-Requirements
 mne
-autoreject
+# autoreject (current mne-python-version not working, replace in future)
+https://api.github.com/repos/autoreject/autoreject/zipball/master
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 qdarkstyle
