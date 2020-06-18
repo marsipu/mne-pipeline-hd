@@ -18,7 +18,7 @@ import pandas as pd
 from PyQt5.QtWidgets import QDialog, QFileDialog, QInputDialog, QMessageBox, QVBoxLayout
 from pandas.errors import EmptyDataError
 
-from bin.gui import subject_widgets as subs
+from src.gui import subject_widgets as subs
 
 
 class MyProject:

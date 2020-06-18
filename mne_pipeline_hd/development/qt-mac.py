@@ -2,7 +2,7 @@ import sys
 
 import matplotlib
 
-from bin.pipeline_functions import ismac
+from src.pipeline_functions import ismac
 
 if ismac:
     matplotlib.use('MacOSX')
@@ -13,7 +13,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QDesktopWidget, QPushButton, QVBoxLayout
 
-from bin.basic_functions import plot
+from src.basic_functions import plot
 
 class TestMainWindow(QMainWindow):
     def __init__(self):

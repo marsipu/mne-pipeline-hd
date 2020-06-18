@@ -11,8 +11,8 @@ import sys
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication
 
-from bin.gui import main_window
-from bin.pipeline_functions import ismac
+from src.gui import main_window
+from src.pipeline_functions import ismac
 
 
 def main():
