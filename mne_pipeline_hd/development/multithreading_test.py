@@ -4,7 +4,7 @@ import time
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
-from bin.basic_functions import loading
+from src.basic_functions import loading
 
 
 class WorkerSignals(QObject):
