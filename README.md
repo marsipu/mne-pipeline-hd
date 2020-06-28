@@ -5,8 +5,8 @@
 ## Installation
 1. Install MNE-python as instructed on the [website](https://www.martinos.org/mne/stable/install_mne_python.html),
 I would recommend to install in a separate conda environment with:
-`conda env create -n mne_pipeline -f environment.yml`
-2. `conda activate mne_pipeline`
+`conda env create -n mne_p -f environment.yml`
+2. `conda activate mne_p`
 3. `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/master`
 
 (or do `pip install -e --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/master`
@@ -17,11 +17,11 @@ I would recommend to install in a separate conda environment with:
 Just run `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/master` again
 
 ## Start
-Run `python mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_pipeline`)
+Run `python mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_p`)
 
 **or**
 
-Load the Pipeline-folder in an IDE like PyCharm, Spyder, Atom, etc. and run \_\_main\_\_.py
+Load the Pipeline-folder in an IDE like PyCharm, VSCode, Atom, etc. and run \_\_main\_\_.py\
 
 ***When using the pipeline and its functions bear in mind that the pipeline is stil in development 
 and the functions are partly still adjusted to my analysis!***
