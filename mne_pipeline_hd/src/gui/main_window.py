@@ -911,6 +911,7 @@ class MainWindow(QMainWindow):
         event.accept()
 
 
+# Todo: Appropriate Documentation
 class QuickGuide(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
