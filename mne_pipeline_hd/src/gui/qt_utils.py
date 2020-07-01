@@ -187,5 +187,7 @@ class OutputStream(io.TextIOBase):
         self.signal = OutputSignal()
 
     def write(self, text):
+        # Send still the output to the command line
         sys.__stdout__.write(text)
+        # Emit additionally the written text in a pyqtSignal
         self.signal.text_written.emit(text)

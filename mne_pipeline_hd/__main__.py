@@ -9,9 +9,10 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 import sys
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QWidget
 
 from src.gui import main_window
+from src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
 from src.pipeline_functions import ismac
 
 
@@ -33,11 +34,18 @@ def main():
         app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
         # Workaround for MAC menu-bar-focusing issue
         app.setAttribute(Qt.AA_DontUseNativeMenuBar, True)
+    try:
+        mw = main_window.MainWindow()
+        mw.center()
+        mw.show()
+        mw.raise_win()
+    except:
+        exc_tuple = get_exception_tuple()
+        ErrorDialog(QWidget(), exc_tuple,
+                    title=f'Error while Main-Window-Inititialization')
 
-    mw = main_window.MainWindow()
-    mw.center()
-    mw.show()
-    mw.raise_win()
+    # Redirect stdout to capture it later in GUI
+    sys.stdout = OutputStream()
 
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()

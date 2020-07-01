@@ -1251,7 +1251,6 @@ class SubDictWidget(QWidget):
         self.template_brain = self.template_box.currentText()
         self.tmpb_dlg = TmpBrainDialog(self)
         # Redirect stdout to capture it
-        sys.stdout = OutputStream()
         sys.stdout.signal.text_written.connect(self.tmpb_dlg.update_text_edit)
 
         worker = TmpBrainWorker(self.add_template_brain)
