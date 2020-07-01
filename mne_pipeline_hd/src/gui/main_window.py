@@ -33,7 +33,7 @@ from mayavi import mlab
 
 from src import basic_functions, resources
 from src.gui import parameter_widgets
-from src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
+from src.gui.qt_utils import ErrorDialog, get_exception_tuple
 from src.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                                      SubjectDock,
                                      SubjectWizard)
@@ -751,8 +751,6 @@ class MainWindow(QMainWindow):
         self.run_dialog.pgbar.setMaximum(self.all_prog)
         self.run_dialog.open()
 
-        # Redirect stdout to capture it
-        sys.stdout = OutputStream()
         sys.stdout.signal.text_written.connect(self.run_dialog.update_label)
 
         self.fworker = FunctionWorker(self)
