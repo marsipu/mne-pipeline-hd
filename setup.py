@@ -26,8 +26,8 @@ setup(name='mne_pipeline_hd',
                    'Topic :: Scientific/Engineering'],
       include_package_data=True,
       entry_points={
-          'gui_scripts': [
-              'mne_pipeline_hd=mne_pipeline_hd.__main__:main'
+          'console_scripts': [
+              'mne_pipeline_hd = mne_pipeline_hd.__main__:main'
           ]
       }
 

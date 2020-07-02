@@ -19,8 +19,8 @@ from mayavi import mlab
 from nilearn.plotting import plot_anat
 from surfer import Brain
 
-from src.basic_functions import operations as op
-from src.pipeline_functions.decorators import topline
+from mne_pipeline_hd.src.basic_functions import operations as op
+from mne_pipeline_hd.src.pipeline_functions.decorators import topline
 
 
 # ==============================================================================

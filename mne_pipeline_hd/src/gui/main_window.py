@@ -31,15 +31,14 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 from mayavi import mlab
 
-from src import basic_functions, resources
-from src.gui import parameter_widgets
-from src.gui.qt_utils import ErrorDialog, get_exception_tuple
-from src.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
-                                     SubjectDock,
-                                     SubjectWizard)
-from src.pipeline_functions import iswin
-from src.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, func_from_def)
-from src.pipeline_functions.project import MyProject
+from mne_pipeline_hd.src import basic_functions, resources
+from mne_pipeline_hd.src.gui import parameter_widgets
+from mne_pipeline_hd.src.gui.qt_utils import ErrorDialog, get_exception_tuple
+from mne_pipeline_hd.src.gui.subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
+                                                     SubjectDock, SubjectWizard)
+from mne_pipeline_hd.src.pipeline_functions import iswin
+from mne_pipeline_hd.src.pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, func_from_def)
+from mne_pipeline_hd.src.pipeline_functions.project import MyProject
 
 
 def get_upstream():
@@ -146,8 +145,8 @@ class MainWindow(QMainWindow):
 
         self.desk_geometry = self.app.desktop().availableGeometry()
         self.size_ratio = 0.9
-        height = self.desk_geometry.height() * self.size_ratio
-        width = self.desk_geometry.width() * self.size_ratio
+        height = int(self.desk_geometry.height() * self.size_ratio)
+        width = int(self.desk_geometry.width() * self.size_ratio)
         self.setGeometry(0, 0, width, height)
 
     # Todo: Import (maybe as custom-packages), which makes import across custom-packages possible
