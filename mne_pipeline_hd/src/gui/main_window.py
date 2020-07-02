@@ -35,7 +35,7 @@ from .. import basic_functions, resources
 from . import parameter_widgets
 from .qt_utils import ErrorDialog, get_exception_tuple
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
-                                                     SubjectDock, SubjectWizard)
+                              SubjectDock, SubjectWizard)
 from ..pipeline_functions import iswin
 from ..pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, func_from_def)
 from ..pipeline_functions.project import MyProject
@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
         # Load custom_modules
         pd_functions_pattern = r'.*_functions\.csv'
         pd_parameters_pattern = r'.*_parameters\.csv'
-        custom_module_pattern = r'(.+)(\.py)'
+        custom_module_pattern = r'(.+)(\.py)$'
         for dir_path, dir_names, file_names in os.walk(self.pr.custom_pkg_path):
             for file_name in file_names:
                 functions_match = re.match(pd_functions_pattern, file_name)
@@ -186,7 +186,7 @@ class MainWindow(QMainWindow):
                             spec.loader.exec_module(module)
                         except:
                             exc_tuple = get_exception_tuple()
-                            self.module_err_dlg = ErrorDialog(self, exc_tuple,
+                            self.module_err_dlg = ErrorDialog(exc_tuple, self,
                                                               title=f'Error in custom-module: {module_name}')
                         else:
                             # Add Module to dictionary
@@ -1100,5 +1100,5 @@ class RunDialog(QDialog):
         self.move(qr.topLeft())
 
     def show_errors(self, err):
-        ErrorDialog(self, err)
+        ErrorDialog(err, self)
         self.close_bt.setEnabled(True)

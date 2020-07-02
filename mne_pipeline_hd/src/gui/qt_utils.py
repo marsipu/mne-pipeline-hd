@@ -76,7 +76,7 @@ def pipe_excepthook(exc_type, exc, tb):
 
 
 class ErrorDialog(QDialog):
-    def __init__(self, parent, err, title=None):
+    def __init__(self, err, parent=None, title=None):
         if parent:
             super().__init__(parent)
         else:

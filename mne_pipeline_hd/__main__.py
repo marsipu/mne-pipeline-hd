@@ -1,25 +1,31 @@
 # -*- coding: utf-8 -*-
 """
 Pipeline-GUI for Analysis of MEG data
-based on: https://doi.org/10.3389/fnins.2018.00006
+based on: https://www.frontiersin.org/articles/10.3389/fnins.2018.00006/full
 @author: Martin Schulz
 @email: mne.pipeline@gmail.com
 @github: marsipu/mne_pipeline_hd
 """
 import sys
 
+from pathlib import Path
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication, QWidget
 
-# Enable start from command-line (via setup.py-entry_point when pip-installed) and from __main__.py-script
+
+# Enable start from command-line (module installed via pip, thus mne_pipeline_hd already in sys.path,
+# but on the other hand package_dir not in sys.path (import src not working))
+# For import from __main__.py-script (for example in IDE), mne_pipeline_hd not in sys.path so it is added
 try:
-    from mne_pipeline_hd.src.gui import main_window
-    from mne_pipeline_hd.src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
-    from mne_pipeline_hd.src.pipeline_functions import ismac
+    import mne_pipeline_hd
 except ModuleNotFoundError:
-    from src.gui import main_window
-    from src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
-    from src.pipeline_functions import ismac
+    dir_path = Path(__file__).parent.parent
+    sys.path.insert(0, str(dir_path))
+
+from mne_pipeline_hd.src.gui import main_window
+from mne_pipeline_hd.src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
+from mne_pipeline_hd.src.pipeline_functions import ismac
+
 
 def main():
     app_name = 'mne_pipeline_hd'
@@ -51,7 +57,7 @@ def main():
 
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()
-    timer.timeout.connect(lambda: None)
+    timer.timeout.connect(lambda: mw)
     timer.start(500)
 
     # For Spyder to make console accessible again
@@ -65,5 +71,5 @@ if __name__ == '__main__':
         main()
     except:
         exc_tuple = get_exception_tuple()
-        ErrorDialog(QWidget(), exc_tuple,
+        ErrorDialog(exc_tuple, QWidget(),
                     title=f'Error while Main-Window-Inititialization')
