@@ -11,10 +11,15 @@ import sys
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication, QWidget
 
-from mne_pipeline_hd.src.gui import main_window
-from mne_pipeline_hd.src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
-from mne_pipeline_hd.src.pipeline_functions import ismac
-
+# Enable start from command-line (via setup.py-entry_point when pip-installed) and from __main__.py-script
+try:
+    from mne_pipeline_hd.src.gui import main_window
+    from mne_pipeline_hd.src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
+    from mne_pipeline_hd.src.pipeline_functions import ismac
+except ModuleNotFoundError:
+    from src.gui import main_window
+    from src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
+    from src.pipeline_functions import ismac
 
 def main():
     app_name = 'mne_pipeline_hd'
