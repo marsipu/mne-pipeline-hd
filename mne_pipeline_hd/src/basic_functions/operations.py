@@ -19,10 +19,10 @@ import mne
 import numpy as np
 from autoreject import AutoReject
 
-from src.basic_functions import loading
-from src.basic_functions.loading import CurrentSub
-from src.pipeline_functions import iswin, pipeline_utils as ut
-from src.pipeline_functions.decorators import small_func, topline
+from mne_pipeline_hd.src.basic_functions import loading
+from mne_pipeline_hd.src.basic_functions.loading import CurrentSub
+from mne_pipeline_hd.src.pipeline_functions import iswin, pipeline_utils as ut
+from mne_pipeline_hd.src.pipeline_functions.decorators import small_func, topline
 
 
 # Todo: Change normal comments to docstrings

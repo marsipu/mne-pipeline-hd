@@ -14,7 +14,7 @@ from os.path import exists, isfile, join
 
 import autoreject as ar
 
-from src.pipeline_functions import islin, ismac, iswin
+from mne_pipeline_hd.src.pipeline_functions import islin, ismac, iswin
 
 
 def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite_ar=False,
