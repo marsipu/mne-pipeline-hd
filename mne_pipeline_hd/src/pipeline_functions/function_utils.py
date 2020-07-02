@@ -29,10 +29,10 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
                              QScrollArea, QStyle, QTableWidget, QTableWidgetItem, QTableWidgetSelectionRange,
                              QVBoxLayout)
 
-from mne_pipeline_hd.src.basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
-from mne_pipeline_hd.src.gui import parameter_widgets
-from mne_pipeline_hd.src.gui.qt_utils import ErrorDialog, Worker
-from mne_pipeline_hd.src.pipeline_functions import ismac
+from ..basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
+from ..gui import parameter_widgets
+from ..gui.qt_utils import ErrorDialog, Worker
+from . import ismac
 
 
 def func_from_def(func_name, sub, main_win):

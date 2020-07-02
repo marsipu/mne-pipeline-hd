@@ -28,8 +28,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
                              QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
-from mne_pipeline_hd.src.basic_functions import loading
-from mne_pipeline_hd.src.gui.qt_utils import (ErrorDialog, OutputStream, Worker)
+from ..basic_functions import loading
+from .qt_utils import (ErrorDialog, OutputStream, Worker)
 
 
 def file_indexing(which_file, all_files):
