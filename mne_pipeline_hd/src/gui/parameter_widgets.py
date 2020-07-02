@@ -566,6 +566,7 @@ class DictGui(Param):
         self.get_param()
 
 
+# Todo: None als Parameter (Special Parameter)
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 

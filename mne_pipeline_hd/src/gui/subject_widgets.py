@@ -755,7 +755,7 @@ class AddFilesWidget(QWidget):
         self.mw.threadpool.start(worker)
 
     def show_errors(self, err):
-        ErrorDialog(self, err)
+        ErrorDialog(err, self)
 
     def add_files(self, signals):
         existing_files = self.mw.pr.all_files
@@ -1071,7 +1071,7 @@ class AddMRIWidget(QWidget):
                 break
 
     def show_errors(self, err):
-        ErrorDialog(self, err)
+        ErrorDialog(err, self)
 
     def add_mri_finished(self):
         self.list_widget.clear()
@@ -1260,7 +1260,7 @@ class SubDictWidget(QWidget):
         self.mw.threadpool.start(worker)
 
     def show_errors(self, err):
-        ErrorDialog(self, err)
+        ErrorDialog(err, self)
 
     def update_lists(self):
         if self.template_brain not in self.mw.pr.all_mri_subjects:

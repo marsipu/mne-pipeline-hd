@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
 
 from ..basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
 from ..gui import parameter_widgets
-from ..gui.qt_utils import ErrorDialog, Worker
+from ..gui.qt_utils import ErrorDialog, Worker, get_exception_tuple
 from . import ismac
 
 
@@ -132,12 +132,12 @@ class FunctionWorker(Worker):
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
         # from matplotlib, as you can set the backend only once there This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
-        if not self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
-            matplotlib.use('agg')
-        elif ismac:
-            matplotlib.use('macosx')
-        else:
-            matplotlib.use('Qt5Agg')
+        # if not self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
+        #     matplotlib.use('agg')
+        # elif ismac:
+        #     matplotlib.use('macosx')
+        # else:
+        #     matplotlib.use('Qt5Agg')
 
         # Check if any mri-subject is selected
         if len(self.mw.pr.sel_mri_files) * len(self.mw.sel_mri_funcs) > 0:
@@ -737,12 +737,8 @@ class CustomFunctionImport(QDialog):
                 try:
                     spec.loader.exec_module(module)
                 except:
-                    traceback.print_exc()
-                    traceback_str = traceback.format_exc(limit=-10)
-                    exctype, value = sys.exc_info()[:2]
-                    logging.error(f'{exctype}: {value}\n'
-                                  f'{traceback_str}')
-                    ErrorDialog(None, (exctype, value, traceback_str))
+                    err = get_exception_tuple()
+                    ErrorDialog(err, self)
                 for func_key in module.__dict__:
                     # Check, if function is already existing
                     if func_key not in self.exst_functions:
@@ -938,10 +934,8 @@ class TestParamGui(QDialog):
             param_gui = gui_handle(self, self.cf.current_parameter, param_alias, hint, **gui_args)
             layout.addWidget(param_gui)
         except:
-            traceback.print_exc()
-            traceback_str = traceback.format_exc(limit=-10)
-            exctype, value = sys.exc_info()[:2]
-            ErrorDialog(self, (exctype, value, traceback_str))
+            err = get_exception_tuple()
+            ErrorDialog(err, self)
             self.close()
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
