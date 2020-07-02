@@ -34,15 +34,12 @@ def main():
         app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
         # Workaround for MAC menu-bar-focusing issue
         app.setAttribute(Qt.AA_DontUseNativeMenuBar, True)
-    try:
-        mw = main_window.MainWindow()
-        mw.center()
-        mw.show()
-        mw.raise_win()
-    except:
-        exc_tuple = get_exception_tuple()
-        ErrorDialog(QWidget(), exc_tuple,
-                    title=f'Error while Main-Window-Inititialization')
+
+    mw = main_window.MainWindow()
+
+    mw.center()
+    mw.show()
+    mw.raise_win()
 
     # Redirect stdout to capture it later in GUI
     sys.stdout = OutputStream()
@@ -58,4 +55,10 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # Todo: Make Exception-Handling for PyQt-Start working (from event-loop?)
+    try:
+        main()
+    except:
+        exc_tuple = get_exception_tuple()
+        ErrorDialog(QWidget(), exc_tuple,
+                    title=f'Error while Main-Window-Inititialization')
