@@ -59,7 +59,8 @@ class MainWinSignals(QObject):
     cancel_functions = pyqtSignal(bool)
     plot_running = pyqtSignal(bool)
 
-
+# Todo: Controller-Class to make MainWindow-Class more light and prepare for features as Pipeline-Freezig
+#  (you need an PyQt-independent system for that)
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()

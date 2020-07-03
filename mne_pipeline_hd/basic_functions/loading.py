@@ -787,7 +787,7 @@ class CurrentSub(BaseSub):
                 try:
                     stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}')
                     stc = mne.source_estimate.read_source_estimate(stc_path)
-                except FileNotFoundError:
+                except OSError:
                     old_stc_path = join(self.save_dir,
                                         f'{self.name}{filter_string(self.p["highpass"], self.p["lowpass"])}'
                                         f'_{trial}_{self.p["inverse_method"]}')

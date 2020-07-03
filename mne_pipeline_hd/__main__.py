@@ -7,24 +7,24 @@ based on: https://www.frontiersin.org/articles/10.3389/fnins.2018.00006/full
 @github: marsipu/mne_pipeline_hd
 """
 import sys
-
 from pathlib import Path
+
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication, QWidget
 
-
 # Enable start from command-line (module installed via pip, thus mne_pipeline_hd already in sys.path,
 # but on the other hand package_dir not in sys.path (import src not working))
-# For import from __main__.py-script (for example in IDE), mne_pipeline_hd not in sys.path so it is added
+# For start from __main__.py-script (for example in IDE), mne_pipeline_hd not in sys.path so it is added
 try:
+    # if installed via pip, currently always the pip installed package is loaded
     import mne_pipeline_hd
 except ModuleNotFoundError:
-    dir_path = Path(__file__).parent.parent
-    sys.path.insert(0, str(dir_path))
+    top_package_path = str(Path(sys.path[0]).parent)
+    sys.path.insert(0, top_package_path)
 
-from mne_pipeline_hd.src.gui import main_window
-from mne_pipeline_hd.src.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
-from mne_pipeline_hd.src.pipeline_functions import ismac
+from mne_pipeline_hd.gui import main_window
+from mne_pipeline_hd.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
+from mne_pipeline_hd.pipeline_functions import ismac
 
 
 def main():
@@ -60,16 +60,9 @@ def main():
     timer.timeout.connect(lambda: mw)
     timer.start(500)
 
-    # For Spyder to make console accessible again
-    app.lastWindowClosed.connect(app.quit)
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
     # Todo: Make Exception-Handling for PyQt-Start working (from event-loop?)
-    try:
-        main()
-    except:
-        exc_tuple = get_exception_tuple()
-        ErrorDialog(exc_tuple, QWidget(),
-                    title=f'Error while Main-Window-Inititialization')
+    main()

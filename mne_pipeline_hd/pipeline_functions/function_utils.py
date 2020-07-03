@@ -7,11 +7,8 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @github: marsipu/mne_pipeline_hd
 """
 import inspect
-import logging
 import shutil
-import sys
 import time
-import traceback
 import types
 from ast import literal_eval
 from importlib import util
@@ -21,6 +18,7 @@ from os.path import isdir, isfile, join
 from pathlib import Path
 
 import matplotlib
+import mne
 import pandas as pd
 from PyQt5.QtCore import QObject, QSize, Qt, pyqtSignal
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout, QGridLayout,
@@ -32,7 +30,6 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
 from ..basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
 from ..gui import parameter_widgets
 from ..gui.qt_utils import ErrorDialog, Worker, get_exception_tuple
-from . import ismac
 
 
 def func_from_def(func_name, sub, main_win):
@@ -130,14 +127,19 @@ class FunctionWorker(Worker):
         """
 
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
-        # from matplotlib, as you can set the backend only once there This could be solved with importing all the
+        # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
-        # if not self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
-        #     matplotlib.use('agg')
+        if not self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
+            matplotlib.use('agg')
         # elif ismac:
         #     matplotlib.use('macosx')
-        # else:
-        #     matplotlib.use('Qt5Agg')
+        else:
+            matplotlib.use('Qt5Agg')
+
+        if self.mw.pr.parameters[self.mw.pr.p_preset]['mne_backend'] == 'pyvista':
+            mne.viz.set_3d_backend('pyvista')
+        else:
+            mne.viz.set_3d_backend('mayavi')
 
         # Check if any mri-subject is selected
         if len(self.mw.pr.sel_mri_files) * len(self.mw.sel_mri_funcs) > 0:
@@ -243,8 +245,7 @@ class CustomFunctionImport(QDialog):
         # Todo: Better solution to include subject-attributes
         exst_attributes = ['mw', 'pr', 'sub', 'mri_sub', 'ga_group', 'name', 'save_dir', 'ermsub', 'bad_channels']
         exst_proj_attributes = vars(self.mw.pr)
-        self.exst_parameters = exst_attributes + \
-                               list(exst_proj_attributes) + \
+        self.exst_parameters = exst_attributes + list(exst_proj_attributes) + \
                                list(self.mw.pr.parameters[self.mw.pr.p_preset])
 
         self.add_pd_funcs = pd.DataFrame(columns=['alias', 'tab', 'group', 'subject_loop', 'matplotlib', 'mayavi',
