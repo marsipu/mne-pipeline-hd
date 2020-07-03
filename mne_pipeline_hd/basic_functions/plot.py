@@ -466,12 +466,12 @@ def plot_stc(sub, stc_interactive, mne_evoked_time):
                      title=f'{sub.name}-{trial}', size=(1600, 800))
         else:
             for idx, t in enumerate(mne_evoked_time):
-                figures_list = [mlab.figure(figure=idx * 2, size=(800, 800)),
-                                mlab.figure(figure=idx * 2 + 1, size=(800, 800))]
+                # figures_list = [mlab.figure(figure=idx * 2, size=(800, 800)),
+                #                 mlab.figure(figure=idx * 2 + 1, size=(800, 800))]
 
                 brain = stc.plot(subject=sub.subtomri, surface='inflated', subjects_dir=sub.subjects_dir,
                                  time_viewer=False, hemi='split', views='lat', initial_time=t,
-                                 title=f'{sub.name}-{trial}', size=(1600, 800), figure=figures_list)
+                                 title=f'{sub.name}-{trial}', size=(1600, 800))
                 brain.title = f'{sub.name}-{trial}'
 
                 if sub.save_plots:

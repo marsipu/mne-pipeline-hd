@@ -30,6 +30,7 @@ inverse_method;Inverse-Method;MNE;;Choose the Inverse-Method for Source-Estimate
 pick_ori;Dipole-Orientation;None;;Choose the Dipole-Orientation for Source-Estimate;ComboGui;{'options': [None, 'normal', 'vector'], 'options_mapping': {None: 'free'}}
 lambda2;;1.0 / 3.0 ** 2;;lambda2 for Source-Estimate;FuncGui;
 mne_evoked_time;;[0.1,0.15,0.2];s;time-points to be displayed in several plots[s];ListGui;
+mne_backend;;mayavi;;Which backend to use for plotting;ComboGui;{'options': ['mayavi', 'pyvista']}
 stc_interactive;;False;;interactive stc-plots;BoolGui;
 stc_animation;;(0,0.5);s;time-span for stc-animation[s];TupleGui;
 parcellation;;aparc;;;StringGui;

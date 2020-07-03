@@ -1,3 +1,3 @@
 include README.md
 include LICENSE
-recursive-include mne_pipeline_hd/src/resources *
+recursive-include mne_pipeline_hd/resources *

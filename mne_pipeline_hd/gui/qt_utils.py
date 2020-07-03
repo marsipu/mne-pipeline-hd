@@ -16,7 +16,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from PyQt5.QtCore import QObject, QRunnable, Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QDesktopWidget, QDialog, QGridLayout, QLabel, QLineEdit, QMessageBox, QPushButton
+from PyQt5.QtWidgets import (QDesktopWidget, QDialog, QGridLayout, QLabel, QLineEdit,
+                             QMessageBox, QPushButton, QApplication)
 
 
 def get_exception_tuple():
@@ -68,13 +69,6 @@ class Worker(QRunnable):
             self.signals.finished.emit()  # Done
 
 
-def pipe_excepthook(exc_type, exc, tb):
-    tb.print_exc()
-    traceback_str = tb.format_exc(limit=-10)
-    logging.error(f'{exc_type}: {exc}\n'
-                  f'{traceback_str}')
-
-
 class ErrorDialog(QDialog):
     def __init__(self, err, parent=None, title=None):
         if parent:
@@ -89,6 +83,7 @@ class ErrorDialog(QDialog):
             self.setWindowTitle('An Error ocurred!')
 
         self.init_ui()
+
         if parent:
             self.open()
         else:
@@ -128,6 +123,12 @@ class ErrorDialog(QDialog):
         layout.addWidget(self.close_bt, 2, 1)
 
         self.setLayout(layout)
+
+        self.desk_geometry = QApplication.instance().desktop().availableGeometry()
+        self.size_ratio = 0.7
+        height = int(self.desk_geometry.height() * self.size_ratio)
+        width = int(self.desk_geometry.width() * self.size_ratio)
+        self.setMaximumSize(width, height)
 
     def center(self):
         qr = self.frameGeometry()
