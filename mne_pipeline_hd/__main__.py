@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtWidgets import QApplication
 
 # Enable start from command-line (module installed via pip, thus mne_pipeline_hd already in sys.path,
 # but on the other hand package_dir not in sys.path (import src not working))
@@ -23,7 +23,7 @@ except ModuleNotFoundError:
     sys.path.insert(0, top_package_path)
 
 from mne_pipeline_hd.gui import main_window
-from mne_pipeline_hd.gui.qt_utils import ErrorDialog, OutputStream, get_exception_tuple
+from mne_pipeline_hd.gui.qt_utils import OutputStream
 from mne_pipeline_hd.pipeline_functions import ismac
 
 

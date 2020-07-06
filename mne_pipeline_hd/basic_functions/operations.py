@@ -96,7 +96,7 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
 
 # Todo: Separate Heidelberg-find_events from main_func
 @topline
-def find_events(sub, adjust_timeline_by_msec, overwrite):
+def find_events(sub, min_duration, shortest_event, adjust_timeline_by_msec, overwrite):
     if overwrite or not isfile(sub.events_path):
         raw = sub.load_raw()
 
@@ -107,12 +107,18 @@ def find_events(sub, adjust_timeline_by_msec, overwrite):
         evs_tol = list()
 
         # Find events for each stim channel, append sample values to list
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 001'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 002'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 003'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 004'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 005'])[:, 0])
-        evs.append(mne.find_events(raw, min_duration=0.002, stim_channel=['STI 006'])[:, 0])
+        evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+                                   stim_channel=['STI 001'])[:, 0])
+        evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+                                   stim_channel=['STI 002'])[:, 0])
+        evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+                                   stim_channel=['STI 003'])[:, 0])
+        evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+                                   stim_channel=['STI 004'])[:, 0])
+        evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+                                   stim_channel=['STI 005'])[:, 0])
+        evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+                                   stim_channel=['STI 006'])[:, 0])
 
         for i in evs:
 

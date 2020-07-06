@@ -8,7 +8,7 @@ setup_vol_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operat
 morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, morph_to, overwrite
 morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
 filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit
-find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;sub, adjust_timeline_by_msec, overwrite
+find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;sub, min_duration, shortest_event, adjust_timeline_by_msec, overwrite
 epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject, overwrite_ar, decim, overwrite
 run_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, overwrite, autoreject, save_plots, figures_path, pscripts_path
 apply_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, overwrite
