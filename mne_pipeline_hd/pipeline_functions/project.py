@@ -241,7 +241,7 @@ class MyProject:
                     for param in [p for p in loaded_parameters[p_preset] if p not in self.mw.pd_params.index]:
                         loaded_parameters[p_preset].pop(param)
                     # Add parameters, which exist in resources/parameters.csv,
-                    # but not in loaded-parameters (e.g. added in development)
+                    # but not in loaded-parameters (e.g. added with custom-module)
                     for param in [p for p in self.mw.pd_params.index if p not in loaded_parameters[p_preset]]:
                         try:
                             eval_param = literal_eval(self.mw.pd_params.loc[param, 'default'])

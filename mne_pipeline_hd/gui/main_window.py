@@ -37,7 +37,8 @@ from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDi
                               SubjectDock, SubjectWizard)
 from .. import basic_functions, resources
 from ..pipeline_functions import iswin
-from ..pipeline_functions.function_utils import (CustomFunctionImport, FunctionWorker, func_from_def)
+from ..pipeline_functions.function_utils import (ChooseCustomModules, CustomFunctionImport, FunctionWorker,
+                                                 func_from_def)
 from ..pipeline_functions.project import MyProject
 
 
@@ -267,6 +268,8 @@ class MainWindow(QMainWindow):
         # Custom-Functions
         self.customf_menu = self.menuBar().addMenu('&Custom Functions')
         self.aadd_customf = self.customf_menu.addAction('&Add custom Functions', self.add_customf)
+
+        self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', self.choose_customf)
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
@@ -499,13 +502,21 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(sublayout)
 
-        param_scroll = QScrollArea()
+        self.param_scroll = QScrollArea()
         self.qall_parameters = QAllParameters(self)
-        param_scroll.setWidget(self.qall_parameters)
+        self.param_scroll.setWidget(self.qall_parameters)
 
-        layout.addWidget(param_scroll)
+        layout.addWidget(self.param_scroll)
         tab.setLayout(layout)
         self.tab_func_widget.addTab(tab, 'Parameters')
+
+    def update_param_gui(self):
+        self.param_scroll.takeWidget()
+        self.qall_parameters.close()
+        del self.qall_parameters
+
+        self.qall_parameters = QAllParameters(self)
+        self.param_scroll.setWidget(self.qall_parameters)
 
     def update_p_preset_project(self):
         self.qall_parameters.update_all_param_guis()
@@ -713,6 +724,9 @@ class MainWindow(QMainWindow):
 
     def add_customf(self):
         self.cf_import = CustomFunctionImport(self)
+
+    def choose_customf(self):
+        self.cf_choose = ChooseCustomModules(self)
 
     def reset_parameters(self):
         msgbox = QMessageBox.question(self, 'Reset all Parameters?',

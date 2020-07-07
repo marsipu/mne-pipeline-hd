@@ -1038,9 +1038,8 @@ class SavePkgDialog(QDialog):
         # Todo: update func-Buttons and Parameters-Widgets
 
 
-def test_func(name, save_dir, huga, buga, f=3):
-    print(name)
-    save_dir = save_dir + f
-    huga = huga - buga
+class ChooseCustomModules(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
 
-    return save_dir, huga
