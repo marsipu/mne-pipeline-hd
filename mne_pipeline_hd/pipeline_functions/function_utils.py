@@ -36,7 +36,10 @@ from ..gui.qt_utils import ErrorDialog, Worker, get_exception_tuple
 def func_from_def(func_name, sub, main_win):
     # Get module, has to specified in functions.csv as it is imported
     module_name = main_win.pd_funcs['module'][func_name]
-    module = main_win.all_modules[module_name]
+    if module_name in main_win.all_modules['basic']:
+        module = main_win.all_modules['basic'][module_name]
+    elif module_name in main_win.all_modules['custom']:
+        module = main_win.all_modules['custom'][module_name][0]
 
     # Get Argument-Names from functions.csv (alias pd_funcs)
     arg_string = main_win.pd_funcs.loc[func_name, 'func_args']
@@ -1027,6 +1030,8 @@ class SavePkgDialog(QDialog):
             if item_list:
                 item = item_list[0]
                 self.cf.func_tablew.removeRow(self.cf.func_tablew.row(item))
+
+        self.cf.mw.import_func_modules()
 
         self.close()
 
