@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
                              QScrollArea, QStyle, QTableWidget, QTableWidgetItem, QTableWidgetSelectionRange,
                              QVBoxLayout)
 
+from . import ismac
 from ..basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
 from ..gui import parameter_widgets
 from ..gui.qt_utils import ErrorDialog, Worker, get_exception_tuple
@@ -131,8 +132,8 @@ class FunctionWorker(Worker):
         # function-modules here, but you had to import them for each run then
         if not self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
             matplotlib.use('agg')
-        # elif ismac:
-        #     matplotlib.use('macosx')
+        elif ismac:
+            matplotlib.use('macosx')
         else:
             matplotlib.use('Qt5Agg')
 

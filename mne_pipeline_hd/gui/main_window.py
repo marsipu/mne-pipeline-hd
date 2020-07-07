@@ -15,6 +15,7 @@ import traceback
 from ast import literal_eval
 from functools import partial
 from importlib import util
+from os import listdir
 from os.path import join
 from pathlib import Path
 from subprocess import run
@@ -58,6 +59,7 @@ class MainWinSignals(QObject):
     # Signals to send into QThread to control function execution
     cancel_functions = pyqtSignal(bool)
     plot_running = pyqtSignal(bool)
+
 
 # Todo: Controller-Class to make MainWindow-Class more light and prepare for features as Pipeline-Freezig
 #  (you need an PyQt-independent system for that)
@@ -165,40 +167,67 @@ class MainWindow(QMainWindow):
         pd_functions_pattern = r'.*_functions\.csv'
         pd_parameters_pattern = r'.*_parameters\.csv'
         custom_module_pattern = r'(.+)(\.py)$'
-        for dir_path, dir_names, file_names in os.walk(self.pr.custom_pkg_path):
-            for file_name in file_names:
+        for directory in os.scandir(self.pr.custom_pkg_path):
+            pkg_name = directory.name
+            pkg_path = directory.path
+            file_dict = {'functions': None, 'parameters': None, 'module': None}
+            for file_name in listdir(pkg_path):
                 functions_match = re.match(pd_functions_pattern, file_name)
                 parameters_match = re.match(pd_parameters_pattern, file_name)
                 custom_module_match = re.match(custom_module_pattern, file_name)
                 if functions_match:
-                    read_pd_funcs = pd.read_csv(join(dir_path, file_name), sep=';', index_col=0)
-                    for idx in [ix for ix in read_pd_funcs.index if ix not in self.pd_funcs.index]:
-                        self.pd_funcs = self.pd_funcs.append(read_pd_funcs.loc[idx])
+                    file_dict['functions'] = join(pkg_path, file_name)
                 elif parameters_match:
-                    read_pd_params = pd.read_csv(join(dir_path, file_name), sep=';', index_col=0)
-                    for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
-                        self.pd_params = self.pd_params.append(read_pd_params.loc[idx])
-                elif custom_module_match:
-                    module_name = custom_module_match.group(1)
-                    if module_name != '__init__':
-                        spec = util.spec_from_file_location(file_name, join(dir_path, file_name))
-                        module = util.module_from_spec(spec)
-                        try:
-                            spec.loader.exec_module(module)
-                        except:
-                            exc_tuple = get_exception_tuple()
-                            self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                              title=f'Error in custom-module: {module_name}')
-                        else:
-                            # Add Module to dictionary
-                            self.all_modules[module_name] = module
-                            # Assign Module-Names to their Package
-                            if dir_path != self.pr.custom_pkg_path:
-                                pkg_name = Path(dir_path).name
-                                if pkg_name in self.custom_packages:
-                                    self.custom_packages[pkg_name].append(module_name)
-                                else:
-                                    self.custom_packages.update({pkg_name: [module_name]})
+                    file_dict['parameters'] = join(pkg_path, file_name)
+                elif custom_module_match and custom_module_match.group(1) != '__init__':
+                    file_dict['module'] = custom_module_match
+
+            # Check, that there is a whole set for a custom-module (module-file, functions, parameters)
+            if all([value is not None for value in file_dict.values()]):
+                functions_path = file_dict['functions']
+                parameters_path = file_dict['parameters']
+                module_name = file_dict['module'].group(1)
+                module_file_name = file_dict['module'].group()
+
+                spec = util.spec_from_file_location(module_file_name, join(pkg_path, module_file_name))
+                module = util.module_from_spec(spec)
+                try:
+                    spec.loader.exec_module(module)
+                except:
+                    exc_tuple = get_exception_tuple()
+                    self.module_err_dlg = ErrorDialog(exc_tuple, self,
+                                                      title=f'Error in import of custom-module: {module_name}')
+                else:
+                    # Add Module to dictionary
+                    self.all_modules[module_name] = module
+                    # Assign Module-Names to their Package (if there are several modules per package)
+                    if pkg_name in self.custom_packages:
+                        self.custom_packages[pkg_name].append(module_name)
+                    else:
+                        self.custom_packages.update({pkg_name: [module_name]})
+
+                    try:
+                        read_pd_funcs = pd.read_csv(functions_path, sep=';', index_col=0)
+                        for idx in [ix for ix in read_pd_funcs.index if ix not in self.pd_funcs.index]:
+                            self.pd_funcs = self.pd_funcs.append(read_pd_funcs.loc[idx])
+                    except:
+                        exc_tuple = get_exception_tuple()
+                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
+                                                          title=f'Error in import of functions-file: '
+                                                                f'{functions_path}')
+                    try:
+                        read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
+                        for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
+                            self.pd_params = self.pd_params.append(read_pd_params.loc[idx])
+                    except:
+                        exc_tuple = get_exception_tuple()
+                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
+                                                          title=f'Error in import of parameters-file: '
+                                                                f'{parameters_path}')
+            else:
+                text = f'Files for import of {pkg_name} are missing: ' \
+                       f'{[key for key in file_dict if file_dict[key] is None]}'
+                QMessageBox.warning(self, 'Import-Problem', text)
 
     def make_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
@@ -1004,8 +1033,8 @@ class RunDialog(QDialog):
 
         desk_geometry = self.mw.app.desktop().availableGeometry()
         self.size_ratio = 0.6
-        height = desk_geometry.height() * self.size_ratio
-        width = desk_geometry.width() * self.size_ratio
+        height = int(desk_geometry.height() * self.size_ratio)
+        width = int(desk_geometry.width() * self.size_ratio)
         self.setGeometry(0, 0, width, height)
         self.center()
 
