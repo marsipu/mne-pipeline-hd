@@ -20,16 +20,18 @@ from pathlib import Path
 import matplotlib
 import mne
 import pandas as pd
-from PyQt5.QtCore import QObject, QSize, Qt, pyqtSignal
+from PyQt5.QtCore import QObject, QPoint, QSize, Qt, pyqtSignal
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout, QGridLayout,
-                             QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem,
+                             QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListView, QListWidget,
+                             QListWidgetItem,
                              QMessageBox, QPushButton,
                              QScrollArea, QStyle, QTableWidget, QTableWidgetItem, QTableWidgetSelectionRange,
-                             QVBoxLayout)
+                             QToolTip, QVBoxLayout)
 
 from . import ismac
 from ..basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
 from ..gui import parameter_widgets
+from ..gui.qt_models import CheckListModel
 from ..gui.qt_utils import ErrorDialog, Worker, get_exception_tuple
 
 
@@ -52,6 +54,7 @@ def func_from_def(func_name, sub, main_win):
 
     keyword_arguments = dict()
 
+    # Get the values for parameter-names
     for arg_name in arg_names:
         # Remove trailing spaces
         arg_name = arg_name.replace(' ', '')
@@ -229,6 +232,7 @@ class FunctionWorker(Worker):
                 break
 
 
+# Todo: Rework with Model/View
 class CustomFunctionImport(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -811,15 +815,17 @@ class CustomFunctionImport(QDialog):
         SelectDependencies(self)
 
     def test_param_gui(self, default_string, gui_type):
-        self.parameters = {}
+        # Simulate CustomFunctionImport as Project-Class
+        self.parameters = {'Test': {}}
+        self.p_preset = 'Test'
         try:
-            self.parameters[self.current_parameter] = literal_eval(default_string)
+            self.parameters['Test'][self.current_parameter] = literal_eval(default_string)
         except (ValueError, SyntaxError):
             # Allow parameters to be defined by functions by numpy, etc.
             if self.add_pd_params.loc[self.current_parameter, 'gui_type'] == 'FuncGui':
-                self.parameters[self.current_parameter] = eval(default_string)
+                self.parameters['Test'][self.current_parameter] = eval(default_string)
             else:
-                self.parameters[self.current_parameter] = default_string
+                self.parameters['Test'][self.current_parameter] = default_string
         gui_handle = getattr(parameter_widgets, gui_type)
         try:
             gui_handle(self, self.current_parameter, 'Test', '')
@@ -899,16 +905,17 @@ class TestParamGui(QDialog):
         super().__init__(cf_dialog)
         self.cf = cf_dialog
         # Replacement for Parameters in Project for Testing
-        self.parameters = {}
+        self.parameters = {'Test': {}}
+        self.p_preset = 'Test'
         string_param = self.cf.add_pd_params.loc[self.cf.current_parameter, 'default']
         try:
-            self.parameters[self.cf.current_parameter] = literal_eval(string_param)
+            self.parameters['Test'][self.cf.current_parameter] = literal_eval(string_param)
         except (ValueError, SyntaxError):
             # Allow parameters to be defined by functions by numpy, etc.
             if self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type'] == 'FuncGui':
-                self.parameters[self.cf.current_parameter] = eval(string_param)
+                self.parameters['Test'][self.cf.current_parameter] = eval(string_param)
             else:
-                self.parameters[self.cf.current_parameter] = string_param
+                self.parameters['Test'][self.cf.current_parameter] = string_param
 
         self.init_ui()
         self.open()
@@ -955,16 +962,13 @@ class SavePkgDialog(QDialog):
         self.pkg_path = None
 
         self.init_ui()
-        self.populate_pkg_cmbx()
         self.open()
 
     def init_ui(self):
         layout = QGridLayout()
-        self.pkg_cmbx = QComboBox()
-        self.pkg_cmbx.setEditable(True)
-        self.pkg_cmbx.activated.connect(self.pkg_cmbx_changed)
-        self.pkg_cmbx.editTextChanged.connect(self.pkg_cmbx_edited)
-        layout.addWidget(self.pkg_cmbx, 0, 0, 1, 2)
+        self.pkg_le = QLineEdit()
+        self.pkg_le.textEdited.connect(self.pkg_le_changed)
+        layout.addWidget(self.pkg_le, 0, 0, 1, 2)
 
         save_bt = QPushButton('Save')
         save_bt.clicked.connect(self.save_pkg)
@@ -975,17 +979,13 @@ class SavePkgDialog(QDialog):
         layout.addWidget(cancel_bt, 1, 1)
         self.setLayout(layout)
 
-    def populate_pkg_cmbx(self):
-        self.pkg_cmbx.insertItems(0, [d for d in listdir(self.cf.mw.pr.custom_pkg_path)
-                                      if isdir(join(self.cf.mw.pr.custom_pkg_path, d))])
-
-    def pkg_cmbx_changed(self, idx):
-        self.pkg_name = self.pkg_cmbx.itemText(idx)
-        self.pkg_path = join(self.cf.mw.pr.custom_pkg_path, self.pkg_name)
-
-    def pkg_cmbx_edited(self, text):
-        self.pkg_name = text
-        self.pkg_path = join(self.cf.mw.pr.custom_pkg_path, self.pkg_name)
+    def pkg_le_changed(self, text):
+        if text in listdir(self.cf.mw.pr.custom_pkg_path):
+            QToolTip.showText(self.pkg_le.mapToGlobal(QPoint(0, 0)), 'This name is already used!')
+            self.pkg_le.setText('')
+        else:
+            self.pkg_name = self.pkg_le.text()
+            self.pkg_path = join(self.cf.mw.pr.custom_pkg_path, self.pkg_name)
 
     def save_pkg(self):
         copy_modules = set()
@@ -1032,7 +1032,8 @@ class SavePkgDialog(QDialog):
                 self.cf.func_tablew.removeRow(self.cf.func_tablew.row(item))
 
         self.cf.mw.import_func_modules()
-
+        self.cf.mw.update_func_bts()
+        self.cf.mw.update_param_gui_tab()
         self.close()
 
         # Todo: update func-Buttons and Parameters-Widgets
@@ -1042,4 +1043,26 @@ class ChooseCustomModules(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.custom_modules = list(self.mw.all_modules['custom'].keys())
 
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        self.layout = QVBoxLayout()
+
+        self.list_view = QListView()
+        self.list_model = CheckListModel(data=self.custom_modules, checked=self.mw.selected_modules)
+        self.list_view.setModel(self.list_model)
+        self.layout.addWidget(self.list_view)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        self.layout.addWidget(close_bt)
+
+        self.setLayout(self.layout)
+
+    def closeEvent(self, event):
+        self.mw.update_func_bts()
+        self.mw.update_param_gui_tab()
+        event.accept()

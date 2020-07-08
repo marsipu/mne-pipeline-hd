@@ -92,6 +92,7 @@ class MainWindow(QMainWindow):
         self.bt_dict = dict()
         self.all_modules = {'basic': {},
                             'custom': {}}
+        self.selected_modules = self.settings.value('selected_modules', defaultValue=['operations', 'plot'])
 
         # Todo: Straighten confusing main_win.init() (Project vs. ModuleImport vs. pdDataFrames)
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
@@ -110,7 +111,7 @@ class MainWindow(QMainWindow):
         self.import_func_modules()
 
         # Load last parameter-preset
-        self.pr.p_preset = self.settings.value('parameter_preset') or 'Default'
+        self.pr.p_preset = self.settings.value('parameter_preset', defaultValue='Default')
         if self.pr.p_preset not in self.pr.parameters:
             self.pr.p_preset = 'Default'
         # Load project-parameters after import of func_modules
@@ -143,7 +144,7 @@ class MainWindow(QMainWindow):
         self.update_statusbar()
         self.add_func_bts()
         self.add_main_bts()
-        self.add_parameter_gui_tab()
+        self.add_param_gui_tab()
         self.make_toolbar()
         self.get_toolbox_params()
         self.add_dock_windows()
@@ -402,8 +403,11 @@ class MainWindow(QMainWindow):
             for f in self.func_dict:
                 if f in pre_func_dict:
                     self.func_dict[f] = pre_func_dict[f]
-        # Todo: Gruppieren nach Tabs und nach Gruppen, außerdem Plot- mit Funktions-Knöpfen zusammenlegen
-        tabs_grouped = self.pd_funcs.groupby('tab')
+
+        # Drop custom-modules, which aren't selected
+        self.cleaned_pd_funcs = self.pd_funcs[self.pd_funcs['module'].isin(self.selected_modules)]
+
+        tabs_grouped = self.cleaned_pd_funcs.groupby('tab')
         # Add tabs
         for tab_name, group in tabs_grouped:
             group_grouped = group.groupby('group')
@@ -419,8 +423,8 @@ class MainWindow(QMainWindow):
                 group_box_layout = QVBoxLayout()
                 # Add button for each function
                 for function in group_grouped.groups[function_group]:
-                    if pd.notna(self.pd_funcs.loc[function, 'alias']):
-                        alias_name = self.pd_funcs.loc[function, 'alias']
+                    if pd.notna(self.cleaned_pd_funcs.loc[function, 'alias']):
+                        alias_name = self.cleaned_pd_funcs.loc[function, 'alias']
                     else:
                         alias_name = function
                     pb = QPushButton(alias_name)
@@ -471,8 +475,8 @@ class MainWindow(QMainWindow):
             else:
                 self.func_dict[function] = 0
 
-    def add_parameter_gui_tab(self):
-        tab = QWidget()
+    def add_param_gui_tab(self):
+        self.param_tab = QWidget()
         layout = QVBoxLayout()
 
         # Add Parameter-Preset-Combobox
@@ -507,16 +511,15 @@ class MainWindow(QMainWindow):
         self.param_scroll.setWidget(self.qall_parameters)
 
         layout.addWidget(self.param_scroll)
-        tab.setLayout(layout)
-        self.tab_func_widget.addTab(tab, 'Parameters')
+        self.param_tab.setLayout(layout)
+        self.tab_func_widget.addTab(self.param_tab, 'Parameters')
 
-    def update_param_gui(self):
-        self.param_scroll.takeWidget()
-        self.qall_parameters.close()
-        del self.qall_parameters
+    def update_param_gui_tab(self):
+        self.tab_func_widget.removeTab(self.tab_func_widget.indexOf(self.param_tab))
+        self.param_tab.close()
+        del self.param_tab
 
-        self.qall_parameters = QAllParameters(self)
-        self.param_scroll.setWidget(self.qall_parameters)
+        self.add_param_gui_tab()
 
     def update_p_preset_project(self):
         self.qall_parameters.update_all_param_guis()
@@ -788,12 +791,9 @@ class MainWindow(QMainWindow):
             self.func_dict[x] = 0
 
     def start(self):
-        # Save project-data before data being lost in errors
-        self.pr.save_parameters()
-        self.pr.save_sub_lists()
-        # Save Main-Window-Settings
-        self.settings.setValue('geometry', self.saveGeometry())
-        self.settings.setValue('checked_funcs', self.func_dict)
+
+        # Save Main-Window-Settings and project before possible Errors happen
+        self.save_main()
 
         # Lists of selected functions
         self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.func_dict[mf]]
@@ -937,8 +937,7 @@ class MainWindow(QMainWindow):
 
     # Todo: Make a developers command line input to access the local variables and use quickly some script on them
 
-    def closeEvent(self, event):
-
+    def save_main(self):
         # Save Parameters
         self.pr.save_parameters()
         self.pr.save_sub_lists()
@@ -947,7 +946,11 @@ class MainWindow(QMainWindow):
         self.settings.setValue('geometry', self.saveGeometry())
         self.settings.setValue('checked_funcs', self.func_dict)
         self.settings.setValue('parameter_preset', self.pr.p_preset)
+        self.settings.setValue('selected_modules', self.selected_modules)
 
+    def closeEvent(self, event):
+
+        self.save_main()
         event.accept()
 
 
@@ -979,15 +982,28 @@ class QuickGuide(QDialog):
 class QAllParameters(QWidget):
     def __init__(self, main_win):
         super().__init__()
-        self.main_win = main_win
+        self.mw = main_win
         self.param_guis = {}
+
+        # Drop Parameters which aren't used
+        all_arg_strings = [v for v in self.mw.pd_funcs['func_args'].values if isinstance(v, str)]
+        self.used_params = set()
+        for value_string in all_arg_strings:
+            value_list = value_string.split(',')
+            for value in value_list:
+                # Remove trailing spaces
+                value = value.replace(' ', '')
+                self.used_params.add(value)
+
+        self.cleaned_pd_params = self.mw.pd_params[self.mw.pd_params.index.isin(self.used_params)]
+
         self.init_ui()
 
     def init_ui(self):
         layout = QHBoxLayout()
         sub_layout = QVBoxLayout()
         r_cnt = 0
-        for idx, parameter in self.main_win.pd_params.iterrows():
+        for idx, parameter in self.cleaned_pd_params.iterrows():
             if r_cnt > 5:
                 layout.addLayout(sub_layout)
                 sub_layout = QVBoxLayout()
@@ -1014,7 +1030,7 @@ class QAllParameters(QWidget):
                 gui_args = {}
 
             gui_handle = getattr(parameter_widgets, gui_name)
-            self.param_guis[idx] = gui_handle(self.main_win.pr, idx, param_alias, hint, **gui_args)
+            self.param_guis[idx] = gui_handle(self.mw.pr, idx, param_alias, hint, **gui_args)
             sub_layout.addWidget(self.param_guis[idx])
 
         if 0 < r_cnt <= 5:

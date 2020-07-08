@@ -3,40 +3,39 @@ from PyQt5.QtGui import QColor, QFont
 
 
 class CheckListModel(QAbstractListModel):
-    def __init__(self, data=None):
+    def __init__(self, data=None, checked=None):
         super().__init__()
         self._data = data or []
-        self.checked = []
+        self._checked = checked or []
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
             return self._data[index.row()]
 
         if role == Qt.CheckStateRole:
-            if index in self.checked:
+            if index.data(Qt.DisplayRole) in self._checked:
                 return Qt.Checked
             else:
                 return Qt.Unchecked
 
     def setData(self, index, value, role=None):
+        if index.isValid() and role != Qt.CheckStateRole:
+            return False
+
         if role == Qt.CheckStateRole:
             if value == Qt.Checked:
-                self.checked.append(index)
+                self._checked.append(index.data(Qt.DisplayRole))
             else:
-                self.checked.remove(index)
+                self._checked.remove(index.data(Qt.DisplayRole))
+
+        self.dataChanged.emit(index, index)
+        return True
 
     def rowCount(self, index=None):
         return len(self._data)
 
     def flags(self, index):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsUserCheckable
-
-    def getchecked(self):
-        """
-        Get checked list-items
-        :return: list with checked items
-        """
-        return [self._data[index.row()] for index in self.checked]
 
 
 class DataTableModel(QAbstractTableModel):
