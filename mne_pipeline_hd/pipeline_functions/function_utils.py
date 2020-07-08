@@ -1031,7 +1031,7 @@ class SavePkgDialog(QDialog):
                 item = item_list[0]
                 self.cf.func_tablew.removeRow(self.cf.func_tablew.row(item))
 
-        self.cf.mw.import_func_modules()
+        self.cf.mw.import_custom_modules()
         self.cf.mw.update_func_bts()
         self.cf.mw.update_param_gui_tab()
         self.close()

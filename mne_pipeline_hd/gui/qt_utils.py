@@ -70,12 +70,12 @@ class Worker(QRunnable):
 
 
 class ErrorDialog(QDialog):
-    def __init__(self, err, parent=None, title=None):
+    def __init__(self, exception_tuple, parent=None, title=None):
         if parent:
             super().__init__(parent)
         else:
             super().__init__()
-        self.err = err
+        self.err = exception_tuple
         self.title = title
         if self.title:
             self.setWindowTitle(self.title)

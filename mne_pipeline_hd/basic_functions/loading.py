@@ -719,7 +719,7 @@ class CurrentSub(BaseSub):
 
     def load_forward(self):
         if self._forward is None:
-            self._forward = mne.read_forward_solution(self.forward_path)
+            self._forward = mne.read_forward_solution(self.forward_path, verbose='WARNING')
 
         return self._forward
 
@@ -769,9 +769,9 @@ class CurrentSub(BaseSub):
     def load_inverse_operator(self):
         if self._inverse is None:
             try:
-                self._inverse = mne.minimum_norm.read_inverse_operator(self.inverse_path)
+                self._inverse = mne.minimum_norm.read_inverse_operator(self.inverse_path, verbose='WARNING')
             except FileNotFoundError:
-                self._inverse = mne.minimum_norm.read_inverse_operator(self.old_inverse_path)
+                self._inverse = mne.minimum_norm.read_inverse_operator(self.old_inverse_path, verbose='WARNING')
 
         return self._inverse
 

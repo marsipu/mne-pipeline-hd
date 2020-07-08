@@ -60,10 +60,7 @@ def main():
     timer.timeout.connect(lambda: mw)
     timer.start(500)
 
-    try:
-        sys.exit(app.exec_())
-    except:
-        print('Got it!')
+    sys.exit(app.exec_())
 
 
 if __name__ == '__main__':

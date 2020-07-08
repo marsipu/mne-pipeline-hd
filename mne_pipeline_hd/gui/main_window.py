@@ -32,6 +32,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDeskt
 from mayavi import mlab
 
 from . import parameter_widgets
+from .other_widgets import DataTerminal
 from .qt_utils import ErrorDialog, get_exception_tuple
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
@@ -108,7 +109,7 @@ class MainWindow(QMainWindow):
         self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
 
         # Import the basic- and custom-function-modules
-        self.import_func_modules()
+        self.import_custom_modules()
 
         # Load last parameter-preset
         self.pr.p_preset = self.settings.value('parameter_preset', defaultValue='Default')
@@ -155,13 +156,19 @@ class MainWindow(QMainWindow):
         width = int(self.desk_geometry.width() * self.size_ratio)
         self.setGeometry(0, 0, width, height)
 
-    def import_func_modules(self):
+    def import_custom_modules(self):
         """
         Load all modules in basic_functions and custom_functions
         """
         # Start with empty dicts, especiall when re-importing from GUI
         self.all_modules = {'basic': {},
                             'custom': {}}
+
+        # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
+        self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
+        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
+        self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
+
         # Load basic-modules
         basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
         for module_name in basic_functions_list:
@@ -198,8 +205,8 @@ class MainWindow(QMainWindow):
                     spec.loader.exec_module(module)
                 except:
                     exc_tuple = get_exception_tuple()
-                    self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                      title=f'Error in import of custom-module: {module_name}')
+                    self.module_err_dlg = ErrorDialog(exc_tuple,
+                                                      self, title=f'Error in import of custom-module: {module_name}')
                 else:
                     # Add module to sys.modules
                     sys.modules[module_name] = module
@@ -213,8 +220,7 @@ class MainWindow(QMainWindow):
                     except:
                         exc_tuple = get_exception_tuple()
                         self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                          title=f'Error in import of functions-file: '
-                                                                f'{functions_path}')
+                                                          title=f'Error in import of functions-file: {functions_path}')
                     try:
                         read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
                         for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
@@ -228,10 +234,11 @@ class MainWindow(QMainWindow):
                 text = f'Files for import of {pkg_name} are missing: ' \
                        f'{[key for key in file_dict if file_dict[key] is None]}'
                 QMessageBox.warning(self, 'Import-Problem', text)
-
-    def reload_modules(self):
+    def reload_basic_modules(self):
         for module_name in self.all_modules['basic']:
             reload(self.all_modules['basic'][module_name])
+
+    def reload_custom_modules(self):
         for module_name in self.all_modules['custom']:
             module = self.all_modules['custom'][module_name][0]
             spec = self.all_modules['custom'][module_name][1]
@@ -272,6 +279,14 @@ class MainWindow(QMainWindow):
 
         self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', self.choose_customf)
 
+        self.areload_custom_modules = QAction('Reload Modules')
+        self.areload_custom_modules.triggered.connect(self.reload_custom_modules)
+        self.customf_menu.addAction(self.areload_custom_modules)
+
+        # Tools
+        self.tool_menu = self.menuBar().addMenu('&Tools')
+        self.asub_terminal = self.tool_menu.addAction('&Data-Terminal', self.show_terminal)
+
         # View
         self.view_menu = self.menuBar().addMenu('&View')
 
@@ -292,10 +307,6 @@ class MainWindow(QMainWindow):
         self.pyfiles = QAction('Load .py-Files')
         self.pyfiles.triggered.connect(self.pr.load_py_lists)
         self.settings_menu.addAction(self.pyfiles)
-
-        self.areload_modules = QAction('Reload Modules')
-        self.areload_modules.triggered.connect(self.reload_modules)
-        self.settings_menu.addAction(self.areload_modules)
 
         # About
         about_menu = self.menuBar().addMenu('About')
@@ -593,19 +604,24 @@ class MainWindow(QMainWindow):
 
     def change_home_path(self):
         # First save the former projects-data
-        self.pr.save_sub_lists()
-        self.pr.save_parameters()
+        self.save_main()
 
         new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
         if new_home_path == '':
             pass
         else:
+            self.pr = MyProject(self)
             self.pr.home_path = new_home_path
             self.settings.setValue('home_path', self.pr.home_path)
+            self.settings.setValue('selected_modules', ['operations', 'plot'])
             self.pr.get_paths()
             self.update_project_box()
             self.change_project(self.pr.projects[0])
             self.subject_dock.update_mri_subjects_list()
+
+            self.import_custom_modules()
+            self.update_func_bts()
+            self.update_param_gui_tab()
 
     def add_project(self):
         # First save the former projects-data
@@ -753,6 +769,9 @@ class MainWindow(QMainWindow):
         else:
             self.showFullScreen()
 
+    def show_terminal(self):
+        DataTerminal(self)
+
     def set_bool_setting(self, action, setting_name):
         self.settings.setValue(setting_name, action.isChecked())
 
@@ -834,12 +853,8 @@ class MainWindow(QMainWindow):
                     and self.pr.parameters[self.pr.p_preset]['show_plots'] == False:
                 mlab.close(all=True)
         except:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            logging.error(f'{exctype}: {value}\n'
-                          f'traceback_str')
-            err = (exctype, value, traceback.format_exc(limit=-10))
-            self.run_dialog.show_errors(err)
+            exc_tuple = get_exception_tuple()
+            self.run_dialog.show_errors(exc_tuple)
         # Send Signal to Function-Worker to continue execution after plot-function in main-thread finishes
         self.mw_signals.plot_running.emit(False)
 
