@@ -1011,6 +1011,8 @@ class QAllParameters(QWidget):
                 self.used_params.add(value)
 
         self.cleaned_pd_params = self.mw.pd_params[self.mw.pd_params.index.isin(self.used_params)]
+        not_removing = ['show_plots','save_plots', 'overwrite', 'enable_cuda', 'shutdown']
+        self.cleaned_pd_params = self.cleaned_pd_params.append(self.mw.pd_params[self.mw.pd_params.index.isin(not_removing)])
 
         self.init_ui()
 
