@@ -138,8 +138,6 @@ class FunctionWorker(Worker):
         # function-modules here, but you had to import them for each run then
         if not self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
             matplotlib.use('agg')
-        elif ismac:
-            matplotlib.use('macosx')
         else:
             matplotlib.use('Qt5Agg')
 
