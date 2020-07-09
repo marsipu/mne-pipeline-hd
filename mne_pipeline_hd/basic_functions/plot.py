@@ -53,10 +53,10 @@ def plot_sensors(sub):
 def plot_events(sub):
     events = sub.load_events()
     actual_event_id = {}
-    for ev_id in [evid for evid in sub.p['event_id'] if evid in np.unique(events[:, 2])]:
+    for ev_id in [evid for evid in sub.p['event_id'] if sub.p['event_id'][evid] in np.unique(events[:, 2])]:
         actual_event_id.update({ev_id: sub.p['event_id'][ev_id]})
 
-    events_figure = mne.viz.plot_events(events, sfreq=1000, event_id=actual_event_id)
+    events_figure = mne.viz.plot_events(events, event_id=actual_event_id)
     plt.title(sub.name)
 
     if sub.save_plots:
