@@ -568,6 +568,7 @@ class AddFileWorker(Worker):
 
 
 # Todo: Enable Drag&Drop
+# Todo: Bug, -raw-adden scheint manchmal problematisch
 # Todo: Model/View, should solve many problems
 class AddFilesWidget(QWidget):
     def __init__(self, main_win):

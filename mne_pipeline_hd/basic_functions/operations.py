@@ -984,6 +984,26 @@ def source_estimate(sub, inverse_method, pick_ori, lambda2, overwrite):
     sub.save_source_estimates(stcs)
 
 
+@topline
+def label_time_course(sub, target_labels, parcellation, extract_mode):
+    stcs = sub.load_source_estimat()
+    src = sub.mri_sub.load_source_space()
+
+    labels = mne.read_labels_from_annot(sub.subtomri,
+                                        subjects_dir=sub.subjects_dir,
+                                        parc=parcellation)
+    chosen_labels = [label for label in labels if label.name in target_labels]
+
+    ltc_dict = {}
+
+    for trial in stcs:
+        ltc_dict[trial] = {}
+        for label in chosen_labels:
+            ltc_dict[trial][label.name] = stcs[trial].extract_label_time_course(label, src, mode=extract_mode)[0]
+
+    sub.save_ltc(ltc_dict)
+
+
 # Todo: Make mixed-norm more customizable
 @topline
 def mixed_norm_estimate(sub, pick_ori, overwrite):
@@ -1115,8 +1135,7 @@ def source_space_connectivity(sub, parcellation, target_labels, inverse_method, 
         labels = mne.read_labels_from_annot(sub.subtomri, parc=parcellation,
                                             subjects_dir=sub.subjects_dir)
 
-        actual_labels = [lb for lb in labels if lb.name in target_labels['lh']
-                         or lb.name in target_labels['rh']]
+        actual_labels = [lb for lb in labels if lb.name in target_labels]
 
         # Average the source estimates within each label using sign-flips to reduce
         # signal cancellations, also here we return a generator

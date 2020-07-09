@@ -673,51 +673,49 @@ def plot_label_time_course(sub, target_labels, parcellation):
     kw = dict(xycoords='data', arrowprops=arrowprops, bbox=bbox_props)
     for trial in stcs:
         stc = stcs[trial]
-        for hemi in target_labels:
-            for lbl in labels:
-                if lbl.name in target_labels[hemi]:
-                    print(lbl.name)
+        for lbl in [label for label in labels if label.name in target_labels]:
+            print(lbl.name)
 
-                    stc_label = stc.in_label(lbl)
-                    gfp = op.calculate_gfp(stc)
-                    mean = stc.extract_label_time_course(lbl, src, mode='mean')
-                    mean_flip = stc.extract_label_time_course(lbl, src, mode='mean_flip')
-                    pca = stc.extract_label_time_course(lbl, src, mode='pca_flip')
+            stc_label = stc.in_label(lbl)
+            gfp = op.calculate_gfp(stc)
+            mean = stc.extract_label_time_course(lbl, src, mode='mean')
+            mean_flip = stc.extract_label_time_course(lbl, src, mode='mean_flip')
+            pca = stc.extract_label_time_course(lbl, src, mode='pca_flip')
 
-                    t = 1e3 * stc_label.times
-                    tmax = t[np.argmax(pca)]
-                    tmin = t[np.argmin(pca)]
-                    print(tmin)
-                    print(tmax)
+            t = 1e3 * stc_label.times
+            tmax = t[np.argmax(pca)]
+            tmin = t[np.argmin(pca)]
+            print(tmin)
+            print(tmax)
 
-                    plt.figure()
-                    plt.plot(t, stc_label.data.T, 'k', linewidth=0.5)
-                    h0, = plt.plot(t, mean.T, 'r', linewidth=3)
-                    h1, = plt.plot(t, mean_flip.T, 'g', linewidth=3)
-                    h2, = plt.plot(t, pca.T, 'b', linewidth=3)
-                    h3, = plt.plot(t, gfp, 'y', linewidth=3)
+            plt.figure()
+            plt.plot(t, stc_label.data.T, 'k', linewidth=0.5)
+            h0, = plt.plot(t, mean.T, 'r', linewidth=3)
+            h1, = plt.plot(t, mean_flip.T, 'g', linewidth=3)
+            h2, = plt.plot(t, pca.T, 'b', linewidth=3)
+            h3, = plt.plot(t, gfp, 'y', linewidth=3)
 
-                    if -200 < tmax < 500:
-                        plt.annotate(f'max_lat={int(tmax)}ms',
-                                     xy=(tmax, pca.max()),
-                                     xytext=(tmax + 200, pca.max() + 2), **kw)
-                    if -200 < tmin < 500:
-                        plt.annotate(f'min_lat={int(tmin)}ms',
-                                     xy=(tmin, pca.min()),
-                                     xytext=(tmin + 200, pca.min() - 2), **kw)
-                    plt.legend([h0, h1, h2, h3], ['mean', 'mean flip', 'PCA flip', 'GFP'])
-                    plt.xlabel('Time (ms)')
-                    plt.ylabel('Source amplitude')
-                    plt.title(f'Activations in Label :{lbl.name}-{trial}')
-                    plt.show()
+            if -200 < tmax < 500:
+                plt.annotate(f'max_lat={int(tmax)}ms',
+                             xy=(tmax, pca.max()),
+                             xytext=(tmax + 200, pca.max() + 2), **kw)
+            if -200 < tmin < 500:
+                plt.annotate(f'min_lat={int(tmin)}ms',
+                             xy=(tmin, pca.min()),
+                             xytext=(tmin + 200, pca.min() - 2), **kw)
+            plt.legend([h0, h1, h2, h3], ['mean', 'mean flip', 'PCA flip', 'GFP'])
+            plt.xlabel('Time (ms)')
+            plt.ylabel('Source amplitude')
+            plt.title(f'Activations in Label :{lbl.name}-{trial}')
+            plt.show()
 
-                    if sub.save_plots:
-                        save_path = join(sub.figures_path, 'label_time_course', trial,
-                                         f'{sub.name}_{trial}_{sub.pr.p_preset}-{lbl.name}{sub.img_format}')
-                        plt.savefig(save_path, dpi=600)
-                        print('figure: ' + save_path + ' has been saved')
-                    else:
-                        print('Not saving plots; set "sub.save_plots" to "True" to save')
+            if sub.save_plots:
+                save_path = join(sub.figures_path, 'label_time_course', trial,
+                                 f'{sub.name}_{trial}_{sub.pr.p_preset}-{lbl.name}{sub.img_format}')
+                plt.savefig(save_path, dpi=600)
+                print('figure: ' + save_path + ' has been saved')
+            else:
+                print('Not saving plots; set "sub.save_plots" to "True" to save')
 
 
 @topline
@@ -725,8 +723,7 @@ def plot_source_space_connectivity(sub, target_labels, con_fmin, con_fmax):
     con_dict = sub.load_connectivity()
     labels = sub.mri_sub.load_parc_labels()
 
-    actual_labels = [lb for lb in labels if lb.name in target_labels['lh']
-                     or lb.name in target_labels['rh']]
+    actual_labels = [lb for lb in labels if lb.name in target_labels]
 
     label_colors = [label.color for label in actual_labels]
 
@@ -906,8 +903,7 @@ def plot_grand_avg_connect(ga_group, con_fmin, con_fmax, parcellation, target_la
     labels_parc = mne.read_labels_from_annot(morph_to, parc=parcellation,
                                              subjects_dir=ga_group.subjects_dir)
 
-    labels = [labl for labl in labels_parc if labl.name in target_labels['lh']
-              or labl.name in target_labels['rh']]
+    labels = [labl for labl in labels_parc if labl.name in target_labels]
 
     label_colors = [label.color for label in labels]
     for labl in labels:

@@ -508,6 +508,7 @@ class CurrentSub(BaseSub):
         self._noise_cov = None
         self._inverse = None
         self._stcs = None
+        self._ltcs = None
         self._mxn_stcs = None
         self._mxn_dips = None
         self._ecd_dips = None
@@ -900,11 +901,32 @@ class CurrentSub(BaseSub):
             makedirs(join(self.save_dir, 'ecd_dipoles'))
 
         for trial in ecd_dips:
-            for dip in ecd_dips:
+            for dip in ecd_dips[trial]:
                 ecd_dip_path = join(self.save_dir, 'ecd_dipoles',
                                     f'{self.name}_{trial}_{self.p_preset}_{dip}-ecd-dip.dip')
                 ecd_dips[trial][dip].save(ecd_dip_path, overwrite=True)
                 self.save_file_params(ecd_dip_path)
+
+    def load_ltcs(self):
+        if self._ltcs is None:
+            self._ltcs = {}
+            for trial in self.p['event_id']:
+                self._ltcs[trial] = {}
+                for label in self.p['target_labels']:
+                    ltc_path = join(self.save_dir, 'label_time_course',
+                                    f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                    self._ltcs[trial][label] = np.load(ltc_path)
+
+    def save_ltcs(self, ltcs):
+        self._ltcs = ltcs
+        if not exists(join(self.save_dir, 'label_time_course')):
+            makedirs(join(self.save_dir, 'label_time_course'))
+
+        for trial in ltcs:
+            for label in ltcs[trial]:
+                ltc_path = join(self.save_dir, 'label_time_course',
+                                f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                np.save(ltc_path, ltcs[trial][label])
 
     def load_connectivity(self):
         if self._connectivity is None:
