@@ -797,11 +797,13 @@ class AddFilesWidget(QWidget):
                     self.mw.pr.info_dict[new_fname][key] = raw.info[key]
                 # Add arrays of digitization-points and save it to json to make the trans-file-management possible
                 # (same digitization = same trans-file)
-                dig_arrays = []
                 if raw.info['dig'] is not None:
+                    dig_dict = {}
                     for dig_point in raw.info['dig']:
-                        dig_arrays.append([float(cd) for cd in dig_point['r']])
-                    self.mw.pr.info_dict[new_fname]['dig'] = dig_arrays
+                        dig_dict[dig_point['ident']] = {}
+                        dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
+                        dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
+                    self.mw.pr.info_dict[new_fname]['dig'] = dig_dict
                 self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
                 # Some raw-files don't have get_channel_types?
                 try:
