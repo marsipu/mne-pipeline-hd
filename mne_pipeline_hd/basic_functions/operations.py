@@ -707,6 +707,12 @@ def run_process_and_write_output(command, subjects_dir):
         sys.stdout.write(c.decode('utf-8'))
 
 
+def run_wsl_process(command, fs_path='~/freesurfer'):
+    subprocess.run(
+            f'wsl export FREESURFER_HOME={fs_path};'
+            f'source $FREESURFER_HOME/SetUpFreeSurfer.sh; {command}')
+
+
 def import_mri(dicom_path, mri_subject, subjects_dir, n_jobs_freesurfer):
     files = listdir(dicom_path)
     first_file = files[0]
