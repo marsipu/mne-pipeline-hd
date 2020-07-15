@@ -62,6 +62,7 @@ class MyProject:
         self.get_paths()
         self.make_paths()
         self.load_sub_lists()
+        self.check_data()
 
     def get_paths(self):
         # Get home_path
@@ -281,6 +282,14 @@ class MyProject:
             self.file_parameters = pd.read_csv(self.file_parameters_path, sep=';', index_col=0)
         except EmptyDataError:
             self.file_parameters = pd.DataFrame([], columns=[p for p in self.parameters[self.p_preset].keys()])
+
+    def check_data(self):
+        missing_subjects = [x for x in listdir(self.data_path) if x not in ['grand_averages', 'empty_room_data'] and x not in self.all_files]
+
+        for sub in missing_subjects:
+            self.all_files.append(sub)
+
+        self.save_sub_lists()
 
     def find_files(self):
         # Order files under tags which correspond to columns in the DataFrame below

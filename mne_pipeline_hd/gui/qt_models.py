@@ -38,54 +38,47 @@ class CheckListModel(QAbstractListModel):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsUserCheckable
 
 
-class DataTableModel(QAbstractTableModel):
-    def __init__(self, main_win):
+class PandasTableModel(QAbstractTableModel):
+    def __init__(self, pd_data):
         super().__init__()
-        self.mw = main_win
+        self.pd_data = pd_data
 
     def data(self, index, role=None):
-        value = self.mw.main_data.iloc[index.row(), index.column()]
-        column = self.mw.main_data.columns[index.column()]
+        value = self.pd_data.iloc[index.row(), index.column()]
+
         if role == Qt.DisplayRole:
-            if column == 'Datum':
-                return value.strftime('%d.%m.%Y')
-
-            if column == 'Betrag':
-                return f'{value} €'
-
-            if column == 'Kategorie':
-                return f'{int(value)}'
-
             return value
 
-        if role == Qt.FontRole:
-            if column in ['Datum', 'Betrag']:
-                return QFont('Helvetica', self.mw.font_size, QFont.Bold)
-            elif column in ['Wer', 'Was']:
-                return QFont('Helvetica', self.mw.font_size, italic=True)
-            else:
-                return QFont('Helvetica', self.mw.font_size)
-
-        if role == Qt.ForegroundRole:
-            if column == 'Betrag':
-                if value < 0:
-                    return QColor('red')
-                else:
-                    return QColor('green')
-
-        if role == Qt.TextAlignmentRole:
-            if column in ['Betrag', 'Kategorie']:
-                return Qt.AlignRight
-
     def rowCount(self, index=None):
-        return len(self.mw.main_data.index)
+        return len(self.pd_data.index)
 
     def columnCount(self, index=None):
-        return len(self.mw.main_data.columns)
+        return len(self.pd_data.columns)
 
     def headerData(self, idx, orientation, role=None):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
-                return str(self.mw.main_data.columns[idx])
+                return str(self.pd_data.columns[idx])
             if orientation == Qt.Vertical:
-                return str(self.mw.main_data.index[idx])
+                return str(self.pd_data.index[idx])
+
+
+class AddFilesModel(PandasTableModel):
+    def __init__(self, pd_data):
+        super().__init__(pd_data)
+
+    def data(self, index, role=None):
+        value = self.pd_data.iloc[index.row(), index.column()]
+        column = self.pd_data.columns[index.column()]
+
+        if role == Qt.DisplayRole:
+            return value
+
+        if role == Qt.CheckStateRole:
+            if column == 'Is Empty-Room?':
+                if value:
+                    return Qt.Checked
+                else:
+                    return Qt.Unchecked
+
+
