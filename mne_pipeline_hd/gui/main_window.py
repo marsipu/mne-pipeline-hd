@@ -94,6 +94,7 @@ class MainWindow(QMainWindow):
         self.all_modules = {'basic': {},
                             'custom': {}}
         self.selected_modules = self.settings.value('selected_modules', defaultValue=['operations', 'plot'])
+        self.subject = None
 
         # Todo: Straighten confusing main_win.init() (Project vs. ModuleImport vs. pdDataFrames)
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
@@ -132,9 +133,9 @@ class MainWindow(QMainWindow):
         self.f_tabs = set(self.pd_funcs['tab'])
         self.f_groups = set(self.pd_funcs['group'])
 
-        # Todo: Real logging
         # Set logging
         logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
         # initiate Subject-Dock here to avoid AttributeError
         self.subject_dock = SubjectDock(self)
@@ -234,6 +235,7 @@ class MainWindow(QMainWindow):
                 text = f'Files for import of {pkg_name} are missing: ' \
                        f'{[key for key in file_dict if file_dict[key] is None]}'
                 QMessageBox.warning(self, 'Import-Problem', text)
+
     def reload_basic_modules(self):
         for module_name in self.all_modules['basic']:
             reload(self.all_modules['basic'][module_name])
@@ -279,7 +281,7 @@ class MainWindow(QMainWindow):
 
         self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', self.choose_customf)
 
-        self.areload_custom_modules = QAction('Reload Modules')
+        self.areload_custom_modules = QAction('Reload Custom-Modules')
         self.areload_custom_modules.triggered.connect(self.reload_custom_modules)
         self.customf_menu.addAction(self.areload_custom_modules)
 
@@ -303,6 +305,10 @@ class MainWindow(QMainWindow):
 
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
         self.settings_menu.addAction('Reset Parameters', self.reset_parameters)
+
+        self.areload_basic_modules = QAction('Reload Basic-Modules')
+        self.areload_basic_modules.triggered.connect(self.reload_basic_modules)
+        self.settings_menu.addAction(self.areload_basic_modules)
 
         self.pyfiles = QAction('Load .py-Files')
         self.pyfiles.triggered.connect(self.pr.load_py_lists)
@@ -860,6 +866,7 @@ class MainWindow(QMainWindow):
 
     def thread_complete(self):
         print('Finished')
+        self.run_dialog.pgbar.setValue(self.all_prog)
         self.run_dialog.close_bt.setEnabled(True)
 
     # Todo: Make Run-Function (windows&non-windows)
@@ -1129,7 +1136,7 @@ class RunDialog(QDialog):
         elif mode == 'file':
             self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
         elif mode == 'ga':
-            self.populate_listw(self.mw.pr.grand_avg_dict, self.mw.sel_ga_funcs)
+            self.populate_listw(self.mw.pr.sel_ga_groups, self.mw.sel_ga_funcs)
         else:
             pass
 
@@ -1177,4 +1184,5 @@ class RunDialog(QDialog):
 
     def show_errors(self, err):
         ErrorDialog(err, self)
+        self.pgbar.setValue(self.all_prog)
         self.close_bt.setEnabled(True)

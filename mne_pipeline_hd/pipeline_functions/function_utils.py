@@ -7,6 +7,8 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @github: marsipu/mne_pipeline_hd
 """
 import inspect
+import logging
+import re
 import shutil
 import time
 import types
@@ -35,25 +37,9 @@ from ..gui.qt_models import CheckListModel
 from ..gui.qt_utils import ErrorDialog, Worker, get_exception_tuple
 
 
-def func_from_def(func_name, sub, main_win):
-    # Get module, has to specified in functions.csv as it is imported
-    module_name = main_win.pd_funcs['module'][func_name]
-    if module_name in main_win.all_modules['basic']:
-        module = main_win.all_modules['basic'][module_name]
-    elif module_name in main_win.all_modules['custom']:
-        module = main_win.all_modules['custom'][module_name][0]
-
-    # Get Argument-Names from functions.csv (alias pd_funcs)
-    arg_string = main_win.pd_funcs.loc[func_name, 'func_args']
-    if pd.notna(arg_string):
-        arg_names = arg_string.split(',')
-    else:
-        arg_names = []
-
+def get_arguments(arg_names, sub, main_win):
+    keyword_arguments = {}
     project_attributes = vars(main_win.pr)
-
-    keyword_arguments = dict()
-
     # Get the values for parameter-names
     for arg_name in arg_names:
         # Remove trailing spaces
@@ -73,12 +59,50 @@ def func_from_def(func_name, sub, main_win):
         elif arg_name in main_win.pr.parameters[main_win.pr.p_preset]:
             keyword_arguments.update({arg_name: main_win.pr.parameters[main_win.pr.p_preset][arg_name]})
         else:
-            raise RuntimeError(f'{func_name}: {arg_name} could not be found in Subject, Project or Parameters')
+            raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
 
-    # Call Function from specified module with arguments from unpacked list/dictionary
-    return_value = getattr(module, func_name)(**keyword_arguments)
+    return keyword_arguments
 
-    return return_value
+
+def func_from_def(func_name, sub, main_win):
+    # Get module, has to specified in functions.csv as it is imported
+    module_name = main_win.pd_funcs['module'][func_name]
+    if module_name in main_win.all_modules['basic']:
+        module = main_win.all_modules['basic'][module_name]
+    elif module_name in main_win.all_modules['custom']:
+        module = main_win.all_modules['custom'][module_name][0]
+    else:
+        raise ModuleNotFoundError(name=module_name)
+
+    # Get Argument-Names from functions.csv (alias pd_funcs)
+    arg_string = main_win.pd_funcs.loc[func_name, 'func_args']
+    if pd.notna(arg_string):
+        arg_names = arg_string.split(',')
+    else:
+        arg_names = []
+
+    keyword_arguments = get_arguments(arg_names, sub, main_win)
+
+    # Catch errors due to unexpected or missing keywords(
+    unexp_kw_pattern = r"(.*) got an unexpected keyword argument \'(.*)\'"
+    miss_kw_pattern = r"(.*) missing 1 required positional argument: \'(.*)\'"
+    try:
+        # Call Function from specified module with arguments from unpacked list/dictionary
+        getattr(module, func_name)(**keyword_arguments)
+    except TypeError as te:
+        match_unexp_kw = re.match(unexp_kw_pattern, str(te))
+        match_miss_kw = re.match(miss_kw_pattern, str(te))
+        if match_unexp_kw:
+            keyword_arguments.pop(match_unexp_kw.group(2))
+            logging.warning(f'Caught unexpected keyword \"{match_unexp_kw.group(2)}\" for {func_name}')
+            getattr(module, func_name)(**keyword_arguments)
+        elif match_miss_kw:
+            add_kw_args = get_arguments([match_miss_kw.group(2)], sub, main_win)
+            keyword_arguments.update(add_kw_args)
+            logging.warning(f'Caught missing keyword \"{match_unexp_kw.group(2)}\" for {func_name}')
+            getattr(module, func_name)(**keyword_arguments)
+        else:
+            raise te
 
 
 class FunctionWorkerSignals(QObject):
@@ -154,14 +178,14 @@ class FunctionWorker(Worker):
             print('No MRI-Subject or MRI-Function selected')
 
         # Call the functions for selected Files
-        if len(self.mw.pr.sel_files) > 0:
+        if len(self.mw.pr.sel_files) * len(self.mw.sel_file_funcs) > 0:
             self.signals.pg_which_loop.emit('file')
             self.subject_loop('file')
         else:
             print('No Subject selected')
 
         # Call functions outside the subject-loop
-        if len(self.mw.sel_ga_funcs) > 0:
+        if len(self.mw.sel_ga_funcs) * len(self.mw.sel_ga_funcs) > 0:
             self.signals.pg_which_loop.emit('ga')
             self.subject_loop('ga')
         else:

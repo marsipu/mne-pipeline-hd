@@ -10,7 +10,8 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 from __future__ import print_function
 
 import gc
-from os.path import join
+from os import makedirs
+from os.path import isdir, join
 
 import matplotlib.pyplot as plt
 import mne
@@ -658,60 +659,22 @@ def plot_labels(mri_sub, parcellation):
 
 
 @topline
-def plot_label_time_course(sub, target_labels, parcellation):
-    stcs = sub.load_source_estimates()
-
-    src = sub.mri_sub.load_source_space()
-
-    labels = mne.read_labels_from_annot(sub.subtomri,
-                                        subjects_dir=sub.subjects_dir,
-                                        parc=parcellation)
-
-    # Annotation Parameters
-    bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
-    arrowprops = dict(arrowstyle="->")
-    kw = dict(xycoords='data', arrowprops=arrowprops, bbox=bbox_props)
-    for trial in stcs:
-        stc = stcs[trial]
-        for lbl in [label for label in labels if label.name in target_labels]:
-            print(lbl.name)
-
-            stc_label = stc.in_label(lbl)
-            gfp = op.calculate_gfp(stc)
-            mean = stc.extract_label_time_course(lbl, src, mode='mean')
-            mean_flip = stc.extract_label_time_course(lbl, src, mode='mean_flip')
-            pca = stc.extract_label_time_course(lbl, src, mode='pca_flip')
-
-            t = 1e3 * stc_label.times
-            tmax = t[np.argmax(pca)]
-            tmin = t[np.argmin(pca)]
-            print(tmin)
-            print(tmax)
+def plot_label_time_course(sub):
+    ltcs = sub.load_ltc()
+    for trial in ltcs:
+        for label in ltcs[trial]:
 
             plt.figure()
-            plt.plot(t, stc_label.data.T, 'k', linewidth=0.5)
-            h0, = plt.plot(t, mean.T, 'r', linewidth=3)
-            h1, = plt.plot(t, mean_flip.T, 'g', linewidth=3)
-            h2, = plt.plot(t, pca.T, 'b', linewidth=3)
-            h3, = plt.plot(t, gfp, 'y', linewidth=3)
-
-            if -200 < tmax < 500:
-                plt.annotate(f'max_lat={int(tmax)}ms',
-                             xy=(tmax, pca.max()),
-                             xytext=(tmax + 200, pca.max() + 2), **kw)
-            if -200 < tmin < 500:
-                plt.annotate(f'min_lat={int(tmin)}ms',
-                             xy=(tmin, pca.min()),
-                             xytext=(tmin + 200, pca.min() - 2), **kw)
-            plt.legend([h0, h1, h2, h3], ['mean', 'mean flip', 'PCA flip', 'GFP'])
-            plt.xlabel('Time (ms)')
+            plt.plot(ltcs[trial][label][1], ltcs[trial][label][0])
+            plt.title(f'Label-Time-Course for {sub.name}-{trial}-{label}\n'
+                      f'with Extraction-Mode: {sub.p["extract_mode"]}')
+            plt.xlabel('Time in ms')
             plt.ylabel('Source amplitude')
-            plt.title(f'Activations in Label :{lbl.name}-{trial}')
             plt.show()
 
             if sub.save_plots:
                 save_path = join(sub.figures_path, 'label_time_course', trial,
-                                 f'{sub.name}_{trial}_{sub.pr.p_preset}-{lbl.name}{sub.img_format}')
+                                 f'{sub.name}_{trial}_{sub.pr.p_preset}-{label}{sub.img_format}')
                 plt.savefig(save_path, dpi=600)
                 print('figure: ' + save_path + ' has been saved')
             else:
@@ -893,6 +856,28 @@ def plot_grand_avg_stc_anim(ga_group, stc_animation, morph_to):
         brain.save_movie(save_path, time_dilation=30,
                          tmin=stc_animation[0], tmax=stc_animation[1], framerate=30)
         mlab.close()
+
+
+@topline
+def plot_grand_avg_ltc(ga_group):
+    ga_ltc = ga_group.load_ga_ltc()
+    for trial in ga_ltc:
+        for label in ga_ltc[trial]:
+            plt.figure()
+            plt.plot(ga_ltc[trial][label][1], ga_ltc[trial][label][0])
+            plt.title(f'Label-Time-Course for {ga_group.name}-{trial}-{label}\n'
+                      f'with Extraction-Mode: {ga_group.p["extract_mode"]}')
+            plt.xlabel('Time in ms')
+            plt.ylabel('Source amplitude')
+            plt.show()
+
+            if ga_group.save_plots:
+                save_path = join(ga_group.figures_path, 'label_time_course', trial,
+                                 f'{ga_group.name}_{trial}_{ga_group.pr.p_preset}-{label}{ga_group.img_format}')
+                plt.savefig(save_path, dpi=600)
+                print('figure: ' + save_path + ' has been saved')
+            else:
+                print('Not saving plots; set "sub.save_plots" to "True" to save')
 
 
 @topline

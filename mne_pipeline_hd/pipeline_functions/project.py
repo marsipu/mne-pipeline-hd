@@ -335,7 +335,7 @@ class MyProject:
 
     def populate_directories(self):
         # create grand averages path with a statistics folder
-        ga_folders = ['statistics', 'evoked', 'stc', 'tfr', 'connect']
+        ga_folders = ['statistics', 'evoked', 'stc', 'ltc', 'tfr', 'connect']
         for subfolder in ga_folders:
             grand_average_path = join(self.data_path, 'grand_averages', subfolder)
             if not exists(grand_average_path):
@@ -375,7 +375,7 @@ class MyProject:
         figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
                              'source_space/statistics', 'source_space/stc',
                              'source_space/connectivity', 'source_space/stc_movie',
-                             'source_space/tfr']
+                             'source_space/tfr', 'source_space/ltc']
 
         for figure_subfolder in figure_subfolders:
             folder_path = join(grand_averages_figures_path, figure_subfolder)

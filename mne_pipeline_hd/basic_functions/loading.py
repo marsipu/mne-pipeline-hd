@@ -442,7 +442,7 @@ class BaseSub:
     """ Base-Class for Sub (The current File/MRI-File/Grand-Average-Group, which is executed)"""
 
     def __init__(self, name, main_win):
-        # Basic Attributes
+        # Basic Attributes (partly taking parameters or main-win-attributes for easier access)
         self.name = name
         self.mw = main_win
         self.pr = main_win.pr
@@ -508,7 +508,7 @@ class CurrentSub(BaseSub):
         self._noise_cov = None
         self._inverse = None
         self._stcs = None
-        self._ltcs = None
+        self._ltc = None
         self._mxn_stcs = None
         self._mxn_dips = None
         self._ecd_dips = None
@@ -907,26 +907,29 @@ class CurrentSub(BaseSub):
                 ecd_dips[trial][dip].save(ecd_dip_path, overwrite=True)
                 self.save_file_params(ecd_dip_path)
 
-    def load_ltcs(self):
-        if self._ltcs is None:
-            self._ltcs = {}
+    def load_ltc(self):
+        if self._ltc is None:
+            self._ltc = {}
             for trial in self.p['event_id']:
-                self._ltcs[trial] = {}
+                self._ltc[trial] = {}
                 for label in self.p['target_labels']:
                     ltc_path = join(self.save_dir, 'label_time_course',
                                     f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
-                    self._ltcs[trial][label] = np.load(ltc_path)
+                    self._ltc[trial][label] = np.load(ltc_path)
 
-    def save_ltcs(self, ltcs):
-        self._ltcs = ltcs
+        return self._ltc
+
+    def save_ltc(self, ltc):
+        self._ltc = ltc
         if not exists(join(self.save_dir, 'label_time_course')):
             makedirs(join(self.save_dir, 'label_time_course'))
 
-        for trial in ltcs:
-            for label in ltcs[trial]:
+        for trial in ltc:
+            for label in ltc[trial]:
                 ltc_path = join(self.save_dir, 'label_time_course',
                                 f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
-                np.save(ltc_path, ltcs[trial][label])
+                np.save(ltc_path, ltc[trial][label])
+                self.save_file_params(ltc_path)
 
     def load_connectivity(self):
         if self._connectivity is None:
@@ -1066,6 +1069,7 @@ class CurrentGAGroup(BaseSub):
 
         # Additional Attributes
         self.save_dir = self.pr.save_dir_averages
+        self.group_list = self.pr.grand_avg_dict[name]
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)
@@ -1074,6 +1078,7 @@ class CurrentGAGroup(BaseSub):
         self._ga_evokeds = None
         self._ga_tfr = None
         self._ga_stcs = None
+        self._ga_ltc = None
         self._ga_connect = None
 
         ################################################################################################################
@@ -1118,8 +1123,7 @@ class CurrentGAGroup(BaseSub):
         if self._ga_stcs is None:
             self._ga_stcs = {}
             for trial in self.p['event_id']:
-                ga_stc_path = join(self.save_dir,
-                                   'stc', f'{self.name}_{trial}_{self.p_preset}')
+                ga_stc_path = join(self.save_dir, 'stc', f'{self.name}_{trial}_{self.p_preset}')
                 self._ga_stcs[trial] = mne.read_source_estimate(ga_stc_path)
 
         return self._ga_stcs
@@ -1127,10 +1131,31 @@ class CurrentGAGroup(BaseSub):
     def save_ga_source_estimate(self, ga_stcs):
         self._ga_stcs = ga_stcs
         for trial in ga_stcs:
-            ga_stc_path = join(self.save_dir,
-                               'stc', f'{self.name}_{trial}_{self.p_preset}')
+            ga_stc_path = join(self.save_dir, 'stc', f'{self.name}_{trial}_{self.p_preset}')
             ga_stcs[trial].save(ga_stc_path)
             self.save_file_params(ga_stc_path)
+
+    def load_ga_ltc(self):
+        if self._ga_ltc is None:
+            self._ga_ltc = {}
+            for trial in self.p['event_id']:
+                self._ga_ltc[trial] = {}
+                for label in self.p['target_labels']:
+                    ga_ltc_path = join(self.save_dir, 'ltc', f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                    try:
+                        self._ga_ltc[trial][label] = np.load(ga_ltc_path)
+                    except FileNotFoundError:
+                        print(f'{ga_ltc_path} not found')
+
+        return self._ga_ltc
+
+    def save_ga_ltc(self, ga_ltc):
+        self._ga_ltc = ga_ltc
+        for trial in ga_ltc:
+            for label in ga_ltc[trial]:
+                ga_ltc_path = join(self.save_dir, 'ltc', f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                np.save(ga_ltc_path, ga_ltc[trial][label])
+                self.save_file_params(ga_ltc_path)
 
     def load_ga_connect(self):
         if self._ga_connect is None:
@@ -1138,12 +1163,11 @@ class CurrentGAGroup(BaseSub):
             for trial in self.p['event_id']:
                 self._ga_connect[trial] = {}
                 for con_method in self.p['con_methods']:
+                    con_path = join(self.save_dir, 'connect', f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
                     try:
-                        con_path = join(self.save_dir, 'connect',
-                                        f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
                         self._ga_connect[trial][con_method] = np.load(con_path)
                     except FileNotFoundError:
-                        pass
+                        print(f'{con_path} not found')
 
         return self._ga_connect
 

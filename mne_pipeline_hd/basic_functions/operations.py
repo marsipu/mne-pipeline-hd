@@ -992,7 +992,7 @@ def source_estimate(sub, inverse_method, pick_ori, lambda2, overwrite):
 
 @topline
 def label_time_course(sub, target_labels, parcellation, extract_mode):
-    stcs = sub.load_source_estimat()
+    stcs = sub.load_source_estimates()
     src = sub.mri_sub.load_source_space()
 
     labels = mne.read_labels_from_annot(sub.subtomri,
@@ -1004,8 +1004,10 @@ def label_time_course(sub, target_labels, parcellation, extract_mode):
 
     for trial in stcs:
         ltc_dict[trial] = {}
+        times = stcs[trial].times
         for label in chosen_labels:
-            ltc_dict[trial][label.name] = stcs[trial].extract_label_time_course(label, src, mode=extract_mode)[0]
+            ltc = stcs[trial].extract_label_time_course(label, src, mode=extract_mode)[0]
+            ltc_dict[trial][label.name] = np.vstack((ltc, times))
 
     sub.save_ltc(ltc_dict)
 
@@ -1220,6 +1222,45 @@ def grand_avg_morphed(ga_group):
 
 
 @topline
+def grand_avg_ltc(ga_group):
+    ltc_average_dict = {}
+    times = None
+    for name in ga_group.group_list:
+        sub = CurrentSub(name, ga_group.mw)
+        print(f'Add {name} to grand_average')
+        ltc_dict = sub.load_ltc()
+        for trial in ltc_dict:
+            if trial not in ltc_average_dict:
+                ltc_average_dict[trial] = {}
+            for label in ltc_dict[trial]:
+                # First row of array is label-time-course-data, second row is time-array
+                if label in ltc_average_dict[trial]:
+                    ltc_average_dict[trial][label].append(ltc_dict[trial][label][0])
+                else:
+                    ltc_average_dict[trial][label] = [ltc_dict[trial][label][0]]
+                # Should be the same for each trial and label
+                times = ltc_dict[trial][label][1]
+
+    ga_ltc = {}
+    for trial in ltc_average_dict:
+        ga_ltc[trial] = {}
+        for label in ltc_average_dict[trial]:
+            if len(ltc_average_dict[trial][label]) != 0:
+                print(f'grand_average for {trial}-{label}')
+                ltc_list = ltc_average_dict[trial][label]
+                n_subjects = len(ltc_list)
+                average = ltc_list[0]
+                for idx in range(1, n_subjects):
+                    average += ltc_list[idx]
+
+                average /= n_subjects
+
+                ga_ltc[trial][label] = np.vstack((average, times))
+
+    ga_group.save_ga_ltc(ga_ltc)
+
+
+@topline
 def grand_avg_connect(ga_group):
     # Prepare the Average-Dict
     con_average_dict = {}
@@ -1252,4 +1293,4 @@ def grand_avg_connect(ga_group):
 
                 ga_con[trial][con_method] = average
 
-    ga_group.save_ga_connect()
+    ga_group.save_ga_connect(ga_con)
