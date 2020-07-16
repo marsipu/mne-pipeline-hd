@@ -23,7 +23,28 @@ from surfer import Brain
 from . import operations as op
 from ..pipeline_functions.decorators import topline
 
+# ==============================================================================
+# BASIC PLOTTING FUNCTIONS
+# ==============================================================================
+def plot_save(sub, plot_name, trial=None, subfolder=None, figure=None, mayavi=False):
 
+    if sub.save_plots:
+        # Folder is named by plot_name
+        dir_path = join(sub.figures_path, plot_name)
+        # Create Subfolder if necessary
+        if subfolder:
+            dir_path = join(sub.figures_path, plot_name, subfolder)
+
+        # Create not existent folders
+        if not isdir(dir_path):
+            makedirs(dir_path)
+
+        file_name = f'{sub.name}_{sub.p_preset}{sub.img_format}'
+        save_path = join(dir_path, sub.name + sub.img_format)
+
+        print('figure: ' + save_path + ' has been saved')
+    else:
+        print('Not saving plots; set "save_plots" to "True" to save')
 # ==============================================================================
 # PLOTTING FUNCTIONS
 # ==============================================================================
