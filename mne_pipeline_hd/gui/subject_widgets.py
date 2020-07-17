@@ -281,7 +281,7 @@ class SubjectDock(QDockWidget):
             pass
 
     def update_mri_selection(self):
-        which_file = self.mri_sub_ledit.text()
+        which_file = self.mri_ledit.text()
         self.mw.pr.sel_mri_files, idxs = file_indexing(which_file, self.mw.pr.all_mri_subjects)
 
     def sub_clear_all(self):
