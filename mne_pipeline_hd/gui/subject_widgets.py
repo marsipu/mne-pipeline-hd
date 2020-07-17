@@ -283,6 +283,13 @@ class SubjectDock(QDockWidget):
     def update_mri_selection(self):
         which_file = self.mri_ledit.text()
         self.mw.pr.sel_mri_files, idxs = file_indexing(which_file, self.mw.pr.all_mri_subjects)
+        if len(idxs) > 0:
+            # Clear all check-states
+            self.mri_clear_all()
+            for idx in idxs:
+                self.mri_listw.item(idx).setCheckState(Qt.Checked)
+        else:
+            pass
 
     def sub_clear_all(self):
         for idx in range(self.sub_listw.count()):

@@ -1184,5 +1184,5 @@ class RunDialog(QDialog):
 
     def show_errors(self, err):
         ErrorDialog(err, self)
-        self.pgbar.setValue(self.all_prog)
+        self.pgbar.setValue(self.mw.all_prog)
         self.close_bt.setEnabled(True)
