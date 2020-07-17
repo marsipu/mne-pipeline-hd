@@ -792,6 +792,7 @@ def copy_watershed(mri_sub):
                    join(mri_sub.subjects_dir, mri_sub.name, 'bem',
                         this_surface['destination'])
                    ]
+        print(f'{surface} was copied')
         run_process_and_write_output(command, mri_sub.subjects_dir)
 
 

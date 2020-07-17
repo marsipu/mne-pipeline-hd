@@ -289,6 +289,10 @@ class MyProject:
         for sub in missing_subjects:
             self.all_files.append(sub)
 
+        missing_erm = [x for x in listdir(self.erm_data_path) if x not in self.erm_files]
+        for erm in missing_erm:
+            self.erm_files.append(erm)
+
         self.save_sub_lists()
 
     def find_files(self):
