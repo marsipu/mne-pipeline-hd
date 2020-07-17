@@ -766,6 +766,9 @@ def apply_watershed(mri_sub, overwrite):
                overwrite_string]
 
     run_process_and_write_output(command, mri_sub.subjects_dir)
+
+
+def copy_watershed(mri_sub):
     # copy commands
     surfaces = dict(
             inner_skull=dict(
