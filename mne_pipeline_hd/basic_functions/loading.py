@@ -449,9 +449,9 @@ class BaseSub:
         self.p_preset = self.pr.p_preset
         self.p = main_win.pr.parameters[self.p_preset]
         self.subjects_dir = self.pr.subjects_dir
-        self.save_plots = self.p['save_plots']
+        self.save_plots = self.mw.settings.value('save_plots')
         self.figures_path = self.pr.figures_path
-        self.img_format = self.p['img_format']
+        self.img_format = self.mw.settings.value('img_format')
 
     def save_file_params(self, path):
         file_name = Path(path).name
@@ -595,9 +595,10 @@ class CurrentSub(BaseSub):
 
         return self._raw_filtered
 
+    # Todo: Save Storage with GUI (and also look to
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
-        if not self.p['save_storage']:
+        if not self.mw.settings.value('save_storage', defaulValue=0):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
             self.save_file_params(self.raw_filtered_path)
 
@@ -618,7 +619,7 @@ class CurrentSub(BaseSub):
 
     def save_erm_filtered(self, erm_filtered):
         self._erm_filtered = erm_filtered
-        if not self.p['save_storage']:
+        if not self.mw.settings.value('save_storage', defaulValue=0):
             self._erm_filtered.save(self.erm_filtered_path)
             self.save_file_params(self.erm_filtered_path)
 

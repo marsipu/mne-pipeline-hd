@@ -240,7 +240,8 @@ class MyProject:
                 for p_preset in loaded_parameters:
                     # Make sure, that only parameters, which exist in pd_params are loaded
                     for param in [p for p in loaded_parameters[p_preset] if p not in self.mw.pd_params.index]:
-                        loaded_parameters[p_preset].pop(param)
+                        if '_exp' not in param:
+                            loaded_parameters[p_preset].pop(param)
                     # Add parameters, which exist in resources/parameters.csv,
                     # but not in loaded-parameters (e.g. added with custom-module)
                     for param in [p for p in self.mw.pd_params.index if p not in loaded_parameters[p_preset]]:
@@ -249,7 +250,10 @@ class MyProject:
                         except (ValueError, SyntaxError):
                             # Allow parameters to be defined by functions e.g. by numpy, etc.
                             if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
-                                eval_param = eval(self.mw.pd_params.loc[param, 'default'])
+                                default_string = self.mw.pd_params.loc[param, 'default']
+                                eval_param = eval(default_string)
+                                exp_name = param + '_exp'
+                                loaded_parameters[p_preset].update({exp_name: default_string})
                             else:
                                 eval_param = self.mw.pd_params.loc[param, 'default']
                         loaded_parameters[p_preset].update({param: eval_param})
@@ -269,6 +273,8 @@ class MyProject:
                 # Allow parameters to be defined by functions e.g. by numpy, etc.
                 if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
                     self.parameters[self.p_preset][param] = eval(string_params[param])
+                    exp_name = param + '_exp'
+                    self.parameters[self.p_preset][exp_name] = string_params[param]
                 else:
                     self.parameters[self.p_preset][param] = string_params[param]
 
@@ -284,7 +290,8 @@ class MyProject:
             self.file_parameters = pd.DataFrame([], columns=[p for p in self.parameters[self.p_preset].keys()])
 
     def check_data(self):
-        missing_subjects = [x for x in listdir(self.data_path) if x not in ['grand_averages', 'empty_room_data'] and x not in self.all_files]
+        missing_subjects = [x for x in listdir(self.data_path) if
+                            x not in ['grand_averages', 'empty_room_data'] and x not in self.all_files]
 
         for sub in missing_subjects:
             self.all_files.append(sub)

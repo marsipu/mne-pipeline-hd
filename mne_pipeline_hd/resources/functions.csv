@@ -1,24 +1,24 @@
 ;alias;tab;group;subject_loop;matplotlib;mayavi;dependencies;module;func_args
-apply_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
-make_dense_scalp_surfaces;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
+apply_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
+make_dense_scalp_surfaces;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 prepare_bem;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
-setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, source_space_spacing, n_jobs, overwrite
+setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, source_space_spacing, n_jobs
 compute_src_distances;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, n_jobs
 setup_vol_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
-morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, morph_to, overwrite
-morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
+morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, morph_to
+morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit
-find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;sub, min_duration, shortest_event, adjust_timeline_by_msec, overwrite
-epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject, overwrite_ar, decim, overwrite
-run_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, overwrite, autoreject, save_plots, figures_path, pscripts_path
-apply_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, overwrite
-get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica, overwrite
+find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;sub, min_duration, shortest_event, adjust_timeline_by_msec
+epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject, overwrite_ar, decim
+run_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, autoreject, save_plots, figures_path, pscripts_path
+apply_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub
+get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica
 tfr;;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica, tfr_freqs, overwrite_tfr, tfr_method, multitaper_bandwith, stockwell_width, n_jobs
-estimate_noise_covariance;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite, baseline, n_jobs, erm_noise_cov, calm_noise_cov, enable_ica
-create_forward_solution;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite, n_jobs, eeg_fwd
-create_inverse_operator;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite
-source_estimate;;Compute;source_space_operations;True;False;False;;operations;sub, inverse_method, pick_ori, lambda2, overwrite
-mixed_norm_estimate;;Compute;source_space_operations;True;False;False;;operations;sub, pick_ori, overwrite
+estimate_noise_covariance;;Compute;source_space_operations;True;False;False;;operations;sub, baseline, n_jobs, erm_noise_cov, calm_noise_cov, enable_ica
+create_forward_solution;;Compute;source_space_operations;True;False;False;;operations;sub, n_jobs, eeg_fwd
+create_inverse_operator;;Compute;source_space_operations;True;False;False;;operations;sub
+source_estimate;;Compute;source_space_operations;True;False;False;;operations;sub, inverse_method, pick_ori, lambda2
+mixed_norm_estimate;;Compute;source_space_operations;True;False;False;;operations;sub, pick_ori
 apply_morph;;Compute;source_space_operations;True;False;False;;operations;sub
 label_time_course;;Compute;source_space_operations;True;False;False;;operations;sub, target_labels, parcellation, extract_mode
 ecd_fit;;Compute;source_space_operations;True;True;True;;operations;sub, ecd_times, ecd_positions, ecd_orientations

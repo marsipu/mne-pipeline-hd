@@ -23,10 +23,8 @@ from surfer import Brain
 from . import operations as op
 from ..pipeline_functions.decorators import topline
 
-# ==============================================================================
-# BASIC PLOTTING FUNCTIONS
-# ==============================================================================
-def plot_save(sub, plot_name, trial=None, subfolder=None, figure=None, mayavi=False):
+
+def plot_save(sub, plot_name, trial=None, subfolder=None, figure=None, mayavi=False, mayavi_figure=None):
 
     if sub.save_plots:
         # Folder is named by plot_name
@@ -39,8 +37,18 @@ def plot_save(sub, plot_name, trial=None, subfolder=None, figure=None, mayavi=Fa
         if not isdir(dir_path):
             makedirs(dir_path)
 
-        file_name = f'{sub.name}_{sub.p_preset}{sub.img_format}'
-        save_path = join(dir_path, sub.name + sub.img_format)
+        file_name = f'{sub.name}_{sub.p_preset}_{plot_name}_{sub.img_format}'
+        if trial:
+            file_name = f'{sub.name}_{sub.p_preset}_{trial}_{plot_name}_{sub.img_format}'
+
+        save_path = join(dir_path, file_name)
+
+        if figure:
+            figure.savefig(save_path, dpi=sub.dpi)
+        elif mayavi and mayavi_figure or mayavi_figure:
+            mayavi_figure.savefig(save_path)
+        elif mayavi:
+            mlab.savefig(save_path, figure=mlab.gcf())
 
         print('figure: ' + save_path + ' has been saved')
     else:
