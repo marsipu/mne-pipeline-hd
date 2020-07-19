@@ -58,6 +58,8 @@ def get_arguments(arg_names, sub, main_win):
             keyword_arguments.update({arg_name: project_attributes[arg_name]})
         elif arg_name in main_win.pr.parameters[main_win.pr.p_preset]:
             keyword_arguments.update({arg_name: main_win.pr.parameters[main_win.pr.p_preset][arg_name]})
+        elif arg_name in main_win.settings.childKeys():
+            keyword_arguments.update({arg_name: main_win.settings.value(arg_name)})
         else:
             raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
 

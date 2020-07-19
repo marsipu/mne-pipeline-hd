@@ -23,28 +23,45 @@ from surfer import Brain
 from . import operations as op
 from ..pipeline_functions.decorators import topline
 
-# ==============================================================================
-# BASIC PLOTTING FUNCTIONS
-# ==============================================================================
-def plot_save(sub, plot_name, trial=None, subfolder=None, figure=None, mayavi=False):
+
+def plot_save(sub, plot_name, subfolder=None, trial=None, matplotlib_figure=None, mayavi=False, mayavi_figure=None):
 
     if sub.save_plots:
         # Folder is named by plot_name
         dir_path = join(sub.figures_path, plot_name)
+
         # Create Subfolder if necessary
         if subfolder:
-            dir_path = join(sub.figures_path, plot_name, subfolder)
+            dir_path = join(dir_path, subfolder)
+            plot_name = plot_name + '_' + subfolder
+
+        # Create Subfolder for trial if necessary
+        if trial:
+            dir_path = join(dir_path, trial)
 
         # Create not existent folders
         if not isdir(dir_path):
             makedirs(dir_path)
 
-        file_name = f'{sub.name}_{sub.p_preset}{sub.img_format}'
-        save_path = join(dir_path, sub.name + sub.img_format)
+        file_name = f'{sub.name}_{sub.p_preset}_{plot_name}{sub.img_format}'
+        if trial:
+            file_name = f'{sub.name}_{sub.p_preset}_{trial}_{plot_name}{sub.img_format}'
+
+        save_path = join(dir_path, file_name)
+
+        if matplotlib_figure and mayavi == False:
+            matplotlib_figure.savefig(save_path, dpi=sub.dpi)
+        elif mayavi and mayavi_figure or mayavi_figure:
+            mayavi_figure.savefig(save_path)
+        elif mayavi:
+            mlab.savefig(save_path, figure=mlab.gcf())
+        else:
+            plt.savefig(save_path, dpi=sub.dpi)
 
         print('figure: ' + save_path + ' has been saved')
     else:
         print('Not saving plots; set "save_plots" to "True" to save')
+
 # ==============================================================================
 # PLOTTING FUNCTIONS
 # ==============================================================================
@@ -81,12 +98,7 @@ def plot_events(sub):
     events_figure = mne.viz.plot_events(events, event_id=actual_event_id)
     plt.title(sub.name)
 
-    if sub.save_plots:
-        save_path = join(sub.figures_path, 'events', sub.name + sub.img_format)
-        events_figure.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "sub.save_plots" to "True" to save')
+    plot_save(sub, 'events', matplotlib_figure=events_figure)
 
 
 @topline
@@ -98,12 +110,7 @@ def plot_power_spectra(sub):
     psd_figure = raw.plot_psd(fmax=sub.p['lowpass'], picks=picks, n_jobs=1)
     plt.title(sub.name)
 
-    if sub.save_plots:
-        save_path = join(sub.figures_path, 'power_spectra_raw', f'{sub.name}_{sub.p_preset}-power_raw{sub.img_format}')
-        psd_figure.savefig(save_path, dpi=600)
-        print('figure: ' + save_path + ' has been saved')
-    else:
-        print('Not saving plots; set "sub.save_plots" to "True" to save')
+    plot_save(sub, 'power_spectra', subfolder='raw', matplotlib_figure=psd_figure)
 
 
 @topline
@@ -114,14 +121,7 @@ def plot_power_spectra_epochs(sub):
 
         psd_figure = epochs[trial].plot_psd(fmax=sub.p['lowpass'], n_jobs=-1)
         plt.title(sub.name + '-' + trial)
-
-        if sub.save_plots:
-            save_path = join(sub.figures_path, 'power_spectra_epochs', trial,
-                             f'{sub.name}_{trial}_{sub.p_preset}-power_epochs{sub.img_format}')
-            psd_figure.savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-        else:
-            print('Not saving plots; set "sub.save_plots" to "True" to save')
+        plot_save(sub, 'power_spectra', subfolder='epochs', matplotlib_figure=psd_figure)
 
 
 @topline
@@ -130,14 +130,7 @@ def plot_power_spectra_topo(sub):
     for trial in epochs.event_id:
         psd_figure = epochs[trial].plot_psd_topomap(n_jobs=-1)
         plt.title(sub.name + '-' + trial)
-
-        if sub.save_plots:
-            save_path = join(sub.figures_path, 'power_spectra_topo', trial,
-                             f'{sub.name}_{trial}_{sub.p_preset}-power_epochs_topo{sub.img_format}')
-            psd_figure.savefig(save_path, dpi=600)
-            print('figure: ' + save_path + ' has been saved')
-        else:
-            print('Not saving plots; set "sub.save_plots" to "True" to save')
+        plot_save(sub, 'power_spectra', subfolder='topo', trial=trial, matplotlib_figure=psd_figure)
 
 
 @topline
@@ -173,37 +166,14 @@ def plot_tfr(sub, t_epoch, baseline):
         plt.title(f'{sub.name}-{power.comment}')
         plt.show()
 
-        if sub.save_plots:
-            save_path1 = join(sub.figures_path, 'tf_sensor_space/plot',
-                              f'{sub.name}_{power.comment}_{sub.p_preset}-tfr{sub.img_format}')
-            fig1.savefig(save_path1, dpi=600)
-            print('figure: ' + save_path1 + ' has been saved')
-            save_path2 = join(sub.figures_path, 'tf_sensor_space/topo',
-                              f'{sub.name}_{power.comment}_{sub.p_preset}-tfr_topo{sub.img_format}')
-            fig2.savefig(save_path2, dpi=600)
-            print('figure: ' + save_path2 + ' has been saved')
-            save_path3 = join(sub.figures_path, 'tf_sensor_space/joint',
-                              f'{sub.name}_{power.comment}_{sub.p_preset}-tfr_joint{sub.img_format}')
-            fig3.savefig(save_path3, dpi=600)
-            print('figure: ' + save_path3 + ' has been saved')
-            save_path4 = join(sub.figures_path, 'tf_sensor_space/oscs',
-                              f'{sub.name}_{power.comment}_{sub.p_preset}-tfr_osc{sub.img_format}')
-            fig4.savefig(save_path4, dpi=600)
-            print('figure: ' + save_path4 + ' has been saved')
-        else:
-            print('Not saving plots; set "sub.save_plots" to "True" to save')
-
-    for itc in itcs:
-        fig5 = itc.plot_topo(title=f'{sub.name}-{itc.comment}-itc',
-                             vmin=0., vmax=1., cmap='Reds')
-
-        if sub.save_plots:
-            save_path5 = join(sub.figures_path, 'tf_sensor_space/itc',
-                              f'{sub.name}_{itc.comment}_{sub.p_preset}-tfr_itc{sub.img_format}')
-            fig5.savefig(save_path5, dpi=600)
-            print('figure: ' + save_path5 + ' has been saved')
-        else:
-            print('Not saving plots; set "sub.save_plots" to "True" to save')
+        plot_save(sub, 'time_frequency', subfolder='plot', trial=power.comment, matplotlib_figure=fig1)
+        plot_save(sub, 'time_frequency', subfolder='topo', trial=power.comment, matplotlib_figure=fig2)
+        plot_save(sub, 'time_frequency', subfolder='joint', trial=power.comment, matplotlib_figure=fig3)
+        plot_save(sub, 'time_frequency', subfolder='osc', trial=power.comment, matplotlib_figure=fig4)
+        for itc in itcs:
+            fig5 = itc.plot_topo(title=f'{sub.name}-{itc.comment}-itc',
+                                 vmin=0., vmax=1., cmap='Reds')
+            plot_save(sub, 'time_frequency', subfolder='itc', trial=itc.comment, matplotlib_figure=fig5)
 
 
 @topline

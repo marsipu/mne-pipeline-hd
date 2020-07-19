@@ -33,6 +33,7 @@ from mayavi import mlab
 
 from . import parameter_widgets
 from .other_widgets import DataTerminal
+from .parameter_widgets import ListGui
 from .qt_utils import ErrorDialog, get_exception_tuple
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
@@ -95,6 +96,7 @@ class MainWindow(QMainWindow):
                             'custom': {}}
         self.selected_modules = self.settings.value('selected_modules', defaultValue=['operations', 'plot'])
         self.subject = None
+        self.available_image_formats = ['.png', '.jpg', '.bmp', '.tiff']
 
         # Todo: Straighten confusing main_win.init() (Project vs. ModuleImport vs. pdDataFrames)
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
@@ -147,6 +149,7 @@ class MainWindow(QMainWindow):
         self.add_func_bts()
         self.add_main_bts()
         self.add_param_gui_tab()
+        self.make_settings_widgets()
         self.make_toolbar()
         self.get_toolbox_params()
         self.add_dock_windows()
@@ -303,6 +306,7 @@ class MainWindow(QMainWindow):
         # Settings
         self.settings_menu = self.menuBar().addMenu('&Settings')
 
+        self.settings_menu.addAction('&Open Settings', self.open_settings_dlg)
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
         self.settings_menu.addAction('Reset Parameters', self.reset_parameters)
 
@@ -321,6 +325,65 @@ class MainWindow(QMainWindow):
         about_menu.addAction('Quick-Guide', self.quick_guide)
         about_menu.addAction('About QT', self.about_qt)
 
+    def make_settings_widgets(self):
+        self.n_jobs_sb = QSpinBox(self)
+        self.n_jobs_sb.setMinimum(0)
+        self.n_jobs_sb.setSpecialValueText('Auto')
+        self.n_jobs_sb.valueChanged.connect(self.n_jobs_changed)
+
+        self.show_plots_chkbx = QCheckBox('Show Plots', self)
+        self.show_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed,
+                                                           self.show_plots_chkbx, 'show_plots'))
+        self.show_plots_chkbx.setToolTip('Do you want to show plots?\n'
+                                         '(or just save them without showing, then just check "Save Plots")')
+
+        self.save_plots_chkbx = QCheckBox('Save Plots', self)
+        self.save_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.save_plots_chkbx, 'save_plots'))
+        self.save_plots_chkbx.setToolTip('Do you want to save the plots made to a file?')
+
+        self.save_storage_chkbx = QCheckBox('Save Storage', self)
+        self.save_storage_chkbx.stateChanged.connect(partial(self.chkbx_changed,
+                                                             self.save_storage_chkbx, 'save_storage'))
+        self.save_storage_chkbx.setToolTip('Do you want to save storage?')
+
+        self.enable_cuda_chkbx = QCheckBox('Enable CUDA', self)
+        self.enable_cuda_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.enable_cuda_chkbx, 'enable_cuda'))
+        self.enable_cuda_chkbx.setToolTip('Do you want to enable CUDA? (system has to be setup for cuda)')
+
+        self.shutdown_chkbx = QCheckBox('Shutdown', self)
+        self.shutdown_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.shutdown_chkbx, 'shutdown'))
+        self.shutdown_chkbx.setToolTip('Do you want to shut your system down after execution of all subjects?')
+
+        self.img_format_cmbx = QComboBox()
+        self.img_format_cmbx.activated.connect(self.img_format_changed)
+        self.img_format_cmbx.addItems(self.available_image_formats)
+        self.img_format_cmbx.setToolTip('Choose the image format for plots')
+
+        self.predef_bads_list = ListGui(self.settings, 'predefined_bads', 'Predefined Bads',
+                                        'Set Bad-Channels here to be set as bad by default')
+
+    def open_settings_dlg(self):
+        dlg = QDialog(self)
+        layout = QVBoxLayout()
+
+        settings_layout = QHBoxLayout()
+        settings_layout.addWidget(self.n_jobs_sb)
+        settings_layout.addWidget(self.show_plots_chkbx)
+        settings_layout.addWidget(self.save_plots_chkbx)
+        settings_layout.addWidget(self.save_storage_chkbx)
+        settings_layout.addWidget(self.enable_cuda_chkbx)
+        settings_layout.addWidget(self.shutdown_chkbx)
+        settings_layout.addWidget(self.predef_bads_list)
+
+        layout.addLayout(settings_layout)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(dlg.close)
+        layout.addWidget(close_bt)
+
+        dlg.setLayout(layout)
+        dlg.open()
+
     def make_toolbar(self):
         self.toolbar = self.addToolBar('Tools')
         # Add Project-Tools
@@ -328,70 +391,49 @@ class MainWindow(QMainWindow):
         self.toolbar.addSeparator()
 
         self.toolbar.addWidget(QLabel('n_jobs: '))
-        self.n_jobs_sb = QSpinBox(self)
-        self.n_jobs_sb.setMinimum(0)
-        self.n_jobs_sb.setSpecialValueText('Auto')
-        self.n_jobs_sb.valueChanged.connect(self.n_jobs_changed)
         self.toolbar.addWidget(self.n_jobs_sb)
 
         self.toolbar.addSeparator()
 
-        self.show_plots_chkbx = QCheckBox('Show Plots', self)
-        self.show_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed,
-                                                           self.show_plots_chkbx, 'show_plots'))
-        self.show_plots_chkbx.setToolTip('Do you want to show plots?\n'
-                                         '(or just save them without showing, checking "Save Plots")')
         self.toolbar.addWidget(self.show_plots_chkbx)
-
-        self.save_plots_chkbx = QCheckBox('Save Plots', self)
-        self.save_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.save_plots_chkbx, 'save_plots'))
-        self.save_plots_chkbx.setToolTip('Do you want to save the plots made to a file?')
         self.toolbar.addWidget(self.save_plots_chkbx)
-
-        self.overwrite_chkbx = QCheckBox('Overwrite', self)
-        self.overwrite_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.overwrite_chkbx, 'overwrite'))
-        self.overwrite_chkbx.setToolTip('Do you want to overwrite the already existing files?')
-        self.toolbar.addWidget(self.overwrite_chkbx)
-
-        self.enable_cuda_chkbx = QCheckBox('Enable CUDA', self)
-        self.enable_cuda_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.enable_cuda_chkbx, 'enable_cuda'))
-        self.overwrite_chkbx.setToolTip('Do you want to enable CUDA? (system has to be setup for cuda)')
+        self.toolbar.addWidget(self.save_storage_chkbx)
         self.toolbar.addWidget(self.enable_cuda_chkbx)
-
-        self.shutdown_chkbx = QCheckBox('Shutdown', self)
-        self.shutdown_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.shutdown_chkbx, 'shutdown'))
-        self.shutdown_chkbx.setToolTip('Do you want to shut your system down after execution of all subjects?')
         self.toolbar.addWidget(self.shutdown_chkbx)
 
         self.get_toolbox_params()
 
     def get_toolbox_params(self):
         # Get n_jobs from settings
-        self.n_jobs_sb.setValue(self.pr.parameters[self.pr.p_preset]['n_jobs'])
+        self.n_jobs_sb.setValue(self.settings.value('n_jobs', defaultValue=-1))
+
+        # Get img_format from settings
+        self.img_format_cmbx.setCurrentText(self.settings.value('img_format', defaultValue='.png'))
 
         # Aliases for Checkboxes in Toolbar
-        chkbox_dict = {'show_plots_chkbx': 'show_plots', 'save_plots_chkbx': 'save_plots',
-                       'overwrite_chkbx': 'overwrite', 'enable_cuda_chkbx': 'enable_cuda', 'shutdown_chkbx': 'shutdown'}
+        chkbox_dict = {'show_plots_chkbx': 'show_plots',
+                       'save_plots_chkbx': 'save_plots',
+                       'save_storage_chkbx': 'save_storage',
+                       'enable_cuda_chkbx': 'enable_cuda',
+                       'shutdown_chkbx': 'shutdown'}
         for chkbox_name in chkbox_dict:
             chkbox = getattr(self, chkbox_name)
 
-            try:
-                chkbox_value = self.pr.parameters[self.pr.p_preset][chkbox_dict[chkbox_name]]
-                chkbox.setChecked(chkbox_value)
-            except KeyError:
-                pass
+            chkbox_value = self.settings.value(chkbox_dict[chkbox_name], defaultValue=0)
+            chkbox.setChecked(chkbox_value)
 
     def n_jobs_changed(self, value):
         # In MNE-Python -1 is automatic, for SpinBox 0 is already auto
         if value == 0:
-            self.pr.parameters[self.pr.p_preset]['n_jobs'] = -1
+            self.settings.setValue('n_jobs', -1)
         else:
-            self.pr.parameters[self.pr.p_preset]['n_jobs'] = value
-        self.qall_parameters.update_param_gui('n_jobs')
+            self.settings.setValue('n_jobs', value)
 
     def chkbx_changed(self, chkbx, param):
-        self.pr.parameters[self.pr.p_preset][param] = chkbx.isChecked()
-        self.qall_parameters.update_param_gui(param)
+        self.settings.setValue(param, chkbx.isChecked())
+
+    def img_format_changed(self, index):
+        self.settings.setValue('img_format', self.available_image_formats[index])
 
     # Todo: Statusbar with purpose
     def update_statusbar(self):
@@ -856,7 +898,6 @@ class MainWindow(QMainWindow):
 
     def thread_func(self, kwargs):
         try:
-            # Todo: Solve Function-Stacking-Problem, maybe with QThread, which can accept Signals from main-thread
             func_from_def(**kwargs)
             if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] == True \
                     and self.pr.parameters[self.pr.p_preset]['show_plots'] == False:
@@ -1021,8 +1062,6 @@ class QAllParameters(QWidget):
                 self.used_params.add(value)
 
         self.cleaned_pd_params = self.mw.pd_params[self.mw.pd_params.index.isin(self.used_params)]
-        not_removing = ['show_plots','save_plots', 'overwrite', 'enable_cuda', 'shutdown']
-        self.cleaned_pd_params = self.cleaned_pd_params.append(self.mw.pd_params[self.mw.pd_params.index.isin(not_removing)])
 
         self.init_ui()
 

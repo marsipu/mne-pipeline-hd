@@ -33,8 +33,9 @@ def main():
     app = QApplication.instance()
     if not app:
         app = QApplication(sys.argv)
-    app.setApplicationName(app_name)
-    app.setOrganizationName(organization_name)
+    app.setApplicationName('mne_pipeline_hd')
+    app.setOrganizationName('marsipu')
+    app.setOrganizationDomain('https://github.com/marsipu/mne_pipeline_hd')
 
     try:
         app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)

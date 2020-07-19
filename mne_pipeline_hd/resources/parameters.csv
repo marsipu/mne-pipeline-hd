@@ -1,5 +1,4 @@
 ;alias;default;unit;description;gui_type;gui_args
-predefined_bads;Predefined Bad-Channels;[6,7,8,26,27,103];;Default bad channels;ListGui;
 ch_types;Channel-Types;['grad'];;Channel-Types used in data;ListGui;
 highpass;Highpass-Cutoff;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
 lowpass;Lowpass-Cutoff;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
@@ -49,12 +48,3 @@ ecd_times;;{};;;DictGui;
 ecd_positions;;{};;;DictGui;
 ecd_orientations;;{};;;DictGui;
 morph_to;;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
-n_jobs_freesurfer;;4;;change according to amount of processors you have available;IntGui;
-show_plots;Show Plots;False;;Check, if you want the plots to be shown;BoolGui;
-save_plots;Save Plots;True;;Check, if you want to save each plot;BoolGui;
-img_format;Image-Format;'.png';;Set Image-Format for Plot-Images;ComboGui;{'options': ['.png', '.jpg', '.bmp', '.tiff']}
-overwrite;Overwrite;True;;Check, if you want to overwrite the saved files each time you run a function again;BoolGui;
-enable_cuda;Enable Cuda;False;;Check, if you want to enable cuda-support (Cuda has to be installed);BoolGui;
-shutdown;Shutdown System;False;;Check, if you want to shutdown your system after having run the pipeline;BoolGui;
-n_jobs;n_jobs;-1;jobs;Enter number of threads, your processor can handle;IntGui;{'min_val': -1, 'special_value_text': 'auto'}
-save_storage;Save Storage;False;;Check, if you don't want to save a file for each step in the pipeline. As a consequence, you have to repeat each step each run.;BoolGui;

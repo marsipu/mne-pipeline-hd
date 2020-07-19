@@ -1,13 +1,13 @@
 ;alias;tab;group;subject_loop;matplotlib;mayavi;dependencies;module;func_args
-apply_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
+apply_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 copy_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
-make_dense_scalp_surfaces;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
+make_dense_scalp_surfaces;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 prepare_bem;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
-setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, source_space_spacing, surface, n_jobs, overwrite
+setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, source_space_spacing, surface, n_jobs
 compute_src_distances;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, n_jobs
 setup_vol_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
-morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, morph_to, overwrite
-morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
+morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, morph_to
+morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit
 find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;sub, min_duration, shortest_event, adjust_timeline_by_msec, overwrite
 epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject_threshold, overwrite_ar, decim, overwrite

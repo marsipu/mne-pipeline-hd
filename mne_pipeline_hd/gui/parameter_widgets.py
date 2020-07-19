@@ -8,9 +8,10 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 """
 import sys
 from ast import literal_eval
+import numpy as np
 from decimal import Decimal
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
                              QLabel,
                              QLineEdit, QListView, QListWidget, QListWidgetItem, QPushButton, QScrollArea, QSizePolicy,
@@ -66,16 +67,18 @@ class Param(QWidget):
         self.setLayout(self.layout)
 
     def read_param(self):
-        if self.param_name in self.pr.parameters[self.pr.p_preset]:
+        # Make also usable by QSettings
+        if isinstance(self.pr, QSettings):
+            if self.param_name in self.pr.childKeys():
+                self.param_value = self.pr.value(self.param_name)
+        elif self.param_name in self.pr.parameters[self.pr.p_preset]:
             self.param_value = self.pr.parameters[self.pr.p_preset][self.param_name]
-        else:
-            pass
 
     def save_param(self):
-        if self.param_name in self.pr.parameters[self.pr.p_preset]:
-            self.pr.parameters[self.pr.p_preset][self.param_name] = self.param_value
+        if isinstance(self.pr, QSettings):
+            self.pr.setValue(self.param_name, self.param_value)
         else:
-            self.pr.parameters[self.pr.p_preset].update({self.param_name: self.param_value})
+            self.pr.parameters[self.pr.p_preset][self.param_name] = self.param_value
 
 
 class IntGui(Param):
@@ -178,6 +181,7 @@ class FuncGui(Param):
         self.param_name = param_name
         self.param_alias = param_alias
         self.param_value = ''
+        self.param_exp = ''
         self.param_widget = QLineEdit()
         self.param_widget.setToolTip(hint + '\n' +
                                      'Use of functions also allowed (from already imported modules)\n'
@@ -206,21 +210,30 @@ class FuncGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        self.param_widget.setText(str(self.param_value))
+        self.param_widget.setText(self.param_exp)
         self.display_widget.setText(str(self.param_value))
 
     def get_param(self):
-        string_param = self.param_widget.text()
+        self.param_exp = self.param_widget.text()
         try:
-            self.param_value = eval(string_param)
+            self.param_value = eval(self.param_exp, {'np': np})
             self.display_widget.setText(str(self.param_value))
-
         except (NameError, SyntaxError) as err:
             self.display_widget.setText(str(err))
-            pass
-        self.save_param()
+            return None
+        else:
+            self.save_param()
+            return self.param_value
 
-        return self.param_value
+    def read_param(self):
+        if self.param_name in self.pr.parameters[self.pr.p_preset]:
+            self.param_value = self.pr.parameters[self.pr.p_preset][self.param_name]
+        if self.param_name + '_exp' in self.pr.parameters[self.pr.p_preset]:
+            self.param_exp = self.pr.parameters[self.pr.p_preset][self.param_name + '_exp']
+
+    def save_param(self):
+        self.pr.parameters[self.pr.p_preset][self.param_name] = self.param_value
+        self.pr.parameters[self.pr.p_preset][self.param_name + '_exp'] = self.param_exp
 
 
 class BoolGui(Param):
