@@ -19,7 +19,6 @@ import mne
 import numpy as np
 from autoreject import AutoReject
 
-from . import loading
 from .loading import CurrentSub
 from ..pipeline_functions import iswin, pipeline_utils as ut
 from ..pipeline_functions.decorators import small_func, topline
@@ -222,7 +221,8 @@ def find_events(sub, min_duration, shortest_event, adjust_timeline_by_msec, over
 
 
 @topline
-def epoch_raw(sub, event_id, t_epoch, baseline, reject, flat, autoreject, overwrite_ar, decim, overwrite):
+def epoch_raw(sub, event_id, t_epoch, baseline, reject, flat,
+              autoreject_threshold, overwrite_ar, decim, overwrite):
     if overwrite or not isfile(sub.epochs_path):
 
         raw = sub.load_filtered()
@@ -245,14 +245,15 @@ def epoch_raw(sub, event_id, t_epoch, baseline, reject, flat, autoreject, overwr
                             preload=True, picks=picks, proj=False, reject=None,
                             decim=decim, on_missing='ignore', reject_by_annotation=True)
 
-        if autoreject:
+        if autoreject_threshold:
             # Todo: Autoreject-Handler with json and more flexibility on autoreject
             reject = ut.autoreject_handler(sub.name, epochs, sub.p["highpass"], sub.p["lowpass"],
                                            sub.pr.pscripts_path, overwrite_ar=overwrite_ar)
-
-        print(f'Rejection Threshold: {reject}')
-
-        epochs.drop_bad(reject=reject, flat=flat)
+            print(f'Autoreject Rejection-Threshold: {reject}')
+            epochs.drop_bad(reject=reject, flat=flat)
+        else:
+            print(f'Chosen Rejection-Threshold: {reject}')
+            epochs.drop_bad(reject=reject, flat=flat)
 
         sub.save_epochs(epochs)
 
@@ -260,13 +261,25 @@ def epoch_raw(sub, event_id, t_epoch, baseline, reject, flat, autoreject, overwr
         print('epochs file: ' + sub.epochs_path + ' already exists')
 
 
+@topline
+def autoreject_interpolation(sub, n_interpolates, consensus_percs, n_jobs):
+    epochs = sub.load_epochs()
+    ar_object = AutoReject(n_interpolates, consensus_percs, random_state=8,
+                           n_jobs=n_jobs)
+    ar_object.fit(epochs)
+    cleaned_epochs = ar_object.transform(epochs)
+
+    sub.save_ar_epochs(cleaned_epochs)
+
+
 # TODO: Organize run_ica properly
+# Todo: Choices for: Fit(Raw, Epochs, Evokeds), Apply (Raw, Epochs, Evokeds)
 @topline
 def run_ica(sub, eog_channel, ecg_channel, reject, flat,
-            overwrite, autoreject, save_plots, figures_path, pscripts_path):
+            overwrite, autoreject_threshold, save_plots, figures_path, pscripts_path):
     info = sub.load_info()
 
-    ica_dict = ut.dict_filehandler(sub.name, f'ica_components{filter_string(sub.p["highpass"], sub.p["lowpass"])}',
+    ica_dict = ut.dict_filehandler(sub.name, f'ica_components_{sub.p_preset}',
                                    pscripts_path,
                                    onlyread=True)
 
@@ -282,11 +295,12 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat,
         # Calculate ICA
         ica = mne.preprocessing.ICA(n_components=25, method='fastica', random_state=8)
 
-        if autoreject:
+        if autoreject_threshold:
             reject = ut.autoreject_handler(sub.name, epochs, sub.p["highpass"], sub.p["lowpass"], sub.pr.pscripts_path,
                                            overwrite_ar=False, only_read=True)
+            print(f'Autoreject Rejection-Threshold: {reject}')
 
-        print('Rejection Threshold: %s' % reject)
+        print(f'Chosen Rejection-Threshold: {reject}')
 
         ica.fit(raw, picks, reject=reject, flat=flat,
                 reject_by_annotation=True)
@@ -511,10 +525,13 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat,
 
 
 @topline
-def apply_ica(sub, overwrite):
+def apply_ica(sub, epoch_origin, overwrite):
     if overwrite or not isfile(sub.ica_epochs_path):
 
-        epochs = sub.load_epochs()
+        if epoch_origin == 'Autoreject+ICA':
+            epochs = sub.load_ar_epochs()
+        else:
+            epochs = sub.load_epochs()
         ica = sub.load_ica()
 
         if len(ica.exclude) == 0:
@@ -528,29 +545,17 @@ def apply_ica(sub, overwrite):
 
 
 @topline
-def autoreject_interpolation(name, save_dir, highpass, lowpass, enable_ica):
-    if enable_ica:
-        ica_epochs_name = name + filter_string(highpass, lowpass) + '-ica-epo.fif'
-        save_path = join(save_dir, ica_epochs_name)
-        epochs = loading.read_ica_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from ICA-Epochs')
-    else:
-        epochs_name = name + filter_string(highpass, lowpass) + '-epo.fif'
-        save_path = join(save_dir, epochs_name)
-        epochs = loading.read_epochs(name, save_dir, highpass, lowpass)
-        print('Evokeds from (normal) Epochs')
-    autor = AutoReject(n_jobs=-1)
-    epochs_clean = autor.fit_transform(epochs)
-
-    epochs_clean.save(save_path, overwrite=True)
-
-
-@topline
-def get_evokeds(sub, enable_ica, overwrite):
+def get_evokeds(sub, epoch_origin, overwrite):
     if overwrite or not isfile(sub.evokeds_path):
-        if enable_ica:
+        if epoch_origin == 'Autoreject+ICA':
+            epochs = sub.load_ica_epochs()
+            print('Evokeds from ICA-Epochs which were cleaned by Autoreject before')
+        elif epoch_origin == 'ICA':
             epochs = sub.load_ica_epochs()
             print('Evokeds from ICA-Epochs')
+        elif epoch_origin == 'Autoreject':
+            epochs = sub.load_ar_epochs()
+            print('Evokeds from Epochs cleaned by Autorejec')
         else:
             epochs = sub.load_epochs()
             print('Evokeds from (normal) Epochs')
@@ -603,14 +608,14 @@ def grand_avg_evokeds(ga_group):
 
 
 @topline
-def tfr(sub, enable_ica, tfr_freqs, overwrite_tfr,
+def tfr(sub, epoch_origin, tfr_freqs, overwrite_tfr,
         tfr_method, multitaper_bandwith, stockwell_width, n_jobs):
     n_cycles = [freq / 2 for freq in tfr_freqs]
     powers = []
     itcs = []
 
     if overwrite_tfr or not isfile(sub.power_tfr_path) or not isfile(sub.itc_tfr_path):
-        if enable_ica:
+        if epoch_origin == 'ICA' or epoch_origin == 'Autoreject+ICA':
             epochs = sub.load_ica_epochs()
         else:
             epochs = sub.load_epochs()
@@ -908,7 +913,7 @@ def create_forward_solution(sub, overwrite, n_jobs, eeg_fwd):
 
 
 @topline
-def estimate_noise_covariance(sub, overwrite, baseline, n_jobs, erm_noise_cov, calm_noise_cov, enable_ica):
+def estimate_noise_covariance(sub, overwrite, baseline, n_jobs, erm_noise_cov, calm_noise_cov, epoch_origin):
     if calm_noise_cov:
         print('Noise Covariance on 1-Minute-Calm')
 
@@ -929,7 +934,7 @@ def estimate_noise_covariance(sub, overwrite, baseline, n_jobs, erm_noise_cov, c
     elif sub.ermsub == 'None' or erm_noise_cov is False:
         print('Noise Covariance on Epochs')
         if overwrite or not isfile(sub.cov_path):
-            if enable_ica:
+            if epoch_origin == 'ICA' or epoch_origin == 'Autoreject+ICA':
                 epochs = sub.load_ica_epochs()
             else:
                 epochs = sub.load_epochs()
@@ -1123,9 +1128,9 @@ def apply_morph(sub):
 
 @topline
 def source_space_connectivity(sub, parcellation, target_labels, inverse_method, lambda2, con_methods,
-                              con_fmin, con_fmax, n_jobs, enable_ica):
+                              con_fmin, con_fmax, n_jobs, epoch_origin):
     info = sub.load_info()
-    if enable_ica:
+    if epoch_origin == 'ICA' or epoch_origin == 'Autoreject+ICA':
         all_epochs = sub.load_ica_epochs()
     else:
         all_epochs = sub.load_epochs()

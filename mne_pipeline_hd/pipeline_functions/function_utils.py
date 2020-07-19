@@ -83,7 +83,7 @@ def func_from_def(func_name, sub, main_win):
 
     keyword_arguments = get_arguments(arg_names, sub, main_win)
 
-    # Catch errors due to unexpected or missing keywords(
+    # Catch errors due to unexpected or missing keywords
     unexp_kw_pattern = r"(.*) got an unexpected keyword argument \'(.*)\'"
     miss_kw_pattern = r"(.*) missing 1 required positional argument: \'(.*)\'"
     try:
@@ -99,7 +99,7 @@ def func_from_def(func_name, sub, main_win):
         elif match_miss_kw:
             add_kw_args = get_arguments([match_miss_kw.group(2)], sub, main_win)
             keyword_arguments.update(add_kw_args)
-            logging.warning(f'Caught missing keyword \"{match_unexp_kw.group(2)}\" for {func_name}')
+            logging.warning(f'Caught missing keyword \"{match_miss_kw.group(2)}\" for {func_name}')
             getattr(module, func_name)(**keyword_arguments)
         else:
             raise te

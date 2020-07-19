@@ -9,10 +9,13 @@ shortest_event;Shortest Event;2;sample;Shortest possible Event;IntGui;{'min_val'
 adjust_timeline_by_msec;Adjust Time;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;Epoch-Timeframe;(-0.5,1.5);s;start and end of epoch;TupleGui;
 baseline;Baseline-Timeframe;(-0.5,0);s;start and end of baseline;CheckTupleGui;{'max_val':0, 'unchecked_value': None}
-enable_ica;;False;;Use ica-epochs, create 1Hz-Highpass-Raw if not existent;BoolGui;
-autoreject;;False;;set True to use autoreject;BoolGui;
-overwrite_ar;;False;;if to calculate new threshold sort ouse previously calculated;BoolGui;
-reject;;{'grad':8e-10};;default reject parameter if not reject with autoreject;DictGui;
+epoch_origin;Epoch-Origin;'default';;If to use epochs from ICA or Autoreject;ComboGui;{'options': ['default', 'ICA', 'Autoreject', 'Autoreject+ICA']}
+autoreject_interpolation;Autoreject(Interpolation);False;;Use autoreject to interpolate Epochs with autoreject;BoolGui;
+n_interpolates;;np.array([1, 4, 32]);;p-values for autoreject;FuncGui;
+consensus_percs;;np.linspace(0, 1.0, 11);;k-values for autoreject;FuncGui;
+autoreject_threshold;Autoreject(Threshold);False;;Use autoreject to find reject-threshold for Epochs;BoolGui;
+overwrite_ar;Overwrite Autoreject(Threshold);False;;if to calculate new threshold sort ouse previously calculated;BoolGui;
+reject;;{'grad':8e-10};;default reject parameter if not reject with autoreject_threshold;DictGui;
 flat;;{'grad':1e-15};;default flat parameter;DictGui;
 decim;;1;;down samplingfactor;IntGui;
 event_id;;{'Default':1};;dictionary to assign strings to the event_ids;DictGui;

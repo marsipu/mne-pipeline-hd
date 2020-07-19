@@ -177,18 +177,42 @@ class ErrorDialog(QDialog):
                 QMessageBox.information(self, 'E-Mail not sent', 'Sending an E-Mail is not possible on your OS')
 
 
-class OutputSignal(QObject):
+class StdoutSignal(QObject):
     text_written = pyqtSignal(str)
 
 
-class OutputStream(io.TextIOBase):
+class StdoutStream(io.TextIOBase):
 
     def __init__(self):
         super().__init__()
-        self.signal = OutputSignal()
+        self.signal = StdoutSignal()
 
     def write(self, text):
         # Send still the output to the command line
         sys.__stdout__.write(text)
         # Emit additionally the written text in a pyqtSignal
         self.signal.text_written.emit(text)
+
+
+class StderrSignal(QObject):
+    text_written = pyqtSignal(str)
+    text_updated = pyqtSignal(str)
+
+
+class StderrStream(io.TextIOBase):
+
+    def __init__(self):
+        super().__init__()
+        self.signal = StderrSignal()
+
+    def write(self, text):
+        # Send still the output to the command line
+        sys.__stderr__.write(text)
+
+        if text[:1] == '\r':
+            # Emit additionally the written text in a pyqtSignal
+            text = text.replace('\r', '')
+            self.signal.text_updated.emit(text)
+        else:
+            self.signal.text_written.emit(text)
+

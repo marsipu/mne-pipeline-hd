@@ -12,12 +12,14 @@ import re
 from ast import literal_eval
 from os import listdir, makedirs, mkdir
 from os.path import exists, isdir, isfile, join
+import numpy as np
 
 import mne
 import pandas as pd
 from PyQt5.QtWidgets import QDialog, QFileDialog, QInputDialog, QMessageBox, QVBoxLayout
 from pandas.errors import EmptyDataError
 
+from .pipeline_utils import ParametersJSONEncoder, ParametersJSONhook
 from ..gui import subject_widgets as subs
 
 
@@ -232,7 +234,7 @@ class MyProject:
     def load_parameters(self):
         try:
             with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'r') as read_file:
-                loaded_parameters = json.load(read_file)
+                loaded_parameters = json.load(read_file, object_hook=ParametersJSONhook)
                 # Avoid errors for old parameter-files
                 if 'Default' not in loaded_parameters:
                     loaded_parameters = {'Default': loaded_parameters}
@@ -246,10 +248,10 @@ class MyProject:
                     for param in [p for p in self.mw.pd_params.index if p not in loaded_parameters[p_preset]]:
                         try:
                             eval_param = literal_eval(self.mw.pd_params.loc[param, 'default'])
-                        except (ValueError, SyntaxError):
+                        except (ValueError, SyntaxError, NameError):
                             # Allow parameters to be defined by functions e.g. by numpy, etc.
                             if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
-                                eval_param = eval(self.mw.pd_params.loc[param, 'default'])
+                                eval_param = eval(self.mw.pd_params.loc[param, 'default'], {'np': np})
                             else:
                                 eval_param = self.mw.pd_params.loc[param, 'default']
                         loaded_parameters[p_preset].update({param: eval_param})
@@ -274,7 +276,8 @@ class MyProject:
 
     def save_parameters(self):
         with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'w') as write_file:
-            json.dump(self.parameters, write_file, indent=4)
+            # Use customized Encoder to deal with arrays
+            json.dump(self.parameters, write_file, cls=ParametersJSONEncoder, indent=4)
 
     def load_file_parameters(self):
         # Load Pandas-CSV (separator=; for Excel)

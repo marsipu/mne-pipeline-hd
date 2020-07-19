@@ -10,12 +10,13 @@ morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operat
 morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
 filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit
 find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;sub, min_duration, shortest_event, adjust_timeline_by_msec, overwrite
-epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject, overwrite_ar, decim, overwrite
-run_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, overwrite, autoreject, save_plots, figures_path, pscripts_path
-apply_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, overwrite
-get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica, overwrite
-tfr;;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica, tfr_freqs, overwrite_tfr, tfr_method, multitaper_bandwith, stockwell_width, n_jobs
-estimate_noise_covariance;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite, baseline, n_jobs, erm_noise_cov, calm_noise_cov, enable_ica
+epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject_threshold, overwrite_ar, decim, overwrite
+autoreject_interpolation;Autoreject(Interpolation);Compute;sensor_space_operations;True;False;False;;operations;sub, n_interpolates, consensus_percs, n_jobs
+run_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, overwrite, autoreject_threshold, save_plots, figures_path, pscripts_path
+apply_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, epoch_origin, overwrite
+get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;sub, epoch_origin, overwrite
+tfr;;Compute;sensor_space_operations;True;False;False;;operations;sub, epoch_origin, tfr_freqs, overwrite_tfr, tfr_method, multitaper_bandwith, stockwell_width, n_jobs
+estimate_noise_covariance;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite, baseline, n_jobs, erm_noise_cov, calm_noise_cov, epoch_origin
 create_forward_solution;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite, n_jobs, eeg_fwd
 create_inverse_operator;;Compute;source_space_operations;True;False;False;;operations;sub, overwrite
 source_estimate;;Compute;source_space_operations;True;False;False;;operations;sub, inverse_method, pick_ori, lambda2, overwrite
@@ -23,7 +24,7 @@ mixed_norm_estimate;;Compute;source_space_operations;True;False;False;;operation
 apply_morph;;Compute;source_space_operations;True;False;False;;operations;sub
 label_time_course;;Compute;source_space_operations;True;False;False;;operations;sub, target_labels, parcellation, extract_mode
 ecd_fit;;Compute;source_space_operations;True;True;True;;operations;sub, ecd_times, ecd_positions, ecd_orientations
-source_space_connectivity;;Compute;source_space_operations;True;False;False;;operations;sub, parcellation, target_labels, inverse_method, lambda2, con_methods, con_fmin, con_fmax, n_jobs, enable_ica
+source_space_connectivity;;Compute;source_space_operations;True;False;False;;operations;sub, parcellation, target_labels, inverse_method, lambda2, con_methods, con_fmin, con_fmax, n_jobs, epoch_origin
 grand_avg_evokeds;;Compute;grand_average_operations;False;False;False;;operations;ga_group
 grand_avg_tfr;;Compute;grand_average_operations;False;False;False;;operations;ga_group
 grand_avg_morphed;;Compute;grand_average_operations;False;False;False;;operations;ga_group

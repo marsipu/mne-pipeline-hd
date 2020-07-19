@@ -23,7 +23,7 @@ import mne
 import pandas as pd
 import qdarkstyle
 from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QFont
+from PyQt5.QtGui import QColor, QFont, QTextCursor
 from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
                              QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSpinBox,
@@ -834,7 +834,10 @@ class MainWindow(QMainWindow):
         self.run_dialog.pgbar.setMaximum(self.all_prog)
         self.run_dialog.open()
 
-        sys.stdout.signal.text_written.connect(self.run_dialog.update_label)
+        sys.stdout.signal.text_written.connect(self.run_dialog.add_text)
+        sys.stderr.signal.text_written.connect(self.run_dialog.add_text)
+        # Handle Console-Ou
+        sys.stderr.signal.text_updated.connect(self.run_dialog.progress_text)
 
         self.fworker = FunctionWorker(self)
 
@@ -1093,6 +1096,7 @@ class RunDialog(QDialog):
 
         self.current_sub = None
         self.current_func = None
+        self.prog_running = False
 
         self.init_ui()
         self.center()
@@ -1172,9 +1176,22 @@ class RunDialog(QDialog):
         if self.current_func is not None:
             self.current_func.setBackground(QColor('white'))
 
-    def update_label(self, text):
+    def add_text(self, text):
+        self.prog_running = False
         self.console_widget.insertPlainText(text)
         self.console_widget.ensureCursorVisible()
+
+    def progress_text(self, text):
+        if self.prog_running:
+            # Delete last line
+            cursor = self.console_widget.textCursor()
+            cursor.select(QTextCursor.LineUnderCursor)
+            cursor.removeSelectedText()
+            # Add line
+            self.console_widget.insertPlainText(text)
+        else:
+            self.prog_running = True
+            self.console_widget.insertPlainText(text)
 
     def center(self):
         qr = self.frameGeometry()

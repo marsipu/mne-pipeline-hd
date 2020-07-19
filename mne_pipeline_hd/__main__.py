@@ -23,7 +23,7 @@ except ModuleNotFoundError:
     sys.path.insert(0, top_package_path)
 
 from mne_pipeline_hd.gui import main_window
-from mne_pipeline_hd.gui.qt_utils import OutputStream
+from mne_pipeline_hd.gui.qt_utils import StderrStream, StdoutStream
 from mne_pipeline_hd.pipeline_functions import ismac
 
 
@@ -53,7 +53,9 @@ def main():
     mw.raise_win()
 
     # Redirect stdout to capture it later in GUI
-    sys.stdout = OutputStream()
+    sys.stdout = StdoutStream()
+    # Redirect stderr to capture the output by tdqm
+    sys.stderr = StderrStream()
 
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()

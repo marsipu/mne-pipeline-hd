@@ -6,8 +6,10 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @email: mne.pipeline@gmail.com
 @github: marsipu/mne_pipeline_hd
 """
+import json
 import os
 import re
+import numpy as np
 from ast import literal_eval
 from os import makedirs
 from os.path import exists, isfile, join
@@ -15,6 +17,27 @@ from os.path import exists, isfile, join
 import autoreject as ar
 
 from . import islin, ismac, iswin
+
+
+class ParametersJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return {'numpy_int': int(obj)}
+
+        elif isinstance(obj, np.floating):
+            return {'numpy_float': float(obj)}
+
+        elif isinstance(obj, np.ndarray):
+            return {'numpy_array': obj.tolist()}
+        else:
+            return super().default(obj)
+
+
+def ParametersJSONhook(obj):
+    if 'numpy_array' in obj.keys():
+        return np.asarray(obj['numpy_array'])
+    else:
+        return obj
 
 
 def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite_ar=False,
@@ -25,7 +48,7 @@ def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite
         if only_read:
             raise Exception('New Autoreject-Threshold only from epoch_raw')
         else:
-            reject = ar.get_rejection_threshold(epochs, ch_types=['grad'])
+            reject = ar.get_rejection_threshold(epochs, ch_types=['grad'], random_state=8)
             with open(reject_value_path, 'w') as rv:
                 rv.write(f'{name}:{reject}\n')
             print(reject_value_path + ' created')
@@ -45,7 +68,7 @@ def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite
                 if only_read:
                     raise Exception('New Autoreject-Threshold only from epoch_raw')
                 print('Rejection with Autoreject')
-                reject = ar.get_rejection_threshold(epochs, ch_types=['grad'])
+                reject = ar.get_rejection_threshold(epochs, ch_types=['grad'], random_state=8)
                 prae_reject = read_reject[name]
                 read_reject[name] = reject
                 if prae_reject == reject:
@@ -63,7 +86,7 @@ def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite
             if only_read:
                 raise Exception('New Autoreject-Threshold only from epoch_raw')
             print('Rejection with Autoreject')
-            reject = ar.get_rejection_threshold(epochs, ch_types=['grad'])
+            reject = ar.get_rejection_threshold(epochs, ch_types=['grad'], random_state=8)
             read_reject.update({name: reject})
             print(f'Added AR-Threshold {reject} for {name}')
             with open(reject_value_path, 'w') as rv:
