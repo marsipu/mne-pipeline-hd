@@ -162,7 +162,7 @@ class FunctionWorker(Worker):
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
         # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
-        if not self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
+        if not self.mw.settings.value('show_plots'):
             matplotlib.use('agg')
         else:
             matplotlib.use('Qt5Agg')
@@ -237,8 +237,7 @@ class FunctionWorker(Worker):
                             self.signals.func_sig.emit({'func_name': func, 'sub': sub, 'main_win': self.mw})
                             self.signals.pgbar_n.emit(self.count)
                             self.count += 1
-                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and \
-                                self.mw.pr.parameters[self.mw.pr.p_preset]['show_plots']:
+                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and self.mw.settings.value('show_plots'):
                             self.signals.pg_subfunc.emit((name, func))
                             # Matplotlib-Plots can be called without showing (backend: agg),
                             # but to be shown, they have to be called in the main thread

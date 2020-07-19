@@ -33,7 +33,7 @@ class ParametersJSONEncoder(json.JSONEncoder):
             return super().default(obj)
 
 
-def ParametersJSONhook(obj):
+def parameters_json_hook(obj):
     if 'numpy_array' in obj.keys():
         return np.asarray(obj['numpy_array'])
     else:
@@ -174,44 +174,6 @@ def read_dict_file(file_name, pscripts_path=None):
                 file_dict[key] = value
 
     return file_dict
-
-
-# Todo: order-dict-function
-def order_the_dict(filename, pscripts_path, unspecified_names=False):
-    file_path = join(pscripts_path, 'MotStart-LBT_diffs' + '.py')
-    file_dict = dict()
-    order_dict1 = dict()
-    order_dict2 = dict()
-    order_dict3 = dict()
-    order_list = []
-
-    with open(file_path, 'r') as file:
-        for item in file:
-            if ':' in item:
-                key, value = item.split(':', 1)
-                try:
-                    value = literal_eval(value)
-                except ValueError:
-                    pass
-                file_dict[key] = value
-
-    if not unspecified_names:
-        pattern = r'(pp[0-9][0-9]*[a-z]*)_([0-9]{0,3}t?)_([a,b]$)'
-    else:
-        pattern = r'.*'
-
-    for key in file_dict:
-        match = re.match(pattern, key)
-        number1 = match.group(1)
-        number2 = match.group(2)
-        number3 = match.group(3)
-        order_dict1.update(number1)
-        order_dict2.update(number2)
-        order_dict3.update(number3)
-
-    for key in order_dict1:
-        order_list.append(order_dict1[key])
-    order_list.sort()
 
 
 def delete_files(data_path, pattern):

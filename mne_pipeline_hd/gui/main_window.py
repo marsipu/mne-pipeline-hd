@@ -325,7 +325,11 @@ class MainWindow(QMainWindow):
         about_menu.addAction('Quick-Guide', self.quick_guide)
         about_menu.addAction('About QT', self.about_qt)
 
+    # Todo: Organize Settings
     def make_settings_widgets(self):
+
+        self.settings.setValue('dpi', 300)
+
         self.n_jobs_sb = QSpinBox(self)
         self.n_jobs_sb.setMinimum(0)
         self.n_jobs_sb.setSpecialValueText('Auto')
@@ -419,7 +423,7 @@ class MainWindow(QMainWindow):
         for chkbox_name in chkbox_dict:
             chkbox = getattr(self, chkbox_name)
 
-            chkbox_value = self.settings.value(chkbox_dict[chkbox_name], defaultValue=0)
+            chkbox_value = bool(self.settings.value(chkbox_dict[chkbox_name], defaultValue=0))
             chkbox.setChecked(chkbox_value)
 
     def n_jobs_changed(self, value):
@@ -899,8 +903,7 @@ class MainWindow(QMainWindow):
     def thread_func(self, kwargs):
         try:
             func_from_def(**kwargs)
-            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] == True \
-                    and self.pr.parameters[self.pr.p_preset]['show_plots'] == False:
+            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] and not self.settings.value('show_plots'):
                 mlab.close(all=True)
         except:
             exc_tuple = get_exception_tuple()

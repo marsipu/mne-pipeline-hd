@@ -452,6 +452,7 @@ class BaseSub:
         self.save_plots = self.mw.settings.value('save_plots')
         self.figures_path = self.pr.figures_path
         self.img_format = self.mw.settings.value('img_format')
+        self.dpi = self.mw.settings.value('dpi')
 
     def save_file_params(self, path):
         file_name = Path(path).name

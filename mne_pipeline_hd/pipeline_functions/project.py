@@ -19,7 +19,7 @@ import pandas as pd
 from PyQt5.QtWidgets import QDialog, QFileDialog, QInputDialog, QMessageBox, QVBoxLayout
 from pandas.errors import EmptyDataError
 
-from .pipeline_utils import ParametersJSONEncoder, ParametersJSONhook
+from .pipeline_utils import ParametersJSONEncoder, parameters_json_hook
 from ..gui import subject_widgets as subs
 
 
@@ -234,7 +234,7 @@ class MyProject:
     def load_parameters(self):
         try:
             with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'r') as read_file:
-                loaded_parameters = json.load(read_file, object_hook=ParametersJSONhook)
+                loaded_parameters = json.load(read_file, object_hook=parameters_json_hook)
                 # Avoid errors for old parameter-files
                 if 'Default' not in loaded_parameters:
                     loaded_parameters = {'Default': loaded_parameters}
