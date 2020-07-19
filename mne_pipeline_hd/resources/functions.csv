@@ -3,7 +3,7 @@ apply_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;oper
 copy_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 make_dense_scalp_surfaces;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, overwrite
 prepare_bem;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
-setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, source_space_spacing, n_jobs, overwrite
+setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, source_space_spacing, surface, n_jobs, overwrite
 compute_src_distances;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, n_jobs
 setup_vol_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, morph_to, overwrite
@@ -57,7 +57,7 @@ plot_stc;Plot Source-Estimate;Plot;source_space_plots;True;True;True;;plot;sub, 
 plot_mixn;Plot Mixed-Norm-Solution;Plot;source_space_plots;True;True;True;;plot;sub, mne_evoked_time, stc_interactive, parcellation
 plot_animated_stc;Plot Source-Estimate Video;Plot;source_space_plots;True;True;True;;plot;sub, stc_animation
 plot_snr;;Plot;source_space_plots;True;True;False;;plot;sub
-plot_label_time_course;;Plot;source_space_plots;True;True;False;;plot;sub, target_labels
+plot_label_time_course;;Plot;source_space_plots;True;True;False;;plot;sub
 plot_source_space_connectivity;;Plot;source_space_plots;True;True;False;;plot;sub, target_labels, con_fmin, con_fmax
 plot_grand_avg_evokeds;;Plot;grand_average_plots;False;True;False;;plot;ga_group
 plot_grand_avg_tfr;;Plot;grand_average_plots;False;True;False;;plot;ga_group, baseline, t_epoch

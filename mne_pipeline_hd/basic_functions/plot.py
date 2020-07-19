@@ -689,7 +689,7 @@ def plot_label_time_course(sub):
             plt.plot(ltcs[trial][label][1], ltcs[trial][label][0])
             plt.title(f'Label-Time-Course for {sub.name}-{trial}-{label}\n'
                       f'with Extraction-Mode: {sub.p["extract_mode"]}')
-            plt.xlabel('Time in ms')
+            plt.xlabel('Time in s')
             plt.ylabel('Source amplitude')
             plt.show()
 

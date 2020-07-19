@@ -25,6 +25,7 @@ eog_channel;;EEG 001;;Set Vertical EOG-Channel;StringGui;
 ecg_channel;;EEG 003;;Set ECG-Channel;StringGui;
 source_space_spacing;;ico5;;See the MNE-Documentation for further details;StringGui;
 vol_source_space_spacing;;5.0;;Spacing between sources in 3D-Grid;FloatGui;
+surface;;white;;Surface for computing the Source-Space;ComboGui;{'options': ['white', 'pial']}
 eeg_fwd;;False;;set True if working with EEG-Data;BoolGui;
 erm_noise_cov;;True;;;BoolGui;
 calm_noise_cov;;False;;Use of a specific time interval in a measurement for noise-covariance;BoolGui;

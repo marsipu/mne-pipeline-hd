@@ -648,6 +648,31 @@ class SliderGui(Param):
         return self.param_value
 
 
+#Todo: Label-GUI
+class LabelGui(Param):
+    """A GUI to select Labels depending on parcellation"""
+
+    def __init__(self, project, param_name, param_alias):
+        super().__init__(project, param_name, param_alias)
+        self.param_name = param_name
+        self.param_value = []
+        self.param_widget = QListWidget()
+        self.param_widget.itemChanged.connect(self.get_param)
+        self.read_param()
+        self.set_param()
+        self.init_label_ui()
+
+    def set_param(self):
+        pass
+
+    def get_param(self):
+        pass
+        self.save_param()
+
+        return self.param_value
+
+
+
 class TestProject:
     def __init__(self):
         self.test_param = 1

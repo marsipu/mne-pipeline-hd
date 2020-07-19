@@ -792,8 +792,9 @@ def copy_watershed(mri_sub):
                    join(mri_sub.subjects_dir, mri_sub.name, 'bem',
                         this_surface['destination'])
                    ]
-        print(f'{surface} was copied')
+
         run_process_and_write_output(command, mri_sub.subjects_dir)
+        print(f'{surface} was copied')
 
 
 def make_dense_scalp_surfaces(mri_sub, overwrite):
@@ -819,10 +820,10 @@ def make_dense_scalp_surfaces(mri_sub, overwrite):
 # MNE SOURCE RECONSTRUCTIONS
 # ==============================================================================
 @topline
-def setup_src(mri_sub, source_space_spacing, n_jobs, overwrite):
+def setup_src(mri_sub, source_space_spacing, surface, n_jobs, overwrite):
     if overwrite or not isfile(mri_sub.source_space_path):
         src = mne.setup_source_space(mri_sub.name, spacing=source_space_spacing,
-                                     surface='white', subjects_dir=mri_sub.subjects_dir,
+                                     surface=surface, subjects_dir=mri_sub.subjects_dir,
                                      add_dist=False, n_jobs=n_jobs)
         mri_sub.save_source_space(src)
 
