@@ -824,17 +824,19 @@ class AddFilesWidget(QWidget):
                         # Organize ERMs
                         if new_fname not in existing_erm_files:
                             self.mw.pr.erm_files.append(new_fname)
-                        # Copy empty-room-files to destination
+                        # Make sure, that all directories exist
                         parent_dir = Path(ermdest).parent
                         os.makedirs(parent_dir, exist_ok=True)
+                        # Copy empty-room-files to destination
                         raw.save(ermdest)
                     else:
                         # Organize sub_files
                         if fname not in existing_files:
                             self.mw.pr.all_files.append(fname)
-                        # Copy sub_files to destination
+                        # Make sure, that all directories exist
                         parent_dir = Path(fdest).parent
                         os.makedirs(parent_dir, exist_ok=True)
+                        # Copy sub_files to destination
                         raw.save(fdest)
                     signals['pgbar_n'].emit(count)
                     count += 1

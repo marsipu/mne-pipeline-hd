@@ -11,7 +11,6 @@ import os
 import re
 import shutil
 import sys
-import traceback
 from ast import literal_eval
 from functools import partial
 from importlib import reload, util
@@ -24,23 +23,24 @@ import pandas as pd
 import qdarkstyle
 from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QTextCursor
-from PyQt5.QtWidgets import (QAction, QApplication, QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog,
+from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
-                             QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSpinBox,
-                             QStyle,
+                             QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QStyle,
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 from mayavi import mlab
 
 from . import parameter_widgets
 from .other_widgets import DataTerminal
-from .parameter_widgets import ListGui
+from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .qt_utils import ErrorDialog, get_exception_tuple
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
 from .. import basic_functions, resources
+from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
 from ..pipeline_functions.function_utils import (ChooseCustomModules, CustomFunctionImport, FunctionWorker,
                                                  func_from_def)
+from ..pipeline_functions.pipeline_utils import shutdown
 from ..pipeline_functions.project import MyProject
 
 
@@ -96,7 +96,7 @@ class MainWindow(QMainWindow):
                             'custom': {}}
         self.selected_modules = self.settings.value('selected_modules', defaultValue=['operations', 'plot'])
         self.subject = None
-        self.available_image_formats = ['.png', '.jpg', '.bmp', '.tiff']
+        self.available_image_formats = ['.png', '.jpg', '.tiff']
 
         # Todo: Straighten confusing main_win.init() (Project vs. ModuleImport vs. pdDataFrames)
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
@@ -122,8 +122,6 @@ class MainWindow(QMainWindow):
         self.pr.load_parameters()
         # Load file_parameters-Data-Frame, because it needs the loaded parameters
         self.pr.load_file_parameters()
-        # After load_parameters, because event-id is needed
-        self.pr.populate_directories()
 
         self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
                                        & (self.pd_funcs['subject_loop'] == True)]
@@ -142,6 +140,12 @@ class MainWindow(QMainWindow):
         # initiate Subject-Dock here to avoid AttributeError
         self.subject_dock = SubjectDock(self)
 
+        # Needs restart, otherwise error, when setting later
+        if self.settings.value('mne_backend', defaultValue='mayavi') == 'pyvista':
+            mne.viz.set_3d_backend('pyvista')
+        else:
+            mne.viz.set_3d_backend('mayavi')
+
         # Todo: Structure Main-Win-Frontend-Construction better
         # Call window-methods
         self.make_menu()
@@ -149,9 +153,7 @@ class MainWindow(QMainWindow):
         self.add_func_bts()
         self.add_main_bts()
         self.add_param_gui_tab()
-        self.make_settings_widgets()
         self.make_toolbar()
-        self.get_toolbox_params()
         self.add_dock_windows()
 
         self.desk_geometry = self.app.desktop().availableGeometry()
@@ -299,6 +301,7 @@ class MainWindow(QMainWindow):
         self.adark_mode.setCheckable(True)
         if self.settings.value('dark_mode') == 'true':
             self.adark_mode.setChecked(True)
+            self.dark_mode()
         else:
             self.adark_mode.setChecked(False)
         self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
@@ -325,61 +328,27 @@ class MainWindow(QMainWindow):
         about_menu.addAction('Quick-Guide', self.quick_guide)
         about_menu.addAction('About QT', self.about_qt)
 
-    # Todo: Organize Settings
-    def make_settings_widgets(self):
-
-        self.settings.setValue('dpi', 300)
-
-        self.n_jobs_sb = QSpinBox(self)
-        self.n_jobs_sb.setMinimum(0)
-        self.n_jobs_sb.setSpecialValueText('Auto')
-        self.n_jobs_sb.valueChanged.connect(self.n_jobs_changed)
-
-        self.show_plots_chkbx = QCheckBox('Show Plots', self)
-        self.show_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed,
-                                                           self.show_plots_chkbx, 'show_plots'))
-        self.show_plots_chkbx.setToolTip('Do you want to show plots?\n'
-                                         '(or just save them without showing, then just check "Save Plots")')
-
-        self.save_plots_chkbx = QCheckBox('Save Plots', self)
-        self.save_plots_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.save_plots_chkbx, 'save_plots'))
-        self.save_plots_chkbx.setToolTip('Do you want to save the plots made to a file?')
-
-        self.save_storage_chkbx = QCheckBox('Save Storage', self)
-        self.save_storage_chkbx.stateChanged.connect(partial(self.chkbx_changed,
-                                                             self.save_storage_chkbx, 'save_storage'))
-        self.save_storage_chkbx.setToolTip('Do you want to save storage?')
-
-        self.enable_cuda_chkbx = QCheckBox('Enable CUDA', self)
-        self.enable_cuda_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.enable_cuda_chkbx, 'enable_cuda'))
-        self.enable_cuda_chkbx.setToolTip('Do you want to enable CUDA? (system has to be setup for cuda)')
-
-        self.shutdown_chkbx = QCheckBox('Shutdown', self)
-        self.shutdown_chkbx.stateChanged.connect(partial(self.chkbx_changed, self.shutdown_chkbx, 'shutdown'))
-        self.shutdown_chkbx.setToolTip('Do you want to shut your system down after execution of all subjects?')
-
-        self.img_format_cmbx = QComboBox()
-        self.img_format_cmbx.activated.connect(self.img_format_changed)
-        self.img_format_cmbx.addItems(self.available_image_formats)
-        self.img_format_cmbx.setToolTip('Choose the image format for plots')
-
-        self.predef_bads_list = ListGui(self.settings, 'predefined_bads', 'Predefined Bads',
-                                        'Set Bad-Channels here to be set as bad by default')
-
     def open_settings_dlg(self):
         dlg = QDialog(self)
         layout = QVBoxLayout()
 
-        settings_layout = QHBoxLayout()
-        settings_layout.addWidget(self.n_jobs_sb)
-        settings_layout.addWidget(self.show_plots_chkbx)
-        settings_layout.addWidget(self.save_plots_chkbx)
-        settings_layout.addWidget(self.save_storage_chkbx)
-        settings_layout.addWidget(self.enable_cuda_chkbx)
-        settings_layout.addWidget(self.shutdown_chkbx)
-        settings_layout.addWidget(self.predef_bads_list)
-
-        layout.addLayout(settings_layout)
+        layout.addWidget(IntGui(self.settings, 'n_jobs', min_val=-1, special_value_text='Auto',
+                                hint='Set to the amount of cores of your machine you want to use for multiprocessing'))
+        layout.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
+                                 hint='Do you want to show plots?\n'
+                                      '(or just save them without showing, then just check "Save Plots")'))
+        layout.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
+                                 hint='Do you want to save the plots made to a file?'))
+        layout.addWidget(BoolGui(self.settings, 'enable_cuda', param_alias='Enable CUDA',
+                                 hint='Do you want to enable CUDA? (system has to be setup for cuda)'))
+        layout.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
+                                 hint='Do you want to shut your system down after execution of all subjects?'))
+        layout.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
+                                hint='Set dpi for saved plots', default=300))
+        layout.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats, param_alias='Image-Format',
+                                  hint='Choose the image format for plots', default='.png'))
+        layout.addWidget(ComboGui(self.settings, 'mne_backend', ['mayavi', 'pyvista'], param_alias='MNE-Backend',
+                                  hint='Choose the backend for plotting in 3D (needs Restart)', default='pyvista'))
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(dlg.close)
@@ -394,50 +363,29 @@ class MainWindow(QMainWindow):
         self.project_tools()
         self.toolbar.addSeparator()
 
-        self.toolbar.addWidget(QLabel('n_jobs: '))
-        self.toolbar.addWidget(self.n_jobs_sb)
-
-        self.toolbar.addSeparator()
-
-        self.toolbar.addWidget(self.show_plots_chkbx)
-        self.toolbar.addWidget(self.save_plots_chkbx)
-        self.toolbar.addWidget(self.save_storage_chkbx)
-        self.toolbar.addWidget(self.enable_cuda_chkbx)
-        self.toolbar.addWidget(self.shutdown_chkbx)
-
-        self.get_toolbox_params()
-
-    def get_toolbox_params(self):
-        # Get n_jobs from settings
-        self.n_jobs_sb.setValue(self.settings.value('n_jobs', defaultValue=-1))
-
-        # Get img_format from settings
-        self.img_format_cmbx.setCurrentText(self.settings.value('img_format', defaultValue='.png'))
-
-        # Aliases for Checkboxes in Toolbar
-        chkbox_dict = {'show_plots_chkbx': 'show_plots',
-                       'save_plots_chkbx': 'save_plots',
-                       'save_storage_chkbx': 'save_storage',
-                       'enable_cuda_chkbx': 'enable_cuda',
-                       'shutdown_chkbx': 'shutdown'}
-        for chkbox_name in chkbox_dict:
-            chkbox = getattr(self, chkbox_name)
-
-            chkbox_value = bool(self.settings.value(chkbox_dict[chkbox_name], defaultValue=0))
-            chkbox.setChecked(chkbox_value)
-
-    def n_jobs_changed(self, value):
-        # In MNE-Python -1 is automatic, for SpinBox 0 is already auto
-        if value == 0:
-            self.settings.setValue('n_jobs', -1)
-        else:
-            self.settings.setValue('n_jobs', value)
-
-    def chkbx_changed(self, chkbx, param):
-        self.settings.setValue(param, chkbx.isChecked())
-
-    def img_format_changed(self, index):
-        self.settings.setValue('img_format', self.available_image_formats[index])
+        self.toolbar.addWidget(IntGui(self.settings, 'n_jobs', min_val=-1, special_value_text='Auto',
+                                      hint='Set to the amount of cores of your machine '
+                                           'you want to use for multiprocessing'))
+        self.toolbar.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
+                                       hint='Do you want to show plots?\n'
+                                            '(or just save them without showing, then just check "Save Plots")'))
+        self.toolbar.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
+                                       hint='Do you want to save the plots made to a file?'))
+        self.toolbar.addWidget(BoolGui(self.settings, 'enable_cuda', param_alias='Enable CUDA',
+                                       hint='Do you want to enable CUDA? (system has to be setup for cuda)'))
+        self.toolbar.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
+                                       hint='Do you want to shut your system down after execution of all subjects?'))
+        self.toolbar.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
+                                      hint='Set dpi for saved plots', default=300))
+        self.toolbar.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
+                                        param_alias='Image-Format', hint='Choose the image format for plots',
+                                        default='.png'))
+        self.toolbar.addWidget(ComboGui(self.settings, 'mne_backend', ['mayavi', 'pyvista'], param_alias='MNE-Backend',
+                                        hint='Choose the backend for plotting in 3D (needs Restart)',
+                                        default='pyvista'))
+        close_all_bt = QPushButton('Close All Plots')
+        close_all_bt.pressed.connect(close_all)
+        self.toolbar.addWidget(close_all_bt)
 
     # Todo: Statusbar with purpose
     def update_statusbar(self):
@@ -586,7 +534,8 @@ class MainWindow(QMainWindow):
 
     def update_p_preset_project(self):
         self.qall_parameters.update_all_param_guis()
-        self.pr.populate_directories()
+        # To update figures_path
+        self.pr.make_paths()
 
     def p_preset_changed(self, idx):
         self.pr.p_preset = self.p_preset_cmbx.itemText(idx)
@@ -636,7 +585,7 @@ class MainWindow(QMainWindow):
                     self.settings.setValue('parameter_preset', self.pr.p_preset)
                     self.p_preset_cmbx.setCurrentText(self.pr.p_preset)
             # Update Param-GUIs for new Parameter-Preset
-            self.self.update_p_preset_project()
+            self.update_p_preset_project()
 
         bt_layout = QHBoxLayout()
         rm_bt = QPushButton('Remove')
@@ -780,7 +729,6 @@ class MainWindow(QMainWindow):
         self.pr.make_paths()
         self.pr.load_parameters()
         self.qall_parameters.update_all_param_guis()
-        self.pr.populate_directories()
 
         self.pr.load_sub_lists()
         self.subject_dock.update_subjects_list()
@@ -903,7 +851,7 @@ class MainWindow(QMainWindow):
     def thread_func(self, kwargs):
         try:
             func_from_def(**kwargs)
-            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] and not self.settings.value('show_plots'):
+            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] and self.settings.value('show_plots') == 'false':
                 mlab.close(all=True)
         except:
             exc_tuple = get_exception_tuple()
@@ -915,6 +863,9 @@ class MainWindow(QMainWindow):
         print('Finished')
         self.run_dialog.pgbar.setValue(self.all_prog)
         self.run_dialog.close_bt.setEnabled(True)
+        if self.settings.value('shutdown') == 'true':
+            self.save_main()
+            shutdown()
 
     # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):
@@ -1018,7 +969,6 @@ class MainWindow(QMainWindow):
         self.settings.setValue('selected_modules', self.selected_modules)
 
     def closeEvent(self, event):
-
         self.save_main()
         event.accept()
 
@@ -1099,7 +1049,8 @@ class QAllParameters(QWidget):
                 gui_args = {}
 
             gui_handle = getattr(parameter_widgets, gui_name)
-            self.param_guis[idx] = gui_handle(self.mw.pr, idx, param_alias, hint, **gui_args)
+            self.param_guis[idx] = gui_handle(self.mw.pr, param_name=idx, param_alias=param_alias,
+                                              hint=hint, **gui_args)
             sub_layout.addWidget(self.param_guis[idx])
 
         if 0 < r_cnt <= 5:

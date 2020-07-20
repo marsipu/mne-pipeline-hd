@@ -85,7 +85,7 @@ def func_from_def(func_name, sub, main_win):
 
     keyword_arguments = get_arguments(arg_names, sub, main_win)
 
-    # Catch errors due to unexpected or missing keywords
+    # Catch one error due to unexpected or missing keywords
     unexp_kw_pattern = r"(.*) got an unexpected keyword argument \'(.*)\'"
     miss_kw_pattern = r"(.*) missing 1 required positional argument: \'(.*)\'"
     try:
@@ -162,15 +162,10 @@ class FunctionWorker(Worker):
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
         # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
-        if not self.mw.settings.value('show_plots'):
-            matplotlib.use('agg')
-        else:
+        if self.mw.settings.value('show_plots') == 'true':
             matplotlib.use('Qt5Agg')
-
-        if self.mw.pr.parameters[self.mw.pr.p_preset]['mne_backend'] == 'pyvista':
-            mne.viz.set_3d_backend('pyvista')
         else:
-            mne.viz.set_3d_backend('mayavi')
+            matplotlib.use('agg')
 
         # Check if any mri-subject is selected
         if len(self.mw.pr.sel_mri_files) * len(self.mw.sel_mri_funcs) > 0:
@@ -237,7 +232,8 @@ class FunctionWorker(Worker):
                             self.signals.func_sig.emit({'func_name': func, 'sub': sub, 'main_win': self.mw})
                             self.signals.pgbar_n.emit(self.count)
                             self.count += 1
-                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and self.mw.settings.value('show_plots'):
+                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and \
+                                self.mw.settings.value('show_plots') == 'true':
                             self.signals.pg_subfunc.emit((name, func))
                             # Matplotlib-Plots can be called without showing (backend: agg),
                             # but to be shown, they have to be called in the main thread

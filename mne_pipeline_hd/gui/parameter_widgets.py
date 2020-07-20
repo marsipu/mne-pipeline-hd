@@ -24,15 +24,19 @@ class Param(QWidget):
     Inherited Clases should have "Gui" in their name to get identified correctly
     """
 
-    def __init__(self, project, param_name, param_alias):
+    def __init__(self, project, param_name, param_alias=None, default=None):
         """
         :param project: Project-Class called in main_window.py
         """
         super().__init__()
         self.pr = project
         self.param_name = param_name
-        self.param_alias = param_alias
+        if param_alias:
+            self.param_alias = param_alias
+        else:
+            self.param_alias = self.param_name
         self.param_value = None
+        self.default = default
         self.param_unit = None
         self.param_widget = QWidget()
 
@@ -70,9 +74,24 @@ class Param(QWidget):
         # Make also usable by QSettings
         if isinstance(self.pr, QSettings):
             if self.param_name in self.pr.childKeys():
-                self.param_value = self.pr.value(self.param_name)
+                value = self.pr.value(self.param_name, defaultValue=self.default)
+                # Convert QSettings-String into Boolean-Type
+                if value == 'true':
+                    self.param_value = True
+                elif value == 'false':
+                    self.param_value = False
+                else:
+                    try:
+                        # Get float (as string)
+                        self.param_value = literal_eval(value)
+                    # Should cover List, Dict, String, Int as they are returned as correct type
+                    except (ValueError, SyntaxError):
+                        self.param_value = value
+
         elif self.param_name in self.pr.parameters[self.pr.p_preset]:
             self.param_value = self.pr.parameters[self.pr.p_preset][self.param_name]
+        else:
+            self.param_value = self.default
 
     def save_param(self):
         if isinstance(self.pr, QSettings):
@@ -84,15 +103,18 @@ class Param(QWidget):
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint, min_val=0, max_val=100, special_value_text=None,
-                 param_unit=None):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=0, max_val=100,
+                 special_value_text=None, param_unit=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = 1  # Default Value
         self.param_widget = QSpinBox()
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
-        self.param_widget.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxValue = {max_val}')
+        if hint:
+            self.param_widget.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxValue = {max_val}')
+        else:
+            self.param_widget.setToolTip(f'MinValue = {min_val}\nMaxValue = {max_val}')
         if special_value_text:
             self.param_widget.setSpecialValueText(special_value_text)
         if param_unit:
@@ -100,6 +122,7 @@ class IntGui(Param):
         self.param_widget.valueChanged.connect(self.get_param)
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_h_layout()
 
     def set_param(self):
@@ -115,9 +138,9 @@ class IntGui(Param):
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint, min_val=0., max_val=100.,
-                 step=1., decimals=2, param_unit=None):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=0., max_val=100.,
+                 step=1., decimals=2, param_unit=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = 1.
         self.param_widget = QDoubleSpinBox()
@@ -125,12 +148,16 @@ class FloatGui(Param):
         self.param_widget.setMaximum(max_val)
         self.param_widget.setSingleStep(step)
         self.param_widget.setDecimals(decimals)
-        self.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxVal = {max_val}')
+        if hint:
+            self.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxVal = {max_val}')
+        else:
+            self.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}')
         if param_unit:
             self.param_widget.setSuffix(f' {param_unit}')
         self.param_widget.valueChanged.connect(self.get_param)
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_h_layout()
 
     def set_param(self):
@@ -150,17 +177,19 @@ class StringGui(Param):
     Input-Mask: Define a string as in https://doc.qt.io/qt-5/qlineedit.html#inputMask-prop
     """
 
-    def __init__(self, project, param_name, param_alias, hint, input_mask=None):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, input_mask=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = ''
         self.param_widget = QLineEdit()
         if input_mask:
             self.param_widget.setInputMask(input_mask)
-        self.param_widget.setToolTip(hint)
+        if hint:
+            self.param_widget.setToolTip(hint)
         self.param_widget.textChanged.connect(self.get_param)
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_h_layout()
 
     def set_param(self):
@@ -176,27 +205,35 @@ class StringGui(Param):
 class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy"""
 
-    def __init__(self, project, param_name, param_alias, hint):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_alias = param_alias
         self.param_value = ''
         self.param_exp = ''
         self.param_widget = QLineEdit()
-        self.param_widget.setToolTip(hint + '\n' +
-                                     'Use of functions also allowed (from already imported modules)\n'
-                                     'Be carefull as everything entered will be executed!')
+        if hint:
+            self.param_widget.setToolTip(hint + '\n' +
+                                         'Use of functions also allowed (from already imported modules + numpy as np)\n'
+                                         'Be carefull as everything entered will be executed!')
+        else:
+            self.param_widget.setToolTip('Use of functions also allowed (from already imported modules + numpy as np)\n'
+                                         'Be carefull as everything entered will be executed!')
         self.param_widget.editingFinished.connect(self.get_param)
 
         self.display_widget = QLabel()
 
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_func_layout()
 
     def init_func_layout(self):
         layout = QHBoxLayout()
-        groupbox = QGroupBox(self.param_alias)
+        if self.param_alias:
+            groupbox = QGroupBox(self.param_alias)
+        else:
+            groupbox = QGroupBox(self.param_name)
         inner_layout = QGridLayout()
         label1 = QLabel('Insert Function/Value here')
         label2 = QLabel('Output')
@@ -239,21 +276,26 @@ class FuncGui(Param):
 class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_alias = param_alias
-        self.param_value = False
+        self.param_value = 0
         self.param_widget = QCheckBox(self.param_alias)
-        self.param_widget.setToolTip(hint)
+        if hint:
+            self.param_widget.setToolTip(hint)
         self.param_widget.toggled.connect(self.get_param)
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_radio_bt_layout()
 
     def init_radio_bt_layout(self):
         layout = QHBoxLayout()
-        self.param_widget.setText(self.param_alias)
+        if self.param_alias:
+            self.param_widget.setText(self.param_alias)
+        else:
+            self.param_widget.setText(self.param_name)
         layout.addWidget(self.param_widget)
         self.setLayout(layout)
 
@@ -276,11 +318,16 @@ class BoolGui(Param):
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint, min_val=-1000., max_val=1000.,
-                 step=.1, decimals=2, param_unit=None):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=-1000., max_val=1000.,
+                 step=.1, decimals=2, param_unit=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = (0, 1)
+
+        if hint:
+            self.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\nDecimals = {decimals}')
+        else:
+            self.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\nDecimals = {decimals}')
 
         self.label = QLabel(self.param_name)
 
@@ -289,7 +336,6 @@ class TupleGui(Param):
         self.param_widget1.setMaximum(max_val)
         self.param_widget1.setSingleStep(step)
         self.param_widget1.setDecimals(decimals)
-        self.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxVal = {max_val}')
         if param_unit:
             self.param_widget1.setSuffix(f' {param_unit}')
         self.param_widget1.valueChanged.connect(self.get_param)
@@ -299,13 +345,13 @@ class TupleGui(Param):
         self.param_widget2.setMaximum(max_val)
         self.param_widget2.setSingleStep(step)
         self.param_widget2.setDecimals(decimals)
-        self.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxVal = {max_val}')
         if param_unit:
             self.param_widget2.setSuffix(f' {param_unit}')
         self.param_widget2.valueChanged.connect(self.get_param)
 
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_tuple_layout()
 
     def init_tuple_layout(self):
@@ -330,14 +376,14 @@ class TupleGui(Param):
 
 
 class CheckTupleGui(TupleGui):
-    def __init__(self, project, param_name, param_alias, hint, min_val=-1000., max_val=1000.,
-                 step=.1, decimals=2, param_unit=None, unchecked_value=None):
+    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=-1000., max_val=1000.,
+                 step=.1, decimals=2, param_unit=None, unchecked_value=None, default=None):
         self.param_name = param_name
         self.unchecked_value = unchecked_value
         self.param_chkbt = QCheckBox(self.param_name)
         self.param_chkbt.stateChanged.connect(self.param_checked)
         super().__init__(project, param_name, param_alias, hint, min_val, max_val,
-                         step, decimals, param_unit)
+                         step, decimals, param_unit, default)
 
     def init_tuple_layout(self):
         layout = QGridLayout()
@@ -371,15 +417,16 @@ class CheckTupleGui(TupleGui):
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
 
-    def __init__(self, project, param_name, param_alias, hint, options, options_mapping=None):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, options, param_alias=None, hint=None, options_mapping=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = None
         self.options = options
         self.options_mapping = options_mapping or {}
         self.param_widget = QComboBox()
         self.param_widget.activated.connect(self.get_param)
-        self.param_widget.setToolTip(hint)
+        if hint:
+            self.param_widget.setToolTip(hint)
         for option in self.options:
             if option in self.options_mapping:
                 self.param_widget.addItem(self.options_mapping[option])
@@ -387,6 +434,7 @@ class ComboGui(Param):
                 self.param_widget.addItem(option)
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_h_layout()
 
     def set_param(self):
@@ -411,17 +459,19 @@ class ComboGui(Param):
 class ListGui(Param):
     """A GUI for List-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = list()
         self.param_widget = QListWidget()
         self.param_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.param_widget.setResizeMode(QListView.Adjust)
-        self.param_widget.setToolTip(hint)
+        if hint:
+            self.param_widget.setToolTip(hint)
         self.param_widget.itemChanged.connect(self.get_param)
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_bt_layout()
 
     def set_param(self):
@@ -465,16 +515,18 @@ class ListGui(Param):
 class CheckListGui(Param):
     """A GUI for List-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint, options_mapping=None):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, options=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
-        self.options_mapping = options_mapping or {}
+        self.options_mapping = options or {}
         self.param_value = dict()
         self.param_widget = QListWidget()
-        self.param_widget.setToolTip(hint)
+        if hint:
+            self.param_widget.setToolTip(hint)
         self.param_widget.itemChanged.connect(self.get_param)
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_v_layout()
 
     def set_param(self):
@@ -515,17 +567,19 @@ class CheckListGui(Param):
 class DictGui(Param):
     """A GUI for Dictionary-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = dict()
         self.param_widget = QTableWidget(0, 2)
         self.param_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.param_widget.setToolTip(hint)
+        if hint:
+            self.param_widget.setToolTip(hint)
         self.param_widget.itemChanged.connect(self.get_param)
         self.param_widget.setHorizontalHeaderLabels(['key', 'value'])
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_bt_layout()
 
     def set_items(self, row, key, value):
@@ -583,8 +637,9 @@ class DictGui(Param):
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, project, param_name, param_alias, hint, min_val=0., max_val=100., step=1.):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None,
+                 min_val=0., max_val=100., step=1., default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_alias = param_alias
         self.param_value = 1
@@ -601,7 +656,10 @@ class SliderGui(Param):
         self.param_widget.setSingleStep(step)
         self.param_widget.setOrientation(Qt.Horizontal)
         self.param_widget.setTracking(True)
-        self.param_widget.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxValue = {max_val}\nStep = {step}')
+        if hint:
+            self.param_widget.setToolTip(f'{hint}\nMinValue = {min_val}\nMaxValue = {max_val}\nStep = {step}')
+        else:
+            self.param_widget.setToolTip(f'MinValue = {min_val}\nMaxValue = {max_val}\nStep = {step}')
         self.param_widget.valueChanged.connect(self.get_param)
 
         self.display_widget = QLineEdit()
@@ -611,11 +669,15 @@ class SliderGui(Param):
 
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_slider_ui()
 
     def init_slider_ui(self):
         layout = QGridLayout()
-        label = QLabel(self.param_alias + ': ')
+        if self.param_alias:
+            label = QLabel(self.param_alias + ': ')
+        else:
+            label = QLabel(self.param_name + ': ')
         layout.addWidget(label, 0, 0)
         layout.addWidget(self.display_widget, 0, 1)
         layout.addWidget(self.param_widget, 1, 0, 1, 2)
@@ -661,19 +723,26 @@ class SliderGui(Param):
         return self.param_value
 
 
-#Todo: Label-GUI
+# Todo: Label-GUI
 class LabelGui(Param):
     """A GUI to select Labels depending on parcellation"""
 
-    def __init__(self, project, param_name, param_alias):
-        super().__init__(project, param_name, param_alias)
+    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = []
         self.param_widget = QListWidget()
         self.param_widget.itemChanged.connect(self.get_param)
+        if hint:
+            self.setToolTip(hint)
         self.read_param()
         self.set_param()
+        self.save_param()
         self.init_label_ui()
+
+    def init_label_ui(self):
+        start_bt = QPushButton('Select Labels')
+        self.layout.addWidget(start_bt)
 
     def set_param(self):
         pass
@@ -710,20 +779,19 @@ if __name__ == '__main__':
     sub_layout = QGridLayout()
     main_win = QWidget()
     proj = TestProject()
-    a = IntGui(proj, 'TestInt', 'TestInt', 'Bugibugi', -4, 10, 's')
-    b = ListGui(proj, 'TestList', 'TestList', 'Bugibugi')
-    c = DictGui(proj, 'TextDict', 'TextDict', 'Bugibugi')
-    d = BoolGui(proj, 'Fugi?', 'Fugi?', 'Bugibugi')
-    e = FloatGui(proj, 'TestFloat', 'TestFloat', 'Bugibugi', -18, +64, 0.4, 6, 'flurbo')
-    f = StringGui(proj, 'TestString', 'TestString', 'Bugibugi', 'ppAAA.AA;_')
-    g = SliderGui(proj, 'TestSlider', 'TestSlider', 'Bugibugi', -10, 10, 1)
-    h = SliderGui(proj, 'TestSlider2', 'TestSlider2', 'Bugigugi', 0, 20.25, 1.3)
-    i = FuncGui(proj, 'TestFunc', 'TestFunc', 'Hugabuga')
-    j = TupleGui(proj, 'TestTuple', 'Test_Tuple', 'Higiwigi', -10, 20, 1)
-    k = ComboGui(proj, 'TestCombo', 'TestCombo', 'Higiwigi', options=['a', 'b', 'c'],
+    a = IntGui(proj, 'TestInt', min_val=-4, max_val=10)
+    b = ListGui(proj, 'TestList')
+    c = DictGui(proj, 'TextDict')
+    d = BoolGui(proj, 'Huba?')
+    e = FloatGui(proj, 'TestFloat', min_val=-18, max_val=+64, step=0.4, decimals=6, param_unit='flurbo')
+    f = StringGui(proj, 'TestString', input_mask='ppAAA.AA;_')
+    g = SliderGui(proj, 'TestSlider', min_val=-10, max_val=10, step=1)
+    h = SliderGui(proj, 'TestSlider2', min_val=0, max_val=20.25, step=1.3)
+    i = FuncGui(proj, 'TestFunc')
+    j = TupleGui(proj, 'TestTuple', min_val=-10, max_val=20, step=1, decimals=3)
+    k = ComboGui(proj, 'TestCombo', options=['a', 'b', 'c'],
                  options_mapping={'a': 'hungiwungi', 'b': 'zulu32', 'c': 'bananaaa'})
-    l = CheckListGui(proj, 'TestCheckList', 'TestCheckList', 'Higiwigi',
-                     options_mapping={'a': 'hungiwungi', 'b': 'zulu32', 'c': 'bananaaa'})
+    l = CheckListGui(proj, 'TestCheckList', options={'a': 'hungiwungi', 'b': 'zulu32', 'c': 'bananaaa'})
     sub_layout.addWidget(a, 0, 0)
     sub_layout.addWidget(b, 0, 1)
     sub_layout.addWidget(c, 0, 2)

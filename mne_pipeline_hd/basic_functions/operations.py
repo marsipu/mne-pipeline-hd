@@ -49,7 +49,7 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
     if not isfile(sub.raw_filtered_path):
         # Get raw from Subject-class
         raw = sub.load_raw()
-        if enable_cuda:  # use cuda for filtering
+        if enable_cuda == 'true':  # use cuda for filtering, boolean-string due to QSettings
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
 
@@ -911,6 +911,7 @@ def estimate_noise_covariance(sub, baseline, n_jobs, erm_noise_cov, calm_noise_c
                                                       method='empirical')
         sub.save_noise_covariance(noise_covariance, 'erm')
 
+
 @topline
 def create_inverse_operator(sub):
 
@@ -962,12 +963,12 @@ def label_time_course(sub, target_labels, parcellation, extract_mode):
 
 # Todo: Make mixed-norm more customizable
 @topline
-def mixed_norm_estimate(sub, pick_ori):
+def mixed_norm_estimate(sub, pick_ori, inverse_method):
     evokeds = sub.load_evokeds()
     forward = sub.load_forward()
     noise_cov = sub.load_noise_covariance()
     inv_op = sub.load_inverse_operator()
-    if sub.p.inverse_method == 'dSPM':
+    if inverse_method == 'dSPM':
         print('dSPM-Inverse-Solution existent, loading...')
         stcs = sub.load_source_estimates()
     else:
@@ -1008,17 +1009,17 @@ def mixed_norm_estimate(sub, pick_ori):
 
 # Todo: Separate Plot-Functions (better responsivness of GUI during fit, when running in QThread)
 @topline
-def ecd_fit(sub, ecd_times, ecd_positions, ecd_orientations):
+def ecd_fit(sub, ecd_times, ecd_positions, ecd_orientations, t_epoch):
     try:
         ecd_time = ecd_times[sub.name]
     except KeyError:
-        ecd_time = {'Dip1': (0, sub.p.tmax)}
-        print(f'No Dipole times assigned for {sub.name}, Dipole-Times: 0-{sub.p.tmax}')
+        ecd_time = {'Dip1': (0, t_epoch[1])}
+        print(f'No Dipole times assigned for {sub.name}, Dipole-Times: 0-{t_epoch[1]}')
 
     evokeds = sub.load_evokeds()
     noise_covariance = sub.load_noise_covariance()
     bem = sub.mri_sub.load_bem_solution()
-    trans = sub.load_transformation
+    trans = sub.load_transformation()
 
     ecd_dips = {}
 
@@ -1058,7 +1059,7 @@ def apply_morph(sub):
     morphed_stcs = {}
     for trial in stcs:
         morphed_stcs[trial] = morph.apply(stcs[trial])
-    sub.save_morphed_source_estimate(morphed_stcs)
+    sub.save_morphed_source_estimates(morphed_stcs)
 
 
 @topline
@@ -1124,7 +1125,7 @@ def grand_avg_morphed(ga_group):
         for name in ga_chunk:
             sub = CurrentSub(name, ga_group.mw)
             print(f'Add {name} to grand_average')
-            stcs = sub.load_source_estimates()
+            stcs = sub.load_morphed_source_estimates()
             for trial in stcs:
                 if trial in sub_trial_dict:
                     sub_trial_dict[trial].append(stcs[trial])

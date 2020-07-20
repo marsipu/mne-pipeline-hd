@@ -512,8 +512,9 @@ class CurrentSub(BaseSub):
         self._inverse = None
         self._stcs = None
         self._ltc = None
-        self._mxn_stcs = None
-        self._mxn_dips = None
+        self._connectivity = None
+        self._mixn_stcs = None
+        self._mixn_dips = None
         self._ecd_dips = None
 
         ################################################################################################################
@@ -603,7 +604,7 @@ class CurrentSub(BaseSub):
     # Todo: Save Storage with GUI (and also look to
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
-        if not self.mw.settings.value('save_storage', defaulValue=0):
+        if not self.mw.settings.value('save_storage'):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
             self.save_file_params(self.raw_filtered_path)
 
@@ -624,7 +625,7 @@ class CurrentSub(BaseSub):
 
     def save_erm_filtered(self, erm_filtered):
         self._erm_filtered = erm_filtered
-        if not self.mw.settings.value('save_storage', defaulValue=0):
+        if not self.mw.settings.value('save_storage'):
             self._erm_filtered.save(self.erm_filtered_path)
             self.save_file_params(self.erm_filtered_path)
 
@@ -862,7 +863,7 @@ class CurrentSub(BaseSub):
         return self._mixn_dips
 
     def save_mixn_dipoles(self, mixn_dips):
-        self._mxn_dips = mixn_dips
+        self._mixn_dips = mixn_dips
 
         # Remove old dipoles
         if not exists(join(self.save_dir, 'mixn_dipoles')):
@@ -879,8 +880,8 @@ class CurrentSub(BaseSub):
                 self.save_file_params(mxn_dip_path)
 
     def load_mixn_source_estimates(self):
-        if self._mxn_stcs is None:
-            self._mxn_stcs = dict()
+        if self._mixn_stcs is None:
+            self._mixn_stcs = dict()
             for trial in self.p['event_id']:
                 try:
                     mx_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-mixn')
@@ -890,12 +891,12 @@ class CurrentSub(BaseSub):
                                   '_' + trial + '-mixn'
                     mx_stc_path = join(self.save_dir, mx_stc_name)
                     mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
-                self._mxn_stcs.update({trial: mx_stc})
+                self._mixn_stcs.update({trial: mx_stc})
 
-        return self._mxn_stcs
+        return self._mixn_stcs
 
     def save_mixn_source_estimates(self, stcs):
-        self._mxn_stcs = stcs
+        self._mixn_stcs = stcs
         for trial in stcs:
             stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-mixn')
             stcs[trial].save(stc_path)
@@ -963,6 +964,7 @@ class CurrentSub(BaseSub):
         return self._connectivity
 
     def save_connectivity(self, con_dict):
+        self._connectivity = con_dict
         for trial in con_dict:
             for con_method in con_dict[trial]:
                 con_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
@@ -1062,7 +1064,7 @@ class CurrentMRISub(BaseSub):
         if self._source_morph is None:
             try:
                 self._source_morph = mne.read_source_morph(self.source_morph_path)
-            except FileNotFoundError:
+            except OSError:
                 self._source_morph = mne.read_source_morph(self.old_source_morph_path)
 
         return self._source_morph

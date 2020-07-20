@@ -153,7 +153,7 @@ class MyProject:
         self.file_parameters_path = join(self.pscripts_path, 'file_parameters.csv')
 
         path_lists = [self.subjects_dir, self.data_path, self.erm_data_path,
-                      self.pscripts_path, self.custom_pkg_path]
+                      self.pscripts_path, self.custom_pkg_path, self.figures_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
                       self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path,
                       self.info_dict_path, self.file_parameters_path]
@@ -168,6 +168,14 @@ class MyProject:
                 with open(file, 'w') as fl:
                     fl.write('')
                 print(f'{file} created')
+
+        # create grand average-paths
+        ga_folders = ['statistics', 'evoked', 'stc', 'ltc', 'tfr', 'connect']
+        for subfolder in ga_folders:
+            grand_average_path = join(self.data_path, 'grand_averages', subfolder)
+            if not exists(grand_average_path):
+                makedirs(grand_average_path)
+                print(grand_average_path + ' has been created')
 
     def load_sub_lists(self):
         self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
@@ -346,79 +354,6 @@ class MyProject:
 
                 except FileNotFoundError:
                     print(f'{sub} not found in {self.data_path}')
-
-    def populate_directories(self):
-        # create grand averages path with a statistics folder
-        ga_folders = ['statistics', 'evoked', 'stc', 'ltc', 'tfr', 'connect']
-        for subfolder in ga_folders:
-            grand_average_path = join(self.data_path, 'grand_averages', subfolder)
-            if not exists(grand_average_path):
-                makedirs(grand_average_path)
-                print(grand_average_path + ' has been created')
-
-        # create erm(empty_room_measurements)paths
-        erm_path = join(self.data_path, 'empty_room_data')
-        if not exists(erm_path):
-            makedirs(erm_path)
-            print(erm_path + ' has been created')
-
-        # Update figures_path for new parameter-preset
-        self.figures_path = join(self.project_path, 'figures', self.p_preset)
-        # create figures path
-        folders = ['epochs_image', 'epochs_topo', 'evoked_image',
-                   'power_spectra_raw', 'power_spectra_epochs',
-                   'power_spectra_topo', 'evoked_butterfly',
-                   'evoked_topo', 'evoked_topomap', 'evoked_joint', 'evoked_white', 'gfp',
-                   'ica', 'ssp', 'stcs', 'vec_stcs', 'transformation', 'source_space',
-                   'noise_covariance', 'events', 'label_time_course', 'ECD',
-                   'stcs_movie', 'bem', 'snr', 'statistics',
-                   'labels', 'tf_sensor_space/plot', 'tf_source_space/label_power',
-                   'tf_sensor_space/topo', 'tf_sensor_space/joint',
-                   'tf_sensor_space/oscs', 'tf_sensor_space/itc',
-                   'tf_sensor_space/dynamics', 'tf_source_space/connectivity',
-                   'epochs_drop_log', 'sensitivity_maps', 'mxn_dipoles']
-
-        for folder in folders:
-            folder_path = join(self.figures_path, folder)
-            if not exists(folder_path):
-                makedirs(folder_path)
-                print(folder_path + ' has been created')
-
-        # create grand average figures path
-        grand_averages_figures_path = join(self.figures_path, 'grand_averages')
-        figure_subfolders = ['sensor_space/evoked', 'sensor_space/tfr',
-                             'source_space/statistics', 'source_space/stc',
-                             'source_space/connectivity', 'source_space/stc_movie',
-                             'source_space/tfr', 'source_space/ltc']
-
-        for figure_subfolder in figure_subfolders:
-            folder_path = join(grand_averages_figures_path, figure_subfolder)
-            if not exists(folder_path):
-                makedirs(folder_path)
-                print(folder_path + ' has been created')
-
-        self.populate_evid_directories()
-
-    def populate_evid_directories(self):
-        # create subfolders for for event_ids
-        trialed_folders = ['power_spectra_epochs', 'power_spectra_topo',
-                           'epochs_image', 'epochs_topo', 'evoked_butterfly',
-                           'evoked_topomap', 'evoked_image',
-                           'evoked_joint', 'evoked_white', 'gfp', 'label_time_course', 'ECD',
-                           'stcs', 'vec_stcs', 'stcs_movie', 'snr',
-                           'tf_sensor_space/plot', 'tf_sensor_space/topo',
-                           'tf_sensor_space/joint', 'tf_sensor_space/oscs',
-                           'tf_sensor_space/itc', 'mxn_dipoles']
-
-        for ev_id in [e for e in self.parameters[self.p_preset]['event_id'] if e is not None]:
-            for tr in trialed_folders:
-                subfolder = join(self.figures_path, tr, ev_id)
-                if not exists(subfolder):
-                    try:
-                        makedirs(subfolder)
-                        print(subfolder + ' has been created')
-                    except OSError:
-                        print(subfolder + ': this event-id-name can\'t be used due to OS-Folder-Naming-Conventions')
 
 
 class FileManagement(QDialog):
