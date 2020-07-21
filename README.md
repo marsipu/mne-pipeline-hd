@@ -1,6 +1,6 @@
 # mne_pipeline_hd
 ### A [MNE-Python](https://mne.tools/stable/index.html) Pipeline for MEG-Lab Heidelberg
-###### inspired by: [Andersen, L.M., 2018. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group Source Space Representation. Front. Neurosci. 12.](https://doi.org/10.3389/fnins.2018.00006)
+###### inspired by: [Andersen L.M. 2018](https://doi.org/10.3389/fnins.2018.00006)
 
 ## Installation
 1. Install MNE-python as instructed on the [website](https://www.martinos.org/mne/stable/install_mne_python.html),
