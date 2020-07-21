@@ -326,7 +326,8 @@ class MainWindow(QMainWindow):
         # about_menu.addAction('Update Pipeline', self.update_pipeline)
         # about_menu.addAction('Update MNE-Python', self.update_mne)
         about_menu.addAction('Quick-Guide', self.quick_guide)
-        about_menu.addAction('About QT', self.about_qt)
+        about_menu.addAction('About', self.about)
+        about_menu.addAction('About QT', self.app.aboutQt)
 
     def open_settings_dlg(self):
         dlg = QDialog(self)
@@ -717,7 +718,7 @@ class MainWindow(QMainWindow):
 
         self.change_project(self.project_box.itemText(idx))
 
-    #Todo: Just reload a new Project-Class!
+    # Todo: Just reload a new Project-Class!
     def change_project(self, project):
         self.pr.project_name = project
         self.pr.p_preset = 'Default'
@@ -953,10 +954,32 @@ class MainWindow(QMainWindow):
     def quick_guide(self):
         QuickGuide(self)
 
-    def about_qt(self):
-        QMessageBox.aboutQt(self, 'About Qt')
+    def about(self):
 
-    # Todo: Make a developers command line input to access the local variables and use quickly some script on them
+        with open(join(resources.__path__[0], 'license.txt'), 'r') as file:
+            license_text = file.read()
+        license_text = license_text.replace('\n', '<br>')
+        text = '<title>MNE-Pipeline HD</title>' \
+               '<h1>A Pipeline-GUI for MNE-Python</h1>' \
+               '<h2>(originally developed for MEG-Lab Heidelberg)</h2>' \
+               '<i>Development was initially inspired by: ' \
+               '<a href=https://doi.org/10.3389/fnins.2018.00006>Andersen L.M. 2018</a></i><br>' \
+               '<br>' \
+               'As for now, this program is still in alpha-state, so some features may not work as expected. ' \
+               'Be sure to check all the parameters for each step to be correctly adjusted to your needs.<br>' \
+               '<br>' \
+               '<b>Developed by:</b><br>' \
+               'Martin Schulz (medical student, Heidelberg)<br>' \
+               'Contributors are much welcome:)<br>' \
+               '<br>' \
+               '<b>Licensed under:</b><br>' \
+               + license_text
+
+        msgbox = QMessageBox(self)
+        msgbox.setWindowTitle('about')
+        msgbox.setStyleSheet('QLabel{min-width: 500px}')
+        msgbox.setText(text)
+        msgbox.open()
 
     def save_main(self):
         # Save Parameters
