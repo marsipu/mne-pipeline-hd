@@ -204,6 +204,7 @@ class StderrStream(io.TextIOBase):
     def __init__(self):
         super().__init__()
         self.signal = StderrSignal()
+        self.last_text = None
 
     def write(self, text):
         # Send still the output to the command line
@@ -212,9 +213,16 @@ class StderrStream(io.TextIOBase):
         if text[:1] == '\r':
             # Emit additionally the written text in a pyqtSignal
             text = text.replace('\r', '')
-            self.signal.text_updated.emit(text)
+            # Avoid doubling
+            if text != self.last_text:
+                self.signal.text_updated.emit(text)
+                self.last_text = text
         else:
-            # Eliminate weird symbols
-            if '\x1b' not in text:
+            # Eliminate weird symbols and avoid doubling
+            if '\x1b' not in text and text != self.last_text:
+                # Avoid weird last line in tqdm-progress
+                if self.last_text[-1:] != '\n':
+                    text = '\n' + text
                 self.signal.text_written.emit(text)
+                self.last_text = text
 

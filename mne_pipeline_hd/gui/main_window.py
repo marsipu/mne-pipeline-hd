@@ -25,7 +25,7 @@ from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QTextCursor
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
-                             QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QStyle,
+                             QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStyle,
                              QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
 from mayavi import mlab
 
@@ -1091,7 +1091,6 @@ class RunDialog(QDialog):
         self.current_sub = None
         self.current_func = None
         self.prog_running = False
-        self.last_text = None
 
         self.init_ui()
         self.center()
@@ -1100,8 +1099,10 @@ class RunDialog(QDialog):
         self.layout = QGridLayout()
 
         self.sub_listw = QListWidget()
+        self.sub_listw.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         self.layout.addWidget(self.sub_listw, 0, 0)
         self.func_listw = QListWidget()
+        self.func_listw.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         self.layout.addWidget(self.func_listw, 0, 1)
         self.console_widget = QTextEdit()
         self.console_widget.setReadOnly(True)
@@ -1182,14 +1183,11 @@ class RunDialog(QDialog):
             cursor = self.console_widget.textCursor()
             cursor.select(QTextCursor.LineUnderCursor)
             cursor.removeSelectedText()
-            # Add line
             self.console_widget.insertPlainText(text)
-            self.last_text = text
+
         else:
             self.prog_running = True
-            # Avoid doubling
-            if text != self.last_text:
-                self.console_widget.insertPlainText(text)
+            self.console_widget.insertPlainText(text)
 
     def center(self):
         qr = self.frameGeometry()

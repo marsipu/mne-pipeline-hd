@@ -464,7 +464,7 @@ class ListGui(Param):
         self.param_name = param_name
         self.param_value = list()
         self.param_widget = QListWidget()
-        self.param_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.param_widget.setResizeMode(QListView.Adjust)
         if hint:
             self.param_widget.setToolTip(hint)
