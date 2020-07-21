@@ -967,11 +967,13 @@ class MainWindow(QMainWindow):
                '<br>' \
                'As for now, this program is still in alpha-state, so some features may not work as expected. ' \
                'Be sure to check all the parameters for each step to be correctly adjusted to your needs.<br>' \
-               '<br>' \
+               '<br><br>' \
                '<b>Developed by:</b><br>' \
                'Martin Schulz (medical student, Heidelberg)<br>' \
-               'Contributors are much welcome:)<br>' \
                '<br>' \
+               '<b>Supported by:</b><br>' \
+               'PD Dr. André Rupp, Kristin Mierisch<br>' \
+               '<br><br>' \
                '<b>Licensed under:</b><br>' \
                + license_text
 
