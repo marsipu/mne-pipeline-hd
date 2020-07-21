@@ -232,6 +232,18 @@ def plot_epochs_drop_log(sub):
 
 
 @topline
+def plot_autoreject_log(sub):
+    reject_log = sub.load_reject_log()
+    epochs = sub.load_epochs()
+
+    fig1 = reject_log.plot()
+    fig2 = reject_log.plot_epochs(epochs)
+
+    plot_save(sub, 'epochs', subfolder='autoreject_log', idx='reject', matplotlib_figure=fig1)
+    plot_save(sub, 'epochs', subfolder='autoreject_log', idx='epochs', matplotlib_figure=fig2)
+
+
+@topline
 def plot_evoked_topo(sub):
     evokeds = sub.load_evokeds()
     fig = mne.viz.plot_evoked_topo(evokeds, title=sub.name)
@@ -402,6 +414,7 @@ def brain_plot(sub, stcs, folder_name, subject, mne_evoked_time):
             stc.plot(subject=sub.subtomri, surface='inflated', subjects_dir=sub.subjects_dir,
                      hemi='split', title=f'{sub.name}-{trial}', size=(1200, 600),
                      initial_time=0)
+
 
 @topline
 def plot_stc(sub, mne_evoked_time):

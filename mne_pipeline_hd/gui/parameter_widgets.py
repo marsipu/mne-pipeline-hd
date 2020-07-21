@@ -754,7 +754,6 @@ class LabelGui(Param):
         return self.param_value
 
 
-
 class TestProject:
     def __init__(self):
         self.test_param = 1
@@ -766,7 +765,7 @@ class TestProject:
                                        'TestFloat': 5.3,
                                        'TestString': 'Havona',
                                        'TestSlider': 5,
-                                       'TestSlide2': 4.5,
+                                       'TestSlider2': 4.5,
                                        'TestFunc': '2**14',
                                        'TestTuple': (45, 6.5),
                                        'TestCombo': 'a',

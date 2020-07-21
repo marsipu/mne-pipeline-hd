@@ -929,7 +929,8 @@ class AddFilesDialog(AddFilesWidget):
 
         self.dialog = QDialog(main_win)
         self.dialog.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Minimum)
-        self.dialog.setGeometry(0, 0, self.mw.desk_geometry.width() * 0.5, self.mw.desk_geometry.height() * 0.5)
+        self.dialog.setGeometry(0, 0, int(self.mw.desk_geometry.width() * 0.5),
+                                int(self.mw.desk_geometry.height() * 0.5))
         self.center()
 
         close_bt = QPushButton('Close', self)

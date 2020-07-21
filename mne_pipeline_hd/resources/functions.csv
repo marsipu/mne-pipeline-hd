@@ -10,13 +10,13 @@ morph_subject;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operat
 morph_labels_from_fsaverage;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 filter_raw;Filter Raw;Compute;sensor_space_operations;True;False;False;;operations;sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit
 find_events;Find Events;Compute;sensor_space_operations;True;False;False;;operations;sub, min_duration, shortest_event, adjust_timeline_by_msec
-epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject_threshold, overwrite_ar, decim
-autoreject_interpolation;Autoreject(Interpolation);Compute;sensor_space_operations;True;False;False;;operations;sub, n_interpolates, consensus_percs, n_jobs
-run_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, autoreject_threshold, save_plots, figures_path, pscripts_path
-apply_ica;;Compute;sensor_space_operations;True;False;False;;operations;sub, epoch_origin
-get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;sub, epoch_origin
-tfr;;Compute;sensor_space_operations;True;False;False;;operations;sub, epoch_origin, tfr_freqs, overwrite_tfr, tfr_method, multitaper_bandwith, stockwell_width, n_jobs
-estimate_noise_covariance;;Compute;source_space_operations;True;False;False;;operations;sub, baseline, n_jobs, erm_noise_cov, calm_noise_cov, epoch_origin
+epoch_raw;Get Epochs;Compute;sensor_space_operations;True;False;False;;operations;sub, event_id, t_epoch, baseline, reject, flat, autoreject_interpolation, consensus_percs, n_interpolates, autoreject_threshold, overwrite_ar, decim, n_jobs
+run_ica;Run ICA;Compute;sensor_space_operations;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolation, autoreject_threshold, save_plots, figures_path, pscripts_path
+apply_ica;Apply ICA;Compute;sensor_space_operations;True;False;False;;operations;sub
+interpolate_bad_chs;Interpolate Bad-Channels;Compute;sensor_space_operations;True;False;False;;operations;sub, bad_interpolation, enable_ica
+get_evokeds;Get Evokeds;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica
+tfr;;Compute;sensor_space_operations;True;False;False;;operations;sub, enable_ica, tfr_freqs, overwrite_tfr, tfr_method, multitaper_bandwith, stockwell_width, n_jobs
+estimate_noise_covariance;;Compute;source_space_operations;True;False;False;;operations;sub, baseline, n_jobs, erm_noise_cov, calm_noise_cov, enable_ica
 create_forward_solution;;Compute;source_space_operations;True;False;False;;operations;sub, n_jobs, eeg_fwd
 create_inverse_operator;;Compute;source_space_operations;True;False;False;;operations;sub
 source_estimate;;Compute;source_space_operations;True;False;False;;operations;sub, inverse_method, pick_ori, lambda2
@@ -24,7 +24,7 @@ mixed_norm_estimate;;Compute;source_space_operations;True;False;False;;operation
 apply_morph;;Compute;source_space_operations;True;False;False;;operations;sub
 label_time_course;;Compute;source_space_operations;True;False;False;;operations;sub, target_labels, parcellation, extract_mode
 ecd_fit;;Compute;source_space_operations;True;False;False;;operations;sub, ecd_times, ecd_positions, ecd_orientations, t_epoch
-source_space_connectivity;;Compute;source_space_operations;True;False;False;;operations;sub, parcellation, target_labels, inverse_method, lambda2, con_methods, con_fmin, con_fmax, n_jobs, epoch_origin
+source_space_connectivity;;Compute;source_space_operations;True;False;False;;operations;sub, parcellation, target_labels, inverse_method, lambda2, con_methods, con_fmin, con_fmax, n_jobs, enable_ica
 grand_avg_evokeds;;Compute;grand_average_operations;False;False;False;;operations;ga_group
 grand_avg_tfr;;Compute;grand_average_operations;False;False;False;;operations;ga_group
 grand_avg_morphed;;Compute;grand_average_operations;False;False;False;;operations;ga_group
@@ -46,7 +46,8 @@ plot_tfr;;Plot;sensor_space_plots;True;True;False;;plot;sub, t_epoch, baseline
 plot_epochs;;Plot;sensor_space_plots;True;True;False;;plot;sub
 plot_epochs_image;;Plot;sensor_space_plots;True;True;False;;plot;sub
 plot_epochs_topo;;Plot;sensor_space_plots;True;True;False;;plot;sub
-plot_epochs_drop_log;;Plot;sensor_space_plots;True;True;False;;sub
+plot_epochs_drop_log;;Plot;sensor_space_plots;True;True;False;;plot;sub
+plot_autoreject_log;;Plot;sensor_space_plots;True;True;False;;plot;sub
 plot_evoked_topo;;Plot;sensor_space_plots;True;True;False;;plot;sub
 plot_evoked_topomap;;Plot;sensor_space_plots;True;True;False;;plot;sub
 plot_evoked_butterfly;;Plot;sensor_space_plots;True;True;False;;plot;sub

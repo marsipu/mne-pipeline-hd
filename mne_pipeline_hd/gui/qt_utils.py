@@ -214,5 +214,7 @@ class StderrStream(io.TextIOBase):
             text = text.replace('\r', '')
             self.signal.text_updated.emit(text)
         else:
-            self.signal.text_written.emit(text)
+            # Eliminate weird symbols
+            if '\x1b' not in text:
+                self.signal.text_written.emit(text)
 

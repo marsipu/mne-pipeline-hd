@@ -221,6 +221,7 @@ class FunctionWorker(Worker):
                 # Print Subject Console Header
                 print('=' * 60 + '\n', name + '\n')
                 for func in selected_functions:
+                    # Todo: Resolve Dependencies and Function-Order
                     # Wait for main-thread-function to finish
                     while self.is_plot_running:
                         time.sleep(1)

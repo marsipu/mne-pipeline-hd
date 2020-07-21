@@ -717,6 +717,7 @@ class MainWindow(QMainWindow):
 
         self.change_project(self.project_box.itemText(idx))
 
+    #Todo: Just reload a new Project-Class!
     def change_project(self, project):
         self.pr.project_name = project
         self.pr.p_preset = 'Default'
@@ -1090,6 +1091,7 @@ class RunDialog(QDialog):
         self.current_sub = None
         self.current_func = None
         self.prog_running = False
+        self.last_text = None
 
         self.init_ui()
         self.center()
@@ -1182,9 +1184,12 @@ class RunDialog(QDialog):
             cursor.removeSelectedText()
             # Add line
             self.console_widget.insertPlainText(text)
+            self.last_text = text
         else:
             self.prog_running = True
-            self.console_widget.insertPlainText(text)
+            # Avoid doubling
+            if text != self.last_text:
+                self.console_widget.insertPlainText(text)
 
     def center(self):
         qr = self.frameGeometry()

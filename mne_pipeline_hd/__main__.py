@@ -30,12 +30,14 @@ from mne_pipeline_hd.pipeline_functions import ismac
 def main():
     app_name = 'mne_pipeline_hd'
     organization_name = 'marsipu'
+    domain_name = 'https://github.com/marsipu/mne_pipeline_hd'
+
     app = QApplication.instance()
     if not app:
         app = QApplication(sys.argv)
-    app.setApplicationName('mne_pipeline_hd')
-    app.setOrganizationName('marsipu')
-    app.setOrganizationDomain('https://github.com/marsipu/mne_pipeline_hd')
+    app.setApplicationName(app_name)
+    app.setOrganizationName(organization_name)
+    app.setOrganizationDomain(domain_name)
 
     try:
         app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)

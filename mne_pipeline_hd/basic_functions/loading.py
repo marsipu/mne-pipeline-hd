@@ -8,6 +8,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 """
 from __future__ import print_function
 
+import json
 import pickle
 from os import listdir, makedirs, remove
 from os.path import exists, join
@@ -20,6 +21,8 @@ import numpy as np
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import ParametersJSONEncoder, parameters_json_hook
+
 
 def filter_string(highpass, lowpass):
     # Check for .0
@@ -499,7 +502,7 @@ class CurrentSub(BaseSub):
         self._erm_filtered = None
         self._events = None
         self._epochs = None
-        self._ar_epochs = None
+        self._reject_log = None
         self._ica = None
         self._ica_epochs = None
         self._evokeds = None
@@ -539,7 +542,7 @@ class CurrentSub(BaseSub):
         self.old_epochs_path = join(self.save_dir,
                                     name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-epo.fif')
 
-        self.ar_epochs_path = join(self.save_dir, f'{name}_{self.p_preset}-ar-epo.fif')
+        self.reject_log_path = join(self.save_dir, f'{name}_{self.p_preset}-arlog.py')
 
         self.ica_path = join(self.save_dir, f'{name}_{self.p_preset}-ica.fif')
         self.old_ica_path = join(self.save_dir,
@@ -654,16 +657,18 @@ class CurrentSub(BaseSub):
         epochs.save(self.epochs_path, overwrite=True)
         self.save_file_params(self.epochs_path)
 
-    def load_ar_epochs(self):
-        if self._ar_epochs is None:
-            self._ar_epochs = mne.read_epochs(self.ar_epochs_path)
+    def load_reject_log(self):
+        if self._reject_log is None:
+            with open(self.reject_log_path, 'rb') as file:
+                self._reject_log = pickle.load(file)
 
-        return self._ar_epochs
+        return self._reject_log
 
-    def save_ar_epochs(self, ar_epochs):
-        self._ar_epochs = ar_epochs
-        ar_epochs.save(self.ar_epochs_path, overwrite=True)
-        self.save_file_params(self.ar_epochs_path)
+    def save_reject_log(self, reject_log):
+        self._reject_log = reject_log
+        with open(self.reject_log_path, 'wb') as file:
+            pickle.dump(reject_log, file)
+        self.save_file_params(self.reject_log_path)
 
     def load_ica(self):
         if self._ica is None:
