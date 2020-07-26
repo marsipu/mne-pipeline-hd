@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
                              QToolTip, QVBoxLayout)
 
 from . import ismac
-from ..basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
+from ..basic_functions.loading import BaseSub, CurrentGAGroup, CurrentMRISub, CurrentSub
 from ..gui import parameter_widgets
 from ..gui.qt_models import CheckListModel
 from ..gui.qt_utils import ErrorDialog, Worker, get_exception_tuple
@@ -171,22 +171,21 @@ class FunctionWorker(Worker):
         if len(self.mw.pr.sel_mri_files) * len(self.mw.sel_mri_funcs) > 0:
             self.signals.pg_which_loop.emit('mri')
             self.subject_loop('mri')
-        else:
-            print('No MRI-Subject or MRI-Function selected')
 
         # Call the functions for selected Files
         if len(self.mw.pr.sel_files) * len(self.mw.sel_file_funcs) > 0:
             self.signals.pg_which_loop.emit('file')
             self.subject_loop('file')
-        else:
-            print('No Subject selected')
 
-        # Call functions outside the subject-loop
-        if len(self.mw.sel_ga_funcs) * len(self.mw.sel_ga_funcs) > 0:
+        # Call functions outside the subject-loop for Grand-Average-Groups
+        if len(self.mw.pr.sel_ga_groups) * len(self.mw.sel_ga_funcs) > 0:
             self.signals.pg_which_loop.emit('ga')
             self.subject_loop('ga')
-        else:
-            print('No Grand-Average-Function selected')
+
+        # Calls functions, which have no Sub
+        elif len(self.mw.sel_other_funcs) > 0:
+            self.signals.pg_which_loop.emit('other')
+            self.subject_loop('other')
 
     def subject_loop(self, subject_type):
         if subject_type == 'mri':
@@ -195,9 +194,14 @@ class FunctionWorker(Worker):
         elif subject_type == 'file':
             selected_subjects = self.mw.pr.sel_files
             selected_functions = self.mw.sel_file_funcs
-        else:
+        elif subject_type == 'ga':
             selected_subjects = self.mw.pr.sel_ga_groups
             selected_functions = self.mw.sel_ga_funcs
+        elif subject_type == 'other':
+            selected_subjects = ['Other Functions']
+            selected_functions = self.mw.sel_other_funcs
+        else:
+            raise RuntimeError(f'Subject-Type: {subject_type} not supported')
 
         running_mri_sub = None
         for name in selected_subjects:
@@ -206,6 +210,7 @@ class FunctionWorker(Worker):
                     sub = CurrentMRISub(name, self.mw)
                     running_mri_sub = sub
                     self.mw.subject = sub
+
                 elif subject_type == 'file':
                     # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
                     if running_mri_sub and running_mri_sub.name == self.mw.pr.sub_dict[name]:
@@ -214,9 +219,16 @@ class FunctionWorker(Worker):
                         sub = CurrentSub(name, self.mw)
                     running_mri_sub = sub.mri_sub
                     self.mw.subject = sub
-                else:
+
+                elif subject_type == 'ga':
                     sub = CurrentGAGroup(name, self.mw)
                     self.mw.subject = sub
+
+                elif subject_type == 'other':
+                    sub = BaseSub(name, self.mw)
+
+                else:
+                    break
 
                 # Print Subject Console Header
                 print('=' * 60 + '\n', name + '\n')
