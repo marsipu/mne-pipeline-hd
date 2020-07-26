@@ -275,6 +275,9 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
     picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
                            stim=False, exclude=sub.bad_channels)
 
+    if not isdir(join(figures_path, 'ica')):
+        makedirs(join(figures_path, 'ica'))
+
     # Calculate ICA
     ica = mne.preprocessing.ICA(n_components=25, method='fastica', random_state=8)
 
