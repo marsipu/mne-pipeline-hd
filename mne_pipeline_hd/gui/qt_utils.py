@@ -204,7 +204,7 @@ class StderrStream(io.TextIOBase):
     def __init__(self):
         super().__init__()
         self.signal = StderrSignal()
-        self.last_text = None
+        self.last_text = ''
 
     def write(self, text):
         # Send still the output to the command line

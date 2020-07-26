@@ -127,7 +127,10 @@ class MainWindow(QMainWindow):
                                        & (self.pd_funcs['subject_loop'] == True)]
         self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'mri_subject_operations')
                                         & (self.pd_funcs['subject_loop'] == True)]
-        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)]
+        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+                                      & (self.pd_funcs['func_args'].str.contains('ga_group'))]
+        self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+                                         & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
 
         # Get function-tabs and function-groups
         self.f_tabs = set(self.pd_funcs['tab'])
@@ -820,11 +823,13 @@ class MainWindow(QMainWindow):
         self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.func_dict[mf]]
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.func_dict[ff]]
         self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.func_dict[gf]]
+        self.sel_other_funcs = [of for of in self.other_funcs.index if self.func_dict[of]]
 
         # Determine steps in progress for all selected subjects and functions
         self.all_prog = (len(self.pr.sel_mri_files) * len(self.sel_mri_funcs) +
                          len(self.pr.sel_files) * len(self.sel_file_funcs) +
-                         len(self.sel_ga_funcs))
+                         len(self.pr.sel_ga_groups) * len(self.sel_ga_funcs) +
+                         len(self.sel_other_funcs))
 
         self.run_dialog = RunDialog(self)
         self.run_dialog.pgbar.setMaximum(self.all_prog)
@@ -959,27 +964,27 @@ class MainWindow(QMainWindow):
         with open(join(resources.__path__[0], 'license.txt'), 'r') as file:
             license_text = file.read()
         license_text = license_text.replace('\n', '<br>')
-        text = '<title>MNE-Pipeline HD</title>' \
-               '<h1>A Pipeline-GUI for MNE-Python</h1>' \
-               '<h2>(originally developed for MEG-Lab Heidelberg)</h2>' \
+        text = '<h1>MNE-Pipeline HD</h1>' \
+               '<b>A Pipeline-GUI for MNE-Python</b><br>' \
+               '(originally developed for MEG-Lab Heidelberg)<br>' \
                '<i>Development was initially inspired by: ' \
                '<a href=https://doi.org/10.3389/fnins.2018.00006>Andersen L.M. 2018</a></i><br>' \
                '<br>' \
                'As for now, this program is still in alpha-state, so some features may not work as expected. ' \
                'Be sure to check all the parameters for each step to be correctly adjusted to your needs.<br>' \
-               '<br><br>' \
+               '<br>' \
                '<b>Developed by:</b><br>' \
                'Martin Schulz (medical student, Heidelberg)<br>' \
                '<br>' \
                '<b>Supported by:</b><br>' \
                'PD Dr. André Rupp, Kristin Mierisch<br>' \
-               '<br><br>' \
+               '<br>' \
                '<b>Licensed under:</b><br>' \
                + license_text
 
         msgbox = QMessageBox(self)
         msgbox.setWindowTitle('about')
-        msgbox.setStyleSheet('QLabel{min-width: 500px}')
+        msgbox.setStyleSheet('QLabel{min-width: 600px; max-height: 700px}')
         msgbox.setText(text)
         msgbox.open()
 
@@ -1162,8 +1167,8 @@ class RunDialog(QDialog):
             self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
         elif mode == 'ga':
             self.populate_listw(self.mw.pr.sel_ga_groups, self.mw.sel_ga_funcs)
-        else:
-            pass
+        elif mode == 'other':
+            self.populate_listw([], self.mw.sel_other_funcs)
 
     def populate_listw(self, files, funcs):
         for file in files:
