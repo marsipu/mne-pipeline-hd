@@ -1152,7 +1152,7 @@ class RunDialog(QDialog):
 
     def cancel_funcs(self):
         self.mw.mw_signals.cancel_functions.emit(True)
-        self.console_widget.insertHtml('<b><big><center>---Terminating Pipeline...---</center></big></b><br>')
+        self.console_widget.insertHtml('<b><big><center>---Finishing last function...---</center></big></b><br>')
         self.console_widget.ensureCursorVisible()
 
     def populate(self, mode):

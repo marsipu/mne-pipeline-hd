@@ -9,7 +9,7 @@ adjust_timeline_by_msec;Adjust Time;0;ms;custom delay to stimulus in ms;IntGui;{
 t_epoch;Epoch-Timeframe;(-0.5,1.5);s;start and end of epoch;TupleGui;
 baseline;Baseline-Timeframe;(-0.5,0);s;start and end of baseline;CheckTupleGui;{'max_val':0, 'unchecked_value': None}
 enable_ica;Enable ICA;False;;If to use epochs from ICA;BoolGui;
-bad_interpolation;Interpolation(Apply to);'Epochs';;Choose where to apply bad-channels-interpolation;ComboGui;{'options': ['Raw', 'Epochs', 'Evokeds']}
+bad_interpolation;Bad-Channel-Interpolation;'Epochs';;Choose where to apply bad-channels-interpolation;ComboGui;{'options': ['Raw', 'Epochs', 'Evokeds']}
 autoreject_interpolation;Autoreject(Interpolation);False;;Use autoreject to interpolate Epochs with autoreject;BoolGui;
 n_interpolates;;np.array([1, 4, 32]);;p-values for autoreject;FuncGui;
 consensus_percs;;np.linspace(0, 1.0, 11);;k-values for autoreject;FuncGui;
