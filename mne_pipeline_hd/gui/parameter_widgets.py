@@ -87,6 +87,8 @@ class Param(QWidget):
                     # Should cover List, Dict, String, Int as they are returned as correct type
                     except (ValueError, SyntaxError):
                         self.param_value = value
+            else:
+                self.param_value = self.default
 
         elif self.param_name in self.pr.parameters[self.pr.p_preset]:
             self.param_value = self.pr.parameters[self.pr.p_preset][self.param_name]
@@ -138,7 +140,7 @@ class IntGui(Param):
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=0., max_val=100.,
+    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=-100., max_val=100.,
                  step=1., decimals=2, param_unit=None, default=None):
         super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name

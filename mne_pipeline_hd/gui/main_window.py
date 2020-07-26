@@ -18,6 +18,7 @@ from os import listdir
 from os.path import join
 from subprocess import run
 
+import matplotlib
 import mne
 import pandas as pd
 import qdarkstyle
@@ -186,7 +187,7 @@ class MainWindow(QMainWindow):
         pd_functions_pattern = r'.*_functions\.csv'
         pd_parameters_pattern = r'.*_parameters\.csv'
         custom_module_pattern = r'(.+)(\.py)$'
-        for directory in os.scandir(self.pr.custom_pkg_path):
+        for directory in [d for d in os.scandir(self.pr.custom_pkg_path) if not d.name.startswith('.')]:
             pkg_name = directory.name
             pkg_path = directory.path
             file_dict = {'functions': None, 'parameters': None, 'module': None}
@@ -840,6 +841,14 @@ class MainWindow(QMainWindow):
         # Handle Console-Ou
         sys.stderr.signal.text_updated.connect(self.run_dialog.progress_text)
 
+        # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
+        # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
+        # function-modules here, but you had to import them for each run then
+        if self.settings.value('show_plots') == 'true':
+            matplotlib.use('Qt5Agg')
+        else:
+            matplotlib.use('agg')
+
         self.fworker = FunctionWorker(self)
 
         self.fworker.signals.error.connect(self.run_dialog.show_errors)
@@ -870,6 +879,8 @@ class MainWindow(QMainWindow):
         print('Finished')
         self.run_dialog.pgbar.setValue(self.all_prog)
         self.run_dialog.close_bt.setEnabled(True)
+        if self.settings.value('show_plots') == 'false':
+            close_all()
         if self.settings.value('shutdown') == 'true':
             self.save_main()
             shutdown()

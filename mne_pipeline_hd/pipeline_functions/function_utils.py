@@ -46,6 +46,8 @@ def get_arguments(arg_names, sub, main_win):
         arg_name = arg_name.replace(' ', '')
         if arg_name == 'mw':
             keyword_arguments.update({'mw': main_win})
+        elif arg_name == 'main_win':
+            keyword_arguments.update({'main_win': main_win})
         elif arg_name == 'pr':
             keyword_arguments.update({'pr': main_win.pr})
         elif arg_name == 'sub':
@@ -158,14 +160,6 @@ class FunctionWorker(Worker):
         """
         Call activated functions in main_window, read function-parameters from functions_empty.csv
         """
-
-        # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
-        # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
-        # function-modules here, but you had to import them for each run then
-        if self.mw.settings.value('show_plots') == 'true':
-            matplotlib.use('Qt5Agg')
-        else:
-            matplotlib.use('agg')
 
         # Check if any mri-subject is selected
         if len(self.mw.pr.sel_mri_files) * len(self.mw.sel_mri_funcs) > 0:
