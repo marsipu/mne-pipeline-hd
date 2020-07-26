@@ -4,5 +4,6 @@
     "mne_backend": "mayavi",
     "dark_mode": "False",
     "checked_funcs": [],
-    "show_plots": true
+    "show_plots": true,
+    "save_storage": false
 }
