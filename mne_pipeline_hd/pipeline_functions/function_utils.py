@@ -32,6 +32,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
 
 from . import ismac
 from ..basic_functions.loading import BaseSub, CurrentGAGroup, CurrentMRISub, CurrentSub
+from ..basic_functions.plot import close_all
 from ..gui import parameter_widgets
 from ..gui.qt_models import CheckListModel
 from ..gui.qt_utils import ErrorDialog, Worker, get_exception_tuple
@@ -60,8 +61,8 @@ def get_arguments(arg_names, sub, main_win):
             keyword_arguments.update({arg_name: project_attributes[arg_name]})
         elif arg_name in main_win.pr.parameters[main_win.pr.p_preset]:
             keyword_arguments.update({arg_name: main_win.pr.parameters[main_win.pr.p_preset][arg_name]})
-        elif arg_name in main_win.settings.childKeys():
-            keyword_arguments.update({arg_name: main_win.settings.value(arg_name)})
+        elif arg_name in main_win.settings:
+            keyword_arguments.update({arg_name: main_win.settings[arg_name]})
         else:
             raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
 
@@ -224,6 +225,9 @@ class FunctionWorker(Worker):
                 else:
                     break
 
+                if not self.mw.get_setting('show_plots'):
+                    close_all()
+
                 # Print Subject Console Header
                 print('=' * 60 + '\n', name + '\n')
                 for func in selected_functions:
@@ -239,8 +243,7 @@ class FunctionWorker(Worker):
                             self.signals.func_sig.emit({'func_name': func, 'sub': sub, 'main_win': self.mw})
                             self.signals.pgbar_n.emit(self.count)
                             self.count += 1
-                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and \
-                                self.mw.settings.value('show_plots') and self.mw.settings.value('show_plots') != 'false':
+                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and self.mw.get_setting('show_plots'):
                             self.signals.pg_subfunc.emit((name, func))
                             # Matplotlib-Plots can be called without showing (backend: agg),
                             # but to be shown, they have to be called in the main thread

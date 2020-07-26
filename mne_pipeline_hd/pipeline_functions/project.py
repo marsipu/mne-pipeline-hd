@@ -50,9 +50,6 @@ class MyProject:
         # Stores selected info-parameters on file-import for later retrival
         self.info_dict = {}
 
-        # Todo: Solution with func-dicts for functions not optimal, wird gebraucht für functions mit func_dict
-        self.func_dict = main_win.func_dict
-
         self.all_files = []
         self.all_mri_subjects = []
         self.erm_files = []
@@ -60,6 +57,10 @@ class MyProject:
         self.erm_dict = {}
         self.bad_channels_dict = {}
         self.grand_avg_dict = {}
+        self.info_dict = {}
+        self.sel_files = []
+        self.sel_mri_files = []
+        self.sel_ga_groups = []
 
         self.get_paths()
         self.make_paths()
@@ -68,7 +69,7 @@ class MyProject:
 
     def get_paths(self):
         # Get home_path
-        self.home_path = self.mw.settings.value('home_path')
+        self.home_path = self.mw.qsettings.value('home_path')
         if self.home_path is None:
             hp = QFileDialog.getExistingDirectory(self.mw, 'Select a folder to store your Pipeline-Projects')
             if hp == '':
@@ -80,7 +81,7 @@ class MyProject:
                     self.get_paths()
             else:
                 self.home_path = str(hp)
-                self.mw.settings.setValue('home_path', self.home_path)
+                self.mw.qsettings.setValue('home_path', self.home_path)
         elif not isdir(self.home_path):
             hp = QFileDialog.getExistingDirectory(self.mw, f'{self.home_path} not found! '
                                                            f'Select the folder where '
@@ -94,12 +95,12 @@ class MyProject:
                     self.get_paths()
             else:
                 self.home_path = str(hp)
-                self.mw.settings.setValue('home_path', self.home_path)
+                self.mw.qsettings.setValue('home_path', self.home_path)
         else:
             pass
 
         # Get project_name
-        self.project_name = self.mw.settings.value('project_name')
+        self.project_name = self.mw.qsettings.value('project_name')
         self.projects_path = join(self.home_path, 'projects')
         if not isdir(self.projects_path):
             mkdir(self.projects_path)
@@ -112,7 +113,7 @@ class MyProject:
                                                          'Enter a project-name for your first project')
             if ok and self.project_name:
                 self.projects.append(self.project_name)
-                self.mw.settings.setValue('project_name', self.project_name)
+                self.mw.qsettings.setValue('project_name', self.project_name)
                 self.make_paths()
             else:
                 # Problem in Python Console, QInputDialog somehow stays in memory
@@ -124,7 +125,7 @@ class MyProject:
                     self.get_paths()
         elif self.project_name is None or self.project_name not in self.projects:
             self.project_name = self.projects[0]
-            self.mw.settings.setValue('project_name', self.project_name)
+            self.mw.qsettings.setValue('project_name', self.project_name)
 
         print(f'Home-Path: {self.home_path}')
         print(f'Project-Name: {self.project_name}')
@@ -151,12 +152,16 @@ class MyProject:
         self.grand_avg_dict_path = join(self.pscripts_path, 'grand_avg_dict.json')
         self.info_dict_path = join(self.pscripts_path, 'info_dict.json')
         self.file_parameters_path = join(self.pscripts_path, 'file_parameters.csv')
+        self.sel_files_path = join(self.pscripts_path, 'selected_files.json')
+        self.sel_mri_files_path = join(self.pscripts_path, 'selected_mri_files.json')
+        self.sel_ga_groups_path = join(self.pscripts_path, 'selected_grand_average_groups.json')
 
         path_lists = [self.subjects_dir, self.data_path, self.erm_data_path,
                       self.pscripts_path, self.custom_pkg_path, self.figures_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
                       self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path,
-                      self.info_dict_path, self.file_parameters_path]
+                      self.info_dict_path, self.file_parameters_path, self.sel_files_path, self.sel_mri_files_path,
+                      self.sel_ga_groups_path]
 
         for path in path_lists:
             if not exists(path):
@@ -187,7 +192,11 @@ class MyProject:
                      self.erm_dict_path: 'erm_dict',
                      self.bad_channels_dict_path: 'bad_channels_dict',
                      self.grand_avg_dict_path: 'grand_avg_dict',
-                     self.info_dict_path: 'info_dict'}
+                     self.info_dict_path: 'info_dict',
+                     self.sel_files_path: 'sel_files',
+                     self.sel_mri_files_path: 'sel_mri_files',
+                     self.sel_ga_groups_path: 'sel_ga_groups'}
+
         for path in load_dict:
             try:
                 with open(path, 'r') as file:
@@ -195,16 +204,6 @@ class MyProject:
             # Either empty file or no file, take default from __init__
             except json.decoder.JSONDecodeError:
                 pass
-
-        self.sel_files = self.mw.settings.value('sel_files', defaultValue=[])
-        self.sel_mri_files = self.mw.settings.value('sel_mri_files', defaultValue=[])
-        self.sel_ga_groups = self.mw.settings.value('sel_ga_groups', defaultValue=[])
-        if not self.sel_files:
-            self.sel_files = []
-        if not self.sel_mri_files:
-            self.sel_mri_files = []
-        if not self.sel_ga_groups:
-            self.sel_ga_groups = []
 
     def load_py_lists(self):
         self.all_files = subs.read_files(join(self.pscripts_path, 'file_list.py'))
@@ -218,12 +217,10 @@ class MyProject:
         self.mw.subject_dock.update_mri_subjects_list()
 
     def save_sub_lists(self):
-        self.mw.settings.setValue('home_path', self.home_path)
-        self.mw.settings.setValue('project_name', self.project_name)
-        self.mw.settings.setValue('projects', self.projects)
-        self.mw.settings.setValue('sel_files', self.sel_files)
-        self.mw.settings.setValue('sel_mri_files', self.sel_mri_files)
-        self.mw.settings.setValue('sel_ga_groups', self.sel_ga_groups)
+        self.mw.qsettings.setValue('home_path', self.home_path)
+        self.mw.qsettings.setValue('project_name', self.project_name)
+        self.mw.qsettings.setValue('projects', self.projects)
+
         save_dict = {self.file_list_path: self.all_files,
                      self.erm_list_path: self.erm_files,
                      self.mri_sub_list_path: self.all_mri_subjects,
@@ -231,7 +228,11 @@ class MyProject:
                      self.erm_dict_path: self.erm_dict,
                      self.bad_channels_dict_path: self.bad_channels_dict,
                      self.grand_avg_dict_path: self.grand_avg_dict,
-                     self.info_dict_path: self.info_dict}
+                     self.info_dict_path: self.info_dict,
+                     self.sel_files_path: self.sel_files,
+                     self.sel_mri_files_path: self.sel_mri_files,
+                     self.sel_ga_groups_path: self.sel_ga_groups}
+
         for path in save_dict:
             with open(path, 'w') as file:
                 json.dump(save_dict[path], file, indent=4)

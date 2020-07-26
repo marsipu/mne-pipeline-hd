@@ -6,6 +6,7 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 @email: mne.pipeline@gmail.com
 @github: marsipu/mne_pipeline_hd
 """
+import json
 import logging
 import os
 import re
@@ -70,7 +71,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.app = QApplication.instance()
-        self.settings = QSettings()
+        self.qsettings = QSettings()
 
         self.app.setFont(QFont('Calibri', 10))
         self.setWindowTitle('MNE-Pipeline HD')
@@ -88,17 +89,6 @@ class MainWindow(QMainWindow):
         # Prepare Dark-Mode
         self.dark_sheet = qdarkstyle.load_stylesheet_pyqt5()
 
-        # Attributes for class-methods
-        self.mw_signals = MainWinSignals()
-        self.module_err_dlg = None
-        self.func_dict = dict()
-        self.bt_dict = dict()
-        self.all_modules = {'basic': {},
-                            'custom': {}}
-        self.selected_modules = self.settings.value('selected_modules', defaultValue=['operations', 'plot'])
-        self.subject = None
-        self.available_image_formats = ['.png', '.jpg', '.tiff']
-
         # Todo: Straighten confusing main_win.init() (Project vs. ModuleImport vs. pdDataFrames)
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
         self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
@@ -109,14 +99,29 @@ class MainWindow(QMainWindow):
         # Call project-class
         self.pr = MyProject(self)
 
+        # Load settings
+        self.load_default_settings()
+        self.load_settings()
+
         # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
         self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
+
+        # Attributes for class-methods
+        self.mw_signals = MainWinSignals()
+        self.module_err_dlg = None
+        self.func_dict = dict()
+        self.bt_dict = dict()
+        self.all_modules = {'basic': {},
+                            'custom': {}}
+        self.selected_modules = self.get_setting('selected_modules')
+        self.subject = None
+        self.available_image_formats = ['.png', '.jpg', '.tiff']
 
         # Import the basic- and custom-function-modules
         self.import_custom_modules()
 
         # Load last parameter-preset
-        self.pr.p_preset = self.settings.value('parameter_preset', defaultValue='Default')
+        self.pr.p_preset = self.get_setting('parameter_preset')
         if self.pr.p_preset not in self.pr.parameters:
             self.pr.p_preset = 'Default'
         # Load project-parameters after import of func_modules
@@ -145,7 +150,7 @@ class MainWindow(QMainWindow):
         self.subject_dock = SubjectDock(self)
 
         # Needs restart, otherwise error, when setting later
-        if self.settings.value('mne_backend', defaultValue='mayavi') == 'pyvista':
+        if self.get_setting('mne_backend') == 'pyvista':
             mne.viz.set_3d_backend('pyvista')
         else:
             mne.viz.set_3d_backend('mayavi')
@@ -165,6 +170,29 @@ class MainWindow(QMainWindow):
         height = int(self.desk_geometry.height() * self.size_ratio)
         width = int(self.desk_geometry.width() * self.size_ratio)
         self.setGeometry(0, 0, width, height)
+
+    def load_default_settings(self):
+        with open(join(resources.__path__[0], 'default_settings.json'), 'r') as file:
+            self.default_settings = json.load(file)
+
+    def load_settings(self):
+        try:
+            with open(join(self.pr.home_path, 'mne_pipeline_hd-settings.json'), 'r') as file:
+                self.settings = json.load(file)
+        except FileNotFoundError:
+            self.settings = self.default_settings
+
+    def save_settings(self):
+        with open(join(self.pr.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
+            json.dump(self.settings, file, indent=4)
+
+    def get_setting(self, setting):
+        try:
+            value = self.settings[setting]
+        except KeyError:
+            value = self.default_settings[setting]
+
+        return value
 
     def import_custom_modules(self):
         """
@@ -303,7 +331,7 @@ class MainWindow(QMainWindow):
 
         self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
         self.adark_mode.setCheckable(True)
-        if self.settings.value('dark_mode') == 'true':
+        if self.get_setting('dark_mode') == 'true':
             self.adark_mode.setChecked(True)
             self.dark_mode()
         else:
@@ -338,22 +366,27 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
 
         layout.addWidget(IntGui(self.settings, 'n_jobs', min_val=-1, special_value_text='Auto',
-                                hint='Set to the amount of cores of your machine you want to use for multiprocessing'))
+                                hint='Set to the amount of cores of your machine '
+                                     'you want to use for multiprocessing', default=-1))
         layout.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
                                  hint='Do you want to show plots?\n'
-                                      '(or just save them without showing, then just check "Save Plots")'))
+                                      '(or just save them without showing, then just check "Save Plots")',
+                                 default=True))
         layout.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
-                                 hint='Do you want to save the plots made to a file?'))
+                                 hint='Do you want to save the plots made to a file?', default=True))
         layout.addWidget(BoolGui(self.settings, 'enable_cuda', param_alias='Enable CUDA',
-                                 hint='Do you want to enable CUDA? (system has to be setup for cuda)'))
+                                 hint='Do you want to enable CUDA? (system has to be setup for cuda)',
+                                 default=False))
         layout.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
                                  hint='Do you want to shut your system down after execution of all subjects?'))
         layout.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
                                 hint='Set dpi for saved plots', default=300))
-        layout.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats, param_alias='Image-Format',
-                                  hint='Choose the image format for plots', default='.png'))
+        layout.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
+                                  param_alias='Image-Format', hint='Choose the image format for plots',
+                                  default='.png'))
         layout.addWidget(ComboGui(self.settings, 'mne_backend', ['mayavi', 'pyvista'], param_alias='MNE-Backend',
-                                  hint='Choose the backend for plotting in 3D (needs Restart)', default='pyvista'))
+                                  hint='Choose the backend for plotting in 3D (needs Restart)',
+                                  default='pyvista'))
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(dlg.close)
@@ -406,7 +439,8 @@ class MainWindow(QMainWindow):
         for func in self.pd_funcs.index:
             self.func_dict.update({func: 0})
 
-        pre_func_dict = self.settings.value('checked_funcs')
+        # Todo: func-dict goes to project, to have function-selection dependent on project
+        pre_func_dict = self.get_setting('checked_funcs')
         del_list = []
         if pre_func_dict:
             # Check for functions, which have been removed, but are still present in cache
@@ -480,7 +514,7 @@ class MainWindow(QMainWindow):
 
     # Todo: Do in Place update of funcs and params
     def update_func_bts(self):
-        self.settings.setValue('checked_funcs', self.func_dict)
+        self.settings['checked_funcs'] = self.func_dict
         self.general_layout.removeWidget(self.tab_func_widget)
         self.tab_func_widget.close()
         del self.tab_func_widget
@@ -554,7 +588,7 @@ class MainWindow(QMainWindow):
         if ok:
             self.pr.p_preset = preset_name
             self.pr.load_default_parameters()
-            self.settings.setValue('parameter_preset', preset_name)
+            self.settings['parameter_preset'] = preset_name
             self.p_preset_cmbx.addItem(preset_name)
             self.p_preset_cmbx.setCurrentText(preset_name)
             self.update_p_preset_project()
@@ -589,7 +623,7 @@ class MainWindow(QMainWindow):
                 self.p_preset_cmbx.removeItem(self.p_preset_cmbx.findText(rm_p_preset, Qt.MatchExactly))
                 if rm_p_preset == self.pr.p_preset:
                     self.pr.p_preset = list(self.pr.parameters.keys())[0]
-                    self.settings.setValue('parameter_preset', self.pr.p_preset)
+                    self.settings['parameter_preset'] = self.pr.p_preset
                     self.p_preset_cmbx.setCurrentText(self.pr.p_preset)
             # Update Param-GUIs for new Parameter-Preset
             self.update_p_preset_project()
@@ -620,8 +654,8 @@ class MainWindow(QMainWindow):
         else:
             self.pr = MyProject(self)
             self.pr.home_path = new_home_path
-            self.settings.setValue('home_path', self.pr.home_path)
-            self.settings.setValue('selected_modules', ['operations', 'plot'])
+            self.qsettings.setValue('home_path', self.pr.home_path)
+            self.settings['selected_modules'] = ['operations', 'plot']
             self.pr.get_paths()
             self.update_project_box()
             self.change_project(self.pr.projects[0])
@@ -641,7 +675,7 @@ class MainWindow(QMainWindow):
         if ok:
             self.pr.project_name = project
             self.pr.projects.append(project)
-            self.settings.setValue('project_name', self.pr.project_name)
+            self.qsettings.setValue('project_name', self.pr.project_name)
             self.project_box.addItem(project)
             self.project_box.setCurrentText(project)
             self.change_project(project)
@@ -728,7 +762,7 @@ class MainWindow(QMainWindow):
     def change_project(self, project):
         self.pr.project_name = project
         self.pr.p_preset = 'Default'
-        self.settings.setValue('project_name', self.pr.project_name)
+        self.qsettings.setValue('project_name', self.pr.project_name)
         print(f'{self.pr.project_name} selected')
 
         # Set new logging
@@ -766,10 +800,10 @@ class MainWindow(QMainWindow):
     def dark_mode(self):
         if self.adark_mode.isChecked():
             self.app.setStyleSheet(self.dark_sheet)
-            self.settings.setValue('dark_mode', True)
+            self.settings['dark_mode'] = True
         else:
             self.app.setStyleSheet('')
-            self.settings.setValue('dark_mode', False)
+            self.settings['dark_mode'] = False
 
     def full_screen(self):
         if self.isFullScreen():
@@ -779,9 +813,6 @@ class MainWindow(QMainWindow):
 
     def show_terminal(self):
         DataTerminal(self)
-
-    def set_bool_setting(self, action, setting_name):
-        self.settings.setValue(setting_name, action.isChecked())
 
     def center(self):
         qr = self.frameGeometry()
@@ -846,7 +877,7 @@ class MainWindow(QMainWindow):
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
         # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
-        if self.settings.value('show_plots') and self.settings.value('show_plots') != 'false':
+        if self.get_setting('show_plots'):
             matplotlib.use('Qt5Agg')
         else:
             matplotlib.use('agg')
@@ -869,7 +900,7 @@ class MainWindow(QMainWindow):
     def thread_func(self, kwargs):
         try:
             func_from_def(**kwargs)
-            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] and self.settings.value('show_plots') == 'false':
+            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] and not self.get_setting('show_plots'):
                 mlab.close(all=True)
         except:
             exc_tuple = get_exception_tuple()
@@ -881,9 +912,9 @@ class MainWindow(QMainWindow):
         print('Finished')
         self.run_dialog.pgbar.setValue(self.all_prog)
         self.run_dialog.close_bt.setEnabled(True)
-        if self.settings.value('show_plots') == 'false':
+        if not self.get_setting('show_plots'):
             close_all()
-        if self.settings.value('shutdown') and self.settings.value('shutdown') != 'false':
+        if self.get_setting('shutdown'):
             self.save_main()
             shutdown()
 
@@ -1007,10 +1038,11 @@ class MainWindow(QMainWindow):
         self.pr.save_sub_lists()
 
         # Save Main-Window-Settings
-        self.settings.setValue('geometry', self.saveGeometry())
-        self.settings.setValue('checked_funcs', self.func_dict)
-        self.settings.setValue('parameter_preset', self.pr.p_preset)
-        self.settings.setValue('selected_modules', self.selected_modules)
+        self.settings['checked_funcs'] = self.func_dict
+        self.settings['parameter_preset'] = self.pr.p_preset
+        self.settings['selected_modules'] = self.selected_modules
+
+        self.save_settings()
 
     def closeEvent(self, event):
         self.save_main()

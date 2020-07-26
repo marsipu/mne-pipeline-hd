@@ -71,24 +71,10 @@ class Param(QWidget):
         self.setLayout(self.layout)
 
     def read_param(self):
-        # Make also usable by QSettings
-        if isinstance(self.pr, QSettings):
-            if self.param_name in self.pr.childKeys():
-                value = self.pr.value(self.param_name, defaultValue=self.default)
-                if value is None:
-                    value = self.default
-                # Convert QSettings-String into Boolean-Type
-                if value == 'true':
-                    self.param_value = True
-                elif value == 'false':
-                    self.param_value = False
-                else:
-                    try:
-                        # Get float (as string)
-                        self.param_value = literal_eval(value)
-                    # Should cover List, Dict, String, Int as they are returned as correct type
-                    except (ValueError, SyntaxError):
-                        self.param_value = value
+        # Make also usable by Main-Window-Settings
+        if isinstance(self.pr, dict):
+            if self.param_name in self.pr:
+                self.param_value = self.pr[self.param_name]
             else:
                 self.param_value = self.default
 
@@ -98,8 +84,8 @@ class Param(QWidget):
             self.param_value = self.default
 
     def save_param(self):
-        if isinstance(self.pr, QSettings):
-            self.pr.setValue(self.param_name, self.param_value)
+        if isinstance(self.pr, dict):
+            self.pr[self.param_name] = self.param_value
         else:
             self.pr.parameters[self.pr.p_preset][self.param_name] = self.param_value
 

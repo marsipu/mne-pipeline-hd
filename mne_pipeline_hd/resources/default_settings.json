@@ -1,0 +1,8 @@
+{
+    "selected_modules": ["operations", "plot"],
+    "parameter_preset": "Default",
+    "mne_backend": "mayavi",
+    "dark_mode": "False",
+    "checked_funcs": [],
+    "show_plots": true
+}
