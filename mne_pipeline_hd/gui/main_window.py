@@ -370,14 +370,16 @@ class MainWindow(QMainWindow):
 
         self.toolbar.addWidget(IntGui(self.settings, 'n_jobs', min_val=-1, special_value_text='Auto',
                                       hint='Set to the amount of cores of your machine '
-                                           'you want to use for multiprocessing'))
+                                           'you want to use for multiprocessing', default=-1))
         self.toolbar.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
                                        hint='Do you want to show plots?\n'
-                                            '(or just save them without showing, then just check "Save Plots")'))
+                                            '(or just save them without showing, then just check "Save Plots")',
+                                       default=True))
         self.toolbar.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
-                                       hint='Do you want to save the plots made to a file?'))
+                                       hint='Do you want to save the plots made to a file?', default=True))
         self.toolbar.addWidget(BoolGui(self.settings, 'enable_cuda', param_alias='Enable CUDA',
-                                       hint='Do you want to enable CUDA? (system has to be setup for cuda)'))
+                                       hint='Do you want to enable CUDA? (system has to be setup for cuda)',
+                                       default=False))
         self.toolbar.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
                                        hint='Do you want to shut your system down after execution of all subjects?'))
         self.toolbar.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,

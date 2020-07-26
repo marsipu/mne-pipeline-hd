@@ -75,6 +75,8 @@ class Param(QWidget):
         if isinstance(self.pr, QSettings):
             if self.param_name in self.pr.childKeys():
                 value = self.pr.value(self.param_name, defaultValue=self.default)
+                if value is None:
+                    value = self.default
                 # Convert QSettings-String into Boolean-Type
                 if value == 'true':
                     self.param_value = True
