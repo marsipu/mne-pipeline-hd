@@ -281,7 +281,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
     if autoreject_interpolation:
         # Avoid calculation of rejection-threshold again on already cleaned epochs, therefore creating new epochs
         simulated_events = mne.make_fixed_length_events(raw, duration=5)
-        simulated_epochs = mne.Epochs(raw, simulated_events, baseline=None, spicks=picks, tmin=0, tmax=2)
+        simulated_epochs = mne.Epochs(raw, simulated_events, baseline=None, picks=picks, tmin=0, tmax=2)
         reject = ar.get_rejection_threshold(simulated_epochs)
         print(f'Autoreject Rejection-Threshold: {reject}')
     elif autoreject_threshold:
