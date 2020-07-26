@@ -240,7 +240,7 @@ class FunctionWorker(Worker):
                             self.signals.pgbar_n.emit(self.count)
                             self.count += 1
                         elif self.mw.pd_funcs.loc[func, 'matplotlib'] and \
-                                self.mw.settings.value('show_plots') == 'true':
+                                self.mw.settings.value('show_plots') and self.mw.settings.value('show_plots') != 'false':
                             self.signals.pg_subfunc.emit((name, func))
                             # Matplotlib-Plots can be called without showing (backend: agg),
                             # but to be shown, they have to be called in the main thread

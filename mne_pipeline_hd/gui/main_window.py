@@ -846,7 +846,7 @@ class MainWindow(QMainWindow):
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
         # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
-        if self.settings.value('show_plots') == 'true':
+        if self.settings.value('show_plots') and self.settings.value('show_plots') != 'false':
             matplotlib.use('Qt5Agg')
         else:
             matplotlib.use('agg')
@@ -883,7 +883,7 @@ class MainWindow(QMainWindow):
         self.run_dialog.close_bt.setEnabled(True)
         if self.settings.value('show_plots') == 'false':
             close_all()
-        if self.settings.value('shutdown') == 'true':
+        if self.settings.value('shutdown') and self.settings.value('shutdown') != 'false':
             self.save_main()
             shutdown()
 

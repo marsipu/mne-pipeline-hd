@@ -31,7 +31,8 @@ def plot_save(sub, plot_name, subfolder=None, trial=None, idx=None, matplotlib_f
     if not dpi:
         dpi = sub.dpi
 
-    if sub.save_plots == 'true':
+    # Todo: Move all possible settings to home-dict (settings-capabilities, e.g boolean, different between os)
+    if sub.save_plots and sub.save_plots != 'false':
         # Folder is named by plot_name
         dir_path = join(sub.figures_path, plot_name)
 

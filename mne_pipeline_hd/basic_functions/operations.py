@@ -49,7 +49,7 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
     if not isfile(sub.raw_filtered_path):
         # Get raw from Subject-class
         raw = sub.load_raw()
-        if enable_cuda == 'true':  # use cuda for filtering, boolean-string due to QSettings
+        if enable_cuda and enable_cuda != 'false':  # use cuda for filtering, boolean-string due to QSettings
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
 
@@ -310,7 +310,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
         fig3 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=sub.name, show=False)
         fig4 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=sub.name, show=False)
         fig5 = ica.plot_overlay(epochs.average(), title=sub.name, show=False)
-        if save_plots:
+        if save_plots and save_plots != 'false':
 
             save_path = join(figures_path, 'ica', sub.name +
                              '_ica_comp' + '_' + sub.pr.p_preset + '.jpg')
@@ -356,7 +356,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
                                            image_args={'sigma': 1.}, show=False)
                 fig7 = ica.plot_overlay(eog_epochs.average(), exclude=eog_indices, title=sub.name + '_eog',
                                         show=False)
-                if save_plots:
+                if save_plots and save_plots != 'false':
                     for f in fig2:
                         save_path = join(figures_path, 'ica', sub.name +
                                          '_ica_prop_eog' + '_' + sub.pr.p_preset +
@@ -386,7 +386,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
                                            image_args={'sigma': 1.}, show=False)
                 fig8 = ica.plot_overlay(ecg_epochs.average(), exclude=ecg_indices, title=sub.name + '_ecg',
                                         show=False)
-                if save_plots:
+                if save_plots and save_plots != 'false':
                     for f in fig9:
                         save_path = join(figures_path, 'ica', sub.name +
                                          '_ica_prop_ecg' + '_' + sub.pr.p_preset +
@@ -424,7 +424,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
         fig6 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=sub.name, show=False)
         fig10 = ica.plot_overlay(epochs.average(), title=sub.name, show=False)
 
-        if save_plots:
+        if save_plots and save_plots != 'false':
             save_path = join(figures_path, 'ica', sub.name +
                              '_ica_comp' + '_' + sub.pr.p_preset + '.jpg')
             fig1.savefig(save_path, dpi=300)
@@ -493,7 +493,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
         fig2 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=sub.name, show=False)
         fig3 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=sub.name, show=False)
 
-        if save_plots:
+        if save_plots and save_plots != 'false':
             save_path = join(figures_path, 'ica', sub.name +
                              '_ica_comp' + '_' + sub.pr.p_preset + '.jpg')
             fig1.savefig(save_path, dpi=300)
