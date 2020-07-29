@@ -15,6 +15,7 @@ from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
+import matplotlib
 import mne
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
@@ -1558,6 +1559,8 @@ class SubBadsWidget(QWidget):
 
     # Todo: Semi-Automatic bad-channel-detection
     def plot_raw_bad(self):
+        # Use interactiv backend again if show_plots have been turned off before
+        matplotlib.use('Qt5Agg')
         self.name = self.listwidget.currentItem().text()
         dialog = QDialog(self)
         dialog.setWindowTitle('Opening...')

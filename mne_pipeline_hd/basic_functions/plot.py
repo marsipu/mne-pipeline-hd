@@ -126,7 +126,7 @@ def plot_events(sub):
 def plot_power_spectra(sub):
     raw = sub.load_filtered()
     picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=False, ecg=False,
-                           exclude='bads')
+                           exclude=sub.bad_channels)
 
     fig = raw.plot_psd(fmax=sub.p['lowpass'], picks=picks, n_jobs=1)
     fig.suptitle(sub.name)
