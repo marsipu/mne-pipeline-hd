@@ -233,7 +233,7 @@ def epoch_raw(sub, event_id, t_epoch, baseline, reject, flat, autoreject_interpo
         print(i)
 
     picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False,
-                           eog=False, ecg=False, exclude='bads')
+                           eog=False, ecg=False, exclude=sub.bad_channels)
 
     epochs = mne.Epochs(raw, events, actual_event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, picks=picks, proj=False, reject=None,

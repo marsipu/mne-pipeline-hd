@@ -8,7 +8,6 @@ based on: https://doi.org/10.3389/fnins.2018.00006
 """
 from __future__ import print_function
 
-import json
 import pickle
 from os import listdir, makedirs, remove
 from os.path import exists, join
@@ -21,7 +20,6 @@ import numpy as np
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import ParametersJSONEncoder, parameters_json_hook
 
 
 def filter_string(highpass, lowpass):
