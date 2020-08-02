@@ -1,5 +1,5 @@
 # mne_pipeline_hd
-### A [MNE-Python](https://mne.tools/stable/index.html) Pipeline for MEG-Lab Heidelberg
+### A [MNE-Python](https://mne.tools/stable/index.html) Pipeline-GUI for MEG-Lab Heidelberg
 ###### inspired by: [Andersen L.M. 2018](https://doi.org/10.3389/fnins.2018.00006)
 
 ## Installation

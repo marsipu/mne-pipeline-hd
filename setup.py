@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Pipeline-GUI for Analysis with MNE-Python
+inspired by: https://doi.org/10.3389/fnins.2018.00006
+@author: Martin Schulz
+@email: dev@earthman-music.de
+@github: https://github.com/marsipu/mne_pipeline_hd
+License: BSD (3-clause)
+"""
 from setuptools import find_packages, setup
 
 with open("README.md", "r") as fh:
@@ -17,7 +26,7 @@ setup(name='mne_pipeline_hd',
                         'qdarkstyle',
                         'pyobjc-framework-Cocoa; sys_platform == "darwin"'],
       license='GPL-3.0',
-      packages=find_packages(exclude=['docs', 'tests', 'development']),
+      packages=find_packages(exclude=['doc', 'tests', 'development']),
       package_data={},
       classifiers=["Programming Language :: Python :: 3",
                    "License :: OSI Approved :: BSD License",
