@@ -560,8 +560,8 @@ class CurrentSub(BaseSub):
 
         self.trans_path = join(self.save_dir, f'{self.subtomri}-trans.fif')
 
-        self.old_forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
-        self.forward_path = join(self.save_dir, f'{self.name}-fwd.fif')
+        self.forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
+        self.old_forward_path = join(self.save_dir, f'{self.name}-fwd.fif')
 
         self.calm_cov_path = join(self.save_dir, f'{name}_{self.p_preset}-calm-cov.fif')
         self.old_calm_cov_path = join(self.save_dir,
@@ -742,7 +742,10 @@ class CurrentSub(BaseSub):
 
     def load_forward(self):
         if self._forward is None:
-            self._forward = mne.read_forward_solution(self.forward_path, verbose='WARNING')
+            try:
+                self._forward = mne.read_forward_solution(self.forward_path, verbose='WARNING')
+            except FileNotFoundError:
+                self._forward = mne.read_forward_solution(self.old_forward_path, verbose='WARNING')
 
         return self._forward
 
@@ -990,6 +993,7 @@ class CurrentMRISub(BaseSub):
 
         # Additional Attributes
         self.save_dir = join(self.pr.subjects_dir, self.name)
+        self.fs_path = self.mw.qsettings.value('fs_path')
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)

@@ -101,7 +101,6 @@ class MainWindow(QMainWindow):
         self.pr = MyProject(self)
 
         # Load settings
-        self.load_default_settings()
         self.load_settings()
 
         # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
@@ -158,12 +157,12 @@ class MainWindow(QMainWindow):
 
         # Todo: Structure Main-Win-Frontend-Construction better
         # Call window-methods
-        self.make_menu()
+        self.init_menu()
         self.update_statusbar()
         self.add_func_bts()
         self.add_main_bts()
         self.add_param_gui_tab()
-        self.make_toolbar()
+        self.init_toolbar()
         self.add_dock_windows()
 
         self.desk_geometry = self.app.desktop().availableGeometry()
@@ -177,6 +176,7 @@ class MainWindow(QMainWindow):
             self.default_settings = json.load(file)
 
     def load_settings(self):
+        self.load_default_settings()
         try:
             with open(join(self.pr.home_path, 'mne_pipeline_hd-settings.json'), 'r') as file:
                 self.settings = json.load(file)
@@ -285,7 +285,7 @@ class MainWindow(QMainWindow):
             spec.loader.exec_module(module)
             sys.modules[module_name] = module
 
-    def make_menu(self):
+    def init_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
         # Input
         input_menu = self.menuBar().addMenu('&Input')
@@ -350,9 +350,7 @@ class MainWindow(QMainWindow):
         self.areload_basic_modules.triggered.connect(self.reload_basic_modules)
         self.settings_menu.addAction(self.areload_basic_modules)
 
-        self.pyfiles = QAction('Load .py-Files')
-        self.pyfiles.triggered.connect(self.pr.load_py_lists)
-        self.settings_menu.addAction(self.pyfiles)
+        self.aset_fs_path = self.settings_menu.addAction('Set FREESURFER_HOME', self.change_fs_path)
 
         # About
         about_menu = self.menuBar().addMenu('About')
@@ -396,7 +394,7 @@ class MainWindow(QMainWindow):
         dlg.setLayout(layout)
         dlg.open()
 
-    def make_toolbar(self):
+    def init_toolbar(self):
         self.toolbar = self.addToolBar('Tools')
         # Add Project-Tools
         self.project_tools()
@@ -644,6 +642,11 @@ class MainWindow(QMainWindow):
     def add_dock_windows(self):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
         self.view_menu.addAction(self.subject_dock.toggleViewAction())
+
+    def change_fs_path(self):
+        fs_path = QFileDialog.getExistingDirectory(self, 'Set to the Folder of the Freesurfer-Executables')
+        if fs_path != '':
+            self.qsettings.setValue('fs_path', fs_path)
 
     def change_home_path(self):
         # First save the former projects-data

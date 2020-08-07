@@ -1,7 +1,5 @@
 ;alias;tab;group;subject_loop;matplotlib;mayavi;dependencies;module;func_args
 apply_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
-copy_watershed;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
-make_dense_scalp_surfaces;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 prepare_bem;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub
 setup_src;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, source_space_spacing, surface, n_jobs
 compute_src_distances;;MRI-Preprocessing;mri_subject_operations;True;False;False;;operations;mri_sub, n_jobs
