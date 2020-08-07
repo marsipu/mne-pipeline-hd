@@ -57,7 +57,7 @@ def plot_save(sub, plot_name, subfolder=None, trial=None, idx=None, matplotlib_f
         elif trial:
             file_name = f'{sub.name}-{trial}_{sub.p_preset}_{plot_name}{sub.img_format}'
         elif idx:
-            file_name = f'{sub.name}_{sub.p_preset}_{plot_name}{idx}{sub.img_format}'
+            file_name = f'{sub.name}_{sub.p_preset}_{plot_name}-{idx}{sub.img_format}'
         else:
             file_name = f'{sub.name}_{sub.p_preset}_{plot_name}{sub.img_format}'
 
@@ -238,10 +238,12 @@ def plot_autoreject_log(sub):
     epochs = sub.load_epochs()
 
     fig1 = reject_log.plot()
-    fig2 = reject_log.plot_epochs(epochs)
-
     plot_save(sub, 'epochs', subfolder='autoreject_log', idx='reject', matplotlib_figure=fig1)
-    plot_save(sub, 'epochs', subfolder='autoreject_log', idx='epochs', matplotlib_figure=fig2)
+    try:
+        fig2 = reject_log.plot_epochs(epochs)
+        plot_save(sub, 'epochs', subfolder='autoreject_log', idx='epochs', matplotlib_figure=fig2)
+    except ValueError:
+        print(f'{sub.name}: No epochs-plot for autoreject-log')
 
 
 @topline
