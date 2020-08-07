@@ -689,65 +689,36 @@ def grand_avg_tfr(ga_group):
 # These functions do not work on Windows
 
 # local function used in the bash commands below
-def run_process_and_write_output(command, subjects_dir):
+def run_process_unix(command, subjects_dir, fs_path):
+    # Several experiments with subprocess showed, that it seems impossible to run commands like "source" from
+    # a subprocess to get SetUpFreeSurfer.sh into the environment.
+    # Current workaround is adding the binaries to PATH manually, after the user set the path to FREESURFER_HOME
+    if fs_path is None:
+        raise RuntimeError('Path to FREESURFER_HOME not set, can\'t run this function')
     environment = environ.copy()
-    environment["SUBJECTS_DIR"] = subjects_dir
+    environment['FREESURFER_HOME'] = fs_path
+    environment['SUBJECTS_DIR'] = subjects_dir
+    # Add Freesurfer to Path
+    environment['PATH'] = environment['PATH'] + ':' + fs_path + '/bin'
 
-    if iswin:
-        raise RuntimeError('mri_subject_functions are currently not working on Windows, please run them on Linux')
-        # command.insert(0, 'wsl')
-
-    process = subprocess.Popen(command, stdout=subprocess.PIPE,
-                               env=environment)
+    # Popen is needed, run(which is supposed to be newer) somehow doesn't seem to support live-stream via PIPE?!
+    process = subprocess.Popen(command, env=environment,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               text=True, universal_newlines=True)
 
     # write bash output in python console
-    for c in iter(lambda: process.stdout.read(1), b''):
-        sys.stdout.write(c.decode('utf-8'))
+    for line in process.stdout:
+        sys.stdout.write(line)
 
 
 def run_wsl_process(command, fs_path='~/freesurfer'):
     subprocess.run(
             f'wsl export FREESURFER_HOME={fs_path};'
-            f'source $FREESURFER_HOME/SetUpFreeSurfer.sh; {command}')
-
-
-def import_mri(dicom_path, mri_subject, subjects_dir, n_jobs):
-    files = listdir(dicom_path)
-    first_file = files[0]
-    # check if import has already been done
-    if not isdir(join(subjects_dir, mri_subject)):
-        # run bash command
-        print('Importing MRI data for subject: ' + mri_subject +
-              ' into FreeSurfer folder.\nBash output follows below.\n\n')
-
-        command = ['recon-all',
-                   '-subjid', mri_subject,
-                   '-i', join(dicom_path, first_file),
-                   '-openmp', str(n_jobs)]
-
-        run_process_and_write_output(command, subjects_dir)
-    else:
-        print('FreeSurfer folder for: ' + mri_subject + ' already exists.' +
-              ' To import data from the beginning, you would have to ' +
-              "delete this subject's FreeSurfer folder")
-
-
-# Todo: Get Freesurfer-Functions ready
-def segment_mri(mri_subject, subjects_dir, n_jobs):
-    print('Segmenting MRI data for subject: ' + mri_subject +
-          ' using the Freesurfer "recon-all" pipeline.' +
-          'Bash output follows below.\n\n')
-
-    command = ['recon-all',
-               '-subjid', mri_subject,
-               '-all',
-               '-openmp', str(n_jobs)]
-
-    run_process_and_write_output(command, subjects_dir)
+            f'source $FREESURFER_HOME/SetUpFreeSurfer.sh;'
+            f'{command}')
 
 
 def apply_watershed(mri_sub):
-    # mne.bem.make_watershed_bem(mri_subject, subjects_dir)
 
     print('Running Watershed algorithm for: ' + mri_sub.name +
           ". Output is written to the bem folder " +
@@ -759,7 +730,7 @@ def apply_watershed(mri_sub):
                '--subject', mri_sub.name,
                '--overwrite']
 
-    run_process_and_write_output(command, mri_sub.subjects_dir)
+    run_process_unix(command, mri_sub.subjects_dir, mri_sub.fs_path)
 
 
 def copy_watershed(mri_sub):
@@ -787,7 +758,7 @@ def copy_watershed(mri_sub):
                         this_surface['destination'])
                    ]
 
-        run_process_and_write_output(command, mri_sub.subjects_dir)
+        run_process_unix(command, mri_sub.subjects_dir, mri_sub.fs_path)
         print(f'{surface} was copied')
 
 
@@ -802,7 +773,7 @@ def make_dense_scalp_surfaces(mri_sub):
                '--subject', mri_sub.name,
                '--overwrite']
 
-    run_process_and_write_output(command, mri_sub.subjects_dir)
+    run_process_unix(command, mri_sub.subjects_dir, mri_sub.fs_path)
 
 
 # ==============================================================================
