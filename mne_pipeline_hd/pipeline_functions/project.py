@@ -71,7 +71,7 @@ class MyProject:
     def get_paths(self):
         # Get home_path
         self.home_path = self.mw.qsettings.value('home_path')
-        if self.home_path is None:
+        if self.home_path is None or not isdir(self.home_path):
             hp = QFileDialog.getExistingDirectory(self.mw, 'Select a folder to store your Pipeline-Projects')
             if hp == '':
                 msg_box = QMessageBox(self.mw)
@@ -83,58 +83,47 @@ class MyProject:
             else:
                 self.home_path = str(hp)
                 self.mw.qsettings.setValue('home_path', self.home_path)
-        elif not isdir(self.home_path):
-            hp = QFileDialog.getExistingDirectory(self.mw, f'{self.home_path} not found! '
-                                                           f'Select the folder where '
-                                                           f'you store your Pipeline-Projects')
-            if hp == '':
-                msg_box = QMessageBox(self.mw)
-                msg_box.setText("You can't cancel this step!")
-                msg_box.setIcon(QMessageBox.Warning)
-                ok = msg_box.exec()
-                if ok:
-                    self.get_paths()
-            else:
-                self.home_path = str(hp)
-                self.mw.qsettings.setValue('home_path', self.home_path)
-        else:
-            pass
 
-        # Get project_name
-        self.project_name = self.mw.qsettings.value('project_name')
-        self.projects_path = join(self.home_path, 'projects')
-        if not isdir(self.projects_path):
-            try:
+        # Check, if home-path is writable
+        try:
+            mkdir(join(self.home_path, 'test'))
+        except OSError:
+            self.home_path = None
+            self.get_paths()
+        else:
+            os.remove(join(self.home_path, 'test'))
+
+
+            # Get project_name
+            self.project_name = self.mw.qsettings.value('project_name')
+            self.projects_path = join(self.home_path, 'projects')
+            if not isdir(self.projects_path):
                 mkdir(self.projects_path)
-            except OSError: # When path is not writable
-                self.home_path = None
-                self.get_paths()
-            self.projects = []
-        else:
-            self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
-        if len(self.projects) == 0:
-            self.project_name, ok = QInputDialog.getText(self.mw, 'Project-Selection',
-                                                         f'No projects in {self.home_path} found\n'
-                                                         'Enter a project-name for your first project')
-            if ok and self.project_name:
-                self.projects.append(self.project_name)
-                self.mw.qsettings.setValue('project_name', self.project_name)
-                self.make_paths()
             else:
-                # Problem in Python Console, QInputDialog somehow stays in memory
-                msg_box = QMessageBox(self.mw)
-                msg_box.setText("You can't cancel this step!")
-                msg_box.setIcon(QMessageBox.Warning)
-                ok = msg_box.exec()
-                if ok:
-                    self.get_paths()
-        elif self.project_name is None or self.project_name not in self.projects:
-            self.project_name = self.projects[0]
-            self.mw.qsettings.setValue('project_name', self.project_name)
+                self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
+            if len(self.projects) == 0:
+                self.project_name, ok = QInputDialog.getText(self.mw, 'Project-Selection',
+                                                             f'No projects in {self.home_path} found\n'
+                                                             'Enter a project-name for your first project')
+                if ok and self.project_name:
+                    self.projects.append(self.project_name)
+                    self.mw.qsettings.setValue('project_name', self.project_name)
+                    self.make_paths()
+                else:
+                    # Problem in Python Console, QInputDialog somehow stays in memory
+                    msg_box = QMessageBox(self.mw)
+                    msg_box.setText("You can't cancel this step!")
+                    msg_box.setIcon(QMessageBox.Warning)
+                    ok = msg_box.exec()
+                    if ok:
+                        self.get_paths()
+            elif self.project_name is None or self.project_name not in self.projects:
+                self.project_name = self.projects[0]
+                self.mw.qsettings.setValue('project_name', self.project_name)
 
-        print(f'Home-Path: {self.home_path}')
-        print(f'Project-Name: {self.project_name}')
-        print(f'Projects-found: {self.projects}')
+            print(f'Home-Path: {self.home_path}')
+            print(f'Project-Name: {self.project_name}')
+            print(f'Projects-found: {self.projects}')
 
     def make_paths(self):
         # Initiate other paths
