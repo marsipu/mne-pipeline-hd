@@ -703,14 +703,14 @@ def run_process_unix(command, subjects_dir, fs_path):
 
     # Add Mac-specific Paths
     if ismac:
-        if isdir(join(fs_path, '/lib/misc/lib')):
+        if isdir(join(fs_path, 'lib/misc/lib')):
             environment['PATH'] = environment['PATH'] + f':{fs_path}/lib/misc/bin'
-            environment['MISC_LIB'] = join(fs_path, '/lib/misc/lib')
-            environment['LD_LIBRARY_PATH'] = join(fs_path, '/lib/misc/lib')
-            environment['DYLD_LIBRARY_PATH'] = join(fs_path, '/lib/misc/lib')
+            environment['MISC_LIB'] = join(fs_path, 'lib/misc/lib')
+            environment['LD_LIBRARY_PATH'] = join(fs_path, 'lib/misc/lib')
+            environment['DYLD_LIBRARY_PATH'] = join(fs_path, 'lib/misc/lib')
 
         if isdir(join(fs_path, '/lib/gcc/lib')):
-            environment['DYLD_LIBRARY_PATH'] = join(fs_path, '/lib/gcc/lib')
+            environment['DYLD_LIBRARY_PATH'] = join(fs_path, 'lib/gcc/lib')
 
     # Popen is needed, run(which is supposed to be newer) somehow doesn't seem to support live-stream via PIPE?!
     process = subprocess.Popen(command, env=environment,
