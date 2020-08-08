@@ -21,7 +21,7 @@ import numpy as np
 import autoreject as ar
 
 from .loading import CurrentSub
-from ..pipeline_functions import iswin, pipeline_utils as ut
+from ..pipeline_functions import ismac, iswin, pipeline_utils as ut
 from ..pipeline_functions.decorators import small_func, topline
 
 
@@ -700,6 +700,17 @@ def run_process_unix(command, subjects_dir, fs_path):
     environment['SUBJECTS_DIR'] = subjects_dir
     # Add Freesurfer to Path
     environment['PATH'] = environment['PATH'] + ':' + fs_path + '/bin'
+
+    # Add Mac-specific Paths
+    if ismac:
+        if isdir(join(fs_path, '/lib/misc/lib')):
+            environment['PATH'] = environment['PATH'] + f':{fs_path}/lib/misc/bin'
+            environment['MISC_LIB'] = join(fs_path, '/lib/misc/lib')
+            environment['LD_LIBRARY_PATH'] = join(fs_path, '/lib/misc/lib')
+            environment['DYLD_LIBRARY_PATH'] = join(fs_path, '/lib/misc/lib')
+
+        if isdir(join(fs_path, '/lib/gcc/lib')):
+            environment['DYLD_LIBRARY_PATH'] = join(fs_path, '/lib/gcc/lib')
 
     # Popen is needed, run(which is supposed to be newer) somehow doesn't seem to support live-stream via PIPE?!
     process = subprocess.Popen(command, env=environment,
