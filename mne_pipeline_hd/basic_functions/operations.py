@@ -9,6 +9,8 @@ License: BSD (3-clause)
 """
 from __future__ import print_function
 
+import os
+import shutil
 import subprocess
 import sys
 from functools import reduce
@@ -689,7 +691,7 @@ def grand_avg_tfr(ga_group):
 # These functions do not work on Windows
 
 # local function used in the bash commands below
-def run_process_unix(command, subjects_dir, fs_path):
+def run_freesurfer_subprocess(command, subjects_dir, fs_path, mne_path=None):
     # Several experiments with subprocess showed, that it seems impossible to run commands like "source" from
     # a subprocess to get SetUpFreeSurfer.sh into the environment.
     # Current workaround is adding the binaries to PATH manually, after the user set the path to FREESURFER_HOME
@@ -698,10 +700,22 @@ def run_process_unix(command, subjects_dir, fs_path):
     environment = environ.copy()
     environment['FREESURFER_HOME'] = fs_path
     environment['SUBJECTS_DIR'] = subjects_dir
-    # Add Freesurfer to Path
-    environment['PATH'] = environment['PATH'] + ':' + fs_path + '/bin'
+    if iswin:
+        command.insert(0, 'wsl')
+        if mne_path is None:
+            raise RuntimeError('Path to MNE-Environment in Windows-Subsytem for Linux(WSL) not set, '
+                               'can\'t run this function')
 
-    # Add Mac-specific Paths
+        # Add Freesurfer-Path, MNE-Path and standard Ubuntu-Paths, which get lost when sharing the Path from Windows
+        # to WSL
+        environment['PATH'] = f'{fs_path}/bin:{mne_path}/bin:' \
+                              f'/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+        environment['WSLENV'] = 'PATH/u:SUBJECTS_DIR/p:FREESURFER_HOME/u'
+    else:
+        # Add Freesurfer to Path
+        environment['PATH'] = environment['PATH'] + f':{fs_path}/bin'
+
+    # Add Mac-specific Freesurfer-Paths (got them from FreeSurferEnv.sh in FREESURFER_HOME)
     if ismac:
         if isdir(join(fs_path, 'lib/misc/lib')):
             environment['PATH'] = environment['PATH'] + f':{fs_path}/lib/misc/bin'
@@ -725,13 +739,6 @@ def run_process_unix(command, subjects_dir, fs_path):
     process.wait()
 
 
-def run_wsl_process(command, fs_path='~/freesurfer'):
-    subprocess.run(
-            f'wsl export FREESURFER_HOME={fs_path};'
-            f'source $FREESURFER_HOME/SetUpFreeSurfer.sh;'
-            f'{command}')
-
-
 def apply_watershed(mri_sub):
 
     print('Running Watershed algorithm for: ' + mri_sub.name +
@@ -744,36 +751,24 @@ def apply_watershed(mri_sub):
                '--subject', mri_sub.name,
                '--overwrite']
 
-    run_process_unix(command, mri_sub.subjects_dir, mri_sub.fs_path)
+    run_freesurfer_subprocess(command, mri_sub.subjects_dir, mri_sub.fs_path, mri_sub.mne_path)
 
+    if iswin:
+        # Copy Watershed-Surfaces because the Links don't work under Windows when made in WSL
+        surfaces = [(f'{mri_sub.name}_inner_skull_surface', 'inner_skull.surf'),
+                    (f'{mri_sub.name}_outer_skin_surface', 'outer_skin.surf'),
+                    (f'{mri_sub.name}_outer_skull_surface', 'outer_skull.surf'),
+                    (f'{mri_sub.name}_brain_surface', 'brain.surf')]
 
-def copy_watershed(mri_sub):
-    # copy commands
-    surfaces = dict(
-            inner_skull=dict(
-                    origin=mri_sub.name + '_inner_skull_surface',
-                    destination='inner_skull.surf'),
-            outer_skin=dict(origin=mri_sub.name + '_outer_skin_surface',
-                            destination='outer_skin.surf'),
-            outer_skull=dict(origin=mri_sub.name + '_outer_skull_surface',
-                             destination='outer_skull.surf'),
-            brain=dict(origin=mri_sub.name + '_brain_surface',
-                       destination='brain_surface.surf')
-    )
+        for surface_tuple in surfaces:
+            # Remove faulty link
+            os.remove(join(mri_sub.subjects_dir, mri_sub.name, 'bem', surface_tuple[1]))
+            # Copy files
+            source = join(mri_sub.subjects_dir, mri_sub.name, 'bem', 'watershed', surface_tuple[0])
+            destination = join(mri_sub.subjects_dir, mri_sub.name, 'bem', surface_tuple[1])
+            shutil.copy2(source, destination)
 
-    for surface in surfaces:
-        this_surface = surfaces[surface]
-        # copy files from watershed into bem folder where MNE expects to
-        # find them
-        command = ['cp', '-v',
-                   join(mri_sub.subjects_dir, mri_sub.name, 'bem', 'watershed',
-                        this_surface['origin']),
-                   join(mri_sub.subjects_dir, mri_sub.name, 'bem',
-                        this_surface['destination'])
-                   ]
-
-        run_process_unix(command, mri_sub.subjects_dir, mri_sub.fs_path)
-        print(f'{surface} was copied')
+            print(f'{surface_tuple[1]} was created')
 
 
 def make_dense_scalp_surfaces(mri_sub):
@@ -787,7 +782,7 @@ def make_dense_scalp_surfaces(mri_sub):
                '--subject', mri_sub.name,
                '--overwrite']
 
-    run_process_unix(command, mri_sub.subjects_dir, mri_sub.fs_path)
+    run_freesurfer_subprocess(command, mri_sub.subjects_dir, mri_sub.fs_path, mri_sub.mne_path)
 
 
 # ==============================================================================

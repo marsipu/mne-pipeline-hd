@@ -994,6 +994,7 @@ class CurrentMRISub(BaseSub):
         # Additional Attributes
         self.save_dir = join(self.pr.subjects_dir, self.name)
         self.fs_path = self.mw.qsettings.value('fs_path')
+        self.mne_path = self.mw.qsettings.value('mne_path')
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)

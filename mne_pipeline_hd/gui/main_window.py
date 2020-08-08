@@ -34,7 +34,7 @@ from mayavi import mlab
 
 from . import parameter_widgets
 from .other_widgets import DataTerminal
-from .parameter_widgets import BoolGui, ComboGui, IntGui
+from .parameter_widgets import BoolGui, ComboGui, IntGui, StringGui
 from .qt_utils import ErrorDialog, get_exception_tuple
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
@@ -342,15 +342,13 @@ class MainWindow(QMainWindow):
         # Settings
         self.settings_menu = self.menuBar().addMenu('&Settings')
 
-        self.settings_menu.addAction('&Open Settings', self.open_settings_dlg)
+        self.settings_menu.addAction('&Open Settings', self.settings_dlg)
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
         self.settings_menu.addAction('Reset Parameters', self.reset_parameters)
 
         self.areload_basic_modules = QAction('Reload Basic-Modules')
         self.areload_basic_modules.triggered.connect(self.reload_basic_modules)
         self.settings_menu.addAction(self.areload_basic_modules)
-
-        self.aset_fs_path = self.settings_menu.addAction('Set FREESURFER_HOME', self.change_fs_path)
 
         # About
         about_menu = self.menuBar().addMenu('About')
@@ -360,39 +358,8 @@ class MainWindow(QMainWindow):
         about_menu.addAction('About', self.about)
         about_menu.addAction('About QT', self.app.aboutQt)
 
-    def open_settings_dlg(self):
-        dlg = QDialog(self)
-        layout = QVBoxLayout()
-
-        layout.addWidget(IntGui(self.settings, 'n_jobs', min_val=-1, special_value_text='Auto',
-                                hint='Set to the amount of cores of your machine '
-                                     'you want to use for multiprocessing', default=-1))
-        layout.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
-                                 hint='Do you want to show plots?\n'
-                                      '(or just save them without showing, then just check "Save Plots")',
-                                 default=True))
-        layout.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
-                                 hint='Do you want to save the plots made to a file?', default=True))
-        layout.addWidget(BoolGui(self.settings, 'enable_cuda', param_alias='Enable CUDA',
-                                 hint='Do you want to enable CUDA? (system has to be setup for cuda)',
-                                 default=False))
-        layout.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
-                                 hint='Do you want to shut your system down after execution of all subjects?'))
-        layout.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
-                                hint='Set dpi for saved plots', default=300))
-        layout.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
-                                  param_alias='Image-Format', hint='Choose the image format for plots',
-                                  default='.png'))
-        layout.addWidget(ComboGui(self.settings, 'mne_backend', ['mayavi', 'pyvista'], param_alias='MNE-Backend',
-                                  hint='Choose the backend for plotting in 3D (needs Restart)',
-                                  default='pyvista'))
-
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(dlg.close)
-        layout.addWidget(close_bt)
-
-        dlg.setLayout(layout)
-        dlg.open()
+    def settings_dlg(self):
+        SettingsDlg(self)
 
     def init_toolbar(self):
         self.toolbar = self.addToolBar('Tools')
@@ -642,11 +609,6 @@ class MainWindow(QMainWindow):
     def add_dock_windows(self):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
         self.view_menu.addAction(self.subject_dock.toggleViewAction())
-
-    def change_fs_path(self):
-        fs_path = QFileDialog.getExistingDirectory(self, 'Set to the Folder of the Freesurfer-Executables')
-        if fs_path != '':
-            self.qsettings.setValue('fs_path', fs_path)
 
     def change_home_path(self):
         # First save the former projects-data
@@ -1051,6 +1013,58 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.save_main()
         event.accept()
+
+
+class SettingsDlg(QDialog):
+    def __init__(self, main_window):
+        super().__init__(main_window)
+        self.mw = main_window
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        layout.addWidget(IntGui(self.mw.settings, 'n_jobs', min_val=-1, special_value_text='Auto',
+                                hint='Set to the amount of cores of your machine '
+                                     'you want to use for multiprocessing', default=-1))
+        layout.addWidget(BoolGui(self.mw.settings, 'show_plots', param_alias='Show Plots',
+                                 hint='Do you want to show plots?\n'
+                                      '(or just save them without showing, then just check "Save Plots")',
+                                 default=True))
+        layout.addWidget(BoolGui(self.mw.settings, 'save_plots', param_alias='Save Plots',
+                                 hint='Do you want to save the plots made to a file?', default=True))
+        layout.addWidget(BoolGui(self.mw.settings, 'enable_cuda', param_alias='Enable CUDA',
+                                 hint='Do you want to enable CUDA? (system has to be setup for cuda)',
+                                 default=False))
+        layout.addWidget(BoolGui(self.mw.settings, 'shutdown', param_alias='Shutdown',
+                                 hint='Do you want to shut your system down after execution of all subjects?'))
+        layout.addWidget(IntGui(self.mw.settings, 'dpi', min_val=0, max_val=10000,
+                                hint='Set dpi for saved plots', default=300))
+        layout.addWidget(ComboGui(self.mw.settings, 'img_format', self.mw.available_image_formats,
+                                  param_alias='Image-Format', hint='Choose the image format for plots',
+                                  default='.png'))
+        layout.addWidget(ComboGui(self.mw.settings, 'mne_backend', options=['mayavi', 'pyvista'],
+                                  param_alias='MNE-Backend',
+                                  hint='Choose the backend for plotting in 3D (needs Restart)',
+                                  default='pyvista'))
+        layout.addWidget(StringGui(self.mw.qsettings, 'fs_path', param_alias='FREESURFER_HOME-Path',
+                                   hint='Set the Path to the "freesurfer"-directory of your Freesurfer-Installation '
+                                        '(for Windows to the LINUX-Path of the Freesurfer-Installation '
+                                        'in Windows-Subsystem for Linux(WSL))',
+                                   default=None))
+        if iswin:
+            layout.addWidget(StringGui(self.mw.qsettings, 'mne_path', param_alias='MNE-Python-Path',
+                                       hint='Set the LINUX-Path to the mne-environment (e.g ...anaconda3/envs/mne)'
+                                            'in Windows-Subsystem for Linux(WSL))',
+                                       default=None))
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
 
 
 # Todo: Appropriate Documentation

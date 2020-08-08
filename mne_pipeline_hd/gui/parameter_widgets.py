@@ -79,6 +79,16 @@ class Param(QWidget):
             else:
                 self.param_value = self.default
 
+        # Make also usable by QSettings
+        elif isinstance(self.pr, QSettings):
+            if self.param_name in self.pr.childKeys():
+                value = self.pr.value(self.param_name, defaultValue=self.default)
+                if value is None:
+                    value = self.default
+                self.param_value = value
+            else:
+                self.param_value = self.default
+
         elif self.param_name in self.pr.parameters[self.pr.p_preset]:
             self.param_value = self.pr.parameters[self.pr.p_preset][self.param_name]
         else:
@@ -87,6 +97,8 @@ class Param(QWidget):
     def save_param(self):
         if isinstance(self.pr, dict):
             self.pr[self.param_name] = self.param_value
+        elif isinstance(self.pr, QSettings):
+            self.pr.setValue(self.param_name, self.param_value)
         else:
             self.pr.parameters[self.pr.p_preset][self.param_name] = self.param_value
 
