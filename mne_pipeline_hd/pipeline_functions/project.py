@@ -84,6 +84,15 @@ class MyProject:
                 self.home_path = str(hp)
                 self.mw.qsettings.setValue('home_path', self.home_path)
 
+        # Check, if home-path is writable
+        try:
+            mkdir(join(self.home_path, 'test'))
+        except OSError:
+            self.home_path = None
+            self.get_paths()
+        else:
+            os.remove(join(self.home_path, 'test'))
+
 
             # Get project_name
             self.project_name = self.mw.qsettings.value('project_name')
