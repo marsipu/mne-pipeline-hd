@@ -721,6 +721,9 @@ def run_process_unix(command, subjects_dir, fs_path):
     for line in process.stdout:
         sys.stdout.write(line)
 
+    # Wait for subprocess to finish
+    process.wait()
+
 
 def run_wsl_process(command, fs_path='~/freesurfer'):
     subprocess.run(
