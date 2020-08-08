@@ -104,7 +104,11 @@ class MyProject:
         self.project_name = self.mw.qsettings.value('project_name')
         self.projects_path = join(self.home_path, 'projects')
         if not isdir(self.projects_path):
-            mkdir(self.projects_path)
+            try:
+                mkdir(self.projects_path)
+            except OSError: # When path is not writable
+                self.home_path = None
+                self.get_paths()
             self.projects = []
         else:
             self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
