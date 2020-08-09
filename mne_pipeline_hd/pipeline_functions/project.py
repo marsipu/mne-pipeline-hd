@@ -11,137 +11,86 @@ import json
 import os
 import re
 from ast import literal_eval
-from os import listdir, makedirs, mkdir
+from os import listdir, makedirs
 from os.path import exists, isdir, isfile, join
-import numpy as np
 
 import mne
+import numpy as np
 import pandas as pd
-from PyQt5.QtWidgets import QDialog, QFileDialog, QInputDialog, QMessageBox, QVBoxLayout
+from PyQt5.QtWidgets import QDialog, QVBoxLayout
 from pandas.errors import EmptyDataError
 
 from .pipeline_utils import ParametersJSONEncoder, parameters_json_hook
 from ..gui import subject_widgets as subs
 
 
-class MyProject:
+class Project:
     """
-    A class with attributes for all the paths and parameters of the selected project
+    A class with attributes for all the paths, file-lists/dicts and parameters of the selected project
     """
-
-    def __init__(self, main_win):
+    def __init__(self, main_win, name):
         self.mw = main_win
+        self.name = name
 
         # Initiate Project-Lists and Dicts
-        # Parameter-Dict, contains parameters for each parameter-preset
-        self.parameters = {'Default': {}}
-
-        # Default-Parameter-Preset
+        # Stores the names of all MEG/EEG-Files
+        self.all_files = []
+        # Stores the names of all Freesurfer-Segmentation-Folders in Subjects-Dir
+        self.all_mri_subjects = []
+        # Stres the names of all Empty-Room-Files (MEG/EEG)
+        self.erm_files = []
+        # Maps each MEG/EEG-File to a Freesurfer-Segmentation or None
+        self.sub_dict = {}
+        # Maps each MEG/EEG-File to a Empty-Room-File or None
+        self.erm_dict = {}
+        # Stores Bad-Channels for each MEG/EEG-File
+        self.bad_channels_dict = {}
+        # Groups MEG/EEG-Files for Grand-Average
+        self.grand_avg_dict = {}
+        # Stores selected Info-Attributes for each file
+        self.info_dict = {}
+        # Stores selected files
+        self.sel_files = []
+        # Stores selected Freesurfer-Segmentations
+        self.sel_mri_files = []
+        # Stores selected Grand-Average-Groups
+        self.sel_ga_groups = []
+        # Stores functions and if they are selected
+        self.sel_functions = {}
+        # Stores parameters for each Parameter-Preset
+        self.parameters = {}
+        # Paramter-Preset
         self.p_preset = 'Default'
-
         # Stores parameters for each file saved to disk from the current run (know, what you did to your data)
         self.file_parameters = pd.DataFrame([])
-
         # paths to existing files
         self.file_orga_paths = {}
-
         # checks in file-categories for each sub
         self.file_orga_checks = {}
-
         # Stores selected info-parameters on file-import for later retrival
         self.info_dict = {}
 
-        self.all_files = []
-        self.all_mri_subjects = []
-        self.erm_files = []
-        self.sub_dict = {}
-        self.erm_dict = {}
-        self.bad_channels_dict = {}
-        self.grand_avg_dict = {}
-        self.info_dict = {}
-        self.sel_files = []
-        self.sel_mri_files = []
-        self.sel_ga_groups = []
-
-        self.get_paths()
         self.make_paths()
         self.load_sub_lists()
         self.check_data()
 
-    def get_paths(self):
-        # Get home_path
-        self.home_path = self.mw.qsettings.value('home_path')
-        if self.home_path is None:
-            hp = QFileDialog.getExistingDirectory(self.mw, 'Select a folder to store your Pipeline-Projects')
-            if hp == '':
-                msg_box = QMessageBox(self.mw)
-                msg_box.setText("You can't cancel this step!")
-                msg_box.setIcon(QMessageBox.Warning)
-                ok = msg_box.exec()
-                if ok:
-                    self.get_paths()
-            else:
-                self.home_path = str(hp)
-                self.mw.qsettings.setValue('home_path', self.home_path)
-        elif not isdir(self.home_path):
-            hp = QFileDialog.getExistingDirectory(self.mw, f'{self.home_path} not found! '
-                                                           f'Select the folder where '
-                                                           f'you store your Pipeline-Projects')
-            if hp == '':
-                msg_box = QMessageBox(self.mw)
-                msg_box.setText("You can't cancel this step!")
-                msg_box.setIcon(QMessageBox.Warning)
-                ok = msg_box.exec()
-                if ok:
-                    self.get_paths()
-            else:
-                self.home_path = str(hp)
-                self.mw.qsettings.setValue('home_path', self.home_path)
-        else:
-            pass
+        # Load last parameter-preset
+        self.p_preset = self.mw.get_setting('parameter_preset')
+        if self.p_preset not in self.parameters:
+            self.p_preset = 'Default'
 
-        # Get project_name
-        self.project_name = self.mw.qsettings.value('project_name')
-        self.projects_path = join(self.home_path, 'projects')
-        if not isdir(self.projects_path):
-            mkdir(self.projects_path)
-            self.projects = []
-        else:
-            self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
-        if len(self.projects) == 0:
-            self.project_name, ok = QInputDialog.getText(self.mw, 'Project-Selection',
-                                                         f'No projects in {self.home_path} found\n'
-                                                         'Enter a project-name for your first project')
-            if ok and self.project_name:
-                self.projects.append(self.project_name)
-                self.mw.qsettings.setValue('project_name', self.project_name)
-                self.make_paths()
-            else:
-                # Problem in Python Console, QInputDialog somehow stays in memory
-                msg_box = QMessageBox(self.mw)
-                msg_box.setText("You can't cancel this step!")
-                msg_box.setIcon(QMessageBox.Warning)
-                ok = msg_box.exec()
-                if ok:
-                    self.get_paths()
-        elif self.project_name is None or self.project_name not in self.projects:
-            self.project_name = self.projects[0]
-            self.mw.qsettings.setValue('project_name', self.project_name)
-
-        print(f'Home-Path: {self.home_path}')
-        print(f'Project-Name: {self.project_name}')
-        print(f'Projects-found: {self.projects}')
+        # Parameter-Dict, contains parameters for each parameter-preset
+        self.load_parameters()
+        self.load_last_p_preset()
+        self.load_file_parameters()
 
     def make_paths(self):
         # Initiate other paths
-        self.project_path = join(self.projects_path, self.project_name)
+        self.project_path = join(self.mw.projects_path, self.name)
         self.data_path = join(self.project_path, 'data')
         self.figures_path = join(self.project_path, 'figures', self.p_preset)
         self.save_dir_averages = join(self.data_path, 'grand_averages')
         self.erm_data_path = join(self.data_path, 'empty_room_data')
-        self.subjects_dir = join(self.home_path, 'freesurfer')
-        mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
-        self.custom_pkg_path = join(self.home_path, 'custom_functions')
         # Subject-List/Dict-Path
         self.pscripts_path = join(self.project_path, '_pipeline_scripts')
         self.file_list_path = join(self.pscripts_path, 'file_list.json')
@@ -156,13 +105,14 @@ class MyProject:
         self.sel_files_path = join(self.pscripts_path, 'selected_files.json')
         self.sel_mri_files_path = join(self.pscripts_path, 'selected_mri_files.json')
         self.sel_ga_groups_path = join(self.pscripts_path, 'selected_grand_average_groups.json')
+        self.selected_funcs_path = join(self.pscripts_path, 'selected_funcs.json')
 
-        path_lists = [self.subjects_dir, self.data_path, self.erm_data_path,
-                      self.pscripts_path, self.custom_pkg_path, self.figures_path]
+        path_lists = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
+                      self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
                       self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path,
                       self.info_dict_path, self.file_parameters_path, self.sel_files_path, self.sel_mri_files_path,
-                      self.sel_ga_groups_path]
+                      self.sel_ga_groups_path, self.selected_funcs_path]
 
         for path in path_lists:
             if not exists(path):
@@ -184,7 +134,7 @@ class MyProject:
                 print(grand_average_path + ' has been created')
 
     def load_sub_lists(self):
-        self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
+        self.projects = [p for p in listdir(self.mw.projects_path) if isdir(join(self.mw.projects_path, p, 'data'))]
 
         load_dict = {self.file_list_path: 'all_files',
                      self.mri_sub_list_path: 'all_mri_subjects',
@@ -196,7 +146,8 @@ class MyProject:
                      self.info_dict_path: 'info_dict',
                      self.sel_files_path: 'sel_files',
                      self.sel_mri_files_path: 'sel_mri_files',
-                     self.sel_ga_groups_path: 'sel_ga_groups'}
+                     self.sel_ga_groups_path: 'sel_ga_groups',
+                     self.selected_funcs_path: 'sel_functions'}
 
         for path in load_dict:
             try:
@@ -218,10 +169,6 @@ class MyProject:
         self.mw.subject_dock.update_mri_subjects_list()
 
     def save_sub_lists(self):
-        self.mw.qsettings.setValue('home_path', self.home_path)
-        self.mw.qsettings.setValue('project_name', self.project_name)
-        self.mw.qsettings.setValue('projects', self.projects)
-
         save_dict = {self.file_list_path: self.all_files,
                      self.erm_list_path: self.erm_files,
                      self.mri_sub_list_path: self.all_mri_subjects,
@@ -232,7 +179,8 @@ class MyProject:
                      self.info_dict_path: self.info_dict,
                      self.sel_files_path: self.sel_files,
                      self.sel_mri_files_path: self.sel_mri_files,
-                     self.sel_ga_groups_path: self.sel_ga_groups}
+                     self.sel_ga_groups_path: self.sel_ga_groups,
+                     self.selected_funcs_path: self.sel_functions}
 
         for path in save_dict:
             with open(path, 'w') as file:
@@ -243,17 +191,15 @@ class MyProject:
 
     def load_parameters(self):
         try:
-            with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'r') as read_file:
+            with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'r') as read_file:
                 loaded_parameters = json.load(read_file, object_hook=parameters_json_hook)
-                # Avoid errors for old parameter-files
-                if 'Default' not in loaded_parameters:
-                    loaded_parameters = {'Default': loaded_parameters}
 
                 for p_preset in loaded_parameters:
                     # Make sure, that only parameters, which exist in pd_params are loaded
                     for param in [p for p in loaded_parameters[p_preset] if p not in self.mw.pd_params.index]:
                         if '_exp' not in param:
                             loaded_parameters[p_preset].pop(param)
+
                     # Add parameters, which exist in resources/parameters.csv,
                     # but not in loaded-parameters (e.g. added with custom-module)
                     for param in [p for p in self.mw.pd_params.index if p not in loaded_parameters[p_preset]]:
@@ -290,8 +236,18 @@ class MyProject:
                 else:
                     self.parameters[self.p_preset][param] = string_params[param]
 
+    def load_last_p_preset(self):
+        try:
+            with open(join(self.pscripts_path, f'last_p_preset_{self.name}.json'), 'r') as read_file:
+                self.p_preset = json.load(read_file)
+                # If parameter-preset not in Parameters, load first Parameter-Key(=Parameter-Preset)
+                if self.p_preset not in self.parameters:
+                    self.p_preset = list(self.parameters.keys())[0]
+        except FileNotFoundError:
+            self.p_preset = list(self.parameters.keys())[0]
+
     def save_parameters(self):
-        with open(join(self.pscripts_path, f'parameters_{self.project_name}.json'), 'w') as write_file:
+        with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'w') as write_file:
             # Use customized Encoder to deal with arrays
             json.dump(self.parameters, write_file, cls=ParametersJSONEncoder, indent=4)
 

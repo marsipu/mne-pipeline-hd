@@ -450,7 +450,7 @@ class BaseSub:
         self.pr = main_win.pr
         self.p_preset = self.pr.p_preset
         self.p = main_win.pr.parameters[self.p_preset]
-        self.subjects_dir = self.pr.subjects_dir
+        self.subjects_dir = self.mw.subjects_dir
         self.save_plots = self.mw.get_setting('save_plots')
         self.figures_path = self.pr.figures_path
         self.img_format = self.mw.get_setting('img_format')
@@ -992,7 +992,7 @@ class CurrentMRISub(BaseSub):
         super().__init__(name, main_win)
 
         # Additional Attributes
-        self.save_dir = join(self.pr.subjects_dir, self.name)
+        self.save_dir = join(self.mw.subjects_dir, self.name)
         self.fs_path = self.mw.qsettings.value('fs_path')
         self.mne_path = self.mw.qsettings.value('mne_path')
 

@@ -237,7 +237,7 @@ class SubjectDock(QDockWidget):
 
     def update_mri_subjects_list(self):
         # Also get all freesurfe-directories from Freesurfer-Folder (maybe user added some manually)
-        self.mw.pr.all_mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
+        self.mw.pr.all_mri_subjects = get_existing_mri_subjects(self.mw.subjects_dir)
         self.mri_listw.clear()
         for idx, file in enumerate(self.mw.pr.all_mri_subjects):
             idx += 1  # Let index start with 1
@@ -360,9 +360,9 @@ class SubjectDock(QDockWidget):
                 for mri_subject in self.mw.pr.sel_mri_files:
                     self.mw.pr.all_mri_subjects.remove(mri_subject)
                     try:
-                        shutil.rmtree(join(self.mw.pr.subjects_dir, mri_subject))
+                        shutil.rmtree(join(self.mw.subjects_dir, mri_subject))
                     except FileNotFoundError:
-                        print(join(self.mw.pr.subjects_dir, mri_subject) + ' not found!')
+                        print(join(self.mw.subjects_dir, mri_subject) + ' not found!')
                 self.mw.pr.sel_mri_files = []
                 self.update_mri_subjects_list()
                 self.mri_msg_box.close()
@@ -798,28 +798,8 @@ class AddFilesWidget(QWidget):
                     continue
 
                 raw = self.load_file(fname, forig)
-                info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
-                             'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
-                             'helium_info']
-                self.mw.pr.info_dict[new_fname] = {}
-                for key in info_keys:
-                    self.mw.pr.info_dict[new_fname][key] = raw.info[key]
-                # Add arrays of digitization-points and save it to json to make the trans-file-management possible
-                # (same digitization = same trans-file)
-                if raw.info['dig'] is not None:
-                    dig_dict = {}
-                    for dig_point in raw.info['dig']:
-                        dig_dict[dig_point['ident']] = {}
-                        dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
-                        dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
-                    self.mw.pr.info_dict[new_fname]['dig'] = dig_dict
-                self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
-                # Some raw-files don't have get_channel_types?
-                try:
-                    self.mw.pr.info_dict[new_fname]['ch_types'] = raw.get_channel_types()
-                except AttributeError:
-                    self.mw.pr.info_dict[new_fname]['ch_types'] = []
-                self.mw.pr.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
+                self.get_infos(raw, new_fname)
+
                 if not self.addf_dialog.wasCanceled():
                     # Copy Empty-Room-Files to their directory
                     if self.is_erm[fname]:
@@ -858,6 +838,30 @@ class AddFilesWidget(QWidget):
         self.is_erm = dict()
         self.mw.pr.save_sub_lists()
         self.mw.subject_dock.update_subjects_list()
+
+    def get_infos(self, raw, new_fname):
+        info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
+                     'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
+                     'helium_info']
+        self.mw.pr.info_dict[new_fname] = {}
+        for key in info_keys:
+            self.mw.pr.info_dict[new_fname][key] = raw.info[key]
+        # Add arrays of digitization-points and save it to json to make the trans-file-management possible
+        # (same digitization = same trans-file)
+        if raw.info['dig'] is not None:
+            dig_dict = {}
+            for dig_point in raw.info['dig']:
+                dig_dict[dig_point['ident']] = {}
+                dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
+                dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
+            self.mw.pr.info_dict[new_fname]['dig'] = dig_dict
+        self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
+        # Some raw-files don't have get_channel_types?
+        try:
+            self.mw.pr.info_dict[new_fname]['ch_types'] = set(raw.get_channel_types())
+        except AttributeError:
+            self.mw.pr.info_dict[new_fname]['ch_types'] = set()
+        self.mw.pr.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
 
     def load_file(self, fname, forig):
         if self.file_types[fname] == '.fif':
@@ -1017,7 +1021,7 @@ class AddMRIWidget(QWidget):
             self.paths[new_name] = self.paths[old_name]
 
     def import_mri_subject(self):
-        mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
+        mri_subjects = get_existing_mri_subjects(self.mw.subjects_dir)
         folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder with a subject\'s Freesurfe-Segmentation')
 
         if folder_path != '':
@@ -1028,12 +1032,12 @@ class AddMRIWidget(QWidget):
                     self.paths.update({mri_sub: folder_path})
                     self.populate_list_widget()
                 else:
-                    print(f'{mri_sub} already existing in {self.mw.pr.subjects_dir}')
+                    print(f'{mri_sub} already existing in {self.mw.subjects_dir}')
             else:
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
 
     def import_mri_subjects(self):
-        mri_subjects = get_existing_mri_subjects(self.mw.pr.subjects_dir)
+        mri_subjects = get_existing_mri_subjects(self.mw.subjects_dir)
         parent_folder = QFileDialog.getExistingDirectory(self, 'Choose a folder containting several '
                                                                'Freesurfer-Segmentations')
         folder_list = sorted([f for f in os.listdir(parent_folder) if not f.startswith('.')], key=str.lower)
@@ -1045,7 +1049,7 @@ class AddMRIWidget(QWidget):
                     self.folders.append(mri_sub)
                     self.paths.update({mri_sub: folder_path})
                 else:
-                    print(f'{mri_sub} already existing in {self.mw.pr.subjects_dir}')
+                    print(f'{mri_sub} already existing in {self.mw.subjects_dir}')
             else:
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
         self.populate_list_widget()
@@ -1069,7 +1073,7 @@ class AddMRIWidget(QWidget):
             if not self.add_mri_dialog.wasCanceled():
                 signals['which_sub'].emit(f'Copying {mri_sub}')
                 src = self.paths[mri_sub]
-                dst = join(self.mw.pr.subjects_dir, mri_sub)
+                dst = join(self.mw.subjects_dir, mri_sub)
                 self.mw.pr.all_mri_subjects.append(mri_sub)
                 if not isdir(dst):
                     print(f'Copying Folder from {src}...')
@@ -1284,7 +1288,7 @@ class SubDictWidget(QWidget):
 
     def add_template_brain(self, signals):
         if self.template_brain == 'fsaverage':
-            mne.datasets.fetch_fsaverage(self.mw.pr.subjects_dir)
+            mne.datasets.fetch_fsaverage(self.mw.subjects_dir)
             signals['update_lists'].emit()
         else:
             pass
@@ -1701,10 +1705,7 @@ class SubjectWizard(QWizard):
         self.setWizardStyle(QWizard.ModernStyle)
         self.setOption(QWizard.HaveHelpButton, False)
 
-        desk_geometry = self.mw.app.desktop().availableGeometry()
-        self.size_ratio = 0.7
-        height = desk_geometry.height() * self.size_ratio
-        width = desk_geometry.width() * self.size_ratio
+        width, height = self.mw.get_ratio_geometry(0.6)
         self.setGeometry(0, 0, width, height)
         self.center()
 

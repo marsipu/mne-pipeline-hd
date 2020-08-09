@@ -85,6 +85,11 @@ class Param(QWidget):
                 value = self.pr.value(self.param_name, defaultValue=self.default)
                 if value is None:
                     value = self.default
+                # Convert booleans, which turn into strings with QSettings
+                elif value == "true":
+                    value = True
+                elif value == "false":
+                    value = False
                 self.param_value = value
             else:
                 self.param_value = self.default

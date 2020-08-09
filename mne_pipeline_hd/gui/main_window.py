@@ -11,13 +11,11 @@ import json
 import logging
 import os
 import re
-import shutil
 import sys
-from ast import literal_eval
 from functools import partial
 from importlib import reload, util
 from os import listdir
-from os.path import join
+from os.path import isdir, join
 from subprocess import run
 
 import matplotlib
@@ -25,26 +23,28 @@ import mne
 import pandas as pd
 import qdarkstyle
 from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QFont, QTextCursor
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
-                             QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStyle,
-                             QStyleFactory, QTabWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget)
+                             QMainWindow, QMessageBox, QPushButton, QScrollArea, QStyle,
+                             QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 from mayavi import mlab
 
-from . import parameter_widgets
+from .dialogs import ChooseCustomModules, CustomFunctionImport, QAllParameters, QuickGuide, \
+    RemoveProjectsDlg, RunDialog, \
+    SettingsDlg
 from .other_widgets import DataTerminal
-from .parameter_widgets import BoolGui, ComboGui, IntGui, StringGui
+from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .qt_utils import ErrorDialog, get_exception_tuple
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
 from .. import basic_functions, resources
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
-from ..pipeline_functions.function_utils import (ChooseCustomModules, CustomFunctionImport, FunctionWorker,
+from ..pipeline_functions.function_utils import (FunctionWorker,
                                                  func_from_def)
 from ..pipeline_functions.pipeline_utils import shutdown
-from ..pipeline_functions.project import MyProject
+from ..pipeline_functions.project import Project
 
 
 def get_upstream():
@@ -72,62 +72,59 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.app = QApplication.instance()
-        self.qsettings = QSettings()
-
+        # Initiate General-Layout
         self.app.setFont(QFont('Calibri', 10))
+        QToolTip.setFont(QFont('SansSerif', 10))
+        self.change_style('Fusion')
+        self.dark_sheet = qdarkstyle.load_stylesheet_pyqt5()
         self.setWindowTitle('MNE-Pipeline HD')
+
         self.setCentralWidget(QWidget(self))
         self.general_layout = QGridLayout()
         self.centralWidget().setLayout(self.general_layout)
+
+        # Set geometry to ratio of screen-geometry
+        width, height = self.get_ratio_geometry(0.9)
+        self.setGeometry(0, 0, width, height)
 
         # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
         self.threadpool = QThreadPool()
         print(f'Multithreading with maximum {self.threadpool.maxThreadCount()} threads')
 
-        QToolTip.setFont(QFont('SansSerif', 10))
-        self.change_style('Fusion')
-
-        # Prepare Dark-Mode
-        self.dark_sheet = qdarkstyle.load_stylesheet_pyqt5()
-
-        # Todo: Straighten confusing main_win.init() (Project vs. ModuleImport vs. pdDataFrames)
-        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
-        self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
-
-        # Get available parameter-guis
-        self.available_param_guis = [pg for pg in dir(parameter_widgets) if 'Gui' in pg and pg != 'QtGui']
-
-        # Call project-class
-        self.pr = MyProject(self)
-
-        # Load settings
-        self.load_settings()
-
-        # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
-        self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
-
-        # Attributes for class-methods
+        # Initiate attributes for Main-Window
+        self.home_path = ''
+        self.projects_path = ''
+        self.current_project = ''
+        self.subjects_dir = ''
+        self.custom_pkg_path = ''
         self.mw_signals = MainWinSignals()
         self.module_err_dlg = None
-        self.func_dict = dict()
         self.bt_dict = dict()
         self.all_modules = {'basic': {},
                             'custom': {}}
-        self.selected_modules = self.get_setting('selected_modules')
         self.subject = None
         self.available_image_formats = ['.png', '.jpg', '.tiff']
 
+        # Load QSettings (which are stored in the OS)
+        # qsettings=<everything, that's OS-dependent>
+        self.qsettings = QSettings()
+        # Get the Home-Path (OS-dependent)
+        self.get_home_path()
+        # Load settings (which are stored as .json-file in home_path)
+        # settings=<everything, that's OS-independent>
+        self.settings = {}
+        self.load_settings()
+        # Get projects and current_project (need settings for this, thus after self.load_settings()
+        self.get_projects()
+
+        # Load CSV-Files for Functions & Parameters
+        # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
+        self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
+        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
+        self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
+
         # Import the basic- and custom-function-modules
         self.import_custom_modules()
-
-        # Load last parameter-preset
-        self.pr.p_preset = self.get_setting('parameter_preset')
-        if self.pr.p_preset not in self.pr.parameters:
-            self.pr.p_preset = 'Default'
-        # Load project-parameters after import of func_modules
-        self.pr.load_parameters()
-        # Load file_parameters-Data-Frame, because it needs the loaded parameters
-        self.pr.load_file_parameters()
 
         self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'mri_subject_operations')
                                        & (self.pd_funcs['subject_loop'] == True)]
@@ -138,16 +135,12 @@ class MainWindow(QMainWindow):
         self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
                                          & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
 
-        # Get function-tabs and function-groups
-        self.f_tabs = set(self.pd_funcs['tab'])
-        self.f_groups = set(self.pd_funcs['group'])
+        # Call project-class
+        self.pr = Project(self, self.current_project)
 
         # Set logging
         logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-
-        # initiate Subject-Dock here to avoid AttributeError
-        self.subject_dock = SubjectDock(self)
 
         # Needs restart, otherwise error, when setting later
         if self.get_setting('mne_backend') == 'pyvista':
@@ -155,21 +148,186 @@ class MainWindow(QMainWindow):
         else:
             mne.viz.set_3d_backend('mayavi')
 
-        # Todo: Structure Main-Win-Frontend-Construction better
         # Call window-methods
         self.init_menu()
-        self.update_statusbar()
-        self.add_func_bts()
-        self.add_main_bts()
-        self.add_param_gui_tab()
+        self.init_main_widget()
         self.init_toolbar()
         self.add_dock_windows()
 
-        self.desk_geometry = self.app.desktop().availableGeometry()
-        self.size_ratio = 0.9
-        height = int(self.desk_geometry.height() * self.size_ratio)
-        width = int(self.desk_geometry.width() * self.size_ratio)
-        self.setGeometry(0, 0, width, height)
+    def get_home_path(self):
+        # Get home_path
+        hp = self.qsettings.value('home_path')
+        checking_home_path = True
+        while checking_home_path:
+            if hp is None or hp == '':
+                hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
+            elif not isdir(hp):
+                hp = QFileDialog.getExistingDirectory(self, f'{hp} not found!\n'
+                                                            f'Select a folder to store your Pipeline-Projects')
+            # Check, if path is writable
+            elif not os.access(hp, os.W_OK):
+                hp = QFileDialog.getExistingDirectory(self, f'{hp} not writable!\n'
+                                                            f'Select a folder to store your Pipeline-Projects')
+            if hp == '':
+                msg_box = QMessageBox.question(self, 'Cancel Start?',
+                                               'You can\'t start without this step, '
+                                               'do you want to cancel the start?')
+                answer = msg_box.exec()
+                if answer == QMessageBox.Yes:
+                    raise RuntimeError('User canceled start')
+            # Check, if the new selected Path from the Dialog is writable
+            elif not os.access(hp, os.W_OK):
+                pass
+            else:
+                self.home_path = str(hp)
+                self.qsettings.setValue('home_path', self.home_path)
+                self.make_base_paths()
+                print(f'Home-Path: {self.home_path}')
+                checking_home_path = False
+
+    def make_base_paths(self):
+        self.projects_path = join(self.home_path, 'projects')
+        if not isdir(self.projects_path):
+            os.mkdir(self.projects_path)
+            self.projects = []
+        self.subjects_dir = join(self.home_path, 'freesurfer')
+        mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
+        self.custom_pkg_path = join(self.home_path, 'custom_functions')
+
+    def get_projects(self):
+        # Get current_project
+        self.current_project = self.get_setting('current_project')
+        self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
+        if len(self.projects) == 0:
+            checking_projects = True
+            while checking_projects:
+                self.current_project, ok = QInputDialog.getText(self, 'Project-Selection',
+                                                                f'No projects in {self.home_path} found\n'
+                                                                'Enter a project-name for your first project')
+                if ok and self.current_project:
+                    self.projects.append(self.current_project)
+                    self.settings['current_project'] = self.current_project
+                    checking_projects = False
+                else:
+                    msg_box = QMessageBox.question(self, 'Cancel Start?',
+                                                   'You can\'t start without this step, '
+                                                   'do you want to cancel the start?')
+                    answer = msg_box.exec()
+                    if answer == QMessageBox.Yes:
+                        raise RuntimeError('User canceled start')
+
+        elif self.current_project is None or self.current_project not in self.projects:
+            self.current_project = self.projects[0]
+            self.settings['current_project'] = self.current_project
+
+        print(f'Projects-found: {self.projects}')
+        print(f'Selected-Project: {self.current_project}')
+
+    def project_updated(self):
+        # Set new logging
+        logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+        # Update Subject-Lists
+        self.subject_dock.update_subjects_list()
+        self.subject_dock.update_mri_subjects_list()
+        self.subject_dock.ga_widget.update_treew()
+        # Update Funciton-Selection
+        self.update_selected_funcs()
+        # Update Parameter-GUIs
+        self.qall_parameters.update_all_param_guis()
+        # Update Project-Box
+        self.update_project_box()
+        # Update Statusbar
+        self.statusBar().showMessage(f'Home-Path: {self.home_path}, '
+                                     f'Project: {self.current_project}, '
+                                     f'Parameter-Preset: {self.pr.p_preset}')
+
+    def change_home_path(self):
+        # First save the former projects-data
+        self.save_main()
+
+        new_home_path = QFileDialog.getExistingDirectory(self,
+                                                         'Change your Home-Path (top-level folder of Pipeline-Data)')
+        if new_home_path != '':
+            self.home_path = new_home_path
+            self.qsettings.setValue('home_path', self.home_path)
+            self.load_settings()
+            self.get_projects()
+            self.make_base_paths()
+            self.update_project_box()
+            self.import_custom_modules()
+            self.update_func_bts()
+            self.update_param_gui_tab()
+            self.statusBar().showMessage(f'Home-Path: {self.home_path}, '
+                                         f'Project: {self.current_project}, '
+                                         f'Parameter-Preset: {self.pr.p_preset}')
+
+            # Create new Project or load existing one
+            self.pr = Project(self, self.current_project)
+            self.project_updated()
+
+    def add_project(self):
+        # First save the former projects-data
+        self.save_main()
+
+        project, ok = QInputDialog.getText(self, 'New Project',
+                                           'Enter a name for a new project')
+        if ok:
+            self.current_project = project
+            self.settings['current_project'] = self.current_project
+            self.projects.append(project)
+
+            self.project_box.addItem(project)
+            self.project_box.setCurrentText(project)
+
+            # Create new Project
+            self.pr = Project(self, self.current_project)
+            self.project_updated()
+
+    # Todo: Replace with Model/View-Template
+    def remove_project(self):
+        # First save the former projects-data
+        self.save_main()
+        RemoveProjectsDlg(self)
+
+    def project_tools(self):
+        self.project_box = QComboBox()
+        self.project_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        for project in self.pr.projects:
+            self.project_box.addItem(project)
+        self.project_box.setCurrentText(self.current_project)
+        self.project_box.activated.connect(self.project_changed)
+        proj_box_label = QLabel('<b>Project: <b>')
+        self.toolbar.addWidget(proj_box_label)
+        self.toolbar.addWidget(self.project_box)
+
+        aadd = QAction(parent=self, icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
+        aadd.triggered.connect(self.add_project)
+        self.toolbar.addAction(aadd)
+
+        arm = QAction(parent=self, icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
+        arm.triggered.connect(self.remove_project)
+        self.toolbar.addAction(arm)
+
+    def project_changed(self, idx):
+        # First save the former projects-data
+        self.save_main()
+
+        self.current_project = self.project_box.itemText(idx)
+
+        # Change project
+        self.pr = Project(self, self.current_project)
+        self.project_updated()
+
+    def update_project_box(self):
+        self.project_box.clear()
+        for project in self.projects:
+            self.project_box.addItem(project)
+        if self.current_project in self.projects:
+            self.project_box.setCurrentText(self.current_project)
+        else:
+            self.project_box.setCurrentText(self.projects[0])
 
     def load_default_settings(self):
         with open(join(resources.__path__[0], 'default_settings.json'), 'r') as file:
@@ -178,13 +336,16 @@ class MainWindow(QMainWindow):
     def load_settings(self):
         self.load_default_settings()
         try:
-            with open(join(self.pr.home_path, 'mne_pipeline_hd-settings.json'), 'r') as file:
+            with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'r') as file:
                 self.settings = json.load(file)
+            # Account for settings, which were not saved but exist in default_settings
+            for setting in [s for s in self.default_settings if s not in self.settings]:
+                self.settings[setting] = self.default_settings[setting]
         except FileNotFoundError:
             self.settings = self.default_settings
 
     def save_settings(self):
-        with open(join(self.pr.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
+        with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
             json.dump(self.settings, file, indent=4)
 
     def get_setting(self, setting):
@@ -216,7 +377,7 @@ class MainWindow(QMainWindow):
         pd_functions_pattern = r'.*_functions\.csv'
         pd_parameters_pattern = r'.*_parameters\.csv'
         custom_module_pattern = r'(.+)(\.py)$'
-        for directory in [d for d in os.scandir(self.pr.custom_pkg_path) if not d.name.startswith('.')]:
+        for directory in [d for d in os.scandir(self.custom_pkg_path) if not d.name.startswith('.')]:
             pkg_name = directory.name
             pkg_path = directory.path
             file_dict = {'functions': None, 'parameters': None, 'module': None}
@@ -254,21 +415,17 @@ class MainWindow(QMainWindow):
 
                     try:
                         read_pd_funcs = pd.read_csv(functions_path, sep=';', index_col=0)
+                        read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
+                    except:
+                        exc_tuple = get_exception_tuple()
+                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
+                                                          title=f'Error in import of .csv-file: {functions_path}')
+                    else:
                         for idx in [ix for ix in read_pd_funcs.index if ix not in self.pd_funcs.index]:
                             self.pd_funcs = self.pd_funcs.append(read_pd_funcs.loc[idx])
-                    except:
-                        exc_tuple = get_exception_tuple()
-                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                          title=f'Error in import of functions-file: {functions_path}')
-                    try:
-                        read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
                         for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
                             self.pd_params = self.pd_params.append(read_pd_params.loc[idx])
-                    except:
-                        exc_tuple = get_exception_tuple()
-                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                          title=f'Error in import of parameters-file: '
-                                                                f'{parameters_path}')
+
             else:
                 text = f'Files for import of {pkg_name} are missing: ' \
                        f'{[key for key in file_dict if file_dict[key] is None]}'
@@ -317,7 +474,7 @@ class MainWindow(QMainWindow):
         self.customf_menu = self.menuBar().addMenu('&Custom Functions')
         self.aadd_customf = self.customf_menu.addAction('&Add custom Functions', self.add_customf)
 
-        self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', self.choose_customf)
+        # self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', self.choose_customf)
 
         self.areload_custom_modules = QAction('Reload Custom-Modules')
         self.areload_custom_modules.triggered.connect(self.reload_custom_modules)
@@ -343,7 +500,7 @@ class MainWindow(QMainWindow):
         self.settings_menu = self.menuBar().addMenu('&Settings')
 
         self.settings_menu.addAction('&Open Settings', self.settings_dlg)
-        self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
+        # self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
         self.settings_menu.addAction('Reset Parameters', self.reset_parameters)
 
         self.areload_basic_modules = QAction('Reload Basic-Modules')
@@ -367,7 +524,7 @@ class MainWindow(QMainWindow):
         self.project_tools()
         self.toolbar.addSeparator()
 
-        self.toolbar.addWidget(IntGui(self.settings, 'n_jobs', min_val=-1, special_value_text='Auto',
+        self.toolbar.addWidget(IntGui(self.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
                                       hint='Set to the amount of cores of your machine '
                                            'you want to use for multiprocessing', default=-1))
         self.toolbar.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
@@ -376,7 +533,7 @@ class MainWindow(QMainWindow):
                                        default=True))
         self.toolbar.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
                                        hint='Do you want to save the plots made to a file?', default=True))
-        self.toolbar.addWidget(BoolGui(self.settings, 'enable_cuda', param_alias='Enable CUDA',
+        self.toolbar.addWidget(BoolGui(self.qsettings, 'enable_cuda', param_alias='Enable CUDA',
                                        hint='Do you want to enable CUDA? (system has to be setup for cuda)',
                                        default=False))
         self.toolbar.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
@@ -393,39 +550,22 @@ class MainWindow(QMainWindow):
         close_all_bt.pressed.connect(close_all)
         self.toolbar.addWidget(close_all_bt)
 
-    # Todo: Statusbar with purpose
-    def update_statusbar(self):
-        self.statusBar().showMessage(f'Home-Path: {self.pr.home_path}, Project: {self.pr.project_name},'
-                                     f'Parameter-Preset: {self.pr.p_preset}')
-
     # Todo: Make Buttons more appealing, mark when check
     #   make button-dependencies
     def add_func_bts(self):
-        self.tab_func_widget = QTabWidget()
-        for func in self.pd_funcs.index:
-            self.func_dict.update({func: 0})
-
-        # Todo: func-dict goes to project, to have function-selection dependent on project
-        pre_func_dict = self.get_setting('checked_funcs')
-        del_list = []
-        if pre_func_dict:
-            # Check for functions, which have been removed, but are still present in cache
-            for k in pre_func_dict:
-                if k not in self.pd_funcs.index:
-                    del_list.append(k)
-            if len(del_list) > 0:
-                for d in del_list:
-                    del pre_func_dict[d]
-
-            # Get selected functions from last run
-            for f in self.func_dict:
-                if f in pre_func_dict:
-                    self.func_dict[f] = pre_func_dict[f]
 
         # Drop custom-modules, which aren't selected
-        self.cleaned_pd_funcs = self.pd_funcs[self.pd_funcs['module'].isin(self.selected_modules)]
+        cleaned_pd_funcs = self.pd_funcs[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))]
 
-        tabs_grouped = self.cleaned_pd_funcs.groupby('tab')
+        # Remove functions from functions in sel_functions, which are not present in cleaned_pd_funcs
+        for f_rm in [f for f in self.pr.sel_functions if f not in cleaned_pd_funcs.index]:
+            self.pr.sel_functions.pop(f_rm)
+
+        # Add functions from cleaned_pd_funcs, which are not present in sel_functions
+        for f_add in [f for f in cleaned_pd_funcs.index if f not in self.pr.sel_functions]:
+            self.pr.sel_functions[f_add] = 0
+
+        tabs_grouped = cleaned_pd_funcs.groupby('tab')
         # Add tabs
         for tab_name, group in tabs_grouped:
             group_grouped = group.groupby('group')
@@ -437,30 +577,33 @@ class MainWindow(QMainWindow):
                 group_box = QGroupBox(function_group, self)
                 setattr(self, f'{function_group}_gbox', group_box)
                 group_box.setCheckable(True)
-                group_box.toggled.connect(self.select_func)
+                group_box.toggled.connect(self.func_group_toggled)
                 group_box_layout = QVBoxLayout()
                 # Add button for each function
                 for function in group_grouped.groups[function_group]:
-                    if pd.notna(self.cleaned_pd_funcs.loc[function, 'alias']):
-                        alias_name = self.cleaned_pd_funcs.loc[function, 'alias']
+                    if pd.notna(cleaned_pd_funcs.loc[function, 'alias']):
+                        alias_name = cleaned_pd_funcs.loc[function, 'alias']
                     else:
                         alias_name = function
                     pb = QPushButton(alias_name)
                     pb.setCheckable(True)
                     self.bt_dict[function] = pb
-                    if self.func_dict[function]:
+                    if self.pr.sel_functions[function]:
                         pb.setChecked(True)
-                        self.func_dict[function] = 1
-                    pb.toggled.connect(self.select_func)
+                    pb.clicked.connect(partial(self.func_selected, function))
                     group_box_layout.addWidget(pb)
                 group_box.setLayout(group_box_layout)
                 tab_func_layout.addWidget(group_box)
             child_w.setLayout(tab_func_layout)
             tab.setWidget(child_w)
             self.tab_func_widget.addTab(tab, tab_name)
+
+    def init_main_widget(self):
+        self.tab_func_widget = QTabWidget()
+        self.add_func_bts()
+        self.add_param_gui_tab()
         self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
 
-    def add_main_bts(self):
         # Add Main-Buttons
         clear_bt = QPushButton('Clear', self)
         start_bt = QPushButton('Start', self)
@@ -480,18 +623,30 @@ class MainWindow(QMainWindow):
 
     # Todo: Do in Place update of funcs and params
     def update_func_bts(self):
-        self.settings['checked_funcs'] = self.func_dict
         self.general_layout.removeWidget(self.tab_func_widget)
         self.tab_func_widget.close()
         del self.tab_func_widget
         self.add_func_bts()
 
-    def select_func(self):
+    def func_selected(self, function):
+        if self.bt_dict[function].isChecked():
+            self.pr.sel_functions[function] = 1
+        else:
+            self.pr.sel_functions[function] = 0
+
+    def func_group_toggled(self):
         for function in self.bt_dict:
             if self.bt_dict[function].isChecked() and self.bt_dict[function].isEnabled():
-                self.func_dict[function] = 1
+                self.pr.sel_functions[function] = 1
             else:
-                self.func_dict[function] = 0
+                self.pr.sel_functions[function] = 0
+
+    def update_selected_funcs(self):
+        for function in self.bt_dict:
+            self.bt_dict[function].setChecked(False)
+            if function in self.pr.sel_functions:
+                if self.pr.sel_functions[function]:
+                    self.bt_dict[function].setChecked(True)
 
     def add_param_gui_tab(self):
         self.param_tab = QWidget()
@@ -607,147 +762,9 @@ class MainWindow(QMainWindow):
         dialog.open()
 
     def add_dock_windows(self):
+        self.subject_dock = SubjectDock(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
         self.view_menu.addAction(self.subject_dock.toggleViewAction())
-
-    def change_home_path(self):
-        # First save the former projects-data
-        self.save_main()
-
-        new_home_path = QFileDialog.getExistingDirectory(self, 'Change folder to store your Pipeline-Projects')
-        if new_home_path == '':
-            pass
-        else:
-            self.pr = MyProject(self)
-            self.pr.home_path = new_home_path
-            self.qsettings.setValue('home_path', self.pr.home_path)
-            self.settings['selected_modules'] = ['operations', 'plot']
-            self.pr.get_paths()
-            self.update_project_box()
-            self.change_project(self.pr.projects[0])
-            self.subject_dock.update_mri_subjects_list()
-
-            self.import_custom_modules()
-            self.update_func_bts()
-            self.update_param_gui_tab()
-
-    def add_project(self):
-        # First save the former projects-data
-        self.pr.save_sub_lists()
-        self.pr.save_parameters()
-
-        project, ok = QInputDialog.getText(self, 'New Project',
-                                           'Enter a project-name for a new project')
-        if ok:
-            self.pr.project_name = project
-            self.pr.projects.append(project)
-            self.qsettings.setValue('project_name', self.pr.project_name)
-            self.project_box.addItem(project)
-            self.project_box.setCurrentText(project)
-            self.change_project(project)
-        else:
-            pass
-
-    # Todo: Replace with Model/View-Template
-    def remove_project(self):
-        # First save the former projects-data
-        self.pr.save_sub_lists()
-        self.pr.save_parameters()
-
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Remove Project')
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel('Select Project for removal'))
-
-        plistw = QListWidget(self)
-        for project in self.pr.projects:
-            item = QListWidgetItem(project)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
-            plistw.addItem(item)
-        layout.addWidget(plistw)
-
-        def remove_selected():
-            rm_list = list()
-            for x in range(plistw.count()):
-                chk_item = plistw.item(x)
-                if chk_item.checkState() == Qt.Checked:
-                    rm_list.append(chk_item.text())
-
-            for rm_project in rm_list:
-                plistw.takeItem(plistw.row(plistw.findItems(rm_project, Qt.MatchExactly)[0]))
-                self.pr.projects.remove(rm_project)
-                self.project_box.removeItem(self.project_box.findText(rm_project, Qt.MatchExactly))
-                if rm_project == self.pr.project_name:
-                    self.change_project(self.pr.projects[0])
-                    self.project_box.setCurrentText(self.pr.projects[0])
-                try:
-                    shutil.rmtree(join(self.pr.projects_path, rm_project))
-                except OSError:
-                    pass
-
-        bt_layout = QHBoxLayout()
-        rm_bt = QPushButton('Remove')
-        rm_bt.clicked.connect(remove_selected)
-        bt_layout.addWidget(rm_bt)
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(dialog.close)
-        bt_layout.addWidget(close_bt)
-        layout.addLayout(bt_layout)
-
-        dialog.setLayout(layout)
-        dialog.open()
-
-    def project_tools(self):
-        self.project_box = QComboBox()
-        self.project_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        for project in self.pr.projects:
-            self.project_box.addItem(project)
-        self.project_box.setCurrentText(self.pr.project_name)
-        self.project_box.activated.connect(self.project_changed)
-        proj_box_label = QLabel('<b>Project: <b>')
-        self.toolbar.addWidget(proj_box_label)
-        self.toolbar.addWidget(self.project_box)
-
-        aadd = QAction(parent=self, icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
-        aadd.triggered.connect(self.add_project)
-        self.toolbar.addAction(aadd)
-
-        arm = QAction(parent=self, icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
-        arm.triggered.connect(self.remove_project)
-        self.toolbar.addAction(arm)
-
-    def project_changed(self, idx):
-        # First save the former projects-data
-        self.pr.save_sub_lists()
-        self.pr.save_parameters()
-
-        self.change_project(self.project_box.itemText(idx))
-
-    # Todo: Just reload a new Project-Class!
-    def change_project(self, project):
-        self.pr.project_name = project
-        self.pr.p_preset = 'Default'
-        self.qsettings.setValue('project_name', self.pr.project_name)
-        print(f'{self.pr.project_name} selected')
-
-        # Set new logging
-        logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
-
-        self.pr.make_paths()
-        self.pr.load_parameters()
-        self.qall_parameters.update_all_param_guis()
-
-        self.pr.load_sub_lists()
-        self.subject_dock.update_subjects_list()
-        self.subject_dock.ga_widget.update_treew()
-
-        self.update_statusbar()
-
-    def update_project_box(self):
-        self.project_box.clear()
-        for project in self.pr.projects:
-            self.project_box.addItem(project)
 
     def add_customf(self):
         self.cf_import = CustomFunctionImport(self)
@@ -762,6 +779,13 @@ class MainWindow(QMainWindow):
         if msgbox == QMessageBox.Yes:
             self.pr.load_default_parameters()
             self.qall_parameters.update_all_param_guis()
+
+    def get_ratio_geometry(self, size_ratio):
+        self.desk_geometry = self.app.desktop().availableGeometry()
+        height = int(self.desk_geometry.height() * size_ratio)
+        width = int(self.desk_geometry.width() * size_ratio)
+
+        return width, height
 
     def dark_mode(self):
         if self.adark_mode.isChecked():
@@ -812,7 +836,7 @@ class MainWindow(QMainWindow):
     def clear(self):
         for x in self.bt_dict:
             self.bt_dict[x].setChecked(False)
-            self.func_dict[x] = 0
+            self.pr.sel_functions[x] = 0
 
     def start(self):
 
@@ -820,10 +844,10 @@ class MainWindow(QMainWindow):
         self.save_main()
 
         # Lists of selected functions
-        self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.func_dict[mf]]
-        self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.func_dict[ff]]
-        self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.func_dict[gf]]
-        self.sel_other_funcs = [of for of in self.other_funcs.index if self.func_dict[of]]
+        self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.pr.sel_functions[mf]]
+        self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.pr.sel_functions[ff]]
+        self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.pr.sel_functions[gf]]
+        self.sel_other_funcs = [of for of in self.other_funcs.index if self.pr.sel_functions[of]]
 
         # Determine steps in progress for all selected subjects and functions
         self.all_prog = (len(self.pr.sel_mri_files) * len(self.sel_mri_funcs) +
@@ -1003,292 +1027,9 @@ class MainWindow(QMainWindow):
         self.pr.save_parameters()
         self.pr.save_sub_lists()
 
-        # Save Main-Window-Settings
-        self.settings['checked_funcs'] = self.func_dict
-        self.settings['parameter_preset'] = self.pr.p_preset
-        self.settings['selected_modules'] = self.selected_modules
-
+        self.settings['current_project'] = self.current_project
         self.save_settings()
 
     def closeEvent(self, event):
         self.save_main()
         event.accept()
-
-
-class SettingsDlg(QDialog):
-    def __init__(self, main_window):
-        super().__init__(main_window)
-        self.mw = main_window
-
-        self.init_ui()
-        self.open()
-
-    def init_ui(self):
-        layout = QVBoxLayout()
-
-        layout.addWidget(IntGui(self.mw.settings, 'n_jobs', min_val=-1, special_value_text='Auto',
-                                hint='Set to the amount of cores of your machine '
-                                     'you want to use for multiprocessing', default=-1))
-        layout.addWidget(BoolGui(self.mw.settings, 'show_plots', param_alias='Show Plots',
-                                 hint='Do you want to show plots?\n'
-                                      '(or just save them without showing, then just check "Save Plots")',
-                                 default=True))
-        layout.addWidget(BoolGui(self.mw.settings, 'save_plots', param_alias='Save Plots',
-                                 hint='Do you want to save the plots made to a file?', default=True))
-        layout.addWidget(BoolGui(self.mw.settings, 'enable_cuda', param_alias='Enable CUDA',
-                                 hint='Do you want to enable CUDA? (system has to be setup for cuda)',
-                                 default=False))
-        layout.addWidget(BoolGui(self.mw.settings, 'shutdown', param_alias='Shutdown',
-                                 hint='Do you want to shut your system down after execution of all subjects?'))
-        layout.addWidget(IntGui(self.mw.settings, 'dpi', min_val=0, max_val=10000,
-                                hint='Set dpi for saved plots', default=300))
-        layout.addWidget(ComboGui(self.mw.settings, 'img_format', self.mw.available_image_formats,
-                                  param_alias='Image-Format', hint='Choose the image format for plots',
-                                  default='.png'))
-        layout.addWidget(ComboGui(self.mw.settings, 'mne_backend', options=['mayavi', 'pyvista'],
-                                  param_alias='MNE-Backend',
-                                  hint='Choose the backend for plotting in 3D (needs Restart)',
-                                  default='pyvista'))
-        layout.addWidget(StringGui(self.mw.qsettings, 'fs_path', param_alias='FREESURFER_HOME-Path',
-                                   hint='Set the Path to the "freesurfer"-directory of your Freesurfer-Installation '
-                                        '(for Windows to the LINUX-Path of the Freesurfer-Installation '
-                                        'in Windows-Subsystem for Linux(WSL))',
-                                   default=None))
-        if iswin:
-            layout.addWidget(StringGui(self.mw.qsettings, 'mne_path', param_alias='MNE-Python-Path',
-                                       hint='Set the LINUX-Path to the mne-environment (e.g ...anaconda3/envs/mne)'
-                                            'in Windows-Subsystem for Linux(WSL))',
-                                       default=None))
-
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(self.close)
-        layout.addWidget(close_bt)
-
-        self.setLayout(layout)
-
-
-# Todo: Appropriate Documentation
-class QuickGuide(QDialog):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        layout = QVBoxLayout()
-
-        text = '<b>Guick-Guide</b><br>' \
-               '1. Use the Subject-Wizard to add Subjects and the Subject-Dicts<br>' \
-               '2. Select the files you want to execute<br>' \
-               '3. Select the functions to execute<br>' \
-               '4. If you want to show plots, check Show Plots<br>' \
-               '5. For Source-Space-Operations, you need to run MRI-Coregistration from the Input-Menu<br>' \
-               '6. For Grand-Averages add a group and add the files, to which you want apply the grand-average'
-
-        self.label = QLabel(text)
-        layout.addWidget(self.label)
-
-        ok_bt = QPushButton('OK')
-        ok_bt.clicked.connect(self.close)
-        layout.addWidget(ok_bt)
-
-        self.setLayout(layout)
-        self.open()
-
-
-class QAllParameters(QWidget):
-    def __init__(self, main_win):
-        super().__init__()
-        self.mw = main_win
-        self.param_guis = {}
-
-        # Drop Parameters which aren't used
-        all_arg_strings = [v for v in self.mw.pd_funcs['func_args'].values if isinstance(v, str)]
-        self.used_params = set()
-        for value_string in all_arg_strings:
-            value_list = value_string.split(',')
-            for value in value_list:
-                # Remove trailing spaces
-                value = value.replace(' ', '')
-                self.used_params.add(value)
-
-        self.cleaned_pd_params = self.mw.pd_params[self.mw.pd_params.index.isin(self.used_params)]
-
-        self.init_ui()
-
-    def init_ui(self):
-        layout = QHBoxLayout()
-        sub_layout = QVBoxLayout()
-        r_cnt = 0
-        for idx, parameter in self.cleaned_pd_params.iterrows():
-            if r_cnt > 5:
-                layout.addLayout(sub_layout)
-                sub_layout = QVBoxLayout()
-                r_cnt = 0
-            else:
-                r_cnt += 1
-
-            # Get Parameters for Gui-Call
-            if not pd.isna(parameter['alias']):
-                param_alias = parameter['alias']
-            else:
-                param_alias = idx
-            if not pd.isna(parameter['gui_type']):
-                gui_name = parameter['gui_type']
-            else:
-                gui_name = 'FuncGui'
-            if not pd.isna(parameter['description']):
-                hint = parameter['description']
-            else:
-                hint = ''
-            try:
-                gui_args = literal_eval(parameter['gui_args'])
-            except (SyntaxError, ValueError):
-                gui_args = {}
-
-            gui_handle = getattr(parameter_widgets, gui_name)
-            self.param_guis[idx] = gui_handle(self.mw.pr, param_name=idx, param_alias=param_alias,
-                                              hint=hint, **gui_args)
-            sub_layout.addWidget(self.param_guis[idx])
-
-        if 0 < r_cnt <= 5:
-            layout.addLayout(sub_layout)
-
-        self.setLayout(layout)
-
-    def update_all_param_guis(self):
-        for gui_name in self.param_guis:
-            param_gui = self.param_guis[gui_name]
-            param_gui.read_param()
-            param_gui.set_param()
-
-    def update_param_gui(self, gui_name):
-        param_gui = self.param_guis[gui_name]
-        param_gui.read_param()
-        param_gui.set_param()
-
-
-class CustomFSelection(QDialog):
-    # Todo: Nice Gui for PKG-Selection and maybe even GDrive-Down/Upload
-    pass
-
-
-class RunDialog(QDialog):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-
-        desk_geometry = self.mw.app.desktop().availableGeometry()
-        self.size_ratio = 0.6
-        height = int(desk_geometry.height() * self.size_ratio)
-        width = int(desk_geometry.width() * self.size_ratio)
-        self.setGeometry(0, 0, width, height)
-        self.center()
-
-        self.current_sub = None
-        self.current_func = None
-        self.prog_running = False
-
-        self.init_ui()
-        self.center()
-
-    def init_ui(self):
-        self.layout = QGridLayout()
-
-        self.sub_listw = QListWidget()
-        self.sub_listw.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        self.layout.addWidget(self.sub_listw, 0, 0)
-        self.func_listw = QListWidget()
-        self.func_listw.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        self.layout.addWidget(self.func_listw, 0, 1)
-        self.console_widget = QTextEdit()
-        self.console_widget.setReadOnly(True)
-        self.layout.addWidget(self.console_widget, 1, 0, 1, 2)
-
-        self.pgbar = QProgressBar()
-        self.pgbar.setValue(0)
-        self.layout.addWidget(self.pgbar, 2, 0, 1, 2)
-
-        self.cancel_bt = QPushButton('Cancel')
-        self.cancel_bt.setFont(QFont('AnyStyle', 14))
-        self.cancel_bt.clicked.connect(self.cancel_funcs)
-        self.layout.addWidget(self.cancel_bt, 3, 0)
-
-        self.close_bt = QPushButton('Close')
-        self.close_bt.setFont(QFont('AnyStyle', 14))
-        self.close_bt.setEnabled(False)
-        self.close_bt.clicked.connect(self.close)
-        self.layout.addWidget(self.close_bt, 3, 1)
-
-        self.setLayout(self.layout)
-
-    def cancel_funcs(self):
-        self.mw.mw_signals.cancel_functions.emit(True)
-        self.console_widget.insertHtml('<b><big><center>---Finishing last function...---</center></big></b><br>')
-        self.console_widget.ensureCursorVisible()
-
-    def populate(self, mode):
-        if mode == 'mri':
-            self.populate_listw(self.mw.pr.sel_mri_files, self.mw.sel_mri_funcs)
-        elif mode == 'file':
-            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
-        elif mode == 'ga':
-            self.populate_listw(self.mw.pr.sel_ga_groups, self.mw.sel_ga_funcs)
-        elif mode == 'other':
-            self.populate_listw([], self.mw.sel_other_funcs)
-
-    def populate_listw(self, files, funcs):
-        for file in files:
-            item = QListWidgetItem(file)
-            item.setFlags(Qt.ItemIsEnabled)
-            self.sub_listw.addItem(item)
-        for func in funcs:
-            item = QListWidgetItem(func)
-            item.setFlags(Qt.ItemIsEnabled)
-            self.func_listw.addItem(item)
-
-    def mark_subfunc(self, subfunc):
-        if self.current_sub is not None:
-            self.current_sub.setBackground(QColor('white'))
-        try:
-            self.current_sub = self.sub_listw.findItems(subfunc[0], Qt.MatchExactly)[0]
-            self.current_sub.setBackground(QColor('green'))
-        except IndexError:
-            pass
-        if self.current_func is not None:
-            self.current_func.setBackground(QColor('white'))
-        try:
-            self.current_func = self.func_listw.findItems(subfunc[1], Qt.MatchExactly)[0]
-            self.current_func.setBackground(QColor('green'))
-        except IndexError:
-            pass
-
-    def clear_marks(self):
-        if self.current_sub is not None:
-            self.current_sub.setBackground(QColor('white'))
-        if self.current_func is not None:
-            self.current_func.setBackground(QColor('white'))
-
-    def add_text(self, text):
-        self.prog_running = False
-        self.console_widget.insertPlainText(text)
-        self.console_widget.ensureCursorVisible()
-
-    def progress_text(self, text):
-        if self.prog_running:
-            # Delete last line
-            cursor = self.console_widget.textCursor()
-            cursor.select(QTextCursor.LineUnderCursor)
-            cursor.removeSelectedText()
-            self.console_widget.insertPlainText(text)
-
-        else:
-            self.prog_running = True
-            self.console_widget.insertPlainText(text)
-
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
-    def show_errors(self, err):
-        ErrorDialog(err, self)
-        self.pgbar.setValue(self.mw.all_prog)
-        self.close_bt.setEnabled(True)

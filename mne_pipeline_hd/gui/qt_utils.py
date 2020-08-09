@@ -17,8 +17,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from PyQt5.QtCore import QObject, QRunnable, Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import (QDesktopWidget, QDialog, QGridLayout, QLabel, QLineEdit,
-                             QMessageBox, QPushButton, QApplication)
+from PyQt5.QtWidgets import QApplication, QDesktopWidget, QDialog, QGridLayout, QLabel, QLineEdit, QMessageBox, \
+    QPushButton
 
 
 def get_exception_tuple():
@@ -68,6 +68,56 @@ class Worker(QRunnable):
             self.signals.error.emit(exc_tuple)
         else:
             self.signals.finished.emit()  # Done
+
+
+class StdoutSignal(QObject):
+    text_written = pyqtSignal(str)
+
+
+class StdoutStream(io.TextIOBase):
+
+    def __init__(self):
+        super().__init__()
+        self.signal = StdoutSignal()
+
+    def write(self, text):
+        # Send still the output to the command line
+        sys.__stdout__.write(text)
+        # Emit additionally the written text in a pyqtSignal
+        self.signal.text_written.emit(text)
+
+
+class StderrSignal(QObject):
+    text_written = pyqtSignal(str)
+    text_updated = pyqtSignal(str)
+
+
+class StderrStream(io.TextIOBase):
+
+    def __init__(self):
+        super().__init__()
+        self.signal = StderrSignal()
+        self.last_text = ''
+
+    def write(self, text):
+        # Send still the output to the command line
+        sys.__stderr__.write(text)
+
+        if text[:1] == '\r':
+            # Emit additionally the written text in a pyqtSignal
+            text = text.replace('\r', '')
+            # Avoid doubling
+            if text != self.last_text:
+                self.signal.text_updated.emit(text)
+                self.last_text = text
+        else:
+            # Eliminate weird symbols and avoid doubling
+            if '\x1b' not in text and text != self.last_text:
+                # Avoid weird last line in tqdm-progress
+                if self.last_text[-1:] != '\n':
+                    text = '\n' + text
+                self.signal.text_written.emit(text)
+                self.last_text = text
 
 
 class ErrorDialog(QDialog):
@@ -176,54 +226,3 @@ class ErrorDialog(QDialog):
                                                              'Thank you for the Report!')
             except OSError:
                 QMessageBox.information(self, 'E-Mail not sent', 'Sending an E-Mail is not possible on your OS')
-
-
-class StdoutSignal(QObject):
-    text_written = pyqtSignal(str)
-
-
-class StdoutStream(io.TextIOBase):
-
-    def __init__(self):
-        super().__init__()
-        self.signal = StdoutSignal()
-
-    def write(self, text):
-        # Send still the output to the command line
-        sys.__stdout__.write(text)
-        # Emit additionally the written text in a pyqtSignal
-        self.signal.text_written.emit(text)
-
-
-class StderrSignal(QObject):
-    text_written = pyqtSignal(str)
-    text_updated = pyqtSignal(str)
-
-
-class StderrStream(io.TextIOBase):
-
-    def __init__(self):
-        super().__init__()
-        self.signal = StderrSignal()
-        self.last_text = ''
-
-    def write(self, text):
-        # Send still the output to the command line
-        sys.__stderr__.write(text)
-
-        if text[:1] == '\r':
-            # Emit additionally the written text in a pyqtSignal
-            text = text.replace('\r', '')
-            # Avoid doubling
-            if text != self.last_text:
-                self.signal.text_updated.emit(text)
-                self.last_text = text
-        else:
-            # Eliminate weird symbols and avoid doubling
-            if '\x1b' not in text and text != self.last_text:
-                # Avoid weird last line in tqdm-progress
-                if self.last_text[-1:] != '\n':
-                    text = '\n' + text
-                self.signal.text_written.emit(text)
-                self.last_text = text
-

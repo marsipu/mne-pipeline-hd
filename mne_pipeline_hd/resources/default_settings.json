@@ -1,9 +1,14 @@
 {
+    "current_project": null,
     "selected_modules": ["operations", "plot"],
     "parameter_preset": "Default",
     "mne_backend": "mayavi",
-    "dark_mode": "False",
+    "dark_mode": false,
     "checked_funcs": [],
     "show_plots": true,
-    "save_storage": false
+    "save_plots": true,
+    "save_storage": false,
+    "shutdown": false,
+    "img_format": ".png",
+    "dpi": 300
 }

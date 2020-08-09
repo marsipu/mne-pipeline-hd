@@ -499,7 +499,7 @@ def plot_ecd(sub):
 
     for trial in ecd_dips:
         for dipole in ecd_dips[trial]:
-            fig = dipole.plot_locations(trans, sub.subtomri, sub.pr.subjects_dir,
+            fig = dipole.plot_locations(trans, sub.subtomri, sub.subjects_dir,
                                         mode='orthoview', idx='gof')
             fig.suptitle(sub.name, horizontalalignment='right')
 
@@ -512,7 +512,7 @@ def plot_ecd(sub):
             print(f'Highest GOF {dipole.gof[best_idx]:.2f}% at t={best_time * 1000:.1f} ms with confidence volume'
                   f'{dipole.conf["vol"][best_idx] * 100 ** 3} cm^3')
 
-            mri_pos = mne.head_to_mri(dipole.pos, sub.subtomri, trans, sub.pr.subjects_dir)
+            mri_pos = mne.head_to_mri(dipole.pos, sub.subtomri, trans, sub.subjects_dir)
 
             save_path_anat = join(sub.sub.figures_path, 'ECD', dipole, trial,
                                   f'{sub.name}-{trial}_{sub.pr.p_preset}_ECD-{dipole}{sub.img_format}')
