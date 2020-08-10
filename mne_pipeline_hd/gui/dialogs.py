@@ -414,7 +414,7 @@ class RunDialog(QDialog):
         elif mode == 'ga':
             self.populate_listw(self.mw.pr.sel_ga_groups, self.mw.sel_ga_funcs)
         elif mode == 'other':
-            self.populate_listw([], self.mw.sel_other_funcs)
+            self.populate_listw(['Other Functions'], self.mw.sel_other_funcs)
 
     def populate_listw(self, files, funcs):
         for file in files:
