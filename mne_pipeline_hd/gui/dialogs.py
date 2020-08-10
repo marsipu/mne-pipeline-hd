@@ -21,9 +21,10 @@ import pandas as pd
 from PyQt5.QtCore import QPoint, QSize, Qt
 from PyQt5.QtGui import QColor, QFont, QTextCursor
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog, QFormLayout,
-                             QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
+                             QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
                              QListView, QListWidget, QListWidgetItem,
-                             QMessageBox, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStyle, QTableWidget,
+                             QMessageBox, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStyle, QTabWidget,
+                             QTableWidget,
                              QTableWidgetItem, QTableWidgetSelectionRange, QTextEdit,
                              QToolTip, QVBoxLayout, QWidget)
 
@@ -33,6 +34,100 @@ from mne_pipeline_hd.gui.qt_models import CheckListModel
 from mne_pipeline_hd.gui.qt_utils import ErrorDialog, get_exception_tuple
 from mne_pipeline_hd.pipeline_functions import iswin
 from mne_pipeline_hd.pipeline_functions.project import Project
+
+
+class CheckListDlg(QDialog):
+    def __init__(self, parent, data, checked):
+        """
+        BaseClass for A Dialog with a Check-List, open() has to be called in SubClass or directly
+        :param parent: parent-Widget
+        :param data: Data for the Check-List
+        :param checked: List, where Checked Data-Items are stored
+        """
+        super().__init__(parent)
+        self.data = data
+        self.checked = checked
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.layout = QGridLayout()
+
+        self.lv = QListView()
+        self.lm = CheckListModel(self.data, self.checked)
+        self.lv.setModel(self.lm)
+        self.layout.addWidget(self.lv, 0, 0, 1, 2)
+
+        self.do_bt = QPushButton('<Do Something>')
+        self.do_bt.clicked.connect(lambda: None)
+        self.layout.addWidget(self.do_bt, 1, 0)
+
+        self.quit_bt = QPushButton('Quit')
+        self.quit_bt.clicked.connect(self.close)
+        self.layout.addWidget(self.quit_bt, 1, 1)
+
+        self.setLayout(self.layout)
+
+
+class RemovePPresetDlg(CheckListDlg):
+    def __init__(self, parent):
+        self.parent = parent
+        self.preset_list = [p for p in self.parent.mw.pr.parameters if p != 'Default']
+        self.rm_list = []
+
+        super().__init__(parent, self.preset_list, self.rm_list)
+
+        self.do_bt.setText('Remove Parameter-Preset')
+        self.do_bt.clicked.connect(self.remove_selected)
+
+        self.open()
+
+    def remove_selected(self):
+        for p_preset in self.rm_list:
+            self.preset_list.remove(p_preset)
+            self.lm.layoutChanged.emit()
+            # Remove from Parameters
+            self.parent.mw.pr.parameters.pop(p_preset)
+            self.parent.update_ppreset_cmbx()
+
+        # If current Parameter-Preset was deleted
+        if self.parent.mw.pr.p_preset not in self.parent.mw.pr.parameters:
+            self.parent.mw.pr.p_preset = list(self.parent.mw.pr.parameters.keys())[0]
+            self.parent.update_all_param_guis()
+
+        self.close()
+
+
+class RemoveProjectsDlg(CheckListDlg):
+    def __init__(self, main_win):
+        self.mw = main_win
+        self.rm_list = []
+        super().__init__(main_win, self.mw.projects, self.rm_list)
+
+        self.do_bt.setText('Remove Projects')
+        self.do_bt.clicked.connect(self.remove_selected)
+
+        self.open()
+
+    def remove_selected(self):
+        for project in self.rm_list:
+            self.mw.projects.remove(project)
+            self.lm.layoutChanged.emit()
+
+            # Remove Project-Folder
+            try:
+                shutil.rmtree(join(self.mw.projects_path, project))
+            except OSError:
+                QMessageBox.critical(self, 'Deletion impossible',
+                                     f'The folder of {project} can\'t be deleted and has to be deleted manually')
+
+        # If current project was deleted, load remaining or create New
+        if self.mw.current_project not in self.mw.projects:
+            self.mw.get_projects()
+            self.mw.pr = Project(self.mw, self.mw.current_project)
+            self.mw.project_updated()
+
+        self.close()
 
 
 class SettingsDlg(QDialog):
@@ -87,65 +182,163 @@ class SettingsDlg(QDialog):
         self.setLayout(layout)
 
 
-class QAllParameters(QWidget):
+class ParametersDlg(QDialog):
     def __init__(self, main_win):
-        super().__init__()
+        super().__init__(main_win)
         self.mw = main_win
         self.param_guis = {}
 
-        # Drop Parameters which aren't used by functions (in selected_modules)
-        all_arg_strings = [v for v in self.mw.pd_funcs['func_args'].values if isinstance(v, str)]
-        self.used_params = set()
-        for value_string in all_arg_strings:
-            value_list = value_string.split(',')
-            for value in value_list:
-                # Remove trailing spaces
-                value = value.replace(' ', '')
-                self.used_params.add(value)
+        # Drop custom-modules, which aren't selected
+        cleaned_pd_funcs = self.mw.pd_funcs[self.mw.pd_funcs['module'].isin(self.mw.get_setting('selected_modules'))]
 
-        self.cleaned_pd_params = self.mw.pd_params[self.mw.pd_params.index.isin(self.used_params)]
+        # Collect args for each function
+        self.arg_func_dict = dict()
+        # Check if func_args is not NaN
+        for func in [f for f in cleaned_pd_funcs.index if isinstance(cleaned_pd_funcs.loc[f, 'func_args'], str)]:
+            # Split func_args-string into args and remove trailing spaces
+            arg_list = [v.replace(' ', '') for v in cleaned_pd_funcs.loc[func, 'func_args'].split(',')]
+            for argument in arg_list:
+                # Add each argument to the dict with the func_names by using functions in a list
+                if argument in self.arg_func_dict:
+                    self.arg_func_dict[argument].append(func)
+                else:
+                    self.arg_func_dict[argument] = [func]
+        # Drop Parameters which aren't used by functions (in selected_modules)
+        self.cleaned_pd_params = self.mw.pd_params[self.mw.pd_params.index.isin(self.arg_func_dict.keys())]
+
+        # Group Parameters according to groups of their functions (if used by multiple functions, put into "general")
+        # Add group-column
+        for param in self.cleaned_pd_params.index:
+            func_list = self.arg_func_dict[param]
+            # Check if all value in func_list are the same (applies also to len(func_list)==1)
+            if all(a == cleaned_pd_funcs.loc[func_list, 'group'][0]
+                   for a in cleaned_pd_funcs.loc[func_list, 'group'].values):
+                group_name = cleaned_pd_funcs.loc[func_list[0], 'group']
+            else:
+                group_name = 'General'
+            self.cleaned_pd_params.loc[param, 'group'] = group_name
+            if group_name in self.mw.group_order:
+                self.cleaned_pd_params.loc[param, 'group_idx'] = self.mw.group_order[group_name]
+            else:
+                self.cleaned_pd_params.loc[param, 'group_idx'] = 100
+
+        # Sort values by group_idx for dramaturgically order
+        self.cleaned_pd_params.sort_values(by='group_idx', inplace=True)
 
         self.init_ui()
+        self.open()
 
     def init_ui(self):
-        layout = QHBoxLayout()
-        sub_layout = QVBoxLayout()
-        r_cnt = 0
-        for idx, parameter in self.cleaned_pd_params.iterrows():
-            if r_cnt > 5:
+        general_layout = QVBoxLayout()
+
+        # Add Parameter-Preset-ComboBox
+        title_layout = QHBoxLayout()
+        p_preset_l = QLabel('Parameter-Presets: ')
+        title_layout.addWidget(p_preset_l)
+        self.p_preset_cmbx = QComboBox()
+        self.p_preset_cmbx.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.p_preset_cmbx.activated.connect(self.p_preset_changed)
+        self.update_ppreset_cmbx()
+        title_layout.addWidget(self.p_preset_cmbx)
+
+        add_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
+        add_bt.clicked.connect(self.add_p_preset)
+        title_layout.addWidget(add_bt)
+
+        rm_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
+        rm_bt.clicked.connect(self.remove_p_preset)
+        title_layout.addWidget(rm_bt)
+
+        title_layout.addStretch(stretch=2)
+
+        reset_bt = QPushButton('Reset')
+        reset_bt.clicked.connect(self.reset_parameters)
+        title_layout.addWidget(reset_bt)
+
+        general_layout.addLayout(title_layout)
+
+        # Create Tab-Widget for Parameters, grouped by group
+        self.tab_param_widget = QTabWidget()
+
+        grouped_params = self.cleaned_pd_params.groupby('group', sort=False)
+
+        for group_name, group in grouped_params:
+            layout = QHBoxLayout()
+            sub_layout = QHBoxLayout()
+            c_cnt = 0
+            tab = QScrollArea()
+            child_w = QWidget()
+            for idx, parameter in group.iterrows():
+
+                # Get Parameters for Gui-Call
+                if pd.notna(parameter['alias']):
+                    param_alias = parameter['alias']
+                else:
+                    param_alias = idx
+                if pd.notna(parameter['gui_type']):
+                    gui_name = parameter['gui_type']
+                else:
+                    gui_name = 'FuncGui'
+                if pd.notna(parameter['description']):
+                    hint = parameter['description']
+                else:
+                    hint = ''
+                try:
+                    gui_args = literal_eval(parameter['gui_args'])
+                except (SyntaxError, ValueError):
+                    gui_args = {}
+
+                gui_handle = getattr(parameter_widgets, gui_name)
+                self.param_guis[idx] = gui_handle(self.mw.pr, param_name=idx, param_alias=param_alias,
+                                                  hint=hint, **gui_args)
+                # Limit layout horizontally to 5 Widgets
+                if c_cnt > 5:
+                    layout.addLayout(sub_layout)
+                    sub_layout = QHBoxLayout()
+                    c_cnt = 0
+                else:
+                    c_cnt += 1
+
+                sub_layout.addWidget(self.param_guis[idx])
+
+            # Add sublayout, if it got remaining Widgets
+            if 0 < c_cnt <= 5:
                 layout.addLayout(sub_layout)
-                sub_layout = QVBoxLayout()
-                r_cnt = 0
-            else:
-                r_cnt += 1
 
-            # Get Parameters for Gui-Call
-            if not pd.isna(parameter['alias']):
-                param_alias = parameter['alias']
-            else:
-                param_alias = idx
-            if not pd.isna(parameter['gui_type']):
-                gui_name = parameter['gui_type']
-            else:
-                gui_name = 'FuncGui'
-            if not pd.isna(parameter['description']):
-                hint = parameter['description']
-            else:
-                hint = ''
-            try:
-                gui_args = literal_eval(parameter['gui_args'])
-            except (SyntaxError, ValueError):
-                gui_args = {}
+            child_w.setLayout(layout)
+            tab.setWidget(child_w)
+            self.tab_param_widget.addTab(tab, group_name)
 
-            gui_handle = getattr(parameter_widgets, gui_name)
-            self.param_guis[idx] = gui_handle(self.mw.pr, param_name=idx, param_alias=param_alias,
-                                              hint=hint, **gui_args)
-            sub_layout.addWidget(self.param_guis[idx])
+        # Set Layout of QWidget (the class itself)
+        general_layout.addWidget(self.tab_param_widget)
+        self.setLayout(general_layout)
 
-        if 0 < r_cnt <= 5:
-            layout.addLayout(sub_layout)
+    def p_preset_changed(self, idx):
+        self.mw.pr.p_preset = self.p_preset_cmbx.itemText(idx)
+        self.update_all_param_guis()
 
-        self.setLayout(layout)
+    def update_ppreset_cmbx(self):
+        self.p_preset_cmbx.clear()
+        for p_preset in self.mw.pr.parameters.keys():
+            self.p_preset_cmbx.addItem(p_preset)
+        if self.mw.pr.p_preset in self.mw.pr.parameters.keys():
+            self.p_preset_cmbx.setCurrentText(self.mw.pr.p_preset)
+        else:
+            self.p_preset_cmbx.setCurrentText(list(self.mw.pr.parameters.keys())[0])
+
+    def add_p_preset(self):
+        preset_name, ok = QInputDialog.getText(self, 'New Parameter-Preset',
+                                               'Enter a name for a new Parameter-Preset')
+        if ok:
+            self.mw.pr.p_preset = preset_name
+            self.mw.pr.load_default_parameters()
+            self.p_preset_cmbx.addItem(preset_name)
+            self.p_preset_cmbx.setCurrentText(preset_name)
+        else:
+            pass
+
+    def remove_p_preset(self):
+        RemovePPresetDlg(self)
 
     def update_all_param_guis(self):
         for gui_name in self.param_guis:
@@ -153,10 +346,13 @@ class QAllParameters(QWidget):
             param_gui.read_param()
             param_gui.set_param()
 
-    def update_param_gui(self, gui_name):
-        param_gui = self.param_guis[gui_name]
-        param_gui.read_param()
-        param_gui.set_param()
+    def reset_parameters(self):
+        msgbox = QMessageBox.question(self, 'Reset all Parameters?',
+                                      'Do you really want to reset all parameters to their default?',
+                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if msgbox == QMessageBox.Yes:
+            self.mw.pr.load_default_parameters()
+            self.update_all_param_guis()
 
 
 class RunDialog(QDialog):
@@ -303,68 +499,6 @@ class QuickGuide(QDialog):
 
         self.setLayout(layout)
         self.open()
-
-
-class CheckListDlg(QDialog):
-    def __init__(self, parent, data, checked):
-        """
-        BaseClass for A Dialog with a Check-List, open() has to be called in SubClass or directly
-        :param parent: parent-Widget
-        :param data: Data for the Check-List
-        :param checked: List, where Checked Data-Items are stored
-        """
-        super().__init__(parent)
-        self.data = data
-        self.checked = checked
-
-        self.init_ui()
-
-    def init_ui(self):
-        self.layout = QGridLayout()
-
-        self.lv = QListView()
-        self.lm = CheckListModel(self.data, self.checked)
-        self.lv.setModel(self.lm)
-        self.layout.addWidget(self.lv, 0, 0, 1, 2)
-
-        self.do_bt = QPushButton('<Do Something>')
-        self.do_bt.clicked.connect(lambda: None)
-        self.layout.addWidget(self.do_bt, 1, 0)
-
-        self.quit_bt = QPushButton('Quit')
-        self.quit_bt.clicked.connect(self.close)
-        self.layout.addWidget(self.quit_bt, 1, 1)
-
-        self.setLayout(self.layout)
-
-
-class RemoveProjectsDlg(CheckListDlg):
-    def __init__(self, main_win):
-        self.mw = main_win
-        self.rm_list = []
-        super().__init__(main_win, self.mw.projects, self.rm_list)
-
-        self.do_bt.setText('Remove Projects')
-        self.do_bt.clicked.connect()
-
-    def remove_selected(self):
-        for project in self.rm_list:
-            self.mw.projects.remove(project)
-            self.lm.layoutChanged.emit()
-            self.mw.update_project_box()
-
-            # Remove Project-Folder
-            try:
-                shutil.rmtree(join(self.projects_path, project))
-            except OSError:
-                QMessageBox.critical(self, 'Deletion impossible',
-                                     f'The folder of {project} can\'t be deleted and has to be deleted manually')
-
-        # If current project was deleted, load remaining or create New
-        if self.mw.current_project not in self.mw.projects:
-            self.mw.get_projects()
-            self.mw.pr = Project(self.mw, self.mw.current_project)
-            self.mw.project_updated()
 
 
 # Todo: Rework with Model/View
@@ -1206,5 +1340,4 @@ class ChooseCustomModules(QDialog):
     def closeEvent(self, event):
         self.mw.settings['selected_modules'] = self.selected_modules
         self.mw.update_func_bts()
-        self.mw.update_param_gui_tab()
         event.accept()

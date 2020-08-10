@@ -30,7 +30,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, Q
                              QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 from mayavi import mlab
 
-from .dialogs import ChooseCustomModules, CustomFunctionImport, QAllParameters, QuickGuide, \
+from .dialogs import ChooseCustomModules, CustomFunctionImport, ParametersDlg, QuickGuide, \
     RemoveProjectsDlg, RunDialog, \
     SettingsDlg
 from .other_widgets import DataTerminal
@@ -123,6 +123,18 @@ class MainWindow(QMainWindow):
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
         self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
 
+        # Set a dramaturgically order for the groups (which applies for func_groups and parameter_groups)
+        self.group_order = {'General': 0,
+                            'Raw': 1,
+                            'Preprocessing': 2,
+                            'Events': 3,
+                            'Epochs': 3,
+                            'Evoked': 3,
+                            'Time-Frequency': 4,
+                            'Forward': 5,
+                            'Inverse': 6,
+                            'Grand-Average': 7}
+
         # Import the basic- and custom-function-modules
         self.import_custom_modules()
 
@@ -162,11 +174,11 @@ class MainWindow(QMainWindow):
             if hp is None or hp == '':
                 hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
             elif not isdir(hp):
-                hp = QFileDialog.getExistingDirectory(self, f'{hp} not found!\n'
+                hp = QFileDialog.getExistingDirectory(self, f'{hp} not found!'
                                                             f'Select a folder to store your Pipeline-Projects')
             # Check, if path is writable
             elif not os.access(hp, os.W_OK):
-                hp = QFileDialog.getExistingDirectory(self, f'{hp} not writable!\n'
+                hp = QFileDialog.getExistingDirectory(self, f'{hp} not writable!'
                                                             f'Select a folder to store your Pipeline-Projects')
             if hp == '':
                 msg_box = QMessageBox.question(self, 'Cancel Start?',
@@ -187,12 +199,12 @@ class MainWindow(QMainWindow):
 
     def make_base_paths(self):
         self.projects_path = join(self.home_path, 'projects')
-        if not isdir(self.projects_path):
-            os.mkdir(self.projects_path)
-            self.projects = []
         self.subjects_dir = join(self.home_path, 'freesurfer')
         mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
         self.custom_pkg_path = join(self.home_path, 'custom_functions')
+        for path in [self.projects_path, self.subjects_dir, self.custom_pkg_path]:
+            if not isdir(path):
+                os.mkdir(path)
 
     def get_projects(self):
         # Get current_project
@@ -234,8 +246,6 @@ class MainWindow(QMainWindow):
         self.subject_dock.ga_widget.update_treew()
         # Update Funciton-Selection
         self.update_selected_funcs()
-        # Update Parameter-GUIs
-        self.qall_parameters.update_all_param_guis()
         # Update Project-Box
         self.update_project_box()
         # Update Statusbar
@@ -253,12 +263,11 @@ class MainWindow(QMainWindow):
             self.home_path = new_home_path
             self.qsettings.setValue('home_path', self.home_path)
             self.load_settings()
-            self.get_projects()
             self.make_base_paths()
-            self.update_project_box()
+            self.get_projects()
             self.import_custom_modules()
             self.update_func_bts()
-            self.update_param_gui_tab()
+            # self.update_param_gui_tab()
             self.statusBar().showMessage(f'Home-Path: {self.home_path}, '
                                          f'Project: {self.current_project}, '
                                          f'Parameter-Preset: {self.pr.p_preset}')
@@ -285,7 +294,6 @@ class MainWindow(QMainWindow):
             self.pr = Project(self, self.current_project)
             self.project_updated()
 
-    # Todo: Replace with Model/View-Template
     def remove_project(self):
         # First save the former projects-data
         self.save_main()
@@ -294,7 +302,7 @@ class MainWindow(QMainWindow):
     def project_tools(self):
         self.project_box = QComboBox()
         self.project_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        for project in self.pr.projects:
+        for project in self.projects:
             self.project_box.addItem(project)
         self.project_box.setCurrentText(self.current_project)
         self.project_box.activated.connect(self.project_changed)
@@ -474,7 +482,7 @@ class MainWindow(QMainWindow):
         self.customf_menu = self.menuBar().addMenu('&Custom Functions')
         self.aadd_customf = self.customf_menu.addAction('&Add custom Functions', self.add_customf)
 
-        # self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', self.choose_customf)
+        self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', self.choose_customf)
 
         self.areload_custom_modules = QAction('Reload Custom-Modules')
         self.areload_custom_modules.triggered.connect(self.reload_custom_modules)
@@ -500,8 +508,7 @@ class MainWindow(QMainWindow):
         self.settings_menu = self.menuBar().addMenu('&Settings')
 
         self.settings_menu.addAction('&Open Settings', self.settings_dlg)
-        # self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
-        self.settings_menu.addAction('Reset Parameters', self.reset_parameters)
+        self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
 
         self.areload_basic_modules = QAction('Reload Basic-Modules')
         self.areload_basic_modules.triggered.connect(self.reload_basic_modules)
@@ -550,76 +557,95 @@ class MainWindow(QMainWindow):
         close_all_bt.pressed.connect(close_all)
         self.toolbar.addWidget(close_all_bt)
 
-    # Todo: Make Buttons more appealing, mark when check
-    #   make button-dependencies
-    def add_func_bts(self):
-
-        # Drop custom-modules, which aren't selected
-        cleaned_pd_funcs = self.pd_funcs[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))]
-
-        # Remove functions from functions in sel_functions, which are not present in cleaned_pd_funcs
-        for f_rm in [f for f in self.pr.sel_functions if f not in cleaned_pd_funcs.index]:
-            self.pr.sel_functions.pop(f_rm)
-
-        # Add functions from cleaned_pd_funcs, which are not present in sel_functions
-        for f_add in [f for f in cleaned_pd_funcs.index if f not in self.pr.sel_functions]:
-            self.pr.sel_functions[f_add] = 0
-
-        tabs_grouped = cleaned_pd_funcs.groupby('tab')
-        # Add tabs
-        for tab_name, group in tabs_grouped:
-            group_grouped = group.groupby('group')
-            tab = QScrollArea()
-            child_w = QWidget()
-            tab_func_layout = QHBoxLayout()
-            # Add groupbox for each group
-            for function_group, _ in group_grouped:
-                group_box = QGroupBox(function_group, self)
-                setattr(self, f'{function_group}_gbox', group_box)
-                group_box.setCheckable(True)
-                group_box.toggled.connect(self.func_group_toggled)
-                group_box_layout = QVBoxLayout()
-                # Add button for each function
-                for function in group_grouped.groups[function_group]:
-                    if pd.notna(cleaned_pd_funcs.loc[function, 'alias']):
-                        alias_name = cleaned_pd_funcs.loc[function, 'alias']
-                    else:
-                        alias_name = function
-                    pb = QPushButton(alias_name)
-                    pb.setCheckable(True)
-                    self.bt_dict[function] = pb
-                    if self.pr.sel_functions[function]:
-                        pb.setChecked(True)
-                    pb.clicked.connect(partial(self.func_selected, function))
-                    group_box_layout.addWidget(pb)
-                group_box.setLayout(group_box_layout)
-                tab_func_layout.addWidget(group_box)
-            child_w.setLayout(tab_func_layout)
-            tab.setWidget(child_w)
-            self.tab_func_widget.addTab(tab, tab_name)
-
     def init_main_widget(self):
-        self.tab_func_widget = QTabWidget()
+        # Add Function-Buttons
         self.add_func_bts()
-        self.add_param_gui_tab()
-        self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
 
         # Add Main-Buttons
-        clear_bt = QPushButton('Clear', self)
-        start_bt = QPushButton('Start', self)
-        stop_bt = QPushButton('Quit', self)
+        clear_bt = QPushButton('Clear')
+        start_bt = QPushButton('Start')
+        param_bt = QPushButton('Parameters')
+        stop_bt = QPushButton('Quit')
 
         clear_bt.setFont(QFont('AnyStyle', 18))
         start_bt.setFont(QFont('AnyStyle', 18))
+        param_bt.setFont(QFont('AnyStyle', 18))
         stop_bt.setFont(QFont('AnyStyle', 18))
 
         clear_bt.clicked.connect(self.clear)
         start_bt.clicked.connect(self.start)
+        param_bt.clicked.connect(self.open_param_dlg)
         stop_bt.clicked.connect(self.close)
 
         self.general_layout.addWidget(clear_bt, 1, 0)
         self.general_layout.addWidget(start_bt, 1, 1)
-        self.general_layout.addWidget(stop_bt, 1, 2)
+        self.general_layout.addWidget(param_bt, 1, 2)
+        self.general_layout.addWidget(stop_bt, 1, 3)
+
+    def open_param_dlg(self):
+        ParametersDlg(self)
+
+    # Todo: Make Buttons more appealing, mark when check
+    #   make button-dependencies
+    def add_func_bts(self):
+        self.tab_func_widget = QTabWidget()
+        # Drop custom-modules, which aren't selected
+        cleaned_pd_funcs = self.pd_funcs[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))]
+
+        # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
+        if len(cleaned_pd_funcs) != 0:
+            for func_name in cleaned_pd_funcs.index:
+                group_name = cleaned_pd_funcs.loc[func_name, 'group']
+                if group_name in self.group_order:
+                    cleaned_pd_funcs.loc[func_name, 'group_idx'] = self.group_order[group_name]
+                else:
+                    cleaned_pd_funcs.loc[func_name, 'group_idx'] = 100
+
+            # Sort values by group_idx for dramaturgically order
+            cleaned_pd_funcs.sort_values(by='group_idx', inplace=True)
+
+            # Remove functions from sel_functions, which are not present in cleaned_pd_funcs
+            for f_rm in [f for f in self.pr.sel_functions if f not in cleaned_pd_funcs.index]:
+                self.pr.sel_functions.pop(f_rm)
+
+            # Add functions from cleaned_pd_funcs, which are not present in sel_functions
+            for f_add in [f for f in cleaned_pd_funcs.index if f not in self.pr.sel_functions]:
+                self.pr.sel_functions[f_add] = 0
+
+            tabs_grouped = cleaned_pd_funcs.groupby('tab')
+            # Add tabs
+            for tab_name, group in tabs_grouped:
+                group_grouped = group.groupby('group', sort=False)
+                tab = QScrollArea()
+                child_w = QWidget()
+                tab_func_layout = QHBoxLayout()
+                # Add groupbox for each group
+                for function_group, _ in group_grouped:
+                    group_box = QGroupBox(function_group, self)
+                    setattr(self, f'{function_group}_gbox', group_box)
+                    group_box.setCheckable(True)
+                    group_box.toggled.connect(self.func_group_toggled)
+                    group_box_layout = QVBoxLayout()
+                    # Add button for each function
+                    for function in group_grouped.groups[function_group]:
+                        if pd.notna(cleaned_pd_funcs.loc[function, 'alias']):
+                            alias_name = cleaned_pd_funcs.loc[function, 'alias']
+                        else:
+                            alias_name = function
+                        pb = QPushButton(alias_name)
+                        pb.setCheckable(True)
+                        self.bt_dict[function] = pb
+                        if self.pr.sel_functions[function]:
+                            pb.setChecked(True)
+                        pb.clicked.connect(partial(self.func_selected, function))
+                        group_box_layout.addWidget(pb)
+                    group_box.setLayout(group_box_layout)
+                    tab_func_layout.addWidget(group_box)
+                child_w.setLayout(tab_func_layout)
+                tab.setWidget(child_w)
+                self.tab_func_widget.addTab(tab, tab_name)
+
+        self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 4)
 
     # Todo: Do in Place update of funcs and params
     def update_func_bts(self):
@@ -648,119 +674,6 @@ class MainWindow(QMainWindow):
                 if self.pr.sel_functions[function]:
                     self.bt_dict[function].setChecked(True)
 
-    def add_param_gui_tab(self):
-        self.param_tab = QWidget()
-        layout = QVBoxLayout()
-
-        # Add Parameter-Preset-Combobox
-        sublayout = QHBoxLayout()
-        p_preset_l = QLabel('Parameter-Presets: ')
-        sublayout.addWidget(p_preset_l)
-        self.p_preset_cmbx = QComboBox()
-        self.p_preset_cmbx.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        for p_preset in self.pr.parameters:
-            self.p_preset_cmbx.addItem(p_preset)
-        self.p_preset_cmbx.activated.connect(self.p_preset_changed)
-        sublayout.addWidget(self.p_preset_cmbx)
-
-        add_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
-        add_bt.clicked.connect(self.add_p_preset)
-        sublayout.addWidget(add_bt)
-
-        rm_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
-        rm_bt.clicked.connect(self.remove_p_preset)
-        sublayout.addWidget(rm_bt)
-
-        sublayout.addStretch(stretch=2)
-
-        reset_bt = QPushButton('Reset')
-        reset_bt.clicked.connect(self.reset_parameters)
-        sublayout.addWidget(reset_bt)
-
-        layout.addLayout(sublayout)
-
-        self.param_scroll = QScrollArea()
-        self.qall_parameters = QAllParameters(self)
-        self.param_scroll.setWidget(self.qall_parameters)
-
-        layout.addWidget(self.param_scroll)
-        self.param_tab.setLayout(layout)
-        self.tab_func_widget.addTab(self.param_tab, 'Parameters')
-
-    def update_param_gui_tab(self):
-        self.tab_func_widget.removeTab(self.tab_func_widget.indexOf(self.param_tab))
-        self.param_tab.close()
-        del self.param_tab
-
-        self.add_param_gui_tab()
-
-    def update_p_preset_project(self):
-        self.qall_parameters.update_all_param_guis()
-        # To update figures_path
-        self.pr.make_paths()
-
-    def p_preset_changed(self, idx):
-        self.pr.p_preset = self.p_preset_cmbx.itemText(idx)
-        self.update_p_preset_project()
-
-    def add_p_preset(self):
-        preset_name, ok = QInputDialog.getText(self, 'New Parameter-Preset',
-                                               'Enter a name for a new Parameter-Preset')
-        if ok:
-            self.pr.p_preset = preset_name
-            self.pr.load_default_parameters()
-            self.settings['parameter_preset'] = preset_name
-            self.p_preset_cmbx.addItem(preset_name)
-            self.p_preset_cmbx.setCurrentText(preset_name)
-            self.update_p_preset_project()
-        else:
-            pass
-
-    # Todo: Replace with Model/View-Template
-    def remove_p_preset(self):
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Remove Parameter-Preset')
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel('Select Parameter-Presets for removal'))
-
-        plistw = QListWidget(self)
-        for p_preset in [p for p in self.pr.parameters if p != 'Default']:
-            item = QListWidgetItem(p_preset)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
-            plistw.addItem(item)
-        layout.addWidget(plistw)
-
-        def remove_selected():
-            rm_list = []
-            for x in range(plistw.count()):
-                chk_item = plistw.item(x)
-                if chk_item.checkState() == Qt.Checked:
-                    rm_list.append(chk_item.text())
-            # Remove the selected preset from list, dict and combobox
-            for rm_p_preset in rm_list:
-                plistw.takeItem(plistw.row(plistw.findItems(rm_p_preset, Qt.MatchExactly)[0]))
-                self.pr.parameters.pop(rm_p_preset)
-                self.p_preset_cmbx.removeItem(self.p_preset_cmbx.findText(rm_p_preset, Qt.MatchExactly))
-                if rm_p_preset == self.pr.p_preset:
-                    self.pr.p_preset = list(self.pr.parameters.keys())[0]
-                    self.settings['parameter_preset'] = self.pr.p_preset
-                    self.p_preset_cmbx.setCurrentText(self.pr.p_preset)
-            # Update Param-GUIs for new Parameter-Preset
-            self.update_p_preset_project()
-
-        bt_layout = QHBoxLayout()
-        rm_bt = QPushButton('Remove')
-        rm_bt.clicked.connect(remove_selected)
-        bt_layout.addWidget(rm_bt)
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(dialog.close)
-        bt_layout.addWidget(close_bt)
-        layout.addLayout(bt_layout)
-
-        dialog.setLayout(layout)
-        dialog.open()
-
     def add_dock_windows(self):
         self.subject_dock = SubjectDock(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
@@ -771,14 +684,6 @@ class MainWindow(QMainWindow):
 
     def choose_customf(self):
         self.cf_choose = ChooseCustomModules(self)
-
-    def reset_parameters(self):
-        msgbox = QMessageBox.question(self, 'Reset all Parameters?',
-                                      'Do you really want to reset all parameters to their default?',
-                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if msgbox == QMessageBox.Yes:
-            self.pr.load_default_parameters()
-            self.qall_parameters.update_all_param_guis()
 
     def get_ratio_geometry(self, size_ratio):
         self.desk_geometry = self.app.desktop().availableGeometry()

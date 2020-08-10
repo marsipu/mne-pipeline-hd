@@ -74,11 +74,6 @@ class Project:
         self.load_sub_lists()
         self.check_data()
 
-        # Load last parameter-preset
-        self.p_preset = self.mw.get_setting('parameter_preset')
-        if self.p_preset not in self.parameters:
-            self.p_preset = 'Default'
-
         # Parameter-Dict, contains parameters for each parameter-preset
         self.load_parameters()
         self.load_last_p_preset()
@@ -134,8 +129,6 @@ class Project:
                 print(grand_average_path + ' has been created')
 
     def load_sub_lists(self):
-        self.projects = [p for p in listdir(self.mw.projects_path) if isdir(join(self.mw.projects_path, p, 'data'))]
-
         load_dict = {self.file_list_path: 'all_files',
                      self.mri_sub_list_path: 'all_mri_subjects',
                      self.erm_list_path: 'erm_files',
@@ -222,7 +215,7 @@ class Project:
 
     def load_default_parameters(self):
         string_params = dict(self.mw.pd_params['default'])
-        # Empty the dict
+        # Empty the dict for current Parameter-Preset
         self.parameters[self.p_preset] = {}
         for param in string_params:
             try:

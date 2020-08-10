@@ -134,7 +134,7 @@ class IntGui(Param):
         self.init_h_layout()
 
     def set_param(self):
-        self.param_widget.setValue(self.param_value)
+        self.param_widget.setValue(int(self.param_value))
 
     def get_param(self):
         self.param_value = self.param_widget.value()

@@ -14,8 +14,8 @@ from PyQt5.QtGui import QColor, QFont
 class CheckListModel(QAbstractListModel):
     def __init__(self, data=None, checked=None):
         super().__init__()
-        self._data = data or []
-        self._checked = checked or []
+        self._data = data
+        self._checked = checked
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
