@@ -930,6 +930,7 @@ class MainWindow(QMainWindow):
     def save_main(self):
         # Save Parameters
         self.pr.save_parameters()
+        self.pr.save_file_parameters()
         self.pr.save_sub_lists()
 
         self.settings['current_project'] = self.current_project

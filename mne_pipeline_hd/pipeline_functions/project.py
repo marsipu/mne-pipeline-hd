@@ -179,9 +179,6 @@ class Project:
             with open(path, 'w') as file:
                 json.dump(save_dict[path], file, indent=4)
 
-        # Save Pandas-CSV (separator=; for Excel)
-        self.file_parameters.to_csv(self.file_parameters_path, sep=';')
-
     def load_parameters(self):
         try:
             with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'r') as read_file:
@@ -200,7 +197,7 @@ class Project:
                             eval_param = literal_eval(self.mw.pd_params.loc[param, 'default'])
                         except (ValueError, SyntaxError, NameError):
                             # Allow parameters to be defined by functions e.g. by numpy, etc.
-                            if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
+                            if self.mw.pd_params.lfile_parametersoc[param, 'gui_type'] == 'FuncGui':
                                 default_string = self.mw.pd_params.loc[param, 'default']
                                 eval_param = eval(default_string, {'np': np})
                                 exp_name = param + '_exp'
@@ -250,6 +247,10 @@ class Project:
             self.file_parameters = pd.read_csv(self.file_parameters_path, sep=';', index_col=0)
         except EmptyDataError:
             self.file_parameters = pd.DataFrame([], columns=[p for p in self.parameters[self.p_preset].keys()])
+
+    def save_file_parameters(self):
+        # Save Pandas-CSV (separator=; for Excel)
+        self.file_parameters.to_csv(self.file_parameters_path, sep=';')
 
     def check_data(self):
         missing_subjects = [x for x in listdir(self.data_path) if
