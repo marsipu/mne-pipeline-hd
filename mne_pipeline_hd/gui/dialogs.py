@@ -264,9 +264,7 @@ class ParametersDlg(QDialog):
         grouped_params = self.cleaned_pd_params.groupby('group', sort=False)
 
         for group_name, group in grouped_params:
-            layout = QHBoxLayout()
-            sub_layout = QHBoxLayout()
-            c_cnt = 0
+            layout = QVBoxLayout()
             tab = QScrollArea()
             child_w = QWidget()
             for idx, parameter in group.iterrows():
@@ -292,19 +290,8 @@ class ParametersDlg(QDialog):
                 gui_handle = getattr(parameter_widgets, gui_name)
                 self.param_guis[idx] = gui_handle(self.mw.pr, param_name=idx, param_alias=param_alias,
                                                   hint=hint, **gui_args)
-                # Limit layout horizontally to 5 Widgets
-                if c_cnt > 5:
-                    layout.addLayout(sub_layout)
-                    sub_layout = QHBoxLayout()
-                    c_cnt = 0
-                else:
-                    c_cnt += 1
 
-                sub_layout.addWidget(self.param_guis[idx])
-
-            # Add sublayout, if it got remaining Widgets
-            if 0 < c_cnt <= 5:
-                layout.addLayout(sub_layout)
+                layout.addWidget(self.param_guis[idx])
 
             child_w.setLayout(layout)
             tab.setWidget(child_w)
