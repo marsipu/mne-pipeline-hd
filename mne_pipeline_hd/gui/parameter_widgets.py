@@ -377,7 +377,9 @@ class TupleGui(Param):
         self.param_widget2.setValue(self.loaded_value[1])
 
     def get_param(self):
-        self.param_value = (self.param_widget1.value(), self.param_widget2.value())
+        # Tuple can't be differenciated from list by json-Encoder,
+        # so this key makes it possible (pipeline_utils.parameters_json_hook)
+        self.param_value = {'tuple_type': (self.param_widget1.value(), self.param_widget2.value())}
         self.save_param()
 
         return self.param_value

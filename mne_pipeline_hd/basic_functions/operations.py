@@ -530,18 +530,18 @@ def apply_ica(sub):
 
 @topline
 def interpolate_bad_chs(sub, bad_interpolation, enable_ica):
-    if bad_interpolation == 'raw':
+    if bad_interpolation == 'Raw':
         raw = sub.load_raw_filtered()
         new_raw = raw.interpolate_bads(reset_bads=False)
         sub.save_filtered(new_raw)
-    elif bad_interpolation == 'epochs':
+    elif bad_interpolation == 'Epochs':
         if enable_ica:
             epochs = sub.load_ica_epochs()
         else:
             epochs = sub.load_epochs()
         new_epochs = epochs.interpolate_bads(reset_bads=False)
         sub.save_epochs(new_epochs)
-    elif bad_interpolation == 'evokeds':
+    elif bad_interpolation == 'Evokeds':
         evokeds = sub.load_evokeds()
         new_evokeds = []
         for evoked in evokeds:

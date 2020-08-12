@@ -30,13 +30,15 @@ class ParametersJSONEncoder(json.JSONEncoder):
 
         elif isinstance(obj, np.ndarray):
             return {'numpy_array': obj.tolist()}
-        else:
-            return super().default(obj)
+
+        return json.JSONEncoder.default(self, obj)
 
 
 def parameters_json_hook(obj):
     if 'numpy_array' in obj.keys():
         return np.asarray(obj['numpy_array'])
+    elif 'tuple_type' in obj.keys():
+        return tuple(obj['tuple_type'])
     else:
         return obj
 
