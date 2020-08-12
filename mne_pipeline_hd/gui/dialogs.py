@@ -189,7 +189,8 @@ class ParametersDlg(QDialog):
         self.param_guis = {}
 
         # Drop custom-modules, which aren't selected
-        cleaned_pd_funcs = self.mw.pd_funcs[self.mw.pd_funcs['module'].isin(self.mw.get_setting('selected_modules'))]
+        cleaned_pd_funcs = self.mw.pd_funcs.loc[self.mw.pd_funcs['module'].isin(
+                self.mw.get_setting('selected_modules'))].copy()
 
         # Collect args for each function
         self.arg_func_dict = dict()
@@ -204,7 +205,7 @@ class ParametersDlg(QDialog):
                 else:
                     self.arg_func_dict[argument] = [func]
         # Drop Parameters which aren't used by functions (in selected_modules)
-        self.cleaned_pd_params = self.mw.pd_params[self.mw.pd_params.index.isin(self.arg_func_dict.keys())]
+        self.cleaned_pd_params = self.mw.pd_params.loc[self.mw.pd_params.index.isin(self.arg_func_dict.keys())].copy()
 
         # Group Parameters according to groups of their functions (if used by multiple functions, put into "general")
         # Add group-column

@@ -379,7 +379,7 @@ class TupleGui(Param):
     def get_param(self):
         # Tuple can't be differenciated from list by json-Encoder,
         # so this key makes it possible (pipeline_utils.parameters_json_hook)
-        self.param_value = {'tuple_type': (self.param_widget1.value(), self.param_widget2.value())}
+        self.param_value = (self.param_widget1.value(), self.param_widget2.value())
         self.save_param()
 
         return self.param_value
@@ -403,11 +403,13 @@ class CheckTupleGui(TupleGui):
         self.setLayout(layout)
 
     def set_param(self):
-        if self.param_value is None:
+
+        self.loaded_value = self.param_value
+
+        if self.loaded_value is None:
             self.param_widget1.setEnabled(False)
             self.param_widget2.setEnabled(False)
         else:
-            self.loaded_value = self.param_value
             self.param_chkbt.setChecked(True)
             self.param_widget1.setValue(self.loaded_value[0])
             self.param_widget2.setValue(self.loaded_value[1])

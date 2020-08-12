@@ -11,6 +11,7 @@ import json
 import os
 import re
 from ast import literal_eval
+from copy import deepcopy
 from os import listdir, makedirs
 from os.path import exists, isdir, isfile, join
 
@@ -72,7 +73,7 @@ class Project:
 
         self.make_paths()
         self.load_sub_lists()
-        self.check_data()
+        # self.check_data()
 
         # Parameter-Dict, contains parameters for each parameter-preset
         self.load_parameters()
@@ -237,9 +238,15 @@ class Project:
             self.p_preset = list(self.parameters.keys())[0]
 
     def save_parameters(self):
+        # Labeling tuples
+        save_parameters = deepcopy(self.parameters)
+        for p_preset in self.parameters:
+            for key in self.parameters[p_preset]:
+                if isinstance(self.parameters[p_preset][key], tuple):
+                    save_parameters[p_preset][key] = {'tuple_type': self.parameters[p_preset][key]}
         with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'w') as write_file:
             # Use customized Encoder to deal with arrays
-            json.dump(self.parameters, write_file, cls=ParametersJSONEncoder, indent=4)
+            json.dump(save_parameters, write_file, cls=ParametersJSONEncoder, indent=4)
 
     def load_file_parameters(self):
         # Load Pandas-CSV (separator=; for Excel)
