@@ -7,15 +7,38 @@ import pandas as pd
 
 
 class PandasTableModel(QAbstractTableModel):
-    def __init__(self, pd_data):
+    """
+    Base TableModel for Pandas-DataFrames
+    """
+    def __init__(self, pd_data=None):
+        """
+        :param pd_data: The data of the model.
+        important: data is rereferenced internally!!!
+        So either subclass and change data to change an objects reference or take data from model directly
+        """
         super().__init__()
-        self.pd_data = pd_data
+        self.pd_data = pd_data or pd.DataFrame([])
 
     def data(self, index, role=None):
         value = self.pd_data.iloc[index.row(), index.column()]
 
         if role == Qt.DisplayRole:
             return value
+
+    def setData(self, index, value, role=None):
+        if role == Qt.EditRole:
+            try:
+                self.pd_data.iloc[index.row(), index.column()] = value
+                self.dataChanged.emit(index, index, [role])
+                return True
+
+            except ValueError:
+                return False
+
+        return False
+
+    def flags(self, index=None):
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
 
     def rowCount(self, index=None):
         return len(self.pd_data.index)
@@ -30,39 +53,53 @@ class PandasTableModel(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 return str(self.pd_data.index[idx])
 
+    def insertRows(self, row, count, index=None):
+        self.beginInsertRows(index, row, row + count - 1)
+        add_data = pd.DataFrame(np.nan, index=[r for r in range(row, count)],
+                                columns=self.pd_data.columns)
+        if row == 0:
+            self.pd_data = pd.concat([add_data, self.pd_data])
+        elif row == len(self.pd_data.index):
+            self.pd_data = self.pd_data.append(add_data)
+        else:
+            self.pd_data = pd.concat([self.pd_data.iloc[:row], add_data, self.pd_data.iloc[row:]])
+        self.endInsertRows()
 
-class AddFilesModel(PandasTableModel):
-    def __init__(self, pd_data):
-        super().__init__(pd_data)
+        return True
 
-    def data(self, index, role=None):
-        value = str(self.pd_data.iloc[index.row(), index.column()])
-        column = self.pd_data.columns[index.column()]
+    def insertColumns(self, column, count, index=None):
+        self.beginInsertColumns(index, column, column + count - 1)
+        add_data = pd.DataFrame(np.nan, index=self.pd_data.index,
+                                columns=[c for c in range(column, count)])
+        if column == 0:
+            self.pd_data = pd.concat([add_data, self.pd_data], axis=1)
+        elif column == len(self.pd_data.columns):
+            for column in add_data.columns:
+                self.pd_data[column] = add_data[column]
+        else:
+            self.pd_data = pd.concat([self.pd_data[:column], add_data, self.pd_data[column:]], axis=1)
+        self.endInsertColumns()
 
-        if role == Qt.DisplayRole:
-            return value
+        return True
 
-        if role == Qt.CheckStateRole:
-            if column == 'Is Empty-Room?':
-                if value:
-                    return Qt.Checked
-                else:
-                    return Qt.Unchecked
+    def removeRows(self, row, count, index=None):
+        self.beginRemoveRows(index, row, row + count - 1)
+        for _ in range(count):
+            self.pd_data.drop(index=row, inplace=True)
+        self.endRemoveRows()
 
-    def flags(self, index):
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+        return True
 
-    def setData(self, index, value, role=None):
-        if role == Qt.EditRole:
-            self.pd_data.iloc[index.row(), index.column()] = value
-            self.dataChanged.emit()
+    def removeColumns(self, column, count, index=None):
+        self.beginRemoveColumns(index, column, column + count - 1)
+        for _ in range(count):
+            self.pd_data.drop(column=column, inplace=True)
+        self.endRemoveRows()
 
-            return True
-
-        return False
+        return True
 
 
-class EditableTableTest(QWidget):
+class PandasModelTest(QWidget):
     def __init__(self):
         super().__init__()
 
@@ -75,7 +112,7 @@ class EditableTableTest(QWidget):
         self.layout = QVBoxLayout()
 
         self.table_view = QTableView()
-        self.table_model = AddFilesModel(self.pd_data)
+        self.table_model = PandasTableModel(self.pd_data)
         self.table_view.setModel(self.table_model)
         self.layout.addWidget(self.table_view)
 
@@ -90,7 +127,7 @@ class EditableTableTest(QWidget):
         self.setLayout(self.layout)
 
     def add_row(self):
-        self.pd_data = self.pd_data.append(pd.Series([1, 2, 3, 4], index=self.pd_data.columns), ignore_index=True)
+        selection = self.table_model.selectionModel()
         self.table_model.layoutChanged.emit()
 
     def remove_row(self):
@@ -105,5 +142,5 @@ timer.timeout.connect(lambda: None)
 timer.start(500)
 
 app = QApplication(sys.argv)
-testw = EditableTableTest()
+testw = PandasModelTest()
 sys.exit(app.exec())
