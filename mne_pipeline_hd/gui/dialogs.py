@@ -299,6 +299,11 @@ class ParametersDlg(QDialog):
 
         # Set Layout of QWidget (the class itself)
         general_layout.addWidget(self.tab_param_widget)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        general_layout.addWidget(close_bt)
+
         self.setLayout(general_layout)
 
     def p_preset_changed(self, idx):
