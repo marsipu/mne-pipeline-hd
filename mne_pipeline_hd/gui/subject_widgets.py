@@ -846,6 +846,7 @@ class AddFilesWidget(QWidget):
         self.mw.pr.info_dict[new_fname] = {}
         for key in info_keys:
             self.mw.pr.info_dict[new_fname][key] = raw.info[key]
+        # Todo: Add sampling-rate
         # Add arrays of digitization-points and save it to json to make the trans-file-management possible
         # (same digitization = same trans-file)
         if raw.info['dig'] is not None:

@@ -389,7 +389,7 @@ class MainWindow(QMainWindow):
             pkg_name = directory.name
             pkg_path = directory.path
             file_dict = {'functions': None, 'parameters': None, 'module': None}
-            for file_name in listdir(pkg_path):
+            for file_name in [f for f in listdir(pkg_path) if not f.startswith(('.', '_'))]:
                 functions_match = re.match(pd_functions_pattern, file_name)
                 parameters_match = re.match(pd_parameters_pattern, file_name)
                 custom_module_match = re.match(custom_module_pattern, file_name)
