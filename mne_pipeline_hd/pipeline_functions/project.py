@@ -198,7 +198,7 @@ class Project:
                             eval_param = literal_eval(self.mw.pd_params.loc[param, 'default'])
                         except (ValueError, SyntaxError, NameError):
                             # Allow parameters to be defined by functions e.g. by numpy, etc.
-                            if self.mw.pd_params.lfile_parametersoc[param, 'gui_type'] == 'FuncGui':
+                            if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
                                 default_string = self.mw.pd_params.loc[param, 'default']
                                 eval_param = eval(default_string, {'np': np})
                                 exp_name = param + '_exp'

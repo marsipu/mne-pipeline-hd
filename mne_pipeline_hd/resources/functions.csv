@@ -7,13 +7,13 @@ apply_ica;Apply ICA;Compute;Preprocessing;True;False;False;;operations;sub
 interpolate_bad_chs;Interpolate Bad-Channels;Compute;Preprocessing;True;False;False;;operations;sub, bad_interpolation, enable_ica
 get_evokeds;Get Evokeds;Compute;Events;True;False;False;;operations;sub, enable_ica
 tfr;;Compute;Time-Frequency;True;False;False;;operations;sub, enable_ica, tfr_freqs, overwrite_tfr, tfr_method, multitaper_bandwith, stockwell_width, n_jobs
-apply_watershed;;Compute;Forward;True;False;False;;operations;mri_sub
-prepare_bem;;Compute;Forward;True;False;False;;operations;mri_sub
-setup_src;;Compute;Forward;True;False;False;;operations;mri_sub, source_space_spacing, surface, n_jobs
-compute_src_distances;;Compute;Forward;True;False;False;;operations;mri_sub, n_jobs
-setup_vol_src;;Compute;Forward;True;False;False;;operations;mri_sub
-morph_subject;;Compute;Forward;True;False;False;;operations;mri_sub, morph_to
-morph_labels_from_fsaverage;;Compute;Forward;True;False;False;;operations;mri_sub
+apply_watershed;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub
+prepare_bem;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub
+setup_src;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub, source_space_spacing, surface, n_jobs
+compute_src_distances;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub, n_jobs
+setup_vol_src;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub
+morph_subject;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub, morph_to
+morph_labels_from_fsaverage;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub
 create_forward_solution;;Compute;Forward;True;False;False;;operations;sub, n_jobs, eeg_fwd
 estimate_noise_covariance;;Compute;Inverse;True;False;False;;operations;sub, baseline, n_jobs, erm_noise_cov, calm_noise_cov, enable_ica
 create_inverse_operator;;Compute;Inverse;True;False;False;;operations;sub
@@ -28,9 +28,9 @@ grand_avg_tfr;;Compute;Grand-Average;False;False;False;;operations;ga_group
 grand_avg_morphed;;Compute;Grand-Average;False;False;False;;operations;ga_group
 grand_avg_ltc;;Compute;Grand-Average;False;False;False;;operations;ga_group
 grand_avg_connect;;Compute;Grand-Average;False;False;False;;operations;ga_group
-plot_source_space;;Plot;Forward;True;True;True;;plot;mri_sub
-plot_bem;;Plot;Forward;True;True;False;;plot;mri_sub
-plot_labels;;Plot;Forward;True;True;True;;plot;mri_sub, parcellation
+plot_source_space;;Plot;MRI-Preprocessing;True;True;True;;plot;mri_sub
+plot_bem;;Plot;MRI-Preprocessing;True;True;False;;plot;mri_sub
+plot_labels;;Plot;MRI-Preprocessing;True;True;True;;plot;mri_sub, parcellation
 plot_noise_covariance;;Plot;Inverse;True;True;False;;plot;sub
 plot_transformation;;Plot;Forward;True;True;True;;plot;sub
 plot_sensitivity_maps;;Plot;Inverse;True;True;True;;plot;sub, ch_types
