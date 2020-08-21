@@ -576,27 +576,25 @@ def plot_source_space_connectivity(sub, target_labels, con_fmin, con_fmax):
     # First, we reorder the labels based on their location in the left hemi
     label_names = [label.name for label in actual_labels]
 
-    lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
-    rh_labels = [l_name for l_name in label_names if l_name.endswith('rh')]
+    lh_label_names = [l_name for l_name in label_names if l_name.endswith('lh')]
+    rh_label_names = [l_name for l_name in label_names if l_name.endswith('rh')]
 
     # Get the y-location of the label
     lh_label_ypos = list()
-    for l_name in lh_labels:
+    for l_name in lh_label_names:
         idx = label_names.index(l_name)
         ypos = np.mean(actual_labels[idx].pos[:, 1])
         lh_label_ypos.append(ypos)
 
     rh_label_ypos = list()
-    for l_name in lh_labels:
+    for l_name in rh_label_names:
         idx = label_names.index(l_name)
         ypos = np.mean(actual_labels[idx].pos[:, 1])
         rh_label_ypos.append(ypos)
 
     # Reorder the labels based on their location
-    lh_labels = [label for (yp, label) in sorted(zip(lh_label_ypos, lh_labels))]
-    rh_labels = [label for (yp, label) in sorted(zip(rh_label_ypos, rh_labels))]
-    # For the right hemi
-    # rh_labels = [label[:-2] + 'rh' for label in lh_labels]
+    lh_labels = [label for (yp, label) in sorted(zip(lh_label_ypos, lh_label_names))]
+    rh_labels = [label for (yp, label) in sorted(zip(rh_label_ypos, rh_label_names))]
 
     # Save the plot order and create a circular layout
     node_order = list()
@@ -621,13 +619,13 @@ def plot_source_space_connectivity(sub, target_labels, con_fmin, con_fmax):
 # %% Grand-Average Plots
 @topline
 def plot_grand_avg_evokeds(ga_group):
-    ga_dict = ga_group.lad_ga_evokeds()
+    ga_evokeds = ga_group.load_ga_evokeds()
 
-    for trial in ga_dict:
-        fig = ga_dict[trial].plot(window_title=f'{ga_group.name}-{trial}',
-                                  spatial_colors=True, gfp=True)
+    for evoked in ga_evokeds:
+        fig = evoked.plot(window_title=f'{ga_group.name}-{evoked.comment}',
+                          spatial_colors=True, gfp=True)
 
-        plot_save(ga_group, 'ga_evokeds', trial=trial, matplotlib_figure=fig)
+        plot_save(ga_group, 'ga_evokeds', trial=evoked.comment, matplotlib_figure=fig)
 
 
 @topline
