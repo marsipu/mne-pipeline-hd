@@ -1113,7 +1113,7 @@ class CurrentGAGroup(BaseSub):
         # Paths
         ################################################################################################################
 
-        self.ga_evokeds_path = join(self.save_dir, 'evokeds',
+        self.ga_evokeds_path = join(self.save_dir, 'evoked',
                                     f'{self.name}_{self.p_preset}-ave.fif')
 
     ####################################################################################################################
