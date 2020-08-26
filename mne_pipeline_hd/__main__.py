@@ -15,15 +15,10 @@ from pathlib import Path
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication
 
-# Enable start from command-line (module installed via pip, thus mne_pipeline_hd already in sys.path,
-# but on the other hand package_dir not in sys.path (import src not working))
-# For start from __main__.py-script (for example in IDE), mne_pipeline_hd not in sys.path so it is added
-try:
-    # if installed via pip, currently always the pip installed package is loaded
-    import mne_pipeline_hd
-except ModuleNotFoundError:
-    # Get the package_path, should work across platforms and in spyder
-    package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent)
+# Enable start also when not installed via pip (e.g. for development)
+# Get the package_path and add it, should work across platforms and in spyder
+package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent)
+if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
 
 from mne_pipeline_hd.gui import main_window

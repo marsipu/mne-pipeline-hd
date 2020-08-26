@@ -22,10 +22,12 @@ from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
-                             QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton, QSizePolicy,
+                             QListView, QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
+                             QSizePolicy,
                              QStyle, QTabWidget,
-                             QTableWidget,
-                             QTableWidgetItem, QTableWidgetSelectionRange, QTextEdit, QTreeWidget, QTreeWidgetItem,
+                             QTableView, QTableWidget,
+                             QTableWidgetItem, QTableWidgetSelectionRange, QTextEdit, QTreeView, QTreeWidget,
+                             QTreeWidgetItem,
                              QVBoxLayout,
                              QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
@@ -1584,7 +1586,7 @@ class SubBadsWidget(QWidget):
         # evt has to be in parameters, otherwise it won't work
         self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
         self.mw.pr.save_sub_lists()
-
+        # Todo: Save raw again with bads in raw.info['bads']
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
@@ -1743,6 +1745,25 @@ class SubjectWizard(QWizard):
         self.addPage(self.assign_bad_channels_page)
 
 
+class EventIDGui(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.general_layout = QVBoxLayout()
+
+        self.list_layout = QHBoxLayout()
+
+        self.file_view = QListView()
+        self.eventid_view = QTableView()
+        self.eventgroup_view = QTreeView()
+
+
+
+# Deprecated I/O-Functions
 def read_files(file_list_path):
     file_list = []
     file_name = Path(file_list_path).name
