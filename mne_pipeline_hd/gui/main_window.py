@@ -35,7 +35,7 @@ from .dialogs import ChooseCustomModules, CustomFunctionImport, ParametersDlg, Q
     SettingsDlg
 from .other_widgets import DataTerminal
 from .parameter_widgets import BoolGui, ComboGui, IntGui
-from .qt_utils import ErrorDialog, get_exception_tuple
+from .gui_utils import ErrorDialog, get_exception_tuple
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
 from .. import basic_functions, resources
@@ -181,10 +181,9 @@ class MainWindow(QMainWindow):
                 hp = QFileDialog.getExistingDirectory(self, f'{hp} not writable!'
                                                             f'Select a folder to store your Pipeline-Projects')
             if hp == '':
-                msg_box = QMessageBox.question(self, 'Cancel Start?',
+                answer = QMessageBox.question(self, 'Cancel Start?',
                                                'You can\'t start without this step, '
                                                'do you want to cancel the start?')
-                answer = msg_box.exec()
                 if answer == QMessageBox.Yes:
                     raise RuntimeError('User canceled start')
             # Check, if the new selected Path from the Dialog is writable

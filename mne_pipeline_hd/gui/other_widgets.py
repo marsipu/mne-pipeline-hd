@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel
     QVBoxLayout
 
 from mne_pipeline_hd.basic_functions.loading import CurrentSub
-from mne_pipeline_hd.gui.qt_utils import Worker, get_exception_tuple
+from mne_pipeline_hd.gui.gui_utils import Worker, get_exception_tuple
 
 
 class LoadSignals(QObject):

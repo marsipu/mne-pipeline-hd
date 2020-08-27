@@ -22,7 +22,7 @@ if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
 
 from mne_pipeline_hd.gui import main_window
-from mne_pipeline_hd.gui.qt_utils import StderrStream, StdoutStream
+from mne_pipeline_hd.gui.gui_utils import StderrStream, StdoutStream
 from mne_pipeline_hd.pipeline_functions import ismac
 
 

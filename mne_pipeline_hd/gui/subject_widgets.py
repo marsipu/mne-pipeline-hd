@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
 from matplotlib import pyplot as plt
 
 from ..basic_functions import loading
-from .qt_utils import (ErrorDialog, Worker)
+from .gui_utils import (ErrorDialog, Worker)
 
 
 def file_indexing(which_file, all_files):

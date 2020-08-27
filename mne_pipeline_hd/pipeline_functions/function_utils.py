@@ -16,7 +16,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 
 from ..basic_functions.loading import BaseSub, CurrentGAGroup, CurrentMRISub, CurrentSub
 from ..basic_functions.plot import close_all
-from ..gui.qt_utils import Worker
+from ..gui.gui_utils import Worker
 
 
 def get_arguments(arg_names, sub, main_win):

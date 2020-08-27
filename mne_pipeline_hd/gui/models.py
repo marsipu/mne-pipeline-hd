@@ -15,18 +15,13 @@ import numpy as np
 
 
 class BaseListModel(QAbstractListModel):
-    """
-    A basic List-Model
+    """ A basic List-Model
 
     Parameters
     ----------
     data : list of str
-        contains list-values, defaults to empty list
+        input existing list here, otherwise defaults to empty list
 
-    Attributes
-    ----------
-    _data : list of str
-        internal reference to list of strings
     """
 
     def __init__(self, data=None):
@@ -37,17 +32,27 @@ class BaseListModel(QAbstractListModel):
         if role == Qt.DisplayRole:
             return self._data[index.row()]
 
-    def rowCount(self, index=None):
+    def rowCount(self, index=QModelIndex()):
         return len(self._data)
 
 
 class EditListModel(BaseListModel):
-    """An editable List-Model"""
+    """An editable List-Model
+
+    Parameters
+    ----------
+    data : list of str
+        input existing list here, otherwise defaults to empty list
+
+    Notes
+    -----
+    This model only returns strings, so any value entered will be converted to a string
+    """
 
     def __init__(self, data):
         super().__init__(data)
 
-    def flags(self, index=None):
+    def flags(self, index=QModelIndex()):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
     def setData(self, index, value, role=None):
@@ -57,17 +62,17 @@ class EditListModel(BaseListModel):
             return True
         return False
 
-    def insertRows(self, row, count, index=None):
+    def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
-        for pos in range(row, count):
+        for pos in range(row, row + count):
             self._data.insert(pos, '')
         self.endInsertRows()
         return True
 
-    def removeRows(self, row, count, index=None):
+    def removeRows(self, row, count, index=QModelIndex()):
         self.beginRemoveRows(index, row, row + count - 1)
-        for pos in range(row, count):
-            self._data.remove(pos)
+        for item in [self._data[i] for i in range(row, row + count)]:
+            self._data.remove(item)
         self.endRemoveRows()
         return True
 
@@ -76,14 +81,17 @@ class CheckListModel(BaseListModel):
     """
     A Model for a Check-List
 
-    Attributes
+    Parameters
     ----------
-    _data : list of str
-        contains list-values, defaults to empty list
+    data : list
+        list with content to be displayed, defaults to empty list
 
-    _checked : list of str
-        contains checked values from list
+    checked : list
+        list which stores the checked items from data
 
+    Notes
+    -----
+    This model only returns strings, so any value entered will be converted to a string
     """
 
     def __init__(self, data=None, checked=None):
@@ -96,7 +104,7 @@ class CheckListModel(BaseListModel):
             return self._data[index.row()]
 
         if role == Qt.CheckStateRole:
-            if index.data(Qt.DisplayRole) in self._checked:
+            if self._data[index.row()] in self._checked:
                 return Qt.Checked
             else:
                 return Qt.Unchecked
@@ -104,24 +112,31 @@ class CheckListModel(BaseListModel):
     def setData(self, index, value, role=None):
         if role == Qt.CheckStateRole:
             if value == Qt.Checked:
-                self._checked.append(index.data(Qt.DisplayRole))
+                self._checked.append(self._data[index.row()])
             else:
-                self._checked.remove(index.data(Qt.DisplayRole))
+                self._checked.remove(self._data[index.row()])
             self.dataChanged.emit(index, index)
             return True
         return False
 
-    def flags(self, index=None):
+    def flags(self, index=QModelIndex()):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
 
 
 class BasePandasModel(QAbstractTableModel):
-    def __init__(self, pd_data=None):
+    """Basic Model for pandas DataFrame
+
+    Parameters
+    ----------
+    data : pandas.DataFrame | None
+        pandas DataFrame with contents to be displayed, defaults to empty DataFrame
+    """
+    def __init__(self, data=None):
         super().__init__()
-        self.pd_data = pd_data
+        self._data = data or pd.DataFrame([])
 
     def data(self, index, role=None):
-        value = self.pd_data.iloc[index.row(), index.column()]
+        value = self._data.iloc[index.row(), index.column()]
 
         if role == Qt.DisplayRole:
             return value
@@ -129,29 +144,36 @@ class BasePandasModel(QAbstractTableModel):
     def headerData(self, idx, orientation, role=None):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
-                return str(self.pd_data.columns[idx])
+                return str(self._data.columns[idx])
             if orientation == Qt.Vertical:
-                return str(self.pd_data.index[idx])
+                return str(self._data.index[idx])
 
-    def rowCount(self, index=None):
-        return len(self.pd_data.index)
+    def rowCount(self, index=QModelIndex()):
+        return len(self._data.index)
 
-    def columnCount(self, index=None):
-        return len(self.pd_data.columns)
+    def columnCount(self, index=QModelIndex()):
+        return len(self._data.columns)
 
 
 class EditPandasModel(BasePandasModel):
+    """ Editable TableModel for Pandas DataFrames
+    Parameters
+    ----------
+    data : pandas.DataFrame | None
+        pandas DataFrame with contents to be displayed, defaults to empty DataFrame
+
+    Notes
+    -----
+    The reference of the original input-DataFrame is lost when edited by this Model,
+    you need to retrieve it directly from the model after editing
     """
-    Editable TableModel for Pandas-DataFrames
-    """
-    def __init__(self, pd_data=None):
+    def __init__(self, data=None):
         """
-        :param pd_data: The data of the model.
+        :param data: The data of the model.
         important: pd_data is rereferenced internally!!!
         So either subclass and set pd_data to an objects reference or retrieve pd_data from model directly
         """
-        super().__init__(pd_data)
-        self.pd_data = pd_data or pd.DataFrame([])
+        super().__init__(data)
 
     def setData(self, index, value, role=None):
         if role == Qt.EditRole:
@@ -165,10 +187,10 @@ class EditPandasModel(BasePandasModel):
 
         return False
 
-    def flags(self, index=None):
+    def flags(self, index=QModelIndex()):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
-    def insertRows(self, row, count, index=None):
+    def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
         add_data = pd.DataFrame(np.nan, index=[r for r in range(row, count)],
                                 columns=self.pd_data.columns)
@@ -182,7 +204,7 @@ class EditPandasModel(BasePandasModel):
 
         return True
 
-    def insertColumns(self, column, count, index=None):
+    def insertColumns(self, column, count, index=QModelIndex()):
         self.beginInsertColumns(index, column, column + count - 1)
         add_data = pd.DataFrame(np.nan, index=self.pd_data.index,
                                 columns=[c for c in range(column, count)])
@@ -197,16 +219,16 @@ class EditPandasModel(BasePandasModel):
 
         return True
 
-    def removeRows(self, row, count, index=None):
+    def removeRows(self, row, count, index=QModelIndex()):
         self.beginRemoveRows(index, row, row + count - 1)
-        self.pd_data.drop(index=[r for r in range(count)], inplace=True)
+        self.pd_data.drop(index=[self.pd_data.index[r] for r in range(row, count)], inplace=True)
         self.endRemoveRows()
 
         return True
 
-    def removeColumns(self, column, count, index=None):
+    def removeColumns(self, column, count, index=QModelIndex()):
         self.beginRemoveColumns(index, column, column + count - 1)
-        self.pd_data.drop(columns=[c for c in range(count)], inplace=True)
+        self.pd_data.drop(columns=[self.pd_data.columns[c] for c in range(column, count)], inplace=True)
         self.endRemoveRows()
 
         return True
@@ -232,8 +254,8 @@ class AddFilesModel(BasePandasModel):
         super().__init__(pd_data)
 
     def data(self, index, role=None):
-        value = self.pd_data.iloc[index.row(), index.column()]
-        column = self.pd_data.columns[index.column()]
+        value = self._data.iloc[index.row(), index.column()]
+        column = self._data.columns[index.column()]
 
         if role == Qt.DisplayRole:
             return value
