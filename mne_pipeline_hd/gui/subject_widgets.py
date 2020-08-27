@@ -32,6 +32,7 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
                              QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
+from .models import FileDictModel
 from ..basic_functions import loading
 from .gui_utils import (ErrorDialog, Worker)
 
@@ -1757,66 +1758,6 @@ class EventIDGui(QDialog):
 
         self.list_layout = QHBoxLayout()
 
-        self.file_view = QListView()
-        self.eventid_view = QTableView()
-        self.eventgroup_view = QTreeView()
-
-
-
-# Deprecated I/O-Functions
-def read_files(file_list_path):
-    file_list = []
-    file_name = Path(file_list_path).name
-    try:
-        with open(file_list_path, 'r') as sl:
-            for line in sl:
-                current_place = line[:-1]
-                file_list.append(current_place)
-
-    except FileNotFoundError:
-        print(f'{file_name} not yet created')
-        pass
-
-    return file_list
-
-
-def read_sub_dict(sub_dict_path):
-    sub_dict = {}
-    file_name = Path(sub_dict_path).name
-    try:
-        with open(sub_dict_path, 'r') as sd:
-            for item in sd:
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    value = value[:-1]
-                    sub_dict[key] = value
-
-    except FileNotFoundError:
-        print(f'{file_name} not yet created, run add_sub_dict')
-
-    return sub_dict
-
-
-def read_bad_channels_dict(bad_channels_dict_path):
-    bad_channels_dict = {}
-
-    try:
-        with open(bad_channels_dict_path, 'r') as bd:
-            for item in bd:
-                if ':' in item:
-                    key, value = item.split(':', 1)
-                    value = value[:-1]
-                    eval_value = literal_eval(value)
-                    if 'MEG' not in value:
-                        new_list = []
-                        for ch in eval_value:
-                            ch_name = f'MEG {ch:03}'
-                            new_list.append(ch_name)
-                        bad_channels_dict[key] = new_list
-                    else:
-                        bad_channels_dict[key] = eval_value
-
-    except FileNotFoundError:
-        print('bad_channels_dict.py not yet created, run add_bad_channels_dict')
-
-    return bad_channels_dict
+        self.files_model = FileDictModel(self.mw.pr.all_files, self.mw.pr.event_id_dict)
+        self.files_view = QListView()
+        self.files_view.setModel(self.files_model)

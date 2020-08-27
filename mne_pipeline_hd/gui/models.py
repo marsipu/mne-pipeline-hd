@@ -258,7 +258,6 @@ class EditPandasModel(BasePandasModel):
 class FileDictModel(BaseListModel):
     def __init__(self, data, file_dict):
         super().__init__(data)
-        self._data = data
         self.file_dict = file_dict
 
     def data(self, index, role=None):

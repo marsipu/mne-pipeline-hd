@@ -315,20 +315,20 @@ class AllBaseWidgets(QWidget):
     def __init__(self):
         super().__init__()
 
-        # self.exlist = ['Athena', 'Hephaistos', 'Zeus', 'Ares', 'Aphrodite', 'Poseidon']
-        # self.exchecked = ['Athena']
-        # self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
-        # self.extree = {'A': {'Aa': 1,
-        #                      'Ab': {'Ab1': 'Hermes',
-        #                             'Ab2': 'Hades'},
-        #                      'Ac': [1, 2, 3, 4]},
-        #                'B': ['Appolo', 42, 128],
-        #                'C': (1, 2, 3)}
+        self.exlist = ['Athena', 'Hephaistos', 'Zeus', 'Ares', 'Aphrodite', 'Poseidon']
+        self.exchecked = ['Athena']
+        self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
+        self.extree = {'A': {'Aa': 1,
+                             'Ab': {'Ab1': 'Hermes',
+                                    'Ab2': 'Hades'},
+                             'Ac': [1, 2, 3, 4]},
+                       'B': ['Appolo', 42, 128],
+                       'C': (1, 2, 3)}
 
-        self.exlist = None
-        self.exchecked = None
-        self.expd = None
-        self.extree = None
+        # self.exlist = None
+        # self.exchecked = None
+        # self.expd = None
+        # self.extree = None
 
         self.widget_dict = {'BaseList': [self.exlist],
                             'EditList': [self.exlist],

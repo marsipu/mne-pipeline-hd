@@ -46,6 +46,8 @@ class Project:
         self.erm_dict = {}
         # Stores Bad-Channels for each MEG/EEG-File
         self.bad_channels_dict = {}
+        # Stores Event-ID for each MEG/EEG-File
+        self.event_id_dict = {}
         # Groups MEG/EEG-Files for Grand-Average
         self.grand_avg_dict = {}
         # Stores selected Info-Attributes for each file
@@ -95,6 +97,7 @@ class Project:
         self.sub_dict_path = join(self.pscripts_path, 'sub_dict.json')
         self.erm_dict_path = join(self.pscripts_path, 'erm_dict.json')
         self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.json')
+        self.event_id_dict_path = join(self.pscripts_path, 'event_id_dict.json')
         self.grand_avg_dict_path = join(self.pscripts_path, 'grand_avg_dict.json')
         self.info_dict_path = join(self.pscripts_path, 'info_dict.json')
         self.file_parameters_path = join(self.pscripts_path, 'file_parameters.csv')
@@ -106,9 +109,9 @@ class Project:
         path_lists = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
                       self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
-                      self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.grand_avg_dict_path,
-                      self.info_dict_path, self.file_parameters_path, self.sel_files_path, self.sel_mri_files_path,
-                      self.sel_ga_groups_path, self.selected_funcs_path]
+                      self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.event_id_dict_path,
+                      self.grand_avg_dict_path, self.info_dict_path, self.file_parameters_path, self.sel_files_path,
+                      self.sel_mri_files_path, self.sel_ga_groups_path, self.selected_funcs_path]
 
         for path in path_lists:
             if not exists(path):
@@ -136,6 +139,7 @@ class Project:
                      self.sub_dict_path: 'sub_dict',
                      self.erm_dict_path: 'erm_dict',
                      self.bad_channels_dict_path: 'bad_channels_dict',
+                     self.event_id_dict_path: 'event_id_dict',
                      self.grand_avg_dict_path: 'grand_avg_dict',
                      self.info_dict_path: 'info_dict',
                      self.sel_files_path: 'sel_files',
@@ -151,17 +155,6 @@ class Project:
             except json.decoder.JSONDecodeError:
                 pass
 
-    def load_py_lists(self):
-        self.all_files = subs.read_files(join(self.pscripts_path, 'file_list.py'))
-        self.all_mri_subjects = subs.read_files(join(self.pscripts_path, 'mri_sub_list.py'))
-        self.erm_files = subs.read_files(join(self.pscripts_path, 'erm_list.py'))
-        self.sub_dict = subs.read_sub_dict(join(self.pscripts_path, 'sub_dict.py'))
-        self.erm_dict = subs.read_sub_dict(join(self.pscripts_path, 'erm_dict.py'))
-        self.bad_channels_dict = subs.read_bad_channels_dict(join(self.pscripts_path, 'bad_channels_dict.py'))
-
-        self.mw.subject_dock.update_subjects_list()
-        self.mw.subject_dock.update_mri_subjects_list()
-
     def save_sub_lists(self):
         save_dict = {self.file_list_path: self.all_files,
                      self.erm_list_path: self.erm_files,
@@ -169,6 +162,7 @@ class Project:
                      self.sub_dict_path: self.sub_dict,
                      self.erm_dict_path: self.erm_dict,
                      self.bad_channels_dict_path: self.bad_channels_dict,
+                     self.event_id_dict_path: self.event_id_dict,
                      self.grand_avg_dict_path: self.grand_avg_dict,
                      self.info_dict_path: self.info_dict,
                      self.sel_files_path: self.sel_files,
