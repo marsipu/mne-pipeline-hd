@@ -133,19 +133,22 @@ class BasePandasModel(QAbstractTableModel):
     """
     def __init__(self, data=None):
         super().__init__()
-        self._data = data or pd.DataFrame([])
+        if data is None:
+            self._data = pd.DataFrame(np.nan, index=[], columns=[])
+        else:
+            self._data = data
 
     def data(self, index, role=None):
         value = self._data.iloc[index.row(), index.column()]
 
         if role == Qt.DisplayRole:
-            return value
+            return str(value)
 
     def headerData(self, idx, orientation, role=None):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 return str(self._data.columns[idx])
-            if orientation == Qt.Vertical:
+            elif orientation == Qt.Vertical:
                 return str(self._data.index[idx])
 
     def rowCount(self, index=QModelIndex()):
@@ -168,17 +171,12 @@ class EditPandasModel(BasePandasModel):
     you need to retrieve it directly from the model after editing
     """
     def __init__(self, data=None):
-        """
-        :param data: The data of the model.
-        important: pd_data is rereferenced internally!!!
-        So either subclass and set pd_data to an objects reference or retrieve pd_data from model directly
-        """
         super().__init__(data)
 
     def setData(self, index, value, role=None):
         if role == Qt.EditRole:
             try:
-                self.pd_data.iloc[index.row(), index.column()] = value
+                self._data.iloc[index.row(), index.column()] = value
                 self.dataChanged.emit(index, index, [role])
                 return True
 
@@ -187,49 +185,72 @@ class EditPandasModel(BasePandasModel):
 
         return False
 
+    def setHeaderData(self, index, orientation, value, role=Qt.EditRole):
+        if role == Qt.EditRole:
+            if orientation == Qt.Vertical:
+                self._data.rename(index={self._data.index[index]: value}, inplace=True)
+                self.headerDataChanged.emit(Qt.Vertical, index, index)
+                return True
+
+            elif orientation == Qt.Horizontal:
+                self._data.rename(columns={self._data.columns[index]: value}, inplace=True)
+                self.headerDataChanged.emit(Qt.Horizontal, index, index)
+                return True
+
+        return False
+
     def flags(self, index=QModelIndex()):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
     def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
-        add_data = pd.DataFrame(np.nan, index=[r for r in range(row, count)],
-                                columns=self.pd_data.columns)
+        add_data = pd.DataFrame(columns=self._data.columns, index=[r for r in range(count)])
         if row == 0:
-            self.pd_data = pd.concat([add_data, self.pd_data])
-        elif row == len(self.pd_data.index):
-            self.pd_data = self.pd_data.append(add_data)
+            self._data = pd.concat([add_data, self._data])
+        elif row == len(self._data.index):
+            self._data = self._data.append(add_data)
         else:
-            self.pd_data = pd.concat([self.pd_data.iloc[:row], add_data, self.pd_data.iloc[row:]])
+            self._data = pd.concat([self._data.iloc[:row], add_data, self._data.iloc[row:]])
         self.endInsertRows()
 
         return True
 
     def insertColumns(self, column, count, index=QModelIndex()):
         self.beginInsertColumns(index, column, column + count - 1)
-        add_data = pd.DataFrame(np.nan, index=self.pd_data.index,
-                                columns=[c for c in range(column, count)])
+        add_data = pd.DataFrame(index=self._data.index, columns=[c for c in range(count)])
         if column == 0:
-            self.pd_data = pd.concat([add_data, self.pd_data], axis=1)
-        elif column == len(self.pd_data.columns):
-            for column in add_data.columns:
-                self.pd_data[column] = add_data[column]
+            self._data = pd.concat([add_data, self._data], axis=1)
+        elif column == len(self._data.columns):
+            self._data = self._data.join(add_data)
         else:
-            self.pd_data = pd.concat([self.pd_data[:column], add_data, self.pd_data[column:]], axis=1)
+            self._data = pd.concat([self._data.iloc[:, :column], add_data, self._data.iloc[:, column:]], axis=1)
         self.endInsertColumns()
 
         return True
 
     def removeRows(self, row, count, index=QModelIndex()):
         self.beginRemoveRows(index, row, row + count - 1)
-        self.pd_data.drop(index=[self.pd_data.index[r] for r in range(row, count)], inplace=True)
+        # Can't use DataFrame.drop() here, because there could be rows with similar index-labels
+        if row == 0:
+            self._data = self._data.iloc[row + count:]
+        elif row + count >= len(self._data.index):
+            self._data = self._data.iloc[:row]
+        else:
+            self._data = pd.concat([self._data.iloc[:row], self._data.iloc[row + count:]])
         self.endRemoveRows()
 
         return True
 
     def removeColumns(self, column, count, index=QModelIndex()):
         self.beginRemoveColumns(index, column, column + count - 1)
-        self.pd_data.drop(columns=[self.pd_data.columns[c] for c in range(column, count)], inplace=True)
-        self.endRemoveRows()
+        # Can't use DataFrame.drop() here, because there could be columns with similar column-labels
+        if column == 0:
+            self._data = self._data.iloc[:, column + count:]
+        elif column + count >= len(self._data.columns):
+            self._data = self._data.iloc[:, :column]
+        else:
+            self._data = pd.concat([self._data.iloc[:, :column], self._data.iloc[:, column + count:]], axis=1)
+        self.endRemoveColumns()
 
         return True
 
