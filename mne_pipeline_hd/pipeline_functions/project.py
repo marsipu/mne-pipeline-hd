@@ -13,16 +13,14 @@ import re
 from ast import literal_eval
 from copy import deepcopy
 from os import listdir, makedirs
-from os.path import exists, isdir, isfile, join
+from os.path import exists, isfile, join
 
-import mne
 import numpy as np
 import pandas as pd
 from PyQt5.QtWidgets import QDialog, QVBoxLayout
 from pandas.errors import EmptyDataError
 
 from .pipeline_utils import ParametersJSONEncoder, parameters_json_hook
-from ..gui import subject_widgets as subs
 
 
 class Project:

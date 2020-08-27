@@ -11,11 +11,12 @@ import os
 import re
 import shutil
 import sys
-from ast import literal_eval
 from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
+import pandas as pd
+import numpy as np
 import matplotlib
 import mne
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
@@ -25,16 +26,19 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
                              QSizePolicy,
                              QStyle, QTabWidget,
-                             QTableView, QTableWidget,
-                             QTableWidgetItem, QTableWidgetSelectionRange, QTextEdit, QTreeView, QTreeWidget,
+                             QTableWidget,
+                             QTableWidgetItem, QTableWidgetSelectionRange, QTextEdit, QTreeWidget,
                              QTreeWidgetItem,
                              QVBoxLayout,
                              QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
+from .base_widgets import CheckList, EditPandasTable
+from .gui_utils import (ErrorDialog, Worker)
 from .models import FileDictModel
 from ..basic_functions import loading
-from .gui_utils import (ErrorDialog, Worker)
+from ..basic_functions.loading import CurrentSub
+from ..basic_functions.operations import find_events
 
 
 def file_indexing(which_file, all_files):
@@ -1761,3 +1765,40 @@ class EventIDGui(QDialog):
         self.files_model = FileDictModel(self.mw.pr.all_files, self.mw.pr.event_id_dict)
         self.files_view = QListView()
         self.files_view.setModel(self.files_model)
+        self.files_view.selectionModel().currentChanged.connect(self.file_selected)
+
+        self.list_layout.addWidget(self.files_view)
+
+        self.event_id_widget = EditPandasTable(ui_buttons=False)
+        self.list_layout.addWidget(self.event_id_widget)
+
+        self.check_widget = CheckList()
+        self.list_layout.addWidget(self.check_widget)
+
+    def get_event_ids(self, name):
+        sub = CurrentSub(name, self.mw)
+        try:
+            events = sub.load_events()
+        except FileNotFoundError:
+            find_events(sub,
+                        self.mw.pr.parameters[self.mw.pr.p_preset]['min_duration'],
+                        self.mw.pr.parameters[self.mw.pr.p_preset]['shortest_event'],
+                        self.mw.pr.parameters[self.mw.pr.p_preset]['adjust_timeline_by_msec'])
+
+            events = sub.load_events()
+        event_ids = np.unique(events[:, 2])
+
+        return event_ids
+
+    def evid_to_pandas(self):
+        pass
+
+    def pandas_to_evid(self):
+        pass
+
+    # Todo: You should be able to choose between different find_event-functions
+    def file_selected(self, current, _):
+        name = self.files_model.data(current, Qt.DisplayRole)
+        if name in self.mw.pr.event_id_dict:
+            pass
+

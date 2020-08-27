@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pandas
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QApplication, QCheckBox, QGridLayout, QInputDialog, QListView, QPushButton, QSpinBox, \
+from PyQt5.QtWidgets import QApplication, QCheckBox, QGridLayout, QHBoxLayout, QInputDialog, QListView, QPushButton, \
+    QSpinBox, \
     QTabWidget, \
     QTableView, \
     QVBoxLayout, \
@@ -53,6 +54,11 @@ class BaseList(QWidget):
         """
         self.model.layoutChanged.emit()
 
+    def replace_data(self, new_data):
+        """Replaces model._data with new_data
+        """
+        self.model._data = new_data
+        self.content_changed()
 
 class EditList(QWidget):
     """An editable List-Widget to display and manipulate the content of a list.
@@ -102,6 +108,12 @@ class EditList(QWidget):
         """Informs ModelView about change in data
         """
         self.model.layoutChanged.emit()
+
+    def replace_data(self, new_data):
+        """Replaces model._data with new_data
+        """
+        self.model._data = new_data
+        self.content_changed()
 
     def add_row(self):
         row = self.view.selectionModel().currentIndex().row()
@@ -155,6 +167,13 @@ class CheckList(QWidget):
         """
         self.model.layoutChanged.emit()
 
+    def replace_data(self, new_data, new_checked):
+        """Replaces model._data with new_data
+        """
+        self.model._data = new_data
+        self.model._checked = new_checked
+        self.content_changed()
+
 
 class BasePandasTable(QWidget):
     """A Widget to display a pandas DataFrame
@@ -192,19 +211,25 @@ class BasePandasTable(QWidget):
         """
         self.model.layoutChanged.emit()
 
+    def replace_data(self, new_data):
+        """Replaces model._data with new_data
+        """
+        self.model._data = new_data
+        self.content_changed()
 
 class EditPandasTable(QWidget):
     """A Widget to display and edit a pandas DataFrame
     """
-    def __init__(self, data=pandas.DataFrame([]), parent=None):
+    def __init__(self, data=pandas.DataFrame([]), ui_buttons=True, parent=None):
         super().__init__(parent)
         self.data = data
+        self.ui_buttons = ui_buttons
 
         self.model = EditPandasModel(data)
         self.view = QTableView()
         self.view.setModel(self.model)
 
-        self.layout = QGridLayout()
+        self.layout = QHBoxLayout()
 
         self.rows_chkbx = QSpinBox()
         self.rows_chkbx.setMinimum(1)
@@ -214,39 +239,46 @@ class EditPandasTable(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view, 0, 0, 7, 1)
+        self.layout.addWidget(self.view)
 
-        addr_bt = QPushButton('Add Row')
-        addr_bt.clicked.connect(self.add_row)
-        self.layout.addWidget(addr_bt, 0, 1)
+        if self.ui_buttons:
+            bt_layout = QVBoxLayout()
 
-        self.layout.addWidget(self.rows_chkbx, 0, 2)
+            addr_layout = QHBoxLayout()
+            addr_bt = QPushButton('Add Row')
+            addr_bt.clicked.connect(self.add_row)
+            addr_layout.addWidget(addr_bt)
+            addr_layout.addWidget(self.rows_chkbx)
+            bt_layout.addLayout(addr_layout)
 
-        addc_bt = QPushButton('Add Column')
-        addc_bt.clicked.connect(self.add_column)
-        self.layout.addWidget(addc_bt, 1, 1)
+            addc_layout = QHBoxLayout()
+            addc_bt = QPushButton('Add Column')
+            addc_bt.clicked.connect(self.add_column)
+            addc_layout.addWidget(addc_bt)
+            addc_layout.addWidget(self.cols_chkbx)
+            bt_layout.addLayout(addc_layout)
 
-        self.layout.addWidget(self.cols_chkbx, 1, 2)
+            rmr_bt = QPushButton('Remove Row')
+            rmr_bt.clicked.connect(self.remove_row)
+            bt_layout.addWidget(rmr_bt)
 
-        rmr_bt = QPushButton('Remove Row')
-        rmr_bt.clicked.connect(self.remove_row)
-        self.layout.addWidget(rmr_bt, 2, 1, 1, 2)
+            rmc_bt = QPushButton('Remove Column')
+            rmc_bt.clicked.connect(self.remove_column)
+            bt_layout.addWidget(rmc_bt)
 
-        rmc_bt = QPushButton('Remove Column')
-        rmc_bt.clicked.connect(self.remove_column)
-        self.layout.addWidget(rmc_bt, 3, 1, 1, 2)
+            edit_bt = QPushButton('Edit')
+            edit_bt.clicked.connect(self.edit_item)
+            bt_layout.addWidget(edit_bt)
 
-        edit_bt = QPushButton('Edit')
-        edit_bt.clicked.connect(self.edit_item)
-        self.layout.addWidget(edit_bt, 4, 1, 1, 2)
+            editrh_bt = QPushButton('Edit Row-Header')
+            editrh_bt.clicked.connect(self.edit_row_header)
+            bt_layout.addWidget(editrh_bt)
 
-        editrh_bt = QPushButton('Edit Row-Header')
-        editrh_bt.clicked.connect(self.edit_row_header)
-        self.layout.addWidget(editrh_bt, 5, 1, 1, 2)
+            editch_bt = QPushButton('Edit Column-Header')
+            editch_bt.clicked.connect(self.edit_col_header)
+            bt_layout.addWidget(editch_bt)
 
-        editch_bt = QPushButton('Edit Column-Header')
-        editch_bt.clicked.connect(self.edit_col_header)
-        self.layout.addWidget(editch_bt, 6, 1, 1, 2)
+            self.layout.addLayout(bt_layout)
 
         self.setLayout(self.layout)
 
@@ -256,16 +288,26 @@ class EditPandasTable(QWidget):
         self.model.layoutChanged.emit()
 
     def update_data(self):
-        """You can overwrite this function in a subclass e.g. to update an objects attribute
+        """Has to be called, when model._data is rereferenced to keep self.data updated
 
         Returns
         -------
         data : pandas.DataFrame
             The DataFrame of this widget
+
+        Notes
+        -----
+        You can overwrite this function in a subclass e.g. to update an objects attribute
         """
         self.data = self.model._data
 
         return self.data
+
+    def replace_data(self, new_data):
+        """Replaces model._data with new_data
+        """
+        self.model._data = new_data
+        self.content_changed()
 
     def add_row(self):
         row = self.view.selectionModel().currentIndex().row()
