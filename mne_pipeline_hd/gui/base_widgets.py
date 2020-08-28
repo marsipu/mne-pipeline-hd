@@ -5,12 +5,8 @@ from pathlib import Path
 
 import pandas
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QApplication, QCheckBox, QGridLayout, QHBoxLayout, QInputDialog, QListView, QPushButton, \
-    QSpinBox, \
-    QTabWidget, \
-    QTableView, \
-    QVBoxLayout, \
-    QWidget
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QInputDialog, QListView, QPushButton, QSpinBox,
+                             QTabWidget, QTableView, QVBoxLayout, QWidget)
 
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
@@ -35,9 +31,8 @@ class BaseList(QWidget):
 
     def __init__(self, data=None, parent=None):
         super().__init__(parent)
-        self.data = data or list()
 
-        self.model = BaseListModel(self.data)
+        self.model = BaseListModel(data)
         self.view = QListView()
         self.view.setModel(self.model)
 
@@ -50,7 +45,7 @@ class BaseList(QWidget):
         self.setLayout(self.layout)
 
     def content_changed(self):
-        """Informs ModelView about change in data
+        """Informs ModelView about external change made in data
         """
         self.model.layoutChanged.emit()
 
@@ -59,6 +54,7 @@ class BaseList(QWidget):
         """
         self.model._data = new_data
         self.content_changed()
+
 
 class EditList(QWidget):
     """An editable List-Widget to display and manipulate the content of a list.
@@ -75,37 +71,42 @@ class EditList(QWidget):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, parent=None):
+    def __init__(self, data=None, ui_buttons=True, parent=None):
         super().__init__(parent)
-        self.data = data or list()
+        self.ui_buttons = ui_buttons
 
-        self.model = EditListModel(self.data)
+        self.model = EditListModel(data)
         self.view = QListView()
         self.view.setModel(self.model)
 
-        self.layout = QGridLayout()
+        self.layout = QVBoxLayout()
 
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view, 0, 0, 3, 1)
+        self.layout.addWidget(self.view)
 
-        addrow_bt = QPushButton('Add Row')
-        addrow_bt.clicked.connect(self.add_row)
-        self.layout.addWidget(addrow_bt, 0, 1)
+        if self.ui_buttons:
+            bt_layout = QHBoxLayout()
 
-        rmrow_bt = QPushButton('Remove Row')
-        rmrow_bt.clicked.connect(self.remove_row)
-        self.layout.addWidget(rmrow_bt, 2, 1)
+            addrow_bt = QPushButton('Add Row')
+            addrow_bt.clicked.connect(self.add_row)
+            bt_layout.addWidget(addrow_bt)
 
-        edit_bt = QPushButton('Edit')
-        edit_bt.clicked.connect(self.edit_item)
-        self.layout.addWidget(edit_bt, 3, 1)
+            rmrow_bt = QPushButton('Remove Row')
+            rmrow_bt.clicked.connect(self.remove_row)
+            bt_layout.addWidget(rmrow_bt)
+
+            edit_bt = QPushButton('Edit')
+            edit_bt.clicked.connect(self.edit_item)
+            bt_layout.addWidget(edit_bt)
+
+            self.layout.addLayout(bt_layout)
 
         self.setLayout(self.layout)
 
     def content_changed(self):
-        """Informs ModelView about change in data
+        """Informs ModelView about external change made in data
         """
         self.model.layoutChanged.emit()
 
@@ -145,12 +146,11 @@ class CheckList(QWidget):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, checked=None, parent=None):
+    def __init__(self, data=None, checked=None, ui_buttons=True, parent=None):
         super().__init__(parent)
-        self.data = data or list()
-        self.checked = checked or list()
+        self.ui_buttons = ui_buttons
 
-        self.model = CheckListModel(self.data, self.checked)
+        self.model = CheckListModel(data, checked)
         self.view = QListView()
         self.view.setModel(self.model)
 
@@ -160,10 +160,24 @@ class CheckList(QWidget):
 
     def init_ui(self):
         self.layout.addWidget(self.view)
+
+        if self.ui_buttons:
+            bt_layout = QHBoxLayout()
+
+            all_bt = QPushButton('All')
+            all_bt.clicked.connect(self.select_all)
+            bt_layout.addWidget(all_bt)
+
+            clear_bt = QPushButton('Clear')
+            clear_bt.clicked.connect(self.clear_all)
+            bt_layout.addWidget(clear_bt)
+
+            self.layout.addLayout(bt_layout)
+
         self.setLayout(self.layout)
 
     def content_changed(self):
-        """Informs ModelView about change in data
+        """Informs ModelView about external change made in data
         """
         self.model.layoutChanged.emit()
 
@@ -172,6 +186,19 @@ class CheckList(QWidget):
         """
         self.model._data = new_data
         self.model._checked = new_checked
+        self.content_changed()
+
+    def select_all(self):
+        """Select all Items while leaving reference to model._checked intact"""
+        for item in [i for i in self.model._data if i not in self.model._checked]:
+            self.model._checked.append(item)
+        # Inform Model about changes
+        self.content_changed()
+
+    def clear_all(self):
+        """Deselect all Items while leaving reference to model._checked intact"""
+        self.model._checked.clear()
+        # Inform Model about changes
         self.content_changed()
 
 
@@ -192,9 +219,8 @@ class BasePandasTable(QWidget):
 
     def __init__(self, data=pandas.DataFrame([]), parent=None):
         super().__init__(parent)
-        self.data = data
 
-        self.model = BasePandasModel(self.data)
+        self.model = BasePandasModel(data)
         self.view = QTableView()
         self.view.setModel(self.model)
 
@@ -207,7 +233,7 @@ class BasePandasTable(QWidget):
         self.setLayout(self.layout)
 
     def content_changed(self):
-        """Informs ModelView about change in data
+        """Informs ModelView about external change made in data
         """
         self.model.layoutChanged.emit()
 
@@ -217,12 +243,12 @@ class BasePandasTable(QWidget):
         self.model._data = new_data
         self.content_changed()
 
+
 class EditPandasTable(QWidget):
     """A Widget to display and edit a pandas DataFrame
     """
     def __init__(self, data=pandas.DataFrame([]), ui_buttons=True, parent=None):
         super().__init__(parent)
-        self.data = data
         self.ui_buttons = ui_buttons
 
         self.model = EditPandasModel(data)
@@ -283,12 +309,13 @@ class EditPandasTable(QWidget):
         self.setLayout(self.layout)
 
     def content_changed(self):
-        """Informs ModelView about change in data
+        """Informs ModelView about external change made in data
         """
         self.model.layoutChanged.emit()
 
     def update_data(self):
-        """Has to be called, when model._data is rereferenced to keep self.data updated
+        """Has to be called, when model._data is rereferenced by for example add_row
+        to keep external data updated
 
         Returns
         -------
@@ -298,10 +325,10 @@ class EditPandasTable(QWidget):
         Notes
         -----
         You can overwrite this function in a subclass e.g. to update an objects attribute
+        (e.g. obj.data = self.model._data)
         """
-        self.data = self.model._data
 
-        return self.data
+        return self.model._data
 
     def replace_data(self, new_data):
         """Replaces model._data with new_data
@@ -311,15 +338,17 @@ class EditPandasTable(QWidget):
 
     def add_row(self):
         row = self.view.selectionModel().currentIndex().row()
-        if row == -1:
-            row = len(self.data.index)
+        # Add row at the bottom if nothing is selected
+        if row == -1 or len(self.view.selectionModel().selectedIndexes()) == 0:
+            row = len(self.model._data.index)
         self.model.insertRows(row, self.rows_chkbx.value())
         self.update_data()
 
     def add_column(self):
         column = self.view.selectionModel().currentIndex().column()
-        if column == -1:
-            column = len(self.data.columns)
+        # Add column to the right if nothing is selected
+        if column == -1 or len(self.view.selectionModel().selectedIndexes()) == 0:
+            column = len(self.model._data.columns)
         self.model.insertColumns(column, self.cols_chkbx.value())
         self.update_data()
 
@@ -340,14 +369,14 @@ class EditPandasTable(QWidget):
 
     def edit_row_header(self):
         row = self.view.selectionModel().currentIndex().row()
-        old_value = self.data.index[row]
+        old_value = self.model._data.index[row]
         text, ok = QInputDialog.getText(self, 'Change Row-Header', f'Change {old_value} in row {row} to:')
         if text and ok:
             self.model.setHeaderData(row, Qt.Vertical, text)
 
     def edit_col_header(self):
         column = self.view.selectionModel().currentIndex().column()
-        old_value = self.data.columns[column]
+        old_value = self.model._data.columns[column]
         text, ok = QInputDialog.getText(self, 'Change Column-Header', f'Change {old_value} in column {column} to:')
         if text and ok:
             self.model.setHeaderData(column, Qt.Horizontal, text)

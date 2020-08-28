@@ -15,12 +15,12 @@ import subprocess
 import sys
 from functools import reduce
 from itertools import combinations
-from os import environ, listdir, makedirs
+from os import environ, makedirs
 from os.path import exists, isdir, isfile, join
 
+import autoreject as ar
 import mne
 import numpy as np
-import autoreject as ar
 
 from .loading import CurrentSub
 from ..pipeline_functions import ismac, iswin, pipeline_utils as ut
@@ -220,25 +220,15 @@ def find_events(sub, min_duration, shortest_event, adjust_timeline_by_msec):
 
 
 @topline
-def epoch_raw(sub, event_id, t_epoch, baseline, reject, flat, autoreject_interpolation, consensus_percs, n_interpolates,
+def epoch_raw(sub, t_epoch, baseline, reject, flat, autoreject_interpolation, consensus_percs, n_interpolates,
               autoreject_threshold, overwrite_ar, decim, n_jobs):
     raw = sub.load_filtered()
     events = sub.load_events()
 
-    # Choose only included event_ids
-    actual_event_id = {}
-    for i in event_id:
-        if event_id[i] in np.unique(events[:, 2]):
-            actual_event_id.update({i: event_id[i]})
-
-    print('Event_ids included:')
-    for i in actual_event_id:
-        print(i)
-
     picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False,
                            eog=False, ecg=False, exclude=sub.bad_channels)
 
-    epochs = mne.Epochs(raw, events, actual_event_id, t_epoch[0], t_epoch[1], baseline,
+    epochs = mne.Epochs(raw, events, sub.event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, picks=picks, proj=False, reject=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=True)
 
@@ -558,7 +548,7 @@ def get_evokeds(sub, enable_ica):
         epochs = sub.load_epochs()
         print('Evokeds from (normal) Epochs')
     evokeds = []
-    for trial in epochs.event_id:
+    for trial in sub.sel_trials:
         print(f'Evoked for {trial}')
         evoked = epochs[trial].average()
         evokeds.append(evoked)
@@ -615,7 +605,7 @@ def tfr(sub, enable_ica, tfr_freqs, overwrite_tfr,
         else:
             epochs = sub.load_epochs()
 
-        for trial in epochs.event_id:
+        for trial in sub.sel_trials:
             if tfr_method == 'morlet':
                 power, itc = mne.time_frequency.tfr_morlet(epochs[trial],
                                                            freqs=tfr_freqs,
@@ -922,12 +912,10 @@ def source_estimate(sub, inverse_method, pick_ori, lambda2):
     evokeds = sub.load_evokeds()
 
     stcs = {}
-    for evoked in evokeds:
-        trial = evoked.comment
-
+    for evoked in [ev for ev in evokeds if ev.comment in sub.sel_trials]:
         stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, method=inverse_method,
                                              pick_ori=pick_ori)
-        stcs.update({trial: stc})
+        stcs.update({evoked.comment: stc})
 
     sub.save_source_estimates(stcs)
 
@@ -976,8 +964,7 @@ def mixed_norm_estimate(sub, pick_ori, inverse_method):
     mixn_dips = {}
     mixn_stcs = {}
 
-    for evoked in evokeds:
-        trial = evoked.comment
+    for evoked in [ev for ev in evokeds if ev.comment in sub.sel_trials]:
         alpha = 30  # regularization parameter between 0 and 100 (100 is high)
         n_mxne_iter = 10  # if > 1 use L0.5/L2 reweighted mixed norm solver
         # if n_mxne_iter > 1 dSPM weighting can be avoided.
@@ -994,7 +981,7 @@ def mixed_norm_estimate(sub, pick_ori, inverse_method):
                                                            weights=stcs[trial], n_mxne_iter=n_mxne_iter,
                                                            return_residual=True, return_as_dipoles=False,
                                                            pick_ori=pick_ori)
-        mixn_stcs[trial] = mixn_stc
+        mixn_stcs[evoked.comment] = mixn_stc
 
     sub.save_mixn_dipoles(mixn_dips)
     sub.save_mixn_source_estimates(mixn_stcs)

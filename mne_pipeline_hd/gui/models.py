@@ -7,11 +7,10 @@ inspired by: https://doi.org/10.3389/fnins.2018.00006
 @github: https://github.com/marsipu/mne_pipeline_hd
 License: BSD (3-clause)
 """
-from PyQt5.QtCore import QAbstractItemModel, QAbstractListModel, QAbstractTableModel, QModelIndex, Qt
-from PyQt5.QtGui import QColor, QFont
-
-import pandas as pd
 import numpy as np
+import pandas as pd
+from PyQt5.QtCore import QAbstractItemModel, QAbstractListModel, QAbstractTableModel, QModelIndex, Qt
+from PyQt5.QtWidgets import QApplication, QStyle
 
 
 class BaseListModel(QAbstractListModel):
@@ -24,9 +23,12 @@ class BaseListModel(QAbstractListModel):
 
     """
 
-    def __init__(self, data=None):
+    def __init__(self, data):
         super().__init__()
-        self._data = data or list()
+        if data is None:
+            self._data = list()
+        else:
+            self._data = data
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
@@ -94,10 +96,17 @@ class CheckListModel(BaseListModel):
     This model only returns strings, so any value entered will be converted to a string
     """
 
-    def __init__(self, data=None, checked=None):
+    def __init__(self, data, checked):
         super().__init__(data)
-        self._data = data or list()
-        self._checked = checked or list()
+        if data is None:
+            self._data = list()
+        else:
+            self._data = data
+
+        if checked is None:
+            self._checked = list()
+        else:
+            self._checked = checked
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
@@ -131,7 +140,8 @@ class BasePandasModel(QAbstractTableModel):
     data : pandas.DataFrame | None
         pandas DataFrame with contents to be displayed, defaults to empty DataFrame
     """
-    def __init__(self, data=None):
+
+    def __init__(self, data):
         super().__init__()
         if data is None:
             self._data = pd.DataFrame(np.nan, index=[], columns=[])
@@ -221,7 +231,7 @@ class EditPandasModel(BasePandasModel):
         if column == 0:
             self._data = pd.concat([add_data, self._data], axis=1)
         elif column == len(self._data.columns):
-            self._data = self._data.join(add_data)
+            self._data = pd.concat([self._data, add_data], axis=1)
         else:
             self._data = pd.concat([self._data.iloc[:, :column], add_data, self._data.iloc[:, column:]], axis=1)
         self.endInsertColumns()
@@ -259,14 +269,17 @@ class FileDictModel(BaseListModel):
     def __init__(self, data, file_dict):
         super().__init__(data)
         self.file_dict = file_dict
+        self.app = QApplication.instance()
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
             return self._data[index.row()]
 
-        elif role == Qt.FontRole:
+        elif role == Qt.DecorationRole:
             if self._data[index.row()] in self.file_dict:
-                pass
+                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+            else:
+                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
 
 
 class AddFilesModel(BasePandasModel):

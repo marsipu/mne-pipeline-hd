@@ -46,6 +46,8 @@ class Project:
         self.bad_channels_dict = {}
         # Stores Event-ID for each MEG/EEG-File
         self.event_id_dict = {}
+        # Stores selected event-id-labels
+        self.sel_trials_dict = {}
         # Groups MEG/EEG-Files for Grand-Average
         self.grand_avg_dict = {}
         # Stores selected Info-Attributes for each file
@@ -96,20 +98,22 @@ class Project:
         self.erm_dict_path = join(self.pscripts_path, 'erm_dict.json')
         self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.json')
         self.event_id_dict_path = join(self.pscripts_path, 'event_id_dict.json')
+        self.sel_trials_dict_path = join(self.pscripts_path, 'selected_evid_labels.json')
         self.grand_avg_dict_path = join(self.pscripts_path, 'grand_avg_dict.json')
         self.info_dict_path = join(self.pscripts_path, 'info_dict.json')
         self.file_parameters_path = join(self.pscripts_path, 'file_parameters.csv')
         self.sel_files_path = join(self.pscripts_path, 'selected_files.json')
         self.sel_mri_files_path = join(self.pscripts_path, 'selected_mri_files.json')
         self.sel_ga_groups_path = join(self.pscripts_path, 'selected_grand_average_groups.json')
-        self.selected_funcs_path = join(self.pscripts_path, 'selected_funcs.json')
+        self.sel_funcs_path = join(self.pscripts_path, 'selected_funcs.json')
 
         path_lists = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
                       self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
         file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
                       self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.event_id_dict_path,
                       self.grand_avg_dict_path, self.info_dict_path, self.file_parameters_path, self.sel_files_path,
-                      self.sel_mri_files_path, self.sel_ga_groups_path, self.selected_funcs_path]
+                      self.sel_mri_files_path, self.sel_ga_groups_path, self.sel_funcs_path,
+                      self.sel_trials_dict_path]
 
         for path in path_lists:
             if not exists(path):
@@ -138,12 +142,14 @@ class Project:
                      self.erm_dict_path: 'erm_dict',
                      self.bad_channels_dict_path: 'bad_channels_dict',
                      self.event_id_dict_path: 'event_id_dict',
+                     self.sel_trials_dict_path: 'sel_trials_dict',
                      self.grand_avg_dict_path: 'grand_avg_dict',
                      self.info_dict_path: 'info_dict',
                      self.sel_files_path: 'sel_files',
                      self.sel_mri_files_path: 'sel_mri_files',
                      self.sel_ga_groups_path: 'sel_ga_groups',
-                     self.selected_funcs_path: 'sel_functions'}
+                     self.sel_funcs_path: 'sel_functions'
+                     }
 
         for path in load_dict:
             try:
@@ -161,12 +167,13 @@ class Project:
                      self.erm_dict_path: self.erm_dict,
                      self.bad_channels_dict_path: self.bad_channels_dict,
                      self.event_id_dict_path: self.event_id_dict,
+                     self.sel_trials_dict_path: self.sel_trials_dict,
                      self.grand_avg_dict_path: self.grand_avg_dict,
                      self.info_dict_path: self.info_dict,
                      self.sel_files_path: self.sel_files,
                      self.sel_mri_files_path: self.sel_mri_files,
                      self.sel_ga_groups_path: self.sel_ga_groups,
-                     self.selected_funcs_path: self.sel_functions}
+                     self.sel_funcs_path: self.sel_functions}
 
         for path in save_dict:
             with open(path, 'w') as file:

@@ -16,11 +16,10 @@ from pathlib import Path
 
 import mne
 import numpy as np
-
-
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
+from PyQt5.QtWidgets import QMessageBox
 
 
 def filter_string(highpass, lowpass):
@@ -465,7 +464,7 @@ class BaseSub:
 class CurrentSub(BaseSub):
     """ Class for File-Data in File-Loop"""
 
-    def __init__(self, name, main_win, mri_sub=None):
+    def __init__(self, name, main_win, mri_sub=None, suppress_warnings=True):
 
         super().__init__(name, main_win)
 
@@ -476,18 +475,42 @@ class CurrentSub(BaseSub):
         try:
             self.ermsub = self.mw.pr.erm_dict[name]
         except KeyError as k:
-            print(f'No erm_measurement assigned for {k}')
-            raise RuntimeError(f'No erm_measurement assigned for {k}')
+            self.ermsub = None
+            if not suppress_warnings:
+                QMessageBox.warning(self.mw, 'No ERM',
+                                    f'No Empty-Room-Measurement assigned for {k}, defaulting to None')
         try:
             self.subtomri = self.mw.pr.sub_dict[name]
         except KeyError as k:
-            print(f'No mri_subject assigned to {k}')
-            raise RuntimeError(f'No mri_subject assigned to {k}')
+            self.subtomri = None
+            if not suppress_warnings:
+                QMessageBox.warning(self.mw, 'No MRI',
+                                    f'No MRI-Subject assigned for {k}, defaulting to None')
         try:
             self.bad_channels = self.mw.pr.bad_channels_dict[name]
         except KeyError as k:
-            print(f'No bad channels for {k}')
-            raise RuntimeError(f'No bad channels for {k}')
+            self.bad_channels = list()
+            if not suppress_warnings:
+                QMessageBox.warning(self.mw, 'No Bad Channels',
+                                    f'No bad channels assigned for {k}, defaulting to empty list')
+        try:
+            self.event_id = self.mw.pr.event_id_dict[name]
+            if len(self.event_id) == 0:
+                raise RuntimeError(name)
+        except (KeyError, RuntimeError) as k:
+            self.event_id = dict()
+            if not suppress_warnings:
+                QMessageBox.warning(self.mw, 'No Event-ID',
+                                    f'No EventID assigned for {k}, defaulting to empty dictionary')
+        try:
+            self.sel_trials = self.mw.pr.sel_trials_dict[name]
+            if len(self.sel_trials) == 0:
+                raise RuntimeError(name)
+        except (KeyError, RuntimeError) as k:
+            self.sel_trials = list()
+            if not suppress_warnings:
+                QMessageBox.warning(self.mw, 'No Trials',
+                                    f'No Trials selected for {k}, defaulting to empty list')
 
         self.mri_sub = mri_sub or CurrentMRISub(self.subtomri, main_win)
 
@@ -809,7 +832,7 @@ class CurrentSub(BaseSub):
     def load_source_estimates(self):
         if self._stcs is None:
             self._stcs = dict()
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 try:
                     stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}')
                     stc = mne.source_estimate.read_source_estimate(stc_path)
@@ -832,7 +855,7 @@ class CurrentSub(BaseSub):
     def load_morphed_source_estimates(self):
         if self._morphed_stcs is None:
             self._morphed_stcs = dict()
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 try:
                     morphed_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
                     morphed_stc = mne.source_estimate.read_source_estimate(morphed_stc_path)
@@ -853,7 +876,7 @@ class CurrentSub(BaseSub):
     def load_mixn_dipoles(self):
         if self._mixn_dips is None:
             self._mixn_dips = dict()
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 idx = 0
                 dip_list = list()
                 try:
@@ -889,7 +912,7 @@ class CurrentSub(BaseSub):
     def load_mixn_source_estimates(self):
         if self._mixn_stcs is None:
             self._mixn_stcs = dict()
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 try:
                     mx_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-mixn')
                     mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
@@ -912,7 +935,7 @@ class CurrentSub(BaseSub):
     def load_ecd(self):
         if self._ecd_dips is None:
             self._ecd_dips = {}
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 self._ecd_dips[trial] = {}
                 for dip in self.p['ecd_times'][self.name]:
                     ecd_dip_path = join(self.save_dir, 'ecd_dipoles',
@@ -935,7 +958,7 @@ class CurrentSub(BaseSub):
     def load_ltc(self):
         if self._ltc is None:
             self._ltc = {}
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 self._ltc[trial] = {}
                 for label in self.p['target_labels']:
                     ltc_path = join(self.save_dir, 'label_time_course',
@@ -959,7 +982,7 @@ class CurrentSub(BaseSub):
     def load_connectivity(self):
         if self._connectivity is None:
             self._connectivity = dict()
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 self._connectivity[trial] = {}
                 for con_method in self.p['con_methods']:
                     try:
@@ -1133,7 +1156,7 @@ class CurrentGAGroup(BaseSub):
     def load_ga_tfr(self):
         if self._ga_tfr is None:
             self._ga_tfr = {}
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 ga_path = join(self.pr.save_dir_averages, 'tfr',
                                f'{self.name}_{trial}_{self.p_preset}_{self.p["tfr_method"]}-tfr.h5')
                 power = mne.time_frequency.read_tfrs(ga_path)[0]
@@ -1150,7 +1173,7 @@ class CurrentGAGroup(BaseSub):
     def load_ga_source_estimate(self):
         if self._ga_stcs is None:
             self._ga_stcs = {}
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 ga_stc_path = join(self.save_dir, 'stc', f'{self.name}_{trial}_{self.p_preset}')
                 self._ga_stcs[trial] = mne.read_source_estimate(ga_stc_path)
 
@@ -1166,7 +1189,7 @@ class CurrentGAGroup(BaseSub):
     def load_ga_ltc(self):
         if self._ga_ltc is None:
             self._ga_ltc = {}
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 self._ga_ltc[trial] = {}
                 for label in self.p['target_labels']:
                     ga_ltc_path = join(self.save_dir, 'ltc', f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
@@ -1188,7 +1211,7 @@ class CurrentGAGroup(BaseSub):
     def load_ga_connect(self):
         if self._ga_connect is None:
             self._ga_connect = {}
-            for trial in self.p['event_id']:
+            for trial in self.sel_trials:
                 self._ga_connect[trial] = {}
                 for con_method in self.p['con_methods']:
                     con_path = join(self.save_dir, 'connect', f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')

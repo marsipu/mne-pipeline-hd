@@ -108,15 +108,8 @@ def plot_sensors(sub):
 @topline
 def plot_events(sub):
     events = sub.load_events()
-    # Make sure, that only events from event_id are displayed
-    actual_event_id = {}
-    for ev_id in [evid for evid in sub.p['event_id'] if sub.p['event_id'][evid] in np.unique(events[:, 2])]:
-        actual_event_id.update({ev_id: sub.p['event_id'][ev_id]})
 
-    actual_event_values = list(actual_event_id.values())
-    events = events[np.isin(events[:, 2], actual_event_values)]
-
-    fig = mne.viz.plot_events(events, event_id=actual_event_id)
+    fig = mne.viz.plot_events(events, event_id=sub.event_id)
     fig.suptitle(sub.name)
 
     plot_save(sub, 'events', matplotlib_figure=fig)
@@ -138,7 +131,7 @@ def plot_power_spectra(sub):
 def plot_power_spectra_epochs(sub):
     epochs = sub.load_epochs()
 
-    for trial in epochs.event_id:
+    for trial in sub.sel_trials:
         fig = epochs[trial].plot_psd(fmax=sub.p['lowpass'], n_jobs=-1)
         fig.suptitle(sub.name + '-' + trial)
         plot_save(sub, 'power_spectra', subfolder='epochs', trial=trial, matplotlib_figure=fig)
@@ -147,7 +140,7 @@ def plot_power_spectra_epochs(sub):
 @topline
 def plot_power_spectra_topo(sub):
     epochs = sub.load_epochs()
-    for trial in epochs.event_id:
+    for trial in sub.sel_trials:
         fig = epochs[trial].plot_psd_topomap(n_jobs=-1)
         fig.suptitle(sub.name + '-' + trial)
         plot_save(sub, 'power_spectra', subfolder='topo', trial=trial, matplotlib_figure=fig)
@@ -200,7 +193,7 @@ def plot_tfr(sub, t_epoch, baseline):
 def plot_epochs(sub):
     epochs = sub.load_epochs()
 
-    for trial in epochs.event_id:
+    for trial in sub.sel_trials:
         fig = mne.viz.plot_epochs(epochs[trial], title=sub.name)
         fig.suptitle(trial)
 
@@ -208,7 +201,7 @@ def plot_epochs(sub):
 @topline
 def plot_epochs_image(sub):
     epochs = sub.load_epochs()
-    for trial in epochs.event_id:
+    for trial in sub.sel_trials:
         figures = mne.viz.plot_epochs_image(epochs[trial], title=sub.name + '_' + trial)
 
         for idx, fig in enumerate(figures):
@@ -218,7 +211,7 @@ def plot_epochs_image(sub):
 @topline
 def plot_epochs_topo(sub):
     epochs = sub.load_epochs()
-    for trial in epochs.event_id:
+    for trial in sub.sel_trials:
         fig = mne.viz.plot_topo_image_epochs(epochs, title=sub.name)
 
         plot_save(sub, 'epochs', subfolder='topo', trial=trial, matplotlib_figure=fig)

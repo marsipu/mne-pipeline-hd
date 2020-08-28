@@ -15,10 +15,10 @@ from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
-import pandas as pd
-import numpy as np
 import matplotlib
 import mne
+import numpy as np
+import pandas as pd
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
@@ -1755,50 +1755,177 @@ class EventIDGui(QDialog):
         super().__init__(main_win)
         self.mw = main_win
 
+        self.name = None
+        self.event_id = dict()
+        self.ids = None
+        self.pd_evid = None
+        self.labels = list()
+        self.checked_labels = list()
+
+        self.layout = QVBoxLayout()
         self.init_ui()
 
-    def init_ui(self):
-        self.general_layout = QVBoxLayout()
+        self.open()
 
-        self.list_layout = QHBoxLayout()
+    def init_ui(self):
+        list_layout = QHBoxLayout()
 
         self.files_model = FileDictModel(self.mw.pr.all_files, self.mw.pr.event_id_dict)
         self.files_view = QListView()
         self.files_view.setModel(self.files_model)
         self.files_view.selectionModel().currentChanged.connect(self.file_selected)
 
-        self.list_layout.addWidget(self.files_view)
+        list_layout.addWidget(self.files_view)
 
         self.event_id_widget = EditPandasTable(ui_buttons=False)
-        self.list_layout.addWidget(self.event_id_widget)
+        self.event_id_widget.view.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        # Connect editing of Event-ID-Table to update of Check-List
+        self.event_id_widget.model.dataChanged.connect(self.update_check_list)
+        self.event_id_widget.setToolTip('Add a Trial-Descriptor for each Event-ID, '
+                                        'if you want to include it in you analysis.\n'
+                                        'You can assign multiple descriptors per ID by '
+                                        'separating them by "/"')
+        list_layout.addWidget(self.event_id_widget)
 
         self.check_widget = CheckList()
-        self.list_layout.addWidget(self.check_widget)
+        list_layout.addWidget(self.check_widget)
 
-    def get_event_ids(self, name):
-        sub = CurrentSub(name, self.mw)
+        self.layout.addLayout(list_layout)
+
+        bt_layout = QHBoxLayout()
+
+        apply_bt = QPushButton('Apply to')
+        apply_bt.clicked.connect(partial(EvIDApply, self))
+        bt_layout.addWidget(apply_bt)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        bt_layout.addWidget(close_bt)
+
+        self.layout.addLayout(bt_layout)
+
+        self.setLayout(self.layout)
+
+    def get_event_id(self):
+        """Get unique event-ids from events"""
+        # Load Events from File
+        sub = CurrentSub(self.name, self.mw, suppress_warnings=True)
         try:
             events = sub.load_events()
         except FileNotFoundError:
+            # Todo: You should be able to choose between different find_event-functions
             find_events(sub,
                         self.mw.pr.parameters[self.mw.pr.p_preset]['min_duration'],
                         self.mw.pr.parameters[self.mw.pr.p_preset]['shortest_event'],
                         self.mw.pr.parameters[self.mw.pr.p_preset]['adjust_timeline_by_msec'])
 
             events = sub.load_events()
-        event_ids = np.unique(events[:, 2])
+        self.ids = np.unique(events[:, 2])
+        self.pd_evid = pd.DataFrame(index=self.ids, columns=['ID-Name(s)'])
+        self.pd_evid['ID-Name(s)'] = ''
 
-        return event_ids
+        if self.name in self.mw.pr.event_id_dict:
+            self.event_id = self.mw.pr.event_id_dict[self.name]
 
-    def evid_to_pandas(self):
-        pass
+            # Convert Event-ID to Pandas DataFrame
+            for key in self.event_id:
+                self.pd_evid.loc[self.event_id[key], 'ID-Name(s)'] = key
 
-    def pandas_to_evid(self):
-        pass
+    def save_event_id(self):
+        if self.name:
+            self.event_id = {}
+            # Convert Pandas DataFrame to Event-ID-Dict
+            for idx in self.pd_evid.index:
+                # Get trial(s) for ID
+                key = str(self.pd_evid.loc[idx, 'ID-Name(s)'])
+                if key != '':
+                    self.event_id[key] = int(idx)
 
-    # Todo: You should be able to choose between different find_event-functions
+            if len(self.event_id) > 0:
+                # Write Event-ID to Project
+                self.mw.pr.event_id_dict[self.name] = self.event_id
+
+                # Get selected Trials and write them to project
+                self.mw.pr.sel_trials_dict[self.name] = self.checked_labels
+
     def file_selected(self, current, _):
-        name = self.files_model.data(current, Qt.DisplayRole)
-        if name in self.mw.pr.event_id_dict:
-            pass
+        """Called when File from file_widget is selected"""
+        # Save event_id for previous file
+        self.save_event_id()
 
+        # Get event-id for selected file and update widget
+        self.name = self.files_model.data(current, Qt.DisplayRole)
+        self.get_event_id()
+        self.event_id_widget.replace_data(self.pd_evid)
+
+        # Load checked trials
+        if self.name in self.mw.pr.sel_trials_dict:
+            self.checked_labels = self.mw.pr.sel_trials_dict[self.name]
+        else:
+            self.checked_labels = list()
+        self.update_check_list()
+
+    def update_check_list(self):
+
+        # Get selectable trials and update widget
+        prelabels = [i.split('/') for i in self.pd_evid['ID-Name(s)'] if i != '']
+        if len(prelabels) > 0:
+            # Concatenate all lists
+            conc_labels = prelabels[0]
+            if len(prelabels) > 1:
+                for item in prelabels[1:]:
+                    conc_labels += item
+            # Make sure that only unique labels exist
+            self.labels = list(set(conc_labels))
+
+            # Make sure, that only trials, which exist in event_id exist
+            for chk_label in self.checked_labels:
+                if not any(chk_label in key for key in self.event_id):
+                    self.checked_labels.remove(chk_label)
+        else:
+            self.labels = list()
+
+        self.check_widget.replace_data(self.labels, self.checked_labels)
+
+    def closeEvent(self, event):
+        # Save event_id for last selected file
+        self.save_event_id()
+        event.accept()
+
+
+class EvIDApply(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.p = parent
+        self.apply_to = list()
+
+        self.layout = QVBoxLayout()
+        self.init_ui()
+
+        self.open()
+
+    def init_ui(self):
+        label = QLabel(f'Apply {self.p.name} to:')
+        self.layout.addWidget(label)
+
+        self.check_listw = CheckList(self.p.mw.pr.all_files, self.apply_to)
+        self.layout.addWidget(self.check_listw)
+
+        bt_layout = QHBoxLayout()
+
+        apply_bt = QPushButton('Apply')
+        apply_bt.clicked.connect(self.apply_evid)
+        bt_layout.addWidget(apply_bt)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        bt_layout.addWidget(close_bt)
+
+        self.layout.addLayout(bt_layout)
+        self.setLayout(self.layout)
+
+    def apply_evid(self):
+        for file in self.apply_to:
+            # Avoid with copy that CheckList-Model changes selected for all afterwards (same reference)
+            self.p.mw.pr.event_id_dict[file] = self.p.event_id.copy()
+            self.p.mw.pr.sel_trials_dict[file] = self.p.checked_labels.copy()

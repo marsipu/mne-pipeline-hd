@@ -18,7 +18,6 @@ overwrite_ar;Overwrite Autoreject(Threshold);False;;if to calculate new threshol
 reject;;{'grad':8e-10};;default reject parameter if not reject with autoreject_threshold;DictGui;
 flat;;{'grad':1e-15};;default flat parameter;DictGui;
 decim;;1;;down samplingfactor;IntGui;
-event_id;;{'Default':1};;dictionary to assign strings to the event_ids;DictGui;
 tfr_freqs;;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
 overwrite_tfr;;True;;Recalculate and overwrite Time-Frequency-Data;BoolGui;
 tfr_method;;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}

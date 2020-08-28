@@ -24,19 +24,19 @@ import pandas as pd
 import qdarkstyle
 from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog,
-                             QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
-                             QMainWindow, QMessageBox, QPushButton, QScrollArea, QStyle,
+from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog,
+                             QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
+                             QPushButton, QScrollArea, QStyle,
                              QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
 from mayavi import mlab
 
 from .dialogs import ChooseCustomModules, CustomFunctionImport, ParametersDlg, QuickGuide, \
     RemoveProjectsDlg, RunDialog, \
     SettingsDlg
+from .gui_utils import ErrorDialog, get_exception_tuple
 from .other_widgets import DataTerminal
 from .parameter_widgets import BoolGui, ComboGui, IntGui
-from .gui_utils import ErrorDialog, get_exception_tuple
-from .subject_widgets import (AddFilesDialog, AddMRIDialog, SubBadsDialog, SubDictDialog,
+from .subject_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
 from .. import basic_functions, resources
 from ..basic_functions.plot import close_all
@@ -474,6 +474,7 @@ class MainWindow(QMainWindow):
                              partial(SubDictDialog, self, 'erm'))
         input_menu.addAction('Assign Bad-Channels --> File',
                              partial(SubBadsDialog, self))
+        input_menu.addAction('Assign Event-IDs', partial(EventIDGui, self))
         input_menu.addSeparator()
         input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
 
