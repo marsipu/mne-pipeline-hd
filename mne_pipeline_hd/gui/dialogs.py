@@ -29,9 +29,9 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDesktopWidget, QDialog, QFil
                              QToolTip, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.parameter_widgets import BoolGui, ComboGui, IntGui, StringGui
-from mne_pipeline_hd.gui.models import CheckListModel
 from mne_pipeline_hd.gui.gui_utils import ErrorDialog, get_exception_tuple
+from mne_pipeline_hd.gui.models import CheckListModel
+from mne_pipeline_hd.gui.parameter_widgets import BoolGui, ComboGui, IntGui, StringGui
 from mne_pipeline_hd.pipeline_functions import iswin
 from mne_pipeline_hd.pipeline_functions.project import Project
 
@@ -1298,7 +1298,7 @@ class SavePkgDialog(QDialog):
 
         self.cf.mw.import_custom_modules()
         self.cf.mw.update_func_bts()
-        self.cf.mw.update_param_gui_tab()
+        self.cf.mw.param_dlg.update_all_param_guis()
         self.close()
 
         # Todo: update func-Buttons and Parameters-Widgets

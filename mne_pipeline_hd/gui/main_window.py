@@ -583,7 +583,7 @@ class MainWindow(QMainWindow):
         self.general_layout.addWidget(stop_bt, 1, 3)
 
     def open_param_dlg(self):
-        ParametersDlg(self)
+        self.param_dlg = ParametersDlg(self)
 
     # Todo: Make Buttons more appealing, mark when check
     #   make button-dependencies
