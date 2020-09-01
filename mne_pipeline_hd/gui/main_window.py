@@ -137,6 +137,7 @@ class MainWindow(QMainWindow):
 
         # Import the basic- and custom-function-modules
         self.import_custom_modules()
+        # Todo: Gruppen machen Probleme mit CustomFunctions!!!
         # Todo: verbessern, um Klarheit zu schaffen bei Unterteilung in Gruppen (über einzelne Module?)
         self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'MRI-Preprocessing')
                                        & (self.pd_funcs['subject_loop'] == True)]

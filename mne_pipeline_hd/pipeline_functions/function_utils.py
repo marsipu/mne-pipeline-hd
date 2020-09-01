@@ -203,7 +203,7 @@ class FunctionWorker(Worker):
                     self.mw.subject = sub
 
                 elif subject_type == 'other':
-                    sub = BaseSub(name, self.mw)
+                    sub = CurrentSub(name, self.mw)
 
                 else:
                     break
