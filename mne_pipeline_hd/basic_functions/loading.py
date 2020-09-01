@@ -512,7 +512,8 @@ class CurrentSub(BaseSub):
                 QMessageBox.warning(self.mw, 'No Trials',
                                     f'No Trials selected for {k}, defaulting to empty list')
 
-        self.mri_sub = mri_sub or CurrentMRISub(self.subtomri, main_win)
+        if not self.subtomri is None:
+            self.mri_sub = mri_sub or CurrentMRISub(self.subtomri, main_win)
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)
@@ -551,11 +552,12 @@ class CurrentSub(BaseSub):
         self.old_raw_filtered_path = join(self.save_dir,
                                           f'{name}{filter_string(self.p["highpass"], self.p["lowpass"])}-raw.fif')
 
-        self.erm_path = join(self.pr.erm_data_path, self.ermsub, f'{self.ermsub}-raw.fif')
-        self.erm_filtered_path = join(self.pr.erm_data_path, self.ermsub, f'{self.ermsub}_{self.p_preset}-raw.fif')
-        self.old_erm_filtered_path = join(self.pr.erm_data_path, self.ermsub,
-                                          self.ermsub + filter_string(self.p["highpass"], self.p["lowpass"])
-                                          + '-raw.fif')
+        if self.ermsub is not None:
+            self.erm_path = join(self.pr.erm_data_path, self.ermsub, f'{self.ermsub}-raw.fif')
+            self.erm_filtered_path = join(self.pr.erm_data_path, self.ermsub, f'{self.ermsub}_{self.p_preset}-raw.fif')
+            self.old_erm_filtered_path = join(self.pr.erm_data_path, self.ermsub,
+                                              self.ermsub + filter_string(self.p["highpass"], self.p["lowpass"])
+                                              + '-raw.fif')
 
         self.events_path = join(self.save_dir, f'{name}_{self.p_preset}-eve.fif')
         self.old_events_path = join(self.save_dir, f'{name}-eve.fif')
