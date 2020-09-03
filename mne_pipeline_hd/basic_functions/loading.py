@@ -619,6 +619,11 @@ class CurrentSub(BaseSub):
 
         return self._raw
 
+    def save_raw(self, raw):
+        self._raw = raw
+        raw.save(self.raw_path, overwrite=True)
+        self.save_file_params(self.raw_path)
+
     def load_filtered(self):
         if self._raw_filtered is None:
             try:
