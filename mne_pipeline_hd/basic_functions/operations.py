@@ -551,6 +551,8 @@ def get_evokeds(sub, enable_ica):
     for trial in sub.sel_trials:
         print(f'Evoked for {trial}')
         evoked = epochs[trial].average()
+        # Todo: optional if you want weights in your evoked.comment?!
+        evoked.comment = trial
         evokeds.append(evoked)
 
     sub.save_evokeds(evokeds)
