@@ -9,14 +9,18 @@ License: BSD (3-clause)
 """
 import sys
 from ast import literal_eval
-import numpy as np
 from decimal import Decimal
+from functools import partial
 
-from PyQt5.QtCore import QSettings, Qt
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
+import numpy as np
+from PyQt5.QtCore import QSettings, QTimer, Qt
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QGridLayout, QGroupBox,
+                             QHBoxLayout,
                              QLabel,
-                             QLineEdit, QListView, QListWidget, QListWidgetItem, QPushButton, QScrollArea, QSizePolicy,
-                             QSlider, QSpinBox, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
+                             QLineEdit, QListWidget, QPushButton, QScrollArea, QSizePolicy,
+                             QSlider, QSpinBox, QVBoxLayout, QWidget)
+
+from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList
 
 
 class Param(QWidget):
@@ -51,24 +55,6 @@ class Param(QWidget):
         self.layout = QVBoxLayout()
         self.layout.addWidget(QLabel(f'{self.param_alias}: '))
         self.layout.addWidget(self.param_widget)
-        self.setLayout(self.layout)
-
-    def init_bt_layout(self):
-        self.layout = QGridLayout()
-        self.layout.addWidget(QLabel(f'{self.param_alias}: '), 0, 0, 1, 2)
-        self.layout.addWidget(self.param_widget, 1, 0)
-
-        # Add Buttons to interact with list widget
-        bt_layout = QVBoxLayout()
-        add_bt = QPushButton('+')
-        add_bt.clicked.connect(self.add_item)
-        bt_layout.addWidget(add_bt)
-
-        rm_bt = QPushButton('-')
-        rm_bt.clicked.connect(self.remove_item)
-        bt_layout.addWidget(rm_bt)
-
-        self.layout.addLayout(bt_layout, 1, 1)
         self.setLayout(self.layout)
 
     def read_param(self):
@@ -468,6 +454,27 @@ class ComboGui(Param):
         return self.param_value
 
 
+class ListDialog(QDialog):
+    def __init__(self, paramw):
+        super().__init__(paramw)
+        self.paramw = paramw
+
+        self.init_layout()
+        self.open()
+
+    def init_layout(self):
+        layout = QVBoxLayout()
+        layout.addWidget(EditList(self.paramw.param_value))
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+        self.setLayout(layout)
+
+    def closeEvent(self, event):
+        self.paramw.set_param()
+        event.accept()
+
+
 class ListGui(Param):
     """A GUI for List-Parameters"""
 
@@ -475,53 +482,68 @@ class ListGui(Param):
         super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = list()
-        self.param_widget = QListWidget()
-        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        self.param_widget.setResizeMode(QListView.Adjust)
+        self.name_label = QLabel(f'{self.param_alias}:')
+        self.value_label = QLabel(f'{str(self.param_value)[:30]} ...')
         if hint:
-            self.param_widget.setToolTip(hint)
-        self.param_widget.itemChanged.connect(self.get_param)
+            self.name_label.setToolTip(hint)
+
         self.read_param()
         self.set_param()
         self.save_param()
-        self.init_bt_layout()
+
+        self.init_layout()
+
+    def init_layout(self):
+        layout = QGridLayout()
+        layout.addWidget(self.name_label, 0, 0)
+
+        edit_bt = QPushButton('Edit')
+        edit_bt.clicked.connect(partial(ListDialog, self))
+        layout.addWidget(edit_bt, 0, 1)
+
+        layout.addWidget(self.value_label, 1, 0, 1, 2)
+
+        self.setLayout(layout)
 
     def set_param(self):
-        self.param_widget.clear()
-        if len(self.param_value) > 0:
-            for item in self.param_value:
-                list_item = QListWidgetItem(str(item))
-                list_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable)
-                self.param_widget.addItem(list_item)
-        # Todo: Model/View and Adjustment of Layout to content
-        # self.param_widget.setMaximumWidth(self.param_widget.sizeHintForColumn(0))
-        # self.param_widget.setMaximumHeight(self.param_widget.sizeHintForRow(0) * self.param_widget.count())
+        self.value_label.setText(f'{str(self.param_value)[:30]} ...')
 
     def get_param(self):
-        param_list = list()
-        for idx in range(self.param_widget.count()):
-            param_text = self.param_widget.item(idx).text()
-            try:
-                param_text = literal_eval(param_text)
-            except (SyntaxError, ValueError):
-                pass
-            param_list.append(param_text)
-        self.param_value = param_list
         self.save_param()
 
         return self.param_value
 
-    def add_item(self):
-        list_item = QListWidgetItem('_None_')
-        list_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable)
-        self.param_widget.addItem(list_item)
-        self.get_param()
 
-    def remove_item(self):
-        row = self.param_widget.currentRow()
-        if row is not None:
-            self.param_widget.takeItem(row)
-        self.get_param()
+class CheckListDialog(QDialog):
+    def __init__(self, paramw):
+        super().__init__(paramw)
+        self.paramw = paramw
+        self.data = list(paramw.param_value.keys())
+        self.checked = [key for key in paramw.param_value.keys() if paramw.param_value[key]]
+
+        self.init_layout()
+        self.open()
+
+    def init_layout(self):
+        layout = QVBoxLayout()
+        layout.addWidget(CheckList(self.data, self.checked))
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def closeEvent(self, event):
+        value_dict = dict()
+        for key in self.data:
+            if key in self.checked:
+                value_dict[key] = 1
+            else:
+                value_dict[key] = 0
+        self.paramw.param_value = value_dict
+        self.paramw.set_param()
+        event.accept()
 
 
 class CheckListGui(Param):
@@ -532,48 +554,58 @@ class CheckListGui(Param):
         self.param_name = param_name
         self.options_mapping = options or {}
         self.param_value = dict()
-        self.param_widget = QListWidget()
+
+        self.name_label = QLabel(f'{self.param_alias}:')
         if hint:
-            self.param_widget.setToolTip(hint)
-        self.param_widget.itemChanged.connect(self.get_param)
+            self.name_label.setToolTip(hint)
+        self.value_label = QLabel(f'{str(self.param_value)[:30]} ...')
+
         self.read_param()
         self.set_param()
         self.save_param()
-        self.init_v_layout()
+
+        self.init_layout()
+
+    def init_layout(self):
+        layout = QGridLayout()
+        layout.addWidget(self.name_label, 0, 0)
+
+        edit_bt = QPushButton('Edit')
+        edit_bt.clicked.connect(partial(CheckListDialog, self))
+        layout.addWidget(edit_bt, 0, 1)
+
+        layout.addWidget(self.value_label, 1, 0, 1, 2)
+
+        self.setLayout(layout)
 
     def set_param(self):
-        self.param_widget.clear()
-        if len(self.param_value) > 0:
-            for name in self.param_value:
-                if name in self.options_mapping:
-                    list_item = QListWidgetItem(str(self.options_mapping[name]))
-                else:
-                    list_item = QListWidgetItem(str(name))
-                list_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsUserCheckable)
-                if self.param_value[name]:
-                    list_item.setCheckState(Qt.Checked)
-                else:
-                    list_item.setCheckState(Qt.Unchecked)
-                self.param_widget.addItem(list_item)
+        self.value_label.setText(f'{str(self.param_value)[:30]} ...')
 
     def get_param(self):
-        param_dict = {}
-        for idx in range(self.param_widget.count()):
-            item = self.param_widget.item(idx)
-            if item.text() in self.options_mapping.values():
-                # Get Dict-Key
-                param_text = [it for it in self.options_mapping.items() if item.text() in it][0][0]
-            else:
-                param_text = item.text()
-
-            if item.checkState() == Qt.Checked:
-                param_dict.update({param_text: 1})
-            else:
-                param_dict.update({param_text: 0})
-        self.param_value = param_dict
         self.save_param()
 
         return self.param_value
+
+
+class DictDialog(QDialog):
+    def __init__(self, paramw):
+        super().__init__(paramw)
+        self.paramw = paramw
+
+        self.init_layout()
+        self.open()
+
+    def init_layout(self):
+        layout = QVBoxLayout()
+        layout.addWidget(EditDict(self.paramw.param_value))
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+        self.setLayout(layout)
+
+    def closeEvent(self, event):
+        self.paramw.set_param()
+        event.accept()
 
 
 class DictGui(Param):
@@ -583,66 +615,37 @@ class DictGui(Param):
         super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = dict()
-        self.param_widget = QTableWidget(0, 2)
-        self.param_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
+        self.name_label = QLabel(f'{self.param_alias}:')
         if hint:
-            self.param_widget.setToolTip(hint)
-        self.param_widget.itemChanged.connect(self.get_param)
-        self.param_widget.setHorizontalHeaderLabels(['key', 'value'])
+            self.name_label.setToolTip(hint)
+        self.value_label = QLabel(f'{str(self.param_value)[:30]} ...')
+
         self.read_param()
         self.set_param()
         self.save_param()
-        self.init_bt_layout()
 
-    def set_items(self, row, key, value):
-        key_item = QTableWidgetItem(key)
-        key_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
-        value_item = QTableWidgetItem(value)
-        value_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
-        self.param_widget.setItem(row, 0, key_item)
-        self.param_widget.setItem(row, 1, value_item)
-        self.param_widget.resizeColumnsToContents()
+        self.init_layout()
+
+    def init_layout(self):
+        layout = QGridLayout()
+        layout.addWidget(self.name_label, 0, 0)
+
+        edit_bt = QPushButton('Edit')
+        edit_bt.clicked.connect(partial(DictDialog, self))
+        layout.addWidget(edit_bt, 0, 1)
+
+        layout.addWidget(self.value_label, 1, 0, 1, 2)
+
+        self.setLayout(layout)
 
     def set_param(self):
-        self.param_widget.clear()
-        if len(self.param_value) > 0:
-            self.param_widget.setRowCount(len(self.param_value))
-            for row, (key, value) in enumerate(self.param_value.items()):
-                self.set_items(row, str(key), str(value))
+        self.value_label.setText(f'{str(self.param_value)[:30]} ...')
 
     def get_param(self):
-        param_dict = dict()
-        for row in range(self.param_widget.rowCount()):
-            row_item = self.param_widget.item(row, 0)
-            value_item = self.param_widget.item(row, 1)
-            if row_item and value_item:
-                try:
-                    key = literal_eval(row_item.text())
-                except (ValueError, SyntaxError):
-                    key = row_item.text()
-                try:
-                    value = literal_eval(value_item.text())
-                except (ValueError, SyntaxError):
-                    value = value_item.text()
-                param_dict.update({key: value})
-        self.param_widget.resizeColumnsToContents()
-        self.param_value = param_dict
         self.save_param()
 
         return self.param_value
-
-    def add_item(self):
-        row = self.param_widget.rowCount()
-        self.param_widget.insertRow(row)
-        self.set_items(row, '_None_key_', '_None_value_')
-        self.param_widget.resizeColumnsToContents()
-        self.get_param()
-
-    def remove_item(self):
-        row = self.param_widget.currentRow()
-        if row is not None:
-            self.param_widget.removeRow(row)
-        self.get_param()
 
 
 # Todo: None als Parameter (Special Parameter)
@@ -650,7 +653,7 @@ class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
     def __init__(self, project, param_name, param_alias=None, hint=None,
-                 min_val=0., max_val=100., step=1., default=None):
+                 min_val=0, max_val=100, step=1, default=None):
         super().__init__(project, param_name, param_alias, default)
         self.param_name = param_name
         self.param_alias = param_alias
@@ -712,14 +715,12 @@ class SliderGui(Param):
                 self.decimal_count = new_decimal_count
                 self.param_widget.setMinimum(self.min_val * 10 ** self.decimal_count)
                 self.param_widget.setMaximum(self.max_val * 10 ** self.decimal_count)
-                self.param_value = new_value
-                self.param_widget.setValue(new_value * 10 ** self.decimal_count)
-        else:
-            pass
+            self.param_value = new_value
+            self.param_widget.setValue(int(new_value * 10 ** self.decimal_count))
 
     def set_param(self):
         if self.decimal_count > 0:
-            self.param_widget.setValue(self.param_value * 10 ** self.decimal_count)
+            self.param_widget.setValue(int(self.param_value * 10 ** self.decimal_count))
         else:
             self.param_widget.setValue(self.param_value)
         self.display_widget.setText(str(self.param_value))
@@ -818,6 +819,10 @@ if __name__ == '__main__':
     main_win.setLayout(sub_layout)
     scroll_area.setWidget(main_win)
     scroll_area.show()
-    app.exec_()
 
-    print(proj.parameters)
+    # Command-Line interrupt with Ctrl+C possible, easier debugging
+    timer = QTimer()
+    timer.timeout.connect(lambda: proj)
+    timer.start(500)
+
+    sys.exit(app.exec())

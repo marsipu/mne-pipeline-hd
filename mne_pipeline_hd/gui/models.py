@@ -9,7 +9,6 @@ License: BSD (3-clause)
 """
 from ast import literal_eval
 
-import numpy as np
 import pandas as pd
 from PyQt5.QtCore import QAbstractItemModel, QAbstractListModel, QAbstractTableModel, QModelIndex, Qt
 from PyQt5.QtWidgets import QApplication, QStyle
@@ -20,12 +19,12 @@ class BaseListModel(QAbstractListModel):
 
     Parameters
     ----------
-    data : list of str
+    data : list
         input existing list here, otherwise defaults to empty list
 
     """
 
-    def __init__(self, data):
+    def __init__(self, data=None):
         super().__init__()
         if data is None:
             self._data = list()
@@ -34,7 +33,7 @@ class BaseListModel(QAbstractListModel):
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return self._data[index.row()]
+            return str(self._data[index.row()])
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data)
@@ -45,7 +44,7 @@ class EditListModel(BaseListModel):
 
     Parameters
     ----------
-    data : list of str
+    data : list
         input existing list here, otherwise defaults to empty list
 
     Notes
@@ -61,7 +60,10 @@ class EditListModel(BaseListModel):
 
     def setData(self, index, value, role=None):
         if role == Qt.EditRole:
-            self._data[index.row()] = value
+            try:
+                self._data[index.row()] = literal_eval(value)
+            except (ValueError, SyntaxError):
+                self._data[index.row()] = value
             self.dataChanged.emit(index, index)
             return True
         return False
