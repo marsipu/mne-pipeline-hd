@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import sys
+from collections import Counter
 from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
@@ -26,16 +27,16 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
                              QSizePolicy,
                              QStyle, QTabWidget,
-                             QTableWidget,
+                             QTableView, QTableWidget,
                              QTableWidgetItem, QTableWidgetSelectionRange, QTextEdit, QTreeWidget,
                              QTreeWidgetItem,
                              QVBoxLayout,
                              QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
-from .base_widgets import CheckList, EditPandasTable
+from .base_widgets import CheckList, EditDict, EditList, EditPandasTable
 from .gui_utils import (ErrorDialog, Worker)
-from .models import FileDictModel
+from .models import AddFilesModel, FileDictModel
 from ..basic_functions import loading
 from ..basic_functions.loading import CurrentSub
 from ..basic_functions.operations import find_events
@@ -592,13 +593,32 @@ class AddFilesWidget(QWidget):
         self.mw = main_win
         self.layout = QVBoxLayout()
 
-        self.files = list()
-        self.paths = dict()
-        self.file_types = dict()
-        self.is_erm = dict()
         self.erm_keywords = ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room', 'raum', 'Raum']
-        self.supported_file_types = ['fif']
-        self.filter_qstring = 'Neuromag (*.fif)'
+        self.supported_file_types = {'.bin': 'Artemis123',
+                                     '.cnt': 'Neuroscan',
+                                     '.ds': 'CTF',
+                                     '.dat': 'Curry',
+                                     '.dap': 'Curry',
+                                     '.rs3': 'Curry',
+                                     '.cdt': 'Curry',
+                                     '.cdt.dpa': 'Curry',
+                                     '.cdt.cef': 'Curry',
+                                     '.cef': 'Curry',
+                                     '.edf': 'European',
+                                     '.bdf': 'BioSemi',
+                                     '.gdf': 'General',
+                                     '.sqd': 'Ricoh/KIT',
+                                     '.data': 'Nicolet',
+                                     '.fif': 'Neuromag',
+                                     '.set': 'EEGLAB',
+                                     '.vhdr': 'Brainvision',
+                                     '.egi': 'EGI',
+                                     '.mff': 'EGI',
+                                     '.mat': 'Fieldtrip',
+                                     '.lay': 'Persyst'}
+
+        self.pd_files = pd.DataFrame([], columns=['Name', 'File-Type', 'Empty-Room?', 'Path'])
+        self.load_kwargs = {}
 
         self.init_ui()
 
@@ -613,18 +633,15 @@ class AddFilesWidget(QWidget):
         input_bt_layout.addWidget(folder_bt)
         self.layout.addLayout(input_bt_layout)
 
-        self.label = QLabel(f'Supported file-formats: {self.supported_file_types}')
-        self.layout.addWidget(self.label)
+        self.view = QTableView()
+        self.model = AddFilesModel(self.pd_files)
+        self.view.setModel(self.model)
 
-        self.table_widget = QTableWidget(0, 4)
-        self.table_widget.itemChanged.connect(self.item_checked)
-        self.table_widget.cellClicked.connect(self.item_selected)
-        self.table_widget.setHorizontalHeaderLabels(['File-Name', 'File-Type', 'Is Empty-Room?', 'Path'])
-        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.table_widget.setToolTip('These .fif-Files can be imported \n'
-                                     '(the Empty-Room-Measurements should appear here '
-                                     'too and will be sorted according to the ERM-Keywords)')
-        self.layout.addWidget(self.table_widget)
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.view.setToolTip('These .fif-Files can be imported \n'
+                             '(the Empty-Room-Measurements should appear here '
+                             'too and will be sorted according to the ERM-Keywords)')
+        self.layout.addWidget(self.view)
 
         self.main_bt_layout = QHBoxLayout()
         import_bt = QPushButton('Import', self)
@@ -634,99 +651,61 @@ class AddFilesWidget(QWidget):
         delete_bt.clicked.connect(self.delete_item)
         self.main_bt_layout.addWidget(delete_bt)
         erm_kw_bt = QPushButton('Empty-Room-Keywords')
-        erm_kw_bt.clicked.connect(self.show_erm_keywords)
+        erm_kw_bt.clicked.connect(partial(ErmKwDialog, self))
         self.main_bt_layout.addWidget(erm_kw_bt)
-        self.layout.addLayout(self.main_bt_layout)
+        load_arg_bt = QPushButton('Load-Arguments')
+        load_arg_bt.clicked.connect(partial(LoadArgDialog, self))
+        self.main_bt_layout.addWidget(load_arg_bt)
 
+        self.layout.addLayout(self.main_bt_layout)
         self.setLayout(self.layout)
 
-    def item_checked(self, item):
-        name = self.table_widget.item(self.table_widget.row(item), 0).text()
-        if self.table_widget.column(item) == 2:
-            if item.checkState() == Qt.Checked:
-                self.is_erm[name] = 1
-            else:
-                self.is_erm[name] = 0
-
-    def item_selected(self, row):
-        # Select only rows
-        self.table_widget.setRangeSelected(QTableWidgetSelectionRange(row, 0, row, 3), True)
-
-    def populate_table_widget(self):
-        # Todo: When adding files sequentially, there seems to be an overtake from previous addition, thus duplicates
-        #   hopefully, this can be removed with Model/View
-        row_count = self.table_widget.rowCount()
-        self.table_widget.setRowCount(row_count + len(self.files))
-        for file_name in self.files:
-            name_item = QTableWidgetItem(file_name)
-            self.table_widget.setItem(row_count, 0, name_item)
-            type_item = QTableWidgetItem(self.file_types[file_name])
-            self.table_widget.setItem(row_count, 1, type_item)
-            erm_item = QTableWidgetItem('')
-            erm_item.setFlags(erm_item.flags() | Qt.ItemIsUserCheckable)
-            if self.is_erm[file_name]:
-                erm_item.setCheckState(Qt.Checked)
-            else:
-                erm_item.setCheckState(Qt.Unchecked)
-            self.table_widget.setItem(row_count, 2, erm_item)
-            path_item = QTableWidgetItem(self.paths[file_name])
-            self.table_widget.setItem(row_count, 3, path_item)
-            row_count += 1
-
     def delete_item(self):
-        idxs = self.table_widget.selectedIndexes()
-        rows = set()
-        for idx in idxs:
-            rows.add(idx.row())
-        for row in rows:
-            file_name = self.table_widget.item(row, 0).text()
+        row_idxs = set([idx.row() for idx in self.view.selectionModel().selectedIndexes()])
+        for row_idx in row_idxs:
+            self.model.removeRow(row_idx)
 
-            self.files.remove(file_name)
-            self.file_types.pop(file_name, None)
-            self.is_erm.pop(file_name, None)
-            self.paths.pop(file_name, None)
-        count = len(rows)
-        # I don't trust the unordered set here (reasonable?)
-        row_list = list(rows)
-        row_list.sort()
-        while count > 0:
-            self.table_widget.removeRow(row_list[0])
-            count -= 1
+    def update_model(self):
+        self.model._data = self.pd_files
+        self.model.layoutChanged.emit()
 
-    def show_erm_keywords(self):
-        ErmKwDialog(self)
-
-    def update_erm_checks(self):
-        for file in self.files:
-            name_item = self.table_widget.findItems(file, Qt.MatchExactly)[0]
-            if name_item:
-                erm_item = self.table_widget.item(self.table_widget.row(name_item), 2)
-                if any(x in file for x in self.erm_keywords):
-                    self.is_erm[file] = 1
-                    erm_item.setCheckState(Qt.Checked)
-                else:
-                    self.is_erm[file] = 0
-                    erm_item.setCheckState(Qt.Unchecked)
-
-    def get_files_path(self):
-        files_list = QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import', filter=self.filter_qstring)[0]
+    def insert_files(self, files_list):
         if len(files_list) > 0:
+            existing_files = list()
+
             for file_path in files_list:
                 p = Path(file_path)
-                file = p.stem
-                if file not in self.files:
-                    self.files.append(file)
-                if file not in self.paths:
-                    self.paths.update({file: file_path})
-                if file not in self.file_types:
-                    self.file_types.update({file: p.suffix})
-                if any(x in file for x in self.erm_keywords):
-                    self.is_erm[file] = 1
+                file_name = p.stem
+                # Get already existing files and skip them
+                if file_path in list(self.pd_files['Path']) \
+                        or file_name in self.mw.pr.all_files \
+                        or file_name in self.mw.pr.erm_files:
+
+                    existing_files.append(file_name)
+                    continue
+
+                # Remove -raw from name (put stays in file_name and path later)
+                if file_name[-4:] == '-raw':
+                    file_name = file_name[:-4]
+
+                if any(x in file_name for x in self.erm_keywords):
+                    erm = 1
                 else:
-                    self.is_erm[file] = 0
-            self.populate_table_widget()
-        else:
-            pass
+                    erm = 0
+
+                self.pd_files = self.pd_files.append({'Name': file_name, 'File-Type': p.suffix,
+                                                      'Empty-Room?': erm, 'Path': file_path}, ignore_index=True)
+
+            self.update_model()
+
+            if len(existing_files) > 0:
+                QMessageBox.information(self, 'Existing Files',
+                                        f'These files already exist in your project: {existing_files}')
+
+    def get_files_path(self):
+        filter_qstring = ';;'.join([f'{self.supported_file_types[key]} (*{key})' for key in self.supported_file_types])
+        files_list = QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import', filter=filter_qstring)[0]
+        self.insert_files(files_list)
 
     def get_folder_path(self):
         folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder to import your raw-Files from (including '
@@ -735,33 +714,31 @@ class AddFilesWidget(QWidget):
             # create a list of file and sub directories
             # names in the given directory
             list_of_file = os.walk(folder_path)
+            files_list = list()
             # Iterate over all the entries
             for dirpath, dirnames, filenames in list_of_file:
-                for full_file in filenames:
+                for file in filenames:
                     for file_type in self.supported_file_types:
-                        match = re.match(rf'(.+)(\.{file_type})', full_file)
-                        if match and len(match.group()) == len(full_file):
-                            file = match.group(1)
-                            if not any(x in full_file for x in ['-eve.', '-epo.', '-ica.', '-ave.', '-tfr.', '-fwd.',
-                                                                '-cov.', '-inv.', '-src.', '-trans.', '-bem-sol.']):
-                                if file not in self.files:
-                                    self.files.append(file)
-                                if file not in self.paths:
-                                    self.paths.update({file: join(dirpath, full_file)})
-                                if file not in self.file_types:
-                                    self.file_types.update({file: match.group(2)})
-                                if any(x in file for x in self.erm_keywords):
-                                    self.is_erm[file] = 1
-                                else:
-                                    self.is_erm[file] = 0
-            self.populate_table_widget()
-        else:
-            pass
+                        match = re.match(rf'(.+)({file_type})', file)
+                        if match and len(match.group()) == len(file):
+                            # Make sure, that no files from Pipeline-Analysis are included
+                            if not any(x in file for x in ['-eve.', '-epo.', '-ica.', '-ave.', '-tfr.', '-fwd.',
+                                                           '-cov.', '-inv.', '-src.', '-trans.', '-bem-sol.']):
+                                files_list.append(join(dirpath, file))
+            self.insert_files(files_list)
+
+    def update_erm_checks(self):
+        for idx in self.pd_files.index:
+            if any(x in self.pd_files.loc[idx, 'Name'] for x in self.erm_keywords):
+                self.pd_files.loc[idx, 'Empty-Room?'] = 1
+            else:
+                self.pd_files.loc[idx, 'Empty-Room?'] = 0
+        self.model.layoutChanged.emit()
 
     def add_files_starter(self):
         self.addf_dialog = QProgressDialog(self)
         self.addf_dialog.setLabelText('Copying Files...')
-        self.addf_dialog.setMaximum(len(self.files))
+        self.addf_dialog.setMaximum(len(self.pd_files.index))
         self.addf_dialog.open()
 
         worker = AddFileWorker(self.add_files)
@@ -775,58 +752,41 @@ class AddFilesWidget(QWidget):
         ErrorDialog(err, self)
 
     def add_files(self, signals):
-        existing_files = self.mw.pr.all_files
-        existing_erm_files = self.mw.pr.erm_files
+
+        # Resolve identical file-names (but different types)
+        duplicates = [item for item, i_cnt in Counter(list(self.pd_files['Name'])).items() if i_cnt > 1]
+        for name in duplicates:
+            dupl_df = self.pd_files[self.pd_files['Name'] == name]
+            for idx in dupl_df.index:
+                self.pd_files.loc[idx, 'Name'] = \
+                    self.pd_files.loc[idx, 'Name'] + '-' + self.pd_files.loc[idx, 'File-Type'][1:]
+
         count = 1
-        # Todo: Structure differenciation between erm and file better
-        for fname in self.files:
+        for idx in self.pd_files.index:
+            file = self.pd_files.loc[idx, 'Name']
             if not self.addf_dialog.wasCanceled():
-                signals['which_sub'].emit(f'Copying {fname}')
-                forig = self.paths[fname]
-                # Make sure every raw-file got it's -raw appendix
-                if fname[-4:] == '-raw':
-                    fdest = join(self.mw.pr.data_path, fname[:-4], fname + self.file_types[fname])
-                    ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname[:-4], fname + self.file_types[fname])
-                    new_fname = fname[:-4]
-                else:
-                    fdest = join(self.mw.pr.data_path, fname, fname + '-raw' + self.file_types[fname])
-                    ermdest = join(self.mw.pr.data_path, 'empty_room_data', fname,
-                                   fname + '-raw' + self.file_types[fname])
-                    new_fname = fname
+                signals['which_sub'].emit(f'Copying {file}')
 
-                # Make sure, files don't exist already
-                if self.is_erm[fname] and isfile(ermdest):
-                    signals['pgbar_n'].emit(count)
-                    count += 1
-                    continue
-                elif isfile(fdest):
-                    signals['pgbar_n'].emit(count)
-                    count += 1
-                    continue
-
-                raw = self.load_file(fname, forig)
-                self.get_infos(raw, new_fname)
+                raw = self.load_file(idx)
+                self.get_infos(raw, file)
 
                 if not self.addf_dialog.wasCanceled():
                     # Copy Empty-Room-Files to their directory
-                    if self.is_erm[fname]:
+                    if self.pd_files.loc[idx, 'Empty-Room?']:
                         # Organize ERMs
-                        if new_fname not in existing_erm_files:
-                            self.mw.pr.erm_files.append(new_fname)
-                        # Make sure, that all directories exist
-                        parent_dir = Path(ermdest).parent
-                        os.makedirs(parent_dir, exist_ok=True)
-                        # Copy empty-room-files to destination
-                        raw.save(ermdest)
+                        self.mw.pr.erm_files.append(file)
+                        save_path = join(self.mw.pr.data_path, 'empty_room_data',
+                                         file, file + '-raw.fif')
                     else:
                         # Organize sub_files
-                        if fname not in existing_files:
-                            self.mw.pr.all_files.append(fname)
-                        # Make sure, that all directories exist
-                        parent_dir = Path(fdest).parent
-                        os.makedirs(parent_dir, exist_ok=True)
-                        # Copy sub_files to destination
-                        raw.save(fdest)
+                        self.mw.pr.all_files.append(file)
+                        save_path = join(self.mw.pr.data_path, file,
+                                         file + '-raw.fif')
+                    # Make sure, that all directories exist
+                    parent_dir = Path(save_path).parent
+                    os.makedirs(parent_dir, exist_ok=True)
+                    # Copy sub_files to destination
+                    raw.save(save_path, overwrite=True)
                     signals['pgbar_n'].emit(count)
                     count += 1
                 else:
@@ -835,14 +795,11 @@ class AddFilesWidget(QWidget):
                 break
 
     def addf_finished(self):
-        all_rows = self.table_widget.rowCount()
-        while all_rows > 0:
-            self.table_widget.removeRow(0)
-            all_rows -= 1
-        self.files = list()
-        self.paths = dict()
-        self.file_types = dict()
-        self.is_erm = dict()
+        self.pd_files = pd.DataFrame([], columns=['Name', 'File-Type', 'Empty-Room?', 'Path'])
+        self.update_model()
+
+        self.addf_dialog.close()
+
         self.mw.pr.save_sub_lists()
         self.mw.subject_dock.update_subjects_list()
 
@@ -850,91 +807,108 @@ class AddFilesWidget(QWidget):
         info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
                      'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
                      'helium_info']
-        self.mw.pr.info_dict[new_fname] = {}
-        for key in info_keys:
-            self.mw.pr.info_dict[new_fname][key] = raw.info[key]
-        # Todo: Add sampling-rate
-        # Add arrays of digitization-points and save it to json to make the trans-file-management possible
-        # (same digitization = same trans-file)
-        if raw.info['dig'] is not None:
-            dig_dict = {}
-            for dig_point in raw.info['dig']:
-                dig_dict[dig_point['ident']] = {}
-                dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
-                dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
-            self.mw.pr.info_dict[new_fname]['dig'] = dig_dict
-        self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
-        # Some raw-files don't have get_channel_types?
         try:
-            self.mw.pr.info_dict[new_fname]['ch_types'] = set(raw.get_channel_types())
-        except AttributeError:
-            self.mw.pr.info_dict[new_fname]['ch_types'] = set()
-        self.mw.pr.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
+            self.mw.pr.info_dict[new_fname] = {}
+            for key in info_keys:
+                self.mw.pr.info_dict[new_fname][key] = raw.info[key]
+            # Add arrays of digitization-points and save it to json to make the trans-file-management possible
+            # (same digitization = same trans-file)
+            if raw.info['dig'] is not None:
+                dig_dict = {}
+                for dig_point in raw.info['dig']:
+                    dig_dict[dig_point['ident']] = {}
+                    dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
+                    dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
+                self.mw.pr.info_dict[new_fname]['dig'] = dig_dict
+            self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
+            # Some raw-files don't have get_channel_types?
+            try:
+                self.mw.pr.info_dict[new_fname]['ch_types'] = set(raw.get_channel_types())
+            except AttributeError:
+                self.mw.pr.info_dict[new_fname]['ch_types'] = set()
+            self.mw.pr.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
+        except (KeyError, TypeError):
+            pass
 
-    def load_file(self, fname, forig):
-        if self.file_types[fname] == '.fif':
-            raw = mne.io.read_raw_fif(forig, preload=True)
+    def load_file(self, idx):
+        path = self.pd_files.loc[idx, 'Path']
+        file_type = self.pd_files.loc[idx, 'File-Type']
+        if file_type == '.bin':
+            raw = mne.io.read_raw_artemis123(path, preload=True, **self.load_kwargs)
+        elif file_type == '.cnt':
+            raw = mne.io.read_raw_cnt(path, preload=True, **self.load_kwargs)
+        elif file_type == '.ds':
+            raw = mne.io.read_raw_ctf(path, preload=True, **self.load_kwargs)
+        elif any(f == file_type for f in ['.dat', '.dap', '.rs3', '.cdt', '.cdt.dpa', '.cdt.cef', '.cef']):
+            raw = mne.io.read_raw_curry(path, preload=True, **self.load_kwargs)
+        elif file_type == '.edf':
+            raw = mne.io.read_raw_edf(path, preload=True, **self.load_kwargs)
+        elif file_type == '.bdf':
+            raw = mne.io.read_raw_bdf(path, preload=True, **self.load_kwargs)
+        elif file_type == '.fif':
+            raw = mne.io.read_raw_fif(path, preload=True, **self.load_kwargs)
+        elif file_type == '.gdf':
+            raw = mne.io.read_raw_gdf(path, preload=True, **self.load_kwargs)
+        elif file_type == '.sqd':
+            raw = mne.io.read_raw_kit(path, preload=True, **self.load_kwargs)
+        elif file_type == '.data':
+            raw = mne.io.read_raw_nicolet(path, preload=True, **self.load_kwargs)
+        elif file_type == '.set':
+            raw = mne.io.read_raw_eeglab(path, preload=True, **self.load_kwargs)
+        elif file_type == '.vhdr':
+            raw = mne.io.read_raw_brainvision(path, preload=True, **self.load_kwargs)
+        elif any(f == file_type for f in ['.egi', '.mff']):
+            raw = mne.io.read_raw_egi(path, preload=True, **self.load_kwargs)
+        elif file_type == '.mat':
+            raw = mne.io.read_raw_fieldtrip(path, info=None, **self.load_kwargs)
+        # elif file_type == '.lay':
+        #     raw = mne.io.read_raw_persyst(path, preload=True, **self.load_kwargs)
         else:
             raw = None
         return raw
 
 
 class ErmKwDialog(QDialog):
-    def __init__(self, parent_win):
-        super().__init__(parent_win)
-        self.parent_win = parent_win
-        self.item_list = parent_win.erm_keywords
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
 
+        self.layout = QVBoxLayout()
         self.init_ui()
-        self.populate_listw()
+
         self.open()
 
     def init_ui(self):
-        self.layout = QGridLayout()
-        self.listw = QListWidget()
-        self.listw.itemChanged.connect(self.item_changed)
-        self.layout.addWidget(self.listw, 0, 0, 1, 3)
+        self.listw = EditList(self.parent.erm_keywords)
+        self.layout.addWidget(self.listw)
 
-        self.add_bt = QPushButton('Add')
-        self.add_bt.clicked.connect(self.add_item)
-        self.remove_bt = QPushButton('Remove')
-        self.remove_bt.clicked.connect(self.remove_item)
         self.close_bt = QPushButton('Close')
-        self.close_bt.clicked.connect(self.close_dlg)
-        self.layout.addWidget(self.add_bt, 1, 0)
-        self.layout.addWidget(self.remove_bt, 1, 1)
-        self.layout.addWidget(self.close_bt, 1, 2)
+        self.close_bt.clicked.connect(self.close)
+        self.layout.addWidget(self.close_bt)
+
         self.setLayout(self.layout)
 
-    def populate_listw(self):
-        self.listw.addItems(self.parent_win.erm_keywords)
-        for idx in range(self.listw.count()):
-            item = self.listw.item(idx)
-            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable)
-
-    def item_changed(self):
-        new_list = []
-        for idx in range(self.listw.count()):
-            item_text = self.listw.item(idx).text()
-            if item_text != '':
-                new_list.append(item_text)
-        self.item_list = new_list
-
-    def add_item(self):
-        item = QListWidgetItem()
-        item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable)
-        self.listw.addItem(item)
-        self.listw.editItem(item)
-
-    def remove_item(self):
-        item = self.listw.currentItem()
-        self.item_list.remove(item.text())
-        self.listw.takeItem(self.listw.row(item))
-
     def close_dlg(self):
-        self.parent_win.erm_keywords = self.item_list
-        self.parent_win.update_erm_checks()
+        self.parent.update_erm_checks()
         self.close()
+
+
+class LoadArgDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+
+        self.layout = QVBoxLayout()
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        self.edit_dict = EditDict(self.parent.load_kwargs)
+        self.layout.addWidget(self.edit_dict)
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        self.layout.addWidget(close_bt)
+        self.setLayout(self.layout)
 
 
 class AddFilesDialog(AddFilesWidget):

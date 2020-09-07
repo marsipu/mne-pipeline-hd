@@ -11,7 +11,9 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QInputDialog, QListView,
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
 
-from mne_pipeline_hd.gui.models import (BaseListModel, BasePandasModel, CheckListModel, EditListModel, EditPandasModel)
+from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel, CheckListModel, EditDictModel,
+                                        EditListModel,
+                                        EditPandasModel)
 
 
 class BaseList(QWidget):
@@ -63,6 +65,8 @@ class EditList(QWidget):
     ----------
     data : List of str | None
         Input a list with contents to display
+    ui_buttons : bool
+        If to display Buttons or not
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -89,11 +93,11 @@ class EditList(QWidget):
         if self.ui_buttons:
             bt_layout = QHBoxLayout()
 
-            addrow_bt = QPushButton('Add Row')
+            addrow_bt = QPushButton('Add')
             addrow_bt.clicked.connect(self.add_row)
             bt_layout.addWidget(addrow_bt)
 
-            rmrow_bt = QPushButton('Remove Row')
+            rmrow_bt = QPushButton('Remove')
             rmrow_bt.clicked.connect(self.remove_row)
             bt_layout.addWidget(rmrow_bt)
 
@@ -118,6 +122,8 @@ class EditList(QWidget):
 
     def add_row(self):
         row = self.view.selectionModel().currentIndex().row()
+        if row == -1:
+            row = len(self.model._data)
         self.model.insertRow(row)
 
     def remove_row(self):
@@ -138,6 +144,8 @@ class CheckList(QWidget):
         Input a list with contents to display
     checked : List of str | None
         Input a list, which will contain the checked items from data (and which intial items will be checked)
+    ui_buttons : bool
+        If to display Buttons or not
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -202,6 +210,119 @@ class CheckList(QWidget):
         self.content_changed()
 
 
+class BaseDict(QWidget):
+    """A Widget to display a Dictionary
+
+    Parameters
+    ----------
+    data : dict | None
+        Input a pandas DataFrame with contents to display
+    parent : QWidget | None
+        Parent Widget (QWidget or inherited) or None if there is no parent
+
+    """
+
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
+
+        self.model = BaseDictModel(data)
+        self.view = QTableView()
+        self.view.setModel(self.model)
+
+        self.layout = QVBoxLayout()
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.layout.addWidget(self.view)
+        self.setLayout(self.layout)
+
+    def content_changed(self):
+        """Informs ModelView about external change made in data
+        """
+        self.model.layoutChanged.emit()
+
+    def replace_data(self, new_data):
+        """Replaces model._data with new_data
+        """
+        self.model._data = new_data
+        self.content_changed()
+
+
+class EditDict(QWidget):
+    """A Widget to display and edit a Dictionary
+
+    Parameters
+    ----------
+    data : dict | None
+        Input a pandas DataFrame with contents to display
+    ui_buttons : bool
+        If to display Buttons or not
+    parent : QWidget | None
+        Parent Widget (QWidget or inherited) or None if there is no parent
+
+    """
+
+    def __init__(self, data=None, ui_buttons=True, parent=None):
+        super().__init__(parent)
+        self.ui_buttons = ui_buttons
+
+        self.model = EditDictModel(data)
+        self.view = QTableView()
+        self.view.setModel(self.model)
+
+        self.layout = QVBoxLayout()
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.layout.addWidget(self.view)
+
+        if self.ui_buttons:
+            bt_layout = QHBoxLayout()
+
+            addrow_bt = QPushButton('Add')
+            addrow_bt.clicked.connect(self.add_row)
+            bt_layout.addWidget(addrow_bt)
+
+            rmrow_bt = QPushButton('Remove')
+            rmrow_bt.clicked.connect(self.remove_row)
+            bt_layout.addWidget(rmrow_bt)
+
+            edit_bt = QPushButton('Edit')
+            edit_bt.clicked.connect(self.edit_item)
+            bt_layout.addWidget(edit_bt)
+
+            self.layout.addLayout(bt_layout)
+
+        self.setLayout(self.layout)
+
+    def content_changed(self):
+        """Informs ModelView about external change made in data
+        """
+        self.model.layoutChanged.emit()
+
+    def replace_data(self, new_data):
+        """Replaces model._data with new_data
+        """
+        self.model._data = new_data
+        self.content_changed()
+
+    def add_row(self):
+        row = self.view.selectionModel().currentIndex().row()
+        if row == -1:
+            row = len(self.model._data)
+        self.model.insertRow(row)
+
+    def remove_row(self):
+        row_idxs = set([idx.row() for idx in self.view.selectionModel().selectedIndexes()])
+        for row_idx in row_idxs:
+            self.model.removeRow(row_idx)
+
+    def edit_item(self):
+        self.view.edit(self.view.selectionModel().currentIndex())
+
+
 class BasePandasTable(QWidget):
     """A Widget to display a pandas DataFrame
 
@@ -214,10 +335,11 @@ class BasePandasTable(QWidget):
 
     Notes
     -----
-    If you change the DataFrame outside of this class, call content_changed to update this widget
+    If you change the Reference to data outside of this class,
+    give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=pandas.DataFrame([]), parent=None):
+    def __init__(self, data=None, parent=None):
         super().__init__(parent)
 
         self.model = BasePandasModel(data)
@@ -246,7 +368,22 @@ class BasePandasTable(QWidget):
 
 class EditPandasTable(QWidget):
     """A Widget to display and edit a pandas DataFrame
+
+    Parameters
+    ----------
+    data : pandas.DataFrame | None
+        Input a pandas DataFrame with contents to display
+    ui_buttons : bool
+        If to display Buttons or not
+    parent : QWidget | None
+        Parent Widget (QWidget or inherited) or None if there is no parent
+
+    Notes
+    -----
+    If you change the Reference to data outside of this class,
+    give the changed DataFrame to replace_data to update this widget
     """
+
     def __init__(self, data=pandas.DataFrame([]), ui_buttons=True, parent=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
@@ -386,24 +523,31 @@ class AllBaseWidgets(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.exlist = ['Athena', 'Hephaistos', 'Zeus', 'Ares', 'Aphrodite', 'Poseidon']
-        self.exchecked = ['Athena']
-        self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
-        self.extree = {'A': {'Aa': 1,
-                             'Ab': {'Ab1': 'Hermes',
-                                    'Ab2': 'Hades'},
-                             'Ac': [1, 2, 3, 4]},
-                       'B': ['Appolo', 42, 128],
-                       'C': (1, 2, 3)}
+        # self.exlist = ['Athena', 'Hephaistos', 'Zeus', 'Ares', 'Aphrodite', 'Poseidon']
+        # self.exdict = {'Athena': 231,
+        #                'Hephaistos': 44,
+        #                'Zeus': 'Boss',
+        #                'Ares': 'War'}
+        # self.exchecked = ['Athena']
+        # self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
+        # self.extree = {'A': {'Aa': 1,
+        #                      'Ab': {'Ab1': 'Hermes',
+        #                             'Ab2': 'Hades'},
+        #                      'Ac': [1, 2, 3, 4]},
+        #                'B': ['Appolo', 42, 128],
+        #                'C': (1, 2, 3)}
 
-        # self.exlist = None
-        # self.exchecked = None
-        # self.expd = None
-        # self.extree = None
+        self.exlist = None
+        self.exchecked = None
+        self.expd = None
+        self.extree = None
+        self.exdict = None
 
         self.widget_dict = {'BaseList': [self.exlist],
                             'EditList': [self.exlist],
                             'CheckList': [self.exlist, self.exchecked],
+                            'BaseDict': [self.exdict],
+                            'EditDict': [self.exdict],
                             'BasePandasTable': [self.expd],
                             'EditPandasTable': [self.expd]}
 

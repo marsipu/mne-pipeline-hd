@@ -30,7 +30,8 @@ class LoadWorker(Worker):
         super().__init__(fn, LoadSignals(), *args, *kwargs)
 
 
-# ToDo: Add Command-History
+# ToDo: Add Command-History, Commands should be visible in Display, color-coding
+# Todo: Add Looping over defined Subject-Selection
 class DataTerminal(QDialog):
     def __init__(self, main_win, subject=None):
         super().__init__(main_win)

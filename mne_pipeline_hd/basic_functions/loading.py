@@ -457,6 +457,7 @@ class BaseSub:
 
     def save_file_params(self, path):
         file_name = Path(path).name
+        self.pr.file_parameters.loc[file_name, 'PATH'] = path
         for p_name in self.pr.parameters[self.p_preset]:
             self.pr.file_parameters.loc[file_name, p_name] = str(self.pr.parameters[self.p_preset][p_name])
 

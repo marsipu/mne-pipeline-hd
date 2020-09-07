@@ -7,6 +7,8 @@ inspired by: https://doi.org/10.3389/fnins.2018.00006
 @github: https://github.com/marsipu/mne_pipeline_hd
 License: BSD (3-clause)
 """
+from ast import literal_eval
+
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import QAbstractItemModel, QAbstractListModel, QAbstractTableModel, QModelIndex, Qt
@@ -67,7 +69,7 @@ class EditListModel(BaseListModel):
     def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
         for pos in range(row, row + count):
-            self._data.insert(pos, '')
+            self._data.insert(pos, '__new__')
         self.endInsertRows()
         return True
 
@@ -132,6 +134,107 @@ class CheckListModel(BaseListModel):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
 
 
+class BaseDictModel(QAbstractTableModel):
+    """Basic Model for Dictonaries
+
+    Parameters
+    ----------
+    data : dict | None
+        Dictionary with keys and values to be displayed, default to empty Dictionary
+
+    Notes
+    -----
+    Python 3.7 is required to ensure order in dictionary
+    """
+
+    def __init__(self, data=None):
+        super().__init__()
+        if data is None:
+            self._data = dict()
+        else:
+            self._data = data
+
+    def data(self, index, role=None):
+        if role == Qt.DisplayRole:
+            if index.column() == 0:
+                return str(list(self._data.keys())[index.row()])
+            elif index.column() == 1:
+                return str(list(self._data.values())[index.row()])
+
+    def headerData(self, idx, orientation, role=None):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                if idx == 0:
+                    return 'Key'
+                elif idx == 1:
+                    return 'Value'
+            elif orientation == Qt.Vertical:
+                return str(idx)
+
+    def rowCount(self, index=QModelIndex()):
+        return len(self._data)
+
+    def columnCount(self, index=QModelIndex()):
+        return 2
+
+
+class EditDictModel(BaseDictModel):
+    """An editable model for Dictionaries
+
+    Parameters
+    ----------
+    data : dict | None
+        Dictionary with keys and values to be displayed and edited, default to empty Dictionary
+
+    Notes
+    -----
+    Python 3.7 is required to ensure order in dictionary
+    """
+    def __init__(self, data=None):
+        super().__init__(data)
+
+    def setData(self, index, value, role=None):
+        if role == Qt.EditRole:
+            try:
+                value = literal_eval(value)
+            except (SyntaxError, ValueError):
+                pass
+            if index.column() == 0:
+                self._data[value] = self._data.pop(list(self._data.keys())[index.row()])
+            elif index.column() == 1:
+                self._data[list(self._data.keys())[index.row()]] = value
+            else:
+                return False
+
+            self.dataChanged.emit(index, index, [role])
+            return True
+
+        return False
+
+    def flags(self, index=QModelIndex()):
+        return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
+
+    def insertRows(self, row, count, index=QModelIndex()):
+        self.beginInsertRows(index, row, row + count - 1)
+        for n in range(count):
+            key_name = f'__new{n}__'
+            while key_name in self._data.keys():
+                n += 1
+                key_name = f'__new{n}__'
+            self._data[key_name] = ''
+        self.endInsertRows()
+
+        return True
+
+    def removeRows(self, row, count, index=QModelIndex()):
+        self.beginRemoveRows(index, row, row + count - 1)
+        for n in range(count):
+            self._data.pop(list(self._data.keys())[row + n])
+        self.endRemoveRows()
+
+        return True
+
+
 class BasePandasModel(QAbstractTableModel):
     """Basic Model for pandas DataFrame
 
@@ -141,10 +244,10 @@ class BasePandasModel(QAbstractTableModel):
         pandas DataFrame with contents to be displayed, defaults to empty DataFrame
     """
 
-    def __init__(self, data):
+    def __init__(self, data=None):
         super().__init__()
         if data is None:
-            self._data = pd.DataFrame(np.nan, index=[], columns=[])
+            self._data = pd.DataFrame([])
         else:
             self._data = data
 
@@ -186,12 +289,15 @@ class EditPandasModel(BasePandasModel):
     def setData(self, index, value, role=None):
         if role == Qt.EditRole:
             try:
-                self._data.iloc[index.row(), index.column()] = value
-                self.dataChanged.emit(index, index, [role])
-                return True
-
-            except ValueError:
+                value = literal_eval(value)
+                # List or Dictionary not allowed here as PandasDataFrame-Item
+                if isinstance(value, dict) or isinstance(value, list):
+                    value = str(value)
+            except (SyntaxError, ValueError):
                 pass
+            self._data.iloc[index.row(), index.column()] = value
+            self.dataChanged.emit(index, index, [role])
+            return True
 
         return False
 
@@ -283,19 +389,51 @@ class FileDictModel(BaseListModel):
 
 
 class AddFilesModel(BasePandasModel):
-    def __init__(self, pd_data):
-        super().__init__(pd_data)
+    def __init__(self, data):
+        super().__init__(data)
 
     def data(self, index, role=None):
         value = self._data.iloc[index.row(), index.column()]
         column = self._data.columns[index.column()]
 
         if role == Qt.DisplayRole:
-            return value
+            if column != 'Empty-Room?':
+                return value
+            return ''
 
-        if role == Qt.CheckStateRole:
-            if column == 'Is Empty-Room?':
+        elif role == Qt.CheckStateRole:
+            if column == 'Empty-Room?':
                 if value:
                     return Qt.Checked
                 else:
                     return Qt.Unchecked
+
+    def setData(self, index, value, role=None):
+        if role == Qt.CheckStateRole and self._data.columns[index.column()] == 'Empty-Room?':
+            if value == Qt.Checked:
+                self._data.iloc[index.row(), index.column()] = 1
+            else:
+                self._data.iloc[index.row(), index.column()] = 0
+            self.dataChanged.emit(index, index, [role])
+            return True
+
+        return False
+
+    def flags(self, index=QModelIndex()):
+        if self._data.columns[index.column()] == 'Empty-Room?':
+            return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
+
+        return QAbstractItemModel.flags(self, index)
+
+    def removeRows(self, row, count, index=QModelIndex()):
+        self.beginRemoveRows(index, row, row + count - 1)
+        # Can't use DataFrame.drop() here, because there could be rows with similar index-labels
+        if row == 0:
+            self._data = self._data.iloc[row + count:]
+        elif row + count >= len(self._data.index):
+            self._data = self._data.iloc[:row]
+        else:
+            self._data = pd.concat([self._data.iloc[:row], self._data.iloc[row + count:]])
+        self.endRemoveRows()
+
+        return True
