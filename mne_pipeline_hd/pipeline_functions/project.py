@@ -176,8 +176,12 @@ class Project:
                      self.sel_funcs_path: self.sel_functions}
 
         for path in save_dict:
-            with open(path, 'w') as file:
-                json.dump(save_dict[path], file, indent=4)
+            try:
+                with open(path, 'w') as file:
+                    json.dump(save_dict[path], file, indent=4)
+            except json.JSONDecodeError as err:
+                print(f'There is a problem with path:\n'
+                      f'{err}')
 
     def load_parameters(self):
         try:

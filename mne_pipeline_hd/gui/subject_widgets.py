@@ -818,9 +818,9 @@ class AddFilesWidget(QWidget):
             self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
             # Some raw-files don't have get_channel_types?
             try:
-                self.mw.pr.info_dict[new_fname]['ch_types'] = set(raw.get_channel_types())
+                self.mw.pr.info_dict[new_fname]['ch_types'] = list(set(raw.get_channel_types()))
             except AttributeError:
-                self.mw.pr.info_dict[new_fname]['ch_types'] = set()
+                self.mw.pr.info_dict[new_fname]['ch_types'] = list()
             self.mw.pr.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
         except (KeyError, TypeError):
             pass
@@ -1455,6 +1455,7 @@ class SubBadsWidget(QWidget):
         self.mw = main_win
         self.setWindowTitle('Assign bad_channels for your files')
         self.layout = QGridLayout()
+        # Todo: Adjust to different machines
         self.channel_count = 122
         self.bad_chkbts = {}
         # To find the items reliable in the list, which should be immutable
@@ -1635,7 +1636,7 @@ class CopyBadsDialog(QDialog):
 
         if copy_from and len(copy_to_list) > 0 and copy_from in self.pw.mw.pr.bad_channels_dict:
             for copy_to in copy_to_list:
-                self.pw.mw.pr.bad_channels_dict[copy_to.text()] = self.pw.mw.pr.bad_channels_dict[copy_from]
+                self.pw.mw.pr.bad_channels_dict[copy_to.text()] = self.pw.mw.pr.bad_channels_dict[copy_from].copy()
                 idx = self.pw.idx_dict[copy_to.text()]
                 self.pw.listwidget.item(idx).setBackground(QColor('green'))
                 self.pw.listwidget.item(idx).setForeground(QColor('white'))
