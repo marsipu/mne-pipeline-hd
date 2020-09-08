@@ -13,7 +13,7 @@ import shutil
 import sys
 from collections import Counter
 from functools import partial
-from os.path import exists, isdir, isfile, join
+from os.path import exists, isdir, join
 from pathlib import Path
 
 import matplotlib
@@ -25,13 +25,8 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
-                             QSizePolicy,
-                             QStyle, QTabWidget,
-                             QTableView, QTableWidget,
-                             QTableWidgetItem, QTableWidgetSelectionRange, QTextEdit, QTreeWidget,
-                             QTreeWidgetItem,
-                             QVBoxLayout,
-                             QWidget, QWizard, QWizardPage)
+                             QSizePolicy, QStyle, QTabWidget, QTableView, QTextEdit, QTreeWidget, QTreeWidgetItem,
+                             QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
 from .base_widgets import CheckList, EditDict, EditList, EditPandasTable
@@ -140,7 +135,7 @@ class SubjectDock(QDockWidget):
     def __init__(self, main_win):
         super().__init__('Subject-Selection', main_win)
         self.mw = main_win
-        self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.setAllowedAreas(Qt.LeftDockWidgetArea)
 
         self.init_ui()
         self.update_subjects_list()

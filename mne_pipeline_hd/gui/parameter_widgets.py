@@ -17,7 +17,7 @@ from PyQt5.QtCore import QSettings, QTimer, Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QGridLayout, QGroupBox,
                              QHBoxLayout,
                              QLabel,
-                             QLineEdit, QListWidget, QPushButton, QScrollArea, QSizePolicy,
+                             QLineEdit, QListWidget, QMainWindow, QPushButton, QScrollArea, QSizePolicy,
                              QSlider, QSpinBox, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList
@@ -29,12 +29,12 @@ class Param(QWidget):
     Inherited Clases should have "Gui" in their name to get identified correctly
     """
 
-    def __init__(self, project, param_name, param_alias=None, default=None):
+    def __init__(self, data, param_name, param_alias=None, default=None):
         """
-        :param project: Project-Class called in main_window.py
+        :param data: Project-Class called in main_window.py
         """
         super().__init__()
-        self.pr = project
+        self.data = data
         self.param_name = param_name
         if param_alias:
             self.param_alias = param_alias
@@ -59,16 +59,16 @@ class Param(QWidget):
 
     def read_param(self):
         # Make also usable by Main-Window-Settings
-        if isinstance(self.pr, dict):
-            if self.param_name in self.pr:
-                self.param_value = self.pr[self.param_name]
+        if isinstance(self.data, dict):
+            if self.param_name in self.data:
+                self.param_value = self.data[self.param_name]
             else:
                 self.param_value = self.default
 
         # Make also usable by QSettings
-        elif isinstance(self.pr, QSettings):
-            if self.param_name in self.pr.childKeys():
-                value = self.pr.value(self.param_name, defaultValue=self.default)
+        elif isinstance(self.data, QSettings):
+            if self.param_name in self.data.childKeys():
+                value = self.data.value(self.param_name, defaultValue=self.default)
                 if value is None:
                     value = self.default
                 # Convert booleans, which turn into strings with QSettings
@@ -80,26 +80,28 @@ class Param(QWidget):
             else:
                 self.param_value = self.default
 
-        elif self.param_name in self.pr.parameters[self.pr.p_preset]:
-            self.param_value = self.pr.parameters[self.pr.p_preset][self.param_name]
-        else:
-            self.param_value = self.default
+        # Main usage to get data from Parameters in Project stored in MainWindow
+        elif isinstance(self.data, QMainWindow):
+            if self.param_name in self.data.pr.parameters[self.data.pr.p_preset]:
+                self.param_value = self.data.pr.parameters[self.data.pr.p_preset][self.param_name]
+            else:
+                self.param_value = self.default
 
     def save_param(self):
-        if isinstance(self.pr, dict):
-            self.pr[self.param_name] = self.param_value
-        elif isinstance(self.pr, QSettings):
-            self.pr.setValue(self.param_name, self.param_value)
-        else:
-            self.pr.parameters[self.pr.p_preset][self.param_name] = self.param_value
+        if isinstance(self.data, dict):
+            self.data[self.param_name] = self.param_value
+        elif isinstance(self.data, QSettings):
+            self.data.setValue(self.param_name, self.param_value)
+        elif isinstance(self.data, QMainWindow):
+            self.data.pr.parameters[self.data.pr.p_preset][self.param_name] = self.param_value
 
 
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=0, max_val=100,
+    def __init__(self, data, param_name, param_alias=None, hint=None, min_val=0, max_val=100,
                  special_value_text=None, param_unit=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = 1  # Default Value
         self.param_widget = QSpinBox()
@@ -132,9 +134,9 @@ class IntGui(Param):
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=-100., max_val=100.,
+    def __init__(self, data, param_name, param_alias=None, hint=None, min_val=-100., max_val=100.,
                  step=1., decimals=2, param_unit=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = 1.
         self.param_widget = QDoubleSpinBox()
@@ -171,8 +173,8 @@ class StringGui(Param):
     Input-Mask: Define a string as in https://doc.qt.io/qt-5/qlineedit.html#inputMask-prop
     """
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, input_mask=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+    def __init__(self, data, param_name, param_alias=None, hint=None, input_mask=None, default=None):
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = ''
         self.param_widget = QLineEdit()
@@ -197,10 +199,15 @@ class StringGui(Param):
 
 
 class FuncGui(Param):
-    """A GUI for Parameters defined by small functions, e.g from numpy"""
+    """A GUI for Parameters defined by small functions, e.g from numpy
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+    Notes
+    -----
+    Only works with Mainwindow.Project at the moment (not with dict or QSettings)
+    """
+
+    def __init__(self, data, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_alias = param_alias
         self.param_value = ''
@@ -242,36 +249,36 @@ class FuncGui(Param):
 
     def set_param(self):
         self.param_widget.setText(self.param_exp)
-        self.display_widget.setText(str(self.param_value))
+        self.display_widget.setText(str(self.param_value)[:20])
 
     def get_param(self):
         self.param_exp = self.param_widget.text()
         try:
             self.param_value = eval(self.param_exp, {'np': np})
-            self.display_widget.setText(str(self.param_value))
+            self.display_widget.setText(str(self.param_value)[:20])
         except (NameError, SyntaxError) as err:
-            self.display_widget.setText(str(err))
+            self.display_widget.setText(str(err)[:20])
             return None
         else:
             self.save_param()
             return self.param_value
 
     def read_param(self):
-        if self.param_name in self.pr.parameters[self.pr.p_preset]:
-            self.param_value = self.pr.parameters[self.pr.p_preset][self.param_name]
-        if self.param_name + '_exp' in self.pr.parameters[self.pr.p_preset]:
-            self.param_exp = self.pr.parameters[self.pr.p_preset][self.param_name + '_exp']
+        if self.param_name in self.data.pr.parameters[self.data.pr.p_preset]:
+            self.param_value = self.data.pr.parameters[self.data.pr.p_preset][self.param_name]
+        if self.param_name + '_exp' in self.data.pr.parameters[self.data.pr.p_preset]:
+            self.param_exp = self.data.pr.parameters[self.data.pr.p_preset][self.param_name + '_exp']
 
     def save_param(self):
-        self.pr.parameters[self.pr.p_preset][self.param_name] = self.param_value
-        self.pr.parameters[self.pr.p_preset][self.param_name + '_exp'] = self.param_exp
+        self.data.pr.parameters[self.data.pr.p_preset][self.param_name] = self.param_value
+        self.data.pr.parameters[self.data.pr.p_preset][self.param_name + '_exp'] = self.param_exp
 
 
 class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+    def __init__(self, data, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_alias = param_alias
         self.param_value = 0
@@ -312,9 +319,9 @@ class BoolGui(Param):
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=-1000., max_val=1000.,
+    def __init__(self, data, param_name, param_alias=None, hint=None, min_val=-1000., max_val=1000.,
                  step=.1, decimals=2, param_unit=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = (0, 1)
 
@@ -372,13 +379,13 @@ class TupleGui(Param):
 
 
 class CheckTupleGui(TupleGui):
-    def __init__(self, project, param_name, param_alias=None, hint=None, min_val=-1000., max_val=1000.,
+    def __init__(self, data, param_name, param_alias=None, hint=None, min_val=-1000., max_val=1000.,
                  step=.1, decimals=2, param_unit=None, unchecked_value=None, default=None):
         self.param_name = param_name
         self.unchecked_value = unchecked_value
         self.param_chkbt = QCheckBox(self.param_name)
         self.param_chkbt.stateChanged.connect(self.param_checked)
-        super().__init__(project, param_name, param_alias, hint, min_val, max_val,
+        super().__init__(data, param_name, param_alias, hint, min_val, max_val,
                          step, decimals, param_unit, default)
 
     def init_tuple_layout(self):
@@ -415,8 +422,8 @@ class CheckTupleGui(TupleGui):
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
 
-    def __init__(self, project, param_name, options, param_alias=None, hint=None, options_mapping=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+    def __init__(self, data, param_name, options, param_alias=None, hint=None, options_mapping=None, default=None):
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = None
         self.options = options
@@ -478,12 +485,12 @@ class ListDialog(QDialog):
 class ListGui(Param):
     """A GUI for List-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+    def __init__(self, data, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = list()
         self.name_label = QLabel(f'{self.param_alias}:')
-        self.value_label = QLabel(f'{str(self.param_value)[:30]} ...')
+        self.value_label = QLabel('')
         if hint:
             self.name_label.setToolTip(hint)
 
@@ -506,7 +513,11 @@ class ListGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        self.value_label.setText(f'{str(self.param_value)[:30]} ...')
+        val_str = str(self.param_value)
+        if len(val_str) > 30:
+            self.value_label.setText(f'{val_str[:30]} ...')
+        else:
+            self.value_label.setText(val_str)
 
     def get_param(self):
         self.save_param()
@@ -549,8 +560,8 @@ class CheckListDialog(QDialog):
 class CheckListGui(Param):
     """A GUI for List-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, options=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+    def __init__(self, data, param_name, param_alias=None, hint=None, options=None, default=None):
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.options_mapping = options or {}
         self.param_value = dict()
@@ -558,7 +569,7 @@ class CheckListGui(Param):
         self.name_label = QLabel(f'{self.param_alias}:')
         if hint:
             self.name_label.setToolTip(hint)
-        self.value_label = QLabel(f'{str(self.param_value)[:30]} ...')
+        self.value_label = QLabel('')
 
         self.read_param()
         self.set_param()
@@ -579,7 +590,11 @@ class CheckListGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        self.value_label.setText(f'{str(self.param_value)[:30]} ...')
+        val_str = str(self.param_value)
+        if len(val_str) > 30:
+            self.value_label.setText(f'{val_str[:30]} ...')
+        else:
+            self.value_label.setText(val_str)
 
     def get_param(self):
         self.save_param()
@@ -611,15 +626,15 @@ class DictDialog(QDialog):
 class DictGui(Param):
     """A GUI for Dictionary-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+    def __init__(self, data, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = dict()
 
         self.name_label = QLabel(f'{self.param_alias}:')
         if hint:
             self.name_label.setToolTip(hint)
-        self.value_label = QLabel(f'{str(self.param_value)[:30]} ...')
+        self.value_label = QLabel('')
 
         self.read_param()
         self.set_param()
@@ -640,7 +655,11 @@ class DictGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        self.value_label.setText(f'{str(self.param_value)[:30]} ...')
+        val_str = str(self.param_value)
+        if len(val_str) > 30:
+            self.value_label.setText(f'{val_str[:30]} ...')
+        else:
+            self.value_label.setText(val_str)
 
     def get_param(self):
         self.save_param()
@@ -652,9 +671,9 @@ class DictGui(Param):
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None,
+    def __init__(self, data, param_name, param_alias=None, hint=None,
                  min_val=0, max_val=100, step=1, default=None):
-        super().__init__(project, param_name, param_alias, default)
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_alias = param_alias
         self.param_value = 1
@@ -740,8 +759,8 @@ class SliderGui(Param):
 class LabelGui(Param):
     """A GUI to select Labels depending on parcellation"""
 
-    def __init__(self, project, param_name, param_alias=None, hint=None, default=None):
-        super().__init__(project, param_name, param_alias, default)
+    def __init__(self, data, param_name, param_alias=None, hint=None, default=None):
+        super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = []
         self.param_widget = QListWidget()

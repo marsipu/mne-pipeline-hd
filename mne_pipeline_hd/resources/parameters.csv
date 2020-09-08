@@ -1,49 +1,49 @@
-;alias;default;unit;description;gui_type;gui_args
-ch_types;Channel-Types;['grad'];;Channel-Types used in data;ListGui;
-highpass;Highpass-Cutoff;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
-lowpass;Lowpass-Cutoff;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
-erm_t_limit;;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
-min_duration;Minimum Duration;0.002;s;Minimum-Duration for Events;FloatGui;{'min_val': 0, 'decimals': 3}
-shortest_event;Shortest Event;2;sample;Shortest possible Event;IntGui;{'min_val': 0}
-adjust_timeline_by_msec;Adjust Time;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
-t_epoch;Epoch-Timeframe;(-0.5,1.5);s;start and end of epoch;TupleGui;
-baseline;Baseline-Timeframe;(-0.5,0);s;start and end of baseline;CheckTupleGui;{'max_val':0, 'unchecked_value': None}
-enable_ica;Enable ICA;False;;If to use epochs from ICA;BoolGui;
-bad_interpolation;Bad-Channel-Interpolation;'Epochs';;Choose where to apply bad-channels-interpolation;ComboGui;{'options': ['Raw', 'Epochs', 'Evokeds']}
-autoreject_interpolation;Autoreject(Interpolation);False;;Use autoreject to interpolate Epochs with autoreject;BoolGui;
-n_interpolates;;np.array([1, 4, 32]);;p-values for autoreject;FuncGui;
-consensus_percs;;np.linspace(0, 1.0, 11);;k-values for autoreject;FuncGui;
-autoreject_threshold;Autoreject(Threshold);False;;Use autoreject to find reject-threshold for Epochs;BoolGui;
-overwrite_ar;Overwrite Autoreject(Threshold);False;;if to calculate new threshold sort ouse previously calculated;BoolGui;
-reject;;{'grad':8e-10};;default reject parameter if not reject with autoreject_threshold;DictGui;
-flat;;{'grad':1e-15};;default flat parameter;DictGui;
-decim;;1;;down samplingfactor;IntGui;
-tfr_freqs;;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
-overwrite_tfr;;True;;Recalculate and overwrite Time-Frequency-Data;BoolGui;
-tfr_method;;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}
-multitaper_bandwith;;4.0;;;FloatGui;
-stockwell_width;;1.0;;;FloatGui;
-eog_channel;;EEG 001;;Set Vertical EOG-Channel;StringGui;
-ecg_channel;;EEG 003;;Set ECG-Channel;StringGui;
-source_space_spacing;;ico5;;See the MNE-Documentation for further details;StringGui;
-vol_source_space_spacing;;5.0;;Spacing between sources in 3D-Grid;FloatGui;
-surface;;white;;Surface for computing the Source-Space;ComboGui;{'options': ['white', 'pial']}
-eeg_fwd;;False;;set True if working with EEG-Data;BoolGui;
-erm_noise_cov;;True;;;BoolGui;
-calm_noise_cov;;False;;Use of a specific time interval in a measurement for noise-covariance;BoolGui;
-inverse_method;Inverse-Method;MNE;;Choose the Inverse-Method for Source-Estimate;ComboGui;{'options': ['MNE', 'dSPM', 'sLORETA', 'eLORETA']}
-pick_ori;Dipole-Orientation;None;;Choose the Dipole-Orientation for Source-Estimate;ComboGui;{'options': [None, 'normal', 'vector'], 'options_mapping': {None: 'free'}}
-lambda2;;1.0 / 3.0 ** 2;;lambda2 for Source-Estimate;FuncGui;
-mne_evoked_time;;[0];sample;time-points to be displayed in stc-plots[absolute sample];ListGui;
-stc_animation;;(0,0.5);s;time-span for stc-animation[s];TupleGui;
-stc_animation_dilat;;20;;time-dilation for stc-animation;IntGui;
-parcellation;;aparc;;;StringGui;
-target_labels;;[];;;ListGui;
-extract_mode;Label-Extraction-Mode;mean_flip;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['max', 'mean', 'mean_flip', 'pca_flip']}
-con_methods;;{'coh': 0, 'cohy': 0, 'imcoh': 0, 'plv': 0, 'ciplv': 0, 'ppc': 0, 'pli': 0, 'pli2_unbiased': 0, 'wpli': 0, 'wpli2_debiased': 0};;methods for connectivity plots;CheckListGui;{'options': {'coh': 'Coherence', 'cohy': 'Coherency', 'imcoh': 'Imaginary Coherence', 'plv': 'Phase-Locking Value', 'ciplv': 'Corrected Imaginary PLV', 'ppc': 'Pairwise Phase Consistency', 'pli': 'Phase Lag Index', 'pli2_unbiased': 'Unbiased estimator of squared PLI', 'wpli': 'Weighted Phase Lag Index', 'wpli2_debiased': 'Debiased estimator of squared WPLI'}}
-con_fmin;;30;;fmin for connectivity plot;IntGui;
-con_fmax;;80;;fmax for connectivity plot;IntGui;
-ecd_times;;{};;;DictGui;
-ecd_positions;;{};;;DictGui;
-ecd_orientations;;{};;;DictGui;
-morph_to;;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
+;alias;group;default;unit;description;gui_type;gui_args
+ch_types;Channel-Types;Preprocessing;['grad'];;Channel-Types used in data;ListGui;
+highpass;Highpass-Cutoff;Preprocessing;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
+lowpass;Lowpass-Cutoff;Preprocessing;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
+erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
+min_duration;Minimum Duration;Events;0.002;s;Minimum-Duration for Events;FloatGui;{'min_val': 0, 'decimals': 3}
+shortest_event;Shortest Event;Events;2;sample;Shortest possible Event;IntGui;{'min_val': 0}
+adjust_timeline_by_msec;Adjust Time;Events;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
+t_epoch;Epoch-Timeframe;Epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
+baseline;Baseline-Timeframe;Epochs;(-0.5,0);s;start and end of baseline;CheckTupleGui;{'max_val':0, 'unchecked_value': None}
+enable_ica;Enable ICA;Preprocessing;False;;If to use epochs from ICA;BoolGui;
+bad_interpolation;Bad-Channel-Interpolation;Preprocessing;'Epochs';;Choose where to apply bad-channels-interpolation;ComboGui;{'options': ['Raw', 'Epochs', 'Evokeds']}
+autoreject_interpolation;Autoreject(Interpolation);Epochs;False;;Use autoreject to interpolate Epochs with autoreject;BoolGui;
+n_interpolates;;Epochs;np.array([1, 4, 32]);;p-values for autoreject;FuncGui;
+consensus_percs;;Epochs;np.linspace(0, 1.0, 11);;k-values for autoreject;FuncGui;
+autoreject_threshold;Autoreject(Threshold);Epochs;False;;Use autoreject to find reject-threshold for Epochs;BoolGui;
+overwrite_ar;Overwrite Autoreject(Threshold);Epochs;False;;if to calculate new threshold sort ouse previously calculated;BoolGui;
+reject;;Epochs;{'grad':8e-10};;default reject parameter if not reject with autoreject_threshold;DictGui;
+flat;;Epochs;{'grad':1e-15};;default flat parameter;DictGui;
+decim;;Preprocessing;1;;down samplingfactor;IntGui;
+tfr_freqs;;Time-Frequency;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
+overwrite_tfr;;Time-Frequency;True;;Recalculate and overwrite Time-Frequency-Data;BoolGui;
+tfr_method;;Time-Frequency;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}
+multitaper_bandwith;;Time-Frequency;4.0;;;FloatGui;
+stockwell_width;;Time-Frequency;1.0;;;FloatGui;
+eog_channel;;Preprocessing;EEG 001;;Set Vertical EOG-Channel;StringGui;
+ecg_channel;;Preprocessing;EEG 003;;Set ECG-Channel;StringGui;
+source_space_spacing;;Forward;ico5;;See the MNE-Documentation for further details;StringGui;
+vol_source_space_spacing;;Forward;5.0;;Spacing between sources in 3D-Grid;FloatGui;
+surface;;Forward;white;;Surface for computing the Source-Space;ComboGui;{'options': ['white', 'pial']}
+eeg_fwd;;Forward;False;;set True if working with EEG-Data;BoolGui;
+erm_noise_cov;;Inverse;True;;;BoolGui;
+calm_noise_cov;;Inverse;False;;Use of a specific time interval in a measurement for noise-covariance;BoolGui;
+inverse_method;Inverse-Method;Inverse;MNE;;Choose the Inverse-Method for Source-Estimate;ComboGui;{'options': ['MNE', 'dSPM', 'sLORETA', 'eLORETA']}
+pick_ori;Dipole-Orientation;Inverse;None;;Choose the Dipole-Orientation for Source-Estimate;ComboGui;{'options': [None, 'normal', 'vector'], 'options_mapping': {None: 'free'}}
+lambda2;;Inverse;1.0 / 3.0 ** 2;;lambda2 for Source-Estimate;FuncGui;
+mne_evoked_time;;Inverse;[0];sample;time-points to be displayed in stc-plots[absolute sample];ListGui;
+stc_animation;;Inverse;(0,0.5);s;time-span for stc-animation[s];TupleGui;
+stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
+parcellation;;Inverse;aparc;;;StringGui;
+target_labels;;Inverse;[];;;ListGui;
+extract_mode;Label-Extraction-Mode;Inverse;mean_flip;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['max', 'mean', 'mean_flip', 'pca_flip']}
+con_methods;;Time-Frequency;{'coh': 0, 'cohy': 0, 'imcoh': 0, 'plv': 0, 'ciplv': 0, 'ppc': 0, 'pli': 0, 'pli2_unbiased': 0, 'wpli': 0, 'wpli2_debiased': 0};;methods for connectivity plots;CheckListGui;{'options': {'coh': 'Coherence', 'cohy': 'Coherency', 'imcoh': 'Imaginary Coherence', 'plv': 'Phase-Locking Value', 'ciplv': 'Corrected Imaginary PLV', 'ppc': 'Pairwise Phase Consistency', 'pli': 'Phase Lag Index', 'pli2_unbiased': 'Unbiased estimator of squared PLI', 'wpli': 'Weighted Phase Lag Index', 'wpli2_debiased': 'Debiased estimator of squared WPLI'}}
+con_fmin;;Time-Frequency;30;;fmin for connectivity plot;IntGui;
+con_fmax;;Time-Frequency;80;;fmax for connectivity plot;IntGui;
+ecd_times;;Inverse;{};;;DictGui;
+ecd_positions;;Inverse;{};;;DictGui;
+ecd_orientations;;Inverse;{};;;DictGui;
+morph_to;;Grand-Average;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;

@@ -513,7 +513,7 @@ class CurrentSub(BaseSub):
                 QMessageBox.warning(self.mw, 'No Trials',
                                     f'No Trials selected for {k}, defaulting to empty list')
 
-        if not self.subtomri is None:
+        if self.subtomri is not None:
             self.mri_sub = mri_sub or CurrentMRISub(self.subtomri, main_win)
 
         ################################################################################################################
@@ -1122,13 +1122,32 @@ class CurrentMRISub(BaseSub):
 
 
 class CurrentGAGroup(BaseSub):
-    def __init__(self, name, main_win):
+    def __init__(self, name, main_win, suppress_warnings=True):
 
         super().__init__(name, main_win)
 
         # Additional Attributes
         self.save_dir = self.pr.save_dir_averages
         self.group_list = self.pr.grand_avg_dict[name]
+
+        try:
+            self.event_id = self.mw.pr.event_id_dict[self.group_list[0]]
+            if len(self.event_id) == 0:
+                raise RuntimeError(name)
+        except (KeyError, RuntimeError) as k:
+            self.event_id = dict()
+            if not suppress_warnings:
+                QMessageBox.warning(self.mw, 'No Event-ID',
+                                    f'No EventID assigned for {k}, defaulting to empty dictionary')
+        try:
+            self.sel_trials = self.mw.pr.sel_trials_dict[self.group_list[0]]
+            if len(self.sel_trials) == 0:
+                raise RuntimeError(name)
+        except (KeyError, RuntimeError) as k:
+            self.sel_trials = list()
+            if not suppress_warnings:
+                QMessageBox.warning(self.mw, 'No Trials',
+                                    f'No Trials selected for {k}, defaulting to empty list')
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)

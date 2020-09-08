@@ -11,6 +11,7 @@ import inspect
 import shutil
 import types
 from ast import literal_eval
+from functools import partial
 from importlib import util
 from math import isnan
 from os import listdir, mkdir
@@ -20,7 +21,7 @@ from pathlib import Path
 import pandas as pd
 from PyQt5.QtCore import QPoint, QSize, Qt
 from PyQt5.QtGui import QColor, QFont, QTextCursor
-from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDesktopWidget, QDialog, QFileDialog, QFormLayout,
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog, QFormLayout,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
                              QListView, QListWidget, QListWidgetItem,
                              QMessageBox, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStyle, QTabWidget,
@@ -182,10 +183,12 @@ class SettingsDlg(QDialog):
         self.setLayout(layout)
 
 
-class ParametersDlg(QDialog):
+class ParametersDock(QDockWidget):
     def __init__(self, main_win):
-        super().__init__(main_win)
+        super().__init__('Parameters', main_win)
         self.mw = main_win
+        self.setAllowedAreas(Qt.RightDockWidgetArea)
+        self.main_widget = QWidget()
         self.param_guis = {}
 
         # Drop custom-modules, which aren't selected
@@ -208,16 +211,19 @@ class ParametersDlg(QDialog):
         self.cleaned_pd_params = self.mw.pd_params.loc[self.mw.pd_params.index.isin(self.arg_func_dict.keys())].copy()
 
         # Group Parameters according to groups of their functions (if used by multiple functions, put into "general")
-        # Add group-column
         for param in self.cleaned_pd_params.index:
-            func_list = self.arg_func_dict[param]
-            # Check if all value in func_list are the same (applies also to len(func_list)==1)
-            if all(a == cleaned_pd_funcs.loc[func_list, 'group'][0]
-                   for a in cleaned_pd_funcs.loc[func_list, 'group'].values):
-                group_name = cleaned_pd_funcs.loc[func_list[0], 'group']
-            else:
-                group_name = 'General'
-            self.cleaned_pd_params.loc[param, 'group'] = group_name
+            group_name = self.cleaned_pd_params.loc[param, 'group']
+            if pd.isna(group_name):
+                # Get Group
+                func_list = self.arg_func_dict[param]
+                # Check if all value in func_list are the same (applies also to len(func_list)==1)
+                if all(a == cleaned_pd_funcs.loc[func_list, 'group'][0]
+                       for a in cleaned_pd_funcs.loc[func_list, 'group'].values):
+                    group_name = cleaned_pd_funcs.loc[func_list[0], 'group']
+                else:
+                    group_name = 'General'
+                self.cleaned_pd_params.loc[param, 'group'] = group_name
+
             if group_name in self.mw.group_order:
                 self.cleaned_pd_params.loc[param, 'group_idx'] = self.mw.group_order[group_name]
             else:
@@ -227,10 +233,9 @@ class ParametersDlg(QDialog):
         self.cleaned_pd_params.sort_values(by='group_idx', inplace=True)
 
         self.init_ui()
-        self.open()
 
     def init_ui(self):
-        general_layout = QVBoxLayout()
+        self.general_layout = QVBoxLayout()
 
         # Add Parameter-Preset-ComboBox
         title_layout = QHBoxLayout()
@@ -247,7 +252,7 @@ class ParametersDlg(QDialog):
         title_layout.addWidget(add_bt)
 
         rm_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
-        rm_bt.clicked.connect(self.remove_p_preset)
+        rm_bt.clicked.connect(partial(RemovePPresetDlg, self))
         title_layout.addWidget(rm_bt)
 
         title_layout.addStretch(stretch=2)
@@ -256,8 +261,14 @@ class ParametersDlg(QDialog):
         reset_bt.clicked.connect(self.reset_parameters)
         title_layout.addWidget(reset_bt)
 
-        general_layout.addLayout(title_layout)
+        self.general_layout.addLayout(title_layout)
 
+        self.add_param_guis()
+
+        self.main_widget.setLayout(self.general_layout)
+        self.setWidget(self.main_widget)
+
+    def add_param_guis(self):
         # Create Tab-Widget for Parameters, grouped by group
         self.tab_param_widget = QTabWidget()
 
@@ -288,7 +299,7 @@ class ParametersDlg(QDialog):
                     gui_args = {}
 
                 gui_handle = getattr(parameter_widgets, gui_name)
-                self.param_guis[idx] = gui_handle(self.mw.pr, param_name=idx, param_alias=param_alias,
+                self.param_guis[idx] = gui_handle(self.mw, param_name=idx, param_alias=param_alias,
                                                   hint=hint, **gui_args)
 
                 layout.addWidget(self.param_guis[idx])
@@ -298,13 +309,13 @@ class ParametersDlg(QDialog):
             self.tab_param_widget.addTab(tab, group_name)
 
         # Set Layout of QWidget (the class itself)
-        general_layout.addWidget(self.tab_param_widget)
+        self.general_layout.addWidget(self.tab_param_widget)
 
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(self.close)
-        general_layout.addWidget(close_bt)
-
-        self.setLayout(general_layout)
+    def update_parameters_widget(self):
+        self.general_layout.removeWidget(self.tab_param_widget)
+        self.tab_param_widget.close()
+        del self.tab_param_widget
+        self.add_param_guis()
 
     def p_preset_changed(self, idx):
         self.mw.pr.p_preset = self.p_preset_cmbx.itemText(idx)
@@ -329,9 +340,6 @@ class ParametersDlg(QDialog):
             self.p_preset_cmbx.setCurrentText(preset_name)
         else:
             pass
-
-    def remove_p_preset(self):
-        RemovePPresetDlg(self)
 
     def update_all_param_guis(self):
         for gui_name in self.param_guis:
@@ -1298,7 +1306,7 @@ class SavePkgDialog(QDialog):
 
         self.cf.mw.import_custom_modules()
         self.cf.mw.update_func_bts()
-        self.cf.mw.param_dlg.update_all_param_guis()
+        self.cf.mw.parameters_dock.update_parameters_widget()
         self.close()
 
         # Todo: update func-Buttons and Parameters-Widgets
@@ -1333,4 +1341,5 @@ class ChooseCustomModules(QDialog):
     def closeEvent(self, event):
         self.mw.settings['selected_modules'] = self.selected_modules
         self.mw.update_func_bts()
+        self.mw.parameters_dock.update_parameters_widget()
         event.accept()

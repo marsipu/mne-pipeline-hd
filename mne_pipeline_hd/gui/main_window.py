@@ -26,13 +26,12 @@ from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
-                             QPushButton, QScrollArea, QStyle,
-                             QStyleFactory, QTabWidget, QToolTip, QVBoxLayout, QWidget)
+                             QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
+                             QVBoxLayout, QWidget)
 from mayavi import mlab
 
-from .dialogs import ChooseCustomModules, CustomFunctionImport, ParametersDlg, QuickGuide, \
-    RemoveProjectsDlg, RunDialog, \
-    SettingsDlg
+from .dialogs import (ChooseCustomModules, CustomFunctionImport, ParametersDock, QuickGuide, RemoveProjectsDlg,
+                      RunDialog, SettingsDlg)
 from .gui_utils import ErrorDialog, get_exception_tuple
 from .other_widgets import DataTerminal
 from .parameter_widgets import BoolGui, ComboGui, IntGui
@@ -41,8 +40,7 @@ from .subject_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsD
 from .. import basic_functions, resources
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
-from ..pipeline_functions.function_utils import (FunctionWorker,
-                                                 func_from_def)
+from ..pipeline_functions.function_utils import (FunctionWorker, func_from_def)
 from ..pipeline_functions.pipeline_utils import shutdown
 from ..pipeline_functions.project import Project
 
@@ -244,6 +242,11 @@ class MainWindow(QMainWindow):
         self.subject_dock.update_subjects_list()
         self.subject_dock.update_mri_subjects_list()
         self.subject_dock.ga_widget.update_treew()
+
+        # Update Parameters
+        self.parameters_dock.update_all_param_guis()
+        self.parameters_dock.update_ppreset_cmbx()
+
         # Update Funciton-Selection
         self.update_selected_funcs()
         # Update Project-Box
@@ -267,6 +270,7 @@ class MainWindow(QMainWindow):
             self.get_projects()
             self.import_custom_modules()
             self.update_func_bts()
+            self.parameters_dock.update_parameters_widget()
             # self.update_param_gui_tab()
             self.statusBar().showMessage(f'Home-Path: {self.home_path}, '
                                          f'Project: {self.current_project}, '
@@ -508,7 +512,7 @@ class MainWindow(QMainWindow):
         # Settings
         self.settings_menu = self.menuBar().addMenu('&Settings')
 
-        self.settings_menu.addAction('&Open Settings', self.settings_dlg)
+        self.settings_menu.addAction('&Open Settings', partial(SettingsDlg, self))
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
 
         self.areload_basic_modules = QAction('Reload Basic-Modules')
@@ -522,9 +526,6 @@ class MainWindow(QMainWindow):
         about_menu.addAction('Quick-Guide', self.quick_guide)
         about_menu.addAction('About', self.about)
         about_menu.addAction('About QT', self.app.aboutQt)
-
-    def settings_dlg(self):
-        SettingsDlg(self)
 
     def init_toolbar(self):
         self.toolbar = self.addToolBar('Tools')
@@ -565,26 +566,19 @@ class MainWindow(QMainWindow):
         # Add Main-Buttons
         clear_bt = QPushButton('Clear')
         start_bt = QPushButton('Start')
-        param_bt = QPushButton('Parameters')
         stop_bt = QPushButton('Quit')
 
         clear_bt.setFont(QFont('AnyStyle', 18))
         start_bt.setFont(QFont('AnyStyle', 18))
-        param_bt.setFont(QFont('AnyStyle', 18))
         stop_bt.setFont(QFont('AnyStyle', 18))
 
         clear_bt.clicked.connect(self.clear)
         start_bt.clicked.connect(self.start)
-        param_bt.clicked.connect(self.open_param_dlg)
         stop_bt.clicked.connect(self.close)
 
         self.general_layout.addWidget(clear_bt, 1, 0)
         self.general_layout.addWidget(start_bt, 1, 1)
-        self.general_layout.addWidget(param_bt, 1, 2)
-        self.general_layout.addWidget(stop_bt, 1, 3)
-
-    def open_param_dlg(self):
-        self.param_dlg = ParametersDlg(self)
+        self.general_layout.addWidget(stop_bt, 1, 2)
 
     # Todo: Make Buttons more appealing, mark when check
     #   make button-dependencies
@@ -619,7 +613,10 @@ class MainWindow(QMainWindow):
                 group_grouped = group.groupby('group', sort=False)
                 tab = QScrollArea()
                 child_w = QWidget()
-                tab_func_layout = QHBoxLayout()
+                tab_v_layout = QVBoxLayout()
+                tab_h_layout = QHBoxLayout()
+                h_size = 0
+                max_h_size = int(self.app.desktop().availableGeometry().width() / 3)
                 # Add groupbox for each group
                 for function_group, _ in group_grouped:
                     group_box = QGroupBox(function_group, self)
@@ -640,15 +637,25 @@ class MainWindow(QMainWindow):
                             pb.setChecked(True)
                         pb.clicked.connect(partial(self.func_selected, function))
                         group_box_layout.addWidget(pb)
+
                     group_box.setLayout(group_box_layout)
-                    tab_func_layout.addWidget(group_box)
-                child_w.setLayout(tab_func_layout)
+                    group_box.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+                    tab_h_layout.addWidget(group_box)
+                    h_size += group_box.sizeHint().width()
+                    if h_size > max_h_size:
+                        tab_v_layout.addLayout(tab_h_layout)
+                        h_size = 0
+                        tab_h_layout = QHBoxLayout()
+
+                if not tab_h_layout.isEmpty():
+                    tab_v_layout.addLayout(tab_h_layout)
+
+                child_w.setLayout(tab_v_layout)
                 tab.setWidget(child_w)
                 self.tab_func_widget.addTab(tab, tab_name)
 
-        self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 4)
+        self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
 
-    # Todo: Do in Place update of funcs and params
     def update_func_bts(self):
         self.general_layout.removeWidget(self.tab_func_widget)
         self.tab_func_widget.close()
@@ -679,6 +686,10 @@ class MainWindow(QMainWindow):
         self.subject_dock = SubjectDock(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
         self.view_menu.addAction(self.subject_dock.toggleViewAction())
+
+        self.parameters_dock = ParametersDock(self)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.parameters_dock)
+        self.view_menu.addAction(self.parameters_dock.toggleViewAction())
 
     def add_customf(self):
         self.cf_import = CustomFunctionImport(self)
