@@ -1,5 +1,5 @@
 ;alias;group;default;unit;description;gui_type;gui_args
-ch_types;Channel-Types;Preprocessing;['grad'];;Channel-Types used in data;ListGui;
+ch_types;Channel-Types;Preprocessing;['grad'];;Channel-Types used in data;CheckListGui;{'options': ['meg', 'eeg']}
 highpass;Highpass-Cutoff;Preprocessing;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
 lowpass;Lowpass-Cutoff;Preprocessing;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
 erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
@@ -32,7 +32,7 @@ eeg_fwd;;Forward;False;;set True if working with EEG-Data;BoolGui;
 erm_noise_cov;;Inverse;True;;;BoolGui;
 calm_noise_cov;;Inverse;False;;Use of a specific time interval in a measurement for noise-covariance;BoolGui;
 inverse_method;Inverse-Method;Inverse;MNE;;Choose the Inverse-Method for Source-Estimate;ComboGui;{'options': ['MNE', 'dSPM', 'sLORETA', 'eLORETA']}
-pick_ori;Dipole-Orientation;Inverse;None;;Choose the Dipole-Orientation for Source-Estimate;ComboGui;{'options': [None, 'normal', 'vector'], 'options_mapping': {None: 'free'}}
+pick_ori;Dipole-Orientation;Inverse;None;;Choose the Dipole-Orientation for Source-Estimate;ComboGui;{'options': [None, 'normal', 'vector']}
 lambda2;;Inverse;1.0 / 3.0 ** 2;;lambda2 for Source-Estimate;FuncGui;
 mne_evoked_time;;Inverse;[0];sample;time-points to be displayed in stc-plots[absolute sample];ListGui;
 stc_animation;;Inverse;(0,0.5);s;time-span for stc-animation[s];TupleGui;
@@ -40,7 +40,7 @@ stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
 parcellation;;Inverse;aparc;;;StringGui;
 target_labels;;Inverse;[];;;ListGui;
 extract_mode;Label-Extraction-Mode;Inverse;mean_flip;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['max', 'mean', 'mean_flip', 'pca_flip']}
-con_methods;;Time-Frequency;{'coh': 0, 'cohy': 0, 'imcoh': 0, 'plv': 0, 'ciplv': 0, 'ppc': 0, 'pli': 0, 'pli2_unbiased': 0, 'wpli': 0, 'wpli2_debiased': 0};;methods for connectivity plots;CheckListGui;{'options': {'coh': 'Coherence', 'cohy': 'Coherency', 'imcoh': 'Imaginary Coherence', 'plv': 'Phase-Locking Value', 'ciplv': 'Corrected Imaginary PLV', 'ppc': 'Pairwise Phase Consistency', 'pli': 'Phase Lag Index', 'pli2_unbiased': 'Unbiased estimator of squared PLI', 'wpli': 'Weighted Phase Lag Index', 'wpli2_debiased': 'Debiased estimator of squared WPLI'}}
+con_methods;;Time-Frequency;{'coh': 0, 'cohy': 0, 'imcoh': 0, 'plv': 0, 'ciplv': 0, 'ppc': 0, 'pli': 0, 'pli2_unbiased': 0, 'wpli': 0, 'wpli2_debiased': 0};;methods for connectivity plots;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}
 con_fmin;;Time-Frequency;30;;fmin for connectivity plot;IntGui;
 con_fmax;;Time-Frequency;80;;fmax for connectivity plot;IntGui;
 ecd_times;;Inverse;{};;;DictGui;

@@ -38,13 +38,12 @@ class BaseList(QWidget):
         self.view = QListView()
         self.view.setModel(self.model)
 
-        self.layout = QVBoxLayout()
-
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view)
-        self.setLayout(self.layout)
+        layout = QVBoxLayout()
+        layout.addWidget(self.view)
+        self.setLayout(layout)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -83,12 +82,11 @@ class EditList(QWidget):
         self.view = QListView()
         self.view.setModel(self.model)
 
-        self.layout = QVBoxLayout()
-
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view)
+        layout = QVBoxLayout()
+        layout.addWidget(self.view)
 
         if self.ui_buttons:
             bt_layout = QHBoxLayout()
@@ -105,9 +103,9 @@ class EditList(QWidget):
             edit_bt.clicked.connect(self.edit_item)
             bt_layout.addWidget(edit_bt)
 
-            self.layout.addLayout(bt_layout)
+            layout.addLayout(bt_layout)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -162,12 +160,11 @@ class CheckList(QWidget):
         self.view = QListView()
         self.view.setModel(self.model)
 
-        self.layout = QVBoxLayout()
-
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view)
+        layout = QVBoxLayout()
+        layout.addWidget(self.view)
 
         if self.ui_buttons:
             bt_layout = QHBoxLayout()
@@ -180,9 +177,9 @@ class CheckList(QWidget):
             clear_bt.clicked.connect(self.clear_all)
             bt_layout.addWidget(clear_bt)
 
-            self.layout.addLayout(bt_layout)
+            layout.addLayout(bt_layout)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -229,13 +226,12 @@ class BaseDict(QWidget):
         self.view = QTableView()
         self.view.setModel(self.model)
 
-        self.layout = QVBoxLayout()
-
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view)
-        self.setLayout(self.layout)
+        layout = QVBoxLayout()
+        layout.addWidget(self.view)
+        self.setLayout(layout)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -271,12 +267,11 @@ class EditDict(QWidget):
         self.view = QTableView()
         self.view.setModel(self.model)
 
-        self.layout = QVBoxLayout()
-
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view)
+        layout = QVBoxLayout()
+        layout.addWidget(self.view)
 
         if self.ui_buttons:
             bt_layout = QHBoxLayout()
@@ -293,9 +288,9 @@ class EditDict(QWidget):
             edit_bt.clicked.connect(self.edit_item)
             bt_layout.addWidget(edit_bt)
 
-            self.layout.addLayout(bt_layout)
+            layout.addLayout(bt_layout)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -346,13 +341,12 @@ class BasePandasTable(QWidget):
         self.view = QTableView()
         self.view.setModel(self.model)
 
-        self.layout = QVBoxLayout()
-
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view)
-        self.setLayout(self.layout)
+        layout = QVBoxLayout()
+        layout.addWidget(self.view)
+        self.setLayout(layout)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -392,8 +386,6 @@ class EditPandasTable(QWidget):
         self.view = QTableView()
         self.view.setModel(self.model)
 
-        self.layout = QHBoxLayout()
-
         self.rows_chkbx = QSpinBox()
         self.rows_chkbx.setMinimum(1)
         self.cols_chkbx = QSpinBox()
@@ -402,7 +394,8 @@ class EditPandasTable(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.layout.addWidget(self.view)
+        layout = QHBoxLayout()
+        layout.addWidget(self.view)
 
         if self.ui_buttons:
             bt_layout = QVBoxLayout()
@@ -441,9 +434,9 @@ class EditPandasTable(QWidget):
             editch_bt.clicked.connect(self.edit_col_header)
             bt_layout.addWidget(editch_bt)
 
-            self.layout.addLayout(bt_layout)
+            layout.addLayout(bt_layout)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -551,7 +544,6 @@ class AllBaseWidgets(QWidget):
                             'BasePandasTable': [self.expd],
                             'EditPandasTable': [self.expd]}
 
-        self.layout = QVBoxLayout()
         self.tab_widget = QTabWidget()
 
         self.init_ui()
@@ -559,11 +551,12 @@ class AllBaseWidgets(QWidget):
         self.setGeometry(0, 0, 800, 400)
 
     def init_ui(self):
+        layout = QVBoxLayout()
         for widget in self.widget_dict:
             self.tab_widget.addTab(globals()[widget](*self.widget_dict[widget]), widget)
 
-        self.layout.addWidget(self.tab_widget)
-        self.setLayout(self.layout)
+        layout.addWidget(self.tab_widget)
+        self.setLayout(layout)
 
 
 if __name__ == '__main__':

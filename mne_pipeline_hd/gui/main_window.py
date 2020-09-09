@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         self.all_modules = {'basic': {},
                             'custom': {}}
         self.subject = None
-        self.available_image_formats = ['.png', '.jpg', '.tiff']
+        self.available_image_formats = {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'}
 
         # Load QSettings (which are stored in the OS)
         # qsettings=<everything, that's OS-dependent>
@@ -552,7 +552,8 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
                                         param_alias='Image-Format', hint='Choose the image format for plots',
                                         default='.png'))
-        self.toolbar.addWidget(ComboGui(self.settings, 'mne_backend', ['mayavi', 'pyvista'], param_alias='MNE-Backend',
+        self.toolbar.addWidget(ComboGui(self.settings, 'mne_backend', {'mayavi': 'Mayavi', 'pyvista': 'PyVista'},
+                                        param_alias='MNE-Backend',
                                         hint='Choose the backend for plotting in 3D (needs Restart)',
                                         default='pyvista'))
         close_all_bt = QPushButton('Close All Plots')
@@ -585,7 +586,7 @@ class MainWindow(QMainWindow):
     def add_func_bts(self):
         self.tab_func_widget = QTabWidget()
         # Drop custom-modules, which aren't selected
-        cleaned_pd_funcs = self.pd_funcs[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))]
+        cleaned_pd_funcs = self.pd_funcs.loc[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))].copy()
 
         # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
         if len(cleaned_pd_funcs) != 0:

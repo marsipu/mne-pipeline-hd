@@ -83,20 +83,33 @@ def plot_save(sub, plot_name, subfolder=None, trial=None, idx=None, matplotlib_f
 # PLOTTING FUNCTIONS
 # ==============================================================================
 @topline
-def plot_filtered(sub):
-    loaded_raw = sub.load_filtered()
+def plot_raw(sub):
+    raw = sub.load_raw()
 
     try:
-        loaded_events = sub.load_events()
-        mne.viz.plot_raw(raw=loaded_raw, events=loaded_events, n_channels=30, bad_color='red',
-                         scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-                         title=f'{sub.name}_highpass={sub.p["highpass"]}_lowpass={sub.p["lowpass"]}')
-
+        events = sub.load_events()
     except FileNotFoundError:
+        events = None
         print('No events found')
-        mne.viz.plot_raw(raw=loaded_raw, n_channels=30, bad_color='red',
-                         scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-                         title=f'{sub.name}_highpass={sub.p["highpass"]}_lowpass={sub.p["lowpass"]}')
+
+    raw.plot(events=events, n_channels=30, bad_color='red',
+             scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
+             title=f'{sub.name}_highpass={sub.p["highpass"]}_lowpass={sub.p["lowpass"]}')
+
+
+@topline
+def plot_filtered(sub):
+    raw = sub.load_filtered()
+
+    try:
+        events = sub.load_events()
+    except FileNotFoundError:
+        events = None
+        print('No events found')
+
+    raw.plot(events=events, n_channels=30, bad_color='red',
+             scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
+             title=f'{sub.name}_highpass={sub.p["highpass"]}_lowpass={sub.p["lowpass"]}')
 
 
 @topline
@@ -366,7 +379,7 @@ def plot_bem(mri_sub):
 def plot_sensitivity_maps(sub, ch_types):
     fwd = sub.load_forward()
 
-    for ch_type in ch_types:
+    for ch_type in [ct for ct in ch_types if ct in ['grad', 'mag', 'eeg']]:
         sens_map = mne.sensitivity_map(fwd, ch_type=ch_type, mode='fixed')
         brain = sens_map.plot(title=f'{ch_type}-Sensitivity for {sub.name}', subjects_dir=sub.subjects_dir,
                               clim=dict(lims=[0, 50, 100]))

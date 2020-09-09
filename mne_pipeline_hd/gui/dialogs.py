@@ -161,7 +161,7 @@ class SettingsDlg(QDialog):
         layout.addWidget(ComboGui(self.mw.settings, 'img_format', self.mw.available_image_formats,
                                   param_alias='Image-Format', hint='Choose the image format for plots',
                                   default='.png'))
-        layout.addWidget(ComboGui(self.mw.settings, 'mne_backend', options=['mayavi', 'pyvista'],
+        layout.addWidget(ComboGui(self.mw.settings, 'mne_backend', options={'mayavi': 'Mayavi', 'pyvista': 'PyVista'},
                                   param_alias='MNE-Backend',
                                   hint='Choose the backend for plotting in 3D (needs Restart)',
                                   default='pyvista'))

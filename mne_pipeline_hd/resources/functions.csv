@@ -1,7 +1,7 @@
 ;alias;tab;group;subject_loop;matplotlib;mayavi;dependencies;module;func_args
 filter_raw;Filter Raw;Compute;Preprocessing;True;False;False;;operations;sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit
 find_events;Find Events;Compute;Events;True;False;False;;operations;sub, min_duration, shortest_event, adjust_timeline_by_msec
-epoch_raw;Get Epochs;Compute;Events;True;False;False;;operations;sub, t_epoch, baseline, reject, flat, autoreject_interpolation, consensus_percs, n_interpolates, autoreject_threshold, overwrite_ar, decim, n_jobs
+epoch_raw;Get Epochs;Compute;Events;True;False;False;;operations;sub, ch_types, t_epoch, baseline, reject, flat, autoreject_interpolation, consensus_percs, n_interpolates, autoreject_threshold, overwrite_ar, decim, n_jobs
 run_ica;Run ICA;Compute;Preprocessing;True;False;False;;operations;sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolation, autoreject_threshold, save_plots, figures_path, pscripts_path
 apply_ica;Apply ICA;Compute;Preprocessing;True;False;False;;operations;sub
 interpolate_bad_chs;Interpolate Bad-Channels;Compute;Preprocessing;True;False;False;;operations;sub, bad_interpolation, enable_ica
@@ -35,6 +35,7 @@ plot_noise_covariance;;Plot;Inverse;True;True;False;;plot;sub
 plot_transformation;;Plot;Forward;True;True;True;;plot;sub
 plot_sensitivity_maps;;Plot;Inverse;True;True;True;;plot;sub, ch_types
 plot_sensors;;Plot;Forward;True;True;False;;plot;sub
+plot_raw;;Plot;Raw;True;True;False;;plot;sub
 plot_filtered;;Plot;Raw;True;True;False;;plot;sub
 plot_events;;Plot;Events;True;True;False;;plot;sub
 plot_power_spectra;;Plot;Time-Frequency;True;True;False;;plot;sub

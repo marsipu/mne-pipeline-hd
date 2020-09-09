@@ -422,40 +422,27 @@ class CheckTupleGui(TupleGui):
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
 
-    def __init__(self, data, param_name, options, param_alias=None, hint=None, options_mapping=None, default=None):
+    def __init__(self, data, param_name, options, param_alias=None, hint=None, default=None):
         super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = None
         self.options = options
-        self.options_mapping = options_mapping or {}
         self.param_widget = QComboBox()
         self.param_widget.activated.connect(self.get_param)
         if hint:
             self.param_widget.setToolTip(hint)
         for option in self.options:
-            if option in self.options_mapping:
-                self.param_widget.addItem(self.options_mapping[option])
-            else:
-                self.param_widget.addItem(option)
+            self.param_widget.addItem(option)
         self.read_param()
         self.set_param()
         self.save_param()
         self.init_h_layout()
 
     def set_param(self):
-        if self.param_value in self.options:
-            if self.param_value in self.options_mapping:
-                self.param_widget.setCurrentText(self.options_mapping[self.param_value])
-            else:
-                self.param_widget.setCurrentText(self.param_value)
+        self.param_widget.setCurrentText(self.param_value)
 
     def get_param(self):
-        pre_value = self.param_widget.currentText()
-        # Get key from value
-        if pre_value in self.options_mapping.values():
-            self.param_value = [it for it in self.options_mapping.items() if pre_value in it][0][0]
-        else:
-            self.param_value = pre_value
+        self.param_value = self.param_widget.currentText()
         self.save_param()
 
         return self.param_value
@@ -479,6 +466,7 @@ class ListDialog(QDialog):
 
     def closeEvent(self, event):
         self.paramw.set_param()
+        self.paramw.save_param()
         event.accept()
 
 
@@ -513,7 +501,7 @@ class ListGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        val_str = str(self.param_value)
+        val_str = ', '.join([str(item) for item in self.param_value])
         if len(val_str) > 30:
             self.value_label.setText(f'{val_str[:30]} ...')
         else:
@@ -529,15 +517,13 @@ class CheckListDialog(QDialog):
     def __init__(self, paramw):
         super().__init__(paramw)
         self.paramw = paramw
-        self.data = list(paramw.param_value.keys())
-        self.checked = [key for key in paramw.param_value.keys() if paramw.param_value[key]]
 
         self.init_layout()
         self.open()
 
     def init_layout(self):
         layout = QVBoxLayout()
-        layout.addWidget(CheckList(self.data, self.checked))
+        layout.addWidget(CheckList(self.paramw.options, self.paramw.param_value))
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
@@ -546,25 +532,19 @@ class CheckListDialog(QDialog):
         self.setLayout(layout)
 
     def closeEvent(self, event):
-        value_dict = dict()
-        for key in self.data:
-            if key in self.checked:
-                value_dict[key] = 1
-            else:
-                value_dict[key] = 0
-        self.paramw.param_value = value_dict
         self.paramw.set_param()
+        self.paramw.save_param()
         event.accept()
 
 
 class CheckListGui(Param):
     """A GUI for List-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, hint=None, options=None, default=None):
+    def __init__(self, data, param_name, options, param_alias=None, hint=None, default=None):
         super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
-        self.options_mapping = options or {}
-        self.param_value = dict()
+        self.options = options
+        self.param_value = list()
 
         self.name_label = QLabel(f'{self.param_alias}:')
         if hint:
@@ -572,6 +552,9 @@ class CheckListGui(Param):
         self.value_label = QLabel('')
 
         self.read_param()
+        # Can be removed soon (30.09.2020)
+        if 'grad' in self.param_value:
+            self.param_value = ['meg']
         self.set_param()
         self.save_param()
 
@@ -590,7 +573,7 @@ class CheckListGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        val_str = str(self.param_value)
+        val_str = ', '.join(self.param_value)
         if len(val_str) > 30:
             self.value_label.setText(f'{val_str[:30]} ...')
         else:
@@ -620,6 +603,7 @@ class DictDialog(QDialog):
 
     def closeEvent(self, event):
         self.paramw.set_param()
+        self.paramw.save_param()
         event.accept()
 
 
@@ -655,7 +639,7 @@ class DictGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        val_str = str(self.param_value)
+        val_str = ', '.join([f'{key}: {value}' for key, value in self.param_value.items()])
         if len(val_str) > 30:
             self.value_label.setText(f'{val_str[:30]} ...')
         else:
@@ -820,8 +804,7 @@ if __name__ == '__main__':
     h = SliderGui(proj, 'TestSlider2', min_val=0, max_val=20.25, step=1.3)
     i = FuncGui(proj, 'TestFunc')
     j = TupleGui(proj, 'TestTuple', min_val=-10, max_val=20, step=1, decimals=3)
-    k = ComboGui(proj, 'TestCombo', options=['a', 'b', 'c'],
-                 options_mapping={'a': 'hungiwungi', 'b': 'zulu32', 'c': 'bananaaa'})
+    k = ComboGui(proj, 'TestCombo', options=['a', 'b', 'c'])
     l = CheckListGui(proj, 'TestCheckList', options={'a': 'hungiwungi', 'b': 'zulu32', 'c': 'bananaaa'})
     sub_layout.addWidget(a, 0, 0)
     sub_layout.addWidget(b, 0, 1)

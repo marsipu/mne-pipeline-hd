@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel
     QVBoxLayout
 
 from mne_pipeline_hd.basic_functions.loading import CurrentSub
+from mne_pipeline_hd.gui.base_widgets import CheckList
 from mne_pipeline_hd.gui.gui_utils import Worker, get_exception_tuple
 
 
@@ -30,13 +31,46 @@ class LoadWorker(Worker):
         super().__init__(fn, LoadSignals(), *args, *kwargs)
 
 
-# ToDo: Add Command-History, Commands should be visible in Display, color-coding
+class HistoryDlg(QDialog):
+    def __init__(self, dt):
+        super().__init__(dt)
+        self.dt = dt
+        self.checked = list()
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        self.checklist = CheckList(self.dt.history, self.checked)
+
+        layout.addWidget(self.checklist)
+
+        add_bt = QPushButton('Add')
+        add_bt.clicked.connect(self.add_cmds)
+        layout.addWidget(add_bt)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def add_cmds(self):
+        for item in self.checked:
+            self.dt.inputw.insertPlainText(item)
+            self.dt.inputw.ensureCursorVisible()
+
+
+# Todo: Syntax Formatting
 # Todo: Add Looping over defined Subject-Selection
 class DataTerminal(QDialog):
     def __init__(self, main_win, subject=None):
         super().__init__(main_win)
         self.mw = main_win
         self.sub = subject
+        self.history = list()
 
         self.default_t_globals = ['mw', 'main_window', 'pr', 'project', 'par', 'parameters']
 
@@ -53,7 +87,8 @@ class DataTerminal(QDialog):
 
         self.bt_dict = {}
 
-        self.load_mapping = {'raw': 'load_raw',
+        self.load_mapping = {'info': 'load_info',
+                             'raw': 'load_raw',
                              'filtered': 'load_filtered',
                              'events': 'load_events',
                              'epochs': 'load_epochs',
@@ -100,7 +135,7 @@ class DataTerminal(QDialog):
         self.sub_layout = QGridLayout()
         self.inputw = QTextEdit()
         self.inputw.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum))
-        self.sub_layout.addWidget(self.inputw, 0, 0, 2, 1)
+        self.sub_layout.addWidget(self.inputw, 0, 0, 3, 1)
 
         self.start_bt = QPushButton('Start')
         self.start_bt.setFont(QFont('AnyStyle', 16))
@@ -108,11 +143,17 @@ class DataTerminal(QDialog):
         self.start_bt.clicked.connect(self.start_execution)
         self.sub_layout.addWidget(self.start_bt, 0, 1)
 
+        self.history_bt = QPushButton('History')
+        self.history_bt.setFont(QFont('AnyStyle', 16))
+        self.history_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
+        self.history_bt.clicked.connect(partial(HistoryDlg, self))
+        self.sub_layout.addWidget(self.history_bt, 1, 1)
+
         self.quit_bt = QPushButton('Close')
         self.quit_bt.setFont(QFont('AnyStyle', 16))
         self.quit_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
         self.quit_bt.clicked.connect(self.close)
-        self.sub_layout.addWidget(self.quit_bt, 1, 1)
+        self.sub_layout.addWidget(self.quit_bt, 2, 1)
 
         self.layout.addLayout(self.sub_layout)
 
@@ -169,7 +210,7 @@ class DataTerminal(QDialog):
         else:
             # To avoid (visual) print-conflicts
             sleep(0.01)
-            self.displayw.insertHtml(f'<b><big><center>{bt_name} loaded</center></big></b><br>')
+            self.displayw.insertHtml(f'<b><big><center>{bt_name} loaded (namespace = {bt_name})</center></big></b><br>')
             self.displayw.ensureCursorVisible()
 
     def update_label(self, text):
@@ -187,6 +228,11 @@ class DataTerminal(QDialog):
 
     def start_execution(self):
         command = self.inputw.toPlainText()
+        command_html = command.replace('\n', '<br>')
+        self.displayw.insertHtml(f'<b><i>{command_html}</i></b><br>')
+        self.displayw.ensureCursorVisible()
+        self.history.insert(0, command)
+
         try:
             print(eval(command, self.t_globals))
         except SyntaxError:

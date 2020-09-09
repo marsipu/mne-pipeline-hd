@@ -220,17 +220,18 @@ def find_events(sub, min_duration, shortest_event, adjust_timeline_by_msec):
 
 
 @topline
-def epoch_raw(sub, t_epoch, baseline, reject, flat, autoreject_interpolation, consensus_percs, n_interpolates,
+def epoch_raw(sub, ch_types, t_epoch, baseline, reject, flat, autoreject_interpolation, consensus_percs, n_interpolates,
               autoreject_threshold, overwrite_ar, decim, n_jobs):
     raw = sub.load_filtered()
     events = sub.load_events()
 
-    picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False,
-                           eog=False, ecg=False, exclude=sub.bad_channels)
+    raw_picked = raw.pick(ch_types, exclude=sub.bad_channels)
 
-    epochs = mne.Epochs(raw, events, sub.event_id, t_epoch[0], t_epoch[1], baseline,
-                        preload=True, picks=picks, proj=False, reject=None,
+    epochs = mne.Epochs(raw_picked, events, sub.event_id, t_epoch[0], t_epoch[1], baseline,
+                        preload=True, proj=False, reject=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=True)
+
+    epochs = epochs.pick(ch_types, exclude=sub.bad_channels)
 
     if autoreject_interpolation:
         ar_object = ar.AutoReject(n_interpolates, consensus_percs, random_state=8,
@@ -1055,9 +1056,6 @@ def source_space_connectivity(sub, parcellation, target_labels, inverse_method, 
     inverse_operator = sub.load_inverse_operator()
     src = inverse_operator['src']
 
-    # Turn checked-dict into list
-    selected_con_methods = [m for m in con_methods if con_methods[m]]
-
     con_dict = {}
     for trial in all_epochs.event_id:
         con_dict[trial] = {}
@@ -1082,13 +1080,13 @@ def source_space_connectivity(sub, parcellation, target_labels, inverse_method, 
 
         sfreq = info['sfreq']  # the sampling frequency
         con, freqs, times, n_epochs, n_tapers = mne.connectivity.spectral_connectivity(
-                label_ts, method=selected_con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
+                label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
                 fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
 
         # con is a 3D array, get the connectivity for the first (and only) freq. band
         # for each con_method
         con_dict = dict()
-        for con_method, c in zip(selected_con_methods, con):
+        for con_method, c in zip(con_methods, con):
             con_dict[trial][con_method] = c
 
     sub.save_connectivity(con_dict)
