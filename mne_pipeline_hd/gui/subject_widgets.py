@@ -698,7 +698,9 @@ class AddFilesWidget(QWidget):
                                         f'These files already exist in your project: {existing_files}')
 
     def get_files_path(self):
-        filter_qstring = ';;'.join([f'{self.supported_file_types[key]} (*{key})' for key in self.supported_file_types])
+        filter_list = [f'{self.supported_file_types[key]} (*{key})' for key in self.supported_file_types]
+        filter_list.append('All Files (*.*)')
+        filter_qstring = ';;'.join(filter_list)
         files_list = QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import', filter=filter_qstring)[0]
         self.insert_files(files_list)
 
