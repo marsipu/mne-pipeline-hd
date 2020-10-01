@@ -30,13 +30,14 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, Q
                              QVBoxLayout, QWidget)
 from mayavi import mlab
 
-from .dialogs import (ChooseCustomModules, CustomFunctionImport, ParametersDock, QuickGuide, RemoveProjectsDlg,
+from .customf_widgets import ChooseCustomModules, CustomFunctionImport
+from .gui_utils import get_exception_tuple, get_ratio_geometry
+from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
                       RunDialog, SettingsDlg, SysInfoMsg)
-from .gui_utils import ErrorDialog, get_exception_tuple
-from .other_widgets import DataTerminal
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
+from .tools import DataTerminal
 from .. import basic_functions, resources
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
@@ -82,7 +83,7 @@ class MainWindow(QMainWindow):
         self.centralWidget().setLayout(self.general_layout)
 
         # Set geometry to ratio of screen-geometry
-        width, height = self.get_ratio_geometry(0.9)
+        width, height = get_ratio_geometry(0.9)
         self.resize(width, height)
         self.center()
 
@@ -689,13 +690,6 @@ class MainWindow(QMainWindow):
         self.parameters_dock = ParametersDock(self)
         self.addDockWidget(Qt.RightDockWidgetArea, self.parameters_dock)
         self.view_menu.addAction(self.parameters_dock.toggleViewAction())
-
-    def get_ratio_geometry(self, size_ratio):
-        self.desk_geometry = self.app.desktop().availableGeometry()
-        height = int(self.desk_geometry.height() * size_ratio)
-        width = int(self.desk_geometry.width() * size_ratio)
-
-        return width, height
 
     def dark_mode(self):
         if self.adark_mode.isChecked():

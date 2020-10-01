@@ -31,7 +31,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
 from matplotlib import pyplot as plt
 
 from .base_widgets import CheckList, EditDict, EditList, EditPandasTable
-from .gui_utils import (ErrorDialog, Worker)
+from .dialogs import ErrorDialog
+from .gui_utils import (Worker, get_ratio_geometry)
 from .models import AddFilesModel, FileDictModel
 from ..basic_functions import loading
 from ..basic_functions.loading import CurrentSub
@@ -1667,7 +1668,7 @@ class SubjectWizard(QWizard):
         self.setWizardStyle(QWizard.ModernStyle)
         self.setOption(QWizard.HaveHelpButton, False)
 
-        width, height = self.mw.get_ratio_geometry(0.6)
+        width, height = get_ratio_geometry(0.6)
         self.setGeometry(0, 0, width, height)
         self.center()
 

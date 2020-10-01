@@ -31,9 +31,12 @@ class BaseListModel(QAbstractListModel):
         else:
             self._data = data
 
+    def getData(self, index=QModelIndex()):
+        return self._data[index.row()]
+
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return str(self._data[index.row()])
+            return str(self.getData(index))
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data)
@@ -116,24 +119,23 @@ class CheckListModel(BaseListModel):
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return self._data[index.row()]
+            return str(self.getData(index))
 
         if role == Qt.CheckStateRole:
-            if self._data[index.row()] in self._checked:
+            if self.getData(index) in self._checked:
                 return Qt.Checked
             else:
                 return Qt.Unchecked
 
     def setData(self, index, value, role=None):
-        datum = self._data[index.row()]
         if role == Qt.CheckStateRole:
             if value == Qt.Checked:
                 if self.one_check:
                     self._checked.clear()
-                self._checked.append(datum)
+                self._checked.append(self.getData(index))
             else:
-                if datum in self._checked:
-                    self._checked.remove(datum)
+                if self.getData(index) in self._checked:
+                    self._checked.remove(self.getData(index))
             self.dataChanged.emit(index, index)
             return True
         return False
@@ -162,12 +164,15 @@ class BaseDictModel(QAbstractTableModel):
         else:
             self._data = data
 
+    def getData(self, index=QModelIndex()):
+        if index.column() == 0:
+            return list(self._data.keys())[index.row()]
+        elif index.column() == 1:
+            return list(self._data.values())[index.row()]
+
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            if index.column() == 0:
-                return str(list(self._data.keys())[index.row()])
-            elif index.column() == 1:
-                return str(list(self._data.values())[index.row()])
+            str(self.getData(index))
 
     def headerData(self, idx, orientation, role=None):
         if role == Qt.DisplayRole:
@@ -259,11 +264,12 @@ class BasePandasModel(QAbstractTableModel):
         else:
             self._data = data
 
-    def data(self, index, role=None):
-        value = self._data.iloc[index.row(), index.column()]
+    def getData(self, index=QModelIndex()):
+        return self._data.iloc[index.row(), index.column()]
 
+    def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return str(value)
+            return str(self.getData(index))
 
     def headerData(self, idx, orientation, role=None):
         if role == Qt.DisplayRole:
@@ -385,15 +391,12 @@ class FileDictModel(BaseListModel):
         self.file_dict = file_dict
         self.app = QApplication.instance()
 
-    def getData(self, index):
-        return self._data[index.row()]
-
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return self._data[index.row()]
+            return str(self.getData(index))
 
         elif role == Qt.DecorationRole:
-            if self._data[index.row()] in self.file_dict:
+            if self.getData(index) in self.file_dict:
                 return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
             else:
                 return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
@@ -404,17 +407,16 @@ class AddFilesModel(BasePandasModel):
         super().__init__(data)
 
     def data(self, index, role=None):
-        value = self._data.iloc[index.row(), index.column()]
         column = self._data.columns[index.column()]
 
         if role == Qt.DisplayRole:
             if column != 'Empty-Room?':
-                return value
+                return str(self.getData(index))
             return ''
 
         elif role == Qt.CheckStateRole:
             if column == 'Empty-Room?':
-                if value:
+                if self.getData(index):
                     return Qt.Checked
                 else:
                     return Qt.Unchecked
@@ -448,3 +450,31 @@ class AddFilesModel(BasePandasModel):
         self.endRemoveRows()
 
         return True
+
+
+class CustomFunctionModel(QAbstractListModel):
+    def __init__(self, data):
+        self._data = data
+
+    def getData(self, index=QModelIndex()):
+        return self._data.index[index.row()]
+
+    def data(self, index, role=None):
+        if role == Qt.DisplayRole:
+            return str(self.getData(index))
+
+        elif role == Qt.DecorationRole:
+            if self.pd_data.loc[self.getData(index), 'ready']:
+                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+            else:
+                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
+
+    def removeRows(self, row, count, index=QModelIndex()):
+        self.beginRemoveRows(index, row, row + count - 1)
+        for item in [self._data[i] for i in range(row, row + count)]:
+            self._data.drop(index=item, inplace=True)
+        self.endRemoveRows()
+        return True
+
+    def rowCount(self):
+        return len(self._data.index)
