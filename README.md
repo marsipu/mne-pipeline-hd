@@ -46,3 +46,16 @@ and should have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-
 6. Commit changes: `git commit --all `
 7. Push changes to your forked repository on GitHub: `git push`
 8. Make "New pull request" from your new feature branch
+
+## Acknowledgments
+This Pipeline is build on top of [MNE-Python](https://mne.tools/stable/index.html)
+> Andersen LM. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for 
+> Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group 
+> Source Space Representation. Front Neurosci. 2018 Jan 22;12:6. doi: 10.3389/fnins.2018.00006. PMID: 29403349; 
+> PMCID: PMC5786561.
+
+It originated from a pipeline by [Lau M. Andersen](https://doi.org/10.3389/fnins.2018.00006)
+> Andersen LM. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for 
+> Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group 
+> Source Space Representation. Front Neurosci. 2018 Jan 22;12:6. doi: 10.3389/fnins.2018.00006. PMID: 29403349; 
+> PMCID: PMC5786561.
