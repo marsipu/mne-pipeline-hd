@@ -1,5 +1,5 @@
 ;alias;group;default;unit;description;gui_type;gui_args
-ch_types;Channel-Types;Preprocessing;['grad'];;Channel-Types used in data;CheckListGui;{'options': ['meg', 'eeg']}
+ch_types;Channel-Types;Preprocessing;['meg'];;Channel-Types used in data;CheckListGui;{'options': ['meg', 'eeg']}
 highpass;Highpass-Cutoff;Preprocessing;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
 lowpass;Lowpass-Cutoff;Preprocessing;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
 erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
