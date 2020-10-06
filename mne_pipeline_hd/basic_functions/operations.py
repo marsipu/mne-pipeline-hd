@@ -330,7 +330,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
-    elif 'EEG 001' in info['ch_names']:
+    elif eog_channel in info['ch_names']:
         eeg_picks = mne.pick_types(raw.info, meg=True, eeg=True, eog=True,
                                    stim=False, exclude=sub.bad_channels)
 
