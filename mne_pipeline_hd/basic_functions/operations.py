@@ -303,7 +303,14 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
         fig1 = ica.plot_components(picks=comp_list, title=sub.name, show=False)
         fig3 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=sub.name, show=False)
         fig4 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=sub.name, show=False)
-        fig5 = ica.plot_overlay(epochs.average(), title=sub.name, show=False)
+        for trial in sub.sel_trials:
+            fig = ica.plot_overlay(epochs[trial].average(), title=sub.name + '-' + trial, show=False)
+            if not exists(join(figures_path, 'ica/evoked_overlay')):
+                makedirs(join(figures_path, 'ica/evoked_overlay'))
+            save_path = join(figures_path, 'ica/evoked_overlay', sub.name + '-' + trial +
+                             '_ica_ovl' + '_' + sub.pr.p_preset + '.jpg')
+            fig.savefig(save_path, dpi=300)
+            print('figure: ' + save_path + ' has been saved')
         if save_plots and save_plots != 'false':
 
             save_path = join(figures_path, 'ica', sub.name +
@@ -319,12 +326,6 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
             save_path = join(figures_path, 'ica', sub.name +
                              '_ica_src' + '_' + sub.pr.p_preset + '_1.jpg')
             fig4.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
-            if not exists(join(figures_path, 'ica/evoked_overlay')):
-                makedirs(join(figures_path, 'ica/evoked_overlay'))
-            save_path = join(figures_path, 'ica/evoked_overlay', sub.name +
-                             '_ica_ovl' + '_' + sub.pr.p_preset + '.jpg')
-            fig5.savefig(save_path, dpi=300)
             print('figure: ' + save_path + ' has been saved')
 
         else:
