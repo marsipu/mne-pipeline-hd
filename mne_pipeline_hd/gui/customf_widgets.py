@@ -10,7 +10,8 @@ from pathlib import Path
 
 import pandas as pd
 from PyQt5.QtCore import QPoint, QSize, Qt
-from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout, QGridLayout, QGroupBox,
+from PyQt5.QtWidgets import (QButtonGroup, QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout, QGridLayout,
+                             QGroupBox,
                              QHBoxLayout,
                              QLabel,
                              QLineEdit,
@@ -19,6 +20,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QFormLa
                              QTableWidgetItem, QTextEdit, QToolTip, QVBoxLayout)
 
 from mne_pipeline_hd.gui import parameter_widgets
+from mne_pipeline_hd.gui.base_widgets import EditDict
 from mne_pipeline_hd.gui.dialogs import ErrorDialog
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
@@ -76,9 +78,8 @@ class CustomFunctionImport(QDialog):
         self.func_model = CustomFunctionModel(self.add_pd_funcs)
         self.func_view.setModel(self.func_model)
         self.func_view.selectionModel().currentChanged.connect(self.func_item_selected)
-        # self.func_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.func_view.setFocus()
-        import_layout.addWidget(self.func_tablew)
+        import_layout.addWidget(self.func_view)
 
         bt_layout = QHBoxLayout()
         showcode_bt = QPushButton('Show Source-Code')
@@ -96,11 +97,6 @@ class CustomFunctionImport(QDialog):
         close_bt = QPushButton('Quit')
         close_bt.clicked.connect(self.close)
         bt_layout.addWidget(close_bt)
-
-        # # Workaround for Dialog not doing anything when Enter is pressed
-        # void_button = QPushButton(self)
-        # void_button.setDefault(True)
-        # bt_layout.addWidget(void_button)
 
         import_layout.addLayout(bt_layout)
         import_gbox.setLayout(import_layout)
@@ -134,34 +130,56 @@ class CustomFunctionImport(QDialog):
         group_layout.addWidget(self.group_chkl)
         func_setup_layout.addRow('Group', group_layout)
 
-        # Todo: Make ButtonGroup YesNo instead of Checkbox
         subloop_layout = QHBoxLayout()
-        self.subloop_chbx = QCheckBox()
-        self.subloop_chbx.setToolTip('Check if function is applied to each file '
-                                     '(instead of e.g. grand-average-functions)')
-        self.subloop_chbx.stateChanged.connect(self.subloop_changed)
-        subloop_layout.addWidget(self.subloop_chbx)
+        self.subloop_bts = QButtonGroup(self)
+        self.subloop_yesbt = QCheckBox('Yes')
+        self.subloop_yesbt.setCheckable(True)
+        self.subloop_nobt = QPushButton('No')
+        self.subloop_nobt.setCheckable(True)
+        self.subloop_bts.addButton(self.subloop_yesbt)
+        self.subloop_bts.addButton(self.subloop_nobt)
+        subloop_layout.addWidget(self.subloop_yesbt)
+        subloop_layout.addWidget(self.subloop_nobt)
+        self.subloop_yesbt.setToolTip('Choose if function is applied to each file')
+        self.subloop_nobt.setToolTip('Choose if function is applied to a group or does something else')
+        self.subloop_bts.buttonToggled.connect(self.subloop_changed)
         self.subloop_chkl = QLabel()
         subloop_layout.addWidget(self.subloop_chkl)
         func_setup_layout.addRow('Subject-Loop?', subloop_layout)
 
         mtpl_layout = QHBoxLayout()
-        self.mtpl_chbx = QCheckBox()
-        self.mtpl_chbx.setToolTip('Is the function containing a Matplotlib-Plot?')
-        self.mtpl_chbx.stateChanged.connect(self.mtpl_changed)
-        mtpl_layout.addWidget(self.mtpl_chbx)
+        self.mtpl_bts = QButtonGroup(self)
+        self.mtpl_yesbt = QPushButton('Yes')
+        self.mtpl_yesbt.setCheckable(True)
+        self.mtpl_nobt = QPushButton('No')
+        self.mtpl_nobt.setCheckable(True)
+        self.mtpl_bts.addButton(self.mtpl_yesbt)
+        self.mtpl_bts.addButton(self.mtpl_nobt)
+        mtpl_layout.addWidget(self.mtpl_yesbt)
+        mtpl_layout.addWidget(self.mtpl_nobt)
+        self.mtpl_yesbt.setToolTip('Choose, if the function contains an interactive Matplotlib-Plot')
+        self.mtpl_nobt.setToolTip('Choose, if the function contains no interactive Matplotlib-Plot')
+        self.mtpl_bts.buttonToggled.connect(self.mtpl_changed)
         self.mtpl_chkl = QLabel()
         mtpl_layout.addWidget(self.mtpl_chkl)
         func_setup_layout.addRow('Matplotlib?', mtpl_layout)
 
         myv_layout = QHBoxLayout()
-        self.myv_chbx = QCheckBox()
-        self.myv_chbx.setToolTip('Is the function containing a Mayavi-Plot?')
-        self.myv_chbx.stateChanged.connect(self.myv_changed)
-        myv_layout.addWidget(self.myv_chbx)
+        self.myv_bts = QButtonGroup(self)
+        self.myv_yesbt = QPushButton('Yes')
+        self.myv_yesbt.setCheckable(True)
+        self.myv_nobt = QPushButton('No')
+        self.myv_nobt.setCheckable(True)
+        self.myv_bts.addButton(self.myv_yesbt)
+        self.myv_bts.addButton(self.myv_nobt)
+        myv_layout.addWidget(self.myv_yesbt)
+        myv_layout.addWidget(self.myv_nobt)
+        self.myv_yesbt.setToolTip('Choose, if the function contains a Pyvista/Mayavi-Plot')
+        self.myv_nobt.setToolTip('Choose, if the function contains a Pyvista/Mayavi-Plot')
+        self.myv_bts.buttonToggled.connect(self.myv_changed)
         self.myv_chkl = QLabel()
         myv_layout.addWidget(self.myv_chkl)
-        func_setup_layout.addRow('Mayavi?', myv_layout)
+        func_setup_layout.addRow('Pyvista/Mayavi?', myv_layout)
 
         self.dpd_bt = QPushButton('Set Dependencies')
         self.dpd_bt.setToolTip('Set the functions that must be activated before or the files that must be present '
@@ -182,7 +200,6 @@ class CustomFunctionImport(QDialog):
         self.param_view = QListView()
         self.param_model = CustomFunctionModel(self.add_pd_params)
         self.param_view.setModel(self.param_model)
-        # self.param_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         param_setup_layout.addWidget(self.param_view)
 
         param_setup_formlayout = QFormLayout()
@@ -222,11 +239,10 @@ class CustomFunctionImport(QDialog):
         guitype_layout.addWidget(self.guitype_chkl)
         param_setup_formlayout.addRow('GUI-Type', guitype_layout)
 
-        # Todo: Proper Widget for Gui-Args
-        self.guiargs_le = QLineEdit()
-        self.guiargs_le.setToolTip('Set Arguments for the GUI in a dict (optional)')
-        self.guiargs_le.textEdited.connect(self.pguiargs_changed)
-        param_setup_formlayout.addRow('GUI-Arguments (optional)', self.guiargs_le)
+        self.guiargs_w = EditDict()
+        self.guiargs_w.setToolTip('Set Arguments for the GUI in a dict (optional)')
+        self.guiargs_w.model.dataChanged.connect(self.pguiargs_changed)
+        param_setup_formlayout.addRow('GUI-Arguments (optional)', self.guiargs_w)
 
         param_setup_layout.addLayout(param_setup_formlayout)
         self.param_setup_gbox.setLayout(param_setup_layout)
@@ -266,7 +282,7 @@ class CustomFunctionImport(QDialog):
             self.default_le.clear()
             self.unit_le.clear()
             self.guitype_cmbx.setCurrentIndex(-1)
-            self.guiargs_le.clear()
+            self.guiargs_w.clear()
             self.param_setup_gbox.setEnabled(False)
 
     def param_item_selected(self, current, _):
@@ -293,30 +309,30 @@ class CustomFunctionImport(QDialog):
             self.group_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
         if pd.notna(self.add_pd_funcs.loc[self.current_function, 'subject_loop']):
             if self.add_pd_funcs.loc[self.current_function, 'subject_loop']:
-                self.subloop_chbx.setChecked(True)
+                self.subloop_yesbt.setChecked(True)
             else:
-                self.subloop_chbx.setChecked(False)
+                self.subloop_nobt.setChecked(True)
             self.subloop_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
         else:
-            self.subloop_chbx.setChecked(False)
+            self.subloop_nobt.setChecked(True)
             self.subloop_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
         if pd.notna(self.add_pd_funcs.loc[self.current_function, 'matplotlib']):
             if self.add_pd_funcs.loc[self.current_function, 'matplotlib']:
-                self.mtpl_chbx.setChecked(True)
+                self.mtpl_yesbt.setChecked(True)
             else:
-                self.mtpl_chbx.setChecked(False)
+                self.mtpl_nobt.setChecked(True)
             self.mtpl_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
         else:
-            self.mtpl_chbx.setChecked(False)
+            self.mtpl_nobt.setChecked(True)
             self.mtpl_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
         if pd.notna(self.add_pd_funcs.loc[self.current_function, 'mayavi']):
             if self.add_pd_funcs.loc[self.current_function, 'mayavi']:
-                self.myv_chbx.setChecked(True)
+                self.myv_yesbt.setChecked(True)
             else:
-                self.myv_chbx.setChecked(False)
+                self.myv_nobt.setChecked(True)
             self.myv_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
         else:
-            self.myv_chbx.setChecked(False)
+            self.myv_nobt.setChecked(True)
             self.myv_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
 
     def update_exst_param_label(self):
@@ -352,9 +368,9 @@ class CustomFunctionImport(QDialog):
             self.guitype_cmbx.setCurrentIndex(-1)
             self.guitype_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_args']):
-            self.guiargs_le.setText(self.add_pd_params.loc[self.current_parameter, 'gui_args'])
+            self.guiargs_w.setText(self.add_pd_params.loc[self.current_parameter, 'gui_args'])
         else:
-            self.guiargs_le.clear()
+            self.guiargs_w.clear()
 
     def check_func_setup(self):
         obligatory_items = ['tab', 'group', 'subject_loop', 'matplotlib', 'mayavi']
@@ -376,7 +392,7 @@ class CustomFunctionImport(QDialog):
         if self.current_function:
             self.add_pd_funcs.loc[self.current_function, 'alias'] = text
 
-    def subloop_changed(self, state):
+    def subloop_changed(self, _, state):
         if self.current_function:
             if state:
                 self.add_pd_funcs.loc[self.current_function, 'subject_loop'] = True
@@ -385,7 +401,7 @@ class CustomFunctionImport(QDialog):
             self.subloop_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
-    def mtpl_changed(self, state):
+    def mtpl_changed(self, _, state):
         if self.current_function:
             if state:
                 self.add_pd_funcs.loc[self.current_function, 'matplotlib'] = True
@@ -394,7 +410,7 @@ class CustomFunctionImport(QDialog):
             self.mtpl_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
-    def myv_changed(self, state):
+    def myv_changed(self, _, state):
         if self.current_function:
             if state:
                 self.add_pd_funcs.loc[self.current_function, 'mayavi'] = True
@@ -433,9 +449,9 @@ class CustomFunctionImport(QDialog):
         if self.current_parameter:
             self.add_pd_params.loc[self.current_parameter, 'description'] = text
 
-    def pguiargs_changed(self, text):
+    def pguiargs_changed(self):
         if self.current_parameter:
-            self.add_pd_params.loc[self.current_parameter, 'gui_args'] = text
+            self.add_pd_params.loc[self.current_parameter, 'gui_args'] = self.guiargs_w.model._data
 
     def populate_func_tablew(self):
         row_count = self.func_tablew.rowCount()

@@ -454,6 +454,7 @@ class AddFilesModel(BasePandasModel):
 
 class CustomFunctionModel(QAbstractListModel):
     def __init__(self, data):
+        super().__init__()
         self._data = data
 
     def getData(self, index=QModelIndex()):
@@ -476,5 +477,5 @@ class CustomFunctionModel(QAbstractListModel):
         self.endRemoveRows()
         return True
 
-    def rowCount(self):
+    def rowCount(self, index=QModelIndex()):
         return len(self._data.index)
