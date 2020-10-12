@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 from PyQt5.QtCore import QPoint, QSize, Qt
-from PyQt5.QtWidgets import (QButtonGroup, QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout, QGridLayout,
+from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout, QGridLayout,
                              QGroupBox,
                              QHBoxLayout,
                              QLabel,
@@ -31,9 +31,7 @@ class CustomFunctionImport(QDialog):
         super().__init__(main_win)
         self.mw = main_win
         self.current_function = None
-        self.current_func_row = 0
         self.current_parameter = None
-        self.current_param_row = 0
 
         self.exst_functions = list(self.mw.pd_funcs.index)
         # Todo: Better solution to include subject-attributes
@@ -58,8 +56,20 @@ class CustomFunctionImport(QDialog):
         self.open()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        gbox_layout = QHBoxLayout()
+        layout = QHBoxLayout()
+
+        # Hint for obligatory items
+        obl_hint_layout = QHBoxLayout()
+        obl_hint_label1 = QLabel()
+        obl_hint_label1.setPixmap(self.no_icon.pixmap(16, 16))
+        obl_hint_layout.addWidget(obl_hint_label1)
+        obl_hint_label2 = QLabel()
+        obl_hint_label2.setPixmap(self.style().standardIcon(QStyle.SP_ArrowForward).pixmap(16, 16))
+        obl_hint_layout.addWidget(obl_hint_label2)
+        obl_hint_label3 = QLabel()
+        obl_hint_label3.setPixmap(self.yes_icon.pixmap(16, 16))
+        obl_hint_layout.addWidget(obl_hint_label3)
+        obl_hint_layout.addWidget(QLabel('(This items are obligatory)'))
 
         # The Import Group-Box
         import_gbox = QGroupBox('Add Functions')
@@ -101,6 +111,12 @@ class CustomFunctionImport(QDialog):
         import_layout.addLayout(bt_layout)
         import_gbox.setLayout(import_layout)
 
+        layout.addWidget(import_gbox)
+
+        # Editor-Widget
+        self.code_editor = QTextEdit()
+        layout.addWidget(self.code_editor)
+
         # The Function-Setup-Groupbox
         func_setup_gbox = QGroupBox('Function-Setup')
         func_setup_layout = QFormLayout()
@@ -132,7 +148,7 @@ class CustomFunctionImport(QDialog):
 
         subloop_layout = QHBoxLayout()
         self.subloop_bts = QButtonGroup(self)
-        self.subloop_yesbt = QCheckBox('Yes')
+        self.subloop_yesbt = QPushButton('Yes')
         self.subloop_yesbt.setCheckable(True)
         self.subloop_nobt = QPushButton('No')
         self.subloop_nobt.setCheckable(True)
@@ -188,6 +204,7 @@ class CustomFunctionImport(QDialog):
         func_setup_layout.addRow('Dependencies', self.dpd_bt)
 
         func_setup_gbox.setLayout(func_setup_layout)
+        layout.addWidget(func_setup_gbox)
 
         # The Parameter-Setup-Group-Box
         self.param_setup_gbox = QGroupBox('Parameter-Setup')
@@ -247,15 +264,7 @@ class CustomFunctionImport(QDialog):
         param_setup_layout.addLayout(param_setup_formlayout)
         self.param_setup_gbox.setLayout(param_setup_layout)
 
-        gbox_layout.addWidget(import_gbox)
-        gbox_layout.addWidget(func_setup_gbox)
-        gbox_layout.addWidget(self.param_setup_gbox)
-
-        layout.addLayout(gbox_layout)
-
-        # Editor-Widget
-        self.code_editor = QTextEdit()
-        layout.addWidget(self.code_editor)
+        layout.addWidget(self.param_setup_gbox)
 
         self.setLayout(layout)
 
@@ -265,7 +274,6 @@ class CustomFunctionImport(QDialog):
 
     def func_item_selected(self, current, _):
         self.current_function = self.func_model.itemData(current)
-        self.current_func_row = current.row()
         self.update_func_setup()
 
         if len(self.param_setup_dict[self.current_function]) > 0:
@@ -377,15 +385,13 @@ class CustomFunctionImport(QDialog):
         # Check, that all obligatory items of the Subject-Setup and the Parameter-Setup are set
         if (all([pd.notna(self.add_pd_funcs.loc[self.current_function, i]) for i in obligatory_items])
                 and all([i for i in self.param_setup_dict[self.current_function].values()])):
-            self.func_setup_dict[self.current_function] = True
-            self.func_tablew.item(self.current_func_row, 2).setIcon(self.yes_icon)
+            self.add_pd_funcs.loc[self.current_function, 'ready'] = True
 
     def check_param_setup(self):
         obligatory_items = ['default', 'gui_type']
         # Check, that all obligatory items of the Parameter-Setup are set
         if all([pd.notna(self.add_pd_params.loc[self.current_parameter, i]) for i in obligatory_items]):
-            self.param_setup_dict[self.current_function][self.current_parameter] = True
-            self.param_tablew.item(self.current_param_row, 1).setIcon(self.yes_icon)
+            self.add_pd_params.loc[self.current_parameter, 'ready'] = True
 
     # Line-Edit Change-Signals
     def falias_changed(self, text):
@@ -577,6 +583,9 @@ class CustomFunctionImport(QDialog):
                             all_parameters = [signature.parameters[p].name for p in signature.parameters]
                             self.param_dict[func_key] = all_parameters
                             self.add_pd_funcs.loc[func_key, 'func_args'] = ','.join(all_parameters)
+                            self.add_pd_funcs.loc[func_key, 'params'] = \
+                                [p for p in all_parameters if p in self.exst_parameters]
+                            # Todo: Remove redundant param_exst_dict, param_setup_dict
                             self.param_exst_dict[func_key] = [p for p in all_parameters if p in self.exst_parameters]
                             self.param_setup_dict[func_key] = {}
                             for param in [p for p in all_parameters if p not in self.exst_parameters]:
@@ -656,7 +665,7 @@ class CustomFunctionImport(QDialog):
             SavePkgDialog(self)
 
     def closeEvent(self, event):
-        drop_funcs = [f for f in self.func_setup_dict if not self.func_setup_dict[f]]
+        drop_funcs = [f for f in self.add_pd_funcs.index if not self.add_pd_funcs.loc[f, 'ready']]
 
         if len(drop_funcs) > 0:
             answer = QMessageBox.question(self, 'Close Custom-Functions?', f'There are still unfinished functions:\n'

@@ -453,6 +453,13 @@ class AddFilesModel(BasePandasModel):
 
 
 class CustomFunctionModel(QAbstractListModel):
+    """A Model for the Pandas-DataFrames containing information for new custom functions/their paramers
+    Parameters to display only their name and if they are ready
+    ----------
+    data : DataFrame
+    add_pd_funcs or add_pd_params
+    """
+
     def __init__(self, data):
         super().__init__()
         self._data = data
@@ -465,10 +472,10 @@ class CustomFunctionModel(QAbstractListModel):
             return str(self.getData(index))
 
         elif role == Qt.DecorationRole:
-            if self.pd_data.loc[self.getData(index), 'ready']:
-                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+            if self._data.loc[self.getData(index), 'ready']:
+                return self.style().standardIcon(QStyle.SP_DialogApplyButton)
             else:
-                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
+                return self.style().standardIcon(QStyle.SP_DialogCancelButton)
 
     def removeRows(self, row, count, index=QModelIndex()):
         self.beginRemoveRows(index, row, row + count - 1)
