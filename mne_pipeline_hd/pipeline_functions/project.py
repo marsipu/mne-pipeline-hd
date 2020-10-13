@@ -20,7 +20,7 @@ import pandas as pd
 from PyQt5.QtWidgets import QDialog, QVBoxLayout
 from pandas.errors import EmptyDataError
 
-from .pipeline_utils import ParametersJSONEncoder, parameters_json_hook
+from .pipeline_utils import NumpyJSONEncoder, numpy_json_hook
 
 
 class Project:
@@ -154,7 +154,7 @@ class Project:
         for path in load_dict:
             try:
                 with open(path, 'r') as file:
-                    setattr(self, load_dict[path], json.load(file))
+                    setattr(self, load_dict[path], json.load(file, object_hook=numpy_json_hook))
             # Either empty file or no file, take default from __init__
             except json.decoder.JSONDecodeError:
                 pass
@@ -178,7 +178,7 @@ class Project:
         for path in save_dict:
             try:
                 with open(path, 'w') as file:
-                    json.dump(save_dict[path], file, indent=4)
+                    json.dump(save_dict[path], file, cls=NumpyJSONEncoder, indent=4)
             except json.JSONDecodeError as err:
                 print(f'There is a problem with path:\n'
                       f'{err}')
@@ -186,7 +186,7 @@ class Project:
     def load_parameters(self):
         try:
             with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'r') as read_file:
-                loaded_parameters = json.load(read_file, object_hook=parameters_json_hook)
+                loaded_parameters = json.load(read_file, object_hook=numpy_json_hook)
 
                 for p_preset in loaded_parameters:
                     # Make sure, that only parameters, which exist in pd_params are loaded
@@ -249,7 +249,7 @@ class Project:
                     save_parameters[p_preset][key] = {'tuple_type': self.parameters[p_preset][key]}
         with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'w') as write_file:
             # Use customized Encoder to deal with arrays
-            json.dump(save_parameters, write_file, cls=ParametersJSONEncoder, indent=4)
+            json.dump(save_parameters, write_file, cls=NumpyJSONEncoder, indent=4)
 
     def load_file_parameters(self):
         # Load Pandas-CSV (separator=; for Excel)

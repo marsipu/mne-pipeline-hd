@@ -20,7 +20,7 @@ import autoreject as ar
 from . import islin, ismac, iswin
 
 
-class ParametersJSONEncoder(json.JSONEncoder):
+class NumpyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
             return {'numpy_int': int(obj)}
@@ -34,7 +34,7 @@ class ParametersJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def parameters_json_hook(obj):
+def numpy_json_hook(obj):
     if 'numpy_array' in obj.keys():
         return np.asarray(obj['numpy_array'])
     elif 'tuple_type' in obj.keys():
