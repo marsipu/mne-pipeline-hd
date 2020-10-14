@@ -1305,8 +1305,7 @@ class SavePkgDialog(QDialog):
                 self.cf.func_tablew.removeRow(self.cf.func_tablew.row(item))
 
         self.cf.mw.import_custom_modules()
-        self.cf.mw.update_func_bts()
-        self.cf.mw.parameters_dock.update_parameters_widget()
+        self.cf.mw.update_func_and_param()
         self.close()
 
         # Todo: update func-Buttons and Parameters-Widgets
@@ -1340,6 +1339,5 @@ class ChooseCustomModules(QDialog):
 
     def closeEvent(self, event):
         self.mw.settings['selected_modules'] = self.selected_modules
-        self.mw.update_func_bts()
-        self.mw.parameters_dock.update_parameters_widget()
+        self.mw.update_func_and_param()
         event.accept()

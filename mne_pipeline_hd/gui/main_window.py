@@ -269,9 +269,7 @@ class MainWindow(QMainWindow):
             self.make_base_paths()
             self.get_projects()
             self.import_custom_modules()
-            self.update_func_bts()
-            self.parameters_dock.update_parameters_widget()
-            # self.update_param_gui_tab()
+            self.update_func_and_param()
             self.statusBar().showMessage(f'Home-Path: {self.home_path}, '
                                          f'Project: {self.current_project}, '
                                          f'Parameter-Preset: {self.pr.p_preset}')
@@ -662,6 +660,10 @@ class MainWindow(QMainWindow):
         self.tab_func_widget.close()
         del self.tab_func_widget
         self.add_func_bts()
+
+    def update_func_and_param(self):
+        self.update_func_bts()
+        self.parameters_dock.update_parameters_widget()
 
     def func_selected(self, function):
         if self.bt_dict[function].isChecked():
