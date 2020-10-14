@@ -161,10 +161,6 @@ class SettingsDlg(QDialog):
         layout.addWidget(ComboGui(self.mw.settings, 'img_format', self.mw.available_image_formats,
                                   param_alias='Image-Format', hint='Choose the image format for plots',
                                   default='.png'))
-        layout.addWidget(ComboGui(self.mw.settings, 'mne_backend', options={'mayavi': 'Mayavi', 'pyvista': 'PyVista'},
-                                  param_alias='MNE-Backend',
-                                  hint='Choose the backend for plotting in 3D (needs Restart)',
-                                  default='pyvista'))
         layout.addWidget(StringGui(self.mw.qsettings, 'fs_path', param_alias='FREESURFER_HOME-Path',
                                    hint='Set the Path to the "freesurfer"-directory of your Freesurfer-Installation '
                                         '(for Windows to the LINUX-Path of the Freesurfer-Installation '
@@ -476,6 +472,29 @@ class RunDialog(QDialog):
         ErrorDialog(err, self)
         self.pgbar.setValue(self.mw.all_prog)
         self.close_bt.setEnabled(True)
+
+
+class SysInfoMsg(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        layout = QVBoxLayout()
+        self.show_widget = QTextEdit()
+        self.show_widget.setReadOnly(True)
+        layout.addWidget(self.show_widget)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        # Set geometry to ratio of screen-geometry
+        width, height = main_win.get_ratio_geometry(0.4)
+        self.resize(width, height)
+
+        self.setLayout(layout)
+        self.show()
+
+    def add_text(self, text):
+        self.show_widget.insertPlainText(text)
 
 
 class QuickGuide(QDialog):

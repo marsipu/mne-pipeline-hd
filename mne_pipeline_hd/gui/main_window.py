@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, Q
 from mayavi import mlab
 
 from .dialogs import (ChooseCustomModules, CustomFunctionImport, ParametersDock, QuickGuide, RemoveProjectsDlg,
-                      RunDialog, SettingsDlg)
+                      RunDialog, SettingsDlg, SysInfoMsg)
 from .gui_utils import ErrorDialog, get_exception_tuple
 from .other_widgets import DataTerminal
 from .parameter_widgets import BoolGui, ComboGui, IntGui
@@ -83,7 +83,8 @@ class MainWindow(QMainWindow):
 
         # Set geometry to ratio of screen-geometry
         width, height = self.get_ratio_geometry(0.9)
-        self.setGeometry(0, 0, width, height)
+        self.resize(width, height)
+        self.center()
 
         # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
         self.threadpool = QThreadPool()
@@ -153,12 +154,6 @@ class MainWindow(QMainWindow):
         logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
-        # Needs restart, otherwise error, when setting later
-        if self.get_setting('mne_backend') == 'pyvista':
-            mne.viz.set_3d_backend('pyvista')
-        else:
-            mne.viz.set_3d_backend('mayavi')
-
         # Call window-methods
         self.init_menu()
         self.init_main_widget()
@@ -181,8 +176,8 @@ class MainWindow(QMainWindow):
                                                             f'Select a folder to store your Pipeline-Projects')
             if hp == '':
                 answer = QMessageBox.question(self, 'Cancel Start?',
-                                               'You can\'t start without this step, '
-                                               'do you want to cancel the start?')
+                                              'You can\'t start without this step, '
+                                              'do you want to cancel the start?')
                 if answer == QMessageBox.Yes:
                     raise RuntimeError('User canceled start')
             # Check, if the new selected Path from the Dialog is writable
@@ -483,9 +478,9 @@ class MainWindow(QMainWindow):
 
         # Custom-Functions
         self.customf_menu = self.menuBar().addMenu('&Custom Functions')
-        self.aadd_customf = self.customf_menu.addAction('&Add custom Functions', self.add_customf)
+        self.aadd_customf = self.customf_menu.addAction('&Add custom Functions', partial(CustomFunctionImport, self))
 
-        self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', self.choose_customf)
+        self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
 
         self.areload_custom_modules = QAction('Reload Custom-Modules')
         self.areload_custom_modules.triggered.connect(self.reload_custom_modules)
@@ -493,7 +488,7 @@ class MainWindow(QMainWindow):
 
         # Tools
         self.tool_menu = self.menuBar().addMenu('&Tools')
-        self.asub_terminal = self.tool_menu.addAction('&Data-Terminal', self.show_terminal)
+        self.asub_terminal = self.tool_menu.addAction('&Data-Terminal', partial(DataTerminal, self))
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
@@ -521,7 +516,8 @@ class MainWindow(QMainWindow):
         about_menu = self.menuBar().addMenu('About')
         # about_menu.addAction('Update Pipeline', self.update_pipeline)
         # about_menu.addAction('Update MNE-Python', self.update_mne)
-        about_menu.addAction('Quick-Guide', self.quick_guide)
+        about_menu.addAction('Quick-Guide', partial(QuickGuide, self))
+        about_menu.addAction('MNE System-Info', self.show_sys_info)
         about_menu.addAction('About', self.about)
         about_menu.addAction('About QT', self.app.aboutQt)
 
@@ -550,10 +546,6 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
                                         param_alias='Image-Format', hint='Choose the image format for plots',
                                         default='.png'))
-        self.toolbar.addWidget(ComboGui(self.settings, 'mne_backend', {'mayavi': 'Mayavi', 'pyvista': 'PyVista'},
-                                        param_alias='MNE-Backend',
-                                        hint='Choose the backend for plotting in 3D (needs Restart)',
-                                        default='pyvista'))
         close_all_bt = QPushButton('Close All Plots')
         close_all_bt.pressed.connect(close_all)
         self.toolbar.addWidget(close_all_bt)
@@ -694,12 +686,6 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.parameters_dock)
         self.view_menu.addAction(self.parameters_dock.toggleViewAction())
 
-    def add_customf(self):
-        self.cf_import = CustomFunctionImport(self)
-
-    def choose_customf(self):
-        self.cf_choose = ChooseCustomModules(self)
-
     def get_ratio_geometry(self, size_ratio):
         self.desk_geometry = self.app.desktop().availableGeometry()
         height = int(self.desk_geometry.height() * size_ratio)
@@ -720,9 +706,6 @@ class MainWindow(QMainWindow):
             self.showNormal()
         else:
             self.showFullScreen()
-
-    def show_terminal(self):
-        DataTerminal(self)
 
     def center(self):
         qr = self.frameGeometry()
@@ -781,7 +764,7 @@ class MainWindow(QMainWindow):
 
         sys.stdout.signal.text_written.connect(self.run_dialog.add_text)
         sys.stderr.signal.text_written.connect(self.run_dialog.add_text)
-        # Handle Console-Ou
+        # Handle tqdm-progress-bars
         sys.stderr.signal.text_updated.connect(self.run_dialog.progress_text)
 
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
@@ -910,8 +893,10 @@ class MainWindow(QMainWindow):
         else:
             pass
 
-    def quick_guide(self):
-        QuickGuide(self)
+    def show_sys_info(self):
+        sys_info_msg = SysInfoMsg(self)
+        sys.stdout.signal.text_written.connect(sys_info_msg.add_text)
+        mne.sys_info()
 
     def about(self):
 
