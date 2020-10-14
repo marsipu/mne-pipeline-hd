@@ -136,16 +136,6 @@ class MainWindow(QMainWindow):
 
         # Import the basic- and custom-function-modules
         self.import_custom_modules()
-        # Todo: Gruppen machen Probleme mit CustomFunctions!!!
-        # Todo: verbessern, um Klarheit zu schaffen bei Unterteilung in Gruppen (über einzelne Module?)
-        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'MRI-Preprocessing')
-                                       & (self.pd_funcs['subject_loop'] == True)]
-        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'MRI-Preprocessing')
-                                        & (self.pd_funcs['subject_loop'] == True)]
-        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                      & (self.pd_funcs['func_args'].str.contains('ga_group'))]
-        self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                         & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
 
         # Call project-class
         self.pr = Project(self, self.current_project)
@@ -373,6 +363,17 @@ class MainWindow(QMainWindow):
         self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
         self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
+
+        # Todo: Gruppen machen Probleme mit CustomFunctions!!!
+        # Todo: verbessern, um Klarheit zu schaffen bei Unterteilung in Gruppen (über einzelne Module?)
+        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'MRI-Preprocessing')
+                                       & (self.pd_funcs['subject_loop'] == True)]
+        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'MRI-Preprocessing')
+                                        & (self.pd_funcs['subject_loop'] == True)]
+        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+                                      & (self.pd_funcs['func_args'].str.contains('ga_group'))]
+        self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+                                         & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
 
         # Load basic-modules
         basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
