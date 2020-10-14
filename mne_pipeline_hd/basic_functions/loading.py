@@ -618,10 +618,17 @@ class CurrentSub(BaseSub):
         if self._raw is None:
             self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
 
+        # Insert/Update BadChannels from bad_channels_dict
+        self._raw.info['bads'] = self.bad_channels
+
         return self._raw
 
     def save_raw(self, raw):
         self._raw = raw
+
+        # Insert/Update BadChannels from bad_channels_dict
+        self._raw.info['bads'] = self.bad_channels
+
         raw.save(self.raw_path, overwrite=True)
         self.save_file_params(self.raw_path)
 
@@ -632,11 +639,18 @@ class CurrentSub(BaseSub):
             except FileNotFoundError:
                 self._raw_filtered = mne.io.read_raw_fif(self.old_raw_filtered_path, preload=True)
 
+        # Insert/Update BadChannels from bad_channels_dict
+        self._raw_filtered.info['bads'] = self.bad_channels
+
         return self._raw_filtered
 
     # Todo: Save Storage with GUI (and also look to
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
+
+        # Insert/Update BadChannels from bad_channels_dict
+        self._raw.info['bads'] = self.bad_channels
+
         if not self.mw.get_setting('save_storage'):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
             self.save_file_params(self.raw_filtered_path)
