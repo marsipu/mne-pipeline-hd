@@ -133,36 +133,22 @@ class CurrentSub(BaseSub):
 
         self.raw_path = join(self.save_dir, f'{name}-raw.fif')
         self.raw_filtered_path = join(self.save_dir, f'{name}_{self.p_preset}-filtered-raw.fif')
-        self.old_raw_filtered_path = join(self.save_dir,
-                                          f'{name}{filter_string(self.p["highpass"], self.p["lowpass"])}-raw.fif')
 
         if self.ermsub is not None:
             self.erm_path = join(self.pr.erm_data_path, self.ermsub, f'{self.ermsub}-raw.fif')
             self.erm_filtered_path = join(self.pr.erm_data_path, self.ermsub, f'{self.ermsub}_{self.p_preset}-raw.fif')
-            self.old_erm_filtered_path = join(self.pr.erm_data_path, self.ermsub,
-                                              self.ermsub + filter_string(self.p["highpass"], self.p["lowpass"])
-                                              + '-raw.fif')
 
         self.events_path = join(self.save_dir, f'{name}_{self.p_preset}-eve.fif')
-        self.old_events_path = join(self.save_dir, f'{name}-eve.fif')
 
         self.epochs_path = join(self.save_dir, f'{name}_{self.p_preset}-epo.fif')
-        self.old_epochs_path = join(self.save_dir,
-                                    name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-epo.fif')
 
         self.reject_log_path = join(self.save_dir, f'{name}_{self.p_preset}-arlog.py')
 
         self.ica_path = join(self.save_dir, f'{name}_{self.p_preset}-ica.fif')
-        self.old_ica_path = join(self.save_dir,
-                                 name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-ica.fif')
 
         self.ica_epochs_path = join(self.save_dir, f'{name}_{self.p_preset}-ica-epo.fif')
-        self.old_ica_epochs_path = join(self.save_dir,
-                                        name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-ica-epo.fif')
 
         self.evokeds_path = join(self.save_dir, f'{name}_{self.p_preset}-ave.fif')
-        self.old_evokeds_path = join(self.save_dir,
-                                     name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-ave.fif')
 
         self.power_tfr_path = join(self.save_dir, f'{name}_{self.p_preset}_{self.p["tfr_method"]}-pw-tfr.h5')
         self.itc_tfr_path = join(self.save_dir, f'{name}_{self.p_preset}_{self.p["tfr_method"]}-itc-tfr.h5')
@@ -170,22 +156,23 @@ class CurrentSub(BaseSub):
         self.trans_path = join(self.save_dir, f'{self.subtomri}-trans.fif')
 
         self.forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
-        self.old_forward_path = join(self.save_dir, f'{self.name}-fwd.fif')
 
         self.calm_cov_path = join(self.save_dir, f'{name}_{self.p_preset}-calm-cov.fif')
-        self.old_calm_cov_path = join(self.save_dir,
-                                      name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-clm-cov.fif')
         self.erm_cov_path = join(self.save_dir, f'{name}_{self.p_preset}-erm-cov.fif')
-        self.old_erm_cov_path = join(self.save_dir,
-                                     name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-erm-cov.fif')
-
         self.cov_path = join(self.save_dir, f'{name}_{self.p_preset}-cov.fif')
-        self.old_cov_path = join(self.save_dir,
-                                 name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-cov.fif')
 
         self.inverse_path = join(self.save_dir, f'{name}_{self.p_preset}-inv.fif')
-        self.old_inverse_path = join(self.save_dir,
-                                     name + filter_string(self.p["highpass"], self.p["lowpass"]) + '-inv.fif')
+
+        self.stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}')
+                          for trial in self.sel_trials}
+
+        self.morphed_stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
+                                  for trial in self.sel_trials}
+
+    def update_file_data(self):
+        self.ermsub = self.mw.pr.erm_dict[self.name]
+        self.subtomri = self.mw.pr.sub_dict[self.name]
+        self.bad_channels = self.mw.pr.bad_channels_dict[self.name]
 
     ####################################################################################################################
     # Load- & Save-Methods
@@ -217,10 +204,7 @@ class CurrentSub(BaseSub):
 
     def load_filtered(self):
         if self._raw_filtered is None:
-            try:
-                self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
-            except FileNotFoundError:
-                self._raw_filtered = mne.io.read_raw_fif(self.old_raw_filtered_path, preload=True)
+            self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
 
         # Insert/Update BadChannels from bad_channels_dict
         self._raw_filtered.info['bads'] = self.bad_channels
@@ -246,10 +230,7 @@ class CurrentSub(BaseSub):
 
     def load_erm_filtered(self):
         if self._erm_filtered is None:
-            try:
-                self._erm_filtered = mne.io.read_raw_fif(self.erm_filtered_path, preload=True)
-            except FileNotFoundError:
-                self._erm_filtered = mne.io.read_raw_fif(self.old_erm_filtered_path, preload=True)
+            self._erm_filtered = mne.io.read_raw_fif(self.erm_filtered_path, preload=True)
 
         return self._erm_filtered
 
@@ -272,10 +253,7 @@ class CurrentSub(BaseSub):
 
     def load_epochs(self):
         if self._epochs is None:
-            try:
-                self._epochs = mne.read_epochs(self.epochs_path)
-            except FileNotFoundError:
-                self._epochs = mne.read_epochs(self.old_epochs_path)
+            self._epochs = mne.read_epochs(self.epochs_path)
 
         return self._epochs
 
@@ -299,10 +277,7 @@ class CurrentSub(BaseSub):
 
     def load_ica(self):
         if self._ica is None:
-            try:
-                self._ica = mne.preprocessing.read_ica(self.ica_path)
-            except FileNotFoundError:
-                self._ica = mne.preprocessing.read_ica(self.old_ica_path)
+            self._ica = mne.preprocessing.read_ica(self.ica_path)
 
         return self._ica
 
@@ -313,10 +288,7 @@ class CurrentSub(BaseSub):
 
     def load_ica_epochs(self):
         if self._ica_epochs is None:
-            try:
-                self._ica_epochs = mne.read_epochs(self.ica_epochs_path)
-            except FileNotFoundError:
-                self._ica_epochs = mne.read_epochs(self.old_ica_epochs_path)
+            self._ica_epochs = mne.read_epochs(self.ica_epochs_path)
 
         return self._ica_epochs
 
@@ -327,10 +299,7 @@ class CurrentSub(BaseSub):
 
     def load_evokeds(self):
         if self._evokeds is None:
-            try:
-                self._evokeds = mne.read_evokeds(self.evokeds_path)
-            except FileNotFoundError:
-                self._evokeds = mne.read_evokeds(self.old_evokeds_path)
+            self._evokeds = mne.read_evokeds(self.evokeds_path)
 
         return self._evokeds
 
@@ -370,10 +339,7 @@ class CurrentSub(BaseSub):
 
     def load_forward(self):
         if self._forward is None:
-            try:
-                self._forward = mne.read_forward_solution(self.forward_path, verbose='WARNING')
-            except FileNotFoundError:
-                self._forward = mne.read_forward_solution(self.old_forward_path, verbose='WARNING')
+            self._forward = mne.read_forward_solution(self.forward_path, verbose='WARNING')
 
         return self._forward
 
@@ -385,26 +351,15 @@ class CurrentSub(BaseSub):
     def load_noise_covariance(self):
         if self._noise_cov is None:
             if self.p['calm_noise_cov']:
-                try:
-                    self._noise_cov = mne.read_cov(self.calm_cov_path)
-                    print('Reading Noise-Covariance from 1-min Calm in raw')
-                except FileNotFoundError:
-                    self._noise_cov = mne.read_cov(self.old_calm_cov_path)
-                    print('Reading Noise-Covariance from 1-min Calm in raw')
+                self._noise_cov = mne.read_cov(self.calm_cov_path)
+                print('Reading Noise-Covariance from 1-min Calm in raw')
+
             elif self.ermsub == 'None' or self.p['erm_noise_cov'] is False:
-                try:
-                    self._noise_cov = mne.read_cov(self.cov_path)
-                    print('Reading Noise-Covariance from Epochs')
-                except FileNotFoundError:
-                    self._noise_cov = mne.read_cov(self.old_cov_path)
-                    print('Reading Noise-Covariance from Epochs')
+                self._noise_cov = mne.read_cov(self.cov_path)
+                print('Reading Noise-Covariance from Epochs')
             else:
-                try:
-                    self._noise_cov = mne.read_cov(self.erm_cov_path)
-                    print('Reading Noise-Covariance from Empty-Room-Data')
-                except FileNotFoundError:
-                    self._noise_cov = mne.read_cov(self.erm_cov_path)
-                    print('Reading Noise-Covariance from Empty-Room-Data')
+                self._noise_cov = mne.read_cov(self.erm_cov_path)
+                print('Reading Noise-Covariance from Empty-Room-Data')
 
         return self._noise_cov
 
@@ -422,10 +377,7 @@ class CurrentSub(BaseSub):
 
     def load_inverse_operator(self):
         if self._inverse is None:
-            try:
-                self._inverse = mne.minimum_norm.read_inverse_operator(self.inverse_path, verbose='WARNING')
-            except FileNotFoundError:
-                self._inverse = mne.minimum_norm.read_inverse_operator(self.old_inverse_path, verbose='WARNING')
+            self._inverse = mne.minimum_norm.read_inverse_operator(self.inverse_path, verbose='WARNING')
 
         return self._inverse
 
@@ -437,15 +389,8 @@ class CurrentSub(BaseSub):
     def load_source_estimates(self):
         if self._stcs is None:
             self._stcs = dict()
-            for trial in self.sel_trials:
-                try:
-                    stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}')
-                    stc = mne.source_estimate.read_source_estimate(stc_path)
-                except OSError:
-                    old_stc_path = join(self.save_dir,
-                                        f'{self.name}{filter_string(self.p["highpass"], self.p["lowpass"])}'
-                                        f'_{trial}_{self.p["inverse_method"]}')
-                    stc = mne.source_estimate.read_source_estimate(old_stc_path)
+            for trial in self.stc_paths:
+                stc = mne.source_estimate.read_source_estimate(self.stc_paths[trial])
                 self._stcs[trial] = stc
 
         return self._stcs
@@ -453,30 +398,29 @@ class CurrentSub(BaseSub):
     def save_source_estimates(self, stcs):
         self._stcs = stcs
         for trial in stcs:
-            stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}')
-            stcs[trial].save(stc_path)
-            self.save_file_params(stc_path)
+            try:
+                stcs[trial].save(self.stc_paths[trial])
+                self.save_file_params(self.stc_paths[trial])
+            except KeyError:
+                raise RuntimeError(f'Selected Trials{list(self.stc_paths.keys())} don\'t seem to match {trial}'
+                                   f'in saved source-estimate')
 
     def load_morphed_source_estimates(self):
         if self._morphed_stcs is None:
             self._morphed_stcs = dict()
-            for trial in self.sel_trials:
-                try:
-                    morphed_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
-                    morphed_stc = mne.source_estimate.read_source_estimate(morphed_stc_path)
-                except FileNotFoundError:
-                    old_morphed_stc_path = join(self.save_dir,
-                                                f'{self.name}{filter_string(self.p["highpass"], self.p["lowpass"])}'
-                                                f'_{trial}_{self.p["inverse_method"]} + _morphed')
-                    morphed_stc = mne.source_estimate.read_source_estimate(old_morphed_stc_path)
+            for trial in self.morphed_stc_paths:
+                morphed_stc = mne.source_estimate.read_source_estimate(self.morphed_stc_paths[trial])
                 self._morphed_stcs[trial] = morphed_stc
 
     def save_morphed_source_estimates(self, morphed_stcs):
         self._morphed_stcs = morphed_stcs
         for trial in morphed_stcs:
-            morphed_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
-            morphed_stcs[trial].save(morphed_stc_path)
-            self.save_file_params(morphed_stc_path)
+            try:
+                morphed_stcs[trial].save(self.morphed_stc_paths[trial])
+                self.save_file_params(self.morphed_stc_paths[trial])
+            except KeyError:
+                raise RuntimeError(f'Selected Trials{list(self.morphed_stc_paths.keys())} don\'t seem to match {trial}'
+                                   f'in saved morphed source-estimate')
 
     def load_mixn_dipoles(self):
         if self._mixn_dips is None:
@@ -484,14 +428,11 @@ class CurrentSub(BaseSub):
             for trial in self.sel_trials:
                 idx = 0
                 dip_list = list()
-                try:
-                    for idx in range(len(listdir(join(self.save_dir, 'mixn_dipoles')))):
-                        mixn_dip_path = join(self.save_dir, 'mixn_dipoles',
-                                             f'{self.name}_{trial}_{self.p_preset}-mixn-dip{idx}.dip')
-                        dip_list.append(mne.read_dipole(mixn_dip_path))
-                        idx += 1
-                except FileNotFoundError:
-                    pass
+                for idx in range(len(listdir(join(self.save_dir, 'mixn_dipoles')))):
+                    mixn_dip_path = join(self.save_dir, 'mixn_dipoles',
+                                         f'{self.name}_{trial}_{self.p_preset}-mixn-dip{idx}.dip')
+                    dip_list.append(mne.read_dipole(mixn_dip_path))
+                    idx += 1
                 self._mixn_dips[trial] = dip_list
                 print(f'{idx + 1} dipoles read for {self.name}-{trial}')
 
@@ -518,14 +459,8 @@ class CurrentSub(BaseSub):
         if self._mixn_stcs is None:
             self._mixn_stcs = dict()
             for trial in self.sel_trials:
-                try:
-                    mx_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-mixn')
-                    mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
-                except FileNotFoundError:
-                    mx_stc_name = self.name + filter_string(self.p["highpass"], self.p["lowpass"]) + \
-                                  '_' + trial + '-mixn'
-                    mx_stc_path = join(self.save_dir, mx_stc_name)
-                    mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
+                mx_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-mixn')
+                mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
                 self._mixn_stcs.update({trial: mx_stc})
 
         return self._mixn_stcs
@@ -605,12 +540,6 @@ class CurrentSub(BaseSub):
                 con_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
                 np.save(con_path)
                 self.save_file_params(con_path)
-
-    # Todo: Better solution for Current-File call and update together with function-call
-    def update_file_data(self):
-        self.ermsub = self.mw.pr.erm_dict[self.name]
-        self.subtomri = self.mw.pr.sub_dict[self.name]
-        self.bad_channels = self.mw.pr.bad_channels_dict[self.name]
 
 
 class CurrentMRISub(BaseSub):
