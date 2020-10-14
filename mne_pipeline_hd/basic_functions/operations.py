@@ -28,20 +28,6 @@ from ..pipeline_functions.decorators import small_func, topline
 
 
 # Todo: Change normal comments to docstrings
-# Naming Conventions
-def filter_string(highpass, lowpass):
-    # Check for .0
-    if '.0' in str(highpass):
-        highpass = int(highpass)
-    if '.0' in str(lowpass):
-        lowpass = int(lowpass)
-    if highpass and highpass != 0:
-        fs = '_' + str(highpass) + '-' + str(lowpass) + '_Hz'
-    else:
-        fs = '_' + str(lowpass) + '_Hz'
-
-    return fs
-
 
 # ==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
