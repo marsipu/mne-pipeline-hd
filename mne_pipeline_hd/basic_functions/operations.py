@@ -93,6 +93,9 @@ def find_events(sub, stim_channels, min_duration, shortest_event, adjust_timelin
     events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10 ** -3 *
                                   raw.info['sfreq']) for ts in events[:, 0]]
 
+    ids = np.unique(events[:, 2])
+    print('unique ID\'s found: ', ids)
+
     if np.size(events) > 0:
         sub.save_events(events)
     else:
@@ -213,7 +216,7 @@ def find_6ch_binary_events(sub, min_duration, shortest_event, adjust_timeline_by
                                   raw.info['sfreq']) for ts in events[:, 0]]
 
     ids = np.unique(events[:, 2])
-    print('unique ID\'s assigned: ', ids)
+    print('unique ID\'s found: ', ids)
 
     if np.size(events) > 0:
         sub.save_events(events)

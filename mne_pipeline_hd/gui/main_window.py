@@ -351,6 +351,18 @@ class MainWindow(QMainWindow):
 
         return value
 
+    def get_func_groups(self):
+        # Todo: Gruppen machen Probleme mit CustomFunctions!!!
+        # Todo: verbessern, um Klarheit zu schaffen bei Unterteilung in Gruppen (über einzelne Module?)
+        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'MRI-Preprocessing')
+                                       & (self.pd_funcs['subject_loop'] == True)]
+        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'MRI-Preprocessing')
+                                        & (self.pd_funcs['subject_loop'] == True)]
+        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+                                      & (self.pd_funcs['func_args'].str.contains('ga_group'))]
+        self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+                                         & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
+
     def import_custom_modules(self):
         """
         Load all modules in basic_functions and custom_functions
@@ -363,17 +375,6 @@ class MainWindow(QMainWindow):
         self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
         # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
         self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
-
-        # Todo: Gruppen machen Probleme mit CustomFunctions!!!
-        # Todo: verbessern, um Klarheit zu schaffen bei Unterteilung in Gruppen (über einzelne Module?)
-        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'MRI-Preprocessing')
-                                       & (self.pd_funcs['subject_loop'] == True)]
-        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'MRI-Preprocessing')
-                                        & (self.pd_funcs['subject_loop'] == True)]
-        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                      & (self.pd_funcs['func_args'].str.contains('ga_group'))]
-        self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                         & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
 
         # Load basic-modules
         basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
@@ -436,6 +437,8 @@ class MainWindow(QMainWindow):
                 text = f'Files for import of {pkg_name} are missing: ' \
                        f'{[key for key in file_dict if file_dict[key] is None]}'
                 QMessageBox.warning(self, 'Import-Problem', text)
+
+        self.get_func_groups()
 
     def reload_basic_modules(self):
         for module_name in self.all_modules['basic']:
