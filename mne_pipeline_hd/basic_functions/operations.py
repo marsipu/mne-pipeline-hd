@@ -236,8 +236,6 @@ def epoch_raw(sub, ch_types, t_epoch, baseline, reject, flat, autoreject_interpo
                         preload=True, proj=False, reject=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=True)
 
-    epochs = epochs.pick(ch_types, exclude=sub.bad_channels)
-
     if autoreject_interpolation:
         ar_object = ar.AutoReject(n_interpolates, consensus_percs, random_state=8,
                                   n_jobs=n_jobs)
