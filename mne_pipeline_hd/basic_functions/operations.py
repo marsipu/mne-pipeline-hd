@@ -82,9 +82,25 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
         print('no erm_file assigned')
 
 
-# Todo: Separate Heidelberg-find_events from main_func
 @topline
-def find_events(sub, min_duration, shortest_event, adjust_timeline_by_msec):
+def find_events(sub, stim_channels, min_duration, shortest_event, adjust_timeline_by_msec):
+    raw = sub.load_raw()
+
+    events = mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+                             stim_channel=stim_channels)
+
+    # apply latency correction
+    events[:, 0] = [ts + np.round(adjust_timeline_by_msec * 10 ** -3 *
+                                  raw.info['sfreq']) for ts in events[:, 0]]
+
+    if np.size(events) > 0:
+        sub.save_events(events)
+    else:
+        print('No events found')
+
+
+@topline
+def find_6ch_binary_events(sub, min_duration, shortest_event, adjust_timeline_by_msec):
     raw = sub.load_raw()
 
     # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg

@@ -34,7 +34,7 @@ from .gui_utils import (ErrorDialog, Worker)
 from .models import AddFilesModel, FileDictModel
 from ..basic_functions import loading
 from ..basic_functions.loading import CurrentSub
-from ..basic_functions.operations import find_events
+from ..basic_functions.operations import find_6ch_binary_events
 
 
 def file_indexing(which_file, all_files):
@@ -1786,10 +1786,10 @@ class EventIDGui(QDialog):
             events = sub.load_events()
         except FileNotFoundError:
             # Todo: You should be able to choose between different find_event-functions
-            find_events(sub,
-                        self.mw.pr.parameters[self.mw.pr.p_preset]['min_duration'],
-                        self.mw.pr.parameters[self.mw.pr.p_preset]['shortest_event'],
-                        self.mw.pr.parameters[self.mw.pr.p_preset]['adjust_timeline_by_msec'])
+            find_6ch_binary_events(sub,
+                                   self.mw.pr.parameters[self.mw.pr.p_preset]['min_duration'],
+                                   self.mw.pr.parameters[self.mw.pr.p_preset]['shortest_event'],
+                                   self.mw.pr.parameters[self.mw.pr.p_preset]['adjust_timeline_by_msec'])
 
             events = sub.load_events()
         self.ids = np.unique(events[:, 2])

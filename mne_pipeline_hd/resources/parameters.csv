@@ -3,6 +3,7 @@ ch_types;Channel-Types;Preprocessing;['meg'];;Channel-Types used in data;CheckLi
 highpass;Highpass-Cutoff;Preprocessing;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
 lowpass;Lowpass-Cutoff;Preprocessing;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
 erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
+stim_channels;Stimulation-Channels;Events;['STI 001'];;Stimulation Channel(s);ListGui;
 min_duration;Minimum Duration;Events;0.002;s;Minimum-Duration for Events;FloatGui;{'min_val': 0, 'decimals': 3}
 shortest_event;Shortest Event;Events;2;sample;Shortest possible Event;IntGui;{'min_val': 0}
 adjust_timeline_by_msec;Adjust Time;Events;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
