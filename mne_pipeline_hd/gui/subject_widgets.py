@@ -25,7 +25,8 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
-                             QSizePolicy, QStyle, QTabWidget, QTableView, QTextEdit, QTreeWidget, QTreeWidgetItem,
+                             QScrollArea, QSizePolicy, QStyle, QTabWidget, QTableView, QTextEdit, QTreeWidget,
+                             QTreeWidgetItem,
                              QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
@@ -556,7 +557,33 @@ class GrandAvgFileAdd(QDialog):
             self.listw.item(idx).setCheckState(Qt.Checked)
 
 
-# ToDo: Event-ID-Widget (Subklassen und jetzt auch mit event_colors)
+def extract_info(project, raw, new_fname):
+    info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
+                 'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
+                 'helium_info']
+    try:
+        project.info_dict[new_fname] = {}
+        for key in info_keys:
+            project.info_dict[new_fname][key] = raw.info[key]
+        # Add arrays of digitization-points and save it to json to make the trans-file-management possible
+        # (same digitization = same trans-file)
+        if raw.info['dig'] is not None:
+            dig_dict = {}
+            for dig_point in raw.info['dig']:
+                dig_dict[dig_point['ident']] = {}
+                dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
+                dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
+            project.info_dict[new_fname]['dig'] = dig_dict
+        project.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
+        # Some raw-files don't have get_channel_types?
+        try:
+            project.info_dict[new_fname]['ch_types'] = list(set(raw.get_channel_types()))
+        except AttributeError:
+            project.info_dict[new_fname]['ch_types'] = list()
+        project.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
+    except (KeyError, TypeError):
+        pass
+
 
 class AddFileSignals(QObject):
     """
@@ -765,7 +792,7 @@ class AddFilesWidget(QWidget):
                 signals['which_sub'].emit(f'Copying {file}')
 
                 raw = self.load_file(idx)
-                self.get_infos(raw, file)
+                extract_info(raw, file)
 
                 if not self.addf_dialog.wasCanceled():
                     # Copy Empty-Room-Files to their directory
@@ -799,33 +826,6 @@ class AddFilesWidget(QWidget):
 
         self.mw.pr.save_sub_lists()
         self.mw.subject_dock.update_subjects_list()
-
-    def get_infos(self, raw, new_fname):
-        info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
-                     'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
-                     'helium_info']
-        try:
-            self.mw.pr.info_dict[new_fname] = {}
-            for key in info_keys:
-                self.mw.pr.info_dict[new_fname][key] = raw.info[key]
-            # Add arrays of digitization-points and save it to json to make the trans-file-management possible
-            # (same digitization = same trans-file)
-            if raw.info['dig'] is not None:
-                dig_dict = {}
-                for dig_point in raw.info['dig']:
-                    dig_dict[dig_point['ident']] = {}
-                    dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
-                    dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
-                self.mw.pr.info_dict[new_fname]['dig'] = dig_dict
-            self.mw.pr.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
-            # Some raw-files don't have get_channel_types?
-            try:
-                self.mw.pr.info_dict[new_fname]['ch_types'] = list(set(raw.get_channel_types()))
-            except AttributeError:
-                self.mw.pr.info_dict[new_fname]['ch_types'] = list()
-            self.mw.pr.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
-        except (KeyError, TypeError):
-            pass
 
     def load_file(self, idx):
         path = self.pd_files.loc[idx, 'Path']
@@ -1456,37 +1456,24 @@ class SubBadsWidget(QWidget):
         super().__init__(main_win)
         self.mw = main_win
         self.setWindowTitle('Assign bad_channels for your files')
-        self.layout = QGridLayout()
-        # Todo: Adjust to different machines
-        self.channel_count = 122
         self.bad_chkbts = {}
-        # To find the items reliable in the list, which should be immutable
-        self.idx_dict = {}
         self.name = None
         self.raw = None
         self.raw_fig = None
 
-        self.initui()
-        self.populate_listw()
+        self.init_ui()
 
-    def initui(self):
-        self.listwidget = QListWidget(self)
-        # Response to Selecting
-        self.listwidget.itemClicked.connect(self.bad_dict_selected)
-        self.listwidget.setMinimumWidth(self.listwidget.sizeHintForColumn(0))
-        self.layout.addWidget(self.listwidget, 0, 0, 2, 1)
+    def init_ui(self):
+        self.layout = QGridLayout()
+        self.list_view = QListView()
+        self.badch_model = FileDictModel(self.mw.pr.all_files, self.mw.pr.bad_channels_dict)
+        self.list_view.setModel(self.badch_model)
+        self.list_view.selectionModel().currentChanged.connect(self.bad_dict_selected)
+        self.list_view.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.layout.addWidget(self.list_view, 0, 0)
 
-        # Make Checkboxes for channels
-        self.chkb_layout = QGridLayout()
-        for x in range(1, self.channel_count + 1):
-            ch_name = f'MEG {x:03}'
-            chkbt = QCheckBox(ch_name, self)
-            chkbt.clicked.connect(self.bad_dict_assign)
-            self.bad_chkbts.update({ch_name: chkbt})
-            r = 0 + (x - 1) // 10
-            c = 1 + (x - 1) % 10
-            self.chkb_layout.addWidget(chkbt, r, c)
-        self.layout.addLayout(self.chkb_layout, 0, 1)
+        self.bt_scroll = QScrollArea()
+        self.layout.addWidget(self.bt_scroll, 0, 1)
 
         # Add Buttons
         self.bt_layout = QHBoxLayout()
@@ -1496,61 +1483,80 @@ class SubBadsWidget(QWidget):
         self.bt_layout.addWidget(plot_bt)
 
         copy_bt = QPushButton('Copy Bads')
-        copy_bt.clicked.connect(self.copy_bad_dlg)
+        copy_bt.clicked.connect(partial(CopyBadsDialog, self))
         self.bt_layout.addWidget(copy_bt)
 
-        self.layout.addLayout(self.bt_layout, 1, 1)
+        self.layout.addLayout(self.bt_layout, 1, 0, 1, 2)
         self.setLayout(self.layout)
 
-    def populate_listw(self):
-        for idx, key in enumerate([f for f in self.mw.pr.all_files
-                                   if len(self.listwidget.findItems(f, Qt.MatchExactly)) == 0]):
-            self.listwidget.insertItem(idx, key)
-            self.idx_dict[key] = idx
-            if key in self.mw.pr.bad_channels_dict:
-                self.listwidget.item(idx).setBackground(QColor('green'))
-                self.listwidget.item(idx).setForeground(QColor('white'))
-            else:
-                self.listwidget.item(idx).setBackground(QColor('red'))
-                self.listwidget.item(idx).setForeground(QColor('white'))
+    def make_bad_chbxs(self):
+        chbx_w = QWidget()
+        chbx_layout = QGridLayout()
 
-    def bad_dict_selected(self):
-        self.name = self.listwidget.currentItem().text()
-        # Check for unsaved changes
-        if self.name:
-            # Close current Plot-Window
-            if self.raw_fig:
-                plt.close(self.raw_fig)
-            # First clear all entries
-            for bt in self.bad_chkbts:
-                self.bad_chkbts[bt].setChecked(False)
-            # Then load existing bads for choice
-            if self.name in self.mw.pr.bad_channels_dict:
-                for bad in self.mw.pr.bad_channels_dict[self.name]:
-                    self.bad_chkbts[bad].setChecked(True)
+        self.bad_chkbts = dict()
+
+        # Load info into info_dict if not already existing
+        if self.name not in self.mw.pr.info_dict:
+            sub = CurrentSub(self.name, self.mw)
+            raw = sub.load_raw()
+            extract_info(self.mw.pr, raw, self.name)
+
+        # Make Checkboxes for channels from info_dict
+        for x, ch_name in enumerate(self.mw.pr.info_dict[self.name]['ch_names']):
+            chkbt = QCheckBox(ch_name, self)
+            chkbt.clicked.connect(self.bad_dict_assign)
+            self.bad_chkbts.update({ch_name: chkbt})
+            r = x // 10
+            c = x % 10
+            chbx_layout.addWidget(chkbt, r, c)
+
+        chbx_w.setLayout(chbx_layout)
+        if self.bt_scroll.widget():
+            self.bt_scroll.takeWidget()
+        self.bt_scroll.setWidget(chbx_w)
+
+    def bad_dict_selected(self, current, _):
+        old_name = self.name
+        self.name = self.badch_model.getData(current)
+
+        # Close current Plot-Window
+        if self.raw_fig:
+            plt.close(self.raw_fig)
+
+        # Reload Bad-Chkbts if other than before
+        if self.name in self.mw.pr.info_dict and old_name:
+            if self.mw.pr.info_dict[self.name]['ch_names'] != self.mw.pr.info_dict[old_name]['ch_names']:
+                self.make_bad_chbxs()
         else:
-            pass
+            self.make_bad_chbxs()
+
+        # Clear entries
+        for bt in self.bad_chkbts:
+            self.bad_chkbts[bt].setChecked(False)
+
+        # Then load existing bads for choice
+        if self.name in self.mw.pr.bad_channels_dict:
+            for bad in self.mw.pr.bad_channels_dict[self.name]:
+                self.bad_chkbts[bad].setChecked(True)
 
     def bad_dict_assign(self):
-        self.name = self.listwidget.currentItem().text()
-        self.listwidget.currentItem().setBackground(QColor('green'))
-        self.listwidget.currentItem().setForeground(QColor('white'))
         bad_channels = []
         for ch in self.bad_chkbts:
             if self.bad_chkbts[ch].isChecked():
                 bad_channels.append(ch)
         self.mw.pr.bad_channels_dict.update({self.name: bad_channels})
         self.mw.pr.save_sub_lists()
+        self.badch_model.layoutChanged.emit()
 
-    # Todo: Semi-Automatic bad-channel-detection
+    # Todo: Automatic bad-channel-detection
     def plot_raw_bad(self):
         # Use interactiv backend again if show_plots have been turned off before
         matplotlib.use('Qt5Agg')
-        self.name = self.listwidget.currentItem().text()
+        sub = CurrentSub(self.name, self.mw)
         dialog = QDialog(self)
         dialog.setWindowTitle('Opening...')
         dialog.open()
-        self.raw = loading.read_raw(self.name, join(self.mw.pr.data_path, self.name))
+        self.raw = sub.load_raw()
         if self.name in self.mw.pr.bad_channels_dict:
             self.raw.info['bads'] = self.mw.pr.bad_channels_dict[self.name]
         self.raw_fig = self.raw.plot(n_channels=30, bad_color='red',
@@ -1563,17 +1569,12 @@ class SubBadsWidget(QWidget):
         # evt has to be in parameters, otherwise it won't work
         self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
         self.mw.pr.save_sub_lists()
-        # Todo: Save raw again with bads in raw.info['bads']
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
         for ch in self.mw.pr.bad_channels_dict[self.name]:
             self.bad_chkbts[ch].setChecked(True)
-        self.listwidget.currentItem().setBackground(QColor('green'))
-        self.listwidget.currentItem().setForeground(QColor('white'))
-
-    def copy_bad_dlg(self):
-        CopyBadsDialog(self)
+        self.badch_model.layoutChanged.emit()
 
     def closeEvent(self, event):
         if self.raw_fig:
@@ -1826,7 +1827,7 @@ class EventIDGui(QDialog):
         self.save_event_id()
 
         # Get event-id for selected file and update widget
-        self.name = self.files_model.data(current, Qt.DisplayRole)
+        self.name = self.files_model.getData(current)
         self.get_event_id()
         self.event_id_widget.replace_data(self.pd_evid)
 

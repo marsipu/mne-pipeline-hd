@@ -379,6 +379,9 @@ class FileDictModel(BaseListModel):
         self.file_dict = file_dict
         self.app = QApplication.instance()
 
+    def getData(self, index):
+        return self._data[index.row()]
+
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
             return self._data[index.row()]
