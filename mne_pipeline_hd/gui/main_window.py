@@ -750,6 +750,10 @@ class MainWindow(QMainWindow):
         # Save Main-Window-Settings and project before possible Errors happen
         self.save_main()
 
+        # Make sure, every function is in sel_functions
+        for func in [f for f in self.pd_funcs.index if f not in self.pr.sel_functions]:
+            self.pr.sel_functions[func] = 0
+
         # Lists of selected functions
         self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.pr.sel_functions[mf]]
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.pr.sel_functions[ff]]
