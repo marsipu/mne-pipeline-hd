@@ -64,7 +64,11 @@ def plot_save(sub, plot_name, subfolder=None, trial=None, idx=None, matplotlib_f
         save_path = join(dir_path, file_name)
 
         if matplotlib_figure:
-            matplotlib_figure.savefig(save_path, dpi=dpi)
+            if isinstance(matplotlib_figure, list):
+                for idx, figure in enumerate(matplotlib_figure):
+                    figure.savefig(join(dir_path, f'{idx}_' + file_name))
+            else:
+                matplotlib_figure.savefig(save_path, dpi=dpi)
         elif mayavi_figure:
             mayavi_figure.savefig(save_path)
         elif brain:
