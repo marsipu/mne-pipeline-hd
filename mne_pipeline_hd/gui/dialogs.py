@@ -485,7 +485,7 @@ class SysInfoMsg(QDialog):
 
         # Set geometry to ratio of screen-geometry
         width, height = main_win.get_ratio_geometry(0.4)
-        self.resize(width, height)
+        self.resize(int(width), int(height))
 
         self.setLayout(layout)
         self.show()

@@ -31,9 +31,9 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, Q
 from mayavi import mlab
 
 from .customf_widgets import ChooseCustomModules, CustomFunctionImport
-from .gui_utils import get_exception_tuple, get_ratio_geometry
 from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
                       RunDialog, SettingsDlg, SysInfoMsg)
+from .gui_utils import get_exception_tuple, get_ratio_geometry
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
 
         # Set geometry to ratio of screen-geometry
         width, height = get_ratio_geometry(0.9)
-        self.resize(width, height)
+        self.resize(int(width), int(height))
         self.center()
 
         # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later

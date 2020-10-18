@@ -463,6 +463,7 @@ class CustomFunctionModel(QAbstractListModel):
     def __init__(self, data):
         super().__init__()
         self._data = data
+        self.app = QApplication.instance()
 
     def getData(self, index=QModelIndex()):
         return self._data.index[index.row()]
@@ -473,16 +474,9 @@ class CustomFunctionModel(QAbstractListModel):
 
         elif role == Qt.DecorationRole:
             if self._data.loc[self.getData(index), 'ready']:
-                return self.style().standardIcon(QStyle.SP_DialogApplyButton)
+                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
             else:
-                return self.style().standardIcon(QStyle.SP_DialogCancelButton)
-
-    def removeRows(self, row, count, index=QModelIndex()):
-        self.beginRemoveRows(index, row, row + count - 1)
-        for item in [self._data[i] for i in range(row, row + count)]:
-            self._data.drop(index=item, inplace=True)
-        self.endRemoveRows()
-        return True
+                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data.index)

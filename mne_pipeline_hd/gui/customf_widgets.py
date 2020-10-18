@@ -2,27 +2,28 @@ import inspect
 import shutil
 import types
 from ast import literal_eval
+from functools import partial
 from importlib import util
 from math import isnan
-from os import listdir, mkdir
+from os import mkdir
 from os.path import isdir, isfile, join
 from pathlib import Path
 
 import pandas as pd
-from PyQt5.QtCore import QPoint, QSize, Qt
-from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout, QGridLayout,
-                             QGroupBox,
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout, QGroupBox,
                              QHBoxLayout,
-                             QLabel,
+                             QInputDialog, QLabel,
                              QLineEdit,
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QPushButton,
-                             QScrollArea, QStyle,
-                             QTableWidgetItem, QTextEdit, QToolTip, QVBoxLayout)
+                             QSizePolicy, QStyle,
+                             QTextEdit, QVBoxLayout)
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import EditDict
+from mne_pipeline_hd.gui.base_widgets import BaseList, EditDict
 from mne_pipeline_hd.gui.dialogs import ErrorDialog
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, get_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
 
 
@@ -32,99 +33,102 @@ class CustomFunctionImport(QDialog):
         self.mw = main_win
         self.current_function = None
         self.current_parameter = None
+        self.oblig_func = ['tab', 'group', 'subject_loop', 'matplotlib', 'mayavi']
+        self.oblig_params = ['default', 'gui_type']
 
         self.exst_functions = list(self.mw.pd_funcs.index)
-        # Todo: Better solution to include subject-attributes
         self.exst_parameters = ['mw', 'pr', 'sub', 'mri_sub', 'ga_group', 'name', 'save_dir', 'ermsub', 'bad_channels']
         self.exst_parameters.append(vars(self.mw.pr))
         self.exst_parameters.append(list(self.mw.pr.parameters[self.mw.pr.p_preset].keys()))
+        self.param_exst_dict = dict()
+
+        self.code_dict = dict()
 
         # Get available parameter-guis
         self.available_param_guis = [pg for pg in dir(parameter_widgets) if 'Gui' in pg and pg != 'QtGui']
 
-        self.add_pd_funcs = pd.DataFrame(columns=['path', 'module', 'alias', 'tab', 'group', 'subject_loop',
-                                                  'matplotlib', 'mayavi', 'dependencies', 'func_args', 'code', 'ready'])
-        self.add_pd_params = pd.DataFrame(columns=['alias', 'default', 'unit', 'description', 'gui_type', 'gui_args',
-                                                   'ready'])
+        self.add_pd_funcs = pd.DataFrame(columns=['alias', 'tab', 'group', 'subject_loop',
+                                                  'matplotlib', 'mayavi', 'dependencies', 'module', 'func_args',
+                                                  'path', 'ready'])
+        self.add_pd_params = pd.DataFrame(columns=['alias', 'default', 'unit', 'description', 'gui_type',
+                                                   'gui_args', 'function', 'ready'])
 
         self.yes_icon = self.style().standardIcon(QStyle.SP_DialogApplyButton)
         self.no_icon = self.style().standardIcon(QStyle.SP_DialogCancelButton)
 
         self.setWindowTitle('Custom-Functions-Setup')
 
+        width, height = get_ratio_geometry(0.7)
+        self.resize(int(width), int(height))
+
         self.init_ui()
         self.open()
 
     def init_ui(self):
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
+        sub_layout = QHBoxLayout()
+
+        # Import Button and Combobox
+        editor_layout = QVBoxLayout()
+
+        func_cmbx_layout = QHBoxLayout()
+        self.func_cmbx = QComboBox()
+        self.func_cmbx.activated.connect(self.func_item_selected)
+        func_cmbx_layout.addWidget(self.func_cmbx)
+
+        self.func_chkl = QLabel()
+        self.func_chkl.setPixmap(self.no_icon.pixmap(16, 16))
+        self.func_chkl.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        func_cmbx_layout.addWidget(self.func_chkl)
+
+        add_bt_layout = QHBoxLayout()
+        addfn_bt = QPushButton('Load Function/s')
+        addfn_bt.setFont(QFont('AnyStyle', 12))
+        addfn_bt.clicked.connect(self.get_functions)
+        add_bt_layout.addWidget(addfn_bt)
+        editfn_bt = QPushButton('Edit Function/s')
+        editfn_bt.setFont(QFont('AnyStyle', 12))
+        editfn_bt.clicked.connect(self.edit_functions)
+        add_bt_layout.addWidget(editfn_bt)
+
+        editor_layout.addLayout(add_bt_layout)
+        editor_layout.addLayout(func_cmbx_layout)
+
+        # Todo: Make it a real editor (maybe even with syntax-highlighting?)
+        # Editor-Widget
+        self.code_editor = QTextEdit()
+        self.code_editor.setReadOnly(True)
+        editor_layout.addWidget(self.code_editor)
+        sub_layout.addLayout(editor_layout)
+
+        setup_layout = QVBoxLayout()
+        # The Function-Setup-Groupbox
+        func_setup_gbox = QGroupBox('Function-Setup')
+        func_setup_layout = QVBoxLayout()
 
         # Hint for obligatory items
         obl_hint_layout = QHBoxLayout()
         obl_hint_label1 = QLabel()
         obl_hint_label1.setPixmap(self.no_icon.pixmap(16, 16))
+        obl_hint_label1.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         obl_hint_layout.addWidget(obl_hint_label1)
         obl_hint_label2 = QLabel()
         obl_hint_label2.setPixmap(self.style().standardIcon(QStyle.SP_ArrowForward).pixmap(16, 16))
+        obl_hint_label2.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         obl_hint_layout.addWidget(obl_hint_label2)
         obl_hint_label3 = QLabel()
         obl_hint_label3.setPixmap(self.yes_icon.pixmap(16, 16))
+        obl_hint_label3.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         obl_hint_layout.addWidget(obl_hint_label3)
-        obl_hint_layout.addWidget(QLabel('(This items are obligatory)'))
+        obl_hint_layout.addWidget(QLabel('(These items are obligatory)'))
+        func_setup_layout.addLayout(obl_hint_layout)
 
-        # The Import Group-Box
-        import_gbox = QGroupBox('Add Functions')
-        import_layout = QVBoxLayout()
-
-        self.exstf_l = QLabel()
-        self.exstf_l.setWordWrap(True)
-        self.exstf_l.hide()
-        import_layout.addWidget(self.exstf_l)
-
-        addfn_bt = QPushButton('Add Functions')
-        addfn_bt.clicked.connect(self.get_functions)
-        import_layout.addWidget(addfn_bt)
-
-        self.func_view = QListView()
-        self.func_model = CustomFunctionModel(self.add_pd_funcs)
-        self.func_view.setModel(self.func_model)
-        self.func_view.selectionModel().currentChanged.connect(self.func_item_selected)
-        self.func_view.setFocus()
-        import_layout.addWidget(self.func_view)
-
-        bt_layout = QHBoxLayout()
-        showcode_bt = QPushButton('Show Source-Code')
-        showcode_bt.clicked.connect(self.show_source_code)
-        bt_layout.addWidget(showcode_bt)
-
-        remove_bt = QPushButton('Remove')
-        remove_bt.clicked.connect(self.remove_func_item)
-        bt_layout.addWidget(remove_bt)
-
-        save_bt = QPushButton('Save')
-        save_bt.clicked.connect(self.save_pkg)
-        bt_layout.addWidget(save_bt)
-
-        close_bt = QPushButton('Quit')
-        close_bt.clicked.connect(self.close)
-        bt_layout.addWidget(close_bt)
-
-        import_layout.addLayout(bt_layout)
-        import_gbox.setLayout(import_layout)
-
-        layout.addWidget(import_gbox)
-
-        # Editor-Widget
-        self.code_editor = QTextEdit()
-        layout.addWidget(self.code_editor)
-
-        # The Function-Setup-Groupbox
-        func_setup_gbox = QGroupBox('Function-Setup')
-        func_setup_layout = QFormLayout()
+        func_setup_formlayout = QFormLayout()
 
         self.falias_le = QLineEdit()
         self.falias_le.setToolTip('Set a name if you want something other than the functions-name')
         self.falias_le.textEdited.connect(self.falias_changed)
-        func_setup_layout.addRow('Alias', self.falias_le)
+        func_setup_formlayout.addRow('Alias', self.falias_le)
 
         tab_layout = QHBoxLayout()
         self.tab_cmbx = QComboBox()
@@ -133,7 +137,7 @@ class CustomFunctionImport(QDialog):
         tab_layout.addWidget(self.tab_cmbx)
         self.tab_chkl = QLabel()
         tab_layout.addWidget(self.tab_chkl)
-        func_setup_layout.addRow('Tab', tab_layout)
+        func_setup_formlayout.addRow('Tab', tab_layout)
 
         group_layout = QHBoxLayout()
         self.group_cmbx = QComboBox()
@@ -144,7 +148,7 @@ class CustomFunctionImport(QDialog):
         group_layout.addWidget(self.group_cmbx)
         self.group_chkl = QLabel()
         group_layout.addWidget(self.group_chkl)
-        func_setup_layout.addRow('Group', group_layout)
+        func_setup_formlayout.addRow('Group', group_layout)
 
         subloop_layout = QHBoxLayout()
         self.subloop_bts = QButtonGroup(self)
@@ -161,7 +165,7 @@ class CustomFunctionImport(QDialog):
         self.subloop_bts.buttonToggled.connect(self.subloop_changed)
         self.subloop_chkl = QLabel()
         subloop_layout.addWidget(self.subloop_chkl)
-        func_setup_layout.addRow('Subject-Loop?', subloop_layout)
+        func_setup_formlayout.addRow('Subject-Loop?', subloop_layout)
 
         mtpl_layout = QHBoxLayout()
         self.mtpl_bts = QButtonGroup(self)
@@ -178,7 +182,7 @@ class CustomFunctionImport(QDialog):
         self.mtpl_bts.buttonToggled.connect(self.mtpl_changed)
         self.mtpl_chkl = QLabel()
         mtpl_layout.addWidget(self.mtpl_chkl)
-        func_setup_layout.addRow('Matplotlib?', mtpl_layout)
+        func_setup_formlayout.addRow('Matplotlib?', mtpl_layout)
 
         myv_layout = QHBoxLayout()
         self.myv_bts = QButtonGroup(self)
@@ -195,16 +199,18 @@ class CustomFunctionImport(QDialog):
         self.myv_bts.buttonToggled.connect(self.myv_changed)
         self.myv_chkl = QLabel()
         myv_layout.addWidget(self.myv_chkl)
-        func_setup_layout.addRow('Pyvista/Mayavi?', myv_layout)
+        func_setup_formlayout.addRow('Pyvista/Mayavi?', myv_layout)
 
         self.dpd_bt = QPushButton('Set Dependencies')
         self.dpd_bt.setToolTip('Set the functions that must be activated before or the files that must be present '
                                'for this function to work')
-        self.dpd_bt.clicked.connect(self.select_dependencies)
-        func_setup_layout.addRow('Dependencies', self.dpd_bt)
+        self.dpd_bt.clicked.connect(partial(SelectDependencies, self))
+        func_setup_formlayout.addRow('Dependencies', self.dpd_bt)
+
+        func_setup_layout.addLayout(func_setup_formlayout)
 
         func_setup_gbox.setLayout(func_setup_layout)
-        layout.addWidget(func_setup_gbox)
+        setup_layout.addWidget(func_setup_gbox)
 
         # The Parameter-Setup-Group-Box
         self.param_setup_gbox = QGroupBox('Parameter-Setup')
@@ -264,7 +270,24 @@ class CustomFunctionImport(QDialog):
         param_setup_layout.addLayout(param_setup_formlayout)
         self.param_setup_gbox.setLayout(param_setup_layout)
 
-        layout.addWidget(self.param_setup_gbox)
+        setup_layout.addWidget(self.param_setup_gbox)
+        sub_layout.addLayout(setup_layout)
+
+        layout.addLayout(sub_layout)
+
+        bt_layout = QHBoxLayout()
+
+        save_bt = QPushButton('Save')
+        save_bt.setFont(QFont('AnyStyle', 16))
+        save_bt.clicked.connect(self.save_pkg)
+        bt_layout.addWidget(save_bt)
+
+        close_bt = QPushButton('Quit')
+        close_bt.setFont(QFont('AnyStyle', 16))
+        close_bt.clicked.connect(self.close)
+        bt_layout.addWidget(close_bt)
+
+        layout.addLayout(bt_layout)
 
         self.setLayout(layout)
 
@@ -272,31 +295,66 @@ class CustomFunctionImport(QDialog):
         self.populate_group_cmbx()
         self.populate_guitype_cmbx()
 
-    def func_item_selected(self, current, _):
-        self.current_function = self.func_model.itemData(current)
+    def update_func_cmbx(self):
+        self.func_cmbx.clear()
+        self.func_cmbx.insertItems(0, self.add_pd_funcs.index)
+        try:
+            current_index = list(self.add_pd_funcs.index).index(self.current_function)
+        except ValueError:
+            current_index = -1
+        self.func_cmbx.setCurrentIndex(current_index)
+
+    def clear_func_items(self):
+        self.falias_le.clear()
+        self.tab_cmbx.setCurrentIndex(-1)
+        self.tab_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
+        self.group_cmbx.setCurrentIndex(-1)
+        self.group_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
+        self.subloop_yesbt.setChecked(False)
+        self.subloop_nobt.setChecked(False)
+        self.subloop_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
+        self.mtpl_yesbt.setChecked(False)
+        self.mtpl_nobt.setChecked(False)
+        self.mtpl_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
+        self.myv_nobt.setChecked(False)
+        self.myv_nobt.setChecked(False)
+        self.myv_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
+
+    def clear_param_items(self):
+        self.update_param_view()
+        self.palias_le.clear()
+        self.default_le.clear()
+        self.default_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
+        self.unit_le.clear()
+        self.guitype_cmbx.setCurrentIndex(-1)
+        self.guitype_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
+        self.guiargs_w.replace_data({})
+        self.param_setup_gbox.setEnabled(False)
+
+    def func_item_selected(self, idx):
+        self.current_function = self.func_cmbx.itemText(idx)
+        self.update_editor()
         self.update_func_setup()
 
-        if len(self.param_setup_dict[self.current_function]) > 0:
+        if self.current_function in list(self.add_pd_params['function']):
             self.param_setup_gbox.setEnabled(True)
-            self.populate_param_tablew()
-            self.current_parameter = self.param_tablew.item(0, 0).text()
+            self.update_param_view()
+            self.current_parameter = \
+                self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function].index[0]
             self.update_exst_param_label()
             self.update_param_setup()
         else:
             self.update_exst_param_label()
             # Clear existing entries
-            self.populate_param_tablew()
-            self.palias_le.clear()
-            self.default_le.clear()
-            self.unit_le.clear()
-            self.guitype_cmbx.setCurrentIndex(-1)
-            self.guiargs_w.clear()
-            self.param_setup_gbox.setEnabled(False)
+            self.clear_param_items()
 
     def param_item_selected(self, current, _):
         self.current_parameter = self.param_model.itemData(current)
-        self.current_param_row = current.row()
         self.update_param_setup()
+
+    def update_editor(self):
+        self.code_editor.clear()
+        self.code_editor.insertPlainText(self.code_dict[self.current_function])
 
     def update_func_setup(self):
         if pd.notna(self.add_pd_funcs.loc[self.current_function, 'alias']):
@@ -322,7 +380,8 @@ class CustomFunctionImport(QDialog):
                 self.subloop_nobt.setChecked(True)
             self.subloop_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
         else:
-            self.subloop_nobt.setChecked(True)
+            self.subloop_yesbt.setChecked(False)
+            self.subloop_nobt.setChecked(False)
             self.subloop_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
         if pd.notna(self.add_pd_funcs.loc[self.current_function, 'matplotlib']):
             if self.add_pd_funcs.loc[self.current_function, 'matplotlib']:
@@ -331,7 +390,8 @@ class CustomFunctionImport(QDialog):
                 self.mtpl_nobt.setChecked(True)
             self.mtpl_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
         else:
-            self.mtpl_nobt.setChecked(True)
+            self.mtpl_yesbt.setChecked(False)
+            self.mtpl_nobt.setChecked(False)
             self.mtpl_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
         if pd.notna(self.add_pd_funcs.loc[self.current_function, 'mayavi']):
             if self.add_pd_funcs.loc[self.current_function, 'mayavi']:
@@ -340,7 +400,8 @@ class CustomFunctionImport(QDialog):
                 self.myv_nobt.setChecked(True)
             self.myv_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
         else:
-            self.myv_nobt.setChecked(True)
+            self.myv_nobt.setChecked(False)
+            self.myv_nobt.setChecked(False)
             self.myv_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
 
     def update_exst_param_label(self):
@@ -376,49 +437,52 @@ class CustomFunctionImport(QDialog):
             self.guitype_cmbx.setCurrentIndex(-1)
             self.guitype_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_args']):
-            self.guiargs_w.setText(self.add_pd_params.loc[self.current_parameter, 'gui_args'])
+            self.guiargs_w.replace_data(literal_eval(self.add_pd_params.loc[self.current_parameter, 'gui_args']))
         else:
-            self.guiargs_w.clear()
+            self.guiargs_w.replace_data({})
 
     def check_func_setup(self):
-        obligatory_items = ['tab', 'group', 'subject_loop', 'matplotlib', 'mayavi']
         # Check, that all obligatory items of the Subject-Setup and the Parameter-Setup are set
-        if (all([pd.notna(self.add_pd_funcs.loc[self.current_function, i]) for i in obligatory_items])
-                and all([i for i in self.param_setup_dict[self.current_function].values()])):
-            self.add_pd_funcs.loc[self.current_function, 'ready'] = True
+        if (all([pd.notna(self.add_pd_funcs.loc[self.current_function, i]) for i in self.oblig_func])
+                and [pd.notna(self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function, i])
+                     for i in self.oblig_params][0].all()):
+            self.func_chkl.setPixmap(self.yes_icon.pixmap(16, 16))
+            self.add_pd_funcs.loc[self.curren_function, 'ready'] = 1
+        else:
+            self.func_chkl.setPixmap(self.no_icon.pixmap(16, 16))
 
     def check_param_setup(self):
-        obligatory_items = ['default', 'gui_type']
         # Check, that all obligatory items of the Parameter-Setup are set
-        if all([pd.notna(self.add_pd_params.loc[self.current_parameter, i]) for i in obligatory_items]):
-            self.add_pd_params.loc[self.current_parameter, 'ready'] = True
+        if all([pd.notna(self.add_pd_params.loc[self.current_parameter, i]) for i in self.oblig_params]):
+            self.add_pd_params.loc[self.current_parameter, 'ready'] = 1
+        self.param_model.layoutChanged.emit()
 
     # Line-Edit Change-Signals
     def falias_changed(self, text):
         if self.current_function:
             self.add_pd_funcs.loc[self.current_function, 'alias'] = text
 
-    def subloop_changed(self, _, state):
+    def subloop_changed(self, current_button, state):
         if self.current_function:
-            if state:
+            if state and current_button == self.subloop_yesbt:
                 self.add_pd_funcs.loc[self.current_function, 'subject_loop'] = True
             else:
                 self.add_pd_funcs.loc[self.current_function, 'subject_loop'] = False
             self.subloop_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
-    def mtpl_changed(self, _, state):
+    def mtpl_changed(self, current_button, state):
         if self.current_function:
-            if state:
+            if state and current_button == self.mtpl_yesbt:
                 self.add_pd_funcs.loc[self.current_function, 'matplotlib'] = True
             else:
                 self.add_pd_funcs.loc[self.current_function, 'matplotlib'] = False
             self.mtpl_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
-    def myv_changed(self, _, state):
+    def myv_changed(self, current_button, state):
         if self.current_function:
-            if state:
+            if state and current_button == self.myv_yesbt:
                 self.add_pd_funcs.loc[self.current_function, 'mayavi'] = True
             else:
                 self.add_pd_funcs.loc[self.current_function, 'mayavi'] = False
@@ -459,46 +523,10 @@ class CustomFunctionImport(QDialog):
         if self.current_parameter:
             self.add_pd_params.loc[self.current_parameter, 'gui_args'] = self.guiargs_w.model._data
 
-    def populate_func_tablew(self):
-        row_count = self.func_tablew.rowCount()
-        self.func_tablew.setRowCount(len(self.function_dict))
-        for key in self.function_dict:
-            name_item = QTableWidgetItem(key)
-            name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
-            self.func_tablew.setItem(row_count, 0, name_item)
-            module_item = QTableWidgetItem(self.module_dict[key])
-            module_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
-            self.func_tablew.setItem(row_count, 1, module_item)
-            setup_item = QTableWidgetItem()
-            setup_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
-            if self.func_setup_dict[key]:
-                setup_item.setIcon(self.yes_icon)
-            else:
-                setup_item.setIcon(self.no_icon)
-            self.func_tablew.setItem(row_count, 2, setup_item)
-            row_count += 1
-
-    def populate_param_tablew(self):
-        if self.current_function and self.current_function in self.param_setup_dict:
-            # Remove Rows of last function
-            row_count = self.param_tablew.rowCount()
-            while row_count > 0:
-                self.param_tablew.removeRow(0)
-                row_count -= 1
-            params = self.param_setup_dict[self.current_function]
-            self.param_tablew.setRowCount(row_count + len(params))
-            for param in params:
-                name_item = QTableWidgetItem(param)
-                name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
-                self.param_tablew.setItem(row_count, 0, name_item)
-                setup_item = QTableWidgetItem()
-                setup_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
-                if self.param_setup_dict[self.current_function][param]:
-                    setup_item.setIcon(self.yes_icon)
-                else:
-                    setup_item.setIcon(self.no_icon)
-                self.param_tablew.setItem(row_count, 1, setup_item)
-                row_count += 1
+    def update_param_view(self):
+        current_pd_params = self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function]
+        self.param_model._data = current_pd_params
+        self.param_model.layoutChanged.emit()
 
     def populate_tab_cmbx(self):
         self.tab_cmbx.insertItems(0, set(self.mw.pd_funcs['tab']))
@@ -550,90 +578,32 @@ class CustomFunctionImport(QDialog):
                                     'The gui_type-value doesn\'t match the entered default_value')
 
     def get_functions(self):
+        # Clear Function- and Parameter-DataFrame
+        self.add_pd_funcs.drop(index=self.add_pd_funcs.index, inplace=True)
+        self.add_pd_params.drop(index=self.add_pd_funcs.index, inplace=True)
+        self.clear_func_items()
+        self.clear_param_items()
+
         # Returns tuple of files-list and file-type
-        files_list = QFileDialog.getOpenFileNames(self, 'Choose the Python-File//s containing your function to import',
-                                                  filter='Python-File (*.py)')[0]
-        already_exst_funcs = []
-        if files_list:
-            for path_string in files_list:
-                file_path = Path(path_string)
-                spec = util.spec_from_file_location(file_path.stem, file_path)
-                module = util.module_from_spec(spec)
-                try:
-                    spec.loader.exec_module(module)
-                except:
-                    err = get_exception_tuple()
-                    ErrorDialog(err, self)
-                for func_key in module.__dict__:
-                    # Check, if function is already existing
-                    if func_key not in self.exst_functions:
-                        func = module.__dict__[func_key]
-                        # Only functions are allowed (Classes should be called from function)
-                        if isinstance(func, types.FunctionType) and func.__module__ == module.__name__:
-                            self.add_pd_funcs.loc[func_key, 'path'] = file_path
-                            self.add_pd_funcs.loc[func_key, 'code'] = inspect.getsource(func)
-                            self.add_pd_funcs.loc[func_key, 'module'] = module.__name__
-                            self.add_pd_funcs.loc[func_key, 'ready'] = 0
+        self.cf_path_string = QFileDialog.getOpenFileName(self,
+                                                          'Choose the Python-File containing your function to import',
+                                                          filter='Python-File (*.py)')[0]
+        if self.cf_path_string:
+            ImportFuncsCheckList(self)
 
-                            # Append empty Series to Func-Data-Frame
-                            func_series = pd.Series([], name=func_key, dtype='object')
-                            self.add_pd_funcs = self.add_pd_funcs.append(func_series)
-                            # Get Parameters and divide them in existing and setup
-                            signature = inspect.signature(func)
-                            all_parameters = [signature.parameters[p].name for p in signature.parameters]
-                            self.param_dict[func_key] = all_parameters
-                            self.add_pd_funcs.loc[func_key, 'func_args'] = ','.join(all_parameters)
-                            self.add_pd_funcs.loc[func_key, 'params'] = \
-                                [p for p in all_parameters if p in self.exst_parameters]
-                            # Todo: Remove redundant param_exst_dict, param_setup_dict
-                            self.param_exst_dict[func_key] = [p for p in all_parameters if p in self.exst_parameters]
-                            self.param_setup_dict[func_key] = {}
-                            for param in [p for p in all_parameters if p not in self.exst_parameters]:
-                                self.param_setup_dict[func_key][param] = False
-                                # Append empty Series to Func-Data-Frame
-                                param_series = pd.Series([], name=param, dtype='object')
-                                if param not in self.add_pd_params.index:
-                                    self.add_pd_params = self.add_pd_params.append(param_series)
-                    else:
-                        already_exst_funcs.append(func_key)
-            if len(already_exst_funcs) > 0:
-                self.exstf_l.setText(f'Already existing functions: {already_exst_funcs}')
-                self.exstf_l.show()
-            else:
-                self.exstf_l.hide()
-            self.populate_func_tablew()
+    def edit_functions(self):
+        # Clear Function- and Parameter-DataFrame
+        self.add_pd_funcs.drop(index=self.add_pd_funcs.index, inplace=True)
+        self.add_pd_params.drop(index=self.add_pd_funcs.index, inplace=True)
+        self.clear_func_items()
+        self.clear_param_items()
 
-    def remove_func_item(self):
-        row = self.func_tablew.currentRow()
-        if row >= 0:
-            name = self.func_tablew.item(row, 0).text()
-
-            self.function_dict.pop(name, None)
-            self.module_dict.pop(name, None)
-            self.func_setup_dict.pop(name, None)
-
-            self.func_tablew.removeRow(row)
-
-    def show_source_code(self):
-
-        row = self.func_view.selectionModel().currentIndex().row()
-        if row >= 0:
-            func_name = self.add_pd_funcs.iloc[row,]
-            name = self.func_tablew.item(row, 0).text()
-            show_dlg = QDialog(self)
-            layout = QVBoxLayout()
-            label = QLabel(self.add_pd_funcs.loc[func_name])
-            scroll_area = QScrollArea()
-            scroll_area.setWidget(label)
-            layout.addWidget(scroll_area)
-            ok_bt = QPushButton('Close')
-            ok_bt.clicked.connect(show_dlg.close)
-            layout.addWidget(ok_bt)
-            show_dlg.setLayout(layout)
-            show_dlg.open()
-
-    def select_dependencies(self):
-        SelectDependencies(self)
+        # Returns tuple of files-list and file-type
+        self.cf_path_string = QFileDialog.getOpenFileName(self,
+                                                          'Choose the Python-File containing the functions to edit',
+                                                          filter='Python-File (*.py)')[0]
+        if self.cf_path_string:
+            ImportFuncsCheckList(self, edit_existing=True)
 
     def test_param_gui(self, default_string, gui_type):
         # Simulate CustomFunctionImport as Project-Class
@@ -661,7 +631,7 @@ class CustomFunctionImport(QDialog):
             TestParamGui(self)
 
     def save_pkg(self):
-        if any([self.func_setup_dict[k] for k in self.func_setup_dict]):
+        if any(self.add_pd_funcs['ready'] == 1):
             SavePkgDialog(self)
 
     def closeEvent(self, event):
@@ -676,6 +646,101 @@ class CustomFunctionImport(QDialog):
 
         if answer == QMessageBox.Yes or answer is None:
             event.accept()
+
+
+class ImportFuncsCheckList(QDialog):
+    def __init__(self, cf_dialog, edit_existing=False):
+        super().__init__(cf_dialog)
+        self.cf = cf_dialog
+        self.edit_existing = edit_existing
+
+        self.file_path = None
+        self.module = None
+        self.loaded_cfs = []
+        self.selected_cfs = []
+        self.already_existing_funcs = []
+
+        self.load_function_list()
+        self.init_ui()
+
+        self.open()
+
+    def load_function_list(self):
+        self.file_path = Path(self.cf.cf_path_string)
+        spec = util.spec_from_file_location(self.file_path.stem, self.file_path)
+        self.module = util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(self.module)
+        except:
+            err = get_exception_tuple()
+            ErrorDialog(err, self)
+        for func_key in self.module.__dict__:
+            func = self.module.__dict__[func_key]
+            # Only functions are allowed (Classes should be called from function)
+            if isinstance(func, types.FunctionType) and func.__module__ == self.module.__name__:
+                # Check, if function is already existing
+                if func_key not in self.cf.exst_functions or self.edit_existing:
+                    self.loaded_cfs.append(func_key)
+                else:
+                    self.already_exst_funcs.append(func_key)
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        if len(self.already_existing_funcs) > 0:
+            exst_label = QLabel(f'These functions already exist: {self.already_existing_funcs}')
+            exst_label.setWordWrap(True)
+            layout.addWidget(exst_label)
+
+        self.list_view = QListView()
+        self.list_model = CheckListModel(self.loaded_cfs, self.selected_cfs)
+        self.list_view.setModel(self.list_model)
+        layout.addWidget(self.list_view)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def load_selected_functions(self):
+        selected_funcs = [cf for cf in self.loaded_cfs if cf in self.selected_cfs]
+        if self.edit_existing:
+            pd_funcs_path = join(self.file_path.parent, f'{self.module.__name__}_functions.csv')
+            pd_params_path = join(self.file_path.parent, f'{self.module.__name__}_parameters.csv')
+            self.cf.add_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0).loc[selected_funcs]
+            self.cf.add_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
+
+        for func_key in selected_funcs:
+            func = self.module.__dict__[func_key]
+
+            self.cf.add_pd_funcs.loc[func_key, 'path'] = self.file_path
+            self.cf.add_pd_funcs.loc[func_key, 'module'] = self.module.__name__
+            self.cf.add_pd_funcs.loc[func_key, 'ready'] = 0
+
+            self.cf.code_dict[func_key] = inspect.getsource(func)
+
+            # Get Parameters and divide them in existing and setup
+            signature = inspect.signature(func)
+            all_parameters = [signature.parameters[p].name for p in signature.parameters]
+            self.cf.add_pd_funcs.loc[func_key, 'func_args'] = ','.join(all_parameters)
+            existing_parameters = []
+
+            for param_key in all_parameters:
+                if param_key in self.cf.exst_parameters or param_key in self.cf.add_pd_params.index:
+                    self.cf.add_pd_params.loc[param_key, 'function'] = func_key
+                    self.cf.add_pd_params.loc[param_key, 'ready'] = 0
+                    existing_parameters.append(param_key)
+                else:
+                    self.cf.add_pd_params.loc[param_key, 'function'] = func_key
+                    self.cf.add_pd_params.loc[param_key, 'ready'] = 0
+
+            self.cf.param_exst_dict[func_key] = existing_parameters
+
+    def closeEvent(self, event):
+        self.load_selected_functions()
+        self.cf.update_func_cmbx()
+        event.accept()
 
 
 class SelectDependencies(QDialog):
@@ -780,77 +845,101 @@ class SavePkgDialog(QDialog):
     def __init__(self, cf_dialog):
         super().__init__(cf_dialog)
         self.cf = cf_dialog
-        self.pkg_path = None
+
+        self.funcs_to_save = list(self.cf.add_pd_funcs.loc[self.cf.add_pd_funcs['ready'] == 1].index)
+        self.ori_path = self.cf.add_pd_funcs[self.funcs_to_save[0], 'path']
+        self.module_name = self.cf.add_pd_funcs.loc[self.funcs_to_save[0], 'module']
+        self.module_dir_path = join(self.cf.mw.custom_pkg_path, self.module_name)
+        self.module_path = Path(join(self.module_dir_path, Path(self.ori_path).name))
 
         self.init_ui()
         self.open()
 
     def init_ui(self):
-        layout = QGridLayout()
+        layout = QVBoxLayout()
+
+        self.func_list = BaseList(self.funcs_to_save)
+        layout.addWidget(self.func_list)
+
         self.pkg_le = QLineEdit()
         self.pkg_le.textEdited.connect(self.pkg_le_changed)
-        layout.addWidget(self.pkg_le, 0, 0, 1, 2)
+        layout.addWidget(self.pkg_le)
 
         save_bt = QPushButton('Save')
         save_bt.clicked.connect(self.save_pkg)
-        layout.addWidget(save_bt, 1, 0)
+        layout.addWidget(save_bt)
 
         cancel_bt = QPushButton('Cancel')
         cancel_bt.clicked.connect(self.close)
-        layout.addWidget(cancel_bt, 1, 1)
+        layout.addWidget(cancel_bt)
         self.setLayout(layout)
 
-    def pkg_le_changed(self, text):
-        if text in listdir(self.cf.mw.custom_pkg_path):
-            QToolTip.showText(self.pkg_le.mapToGlobal(QPoint(0, 0)), 'This name is already used!')
-            self.pkg_le.setText('')
-        else:
-            self.pkg_name = self.pkg_le.text()
-            self.pkg_path = join(self.cf.mw.custom_pkg_path, self.pkg_name)
-
     def save_pkg(self):
-        copy_modules = set()
-        for func in self.cf.path_dict:
-            copy_modules.add(self.cf.path_dict[func])
-        if not isdir(self.pkg_path):
-            mkdir(self.pkg_path)
-        # Create __init__.py to make it a package
-        with open(join(self.pkg_path, '__init__.py'), 'w') as f:
-            f.write('')
-        for ori_path in copy_modules:
-            shutil.copy2(ori_path, join(self.pkg_path, Path(ori_path).name))
         # Drop all functions with unfinished setup and add them to the main_window-DataFrame
-        drop_funcs = [f for f in self.cf.func_setup_dict if not self.cf.func_setup_dict[f]]
-        final_add_pd_funcs = self.cf.add_pd_funcs.drop(labels=drop_funcs, axis=0)
-        param_set = set()
-        for func in final_add_pd_funcs.index:
-            for param in self.cf.param_setup_dict[func]:
-                param_set.add(param)
-        final_add_pd_params = self.cf.add_pd_params.loc[param_set]
+        drop_funcs = self.cf.add_pd_funcs.loc[self.cf.add_pd_funcs['ready'] == 0].index
+        final_add_pd_funcs = self.cf.add_pd_funcs.drop(index=drop_funcs)
 
-        pd_funcs_path = join(self.pkg_path, f'{self.pkg_name}_functions.csv')
-        pd_params_path = join(self.pkg_path, f'{self.pkg_name}_parameters.csv')
+        drop_params = self.cf.add_pd_params.loc[~self.cf.add_pd_params['function'].isin(final_add_pd_funcs.index)].index
+        final_add_pd_params = self.cf.add_pd_params.drop(index=drop_params)
 
-        if isfile(pd_funcs_path):
-            read_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0)
-            # Check, that there are no duplicates
-            drop_funcs = [f for f in read_pd_funcs.index if f in final_add_pd_funcs]
-            read_pd_funcs.drop(labels=drop_funcs, axis=0)
-            final_add_pd_funcs = read_pd_funcs.append(final_add_pd_funcs)
-        final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
-        if isfile(pd_params_path):
-            read_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
-            # Check, that there are no duplicates
-            drop_params = [p for p in read_pd_params.index if p in final_add_pd_params]
-            read_pd_params.drop(labels=drop_params, axis=0)
-            final_add_pd_params = read_pd_params.append(final_add_pd_params)
-        final_add_pd_params.to_csv(pd_params_path, sep=';')
+        del final_add_pd_funcs['ready']
+        del final_add_pd_params['ready']
 
-        for func in final_add_pd_funcs.index:
-            item_list = self.cf.func_tablew.findItems(func, Qt.MatchExactly)
-            if item_list:
-                item = item_list[0]
-                self.cf.func_tablew.removeRow(self.cf.func_tablew.row(item))
+        pd_funcs_path = join(self.pkg_path, f'{self.module_name}_functions.csv')
+        pd_params_path = join(self.pkg_path, f'{self.module_name}_parameters.csv')
+
+        # When importing custom-functions from module-script already in custom_pkg_path
+        if self.ori_path == self.module_path:
+            if isfile(pd_funcs_path):
+                read_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0)
+                # Replace indexes from file with same name
+                drop_funcs = [f for f in read_pd_funcs.index if f in final_add_pd_funcs.index]
+                read_pd_funcs.drop(index=drop_funcs, inplace=True)
+                final_add_pd_funcs = read_pd_funcs.append(final_add_pd_funcs)
+            if isfile(pd_params_path):
+                read_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
+                # Replace indexes from file with same name
+                drop_params = [p for p in read_pd_params.index if p in final_add_pd_params.index]
+                read_pd_params.drop(index=drop_params, inplace=True)
+                final_add_pd_params = read_pd_params.append(final_add_pd_params)
+
+            final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
+            final_add_pd_params.to_csv(pd_params_path, sep=';')
+
+        elif isdir(self.module_dir_path):
+            new_module_name, ok = QInputDialog.getText(self, 'Warning',
+                                                       f'{self.module_name} already exists, please enter another name')
+            if new_module_name and ok:
+                self.module_name = new_module_name
+                self.module_dir_path = join(self.cf.mw.custom_pkg_path, self.module_name)
+                self.module_path = Path(join(self.module_dir_path, Path(self.ori_path).name))
+                if not isdir(self.module_dir_path):
+                    mkdir(self.module_dir_path)
+
+                    # Create __init__.py to make it a package
+                    with open(join(self.pkg_path, '__init__.py'), 'w') as f:
+                        f.write('')
+                    # Copy Origin-Script to Destination
+                    shutil.copy2(self.ori_path, self.module_path)
+
+                    final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
+                    final_add_pd_params.to_csv(pd_params_path, sep=';')
+
+        else:
+            # Create __init__.py to make it a package
+            with open(join(self.pkg_path, '__init__.py'), 'w') as f:
+                f.write('')
+            # Copy Origin-Script to Destination
+            shutil.copy2(self.ori_path, self.module_path)
+
+            final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
+            final_add_pd_params.to_csv(pd_params_path, sep=';')
+
+        self.cf.add_pd_funcs.drop(index=final_add_pd_funcs.index, inplace=True)
+        self.cf.update_cf_cmbx()
+        self.cf.add_pd_params.drop(index=final_add_pd_params.index, inplace=True)
+        self.cf.clear_func_items()
+        self.cf.clear_param_items()
 
         self.cf.mw.import_custom_modules()
         self.cf.mw.update_func_bts()
