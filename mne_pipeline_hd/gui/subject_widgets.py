@@ -792,7 +792,7 @@ class AddFilesWidget(QWidget):
                 signals['which_sub'].emit(f'Copying {file}')
 
                 raw = self.load_file(idx)
-                extract_info(raw, file)
+                extract_info(self.mw.pr, raw, file)
 
                 if not self.addf_dialog.wasCanceled():
                     # Copy Empty-Room-Files to their directory
