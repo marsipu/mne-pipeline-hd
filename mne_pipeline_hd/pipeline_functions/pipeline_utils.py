@@ -10,6 +10,8 @@ License: BSD (3-clause)
 import json
 import os
 import re
+from pathlib import Path
+
 import numpy as np
 from ast import literal_eval
 from os import makedirs
@@ -187,6 +189,30 @@ def delete_files(data_path, pattern):
             if match:
                 os.remove(join(dirpath, f))
                 print(f'{f} removed')
+
+
+def compare_prev_run(sub, path, parameters):
+    """Compare the file-parameters of the previous run for the given path"""
+    result_dict = dict()
+    file_name = Path(path).name
+    for param in parameters:
+        try:
+            try:
+                previous_value = literal_eval(sub.pr.file_parameters.loc[file_name, param])
+            except (SyntaxError, ValueError):
+                previous_value = sub.pr.file_parameters.loc[file_name, param]
+            current_value = sub.p[param]
+
+            if previous_value != current_value:
+                result_dict[param] = (previous_value, current_value)
+                print(f'{file_name}: "{param}" changed from {previous_value} to {current_value}')
+            else:
+                result_dict[param] = None
+                print(f'{file_name}: "{param}" is unchanged')
+        except IndexError:
+            result_dict[param] = None
+
+    return result_dict
 
 
 def shutdown():

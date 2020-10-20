@@ -252,7 +252,7 @@ class CurrentSub(BaseSub):
     def save_erm_filtered(self, erm_filtered):
         self._erm_filtered = erm_filtered
         if not self.mw.get_setting('save_storage'):
-            self._erm_filtered.save(self.erm_filtered_path)
+            self._erm_filtered.save(self.erm_filtered_path, overwrite=True)
             self.save_file_params(self.erm_filtered_path)
 
     def load_events(self):

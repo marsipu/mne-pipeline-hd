@@ -25,7 +25,7 @@ import numpy as np
 from .loading import CurrentSub
 from ..pipeline_functions import ismac, iswin, pipeline_utils as ut
 from ..pipeline_functions.decorators import small_func, topline
-
+from ..pipeline_functions.pipeline_utils import compare_prev_run
 
 # Todo: Change normal comments to docstrings
 
@@ -34,8 +34,9 @@ from ..pipeline_functions.decorators import small_func, topline
 # ==============================================================================
 @topline
 def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
-    # Prevent error for "raw might not be assigned" below
-    if not isfile(sub.raw_filtered_path):
+
+    results = compare_prev_run(sub, sub.raw_filtered_path, ['highpass', 'lowpass'])
+    if results['highpass'] is not None or results['lowpass'] is not None:
         # Get raw from Subject-class
         raw = sub.load_raw()
         if enable_cuda and enable_cuda != 'false':  # use cuda for filtering, boolean-string due to QSettings
@@ -48,13 +49,8 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
 
         sub.save_filtered(raw)
 
-    else:
-        print(f'raw file with Highpass = {highpass} Hz and Lowpass = {lowpass} Hz already exists')
-
-    # Filter Empty-Room-Data too
-    if sub.ermsub != 'None':
-        if not isfile(sub.erm_filtered_path):
-
+        # Filter Empty-Room-Data too
+        if sub.ermsub != 'None':
             raw = sub.load_raw()
             erm_raw = sub.load_erm()
 
@@ -76,10 +72,7 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
             print('ERM-Data filtered and saved')
 
         else:
-            print(f'erm-raw file with Highpass = {highpass} Hz and Lowpass = {lowpass} Hz already exists')
-
-    else:
-        print('no erm_file assigned')
+            print('no erm_file assigned')
 
 
 @topline
@@ -976,7 +969,7 @@ def mixed_norm_estimate(sub, pick_ori, inverse_method):
         alpha = 30  # regularization parameter between 0 and 100 (100 is high)
         n_mxne_iter = 10  # if > 1 use L0.5/L2 reweighted mixed norm solver
         # if n_mxne_iter > 1 dSPM weighting can be avoided.
-
+        trial = evoked.comment
         mixn_dipoles, dip_residual = mne.inverse_sparse.mixed_norm(evoked, forward, noise_cov, alpha,
                                                                    maxit=3000, tol=1e-4, active_set_size=10,
                                                                    debias=True, weights=stcs[trial],

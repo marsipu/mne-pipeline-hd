@@ -288,9 +288,9 @@ def plot_evoked_joint(sub):
 @topline
 def plot_evoked_butterfly(sub):
     evokeds = sub.load_evokeds()
-
+    titles_dict = {'eeg': f'{sub.name} - EEG'}
     for evoked in evokeds:
-        fig = evoked.plot(spatial_colors=True,
+        fig = evoked.plot(spatial_colors=True, titles=titles_dict,
                           window_title=sub.name + ' - ' + evoked.comment,
                           selectable=True, gfp=True, zorder='std')
 
