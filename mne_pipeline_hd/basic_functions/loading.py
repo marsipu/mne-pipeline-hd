@@ -22,6 +22,17 @@ from PyQt5.QtWidgets import QMessageBox
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
+def pick_types_helper(data, ch_types):
+    kwargs = {'stim': True, 'eog': True, 'ecg': True, 'emg': True, 'ref_meg': 'auto', 'misc': True,
+              'resp': True, 'chpi': True, 'exci': True, 'ias': True, 'syst': True, 'seeg': True,
+              'dipole': True, 'gof': True, 'bio': True, 'ecog': True, 'fnirs': True, 'csd': True}
+    # Only exclude MEG or EEG if not selected, should not affect other channel-types
+    data.pick_types(meg='meg' in ch_types, eeg='eeg' in ch_types,
+                    exclude=[], **kwargs)
+    print(f'Picked Types: {ch_types}')
+    return data
+
+
 class BaseSub:
     """ Base-Class for Sub (The current File/MRI-File/Grand-Average-Group, which is executed)"""
 
@@ -188,6 +199,8 @@ class CurrentSub(BaseSub):
         if self._raw is None:
             self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
 
+        self._raw = pick_types_helper(self._raw, self.p['ch_types'])
+
         # Insert/Update BadChannels from bad_channels_dict
         self._raw.info['bads'] = self.bad_channels
 
@@ -205,6 +218,8 @@ class CurrentSub(BaseSub):
     def load_filtered(self):
         if self._raw_filtered is None:
             self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
+
+        self._raw_filtered = pick_types_helper(self._raw_filtered, self.p['ch_types'])
 
         # Insert/Update BadChannels from bad_channels_dict
         self._raw_filtered.info['bads'] = self.bad_channels
@@ -225,7 +240,7 @@ class CurrentSub(BaseSub):
     def load_erm(self):
         # unfiltered erm is not considered important enough to be a sub-attribute
         erm = mne.io.read_raw_fif(self.erm_path, preload=True)
-
+        erm = pick_types_helper(erm, self.p['ch_types'])
         return erm
 
     def load_erm_filtered(self):
@@ -254,6 +269,8 @@ class CurrentSub(BaseSub):
     def load_epochs(self):
         if self._epochs is None:
             self._epochs = mne.read_epochs(self.epochs_path)
+
+        self._epochs = pick_types_helper(self._epochs, self.p['ch_types'])
 
         return self._epochs
 
@@ -300,6 +317,9 @@ class CurrentSub(BaseSub):
     def load_evokeds(self):
         if self._evokeds is None:
             self._evokeds = mne.read_evokeds(self.evokeds_path)
+
+        for idx, evoked in enumerate(self._evokeds):
+            self._evokeds[idx] = pick_types_helper(evoked, self.p['ch_types'])
 
         return self._evokeds
 
@@ -601,7 +621,7 @@ class CurrentMRISub(BaseSub):
 
     def save_bem_model(self, bem_model):
         self._bem_model = bem_model
-        mne.write_bem_surfaces(self.bem_model_path, bem_model)
+        mne.write_bem_surfaces(self.bem_model_path, bem_model, overwrite=True)
         self.save_file_params(self.bem_model_path)
 
     def load_bem_solution(self):
@@ -612,7 +632,7 @@ class CurrentMRISub(BaseSub):
 
     def save_bem_solution(self, bem_solution):
         self._bem_solution = bem_solution
-        mne.write_bem_solution(self.bem_solution_path, bem_solution)
+        mne.write_bem_solution(self.bem_solution_path, bem_solution, overwrite=True)
         self.save_file_params(self.bem_solution_path)
 
     def load_vol_source_space(self):

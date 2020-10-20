@@ -809,8 +809,9 @@ def compute_src_distances(mri_sub, n_jobs):
 
 
 @topline
-def prepare_bem(mri_sub):
-    bem_model = mne.make_bem_model(mri_sub.name, conductivity=[0.3], subjects_dir=mri_sub.subjects_dir)
+def prepare_bem(mri_sub, bem_spacing):
+    bem_model = mne.make_bem_model(mri_sub.name, subjects_dir=mri_sub.subjects_dir,
+                                   ico=bem_spacing)
     mri_sub.save_bem_model(bem_model)
 
     bem_solution = mne.make_bem_solution(bem_model)

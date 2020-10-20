@@ -9,7 +9,7 @@ interpolate_bad_chs;Interpolate Bad-Channels;Compute;Preprocessing;True;False;Fa
 get_evokeds;Get Evokeds;Compute;Events;True;False;False;;operations;sub, enable_ica
 tfr;;Compute;Time-Frequency;True;False;False;;operations;sub, enable_ica, tfr_freqs, overwrite_tfr, tfr_method, multitaper_bandwith, stockwell_width, n_jobs
 apply_watershed;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub
-prepare_bem;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub
+prepare_bem;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub, bem_spacing
 setup_src;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub, source_space_spacing, surface, n_jobs
 compute_src_distances;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub, n_jobs
 setup_vol_src;;Compute;MRI-Preprocessing;True;False;False;;operations;mri_sub

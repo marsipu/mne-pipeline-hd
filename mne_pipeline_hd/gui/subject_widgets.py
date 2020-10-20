@@ -1673,9 +1673,6 @@ class SubBadsWizPage(QWizardPage):
         layout.addWidget(self.sub_bad_w)
         self.setLayout(layout)
 
-    def initializePage(self):
-        self.sub_bad_w.populate_listw()
-
 
 class SubjectWizard(QWizard):
     def __init__(self, main_win):
