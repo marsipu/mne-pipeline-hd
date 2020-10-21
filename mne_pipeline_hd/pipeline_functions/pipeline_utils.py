@@ -209,8 +209,9 @@ def compare_prev_run(sub, path, parameters):
             else:
                 result_dict[param] = None
                 print(f'{file_name}: "{param}" is unchanged')
-        except IndexError:
-            result_dict[param] = None
+        except KeyError:
+            result_dict[param] = 'missing'
+            print(f'{file_name}: "{param}" was not recorded yet')
 
     return result_dict
 
