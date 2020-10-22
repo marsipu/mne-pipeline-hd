@@ -1588,7 +1588,9 @@ class CopyBadsDialog(QDialog):
     def __init__(self, parent_w):
         super().__init__(parent_w)
 
-        self.pw = parent_w
+        self.all_files = parent_w.mw.pr.all_files
+        self.bad_channels_dict = parent_w.mw.pr.bad_channels_dict
+        self.info_dict = parent_w.mw.pr.info_dict
 
         self.init_ui()
         self.open()
@@ -1601,24 +1603,11 @@ class CopyBadsDialog(QDialog):
         to_l = QLabel('Copy to:')
         layout.addWidget(to_l, 0, 1)
 
-        self.listw1 = QListWidget()
-        self.listw2 = QListWidget()
-        self.listw2.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.copy_from = list()
+        self.copy_tos = list()
 
-        # Insert items
-        for idx, key in enumerate(self.pw.mw.pr.all_files):
-            self.listw1.insertItem(idx, key)
-            self.listw2.insertItem(idx, key)
-            if key in self.pw.mw.pr.bad_channels_dict:
-                self.listw1.item(idx).setBackground(QColor('green'))
-                self.listw1.item(idx).setForeground(QColor('white'))
-                self.listw2.item(idx).setBackground(QColor('green'))
-                self.listw2.item(idx).setForeground(QColor('white'))
-            else:
-                self.listw1.item(idx).setBackground(QColor('red'))
-                self.listw1.item(idx).setForeground(QColor('white'))
-                self.listw2.item(idx).setBackground(QColor('red'))
-                self.listw2.item(idx).setForeground(QColor('white'))
+        self.listw1 = CheckList(self.all_files, self.copy_from, ui_buttons=False, one_check=True)
+        self.listw2 = CheckList(self.all_files, self.copy_tos)
 
         layout.addWidget(self.listw1, 1, 0)
         layout.addWidget(self.listw2, 1, 1)
@@ -1634,19 +1623,14 @@ class CopyBadsDialog(QDialog):
         self.setLayout(layout)
 
     def copy_bads(self):
-        copy_from = self.listw1.currentItem().text()
-        copy_to_list = self.listw2.selectedItems()
-
-        if copy_from and len(copy_to_list) > 0 and copy_from in self.pw.mw.pr.bad_channels_dict:
-            for copy_to in copy_to_list:
-                self.pw.mw.pr.bad_channels_dict[copy_to.text()] = self.pw.mw.pr.bad_channels_dict[copy_from].copy()
-                idx = self.pw.idx_dict[copy_to.text()]
-                self.pw.listwidget.item(idx).setBackground(QColor('green'))
-                self.pw.listwidget.item(idx).setForeground(QColor('white'))
-                self.listw1.item(idx).setBackground(QColor('green'))
-                self.listw1.item(idx).setForeground(QColor('white'))
-                self.listw2.item(idx).setBackground(QColor('green'))
-                self.listw2.item(idx).setForeground(QColor('white'))
+        # Check, that at least one item is selected in each list and that the copy_from-item is in bad_channels_dict
+        if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[0] in self.bad_channels_dict:
+            copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
+            for copy_to in self.copy_tos:
+                # Make sure, that only channels which exist too in copy_to are copied
+                for rm_ch in [r for r in copy_bad_chs if r not in self.info_dict[copy_to]['ch_names']]:
+                    copy_bad_chs.remove(rm_ch)
+                self.bad_channels_dict[copy_to] = copy_bad_chs
 
 
 class SubBadsDialog(SubBadsWidget):

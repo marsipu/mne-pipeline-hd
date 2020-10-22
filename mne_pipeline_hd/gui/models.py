@@ -100,8 +100,10 @@ class CheckListModel(BaseListModel):
     This model only returns strings, so any value entered will be converted to a string
     """
 
-    def __init__(self, data, checked):
+    def __init__(self, data, checked, one_check=False):
         super().__init__(data)
+        self.one_check = one_check
+
         if data is None:
             self._data = list()
         else:
@@ -123,11 +125,15 @@ class CheckListModel(BaseListModel):
                 return Qt.Unchecked
 
     def setData(self, index, value, role=None):
+        datum = self._data[index.row()]
         if role == Qt.CheckStateRole:
             if value == Qt.Checked:
-                self._checked.append(self._data[index.row()])
+                if self.one_check:
+                    self._checked.clear()
+                self._checked.append(datum)
             else:
-                self._checked.remove(self._data[index.row()])
+                if datum in self._checked:
+                    self._checked.remove(datum)
             self.dataChanged.emit(index, index)
             return True
         return False

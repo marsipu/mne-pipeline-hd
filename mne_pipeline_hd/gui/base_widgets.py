@@ -144,6 +144,8 @@ class CheckList(QWidget):
         Input a list, which will contain the checked items from data (and which intial items will be checked)
     ui_buttons : bool
         If to display Buttons or not
+    one_check : bool
+        If only one Item in the CheckList can be checked at the same time
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -152,11 +154,11 @@ class CheckList(QWidget):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, checked=None, ui_buttons=True, parent=None):
+    def __init__(self, data=None, checked=None, ui_buttons=True, one_check=False, parent=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
 
-        self.model = CheckListModel(data, checked)
+        self.model = CheckListModel(data, checked, one_check=one_check)
         self.view = QListView()
         self.view.setModel(self.model)
 
