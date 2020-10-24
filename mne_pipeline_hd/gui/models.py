@@ -172,7 +172,7 @@ class BaseDictModel(QAbstractTableModel):
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            str(self.getData(index))
+            return str(self.getData(index))
 
     def headerData(self, idx, orientation, role=None):
         if role == Qt.DisplayRole:
@@ -197,14 +197,19 @@ class EditDictModel(BaseDictModel):
     Parameters
     ----------
     data : dict | None
-        Dictionary with keys and values to be displayed and edited, default to empty Dictionary
+        Dictionary with keys and values to be displayed and edited, default to empty Dictionary.
+
+    only_edit : 'keys' | 'values' | None
+        Makes only keys or only values editable. Both are editable if None.
 
     Notes
     -----
     Python 3.7 is required to ensure order in dictionary
     """
-    def __init__(self, data=None):
+
+    def __init__(self, data=None, only_edit=None):
         super().__init__(data)
+        self.only_edit = only_edit
 
     def setData(self, index, value, role=None):
         if role == Qt.EditRole:
@@ -225,7 +230,14 @@ class EditDictModel(BaseDictModel):
         return False
 
     def flags(self, index=QModelIndex()):
-        return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
+        if not self.only_edit:
+            return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
+        elif index.column() == 0 and self.only_edit == 'keys':
+            return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
+        elif index.column() == 1 and self.only_edit == 'values':
+            return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
+        else:
+            return QAbstractItemModel.flags(self, index)
 
     def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
@@ -412,7 +424,8 @@ class AddFilesModel(BasePandasModel):
         if role == Qt.DisplayRole:
             if column != 'Empty-Room?':
                 return str(self.getData(index))
-            return ''
+            else:
+                return ''
 
         elif role == Qt.CheckStateRole:
             if column == 'Empty-Room?':
@@ -467,6 +480,10 @@ class CustomFunctionModel(QAbstractListModel):
 
     def getData(self, index=QModelIndex()):
         return self._data.index[index.row()]
+
+    def updateData(self, new_data):
+        self._data = new_data
+        self.layoutChanged.emit()
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:

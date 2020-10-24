@@ -26,6 +26,58 @@ from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, get_ratio_geometr
 from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
 
 
+class EditGuiArgsDlg(QDialog):
+    def __init__(self, cf_dialog):
+        super().__init__(cf_dialog)
+        self.cf = cf_dialog
+        self.gui_args = dict()
+        self.default_gui_args = dict()
+
+        if self.cf.current_parameter:
+            covered_params = ['data', 'param_name', 'param_alias', 'default', 'unit', 'hint']
+            # Get possible default GUI-Args additional to those covered by the Main-GUI
+            gui_type = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type']
+            if pd.notna(gui_type):
+                gui_handle = getattr(parameter_widgets, gui_type)
+                psig = inspect.signature(gui_handle).parameters
+                self.default_gui_args = {p: psig[p].default for p in psig if p not in covered_params}
+
+            # Get current GUI-Args
+            loaded_gui_args = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_args']
+            if pd.notna(loaded_gui_args):
+                self.gui_args = literal_eval(loaded_gui_args)
+            else:
+                self.gui_args = dict()
+
+            # Fill in all possible Options, which are not already changed
+            for arg_key in [ak for ak in self.default_gui_args if ak not in self.gui_args]:
+                self.gui_args[arg_key] = self.default_gui_args[arg_key]
+
+            if len(self.gui_args) > 0:
+                self.init_ui()
+                self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.addWidget(EditDict(data=self.gui_args, ui_buttons=False))
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def closeEvent(self, event):
+        # Remove all options which don't differ from the default
+        for arg_key in [ak for ak in self.gui_args if self.gui_args[ak] == self.default_gui_args[ak]]:
+            self.gui_args.pop(arg_key)
+
+        if len(self.gui_args) > 0:
+            self.cf.pguiargs_changed(self.gui_args)
+
+        event.accept()
+
+
 class CustomFunctionImport(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -72,7 +124,7 @@ class CustomFunctionImport(QDialog):
 
         func_cmbx_layout = QHBoxLayout()
         self.func_cmbx = QComboBox()
-        self.func_cmbx.currentIndexChanged.connect(self.func_item_selected)
+        self.func_cmbx.currentTextChanged.connect(self.func_item_selected)
         func_cmbx_layout.addWidget(self.func_cmbx)
 
         self.func_chkl = QLabel()
@@ -103,6 +155,7 @@ class CustomFunctionImport(QDialog):
         setup_layout = QVBoxLayout()
         # The Function-Setup-Groupbox
         func_setup_gbox = QGroupBox('Function-Setup')
+        func_setup_gbox.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         func_setup_layout = QVBoxLayout()
 
         # Hint for obligatory items
@@ -132,7 +185,9 @@ class CustomFunctionImport(QDialog):
         tab_layout = QHBoxLayout()
         self.tab_cmbx = QComboBox()
         self.tab_cmbx.setToolTip('Choose the Tab for the function (Compute/Plot/...)')
+        self.tab_cmbx.setEditable(True)
         self.tab_cmbx.activated.connect(self.tab_cmbx_changed)
+        self.tab_cmbx.editTextChanged.connect(self.tab_cmbx_edited)
         tab_layout.addWidget(self.tab_cmbx)
         self.tab_chkl = QLabel()
         tab_layout.addWidget(self.tab_chkl)
@@ -213,6 +268,7 @@ class CustomFunctionImport(QDialog):
 
         # The Parameter-Setup-Group-Box
         self.param_setup_gbox = QGroupBox('Parameter-Setup')
+        self.param_setup_gbox.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         param_setup_layout = QVBoxLayout()
         self.exstparam_l = QLabel()
         self.exstparam_l.setWordWrap(True)
@@ -222,6 +278,7 @@ class CustomFunctionImport(QDialog):
         self.param_view = QListView()
         self.param_model = CustomFunctionModel(self.add_pd_params)
         self.param_view.setModel(self.param_model)
+        self.param_view.selectionModel().currentChanged.connect(self.param_item_selected)
         param_setup_layout.addWidget(self.param_view)
 
         param_setup_formlayout = QFormLayout()
@@ -261,10 +318,10 @@ class CustomFunctionImport(QDialog):
         guitype_layout.addWidget(self.guitype_chkl)
         param_setup_formlayout.addRow('GUI-Type', guitype_layout)
 
-        self.guiargs_w = EditDict()
-        self.guiargs_w.setToolTip('Set Arguments for the GUI in a dict (optional)')
-        self.guiargs_w.model.dataChanged.connect(self.pguiargs_changed)
-        param_setup_formlayout.addRow('GUI-Arguments (optional)', self.guiargs_w)
+        self.guiargs_bt = QPushButton('Edit')
+        self.guiargs_bt.clicked.connect(partial(EditGuiArgsDlg, self))
+        self.guiargs_bt.setToolTip('Set Arguments for the GUI in a dict (optional)')
+        param_setup_formlayout.addRow('Additional Options', self.guiargs_bt)
 
         param_setup_layout.addLayout(param_setup_formlayout)
         self.param_setup_gbox.setLayout(param_setup_layout)
@@ -300,7 +357,7 @@ class CustomFunctionImport(QDialog):
         try:
             current_index = list(self.add_pd_funcs.index).index(self.current_function)
         except ValueError:
-            current_index = -1
+            current_index = 0
         self.func_cmbx.setCurrentIndex(current_index)
 
     def clear_func_items(self):
@@ -327,28 +384,28 @@ class CustomFunctionImport(QDialog):
         self.unit_le.clear()
         self.guitype_cmbx.setCurrentIndex(-1)
         self.guitype_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
-        self.guiargs_w.replace_data({})
         self.param_setup_gbox.setEnabled(False)
 
-    def func_item_selected(self, idx):
-        self.current_function = self.func_cmbx.itemText(idx)
-        self.update_editor()
-        self.update_func_setup()
+    def func_item_selected(self, text):
+        if text:
+            self.current_function = text
+            self.update_editor()
+            self.update_func_setup()
 
-        if self.current_function in list(self.add_pd_params['function']):
-            self.param_setup_gbox.setEnabled(True)
-            self.update_param_view()
-            self.current_parameter = \
-                self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function].index[0]
-            self.update_exst_param_label()
-            self.update_param_setup()
-        else:
-            self.update_exst_param_label()
-            # Clear existing entries
-            self.clear_param_items()
+            if self.current_function in list(self.add_pd_params['function']):
+                self.param_setup_gbox.setEnabled(True)
+                self.update_param_view()
+                self.current_parameter = \
+                    self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function].index[0]
+                self.update_exst_param_label()
+                self.update_param_setup()
+            else:
+                self.update_exst_param_label()
+                # Clear existing entries
+                self.clear_param_items()
 
-    def param_item_selected(self, current, _):
-        self.current_parameter = self.param_model.itemData(current)
+    def param_item_selected(self, current):
+        self.current_parameter = self.param_model.getData(current)
         self.update_param_setup()
 
     def update_editor(self):
@@ -435,10 +492,6 @@ class CustomFunctionImport(QDialog):
         else:
             self.guitype_cmbx.setCurrentIndex(-1)
             self.guitype_chkl.setPixmap(self.no_icon.pixmap(QSize(16, 16)))
-        if pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_args']):
-            self.guiargs_w.replace_data(literal_eval(self.add_pd_params.loc[self.current_parameter, 'gui_args']))
-        else:
-            self.guiargs_w.replace_data({})
 
     def check_func_setup(self):
         # Check, that all obligatory items of the Subject-Setup and the Parameter-Setup are set
@@ -446,15 +499,19 @@ class CustomFunctionImport(QDialog):
                 and [pd.notna(self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function, i])
                      for i in self.oblig_params][0].all()):
             self.func_chkl.setPixmap(self.yes_icon.pixmap(16, 16))
-            self.add_pd_funcs.loc[self.curren_function, 'ready'] = 1
+            self.add_pd_funcs.loc[self.current_function, 'ready'] = 1
         else:
             self.func_chkl.setPixmap(self.no_icon.pixmap(16, 16))
+
+    def update_param_view(self):
+        current_pd_params = self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function]
+        self.param_model.updateData(current_pd_params)
 
     def check_param_setup(self):
         # Check, that all obligatory items of the Parameter-Setup are set
         if all([pd.notna(self.add_pd_params.loc[self.current_parameter, i]) for i in self.oblig_params]):
             self.add_pd_params.loc[self.current_parameter, 'ready'] = 1
-        self.param_model.layoutChanged.emit()
+        self.update_param_view()
 
     # Line-Edit Change-Signals
     def falias_changed(self, text):
@@ -499,16 +556,19 @@ class CustomFunctionImport(QDialog):
                 result = self.test_param_gui(default_string=text,
                                              gui_type=self.add_pd_params.loc[self.current_parameter, 'gui_type'])
             else:
-                result = True
-            if result:
+                result = None
+            if not result:
                 self.add_pd_params.loc[self.current_parameter, 'default'] = text
                 self.default_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
                 self.check_param_setup()
                 self.check_func_setup()
             else:
                 self.default_le.clear()
+                self.add_pd_params.loc[self.current_parameter, 'default'] = None
                 QMessageBox.warning(self, 'Invalid default-value',
-                                    'The default-value doesn\'t match the selected gui-type')
+                                    f'The default-value doesn\'t match the selected gui-type '
+                                    f'and raises the following error:\n'
+                                    f'{result}')
 
     def punit_changed(self, text):
         if self.current_parameter:
@@ -517,15 +577,6 @@ class CustomFunctionImport(QDialog):
     def pdescription_changed(self, text):
         if self.current_parameter:
             self.add_pd_params.loc[self.current_parameter, 'description'] = text
-
-    def pguiargs_changed(self):
-        if self.current_parameter:
-            self.add_pd_params.loc[self.current_parameter, 'gui_args'] = self.guiargs_w.model._data
-
-    def update_param_view(self):
-        current_pd_params = self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function]
-        self.param_model._data = current_pd_params
-        self.param_model.layoutChanged.emit()
 
     def populate_tab_cmbx(self):
         self.tab_cmbx.insertItems(0, set(self.mw.pd_funcs['tab']))
@@ -542,6 +593,12 @@ class CustomFunctionImport(QDialog):
     def tab_cmbx_changed(self, idx):
         if self.current_function:
             self.add_pd_funcs.loc[self.current_function, 'tab'] = self.tab_cmbx.itemText(idx)
+            self.tab_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
+            self.check_func_setup()
+
+    def tab_cmbx_edited(self, text):
+        if self.current_function:
+            self.add_pd_funcs.loc[self.current_function, 'tab'] = text
             self.tab_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
@@ -565,16 +622,39 @@ class CustomFunctionImport(QDialog):
                 result = self.test_param_gui(default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
                                              gui_type=text)
             else:
-                result = True
-            if result:
+                result = None
+
+            if not result:
                 self.add_pd_params.loc[self.current_parameter, 'gui_type'] = text
                 self.guitype_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
                 self.check_param_setup()
                 self.check_func_setup()
             else:
                 self.guitype_cmbx.setCurrentIndex(-1)
-                QMessageBox.warning(self, 'Invalid gui_type-value',
-                                    'The gui_type-value doesn\'t match the entered default_value')
+                self.add_pd_params.loc[self.current_parameter, 'gui_type'] = None
+                QMessageBox.warning(self, 'Invalid default-value',
+                                    f'The default-value doesn\'t match the selected gui-type '
+                                    f'and raises the following error:\n'
+                                    f'{result}')
+
+    def pguiargs_changed(self, gui_args):
+        if self.current_parameter:
+            # Check, if default_value and gui_type match
+            if pd.notna(self.add_pd_params.loc[self.current_parameter, ['default', 'gui_type']]).all():
+                result = self.test_param_gui(default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
+                                             gui_type=self.add_pd_params.loc[self.current_parameter, 'gui_type'],
+                                             gui_args=gui_args)
+            else:
+                result = None
+
+            if not result:
+                self.add_pd_params.loc[self.current_parameter, 'gui_args'] = str(gui_args)
+            else:
+                self.add_pd_params.loc[self.current_parameter, 'gui_args'] = None
+                QMessageBox.warning(self, 'Invalid default-value',
+                                    f'The gui_args don\'t match the selected gui-type '
+                                    f'and raise the following error:\n'
+                                    f'{result}')
 
     def get_functions(self):
         # Clear Function- and Parameter-DataFrame
@@ -604,25 +684,28 @@ class CustomFunctionImport(QDialog):
         if self.cf_path_string:
             ImportFuncsCheckList(self, edit_existing=True)
 
-    def test_param_gui(self, default_string, gui_type):
-        # Simulate CustomFunctionImport as Project-Class
-        self.parameters = {'Test': {}}
-        self.p_preset = 'Test'
+    def test_param_gui(self, default_string, gui_type, gui_args=None):
+        # Test ParamGui with Value
+        test_parameters = dict()
         try:
-            self.parameters['Test'][self.current_parameter] = literal_eval(default_string)
+            test_parameters[self.current_parameter] = literal_eval(default_string)
         except (ValueError, SyntaxError):
             # Allow parameters to be defined by functions by numpy, etc.
             if self.add_pd_params.loc[self.current_parameter, 'gui_type'] == 'FuncGui':
-                self.parameters['Test'][self.current_parameter] = eval(default_string)
+                test_parameters[self.current_parameter] = eval(default_string)
             else:
-                self.parameters['Test'][self.current_parameter] = default_string
+                test_parameters[self.current_parameter] = default_string
         gui_handle = getattr(parameter_widgets, gui_type)
         try:
-            gui_handle(self, self.current_parameter, 'Test', '')
-        except TypeError:
-            result = False
+            if gui_args:
+                gui_handle(data=test_parameters, param_name=self.current_parameter, **gui_args)
+            else:
+                gui_handle(data=test_parameters, param_name=self.current_parameter)
+        except Exception as e:
+            result = e
         else:
-            result = True
+            result = None
+
         return result
 
     def show_param_gui(self):
@@ -645,6 +728,8 @@ class CustomFunctionImport(QDialog):
 
         if answer == QMessageBox.Yes or answer is None:
             event.accept()
+        else:
+            event.ignore()
 
 
 class ImportFuncsCheckList(QDialog):
@@ -735,6 +820,8 @@ class ImportFuncsCheckList(QDialog):
     def closeEvent(self, event):
         self.load_selected_functions()
         self.cf.update_func_cmbx()
+        self.cf.update_exst_param_label()
+        self.cf.update_editor()
         event.accept()
 
 
@@ -785,18 +872,18 @@ class TestParamGui(QDialog):
     def __init__(self, cf_dialog):
         super().__init__(cf_dialog)
         self.cf = cf_dialog
-        # Replacement for Parameters in Project for Testing
-        self.parameters = {'Test': {}}
-        self.p_preset = 'Test'
+        # Dict as Replacement for Parameters in Project for Testing
+        self.test_parameters = dict()
+
         string_param = self.cf.add_pd_params.loc[self.cf.current_parameter, 'default']
         try:
-            self.parameters['Test'][self.cf.current_parameter] = literal_eval(string_param)
+            self.test_parameters[self.cf.current_parameter] = literal_eval(string_param)
         except (ValueError, SyntaxError):
             # Allow parameters to be defined by functions by numpy, etc.
             if self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type'] == 'FuncGui':
-                self.parameters['Test'][self.cf.current_parameter] = eval(string_param)
+                self.test_parameters[self.cf.current_parameter] = eval(string_param)
             else:
-                self.parameters['Test'][self.cf.current_parameter] = string_param
+                self.test_parameters[self.cf.current_parameter] = string_param
 
         self.init_ui()
         self.open()
@@ -824,7 +911,8 @@ class TestParamGui(QDialog):
         except (SyntaxError, ValueError):
             gui_args = {}
         try:
-            param_gui = gui_handle(self, self.cf.current_parameter, param_alias, hint, **gui_args)
+            param_gui = gui_handle(data=self.test_parameters, param_name=self.cf.current_parameter,
+                                   param_alias=param_alias, hint=hint, **gui_args)
             layout.addWidget(param_gui)
         except:
             err = get_exception_tuple()

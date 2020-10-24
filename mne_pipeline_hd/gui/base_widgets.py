@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QInputDialog, QListView, QPushButton, QSpinBox,
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QInputDialog, QListView, QPushButton, QSizePolicy, QSpinBox,
                              QTabWidget, QTableView, QVBoxLayout, QWidget)
 
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
@@ -66,6 +66,8 @@ class EditList(QWidget):
         Input a list with contents to display
     ui_buttons : bool
         If to display Buttons or not
+    ui_button_pos: str
+        The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -74,9 +76,10 @@ class EditList(QWidget):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, ui_buttons=True, parent=None):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
+        self.ui_button_pos = ui_button_pos
 
         self.model = EditListModel(data)
         self.view = QListView()
@@ -85,25 +88,35 @@ class EditList(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.addWidget(self.view)
+        if self.ui_button_pos in ['top', 'bottom']:
+            layout = QVBoxLayout()
+            bt_layout = QHBoxLayout()
+        else:
+            layout = QHBoxLayout()
+            bt_layout = QVBoxLayout()
 
         if self.ui_buttons:
-            bt_layout = QHBoxLayout()
-
             addrow_bt = QPushButton('Add')
+            addrow_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             addrow_bt.clicked.connect(self.add_row)
             bt_layout.addWidget(addrow_bt)
 
             rmrow_bt = QPushButton('Remove')
+            rmrow_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             rmrow_bt.clicked.connect(self.remove_row)
             bt_layout.addWidget(rmrow_bt)
 
             edit_bt = QPushButton('Edit')
+            edit_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             edit_bt.clicked.connect(self.edit_item)
             bt_layout.addWidget(edit_bt)
 
             layout.addLayout(bt_layout)
+
+        if self.ui_button_pos in ['top', 'left']:
+            layout.addWidget(self.view)
+        else:
+            layout.insertWidget(0, self.view)
 
         self.setLayout(layout)
 
@@ -256,14 +269,17 @@ class EditDict(QWidget):
         Input a pandas DataFrame with contents to display
     ui_buttons : bool
         If to display Buttons or not
+    ui_button_pos: str
+        The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
     """
 
-    def __init__(self, data=None, ui_buttons=True, parent=None):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
+        self.ui_button_pos = ui_button_pos
 
         self.model = EditDictModel(data)
         self.view = QTableView()
@@ -272,25 +288,35 @@ class EditDict(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.addWidget(self.view)
+        if self.ui_button_pos in ['top', 'bottom']:
+            layout = QVBoxLayout()
+            bt_layout = QHBoxLayout()
+        else:
+            layout = QHBoxLayout()
+            bt_layout = QVBoxLayout()
 
         if self.ui_buttons:
-            bt_layout = QHBoxLayout()
-
             addrow_bt = QPushButton('Add')
+            addrow_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             addrow_bt.clicked.connect(self.add_row)
             bt_layout.addWidget(addrow_bt)
 
             rmrow_bt = QPushButton('Remove')
+            rmrow_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             rmrow_bt.clicked.connect(self.remove_row)
             bt_layout.addWidget(rmrow_bt)
 
             edit_bt = QPushButton('Edit')
+            edit_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             edit_bt.clicked.connect(self.edit_item)
             bt_layout.addWidget(edit_bt)
 
             layout.addLayout(bt_layout)
+
+        if self.ui_button_pos in ['top', 'left']:
+            layout.addWidget(self.view)
+        else:
+            layout.insertWidget(0, self.view)
 
         self.setLayout(layout)
 
@@ -371,6 +397,8 @@ class EditPandasTable(QWidget):
         Input a pandas DataFrame with contents to display
     ui_buttons : bool
         If to display Buttons or not
+    ui_button_pos: str
+        The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -380,9 +408,10 @@ class EditPandasTable(QWidget):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=pandas.DataFrame([]), ui_buttons=True, parent=None):
+    def __init__(self, data=pandas.DataFrame([]), ui_buttons=True, ui_button_pos='right', parent=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
+        self.ui_button_pos = ui_button_pos
 
         self.model = EditPandasModel(data)
         self.view = QTableView()
@@ -396,14 +425,17 @@ class EditPandasTable(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        layout = QHBoxLayout()
-        layout.addWidget(self.view)
-
-        if self.ui_buttons:
+        if self.ui_button_pos in ['top', 'bottom']:
+            layout = QVBoxLayout()
+            bt_layout = QHBoxLayout()
+        else:
+            layout = QHBoxLayout()
             bt_layout = QVBoxLayout()
 
+        if self.ui_buttons:
             addr_layout = QHBoxLayout()
             addr_bt = QPushButton('Add Row')
+            addr_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             addr_bt.clicked.connect(self.add_row)
             addr_layout.addWidget(addr_bt)
             addr_layout.addWidget(self.rows_chkbx)
@@ -411,32 +443,43 @@ class EditPandasTable(QWidget):
 
             addc_layout = QHBoxLayout()
             addc_bt = QPushButton('Add Column')
+            addc_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             addc_bt.clicked.connect(self.add_column)
             addc_layout.addWidget(addc_bt)
             addc_layout.addWidget(self.cols_chkbx)
             bt_layout.addLayout(addc_layout)
 
             rmr_bt = QPushButton('Remove Row')
+            rmr_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             rmr_bt.clicked.connect(self.remove_row)
             bt_layout.addWidget(rmr_bt)
 
             rmc_bt = QPushButton('Remove Column')
+            rmc_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             rmc_bt.clicked.connect(self.remove_column)
             bt_layout.addWidget(rmc_bt)
 
             edit_bt = QPushButton('Edit')
+            edit_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             edit_bt.clicked.connect(self.edit_item)
             bt_layout.addWidget(edit_bt)
 
             editrh_bt = QPushButton('Edit Row-Header')
+            editrh_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             editrh_bt.clicked.connect(self.edit_row_header)
             bt_layout.addWidget(editrh_bt)
 
             editch_bt = QPushButton('Edit Column-Header')
+            editch_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             editch_bt.clicked.connect(self.edit_col_header)
             bt_layout.addWidget(editch_bt)
 
             layout.addLayout(bt_layout)
+
+        if self.ui_button_pos in ['top', 'left']:
+            layout.addWidget(self.view)
+        else:
+            layout.insertWidget(0, self.view)
 
         self.setLayout(layout)
 
@@ -518,25 +561,25 @@ class AllBaseWidgets(QWidget):
     def __init__(self):
         super().__init__()
 
-        # self.exlist = ['Athena', 'Hephaistos', 'Zeus', 'Ares', 'Aphrodite', 'Poseidon']
-        # self.exdict = {'Athena': 231,
-        #                'Hephaistos': 44,
-        #                'Zeus': 'Boss',
-        #                'Ares': 'War'}
-        # self.exchecked = ['Athena']
-        # self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
-        # self.extree = {'A': {'Aa': 1,
-        #                      'Ab': {'Ab1': 'Hermes',
-        #                             'Ab2': 'Hades'},
-        #                      'Ac': [1, 2, 3, 4]},
-        #                'B': ['Appolo', 42, 128],
-        #                'C': (1, 2, 3)}
+        self.exlist = ['Athena', 'Hephaistos', 'Zeus', 'Ares', 'Aphrodite', 'Poseidon']
+        self.exdict = {'Athena': 231,
+                       'Hephaistos': 44,
+                       'Zeus': 'Boss',
+                       'Ares': 'War'}
+        self.exchecked = ['Athena']
+        self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
+        self.extree = {'A': {'Aa': 1,
+                             'Ab': {'Ab1': 'Hermes',
+                                    'Ab2': 'Hades'},
+                             'Ac': [1, 2, 3, 4]},
+                       'B': ['Appolo', 42, 128],
+                       'C': (1, 2, 3)}
 
-        self.exlist = None
-        self.exchecked = None
-        self.expd = None
-        self.extree = None
-        self.exdict = None
+        # self.exlist = None
+        # self.exchecked = None
+        # self.expd = None
+        # self.extree = None
+        # self.exdict = None
 
         self.widget_dict = {'BaseList': [self.exlist],
                             'EditList': [self.exlist],
