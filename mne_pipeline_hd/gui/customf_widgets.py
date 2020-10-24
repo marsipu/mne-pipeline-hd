@@ -1,6 +1,5 @@
 import inspect
 import shutil
-import types
 from ast import literal_eval
 from functools import partial
 from importlib import util
@@ -73,7 +72,7 @@ class CustomFunctionImport(QDialog):
 
         func_cmbx_layout = QHBoxLayout()
         self.func_cmbx = QComboBox()
-        self.func_cmbx.activated.connect(self.func_item_selected)
+        self.func_cmbx.currentIndexChanged.connect(self.func_item_selected)
         func_cmbx_layout.addWidget(self.func_cmbx)
 
         self.func_chkl = QLabel()
@@ -677,7 +676,7 @@ class ImportFuncsCheckList(QDialog):
         for func_key in self.module.__dict__:
             func = self.module.__dict__[func_key]
             # Only functions are allowed (Classes should be called from function)
-            if isinstance(func, types.FunctionType) and func.__module__ == self.module.__name__:
+            if callable(func) and func.__module__ == self.module.__name__:
                 # Check, if function is already existing
                 if func_key not in self.cf.exst_functions or self.edit_existing:
                     self.loaded_cfs.append(func_key)
@@ -721,15 +720,11 @@ class ImportFuncsCheckList(QDialog):
             self.cf.code_dict[func_key] = inspect.getsource(func)
 
             # Get Parameters and divide them in existing and setup
-            signature = inspect.signature(func)
-            all_parameters = [signature.parameters[p].name for p in signature.parameters]
-            self.cf.add_pd_funcs.loc[func_key, 'func_args'] = ','.join(all_parameters)
+            all_parameters = list(inspect.signature(func).parameters)
             existing_parameters = []
 
             for param_key in all_parameters:
                 if param_key in self.cf.exst_parameters or param_key in self.cf.add_pd_params.index:
-                    self.cf.add_pd_params.loc[param_key, 'function'] = func_key
-                    self.cf.add_pd_params.loc[param_key, 'ready'] = 0
                     existing_parameters.append(param_key)
                 else:
                     self.cf.add_pd_params.loc[param_key, 'function'] = func_key

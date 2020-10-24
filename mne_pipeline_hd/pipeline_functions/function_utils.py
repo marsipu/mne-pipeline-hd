@@ -7,14 +7,14 @@ inspired by: https://doi.org/10.3389/fnins.2018.00006
 @github: https://github.com/marsipu/mne_pipeline_hd
 License: BSD (3-clause)
 """
+import inspect
 import logging
 import re
 import time
 
-import pandas as pd
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from ..basic_functions.loading import BaseSub, CurrentGAGroup, CurrentMRISub, CurrentSub
+from ..basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
 from ..basic_functions.plot import close_all
 from ..gui.gui_utils import Worker
 
@@ -62,12 +62,9 @@ def func_from_def(func_name, sub, main_win):
     else:
         raise ModuleNotFoundError(name=module_name)
 
-    # Get Argument-Names from functions.csv (alias pd_funcs)
-    arg_string = main_win.pd_funcs.loc[func_name, 'func_args']
-    if pd.notna(arg_string):
-        arg_names = arg_string.split(',')
-    else:
-        arg_names = []
+    # Get arguments from function signature
+    func = getattr(module, func_name)
+    arg_names = list(inspect.signature(func).parameters)
 
     keyword_arguments = get_arguments(arg_names, sub, main_win)
 
