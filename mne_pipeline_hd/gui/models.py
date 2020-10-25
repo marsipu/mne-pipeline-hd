@@ -19,7 +19,7 @@ class BaseListModel(QAbstractListModel):
 
     Parameters
     ----------
-    data : list
+    data : list()
         input existing list here, otherwise defaults to empty list
 
     """
@@ -47,7 +47,7 @@ class EditListModel(BaseListModel):
 
     Parameters
     ----------
-    data : list
+    data : list()
         input existing list here, otherwise defaults to empty list
 
     Notes
@@ -92,10 +92,10 @@ class CheckListModel(BaseListModel):
 
     Parameters
     ----------
-    data : list
+    data : list()
         list with content to be displayed, defaults to empty list
 
-    checked : list
+    checked : list()
         list which stores the checked items from data
 
     Notes

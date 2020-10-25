@@ -3,7 +3,6 @@ import shutil
 from ast import literal_eval
 from functools import partial
 from importlib import util
-from math import isnan
 from os import mkdir
 from os.path import isdir, isfile, join
 from pathlib import Path
@@ -20,7 +19,7 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QTextEdit, QVBoxLayout)
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import BaseList, EditDict
+from mne_pipeline_hd.gui.base_widgets import BaseList, EditDict, EditList
 from mne_pipeline_hd.gui.dialogs import ErrorDialog
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, get_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
@@ -34,7 +33,7 @@ class EditGuiArgsDlg(QDialog):
         self.default_gui_args = dict()
 
         if self.cf.current_parameter:
-            covered_params = ['data', 'param_name', 'param_alias', 'default', 'unit', 'hint']
+            covered_params = ['data', 'param_name', 'param_alias', 'default', 'param_unit', 'hint']
             # Get possible default GUI-Args additional to those covered by the Main-GUI
             gui_type = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type']
             if pd.notna(gui_type):
@@ -76,6 +75,27 @@ class EditGuiArgsDlg(QDialog):
             self.cf.pguiargs_changed(self.gui_args)
 
         event.accept()
+
+
+class ChooseOptions(QDialog):
+    def __init__(self, cf_dialog, gui_type, options):
+        super().__init__(cf_dialog)
+        self.cf = cf_dialog
+        self.gui_type = gui_type
+        self.options = options
+
+        self.init_ui()
+        # If open(), execution doesn't stop after the dialog
+        self.exec()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel(f'For {self.gui_type}, you need to specify the options to choose from'))
+        layout.addWidget(EditList(data=self.options))
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+        self.setLayout(layout)
 
 
 class CustomFunctionImport(QDialog):
@@ -551,24 +571,10 @@ class CustomFunctionImport(QDialog):
 
     def pdefault_changed(self, text):
         if self.current_parameter:
-            # Check, if default_value and gui_type match
-            if pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_type']):
-                result = self.test_param_gui(default_string=text,
-                                             gui_type=self.add_pd_params.loc[self.current_parameter, 'gui_type'])
-            else:
-                result = None
-            if not result:
-                self.add_pd_params.loc[self.current_parameter, 'default'] = text
-                self.default_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
-                self.check_param_setup()
-                self.check_func_setup()
-            else:
-                self.default_le.clear()
-                self.add_pd_params.loc[self.current_parameter, 'default'] = None
-                QMessageBox.warning(self, 'Invalid default-value',
-                                    f'The default-value doesn\'t match the selected gui-type '
-                                    f'and raises the following error:\n'
-                                    f'{result}')
+            self.add_pd_params.loc[self.current_parameter, 'default'] = text
+            self.default_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
+            self.check_param_setup()
+            self.check_func_setup()
 
     def punit_changed(self, text):
         if self.current_parameter:
@@ -616,11 +622,30 @@ class CustomFunctionImport(QDialog):
 
     def guitype_cmbx_changed(self, idx):
         text = self.guitype_cmbx.itemText(idx)
+        gui_args = dict()
+        options = list()
+
         if self.current_parameter:
+            # If ComboGui or CheckListGui, options have to be set:
+            if text in ['ComboGui', 'CheckListGui']:
+                # Check if options already in gui_args
+                loaded_gui_args = self.add_pd_params.loc[self.current_parameter, 'gui_args']
+                if pd.notna(loaded_gui_args):
+                    gui_args = literal_eval(loaded_gui_args)
+                    if 'options' in gui_args:
+                        options = gui_args['options']
+
+                ChooseOptions(self, text, options)
+
+                # Save the gui_args in add_pd_params
+                gui_args['options'] = options
+                self.add_pd_params.loc[self.current_parameter, 'gui_args'] = str(gui_args)
+
             # Check, if default_value and gui_type match
             if pd.notna(self.add_pd_params.loc[self.current_parameter, 'default']):
-                result = self.test_param_gui(default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
-                                             gui_type=text)
+                result, _ = self.test_param_gui(
+                        default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
+                        gui_type=text, gui_args=gui_args)
             else:
                 result = None
 
@@ -632,18 +657,15 @@ class CustomFunctionImport(QDialog):
             else:
                 self.guitype_cmbx.setCurrentIndex(-1)
                 self.add_pd_params.loc[self.current_parameter, 'gui_type'] = None
-                QMessageBox.warning(self, 'Invalid default-value',
-                                    f'The default-value doesn\'t match the selected gui-type '
-                                    f'and raises the following error:\n'
-                                    f'{result}')
 
     def pguiargs_changed(self, gui_args):
         if self.current_parameter:
             # Check, if default_value and gui_type match
             if pd.notna(self.add_pd_params.loc[self.current_parameter, ['default', 'gui_type']]).all():
-                result = self.test_param_gui(default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
-                                             gui_type=self.add_pd_params.loc[self.current_parameter, 'gui_type'],
-                                             gui_args=gui_args)
+                result, _ = self.test_param_gui(
+                        default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
+                        gui_type=self.add_pd_params.loc[self.current_parameter, 'gui_type'],
+                        gui_args=gui_args)
             else:
                 result = None
 
@@ -651,10 +673,6 @@ class CustomFunctionImport(QDialog):
                 self.add_pd_params.loc[self.current_parameter, 'gui_args'] = str(gui_args)
             else:
                 self.add_pd_params.loc[self.current_parameter, 'gui_args'] = None
-                QMessageBox.warning(self, 'Invalid default-value',
-                                    f'The gui_args don\'t match the selected gui-type '
-                                    f'and raise the following error:\n'
-                                    f'{result}')
 
     def get_functions(self):
         # Clear Function- and Parameter-DataFrame
@@ -695,18 +713,34 @@ class CustomFunctionImport(QDialog):
                 test_parameters[self.current_parameter] = eval(default_string)
             else:
                 test_parameters[self.current_parameter] = default_string
+        if pd.notna(self.add_pd_params.loc[self.current_parameter, 'alias']):
+            param_alias = self.add_pd_params.loc[self.current_parameter, 'alias']
+        else:
+            param_alias = self.current_parameter
+        if pd.notna(self.add_pd_params.loc[self.current_parameter, 'description']):
+            hint = self.cf.add_pd_params.loc[self.cf.current_parameter, 'description']
+        else:
+            hint = ''
+
         gui_handle = getattr(parameter_widgets, gui_type)
         try:
             if gui_args:
-                gui_handle(data=test_parameters, param_name=self.current_parameter, **gui_args)
+                gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
+                                 param_alias=param_alias, hint=hint, **gui_args)
             else:
-                gui_handle(data=test_parameters, param_name=self.current_parameter)
+                gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
+                                 param_alias=param_alias, hint=hint)
         except Exception as e:
+            gui = None
             result = e
+            QMessageBox.warning(self, 'Error in ParamGui',
+                                f'The execution of {gui_type} with {default_string} as default '
+                                f'and {gui_args} as additional parameters raises the following error:\n'
+                                f'{result}')
         else:
             result = None
 
-        return result
+        return result, gui
 
     def show_param_gui(self):
         if self.current_parameter and pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_type']):
@@ -875,18 +909,18 @@ class TestParamGui(QDialog):
         # Dict as Replacement for Parameters in Project for Testing
         self.test_parameters = dict()
 
-        string_param = self.cf.add_pd_params.loc[self.cf.current_parameter, 'default']
+        default_string = self.cf.add_pd_params.loc[self.cf.current_parameter, 'default']
+        gui_type = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type']
         try:
-            self.test_parameters[self.cf.current_parameter] = literal_eval(string_param)
-        except (ValueError, SyntaxError):
-            # Allow parameters to be defined by functions by numpy, etc.
-            if self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type'] == 'FuncGui':
-                self.test_parameters[self.cf.current_parameter] = eval(string_param)
-            else:
-                self.test_parameters[self.cf.current_parameter] = string_param
+            gui_args = literal_eval(self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_args'])
+        except (SyntaxError, ValueError):
+            gui_args = {}
 
-        self.init_ui()
-        self.open()
+        self.result, self.gui = self.cf.test_param_gui(default_string, gui_type, gui_args)
+
+        if not self.result:
+            self.init_ui()
+            self.open()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -897,27 +931,8 @@ class TestParamGui(QDialog):
             void_bt.setDefault(True)
             layout.addWidget(void_bt)
 
-        gui_handle = getattr(parameter_widgets, self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type'])
-        if isnan(self.cf.add_pd_params.loc[self.cf.current_parameter, 'alias']):
-            param_alias = self.cf.current_parameter
-        else:
-            param_alias = self.cf.add_pd_params.loc[self.cf.current_parameter, 'alias']
-        if isnan(self.cf.add_pd_params.loc[self.cf.current_parameter, 'description']):
-            hint = ''
-        else:
-            hint = self.cf.add_pd_params.loc[self.cf.current_parameter, 'description']
-        try:
-            gui_args = literal_eval(self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_args'])
-        except (SyntaxError, ValueError):
-            gui_args = {}
-        try:
-            param_gui = gui_handle(data=self.test_parameters, param_name=self.cf.current_parameter,
-                                   param_alias=param_alias, hint=hint, **gui_args)
-            layout.addWidget(param_gui)
-        except:
-            err = get_exception_tuple()
-            ErrorDialog(err, self)
-            self.close()
+        layout.addWidget(self.gui)
+
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)

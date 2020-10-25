@@ -432,17 +432,17 @@ class ComboGui(Param):
         if hint:
             self.param_widget.setToolTip(hint)
         for option in self.options:
-            self.param_widget.addItem(option)
+            self.param_widget.addItem(str(option))
         self.read_param()
         self.set_param()
         self.save_param()
         self.init_h_layout()
 
     def set_param(self):
-        self.param_widget.setCurrentText(self.param_value)
+        self.param_widget.setCurrentText(str(self.param_value))
 
     def get_param(self):
-        self.param_value = self.param_widget.currentText()
+        self.param_value = literal_eval(self.param_widget.currentText())
         self.save_param()
 
         return self.param_value
@@ -523,7 +523,8 @@ class CheckListDialog(QDialog):
 
     def init_layout(self):
         layout = QVBoxLayout()
-        layout.addWidget(CheckList(self.paramw.options, self.paramw.param_value))
+        layout.addWidget(CheckList(data=self.paramw.options, checked=self.paramw.param_value,
+                                   one_check=self.paramw.one_check))
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
@@ -540,11 +541,12 @@ class CheckListDialog(QDialog):
 class CheckListGui(Param):
     """A GUI for List-Parameters"""
 
-    def __init__(self, data, param_name, options, param_alias=None, hint=None, default=None):
+    def __init__(self, data, param_name, options, param_alias=None, hint=None, default=None, one_check=False):
         super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.options = options
         self.param_value = list()
+        self.one_check = one_check
 
         self.name_label = QLabel(f'{self.param_alias}:')
         if hint:
@@ -552,9 +554,8 @@ class CheckListGui(Param):
         self.value_label = QLabel('')
 
         self.read_param()
-        # Can be removed soon (30.09.2020)
-        if 'grad' in self.param_value:
-            self.param_value = ['meg']
+        if not isinstance(self.param_value, list):
+            self.param_value = [self.param_value]
         self.set_param()
         self.save_param()
 
@@ -573,7 +574,7 @@ class CheckListGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        val_str = ', '.join(self.param_value)
+        val_str = ', '.join([str(item) for item in self.param_value])
         if len(val_str) > 30:
             self.value_label.setText(f'{val_str[:30]} ...')
         else:
