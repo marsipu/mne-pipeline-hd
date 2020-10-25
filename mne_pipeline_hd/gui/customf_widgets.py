@@ -686,7 +686,7 @@ class CustomFunctionImport(QDialog):
                                                           'Choose the Python-File containing your function to import',
                                                           filter='Python-File (*.py)')[0]
         if self.cf_path_string:
-            ImportFuncsCheckList(self)
+            ImportFuncs(self)
 
     def edit_functions(self):
         # Clear Function- and Parameter-DataFrame
@@ -700,7 +700,7 @@ class CustomFunctionImport(QDialog):
                                                           'Choose the Python-File containing the functions to edit',
                                                           filter='Python-File (*.py)')[0]
         if self.cf_path_string:
-            ImportFuncsCheckList(self, edit_existing=True)
+            ImportFuncs(self, edit_existing=True)
 
     def test_param_gui(self, default_string, gui_type, gui_args=None):
         # Test ParamGui with Value
@@ -720,16 +720,20 @@ class CustomFunctionImport(QDialog):
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'description']):
             hint = self.cf.add_pd_params.loc[self.cf.current_parameter, 'description']
         else:
-            hint = ''
+            hint = None
+        if pd.notna(self.add_pd_params.loc[self.current_parameter, 'unit']):
+            param_unit = self.add_pd_params.loc[self.current_parameter, 'unit']
+        else:
+            param_unit = None
 
         gui_handle = getattr(parameter_widgets, gui_type)
         try:
             if gui_args:
                 gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
-                                 param_alias=param_alias, hint=hint, **gui_args)
+                                 param_alias=param_alias, hint=hint, param_unit=param_unit, **gui_args)
             else:
                 gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
-                                 param_alias=param_alias, hint=hint)
+                                 param_alias=param_alias, hint=hint, param_unit=param_unit)
         except Exception as e:
             gui = None
             result = e
@@ -766,7 +770,7 @@ class CustomFunctionImport(QDialog):
             event.ignore()
 
 
-class ImportFuncsCheckList(QDialog):
+class ImportFuncs(QDialog):
     def __init__(self, cf_dialog, edit_existing=False):
         super().__init__(cf_dialog)
         self.cf = cf_dialog
@@ -981,6 +985,7 @@ class SavePkgDialog(QDialog):
         final_add_pd_params = self.cf.add_pd_params.drop(index=drop_params)
 
         del final_add_pd_funcs['ready']
+        del final_add_pd_funcs['path']
         del final_add_pd_params['ready']
 
         pd_funcs_path = join(self.pkg_path, f'{self.module_name}_functions.csv')
