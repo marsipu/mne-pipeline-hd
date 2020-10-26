@@ -52,7 +52,7 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
         sub.save_filtered(raw)
 
         # Filter Empty-Room-Data too
-        if sub.ermsub != 'None':
+        if sub.ermsub is not None:
             raw = sub.load_raw()
             erm_raw = sub.load_erm()
 
