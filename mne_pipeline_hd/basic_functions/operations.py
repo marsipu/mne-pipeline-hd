@@ -27,6 +27,7 @@ from ..pipeline_functions import ismac, iswin, pipeline_utils as ut
 from ..pipeline_functions.decorators import small_func, topline
 from ..pipeline_functions.pipeline_utils import compare_prev_run
 
+
 # Todo: Change normal comments to docstrings
 
 # ==============================================================================
@@ -50,7 +51,7 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
         sub.save_filtered(raw)
 
         # Filter Empty-Room-Data too
-        if sub.ermsub != 'None':
+        if sub.ermsub is not None:
             raw = sub.load_raw()
             erm_raw = sub.load_erm()
 
