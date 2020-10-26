@@ -10,14 +10,13 @@ License: BSD (3-clause)
 import json
 import os
 import re
-from pathlib import Path
-
-import numpy as np
 from ast import literal_eval
 from os import makedirs
 from os.path import exists, isfile, join
+from pathlib import Path
 
 import autoreject as ar
+import numpy as np
 
 from . import islin, ismac, iswin
 
@@ -53,7 +52,7 @@ def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite
         if only_read:
             raise Exception('New Autoreject-Threshold only from epoch_raw')
         else:
-            reject = ar.get_rejection_threshold(epochs, ch_types=['grad'], random_state=8)
+            reject = ar.get_rejection_threshold(epochs, random_state=8)
             with open(reject_value_path, 'w') as rv:
                 rv.write(f'{name}:{reject}\n')
             print(reject_value_path + ' created')
