@@ -1535,10 +1535,18 @@ class SubBadsWidget(QWidget):
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
 
+        # Catch Channels, which are present in bad_channels_dict, but not in bad_chkbts
+        error_list = list()
         # Then load existing bads for choice
         if self.name in self.mw.pr.bad_channels_dict:
             for bad in self.mw.pr.bad_channels_dict[self.name]:
-                self.bad_chkbts[bad].setChecked(True)
+                try:
+                    self.bad_chkbts[bad].setChecked(True)
+                except KeyError:
+                    error_list.append(bad)
+
+        for error_ch in error_list:
+            self.mw.pr.bad_channels_dict[self.name].remove(error_ch)
 
     def bad_dict_assign(self):
         bad_channels = []
