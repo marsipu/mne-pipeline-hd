@@ -39,9 +39,9 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
 
     results = compare_prev_run(sub, sub.raw_filtered_path, ['highpass', 'lowpass'])
     if results['highpass'] is not None or results['lowpass'] is not None:
-        # Get raw from Subject-class
-        raw = sub.load_raw()
-        if enable_cuda and enable_cuda != 'false':  # use cuda for filtering, boolean-string due to QSettings
+        # Get raw from Subject-class, load as copy to avoid changing attribute value inplace
+        raw = sub.load_raw().copy()
+        if enable_cuda:  # use cuda for filtering
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
 
@@ -50,11 +50,15 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
         raw.info['bads'] = sub.bad_channels
 
         sub.save_filtered(raw)
+    else:
+        print(f'{sub.name} already filtered with highpass={highpass} and lowpass={lowpass}')
 
-        # Filter Empty-Room-Data too
-        if sub.ermsub is not None:
+    # Filter Empty-Room-Data too
+    if sub.ermsub is not None:
+        erm_results = compare_prev_run(sub, sub.erm_path, ['highpass', 'lowpass'])
+        if erm_results['highpass'] is not None or erm_results['lowpass'] is not None:
             raw = sub.load_raw()
-            erm_raw = sub.load_erm()
+            erm_raw = sub.load_erm().copy()
 
             # Due to channel-deletion sometimes in HPI-Fitting-Process
             ch_list = set(erm_raw.info['ch_names']) & set(raw.info['ch_names'])
@@ -72,9 +76,11 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
 
             sub.save_erm_filtered(erm_raw)
             print('ERM-Data filtered and saved')
-
         else:
-            print('no erm_file assigned')
+            print(f'{sub.ermsub} already filtered with highpass={highpass} and lowpass={lowpass}')
+
+    else:
+        print('no erm_file assigned')
 
 
 @topline
@@ -225,7 +231,7 @@ def epoch_raw(sub, ch_types, t_epoch, baseline, reject, flat, autoreject_interpo
     raw = sub.load_filtered()
     events = sub.load_events()
 
-    raw_picked = raw.pick(ch_types, exclude=sub.bad_channels)
+    raw_picked = raw.copy().pick(ch_types, exclude=sub.bad_channels)
 
     epochs = mne.Epochs(raw_picked, events, sub.event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, proj=False, reject=None,
