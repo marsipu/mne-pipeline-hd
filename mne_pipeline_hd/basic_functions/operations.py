@@ -54,7 +54,7 @@ def filter_raw(sub, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
 
     # Filter Empty-Room-Data too
     if sub.ermsub is not None:
-        erm_results = compare_prev_run(sub, sub.erm_path, ['highpass', 'lowpass'])
+        erm_results = compare_prev_run(sub, sub.erm_filtered_path, ['highpass', 'lowpass'])
         if erm_results['highpass'] is not None or erm_results['lowpass'] is not None:
             raw = sub.load_raw()
             erm_raw = sub.load_erm().copy()
@@ -269,7 +269,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
     if raw.info['highpass'] < 1:
         raw.filter(l_freq=1., h_freq=None)
     epochs = sub.load_epochs()
-    picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
+    picks = mne.pick_types(raw.info, meg=True, eeg=True, eog=False,
                            stim=False, exclude=sub.bad_channels)
 
     if not isdir(join(figures_path, 'ica')):
@@ -451,7 +451,7 @@ def run_ica(sub, eog_channel, ecg_channel, reject, flat, autoreject_interpolatio
     # components have to be selected manually in the ica_components.py
     else:
         print('No EEG-Channels to read EOG/EEG from')
-        meg_picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
+        meg_picks = mne.pick_types(raw.info, meg=True, eeg=True, eog=False,
                                    stim=False, exclude=sub.bad_channels)
         ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, picks=meg_picks,
                                                          reject=reject, flat=flat)
