@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Pipeline-GUI for Analysis with MNE-Python
-inspired by: https://doi.org/10.3389/fnins.2018.00006
+Copyright © 2011-2019, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
+inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
@@ -473,7 +474,7 @@ class SysInfoMsg(QDialog):
         layout.addWidget(close_bt)
 
         # Set geometry to ratio of screen-geometry
-        width, height = main_win.get_ratio_geometry(0.4)
+        width, height = get_ratio_geometry(0.4)
         self.resize(int(width), int(height))
 
         self.setLayout(layout)

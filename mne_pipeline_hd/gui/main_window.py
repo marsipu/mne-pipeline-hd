@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Pipeline-GUI for Analysis with MNE-Python
-inspired by: https://doi.org/10.3389/fnins.2018.00006
+Copyright © 2011-2019, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
+inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
@@ -530,6 +531,7 @@ class MainWindow(QMainWindow):
         about_menu.addAction('Quick-Guide', partial(QuickGuide, self))
         about_menu.addAction('MNE System-Info', self.show_sys_info)
         about_menu.addAction('About', self.about)
+        about_menu.addAction('About MNE-Python', self.about_mne)
         about_menu.addAction('About QT', self.app.aboutQt)
 
     def init_toolbar(self):
@@ -907,7 +909,6 @@ class MainWindow(QMainWindow):
         mne.sys_info()
 
     def about(self):
-
         with open(join(resources.__path__[0], 'license.txt'), 'r') as file:
             license_text = file.read()
         license_text = license_text.replace('\n', '<br>')
@@ -930,7 +931,20 @@ class MainWindow(QMainWindow):
                + license_text
 
         msgbox = QMessageBox(self)
-        msgbox.setWindowTitle('about')
+        msgbox.setWindowTitle('About')
+        msgbox.setStyleSheet('QLabel{min-width: 600px; max-height: 700px}')
+        msgbox.setText(text)
+        msgbox.open()
+
+    def about_mne(self):
+        with open(join(resources.__path__[0], 'mne_license.txt'), 'r') as file:
+            license_text = file.read()
+        license_text = license_text.replace('\n', '<br>')
+        text = '<h1>MNE-Python</h1>' \
+               + license_text
+
+        msgbox = QMessageBox(self)
+        msgbox.setWindowTitle('About MNE-Python')
         msgbox.setStyleSheet('QLabel{min-width: 600px; max-height: 700px}')
         msgbox.setText(text)
         msgbox.open()
