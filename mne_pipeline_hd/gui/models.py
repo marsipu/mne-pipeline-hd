@@ -144,6 +144,23 @@ class CheckListModel(BaseListModel):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
 
 
+class CheckDictModel(BaseListModel):
+    def __init__(self, data, check_dict):
+        super().__init__(data)
+        self.check_dict = check_dict
+        self.app = QApplication.instance()
+
+    def data(self, index, role=None):
+        if role == Qt.DisplayRole:
+            return str(self.getData(index))
+
+        elif role == Qt.DecorationRole:
+            if self.getData(index) in self.check_dict:
+                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+            else:
+                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
+
+
 class BaseDictModel(QAbstractTableModel):
     """Basic Model for Dictonaries
 
@@ -330,12 +347,20 @@ class EditPandasModel(BasePandasModel):
     def setHeaderData(self, index, orientation, value, role=Qt.EditRole):
         if role == Qt.EditRole:
             if orientation == Qt.Vertical:
-                self._data.rename(index={self._data.index[index]: value}, inplace=True)
+                # DataFrame.rename does rename all duplicate indices if existent,
+                # that's why the index is reassigned directly
+                new_index = list(self._data.index)
+                new_index[index] = value
+                self._data.index = new_index
                 self.headerDataChanged.emit(Qt.Vertical, index, index)
                 return True
 
             elif orientation == Qt.Horizontal:
-                self._data.rename(columns={self._data.columns[index]: value}, inplace=True)
+                # DataFrame.rename does rename all duplicate columns if existent,
+                # that's why the columns are reassigned directly
+                new_columns = list(self._data.columns)
+                new_columns[index] = value
+                self._data.columns = new_columns
                 self.headerDataChanged.emit(Qt.Horizontal, index, index)
                 return True
 
@@ -395,23 +420,6 @@ class EditPandasModel(BasePandasModel):
         self.endRemoveColumns()
 
         return True
-
-
-class FileDictModel(BaseListModel):
-    def __init__(self, data, file_dict):
-        super().__init__(data)
-        self.file_dict = file_dict
-        self.app = QApplication.instance()
-
-    def data(self, index, role=None):
-        if role == Qt.DisplayRole:
-            return str(self.getData(index))
-
-        elif role == Qt.DecorationRole:
-            if self.getData(index) in self.file_dict:
-                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
-            else:
-                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
 
 
 class AddFilesModel(BasePandasModel):
