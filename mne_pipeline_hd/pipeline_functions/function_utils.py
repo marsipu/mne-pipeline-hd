@@ -120,8 +120,8 @@ class FunctionWorker(Worker):
         self.count = 1
 
         # Signals received from main_win for canceling functions and
-        self.mw.mw_signals.cancel_functions.connect(self.check_cancel_functions)
-        self.mw.mw_signals.plot_running.connect(self.check_plot_running)
+        self.mw.cancel_functions.connect(self.check_cancel_functions)
+        self.mw.plot_running.connect(self.check_plot_running)
         self.is_cancel_functions = False
         self.is_plot_running = False
 

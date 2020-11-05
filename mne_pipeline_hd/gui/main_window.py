@@ -22,7 +22,7 @@ import matplotlib
 import mne
 import pandas as pd
 import qdarkstyle
-from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
+from PyQt5.QtCore import QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
@@ -59,18 +59,17 @@ def get_upstream():
     print(result.stdout)
 
 
-class MainWinSignals(QObject):
-    # Signals to send into QThread to control function execution
-    cancel_functions = pyqtSignal(bool)
-    plot_running = pyqtSignal(bool)
-
-
 # Todo: Controller-Class to make MainWindow-Class more light and prepare for features as Pipeline-Freezig
 #  (you need an PyQt-independent system for that)
 class MainWindow(QMainWindow):
+    # Define Main-Window-Signals to send into QThread to control function execution
+    cancel_functions = pyqtSignal(bool)
+    plot_running = pyqtSignal(bool)
+
     def __init__(self):
         super().__init__()
         self.app = QApplication.instance()
+
         # Initiate General-Layout
         self.app.setFont(QFont('Calibri', 10))
         QToolTip.setFont(QFont('SansSerif', 10))
@@ -97,7 +96,6 @@ class MainWindow(QMainWindow):
         self.current_project = ''
         self.subjects_dir = ''
         self.custom_pkg_path = ''
-        self.mw_signals = MainWinSignals()
         self.module_err_dlg = None
         self.bt_dict = dict()
         self.all_modules = {'basic': {},
@@ -185,7 +183,7 @@ class MainWindow(QMainWindow):
         self.projects_path = join(self.home_path, 'projects')
         self.subjects_dir = join(self.home_path, 'freesurfer')
         mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
-        self.custom_pkg_path = join(self.home_path, 'custom_functions')
+        self.custom_pkg_path = join(self.home_path, 'custom_packages')
         for path in [self.projects_path, self.subjects_dir, self.custom_pkg_path]:
             if not isdir(path):
                 os.mkdir(path)
@@ -359,10 +357,10 @@ class MainWindow(QMainWindow):
                                        & (self.pd_funcs['subject_loop'] == True)]
         self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'MRI-Preprocessing')
                                         & (self.pd_funcs['subject_loop'] == True)]
-        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                      & (self.pd_funcs['func_args'].str.contains('ga_group'))]
-        self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                         & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
+        # self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+        #                               & (self.pd_funcs['func_args'].str.contains('ga_group'))]
+        # self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
+        #                                  & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
 
     def import_custom_modules(self):
         """
@@ -372,9 +370,9 @@ class MainWindow(QMainWindow):
         self.all_modules = {'basic': {},
                             'custom': {}}
 
-        # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
+        # Pandas-DataFrame for contextual data of basic functions (included with program)
         self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
-        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
+        # Pandas-DataFrame for contextual data of paramaters for basic functions (included with program)
         self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
 
         # Load basic-modules
@@ -388,7 +386,7 @@ class MainWindow(QMainWindow):
         for directory in [d for d in os.scandir(self.custom_pkg_path) if not d.name.startswith('.')]:
             pkg_name = directory.name
             pkg_path = directory.path
-            file_dict = {'functions': None, 'parameters': None, 'module': None}
+            file_dict = {'functions': None, 'parameters': None, 'module': list()}
             for file_name in [f for f in listdir(pkg_path) if not f.startswith(('.', '_'))]:
                 functions_match = re.match(pd_functions_pattern, file_name)
                 parameters_match = re.match(pd_parameters_pattern, file_name)
@@ -398,41 +396,49 @@ class MainWindow(QMainWindow):
                 elif parameters_match:
                     file_dict['parameters'] = join(pkg_path, file_name)
                 elif custom_module_match and custom_module_match.group(1) != '__init__':
-                    file_dict['module'] = custom_module_match
+                    file_dict['modules'].append(custom_module_match)
 
             # Check, that there is a whole set for a custom-module (module-file, functions, parameters)
-            if all([value is not None for value in file_dict.values()]):
+            if all([value is not None or value != [] for value in file_dict.values()]):
+                self.all_modules['custom'][pkg_name] = {}
                 functions_path = file_dict['functions']
                 parameters_path = file_dict['parameters']
-                module_name = file_dict['module'].group(1)
-                module_file_name = file_dict['module'].group()
+                correct_count = 0
+                for module_match in file_dict['modules']:
+                    module_name = module_match.group(1)
+                    module_file_name = module_match.group()
 
-                spec = util.spec_from_file_location(module_name, join(pkg_path, module_file_name))
-                module = util.module_from_spec(spec)
-                try:
-                    spec.loader.exec_module(module)
-                except:
-                    exc_tuple = get_exception_tuple()
-                    self.module_err_dlg = ErrorDialog(exc_tuple,
-                                                      self, title=f'Error in import of custom-module: {module_name}')
-                else:
-                    # Add module to sys.modules
-                    sys.modules[module_name] = module
-                    # Add Module to dictionary
-                    self.all_modules['custom'][module_name] = (module, spec)
+                    spec = util.spec_from_file_location(module_name, join(pkg_path, module_file_name))
+                    module = util.module_from_spec(spec)
+                    try:
+                        spec.loader.exec_module(module)
+                    except:
+                        exc_tuple = get_exception_tuple()
+                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
+                                                          title=f'Error in import of custom-module: {module_name}')
+                    else:
+                        correct_count += 1
+                        # Add module to sys.modules
+                        sys.modules[module_name] = module
+                        # Add Module to dictionary
+                        self.all_modules['custom'][pkg_name][module_name] = (module, spec)
 
+                # Make sure, that every module in modules is imported without error
+                # (otherwise don't append to pd_funcs and pd_params)
+                if len(file_dict['modules']) == correct_count:
                     try:
                         read_pd_funcs = pd.read_csv(functions_path, sep=';', index_col=0)
                         read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
                     except:
                         exc_tuple = get_exception_tuple()
                         self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                          title=f'Error in import of .csv-file: {functions_path}')
+                                                          title=f'Error in import of custom-package: {pkg_name}')
                     else:
-                        for idx in [ix for ix in read_pd_funcs.index if ix not in self.pd_funcs.index]:
-                            self.pd_funcs = self.pd_funcs.append(read_pd_funcs.loc[idx])
-                        for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
-                            self.pd_params = self.pd_params.append(read_pd_params.loc[idx])
+                        # Check, that there are no duplicates
+                        pd_funcs_to_append = read_pd_funcs.loc[~read_pd_funcs.index.isin(self.pd_funcs.index)]
+                        self.pd_funcs = self.pd_funcs.append(pd_funcs_to_append)
+                        pd_params_to_append = read_pd_params.loc[~read_pd_params.index.isin(self.pd_params.index)]
+                        self.pd_params = self.pd_params.append(pd_params_to_append)
 
             else:
                 text = f'Files for import of {pkg_name} are missing: ' \
@@ -751,8 +757,8 @@ class MainWindow(QMainWindow):
         # Lists of selected functions
         self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.pr.sel_functions[mf]]
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.pr.sel_functions[ff]]
-        self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.pr.sel_functions[gf]]
-        self.sel_other_funcs = [of for of in self.other_funcs.index if self.pr.sel_functions[of]]
+        # self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.pr.sel_functions[gf]]
+        # self.sel_other_funcs = [of for of in self.other_funcs.index if self.pr.sel_functions[of]]
 
         # Determine steps in progress for all selected subjects and functions
         self.all_prog = (len(self.pr.sel_mri_files) * len(self.sel_mri_funcs) +
@@ -801,7 +807,7 @@ class MainWindow(QMainWindow):
             exc_tuple = get_exception_tuple()
             self.run_dialog.show_errors(exc_tuple)
         # Send Signal to Function-Worker to continue execution after plot-function in main-thread finishes
-        self.mw_signals.plot_running.emit(False)
+        self.plot_running.emit(False)
 
     def thread_complete(self):
         print('Finished')

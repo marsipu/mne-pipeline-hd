@@ -397,8 +397,8 @@ class CheckTupleGui(TupleGui):
         self.unchecked_value = unchecked_value
         self.param_chkbt = QCheckBox(self.param_name)
         self.param_chkbt.stateChanged.connect(self.param_checked)
-        super().__init__(data, param_name, param_alias, hint, min_val, max_val,
-                         step, decimals, param_unit, default)
+        super().__init__(data=data, param_name=param_name, param_alias=param_alias, default=default, hint=hint,
+                         min_val=min_val, max_val=max_val, step=step, decimals=decimals, param_unit=param_unit)
 
     def init_tuple_layout(self):
         layout = QGridLayout()

@@ -33,8 +33,7 @@ from matplotlib import pyplot as plt
 from .base_widgets import CheckList, EditDict, EditList, EditPandasTable
 from .dialogs import ErrorDialog
 from .gui_utils import (Worker, get_ratio_geometry)
-from .models import AddFilesModel, FileDictModel
-from ..basic_functions import loading
+from .models import AddFilesModel, CheckDictModel
 from ..basic_functions.loading import CurrentSub
 from ..basic_functions.operations import find_6ch_binary_events
 
@@ -1467,7 +1466,7 @@ class SubBadsWidget(QWidget):
     def init_ui(self):
         self.layout = QGridLayout()
         self.list_view = QListView()
-        self.badch_model = FileDictModel(self.mw.pr.all_files, self.mw.pr.bad_channels_dict)
+        self.badch_model = CheckDictModel(self.mw.pr.all_files, self.mw.pr.bad_channels_dict)
         self.list_view.setModel(self.badch_model)
         self.list_view.selectionModel().currentChanged.connect(self.bad_dict_selected)
         self.list_view.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
@@ -1725,7 +1724,7 @@ class EventIDGui(QDialog):
     def init_ui(self):
         list_layout = QHBoxLayout()
 
-        self.files_model = FileDictModel(self.mw.pr.all_files, self.mw.pr.event_id_dict)
+        self.files_model = CheckDictModel(self.mw.pr.all_files, self.mw.pr.event_id_dict)
         self.files_view = QListView()
         self.files_view.setModel(self.files_model)
         self.files_view.selectionModel().currentChanged.connect(self.file_selected)

@@ -184,48 +184,36 @@ class ParametersDock(QDockWidget):
         self.main_widget = QWidget()
         self.param_guis = {}
 
-        # Drop custom-modules, which aren't selected
-        cleaned_pd_funcs = self.mw.pd_funcs.loc[self.mw.pd_funcs['module'].isin(
-                self.mw.get_setting('selected_modules'))].copy()
+        self.dropgroup_params()
+        self.init_ui()
 
-        # Collect args for each function
-        self.arg_func_dict = dict()
-        # Check if func_args is not NaN
-        for func in [f for f in cleaned_pd_funcs.index if isinstance(cleaned_pd_funcs.loc[f, 'func_args'], str)]:
-            # Split func_args-string into args and remove trailing spaces
-            arg_list = [v.replace(' ', '') for v in cleaned_pd_funcs.loc[func, 'func_args'].split(',')]
-            for argument in arg_list:
-                # Add each argument to the dict with the func_names by using functions in a list
-                if argument in self.arg_func_dict:
-                    self.arg_func_dict[argument].append(func)
-                else:
-                    self.arg_func_dict[argument] = [func]
-        # Drop Parameters which aren't used by functions (in selected_modules)
-        self.cleaned_pd_params = self.mw.pd_params.loc[self.mw.pd_params.index.isin(self.arg_func_dict.keys())].copy()
-
-        # Group Parameters according to groups of their functions (if used by multiple functions, put into "general")
+    def dropgroup_params(self):
+        # Create a set of all unique parameters used by functions in selected_modules
+        sel_pdfuncs = self.mw.pd_funcs.loc[self.mw.pd_funcs['module'].isin(self.mw.get_setting('selected_modules'))]
+        # Remove rows with NaN in func_args
+        sel_pdfuncs = sel_pdfuncs.loc[sel_pdfuncs['func_args'].notna()]
+        all_used_params = ','.join(sel_pdfuncs['func_args']).split(',')
+        drop_idx_list = list()
+        self.cleaned_pd_params = self.mw.pd_params.copy()
         for param in self.cleaned_pd_params.index:
-            group_name = self.cleaned_pd_params.loc[param, 'group']
-            if pd.isna(group_name):
-                # Get Group
-                func_list = self.arg_func_dict[param]
-                # Check if all value in func_list are the same (applies also to len(func_list)==1)
-                if all(a == cleaned_pd_funcs.loc[func_list, 'group'][0]
-                       for a in cleaned_pd_funcs.loc[func_list, 'group'].values):
-                    group_name = cleaned_pd_funcs.loc[func_list[0], 'group']
-                else:
-                    group_name = 'General'
-                self.cleaned_pd_params.loc[param, 'group'] = group_name
+            if param in all_used_params:
+                # Group-Name (if not given, set to 'Various')
+                group_name = self.cleaned_pd_params.loc[param, 'group']
+                if pd.isna(group_name):
+                    self.cleaned_pd_params.loc[param, 'group'] = 'Various'
 
-            if group_name in self.mw.group_order:
-                self.cleaned_pd_params.loc[param, 'group_idx'] = self.mw.group_order[group_name]
+                # Determine order of groups by main_window.group_order
+                if group_name in self.mw.group_order:
+                    self.cleaned_pd_params.loc[param, 'group_idx'] = self.mw.group_order[group_name]
+                else:
+                    self.cleaned_pd_params.loc[param, 'group_idx'] = 100
             else:
-                self.cleaned_pd_params.loc[param, 'group_idx'] = 100
+                # Drop Parameters which aren't used by functions
+                drop_idx_list.append(param)
+        self.cleaned_pd_params.drop(index=drop_idx_list, inplace=True)
 
         # Sort values by group_idx for dramaturgically order
         self.cleaned_pd_params.sort_values(by='group_idx', inplace=True)
-
-        self.init_ui()
 
     def init_ui(self):
         self.general_layout = QVBoxLayout()
@@ -308,6 +296,7 @@ class ParametersDock(QDockWidget):
         self.general_layout.removeWidget(self.tab_param_widget)
         self.tab_param_widget.close()
         del self.tab_param_widget
+        self.dropgroup_params()
         self.add_param_guis()
 
     def p_preset_changed(self, idx):
@@ -396,7 +385,7 @@ class RunDialog(QDialog):
         self.setLayout(self.layout)
 
     def cancel_funcs(self):
-        self.mw.mw_signals.cancel_functions.emit(True)
+        self.mw.cancel_functions.emit(True)
         self.console_widget.insertHtml('<b><big><center>---Finishing last function...---</center></big></b><br>')
         self.console_widget.ensureCursorVisible()
 

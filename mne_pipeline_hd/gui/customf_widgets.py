@@ -1,4 +1,5 @@
 import inspect
+import os
 import shutil
 from ast import literal_eval
 from functools import partial
@@ -12,7 +13,7 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout, QGroupBox,
                              QHBoxLayout,
-                             QInputDialog, QLabel,
+                             QLabel,
                              QLineEdit,
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QPushButton,
                              QSizePolicy, QStyle,
@@ -102,6 +103,8 @@ class CustomFunctionImport(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.file_path = None
+        self.pkg_name = None
         self.current_function = None
         self.current_parameter = None
         self.oblig_func = ['tab', 'group', 'subject_loop', 'matplotlib', 'mayavi']
@@ -118,9 +121,8 @@ class CustomFunctionImport(QDialog):
         # Get available parameter-guis
         self.available_param_guis = [pg for pg in dir(parameter_widgets) if 'Gui' in pg and pg != 'QtGui']
 
-        self.add_pd_funcs = pd.DataFrame(columns=['alias', 'tab', 'group', 'subject_loop',
-                                                  'matplotlib', 'mayavi', 'dependencies', 'module', 'func_args',
-                                                  'path', 'ready'])
+        self.add_pd_funcs = pd.DataFrame(columns=['alias', 'tab', 'group', 'subject_loop', 'matplotlib', 'mayavi',
+                                                  'dependencies', 'module', 'func_args', 'ready'])
         self.add_pd_params = pd.DataFrame(columns=['alias', 'default', 'unit', 'description', 'gui_type',
                                                    'gui_args', 'function', 'ready'])
 
@@ -522,8 +524,10 @@ class CustomFunctionImport(QDialog):
             self.add_pd_funcs.loc[self.current_function, 'ready'] = 1
         else:
             self.func_chkl.setPixmap(self.no_icon.pixmap(16, 16))
+            self.add_pd_funcs.loc[self.current_function, 'ready'] = 0
 
     def update_param_view(self):
+        # Update Param-Model with new pd_params of current_function
         current_pd_params = self.add_pd_params.loc[self.add_pd_params['function'] == self.current_function]
         self.param_model.updateData(current_pd_params)
 
@@ -531,6 +535,8 @@ class CustomFunctionImport(QDialog):
         # Check, that all obligatory items of the Parameter-Setup are set
         if all([pd.notna(self.add_pd_params.loc[self.current_parameter, i]) for i in self.oblig_params]):
             self.add_pd_params.loc[self.current_parameter, 'ready'] = 1
+        else:
+            self.add_pd_params.loc[self.current_parameter, 'ready'] = 0
         self.update_param_view()
 
     # Line-Edit Change-Signals
@@ -657,6 +663,8 @@ class CustomFunctionImport(QDialog):
             else:
                 self.guitype_cmbx.setCurrentIndex(-1)
                 self.add_pd_params.loc[self.current_parameter, 'gui_type'] = None
+                self.check_param_setup()
+                self.check_func_setup()
 
     def pguiargs_changed(self, gui_args):
         if self.current_parameter:
@@ -682,10 +690,11 @@ class CustomFunctionImport(QDialog):
         self.clear_param_items()
 
         # Returns tuple of files-list and file-type
-        self.cf_path_string = QFileDialog.getOpenFileName(self,
-                                                          'Choose the Python-File containing your function to import',
-                                                          filter='Python-File (*.py)')[0]
-        if self.cf_path_string:
+        cf_path_string = QFileDialog.getOpenFileName(self,
+                                                     'Choose the Python-File containing your function to import',
+                                                     filter='Python-File (*.py)')[0]
+        if cf_path_string:
+            self.file_path = Path(cf_path_string)
             ImportFuncs(self)
 
     def edit_functions(self):
@@ -696,10 +705,11 @@ class CustomFunctionImport(QDialog):
         self.clear_param_items()
 
         # Returns tuple of files-list and file-type
-        self.cf_path_string = QFileDialog.getOpenFileName(self,
-                                                          'Choose the Python-File containing the functions to edit',
-                                                          filter='Python-File (*.py)')[0]
-        if self.cf_path_string:
+        cf_path_string = QFileDialog.getOpenFileName(self,
+                                                     'Choose the Python-File containing the functions to edit',
+                                                     filter='Python-File (*.py)')[0]
+        if cf_path_string:
+            self.file_path = Path(cf_path_string)
             ImportFuncs(self, edit_existing=True)
 
     def test_param_gui(self, default_string, gui_type, gui_args=None):
@@ -776,7 +786,6 @@ class ImportFuncs(QDialog):
         self.cf = cf_dialog
         self.edit_existing = edit_existing
 
-        self.file_path = None
         self.module = None
         self.loaded_cfs = []
         self.selected_cfs = []
@@ -788,23 +797,23 @@ class ImportFuncs(QDialog):
         self.open()
 
     def load_function_list(self):
-        self.file_path = Path(self.cf.cf_path_string)
-        spec = util.spec_from_file_location(self.file_path.stem, self.file_path)
+        spec = util.spec_from_file_location(self.cf.file_path.stem, self.cf.file_path)
         self.module = util.module_from_spec(spec)
         try:
             spec.loader.exec_module(self.module)
         except:
             err = get_exception_tuple()
             ErrorDialog(err, self)
-        for func_key in self.module.__dict__:
-            func = self.module.__dict__[func_key]
-            # Only functions are allowed (Classes should be called from function)
-            if callable(func) and func.__module__ == self.module.__name__:
-                # Check, if function is already existing
-                if func_key not in self.cf.exst_functions or self.edit_existing:
-                    self.loaded_cfs.append(func_key)
-                else:
-                    self.already_exst_funcs.append(func_key)
+        else:
+            for func_key in self.module.__dict__:
+                func = self.module.__dict__[func_key]
+                # Only functions are allowed (Classes should be called from function)
+                if callable(func) and func.__module__ == self.module.__name__:
+                    # Check, if function is already existing
+                    if func_key not in self.cf.exst_functions or self.edit_existing:
+                        self.loaded_cfs.append(func_key)
+                    else:
+                        self.already_exst_funcs.append(func_key)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -828,15 +837,17 @@ class ImportFuncs(QDialog):
     def load_selected_functions(self):
         selected_funcs = [cf for cf in self.loaded_cfs if cf in self.selected_cfs]
         if self.edit_existing:
-            pd_funcs_path = join(self.file_path.parent, f'{self.module.__name__}_functions.csv')
-            pd_params_path = join(self.file_path.parent, f'{self.module.__name__}_parameters.csv')
+            self.cf.pkg_name = self.cf.file_path.parent.name
+            pd_funcs_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_functions.csv')
+            pd_params_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_parameters.csv')
             self.cf.add_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0).loc[selected_funcs]
             self.cf.add_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
+        else:
+            self.cf.pkg_name = None
 
         for func_key in selected_funcs:
             func = self.module.__dict__[func_key]
 
-            self.cf.add_pd_funcs.loc[func_key, 'path'] = self.file_path
             self.cf.add_pd_funcs.loc[func_key, 'module'] = self.module.__name__
             self.cf.add_pd_funcs.loc[func_key, 'ready'] = 0
 
@@ -844,6 +855,7 @@ class ImportFuncs(QDialog):
 
             # Get Parameters and divide them in existing and setup
             all_parameters = list(inspect.signature(func).parameters)
+            self.cf.add_pd_funcs.loc[func_key, 'func_args'] = ','.join(all_parameters)
             existing_parameters = []
 
             for param_key in all_parameters:
@@ -948,11 +960,8 @@ class SavePkgDialog(QDialog):
         super().__init__(cf_dialog)
         self.cf = cf_dialog
 
-        self.funcs_to_save = list(self.cf.add_pd_funcs.loc[self.cf.add_pd_funcs['ready'] == 1].index)
-        self.ori_path = self.cf.add_pd_funcs[self.funcs_to_save[0], 'path']
-        self.module_name = self.cf.add_pd_funcs.loc[self.funcs_to_save[0], 'module']
-        self.module_dir_path = join(self.cf.mw.custom_pkg_path, self.module_name)
-        self.module_path = Path(join(self.module_dir_path, Path(self.ori_path).name))
+        self.my_pkg_name = None
+        self.pkg_path = None
 
         self.init_ui()
         self.open()
@@ -960,10 +969,15 @@ class SavePkgDialog(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        self.func_list = BaseList(self.funcs_to_save)
+        self.func_list = BaseList(list(self.cf.add_pd_funcs.loc[self.cf.add_pd_funcs['ready'] == 1].index))
         layout.addWidget(self.func_list)
 
+        pkg_name_label = QLabel('Package-Name:')
+        layout.addWidget(pkg_name_label)
+
         self.pkg_le = QLineEdit()
+        if self.cf.pkg_name:
+            self.pkg_le.setText(self.cf.pkg_name)
         self.pkg_le.textEdited.connect(self.pkg_le_changed)
         layout.addWidget(self.pkg_le)
 
@@ -976,80 +990,87 @@ class SavePkgDialog(QDialog):
         layout.addWidget(cancel_bt)
         self.setLayout(layout)
 
+    def pkg_le_changed(self, text):
+        if text != '':
+            self.my_pkg_name = text
+
     def save_pkg(self):
-        # Drop all functions with unfinished setup and add them to the main_window-DataFrame
-        drop_funcs = self.cf.add_pd_funcs.loc[self.cf.add_pd_funcs['ready'] == 0].index
-        final_add_pd_funcs = self.cf.add_pd_funcs.drop(index=drop_funcs)
+        if self.my_pkg_name or self.cf.pkg_name:
+            # Drop all functions with unfinished setup and add the remaining to the main_window-DataFrame
+            drop_funcs = self.cf.add_pd_funcs.loc[self.cf.add_pd_funcs['ready'] == 0].index
+            final_add_pd_funcs = self.cf.add_pd_funcs.drop(index=drop_funcs)
 
-        drop_params = self.cf.add_pd_params.loc[~self.cf.add_pd_params['function'].isin(final_add_pd_funcs.index)].index
-        final_add_pd_params = self.cf.add_pd_params.drop(index=drop_params)
+            drop_params = self.cf.add_pd_params.loc[
+                ~self.cf.add_pd_params['function'].isin(final_add_pd_funcs.index)].index
+            final_add_pd_params = self.cf.add_pd_params.drop(index=drop_params)
 
-        del final_add_pd_funcs['ready']
-        del final_add_pd_funcs['path']
-        del final_add_pd_params['ready']
+            # Remove no longer needed columns
+            del final_add_pd_funcs['ready']
+            del final_add_pd_params['ready']
+            del final_add_pd_params['function']
 
-        pd_funcs_path = join(self.pkg_path, f'{self.module_name}_functions.csv')
-        pd_params_path = join(self.pkg_path, f'{self.module_name}_parameters.csv')
+            # This is only not None, when the function was imported by edit-functions
+            if self.cf.pkg_name:
+                # Update and overwrite existing settings for funcs and params
+                self.pkg_path = join(self.cf.mw.custom_pkg_path, self.cf.pkg_name)
+                pd_funcs_path = join(self.pkg_path, f'{self.cf.pkg_name}_functions.csv')
+                pd_params_path = join(self.pkg_path, f'{self.cf.pkg_name}_parameters.csv')
+                if isfile(pd_funcs_path):
+                    read_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0)
+                    # Replace indexes from file with same name
+                    drop_funcs = [f for f in read_pd_funcs.index if f in final_add_pd_funcs.index]
+                    read_pd_funcs.drop(index=drop_funcs, inplace=True)
+                    final_add_pd_funcs = read_pd_funcs.append(final_add_pd_funcs)
+                if isfile(pd_params_path):
+                    read_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
+                    # Replace indexes from file with same name
+                    drop_params = [p for p in read_pd_params.index if p in final_add_pd_params.index]
+                    read_pd_params.drop(index=drop_params, inplace=True)
+                    final_add_pd_params = read_pd_params.append(final_add_pd_params)
 
-        # When importing custom-functions from module-script already in custom_pkg_path
-        if self.ori_path == self.module_path:
-            if isfile(pd_funcs_path):
-                read_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0)
-                # Replace indexes from file with same name
-                drop_funcs = [f for f in read_pd_funcs.index if f in final_add_pd_funcs.index]
-                read_pd_funcs.drop(index=drop_funcs, inplace=True)
-                final_add_pd_funcs = read_pd_funcs.append(final_add_pd_funcs)
-            if isfile(pd_params_path):
-                read_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
-                # Replace indexes from file with same name
-                drop_params = [p for p in read_pd_params.index if p in final_add_pd_params.index]
-                read_pd_params.drop(index=drop_params, inplace=True)
-                final_add_pd_params = read_pd_params.append(final_add_pd_params)
+                if self.my_pkg_name and self.my_pkg_name != self.cf.pkg_name:
+                    # Rename folder and .csv-files if you enter a new name
+                    new_pkg_path = join(self.cf.mw.custom_pkg_path, self.my_pkg_name)
+                    os.rename(self.pkg_path, new_pkg_path)
+
+                    new_pd_funcs_path = join(new_pkg_path, f'{self.my_pkg_name}_functions.csv')
+                    os.rename(pd_funcs_path, new_pd_funcs_path)
+                    pd_funcs_path = new_pd_funcs_path
+
+                    new_pd_params_path = join(new_pkg_path, f'{self.my_pkg_name}_parameters.csv')
+                    os.rename(pd_params_path, new_pd_params_path)
+                    pd_params_path = new_pd_params_path
+
+            else:
+                self.pkg_path = join(self.cf.mw.custom_pkg_path, self.my_pkg_name)
+                if not isdir(self.pkg_path):
+                    mkdir(self.pkg_path)
+                pd_funcs_path = join(self.pkg_path, f'{self.my_pkg_name}_functions.csv')
+                pd_params_path = join(self.pkg_path, f'{self.my_pkg_name}_parameters.csv')
+                # Create __init__.py to make it a package
+                with open(join(self.pkg_path, '__init__.py'), 'w') as f:
+                    f.write('')
+                # Copy Origin-Script to Destination
+                dest_path = join(self.pkg_path, self.cf.file_path.name)
+                shutil.copy2(self.cf.file_path, dest_path)
 
             final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
             final_add_pd_params.to_csv(pd_params_path, sep=';')
 
-        elif isdir(self.module_dir_path):
-            new_module_name, ok = QInputDialog.getText(self, 'Warning',
-                                                       f'{self.module_name} already exists, please enter another name')
-            if new_module_name and ok:
-                self.module_name = new_module_name
-                self.module_dir_path = join(self.cf.mw.custom_pkg_path, self.module_name)
-                self.module_path = Path(join(self.module_dir_path, Path(self.ori_path).name))
-                if not isdir(self.module_dir_path):
-                    mkdir(self.module_dir_path)
+            self.cf.add_pd_funcs.drop(index=final_add_pd_funcs.index, inplace=True)
+            self.cf.update_func_cmbx()
+            self.cf.add_pd_params.drop(index=final_add_pd_params.index, inplace=True)
+            self.cf.clear_func_items()
+            self.cf.clear_param_items()
 
-                    # Create __init__.py to make it a package
-                    with open(join(self.pkg_path, '__init__.py'), 'w') as f:
-                        f.write('')
-                    # Copy Origin-Script to Destination
-                    shutil.copy2(self.ori_path, self.module_path)
-
-                    final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
-                    final_add_pd_params.to_csv(pd_params_path, sep=';')
+            self.cf.mw.import_custom_modules()
+            self.cf.mw.update_func_bts()
+            self.cf.mw.parameters_dock.update_parameters_widget()
+            self.close()
 
         else:
-            # Create __init__.py to make it a package
-            with open(join(self.pkg_path, '__init__.py'), 'w') as f:
-                f.write('')
-            # Copy Origin-Script to Destination
-            shutil.copy2(self.ori_path, self.module_path)
-
-            final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
-            final_add_pd_params.to_csv(pd_params_path, sep=';')
-
-        self.cf.add_pd_funcs.drop(index=final_add_pd_funcs.index, inplace=True)
-        self.cf.update_cf_cmbx()
-        self.cf.add_pd_params.drop(index=final_add_pd_params.index, inplace=True)
-        self.cf.clear_func_items()
-        self.cf.clear_param_items()
-
-        self.cf.mw.import_custom_modules()
-        self.cf.mw.update_func_bts()
-        self.cf.mw.parameters_dock.update_parameters_widget()
-        self.close()
-
-        # Todo: update func-Buttons and Parameters-Widgets
+            # If no valid pkg_name is existing
+            QMessageBox.warning(self, 'No valid Package-Name!', 'You need to enter a valid Package-Name!')
 
 
 class ChooseCustomModules(QDialog):
@@ -1080,6 +1101,7 @@ class ChooseCustomModules(QDialog):
 
     def closeEvent(self, event):
         self.mw.settings['selected_modules'] = self.selected_modules
+        self.mw.import_custom_modules()
         self.mw.update_func_bts()
         self.mw.parameters_dock.update_parameters_widget()
         event.accept()
