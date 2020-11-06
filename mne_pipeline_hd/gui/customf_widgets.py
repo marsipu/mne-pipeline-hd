@@ -32,8 +32,40 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import BaseList, EditDict, EditList
 from mne_pipeline_hd.gui.dialogs import ErrorDialog
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, get_ratio_geometry
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
+
+
+# ToDo: Syntax-Highlighting
+class CodeView(QDialog):
+    def __init__(self, cf_dialog):
+        super().__init__(cf_dialog)
+        self.cf = cf_dialog
+
+        self.init_ui()
+        self.show()
+
+    def update_code(self):
+        self.code_display.clear()
+        self.code_display.insertPlainText(self.cf.code_dict[self.cf.current_function])
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        self.code_display = QTextEdit()
+        self.code_display.setReadOnly(True)
+        self.update_code()
+        layout.addWidget(self.code_display)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def closeEvent(self, event):
+        self.cf.code_view = None
+        event.accept()
 
 
 class EditGuiArgsDlg(QDialog):
@@ -126,6 +158,7 @@ class CustomFunctionImport(QDialog):
         self.exst_parameters.append(list(self.mw.pr.parameters[self.mw.pr.p_preset].keys()))
         self.param_exst_dict = dict()
 
+        self.code_view = None
         self.code_dict = dict()
 
         # Get available parameter-guis
@@ -141,29 +174,16 @@ class CustomFunctionImport(QDialog):
 
         self.setWindowTitle('Custom-Functions-Setup')
 
-        width, height = get_ratio_geometry(0.7)
-        self.resize(int(width), int(height))
+        # width, height = get_ratio_geometry(0.7)
+        # self.resize(int(width), int(height))
 
         self.init_ui()
         self.open()
 
     def init_ui(self):
         layout = QVBoxLayout()
-        sub_layout = QHBoxLayout()
 
         # Import Button and Combobox
-        editor_layout = QVBoxLayout()
-
-        func_cmbx_layout = QHBoxLayout()
-        self.func_cmbx = QComboBox()
-        self.func_cmbx.currentTextChanged.connect(self.func_item_selected)
-        func_cmbx_layout.addWidget(self.func_cmbx)
-
-        self.func_chkl = QLabel()
-        self.func_chkl.setPixmap(self.no_icon.pixmap(16, 16))
-        self.func_chkl.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        func_cmbx_layout.addWidget(self.func_chkl)
-
         add_bt_layout = QHBoxLayout()
         addfn_bt = QPushButton('Load Function/s')
         addfn_bt.setFont(QFont('AnyStyle', 12))
@@ -173,25 +193,25 @@ class CustomFunctionImport(QDialog):
         editfn_bt.setFont(QFont('AnyStyle', 12))
         editfn_bt.clicked.connect(self.edit_functions)
         add_bt_layout.addWidget(editfn_bt)
+        layout.addLayout(add_bt_layout)
 
-        editor_layout.addLayout(add_bt_layout)
-        editor_layout.addLayout(func_cmbx_layout)
+        # Function-ComboBox
+        func_cmbx_layout = QHBoxLayout()
+        self.func_cmbx = QComboBox()
+        self.func_cmbx.currentTextChanged.connect(self.func_item_selected)
+        func_cmbx_layout.addWidget(self.func_cmbx)
 
-        # Todo: Make it a real editor (maybe even with syntax-highlighting?)
-        # Editor-Widget
-        self.code_editor = QTextEdit()
-        self.code_editor.setReadOnly(True)
-        editor_layout.addWidget(self.code_editor)
-        sub_layout.addLayout(editor_layout)
-
-        setup_layout = QVBoxLayout()
-        # The Function-Setup-Groupbox
-        func_setup_gbox = QGroupBox('Function-Setup')
-        func_setup_gbox.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        func_setup_layout = QVBoxLayout()
+        self.func_chkl = QLabel()
+        self.func_chkl.setPixmap(self.no_icon.pixmap(16, 16))
+        self.func_chkl.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        func_cmbx_layout.addWidget(self.func_chkl)
+        layout.addLayout(func_cmbx_layout)
 
         # Hint for obligatory items
+        # There may be a better way to center the labels instead of with the space-labels
         obl_hint_layout = QHBoxLayout()
+        space_label1 = QLabel('')
+        obl_hint_layout.addWidget(space_label1)
         obl_hint_label1 = QLabel()
         obl_hint_label1.setPixmap(self.no_icon.pixmap(16, 16))
         obl_hint_label1.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
@@ -204,9 +224,17 @@ class CustomFunctionImport(QDialog):
         obl_hint_label3.setPixmap(self.yes_icon.pixmap(16, 16))
         obl_hint_label3.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         obl_hint_layout.addWidget(obl_hint_label3)
-        obl_hint_layout.addWidget(QLabel('(These items are obligatory)'))
-        func_setup_layout.addLayout(obl_hint_layout)
+        obl_hint_label4 = QLabel('(= The items marked are obligatory)')
+        obl_hint_label4.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        obl_hint_layout.addWidget(obl_hint_label4)
+        space_label2 = QLabel('')
+        obl_hint_layout.addWidget(space_label2)
+        layout.addLayout(obl_hint_layout)
 
+        setup_layout = QHBoxLayout()
+        # The Function-Setup-Groupbox
+        func_setup_gbox = QGroupBox('Function-Setup')
+        func_setup_gbox.setAlignment(Qt.AlignHCenter)
         func_setup_formlayout = QFormLayout()
 
         self.falias_le = QLineEdit()
@@ -293,14 +321,12 @@ class CustomFunctionImport(QDialog):
         self.dpd_bt.clicked.connect(partial(SelectDependencies, self))
         func_setup_formlayout.addRow('Dependencies', self.dpd_bt)
 
-        func_setup_layout.addLayout(func_setup_formlayout)
-
-        func_setup_gbox.setLayout(func_setup_layout)
+        func_setup_gbox.setLayout(func_setup_formlayout)
         setup_layout.addWidget(func_setup_gbox)
 
         # The Parameter-Setup-Group-Box
         self.param_setup_gbox = QGroupBox('Parameter-Setup')
-        self.param_setup_gbox.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.param_setup_gbox.setAlignment(Qt.AlignHCenter)
         param_setup_layout = QVBoxLayout()
         self.exstparam_l = QLabel()
         self.exstparam_l.setWordWrap(True)
@@ -359,9 +385,7 @@ class CustomFunctionImport(QDialog):
         self.param_setup_gbox.setLayout(param_setup_layout)
 
         setup_layout.addWidget(self.param_setup_gbox)
-        sub_layout.addLayout(setup_layout)
-
-        layout.addLayout(sub_layout)
+        layout.addLayout(setup_layout)
 
         bt_layout = QHBoxLayout()
 
@@ -369,6 +393,11 @@ class CustomFunctionImport(QDialog):
         save_bt.setFont(QFont('AnyStyle', 16))
         save_bt.clicked.connect(self.save_pkg)
         bt_layout.addWidget(save_bt)
+
+        src_bt = QPushButton('Show Code')
+        src_bt.setFont(QFont('AnyStyle', 16))
+        src_bt.clicked.connect(self.show_code)
+        bt_layout.addWidget(src_bt)
 
         close_bt = QPushButton('Quit')
         close_bt.setFont(QFont('AnyStyle', 16))
@@ -421,7 +450,8 @@ class CustomFunctionImport(QDialog):
     def func_item_selected(self, text):
         if text:
             self.current_function = text
-            self.update_editor()
+            if self.code_view:
+                self.code_view.update_code()
             self.update_func_setup()
 
             if self.current_function in list(self.add_pd_params['function']):
@@ -439,10 +469,8 @@ class CustomFunctionImport(QDialog):
     def param_item_selected(self, current):
         self.current_parameter = self.param_model.getData(current)
         self.update_param_setup()
-
-    def update_editor(self):
-        self.code_editor.clear()
-        self.code_editor.insertPlainText(self.code_dict[self.current_function])
+        if self.code_view:
+            self.code_view.update_code()
 
     def update_func_setup(self):
         if pd.notna(self.add_pd_funcs.loc[self.current_function, 'alias']):
@@ -770,6 +798,9 @@ class CustomFunctionImport(QDialog):
         if self.current_parameter and pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_type']):
             TestParamGui(self)
 
+    def show_code(self):
+        self.code_view = CodeView(self)
+
     def save_pkg(self):
         if any(self.add_pd_funcs['ready'] == 1):
             SavePkgDialog(self)
@@ -842,6 +873,7 @@ class ImportFuncs(QDialog):
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)
 
+        self.setWindowTitle('Choose Functions')
         self.setLayout(layout)
 
     def load_selected_functions(self):
@@ -881,7 +913,8 @@ class ImportFuncs(QDialog):
         self.load_selected_functions()
         self.cf.update_func_cmbx()
         self.cf.update_exst_param_label()
-        self.cf.update_editor()
+        if self.cf.code_view:
+            self.cf.code_view.update_code()
         event.accept()
 
 
