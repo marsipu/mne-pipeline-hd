@@ -214,7 +214,8 @@ class ParametersDock(QDockWidget):
         self.cleaned_pd_params.drop(index=drop_idx_list, inplace=True)
 
         # Sort values by group_idx for dramaturgically order
-        self.cleaned_pd_params.sort_values(by='group_idx', inplace=True)
+        if 'group_idx' in self.cleaned_pd_params.columns:
+            self.cleaned_pd_params.sort_values(by='group_idx', inplace=True)
 
     def init_ui(self):
         self.general_layout = QVBoxLayout()

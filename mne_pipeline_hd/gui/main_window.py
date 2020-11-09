@@ -103,6 +103,8 @@ class MainWindow(QMainWindow):
                             'custom': {}}
         self.subject = None
         self.available_image_formats = {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'}
+        # For functions, which should or should not be called durin initialization
+        self.first_init = True
 
         # Load QSettings (which are stored in the OS)
         # qsettings=<everything, that's OS-dependent>
@@ -146,9 +148,13 @@ class MainWindow(QMainWindow):
 
         # Call window-methods
         self.init_menu()
-        self.init_main_widget()
         self.init_toolbar()
         self.add_dock_windows()
+        self.init_main_widget()
+        self.center()
+        self.raise_win()
+
+        self.first_init = False
 
     def get_home_path(self):
         # Get home_path
@@ -352,24 +358,15 @@ class MainWindow(QMainWindow):
         return value
 
     def get_func_groups(self):
-        # Todo: Gruppen machen Probleme mit CustomFunctions!!!
-        # Todo: verbessern, um Klarheit zu schaffen bei Unterteilung in Gruppen (über einzelne Module?)
-        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'MRI-Preprocessing')
-                                       & (self.pd_funcs['subject_loop'] == True)]
-        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'MRI-Preprocessing')
-                                        & (self.pd_funcs['subject_loop'] == True)]
-        # self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-        #                               & (self.pd_funcs['func_args'].str.contains('ga_group'))]
-        # self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-        #                                  & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
+        self.mri_funcs = self.pd_funcs[self.pd_funcs['target'] == 'FSMRI']
+        self.file_funcs = self.pd_funcs[self.pd_funcs['target'] == 'MEEG']
+        self.ga_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Group']
+        self.other_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Other']
 
     def import_custom_modules(self):
         """
         Load all modules in basic_functions and custom_functions
         """
-        # Start with empty dicts, especiall when re-importing from GUI
-        self.all_modules = {'basic': {},
-                            'custom': {}}
 
         # Pandas-DataFrame for contextual data of basic functions (included with program)
         self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
@@ -387,7 +384,7 @@ class MainWindow(QMainWindow):
         for directory in [d for d in os.scandir(self.custom_pkg_path) if not d.name.startswith('.')]:
             pkg_name = directory.name
             pkg_path = directory.path
-            file_dict = {'functions': None, 'parameters': None, 'module': list()}
+            file_dict = {'functions': None, 'parameters': None, 'modules': list()}
             for file_name in [f for f in listdir(pkg_path) if not f.startswith(('.', '_'))]:
                 functions_match = re.match(pd_functions_pattern, file_name)
                 parameters_match = re.match(pd_parameters_pattern, file_name)
@@ -453,11 +450,12 @@ class MainWindow(QMainWindow):
             reload(self.all_modules['basic'][module_name])
 
     def reload_custom_modules(self):
-        for module_name in self.all_modules['custom']:
-            module = self.all_modules['custom'][module_name][0]
-            spec = self.all_modules['custom'][module_name][1]
-            spec.loader.exec_module(module)
-            sys.modules[module_name] = module
+        for pkg_name in self.all_modules['custom']:
+            for module_name in self.all_modules['custom'][pkg_name]:
+                module = self.all_modules['custom'][pkg_name][module_name][0]
+                spec = self.all_modules['custom'][pkg_name][module_name][1]
+                spec.loader.exec_module(module)
+                sys.modules[module_name] = module
 
     def init_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
@@ -494,9 +492,7 @@ class MainWindow(QMainWindow):
 
         self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
 
-        self.areload_custom_modules = QAction('Reload Custom-Modules')
-        self.areload_custom_modules.triggered.connect(self.reload_custom_modules)
-        self.customf_menu.addAction(self.areload_custom_modules)
+        self.areload_custom_modules = self.customf_menu.addAction('&Reload Custom-Modules', self.reload_custom_modules)
 
         # Tools
         self.tool_menu = self.menuBar().addMenu('&Tools')
@@ -564,6 +560,13 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(close_all_bt)
 
     def init_main_widget(self):
+        self.tab_func_widget = QTabWidget()
+        self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
+
+        # Show already here to get the width of tab_func_widget to fit the function-groups inside
+        self.show()
+        self.general_layout.invalidate()
+
         # Add Function-Buttons
         self.add_func_bts()
 
@@ -587,9 +590,10 @@ class MainWindow(QMainWindow):
     # Todo: Make Buttons more appealing, mark when check
     #   make button-dependencies
     def add_func_bts(self):
-        self.tab_func_widget = QTabWidget()
         # Drop custom-modules, which aren't selected
         cleaned_pd_funcs = self.pd_funcs.loc[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))].copy()
+        # Horizontal Border for Function-Groups
+        max_h_size = int(self.tab_func_widget.geometry().width() * 0.9)
 
         # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
         if len(cleaned_pd_funcs) != 0:
@@ -620,7 +624,6 @@ class MainWindow(QMainWindow):
                 tab_v_layout = QVBoxLayout()
                 tab_h_layout = QHBoxLayout()
                 h_size = 0
-                max_h_size = int(self.app.desktop().availableGeometry().width() / 3)
                 # Add groupbox for each group
                 for function_group, _ in group_grouped:
                     group_box = QGroupBox(function_group, self)
@@ -647,23 +650,27 @@ class MainWindow(QMainWindow):
                     tab_h_layout.addWidget(group_box)
                     h_size += group_box.sizeHint().width()
                     if h_size > max_h_size:
+                        extra_group = tab_h_layout.takeAt(tab_h_layout.count() - 1).widget()
                         tab_v_layout.addLayout(tab_h_layout)
                         h_size = 0
                         tab_h_layout = QHBoxLayout()
+                        tab_h_layout.addWidget(extra_group)
 
-                if not tab_h_layout.isEmpty():
+                if tab_h_layout.count() > 0:
                     tab_v_layout.addLayout(tab_h_layout)
 
                 child_w.setLayout(tab_v_layout)
                 tab.setWidget(child_w)
                 self.tab_func_widget.addTab(tab, tab_name)
 
-        self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
-
     def update_func_bts(self):
-        self.general_layout.removeWidget(self.tab_func_widget)
-        self.tab_func_widget.close()
-        del self.tab_func_widget
+        # Remove tabs in tab_func_widget
+        while self.tab_func_widget.count():
+            tab = self.tab_func_widget.removeTab(0)
+            if tab:
+                tab.deleteLater()
+        self.bt_dict = dict()
+
         self.add_func_bts()
 
     def update_func_and_param(self):
@@ -759,8 +766,8 @@ class MainWindow(QMainWindow):
         # Lists of selected functions
         self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.pr.sel_functions[mf]]
         self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.pr.sel_functions[ff]]
-        # self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.pr.sel_functions[gf]]
-        # self.sel_other_funcs = [of for of in self.other_funcs.index if self.pr.sel_functions[of]]
+        self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.pr.sel_functions[gf]]
+        self.sel_other_funcs = [of for of in self.other_funcs.index if self.pr.sel_functions[of]]
 
         # Determine steps in progress for all selected subjects and functions
         self.all_prog = (len(self.pr.sel_mri_files) * len(self.sel_mri_funcs) +
@@ -948,6 +955,11 @@ class MainWindow(QMainWindow):
         msgbox.setStyleSheet('QLabel{min-width: 600px; max-height: 700px}')
         msgbox.setText(text)
         msgbox.open()
+
+    def resizeEvent(self, event):
+        if not self.first_init:
+            self.update_func_bts()
+        event.accept()
 
     def save_main(self):
         # Save Parameters

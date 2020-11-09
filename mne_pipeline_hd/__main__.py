@@ -49,11 +49,8 @@ def main():
         # Workaround for MAC menu-bar-focusing issue
         app.setAttribute(Qt.AA_DontUseNativeMenuBar, True)
 
+    # Initiate MainWindow-Class (this class also contains all the functionalities and data of the program)
     mw = main_window.MainWindow()
-
-    mw.center()
-    mw.show()
-    mw.raise_win()
 
     # Redirect stdout to capture it later in GUI
     sys.stdout = StdoutStream()
