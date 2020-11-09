@@ -929,9 +929,14 @@ class ImportFuncs(QDialog):
 
                     # functions (which are using param) is a continuous string
                     # (because pandas can't store a list as item)
-                    if param_key in self.cf.add_pd_params.index and \
-                            pd.notna(self.cf.add_pd_params.loc[param_key, 'functions']):
-                        self.cf.add_pd_params.loc[param_key, 'functions'] += func_key
+                    if param_key in self.cf.add_pd_params.index:
+                        if 'functions' in self.cf.add_pd_params.columns:
+                            if pd.notna(self.cf.add_pd_params.loc[param_key, 'functions']):
+                                self.cf.add_pd_params.loc[param_key, 'functions'] += func_key
+                            else:
+                                self.cf.add_pd_params.loc[param_key, 'functions'] = func_key
+                        else:
+                            self.cf.add_pd_params.loc[param_key, 'functions'] = func_key
                     else:
                         self.cf.add_pd_params.loc[param_key, 'functions'] = func_key
 

@@ -367,6 +367,9 @@ class MainWindow(QMainWindow):
         """
         Load all modules in basic_functions and custom_functions
         """
+        # Empty the module-dicts
+        self.all_modules = {'basic': {},
+                            'custom': {}}
 
         # Pandas-DataFrame for contextual data of basic functions (included with program)
         self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
@@ -492,6 +495,7 @@ class MainWindow(QMainWindow):
 
         self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
 
+        self.areload_basic_modules = self.customf_menu.addAction('&Reload Basic-Modules', self.reload_basic_modules)
         self.areload_custom_modules = self.customf_menu.addAction('&Reload Custom-Modules', self.reload_custom_modules)
 
         # Tools
@@ -515,10 +519,6 @@ class MainWindow(QMainWindow):
 
         self.settings_menu.addAction('&Open Settings', partial(SettingsDlg, self))
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
-
-        self.areload_basic_modules = QAction('Reload Basic-Modules')
-        self.areload_basic_modules.triggered.connect(self.reload_basic_modules)
-        self.settings_menu.addAction(self.areload_basic_modules)
 
         # About
         about_menu = self.menuBar().addMenu('About')
@@ -758,6 +758,10 @@ class MainWindow(QMainWindow):
 
         # Save Main-Window-Settings and project before possible Errors happen
         self.save_main()
+
+        # Reload modules to get latest changes
+        self.reload_basic_modules()
+        self.reload_custom_modules()
 
         # Make sure, every function is in sel_functions
         for func in [f for f in self.pd_funcs.index if f not in self.pr.sel_functions]:

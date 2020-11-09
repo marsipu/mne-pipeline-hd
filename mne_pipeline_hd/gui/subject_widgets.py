@@ -687,6 +687,8 @@ class AddFilesWidget(QWidget):
         row_idxs = set([idx.row() for idx in self.view.selectionModel().selectedIndexes()])
         for row_idx in row_idxs:
             self.model.removeRow(row_idx)
+        # Update pd_files, because reference is changed with model.removeRow()
+        self.pd_files = self.model._data
 
     def update_model(self):
         self.model._data = self.pd_files
@@ -915,8 +917,8 @@ class AddFilesDialog(AddFilesWidget):
 
         self.dialog = QDialog(main_win)
         self.dialog.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Minimum)
-        self.dialog.setGeometry(0, 0, int(self.mw.desk_geometry.width() * 0.5),
-                                int(self.mw.desk_geometry.height() * 0.5))
+        width, height = get_ratio_geometry(0.7)
+        self.resize(int(width), int(height))
         self.center()
 
         close_bt = QPushButton('Close', self)
