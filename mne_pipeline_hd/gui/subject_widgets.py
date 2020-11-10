@@ -1882,7 +1882,8 @@ class EventIDGui(QDialog):
         else:
             self.labels = list()
 
-        self.check_widget.replace_data(self.labels, self.checked_labels)
+        self.check_widget.replace_data(self.labels)
+        self.check_widget.replace_checked(self.checked_labels)
 
     def closeEvent(self, event):
         # Save event_id for last selected file

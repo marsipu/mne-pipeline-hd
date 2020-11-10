@@ -108,13 +108,15 @@ class Base(QWidget):
         self.content_changed()
 
 
-class BaseList(QWidget):
+class BaseList(Base):
     """A basic List-Widget to display the content of a list.
 
     Parameters
     ----------
     data : List of str | None
         Input a list with contents to display
+    extended_selection: bool
+        Set True, if you want to select more than one item in the list
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -123,86 +125,14 @@ class BaseList(QWidget):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    currentChanged = pyqtSignal(object, object)
-    selectionChanged = pyqtSignal(list)
-
     def __init__(self, data=None, extended_selection=False, parent=None, title=None):
-        super().__init__(parent)
-        self.title = title
+        super().__init__(model=BaseListModel(data), view=QListView(), parent=parent, title=title)
 
-        self.model = BaseListModel(data)
-        self.view = QListView()
-        self.view.setModel(self.model)
         if extended_selection:
             self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
-        # Connect to custom Selection-Signal
-        self.view.selectionModel().currentChanged.connect(self._current_changed)
-        self.view.selectionModel().selectionChanged.connect(self._selection_changed)
 
-        self.init_ui()
-
-    def init_ui(self):
-        layout = QVBoxLayout()
-
-        if self.title:
-            title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
-            layout.addWidget(title_label)
-
-        layout.addWidget(self.view)
-        self.setLayout(layout)
-
-    def get_current(self):
-        current = self.model.getData(self.view.currentIndex())
-
-        return current
-
-    def _current_changed(self, current_idx, previous_idx):
-        current = self.model.getData(current_idx)
-        previous = self.model.getData(previous_idx)
-
-        self.currentChanged.emit(current, previous)
-
-        print(f'Current changed from {previous} to {current}')
-
-    def get_selected(self):
-        selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
-
-        return selected
-
-    def _selection_changed(self):
-        # Somehow, the indexes got from selectionChanged don't appear to be right
-        # (maybe some issue with QItemSelection?)
-        current = self.get_selected()
-
-        self.selectionChanged.emit(current)
-
-        print(f'Selection changed to {current}')
-
-    def select(self, values, clear_selection=True):
-        indices = [i for i, x in enumerate(self.model._data) if x in values]
-
-        if clear_selection:
-            self.view.selectionModel().clearSelection()
-
-        for idx in indices:
-            index = self.model.createIndex(idx, 0)
-            self.view.selectionModel().select(index, command=QItemSelectionModel.Select)
-
-    def content_changed(self):
-        """Informs ModelView about external change made in data
-        """
-        self.model.layoutChanged.emit()
-
-    def replace_data(self, new_data):
-        """Replaces model._data with new_data
-        """
-        self.model._data = new_data
-        self.content_changed()
-
-
-class EditList(QWidget):
+class EditList(Base):
     """An editable List-Widget to display and manipulate the content of a list.
 
     Parameters
@@ -221,28 +151,16 @@ class EditList(QWidget):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    currentChanged = pyqtSignal(object, object)
-    selectionChanged = pyqtSignal(list)
-
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False, parent=None,
                  title=None):
-        super().__init__(parent)
+
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
-        self.title = title
 
-        self.model = EditListModel(data)
-        self.view = QListView()
-        self.view.setModel(self.model)
+        super().__init__(model=EditListModel(data), view=QListView(), parent=parent, title=title)
 
         if extended_selection:
             self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-        # Connect to custom Selection-Signal
-        self.view.selectionModel().currentChanged.connect(self._current_changed)
-        self.view.selectionModel().selectionChanged.connect(self._selection_changed)
-
-        self.init_ui()
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -285,54 +203,6 @@ class EditList(QWidget):
         else:
             self.setLayout(layout)
 
-    def get_current(self):
-        current = self.model.getData(self.view.currentIndex())
-
-        return current
-
-    def _current_changed(self, current_idx, previous_idx):
-        current = self.model.getData(current_idx)
-        previous = self.model.getData(previous_idx)
-
-        self.currentChanged.emit(current, previous)
-
-        print(f'Current changed from {previous} to {current}')
-
-    def get_selected(self):
-        selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
-
-        return selected
-
-    def _selection_changed(self):
-        # Somehow, the indexes got from selectionChanged don't appear to be right
-        # (maybe some issue with QItemSelection?)
-        current = self.get_selected()
-
-        self.selectionChanged.emit(current)
-
-        print(f'Selection changed to {current}')
-
-    def select(self, values, clear_selection=True):
-        indices = [i for i, x in enumerate(self.model._data) if x in values]
-
-        if clear_selection:
-            self.view.selectionModel().clearSelection()
-
-        for idx in indices:
-            index = self.model.createIndex(idx, 0)
-            self.view.selectionModel().select(index, QItemSelectionModel.Select)
-
-    def content_changed(self):
-        """Informs ModelView about external change made in data
-        """
-        self.model.layoutChanged.emit()
-
-    def replace_data(self, new_data):
-        """Replaces model._data with new_data
-        """
-        self.model._data = new_data
-        self.content_changed()
-
     def add_row(self):
         row = self.view.selectionModel().currentIndex().row()
         if row == -1:
@@ -348,7 +218,7 @@ class EditList(QWidget):
         self.view.edit(self.view.selectionModel().currentIndex())
 
 
-class CheckList(QWidget):
+class CheckList(Base):
     """A Widget for a Check-List.
 
     Parameters
@@ -373,17 +243,14 @@ class CheckList(QWidget):
 
     def __init__(self, data=None, checked=None, ui_buttons=True, ui_button_pos='right', one_check=False, parent=None,
                  title=None):
-        super().__init__(parent)
+
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
-        self.title = title
 
-        self.model = CheckListModel(data, checked, one_check=one_check)
-        self.model.dataChanged.connect(self.checked_changed)
-        self.view = QListView()
-        self.view.setModel(self.model)
+        super().__init__(model=CheckListModel(data, checked, one_check=one_check),
+                         view=QListView(), parent=parent, title=title)
 
-        self.init_ui()
+        self.model.dataChanged.connect(self._checked_changed)
 
     def init_ui(self):
 
@@ -422,19 +289,13 @@ class CheckList(QWidget):
         else:
             self.setLayout(layout)
 
-    def checked_changed(self):
+    def _checked_changed(self):
         self.checkedChanged.emit(self.model._checked)
         print(f'Changed values: {self.model._checked}')
 
-    def content_changed(self):
-        """Informs ModelView about external change made in data
+    def replace_checked(self, new_checked):
+        """Replaces model._checked with new check_dict
         """
-        self.model.layoutChanged.emit()
-
-    def replace_data(self, new_data, new_checked):
-        """Replaces model._data with new_data
-        """
-        self.model._data = new_data
         self.model._checked = new_checked
         self.content_changed()
 
@@ -444,17 +305,17 @@ class CheckList(QWidget):
             self.model._checked.append(item)
         # Inform Model about changes
         self.content_changed()
-        self.checked_changed()
+        self._checked_changed()
 
     def clear_all(self):
         """Deselect all Items while leaving reference to model._checked intact"""
         self.model._checked.clear()
         # Inform Model about changes
         self.content_changed()
-        self.checked_changed()
+        self._checked_changed()
 
 
-class CheckDictList(QWidget):
+class CheckDictList(Base):
     """A List-Widget to display the items of a list and mark them depending of their appearance in check_dict
 
     Parameters
@@ -471,89 +332,23 @@ class CheckDictList(QWidget):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    currentChanged = pyqtSignal(object, object)
-    selectionChanged = pyqtSignal(list)
-
     def __init__(self, data=None, check_dict=None, extended_selection=False, parent=None, title=None):
-        super().__init__(parent)
-        self.title = title
 
-        self.model = CheckDictModel(data, check_dict)
-        self.view = QListView()
+        super().__init__(model=CheckDictModel(data, check_dict), view=QListView(), parent=parent, title=title)
+
         if extended_selection:
             self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setModel(self.model)
 
-        # Connect to custom Selection-Signal
-        self.view.selectionModel().currentChanged.connect(self._current_changed)
-        self.view.selectionModel().selectionChanged.connect(self._selection_changed)
-
-        self.init_ui()
-
-    def init_ui(self):
-        layout = QVBoxLayout()
-
-        if self.title:
-            title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
-            layout.addWidget(title_label)
-
-        layout.addWidget(self.view)
-        self.setLayout(layout)
-
-    def get_current(self):
-        current = self.model.getData(self.view.currentIndex())
-
-        return current
-
-    def _current_changed(self, current_idx, previous_idx):
-        current = self.model.getData(current_idx)
-        previous = self.model.getData(previous_idx)
-
-        self.currentChanged.emit(current, previous)
-
-        print(f'Current changed from {previous} to {current}')
-
-    def get_selected(self):
-        selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
-
-        return selected
-
-    def _selection_changed(self):
-        # Somehow, the indexes got from selectionChanged don't appear to be right
-        # (maybe some issue with QItemSelection?)
-        current = self.get_selected()
-
-        self.selectionChanged.emit(current)
-
-        print(f'Selection changed to {current}')
-
-    def select(self, values, clear_selection=True):
-        indices = [i for i, x in enumerate(self.model._data) if x in values]
-
-        if clear_selection:
-            self.view.selectionModel().clearSelection()
-
-        for idx in indices:
-            index = self.model.createIndex(idx, 0)
-            self.view.selectionModel().select(index, command=QItemSelectionModel.Select)
-
-    def content_changed(self):
-        """Informs ModelView about external change made in data
+    def replace_check_dict(self, new_check_dict=None):
+        """Replaces model.check_dict with new check_dict
         """
-        self.model.layoutChanged.emit()
-
-    def replace_data(self, new_data=None, new_check_dict=None):
-        """Replaces model._data with new_data
-        """
-        if new_data:
-            self.model._data = new_data
         if new_check_dict:
-            self.model.check_dict = new_check_dict
+            self.model._check_dict = new_check_dict
         self.content_changed()
 
 
-class BaseDict(QWidget):
+class BaseDict(Base):
     """A Widget to display a Dictionary
 
     Parameters
@@ -565,33 +360,8 @@ class BaseDict(QWidget):
 
     """
 
-    currentChanged = pyqtSignal(dict, dict)
-    selectionChanged = pyqtSignal(dict)
-
     def __init__(self, data=None, parent=None, title=None):
-        super().__init__(parent)
-        self.title = title
-
-        self.model = BaseDictModel(data)
-        self.view = QTableView()
-        self.view.setModel(self.model)
-
-        # Connect to custom Selection-Signal
-        self.view.selectionModel().currentChanged.connect(self._current_changed)
-        self.view.selectionModel().selectionChanged.connect(self._selection_changed)
-
-        self.init_ui()
-
-    def init_ui(self):
-        layout = QVBoxLayout()
-
-        if self.title:
-            title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
-            layout.addWidget(title_label)
-
-        layout.addWidget(self.view)
-        self.setLayout(layout)
+        super().__init__(model=BaseDictModel(data), view=QTableView(), parent=parent, title=title)
 
     def get_keyvalue_by_index(self, index, data_dict):
         """For the given index, make an entry in item_dict with the data at index as key and a dict as value defining
@@ -642,19 +412,8 @@ class BaseDict(QWidget):
 
         print(f'Selection changed to {current_dict}')
 
-    def content_changed(self):
-        """Informs ModelView about external change made in data
-        """
-        self.model.layoutChanged.emit()
 
-    def replace_data(self, new_data):
-        """Replaces model._data with new_data
-        """
-        self.model._data = new_data
-        self.content_changed()
-
-
-class EditDict(QWidget):
+class EditDict(Base):
     """A Widget to display and edit a Dictionary
 
     Parameters
@@ -670,24 +429,12 @@ class EditDict(QWidget):
 
     """
 
-    currentChanged = pyqtSignal(dict, dict)
-    selectionChanged = pyqtSignal(dict)
-
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None):
-        super().__init__(parent)
+
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
-        self.title = title
 
-        self.model = EditDictModel(data)
-        self.view = QTableView()
-        self.view.setModel(self.model)
-
-        # Connect to custom Selection-Signal
-        self.view.selectionModel().currentChanged.connect(self._current_changed)
-        self.view.selectionModel().selectionChanged.connect(self._selection_changed)
-
-        self.init_ui()
+        super().__init__(model=EditDictModel(data), view=QTableView(), parent=parent, title=title)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -780,17 +527,6 @@ class EditDict(QWidget):
 
         print(f'Selection changed to {current_dict}')
 
-    def content_changed(self):
-        """Informs ModelView about external change made in data
-        """
-        self.model.layoutChanged.emit()
-
-    def replace_data(self, new_data):
-        """Replaces model._data with new_data
-        """
-        self.model._data = new_data
-        self.content_changed()
-
     def add_row(self):
         row = self.view.selectionModel().currentIndex().row()
         if row == -1:
@@ -806,7 +542,7 @@ class EditDict(QWidget):
         self.view.edit(self.view.selectionModel().currentIndex())
 
 
-class BasePandasTable(QWidget):
+class BasePandasTable(Base):
     """A Widget to display a pandas DataFrame
 
     Parameters
@@ -822,33 +558,8 @@ class BasePandasTable(QWidget):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    currentChanged = pyqtSignal(dict, dict)
-    selectionChanged = pyqtSignal(dict)
-
     def __init__(self, data=None, parent=None, title=None):
-        super().__init__(parent)
-        self.title = title
-
-        self.model = BasePandasModel(data)
-        self.view = QTableView()
-        self.view.setModel(self.model)
-
-        # Connect to custom Selection-Signal
-        self.view.selectionModel().currentChanged.connect(self._current_changed)
-        self.view.selectionModel().selectionChanged.connect(self._selection_changed)
-
-        self.init_ui()
-
-    def init_ui(self):
-        layout = QVBoxLayout()
-
-        if self.title:
-            title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
-            layout.addWidget(title_label)
-
-        layout.addWidget(self.view)
-        self.setLayout(layout)
+        super().__init__(model=BasePandasModel(data), view=QTableView(), parent=parent, title=title)
 
     def get_rowcol_by_index(self, index, data_dict):
         data = self.model.getData(index)
@@ -884,19 +595,8 @@ class BasePandasTable(QWidget):
 
         print(f'Selection changed to {current_dict}')
 
-    def content_changed(self):
-        """Informs ModelView about external change made in data
-        """
-        self.model.layoutChanged.emit()
 
-    def replace_data(self, new_data):
-        """Replaces model._data with new_data
-        """
-        self.model._data = new_data
-        self.content_changed()
-
-
-class EditPandasTable(QWidget):
+class EditPandasTable(Base):
     """A Widget to display and edit a pandas DataFrame
 
     Parameters
@@ -916,29 +616,12 @@ class EditPandasTable(QWidget):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    currentChanged = pyqtSignal(dict, dict)
-    selectionChanged = pyqtSignal(dict)
-
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None):
-        super().__init__(parent)
+
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
-        self.title = title
 
-        self.model = EditPandasModel(data)
-        self.view = QTableView()
-        self.view.setModel(self.model)
-
-        # Connect to custom Selection-Signal
-        self.view.selectionModel().currentChanged.connect(self._current_changed)
-        self.view.selectionModel().selectionChanged.connect(self._selection_changed)
-
-        self.rows_chkbx = QSpinBox()
-        self.rows_chkbx.setMinimum(1)
-        self.cols_chkbx = QSpinBox()
-        self.cols_chkbx.setMinimum(1)
-
-        self.init_ui()
+        super().__init__(model=EditPandasModel(data), view=QTableView(), parent=parent, title=title)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -954,6 +637,8 @@ class EditPandasTable(QWidget):
             addr_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             addr_bt.clicked.connect(self.add_row)
             addr_layout.addWidget(addr_bt)
+            self.rows_chkbx = QSpinBox()
+            self.rows_chkbx.setMinimum(1)
             addr_layout.addWidget(self.rows_chkbx)
             bt_layout.addLayout(addr_layout)
 
@@ -962,6 +647,8 @@ class EditPandasTable(QWidget):
             addc_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             addc_bt.clicked.connect(self.add_column)
             addc_layout.addWidget(addc_bt)
+            self.cols_chkbx = QSpinBox()
+            self.cols_chkbx.setMinimum(1)
             addc_layout.addWidget(self.cols_chkbx)
             bt_layout.addLayout(addc_layout)
 
@@ -1040,11 +727,6 @@ class EditPandasTable(QWidget):
 
         print(f'Selection changed to {current_dict}')
 
-    def content_changed(self):
-        """Informs ModelView about external change made in data
-        """
-        self.model.layoutChanged.emit()
-
     def update_data(self):
         """Has to be called, when model._data is rereferenced by for example add_row
         to keep external data updated
@@ -1061,12 +743,6 @@ class EditPandasTable(QWidget):
         """
 
         return self.model._data
-
-    def replace_data(self, new_data):
-        """Replaces model._data with new_data
-        """
-        self.model._data = new_data
-        self.content_changed()
 
     def add_row(self):
         row = self.view.selectionModel().currentIndex().row()
@@ -1212,7 +888,7 @@ class AllBaseWidgets(QWidget):
 
         self.widget_kwargs = {'BaseList': {'extended_selection': True, 'title': 'BaseList'},
                               'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList'},
-                              'CheckList': {'one_check': True, 'title': 'CheckList'},
+                              'CheckList': {'one_check': False, 'title': 'CheckList'},
                               'CheckDictList': {'extended_selection': True, 'title': 'CheckDictList'},
                               'BaseDict': {'title': 'BaseDict'},
                               'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict'},

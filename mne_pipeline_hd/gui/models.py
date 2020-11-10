@@ -148,7 +148,7 @@ class CheckListModel(BaseListModel):
 class CheckDictModel(BaseListModel):
     def __init__(self, data, check_dict):
         super().__init__(data)
-        self.check_dict = check_dict
+        self._check_dict = check_dict
         self.app = QApplication.instance()
 
     def data(self, index, role=None):
@@ -156,7 +156,7 @@ class CheckDictModel(BaseListModel):
             return str(self.getData(index))
 
         elif role == Qt.DecorationRole:
-            if self.getData(index) in self.check_dict:
+            if self.getData(index) in self._check_dict:
                 return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
             else:
                 return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
