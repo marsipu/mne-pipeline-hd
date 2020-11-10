@@ -16,8 +16,9 @@ from pathlib import Path
 import pandas
 from PyQt5.QtCore import QItemSelectionModel, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QGridLayout, QHBoxLayout, QInputDialog, QLabel, QListView,
-                             QPushButton, QSizePolicy,
+from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QGridLayout, QHBoxLayout, QInputDialog, QLabel,
+                             QListView,
+                             QPushButton, QScrollArea, QSizePolicy,
                              QSpinBox,
                              QTabWidget, QTableView, QVBoxLayout, QWidget)
 
@@ -113,7 +114,7 @@ class BaseList(Base):
 
         for idx in indices:
             index = self.model.createIndex(idx, 0)
-            self.view.selectionModel().select(index, command=QItemSelectionModel.Select)
+            self.view.selectionModel().select(index, QItemSelectionModel.Select)
 
 
 class SimpleList(BaseList):
@@ -740,6 +741,25 @@ class EditPandasTable(BasePandasTable):
             self.model.setHeaderData(column, Qt.Horizontal, text)
 
 
+class SimpleDialog(QDialog):
+    def __init__(self, widget, parent=None, modal=True, scroll=True):
+        super().__init__(parent)
+
+        layout = QVBoxLayout()
+        if scroll:
+            scroll_area = QScrollArea()
+            scroll_area.setWidget(widget)
+            layout.addWidget(scroll_area)
+        else:
+            layout.addWidget(widget)
+        self.setLayout(layout)
+
+        if modal:
+            self.open()
+        else:
+            self.show()
+
+
 class AssignWidget(QWidget):
     """A Widget to assign a property from properties to each item in items
 
@@ -766,15 +786,20 @@ class AssignWidget(QWidget):
         layout.addWidget(self.items_w, 0, 0)
 
         if self.props_editable:
-            self.props_w = EditList(self.props)
+            self.props_w = EditList(self.props, extended_selection=False)
         else:
-            self.props_w = SimpleList(self.props)
+            self.props_w = SimpleList(self.props, extended_selection=False)
         layout.addWidget(self.props_w, 0, 1)
 
         assign_bt = QPushButton('Assign')
         assign_bt.setFont(QFont('AnyStyle', 16))
         assign_bt.clicked.connect(self.assign)
         layout.addWidget(assign_bt, 1, 0, 1, 2)
+
+        show_assign_bt = QPushButton('Show Assignments')
+        show_assign_bt.setFont(QFont('AnyStyle', 16))
+        show_assign_bt.clicked.connect(self.show_assignments)
+        layout.addWidget(show_assign_bt, 2, 0, 1, 2)
 
         if self.title:
             super_layout = QVBoxLayout()
@@ -794,6 +819,15 @@ class AssignWidget(QWidget):
     def assign(self):
         sel_items = self.items_w.get_selected()
         sel_prop = self.props_w.get_current()
+
+        for item in sel_items:
+            self.assignments[item] = sel_prop
+
+        # Inform Model in CheckDict about change
+        self.items_w.content_changed()
+
+    def show_assignments(self):
+        SimpleDialog(SimpleDict(self.assignments), parent=self, modal=False, scroll=True)
 
 
 class AllBaseWidgets(QWidget):
