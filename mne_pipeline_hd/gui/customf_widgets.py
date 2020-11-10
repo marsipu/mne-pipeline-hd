@@ -30,7 +30,7 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QTextEdit, QVBoxLayout)
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import BaseList, CheckList, EditDict, EditList
+from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList, SimpleList
 from mne_pipeline_hd.gui.dialogs import ErrorDialog
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
@@ -1063,7 +1063,7 @@ class SavePkgDialog(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        self.func_list = BaseList(list(self.cf.add_pd_funcs.loc[self.cf.add_pd_funcs['ready'] == 1].index))
+        self.func_list = SimpleList(list(self.cf.add_pd_funcs.loc[self.cf.add_pd_funcs['ready'] == 1].index))
         layout.addWidget(self.func_list)
 
         pkg_name_label = QLabel('Package-Name:')

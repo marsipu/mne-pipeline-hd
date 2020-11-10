@@ -32,9 +32,9 @@ from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandas
 
 class Base(QWidget):
     currentChanged = pyqtSignal(object, object)
-    selectionChanged = pyqtSignal(list)
+    selectionChanged = pyqtSignal(object)
 
-    def __init__(self, model, view, parent=None, title=None):
+    def __init__(self, model, view, parent, title):
         super().__init__(parent)
         self.title = title
 
@@ -80,21 +80,11 @@ class Base(QWidget):
     def _selection_changed(self):
         # Somehow, the indexes got from selectionChanged don't appear to be right
         # (maybe some issue with QItemSelection?)
-        current = self.get_selected()
+        selected = self.get_selected()
 
-        self.selectionChanged.emit(current)
+        self.selectionChanged.emit(selected)
 
-        print(f'Selection changed to {current}')
-
-    def select(self, values, clear_selection=True):
-        indices = [i for i, x in enumerate(self.model._data) if x in values]
-
-        if clear_selection:
-            self.view.selectionModel().clearSelection()
-
-        for idx in indices:
-            index = self.model.createIndex(idx, 0)
-            self.view.selectionModel().select(index, command=QItemSelectionModel.Select)
+        print(f'Selection changed to {selected}')
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -109,6 +99,24 @@ class Base(QWidget):
 
 
 class BaseList(Base):
+    def __init__(self, model, view, extended_selection, parent, title):
+        super().__init__(model, view, parent, title)
+
+        if extended_selection:
+            self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+    def select(self, values, clear_selection=True):
+        indices = [i for i, x in enumerate(self.model._data) if x in values]
+
+        if clear_selection:
+            self.view.selectionModel().clearSelection()
+
+        for idx in indices:
+            index = self.model.createIndex(idx, 0)
+            self.view.selectionModel().select(index, command=QItemSelectionModel.Select)
+
+
+class SimpleList(BaseList):
     """A basic List-Widget to display the content of a list.
 
     Parameters
@@ -126,13 +134,11 @@ class BaseList(Base):
     """
 
     def __init__(self, data=None, extended_selection=False, parent=None, title=None):
-        super().__init__(model=BaseListModel(data), view=QListView(), parent=parent, title=title)
-
-        if extended_selection:
-            self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        super().__init__(model=BaseListModel(data), view=QListView(),
+                         extended_selection=extended_selection, parent=parent, title=title)
 
 
-class EditList(Base):
+class EditList(BaseList):
     """An editable List-Widget to display and manipulate the content of a list.
 
     Parameters
@@ -157,10 +163,8 @@ class EditList(Base):
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditListModel(data), view=QListView(), parent=parent, title=title)
-
-        if extended_selection:
-            self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        super().__init__(model=EditListModel(data), view=QListView(),
+                         extended_selection=extended_selection, parent=parent, title=title)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -218,7 +222,7 @@ class EditList(Base):
         self.view.edit(self.view.selectionModel().currentIndex())
 
 
-class CheckList(Base):
+class CheckList(BaseList):
     """A Widget for a Check-List.
 
     Parameters
@@ -248,7 +252,7 @@ class CheckList(Base):
         self.ui_button_pos = ui_button_pos
 
         super().__init__(model=CheckListModel(data, checked, one_check=one_check),
-                         view=QListView(), parent=parent, title=title)
+                         view=QListView(), extended_selection=False, parent=parent, title=title)
 
         self.model.dataChanged.connect(self._checked_changed)
 
@@ -315,7 +319,7 @@ class CheckList(Base):
         self._checked_changed()
 
 
-class CheckDictList(Base):
+class CheckDictList(BaseList):
     """A List-Widget to display the items of a list and mark them depending of their appearance in check_dict
 
     Parameters
@@ -333,12 +337,8 @@ class CheckDictList(Base):
     """
 
     def __init__(self, data=None, check_dict=None, extended_selection=False, parent=None, title=None):
-
-        super().__init__(model=CheckDictModel(data, check_dict), view=QListView(), parent=parent, title=title)
-
-        if extended_selection:
-            self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.view.setModel(self.model)
+        super().__init__(model=CheckDictModel(data, check_dict), view=QListView(),
+                         extended_selection=extended_selection, parent=parent, title=title)
 
     def replace_check_dict(self, new_check_dict=None):
         """Replaces model.check_dict with new check_dict
@@ -349,19 +349,9 @@ class CheckDictList(Base):
 
 
 class BaseDict(Base):
-    """A Widget to display a Dictionary
 
-    Parameters
-    ----------
-    data : dict | None
-        Input a pandas DataFrame with contents to display
-    parent : QWidget | None
-        Parent Widget (QWidget or inherited) or None if there is no parent
-
-    """
-
-    def __init__(self, data=None, parent=None, title=None):
-        super().__init__(model=BaseDictModel(data), view=QTableView(), parent=parent, title=title)
+    def __init__(self, model, view, parent, title):
+        super().__init__(model, view, parent, title)
 
     def get_keyvalue_by_index(self, index, data_dict):
         """For the given index, make an entry in item_dict with the data at index as key and a dict as value defining
@@ -389,6 +379,14 @@ class BaseDict(Base):
             else:
                 data_dict[data] = {'type': item_type, 'counterpart': [counterpart]}
 
+        return data_dict
+
+    def get_current(self):
+        current_dict = dict()
+        self.get_keyvalue_by_index(self.view.currentIndex(), current_dict)
+
+        return current_dict
+
     def _current_changed(self, current_idx, previous_idx):
         current_dict = dict()
         previous_dict = dict()
@@ -400,20 +398,39 @@ class BaseDict(Base):
 
         print(f'Current changed from {previous_dict} to {current_dict}')
 
+    def get_selected(self):
+        selection_dict = dict()
+
+        for idx in self.view.selectedIndexes():
+            self.get_keyvalue_by_index(idx, selection_dict)
+
+        return selection_dict
+
     def _selection_changed(self):
         # Somehow, the indexes got from selectionChanged don't appear to be right
         # (maybe some issue with QItemSelection?)
-        current_dict = dict()
+        selection_dict = self.selectionChanged.emit(self.get_selected())
 
-        for idx in self.view.selectedIndexes():
-            self.get_keyvalue_by_index(idx, current_dict)
-
-        self.selectionChanged.emit(current_dict)
-
-        print(f'Selection changed to {current_dict}')
+        print(f'Selection changed to {selection_dict}')
 
 
-class EditDict(Base):
+class SimpleDict(BaseDict):
+    """A Widget to display a Dictionary
+
+    Parameters
+    ----------
+    data : dict | None
+        Input a pandas DataFrame with contents to display
+    parent : QWidget | None
+        Parent Widget (QWidget or inherited) or None if there is no parent
+
+    """
+
+    def __init__(self, data=None, parent=None, title=None):
+        super().__init__(model=BaseDictModel(data), view=QTableView(), parent=parent, title=title)
+
+
+class EditDict(BaseDict):
     """A Widget to display and edit a Dictionary
 
     Parameters
@@ -477,56 +494,6 @@ class EditDict(Base):
         else:
             self.setLayout(layout)
 
-    def get_keyvalue_by_index(self, index, data_dict):
-        """For the given index, make an entry in item_dict with the data at index as key and a dict as value defining
-        if data is key or value and refering to the corresponding key/value of data depending on its type
-
-        Parameters
-        ----------
-        index: Index in Model
-        data_dict: Dictionary to store information about the data at index
-        """
-        data = self.model.getData(index)
-        item_type = None
-        counterpart = None
-        if index.column() == 0:
-            item_type = 'key'
-            counterpart_idx = index.sibling(index.row(), 1)
-            counterpart = self.model.getData(counterpart_idx)
-        elif index.column() == 1:
-            item_type = 'value'
-            counterpart_idx = index.sibling(index.row(), 0)
-            counterpart = self.model.getData(counterpart_idx)
-        if data and item_type and counterpart:
-            if data and item_type and counterpart:
-                if data in data_dict:
-                    data_dict['counterpart'].append(counterpart)
-                else:
-                    data_dict[data] = {'type': item_type, 'counterpart': [counterpart]}
-
-    def _current_changed(self, current_idx, previous_idx):
-        current_dict = dict()
-        previous_dict = dict()
-
-        self.get_keyvalue_by_index(current_idx, current_dict)
-        self.get_keyvalue_by_index(previous_idx, previous_dict)
-
-        self.currentChanged.emit(current_dict, previous_dict)
-
-        print(f'Current changed from {previous_dict} to {current_dict}')
-
-    def _selection_changed(self):
-        # Somehow, the indexes got from selectionChanged don't appear to be right
-        # (maybe some issue with QItemSelection?)
-        current_dict = dict()
-
-        for idx in self.view.selectedIndexes():
-            self.get_keyvalue_by_index(idx, current_dict)
-
-        self.selectionChanged.emit(current_dict)
-
-        print(f'Selection changed to {current_dict}')
-
     def add_row(self):
         row = self.view.selectionModel().currentIndex().row()
         if row == -1:
@@ -543,6 +510,56 @@ class EditDict(Base):
 
 
 class BasePandasTable(Base):
+
+    def __init__(self, model, view, parent, title):
+        super().__init__(model, view, parent, title)
+
+    def get_rowcol_by_index(self, index, data_dict):
+        data = self.model.getData(index)
+        row = self.model.headerData(index.row(), orientation=Qt.Vertical, role=Qt.DisplayRole)
+        column = self.model.headerData(index.column(), orientation=Qt.Horizontal, role=Qt.DisplayRole)
+
+        if data and row and column:
+            if data in data_dict:
+                data_dict[data]['row'].append(row)
+                data_dict[data]['column'].append(column)
+            else:
+                data_dict[data] = {'row': [row], 'column': [column]}
+
+    def get_current(self):
+        current_dict = dict()
+        self.get_rowcol_by_index(self.view.currentIndex(), current_dict)
+
+        return current_dict
+
+    def _current_changed(self, current_idx, previous_idx):
+        current_dict = dict()
+        previous_dict = dict()
+
+        self.get_rowcol_by_index(current_idx, current_dict)
+        self.get_rowcol_by_index(previous_idx, previous_dict)
+
+        self.currentChanged.emit(current_dict, previous_dict)
+
+        print(f'Current changed from {previous_dict} to {current_dict}')
+
+    def get_selected(self):
+        # Somehow, the indexes got from selectionChanged don't appear to be right
+        # (maybe some issue with QItemSelection?)
+        selection_dict = dict()
+        for idx in self.view.selectedIndexes():
+            self.get_rowcol_by_index(idx, selection_dict)
+
+        return selection_dict
+
+    def _selection_changed(self):
+        selection_dict = self.get_selected()
+        self.selectionChanged.emit(selection_dict)
+
+        print(f'Selection changed to {selection_dict}')
+
+
+class SimplePandasTable(BasePandasTable):
     """A Widget to display a pandas DataFrame
 
     Parameters
@@ -561,42 +578,8 @@ class BasePandasTable(Base):
     def __init__(self, data=None, parent=None, title=None):
         super().__init__(model=BasePandasModel(data), view=QTableView(), parent=parent, title=title)
 
-    def get_rowcol_by_index(self, index, data_dict):
-        data = self.model.getData(index)
-        row = self.model.headerData(index.row(), orientation=Qt.Vertical, role=Qt.DisplayRole)
-        column = self.model.headerData(index.column(), orientation=Qt.Horizontal, role=Qt.DisplayRole)
 
-        if data and row and column:
-            if data in data_dict:
-                data_dict[data]['row'].append(row)
-                data_dict[data]['column'].append(column)
-            else:
-                data_dict[data] = {'row': [row], 'column': [column]}
-
-    def _current_changed(self, current_idx, previous_idx):
-        current_dict = dict()
-        previous_dict = dict()
-
-        self.get_rowcol_by_index(current_idx, current_dict)
-        self.get_rowcol_by_index(previous_idx, previous_dict)
-
-        self.currentChanged.emit(current_dict, previous_dict)
-
-        print(f'Current changed from {previous_dict} to {current_dict}')
-
-    def _selection_changed(self):
-        # Somehow, the indexes got from selectionChanged don't appear to be right
-        # (maybe some issue with QItemSelection?)
-        current_dict = dict()
-        for idx in self.view.selectedIndexes():
-            self.get_rowcol_by_index(idx, current_dict)
-
-        self.selectionChanged.emit(current_dict)
-
-        print(f'Selection changed to {current_dict}')
-
-
-class EditPandasTable(Base):
+class EditPandasTable(BasePandasTable):
     """A Widget to display and edit a pandas DataFrame
 
     Parameters
@@ -694,39 +677,6 @@ class EditPandasTable(Base):
         else:
             self.setLayout(layout)
 
-    def get_rowcol_by_index(self, index, data_dict):
-        data = self.model.getData(index)
-        row = self.model.headerData(index.row(), orientation=Qt.Vertical, role=Qt.DisplayRole)
-        column = self.model.headerData(index.column(), orientation=Qt.Horizontal, role=Qt.DisplayRole)
-
-        if data in data_dict:
-            data_dict[data]['row'].append(row)
-            data_dict[data]['column'].append(column)
-        else:
-            data_dict[data] = {'row': [row], 'column': [column]}
-
-    def _current_changed(self, current_idx, previous_idx):
-        current_dict = dict()
-        previous_dict = dict()
-
-        self.get_rowcol_by_index(current_idx, current_dict)
-        self.get_rowcol_by_index(previous_idx, previous_dict)
-
-        self.currentChanged.emit(current_dict, previous_dict)
-
-        print(f'Current changed from {previous_dict} to {current_dict}')
-
-    def _selection_changed(self):
-        # Somehow, the indexes got from selectionChanged don't appear to be right
-        # (maybe some issue with QItemSelection?)
-        current_dict = dict()
-        for idx in self.view.selectedIndexes():
-            self.get_rowcol_by_index(idx, current_dict)
-
-        self.selectionChanged.emit(current_dict)
-
-        print(f'Selection changed to {current_dict}')
-
     def update_data(self):
         """Has to be called, when model._data is rereferenced by for example add_row
         to keep external data updated
@@ -818,7 +768,7 @@ class AssignWidget(QWidget):
         if self.props_editable:
             self.props_w = EditList(self.props)
         else:
-            self.props_w = BaseList(self.props)
+            self.props_w = SimpleList(self.props)
         layout.addWidget(self.props_w, 0, 1)
 
         assign_bt = QPushButton('Assign')
@@ -876,23 +826,23 @@ class AllBaseWidgets(QWidget):
         # self.extree = None
         # self.exdict = None
 
-        self.widget_args = {'BaseList': [self.exlist],
+        self.widget_args = {'SimpleList': [self.exlist],
                             'EditList': [self.exlist],
                             'CheckList': [self.exlist, self.exchecked],
                             'CheckDictList': [self.exlist, self.exdict],
-                            'BaseDict': [self.exdict],
+                            'SimpleDict': [self.exdict],
                             'EditDict': [self.exdict],
-                            'BasePandasTable': [self.expd],
+                            'SimplePandasTable': [self.expd],
                             'EditPandasTable': [self.expd],
                             'AssignWidget': [self.exlist, self.exattributes, self.exassignments]}
 
-        self.widget_kwargs = {'BaseList': {'extended_selection': True, 'title': 'BaseList'},
+        self.widget_kwargs = {'SimpleList': {'extended_selection': True, 'title': 'BaseList'},
                               'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList'},
                               'CheckList': {'one_check': False, 'title': 'CheckList'},
                               'CheckDictList': {'extended_selection': True, 'title': 'CheckDictList'},
-                              'BaseDict': {'title': 'BaseDict'},
+                              'SimpleDict': {'title': 'BaseDict'},
                               'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict'},
-                              'BasePandasTable': {'title': 'BasePandasTable'},
+                              'SimplePandasTable': {'title': 'BasePandasTable'},
                               'EditPandasTable': {'title': 'EditPandasTable'},
                               'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget'}}
 
