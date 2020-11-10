@@ -54,12 +54,14 @@ def get_arguments(arg_names, sub, main_win):
 
 
 def func_from_def(func_name, sub, main_win):
+    # Get Package-Name, is only defined for custom-packages
+    pkg_name = main_win.pd_funcs['pkg_name'][func_name]
     # Get module, has to specified in functions.csv as it is imported
     module_name = main_win.pd_funcs['module'][func_name]
     if module_name in main_win.all_modules['basic']:
         module = main_win.all_modules['basic'][module_name]
     elif module_name in main_win.all_modules['custom']:
-        module = main_win.all_modules['custom'][module_name][0]
+        module = main_win.all_modules['custom'][pkg_name][module_name][0]
     else:
         raise ModuleNotFoundError(name=module_name)
 

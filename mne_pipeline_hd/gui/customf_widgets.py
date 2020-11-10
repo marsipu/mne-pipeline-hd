@@ -863,6 +863,10 @@ class ImportFuncs(QDialog):
                 pd_params_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_parameters.csv')
                 self.cf.add_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0)
                 self.cf.add_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
+
+                # Can be removed soon, when nobody uses old packages anymore (10.11.2020)
+                if 'target' not in self.cf.add_pd_funcs.columns:
+                    self.cf.add_pd_funcs['target'] = None
             else:
                 self.cf.pkg_name = None
             spec = util.spec_from_file_location(self.cf.file_path.stem, self.cf.file_path)
@@ -894,11 +898,12 @@ class ImportFuncs(QDialog):
             layout.addWidget(exst_label)
 
         view_layout = QHBoxLayout()
-        load_list = CheckList(self.loaded_cfs, self.selected_cfs)
+        load_list = CheckList(self.loaded_cfs, self.selected_cfs, ui_button_pos='bottom', title='New functions')
         view_layout.addWidget(load_list)
 
         if len(self.edit_loaded_cfs) > 0:
-            edit_list = CheckList(self.edit_loaded_cfs, self.selected_edit_cfs)
+            edit_list = CheckList(self.edit_loaded_cfs, self.selected_edit_cfs, ui_button_pos='bottom',
+                                  title='Functions to edit')
             view_layout.addWidget(edit_list)
 
         layout.addLayout(view_layout)

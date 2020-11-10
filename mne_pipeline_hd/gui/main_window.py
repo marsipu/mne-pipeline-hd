@@ -435,6 +435,9 @@ class MainWindow(QMainWindow):
                         self.module_err_dlg = ErrorDialog(exc_tuple, self,
                                                           title=f'Error in import of custom-package: {pkg_name}')
                     else:
+                        # Add pkg_name here (would be redundant in read_pd_funcs of each custom-package)
+                        read_pd_funcs['pkg_name'] = pkg_name
+
                         # Check, that there are no duplicates
                         pd_funcs_to_append = read_pd_funcs.loc[~read_pd_funcs.index.isin(self.pd_funcs.index)]
                         self.pd_funcs = self.pd_funcs.append(pd_funcs_to_append)
@@ -491,7 +494,7 @@ class MainWindow(QMainWindow):
 
         # Custom-Functions
         self.customf_menu = self.menuBar().addMenu('&Custom Functions')
-        self.aadd_customf = self.customf_menu.addAction('&Add custom Functions', partial(CustomFunctionImport, self))
+        self.aadd_customf = self.customf_menu.addAction('&Import', partial(CustomFunctionImport, self))
 
         self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
 
