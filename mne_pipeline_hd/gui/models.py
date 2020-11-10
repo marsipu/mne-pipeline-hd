@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Pipeline-GUI for Analysis with MNE-Python
-Copyright © 2011-2019, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
-inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
+inspired by: https://doi.org/10.3389/fnins.2018.00006
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
@@ -20,7 +19,7 @@ class BaseListModel(QAbstractListModel):
 
     Parameters
     ----------
-    data : list()
+    data : list
         input existing list here, otherwise defaults to empty list
 
     """
@@ -32,12 +31,9 @@ class BaseListModel(QAbstractListModel):
         else:
             self._data = data
 
-    def getData(self, index=QModelIndex()):
-        return self._data[index.row()]
-
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return str(self.getData(index))
+            return str(self._data[index.row()])
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data)
@@ -48,7 +44,7 @@ class EditListModel(BaseListModel):
 
     Parameters
     ----------
-    data : list()
+    data : list
         input existing list here, otherwise defaults to empty list
 
     Notes
@@ -93,10 +89,10 @@ class CheckListModel(BaseListModel):
 
     Parameters
     ----------
-    data : list()
+    data : list
         list with content to be displayed, defaults to empty list
 
-    checked : list()
+    checked : list
         list which stores the checked items from data
 
     Notes
@@ -120,46 +116,30 @@ class CheckListModel(BaseListModel):
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return str(self.getData(index))
+            return self._data[index.row()]
 
         if role == Qt.CheckStateRole:
-            if self.getData(index) in self._checked:
+            if self._data[index.row()] in self._checked:
                 return Qt.Checked
             else:
                 return Qt.Unchecked
 
     def setData(self, index, value, role=None):
+        datum = self._data[index.row()]
         if role == Qt.CheckStateRole:
             if value == Qt.Checked:
                 if self.one_check:
                     self._checked.clear()
-                self._checked.append(self.getData(index))
+                self._checked.append(datum)
             else:
-                if self.getData(index) in self._checked:
-                    self._checked.remove(self.getData(index))
+                if datum in self._checked:
+                    self._checked.remove(datum)
             self.dataChanged.emit(index, index)
             return True
         return False
 
     def flags(self, index=QModelIndex()):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
-
-
-class CheckDictModel(BaseListModel):
-    def __init__(self, data, check_dict):
-        super().__init__(data)
-        self._check_dict = check_dict
-        self.app = QApplication.instance()
-
-    def data(self, index, role=None):
-        if role == Qt.DisplayRole:
-            return str(self.getData(index))
-
-        elif role == Qt.DecorationRole:
-            if self.getData(index) in self._check_dict:
-                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
-            else:
-                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
 
 
 class BaseDictModel(QAbstractTableModel):
@@ -182,15 +162,12 @@ class BaseDictModel(QAbstractTableModel):
         else:
             self._data = data
 
-    def getData(self, index=QModelIndex()):
-        if index.column() == 0:
-            return list(self._data.keys())[index.row()]
-        elif index.column() == 1:
-            return list(self._data.values())[index.row()]
-
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return str(self.getData(index))
+            if index.column() == 0:
+                return str(list(self._data.keys())[index.row()])
+            elif index.column() == 1:
+                return str(list(self._data.values())[index.row()])
 
     def headerData(self, idx, orientation, role=None):
         if role == Qt.DisplayRole:
@@ -215,19 +192,14 @@ class EditDictModel(BaseDictModel):
     Parameters
     ----------
     data : dict | None
-        Dictionary with keys and values to be displayed and edited, default to empty Dictionary.
-
-    only_edit : 'keys' | 'values' | None
-        Makes only keys or only values editable. Both are editable if None.
+        Dictionary with keys and values to be displayed and edited, default to empty Dictionary
 
     Notes
     -----
     Python 3.7 is required to ensure order in dictionary
     """
-
-    def __init__(self, data=None, only_edit=None):
+    def __init__(self, data=None):
         super().__init__(data)
-        self.only_edit = only_edit
 
     def setData(self, index, value, role=None):
         if role == Qt.EditRole:
@@ -248,14 +220,7 @@ class EditDictModel(BaseDictModel):
         return False
 
     def flags(self, index=QModelIndex()):
-        if not self.only_edit:
-            return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-        elif index.column() == 0 and self.only_edit == 'keys':
-            return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-        elif index.column() == 1 and self.only_edit == 'values':
-            return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-        else:
-            return QAbstractItemModel.flags(self, index)
+        return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
     def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
@@ -294,12 +259,11 @@ class BasePandasModel(QAbstractTableModel):
         else:
             self._data = data
 
-    def getData(self, index=QModelIndex()):
-        return self._data.iloc[index.row(), index.column()]
-
     def data(self, index, role=None):
+        value = self._data.iloc[index.row(), index.column()]
+
         if role == Qt.DisplayRole:
-            return str(self.getData(index))
+            return str(value)
 
     def headerData(self, idx, orientation, role=None):
         if role == Qt.DisplayRole:
@@ -348,20 +312,12 @@ class EditPandasModel(BasePandasModel):
     def setHeaderData(self, index, orientation, value, role=Qt.EditRole):
         if role == Qt.EditRole:
             if orientation == Qt.Vertical:
-                # DataFrame.rename does rename all duplicate indices if existent,
-                # that's why the index is reassigned directly
-                new_index = list(self._data.index)
-                new_index[index] = value
-                self._data.index = new_index
+                self._data.rename(index={self._data.index[index]: value}, inplace=True)
                 self.headerDataChanged.emit(Qt.Vertical, index, index)
                 return True
 
             elif orientation == Qt.Horizontal:
-                # DataFrame.rename does rename all duplicate columns if existent,
-                # that's why the columns are reassigned directly
-                new_columns = list(self._data.columns)
-                new_columns[index] = value
-                self._data.columns = new_columns
+                self._data.rename(columns={self._data.columns[index]: value}, inplace=True)
                 self.headerDataChanged.emit(Qt.Horizontal, index, index)
                 return True
 
@@ -423,22 +379,42 @@ class EditPandasModel(BasePandasModel):
         return True
 
 
+class FileDictModel(BaseListModel):
+    def __init__(self, data, file_dict):
+        super().__init__(data)
+        self.file_dict = file_dict
+        self.app = QApplication.instance()
+
+    def getData(self, index):
+        return self._data[index.row()]
+
+    def data(self, index, role=None):
+        if role == Qt.DisplayRole:
+            return self._data[index.row()]
+
+        elif role == Qt.DecorationRole:
+            if self._data[index.row()] in self.file_dict:
+                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+            else:
+                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
+
+
 class AddFilesModel(BasePandasModel):
     def __init__(self, data):
         super().__init__(data)
 
     def data(self, index, role=None):
+        value = self._data.iloc[index.row(), index.column()]
         column = self._data.columns[index.column()]
 
         if role == Qt.DisplayRole:
             if column != 'Empty-Room?':
-                return str(self.getData(index))
-            else:
-                return ''
+                return value
+            return ''
 
         elif role == Qt.CheckStateRole:
             if column == 'Empty-Room?':
-                if self.getData(index):
+                if value:
                     return Qt.Checked
                 else:
                     return Qt.Unchecked
@@ -472,37 +448,3 @@ class AddFilesModel(BasePandasModel):
         self.endRemoveRows()
 
         return True
-
-
-class CustomFunctionModel(QAbstractListModel):
-    """A Model for the Pandas-DataFrames containing information for new custom functions/their paramers
-    Parameters to display only their name and if they are ready
-    ----------
-    data : DataFrame
-    add_pd_funcs or add_pd_params
-    """
-
-    def __init__(self, data):
-        super().__init__()
-        self._data = data
-        self.app = QApplication.instance()
-
-    def getData(self, index=QModelIndex()):
-        return self._data.index[index.row()]
-
-    def updateData(self, new_data):
-        self._data = new_data
-        self.layoutChanged.emit()
-
-    def data(self, index, role=None):
-        if role == Qt.DisplayRole:
-            return str(self.getData(index))
-
-        elif role == Qt.DecorationRole:
-            if self._data.loc[self.getData(index), 'ready']:
-                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
-            else:
-                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
-
-    def rowCount(self, index=QModelIndex()):
-        return len(self._data.index)

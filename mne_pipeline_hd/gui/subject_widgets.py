@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Pipeline-GUI for Analysis with MNE-Python
-Copyright © 2011-2019, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
-inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
+inspired by: https://doi.org/10.3389/fnins.2018.00006
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
@@ -31,10 +30,10 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
                              QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
-from .base_widgets import CheckDictList, CheckList, EditDict, EditList, EditPandasTable
-from .dialogs import ErrorDialog
-from .gui_utils import (Worker, get_ratio_geometry)
-from .models import AddFilesModel, CheckDictModel
+from .base_widgets import CheckList, EditDict, EditList, EditPandasTable
+from .gui_utils import (ErrorDialog, Worker)
+from .models import AddFilesModel, FileDictModel
+from ..basic_functions import loading
 from ..basic_functions.loading import CurrentSub
 from ..basic_functions.operations import find_6ch_binary_events
 
@@ -687,8 +686,6 @@ class AddFilesWidget(QWidget):
         row_idxs = set([idx.row() for idx in self.view.selectionModel().selectedIndexes()])
         for row_idx in row_idxs:
             self.model.removeRow(row_idx)
-        # Update pd_files, because reference is changed with model.removeRow()
-        self.pd_files = self.model._data
 
     def update_model(self):
         self.model._data = self.pd_files
@@ -917,8 +914,8 @@ class AddFilesDialog(AddFilesWidget):
 
         self.dialog = QDialog(main_win)
         self.dialog.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Minimum)
-        width, height = get_ratio_geometry(0.7)
-        self.resize(int(width), int(height))
+        self.dialog.setGeometry(0, 0, int(self.mw.desk_geometry.width() * 0.5),
+                                int(self.mw.desk_geometry.height() * 0.5))
         self.center()
 
         close_bt = QPushButton('Close', self)
@@ -926,10 +923,6 @@ class AddFilesDialog(AddFilesWidget):
         self.main_bt_layout.addWidget(close_bt)
 
         self.dialog.setLayout(self.layout)
-
-        width, height = get_ratio_geometry(0.8)
-        self.resize(width, height)
-
         self.dialog.open()
 
     def center(self):
@@ -1434,10 +1427,6 @@ class SubDictDialog(SubDictWidget):
         self.bt_layout.addWidget(close_bt)
 
         self.dialog.setLayout(self.layout)
-
-        width, height = get_ratio_geometry(0.8)
-        self.resize(width, height)
-
         self.dialog.open()
 
 
@@ -1455,6 +1444,152 @@ class SubDictWizPage(QWizardPage):
     def initializePage(self):
         self.sub_dict_w.populate_lists()
         self.sub_dict_w.get_status()
+
+
+class SubBadsWidget(QWidget):
+    """ A Dialog to select Bad-Channels for the files """
+
+    def __init__(self, main_win):
+        """
+        :param main_win: The parent-window for the dialog
+        """
+        super().__init__(main_win)
+        self.mw = main_win
+        self.setWindowTitle('Assign bad_channels for your files')
+        self.bad_chkbts = {}
+        self.name = None
+        self.raw = None
+        self.raw_fig = None
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.layout = QGridLayout()
+        self.list_view = QListView()
+        self.badch_model = FileDictModel(self.mw.pr.all_files, self.mw.pr.bad_channels_dict)
+        self.list_view.setModel(self.badch_model)
+        self.list_view.selectionModel().currentChanged.connect(self.bad_dict_selected)
+        self.list_view.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.layout.addWidget(self.list_view, 0, 0)
+
+        self.bt_scroll = QScrollArea()
+        self.layout.addWidget(self.bt_scroll, 0, 1)
+
+        # Add Buttons
+        self.bt_layout = QHBoxLayout()
+
+        plot_bt = QPushButton('Plot Raw')
+        plot_bt.clicked.connect(self.plot_raw_bad)
+        self.bt_layout.addWidget(plot_bt)
+
+        copy_bt = QPushButton('Copy Bads')
+        copy_bt.clicked.connect(partial(CopyBadsDialog, self))
+        self.bt_layout.addWidget(copy_bt)
+
+        self.layout.addLayout(self.bt_layout, 1, 0, 1, 2)
+        self.setLayout(self.layout)
+
+    def make_bad_chbxs(self):
+        chbx_w = QWidget()
+        chbx_layout = QGridLayout()
+
+        self.bad_chkbts = dict()
+
+        # Load info into info_dict if not already existing
+        if self.name not in self.mw.pr.info_dict:
+            sub = CurrentSub(self.name, self.mw)
+            raw = sub.load_raw()
+            extract_info(self.mw.pr, raw, self.name)
+
+        # Make Checkboxes for channels from info_dict
+        for x, ch_name in enumerate(self.mw.pr.info_dict[self.name]['ch_names']):
+            chkbt = QCheckBox(ch_name, self)
+            chkbt.clicked.connect(self.bad_dict_assign)
+            self.bad_chkbts.update({ch_name: chkbt})
+            r = x // 10
+            c = x % 10
+            chbx_layout.addWidget(chkbt, r, c)
+
+        chbx_w.setLayout(chbx_layout)
+        if self.bt_scroll.widget():
+            self.bt_scroll.takeWidget()
+        self.bt_scroll.setWidget(chbx_w)
+
+    def bad_dict_selected(self, current, _):
+        old_name = self.name
+        self.name = self.badch_model.getData(current)
+
+        # Close current Plot-Window
+        if self.raw_fig:
+            plt.close(self.raw_fig)
+
+        # Reload Bad-Chkbts if other than before
+        if self.name in self.mw.pr.info_dict and old_name:
+            if self.mw.pr.info_dict[self.name]['ch_names'] != self.mw.pr.info_dict[old_name]['ch_names']:
+                self.make_bad_chbxs()
+        else:
+            self.make_bad_chbxs()
+
+        # Clear entries
+        for bt in self.bad_chkbts:
+            self.bad_chkbts[bt].setChecked(False)
+
+        # Catch Channels, which are present in bad_channels_dict, but not in bad_chkbts
+        error_list = list()
+        # Then load existing bads for choice
+        if self.name in self.mw.pr.bad_channels_dict:
+            for bad in self.mw.pr.bad_channels_dict[self.name]:
+                try:
+                    self.bad_chkbts[bad].setChecked(True)
+                except KeyError:
+                    error_list.append(bad)
+
+        for error_ch in error_list:
+            self.mw.pr.bad_channels_dict[self.name].remove(error_ch)
+
+    def bad_dict_assign(self):
+        bad_channels = []
+        for ch in self.bad_chkbts:
+            if self.bad_chkbts[ch].isChecked():
+                bad_channels.append(ch)
+        self.mw.pr.bad_channels_dict.update({self.name: bad_channels})
+        self.mw.pr.save_sub_lists()
+        self.badch_model.layoutChanged.emit()
+
+    # Todo: Automatic bad-channel-detection
+    def plot_raw_bad(self):
+        # Use interactiv backend again if show_plots have been turned off before
+        matplotlib.use('Qt5Agg')
+        sub = CurrentSub(self.name, self.mw)
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Opening...')
+        dialog.open()
+        self.raw = sub.load_raw()
+        if self.name in self.mw.pr.bad_channels_dict:
+            self.raw.info['bads'] = self.mw.pr.bad_channels_dict[self.name]
+        self.raw_fig = self.raw.plot(n_channels=30, bad_color='red',
+                                     scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), title=self.name)
+        # Connect Closing of Matplotlib-Figure to assignment of bad-channels
+        self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
+        dialog.close()
+
+    def get_selected_bads(self, evt):
+        # evt has to be in parameters, otherwise it won't work
+        self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
+        self.mw.pr.save_sub_lists()
+        # Clear all entries
+        for bt in self.bad_chkbts:
+            self.bad_chkbts[bt].setChecked(False)
+        for ch in self.mw.pr.bad_channels_dict[self.name]:
+            self.bad_chkbts[ch].setChecked(True)
+        self.badch_model.layoutChanged.emit()
+
+    def closeEvent(self, event):
+        if self.raw_fig:
+            plt.close(self.raw_fig)
+            event.accept()
+        else:
+            event.accept()
 
 
 class CopyBadsDialog(QDialog):
@@ -1506,188 +1641,18 @@ class CopyBadsDialog(QDialog):
                 self.bad_channels_dict[copy_to] = copy_bad_chs
 
 
-class SubBadsWidget(QWidget):
-    """ A Dialog to select Bad-Channels for the files """
-
-    def __init__(self, main_win):
-        """
-        :param main_win: The parent-window for the dialog
-        """
-        super().__init__(main_win)
-        self.mw = main_win
-        self.setWindowTitle('Assign bad_channels for your files')
-        self.bad_chkbts = {}
-        self.name = None
-        self.raw = None
-        self.raw_fig = None
-
-        self.init_ui()
-
-    def init_ui(self):
-        self.layout = QGridLayout()
-
-        self.files_widget = CheckDictList(self.mw.pr.all_files, self.mw.pr.bad_channels_dict, title='Files')
-        self.files_widget.currentChanged.connect(self.bad_dict_selected)
-        self.files_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
-        self.layout.addWidget(self.files_widget, 0, 0)
-
-        self.bt_scroll = QScrollArea()
-        self.bt_scroll.setWidgetResizable(True)
-        self.layout.addWidget(self.bt_scroll, 0, 1)
-
-        # Add Buttons
-        self.bt_layout = QHBoxLayout()
-
-        plot_bt = QPushButton('Plot Raw')
-        plot_bt.clicked.connect(self.plot_raw_bad)
-        self.bt_layout.addWidget(plot_bt)
-
-        copy_bt = QPushButton('Copy Bads')
-        copy_bt.clicked.connect(partial(CopyBadsDialog, self))
-        self.bt_layout.addWidget(copy_bt)
-
-        self.layout.addLayout(self.bt_layout, 1, 0, 1, 2)
-        self.setLayout(self.layout)
-
-    def make_bad_chbxs(self):
-        chbx_w = QWidget()
-        chbx_w.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        chbx_layout = QGridLayout()
-        row = 0
-        column = 0
-        h_size = 0
-        # Currently, you have to fine-tune the max_h_size, because it doesn't seem to reflect exactly the actual width
-        max_h_size = int(self.bt_scroll.geometry().width() * 0.85)
-
-        self.bad_chkbts = dict()
-
-        # Load info into info_dict if not already existing
-        if self.name not in self.mw.pr.info_dict:
-            sub = CurrentSub(self.name, self.mw)
-            raw = sub.load_raw()
-            extract_info(self.mw.pr, raw, self.name)
-
-        # Make Checkboxes for channels from info_dict
-        for x, ch_name in enumerate(self.mw.pr.info_dict[self.name]['ch_names']):
-            chkbt = QCheckBox(ch_name, self)
-            chkbt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-            chkbt.clicked.connect(self.bad_dict_assign)
-            self.bad_chkbts.update({ch_name: chkbt})
-            h_size += chkbt.sizeHint().width()
-            if h_size > max_h_size:
-                column = 0
-                row += 1
-                h_size = chkbt.sizeHint().width()
-            chbx_layout.addWidget(chkbt, row, column)
-            column += 1
-
-        chbx_w.setLayout(chbx_layout)
-
-        if self.bt_scroll.widget():
-            self.bt_scroll.takeWidget()
-        self.bt_scroll.setWidget(chbx_w)
-
-    def bad_dict_selected(self, current, _):
-        old_name = self.name
-        self.name = current
-
-        # Close current Plot-Window
-        if self.raw_fig:
-            plt.close(self.raw_fig)
-
-        # Reload Bad-Chkbts if other than before
-        if self.name in self.mw.pr.info_dict and old_name:
-            if self.mw.pr.info_dict[self.name]['ch_names'] != self.mw.pr.info_dict[old_name]['ch_names']:
-                self.make_bad_chbxs()
-        else:
-            self.make_bad_chbxs()
-
-        # Clear entries
-        for bt in self.bad_chkbts:
-            self.bad_chkbts[bt].setChecked(False)
-
-        # Catch Channels, which are present in bad_channels_dict, but not in bad_chkbts
-        error_list = list()
-        # Then load existing bads for choice
-        if self.name in self.mw.pr.bad_channels_dict:
-            for bad in self.mw.pr.bad_channels_dict[self.name]:
-                try:
-                    self.bad_chkbts[bad].setChecked(True)
-                except KeyError:
-                    error_list.append(bad)
-
-        for error_ch in error_list:
-            self.mw.pr.bad_channels_dict[self.name].remove(error_ch)
-
-    def bad_dict_assign(self):
-        bad_channels = []
-        for ch in self.bad_chkbts:
-            if self.bad_chkbts[ch].isChecked():
-                bad_channels.append(ch)
-        self.mw.pr.bad_channels_dict.update({self.name: bad_channels})
-        self.mw.pr.save_sub_lists()
-        self.files_widget.content_changed()
-
-    # Todo: Automatic bad-channel-detection
-    def plot_raw_bad(self):
-        # Use interactiv backend again if show_plots have been turned off before
-        matplotlib.use('Qt5Agg')
-        sub = CurrentSub(self.name, self.mw)
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Opening...')
-        dialog.open()
-        self.raw = sub.load_raw()
-        if self.name in self.mw.pr.bad_channels_dict:
-            self.raw.info['bads'] = self.mw.pr.bad_channels_dict[self.name]
-        self.raw_fig = self.raw.plot(n_channels=30, bad_color='red',
-                                     scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), title=self.name)
-        # Connect Closing of Matplotlib-Figure to assignment of bad-channels
-        self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
-        dialog.close()
-
-    def get_selected_bads(self, evt):
-        # evt has to be in parameters, otherwise it won't work
-        self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
-        self.mw.pr.save_sub_lists()
-        # Clear all entries
-        for bt in self.bad_chkbts:
-            self.bad_chkbts[bt].setChecked(False)
-        for ch in self.mw.pr.bad_channels_dict[self.name]:
-            self.bad_chkbts[ch].setChecked(True)
-        self.files_widget.content_changed()
-
-    def resizeEvent(self, event):
-        if self.name:
-            self.make_bad_chbxs()
-        event.accept()
-
-    def closeEvent(self, event):
-        if self.raw_fig:
-            plt.close(self.raw_fig)
-            event.accept()
-        else:
-            event.accept()
-
-
-class SubBadsDialog(QDialog):
+class SubBadsDialog(SubBadsWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
 
-        layout = QVBoxLayout()
-
-        bads_widget = SubBadsWidget(main_win)
-        layout.addWidget(bads_widget)
+        self.dialog = QDialog(main_win)
 
         close_bt = QPushButton('Close', self)
-        close_bt.clicked.connect(self.close)
-        bads_widget.bt_layout.addWidget(close_bt)
+        close_bt.clicked.connect(self.dialog.close)
+        self.bt_layout.addWidget(close_bt)
 
-        self.setLayout(layout)
-
-        width, height = get_ratio_geometry(0.8)
-        self.resize(width, height)
-
-        self.open()
+        self.dialog.setLayout(self.layout)
+        self.dialog.open()
 
 
 class SubBadsWizPage(QWizardPage):
@@ -1710,7 +1675,7 @@ class SubjectWizard(QWizard):
         self.setWizardStyle(QWizard.ModernStyle)
         self.setOption(QWizard.HaveHelpButton, False)
 
-        width, height = get_ratio_geometry(0.6)
+        width, height = self.mw.get_ratio_geometry(0.6)
         self.setGeometry(0, 0, width, height)
         self.center()
 
@@ -1767,7 +1732,7 @@ class EventIDGui(QDialog):
     def init_ui(self):
         list_layout = QHBoxLayout()
 
-        self.files_model = CheckDictModel(self.mw.pr.all_files, self.mw.pr.event_id_dict)
+        self.files_model = FileDictModel(self.mw.pr.all_files, self.mw.pr.event_id_dict)
         self.files_view = QListView()
         self.files_view.setModel(self.files_model)
         self.files_view.selectionModel().currentChanged.connect(self.file_selected)
@@ -1882,8 +1847,7 @@ class EventIDGui(QDialog):
         else:
             self.labels = list()
 
-        self.check_widget.replace_data(self.labels)
-        self.check_widget.replace_checked(self.checked_labels)
+        self.check_widget.replace_data(self.labels, self.checked_labels)
 
     def closeEvent(self, event):
         # Save event_id for last selected file
