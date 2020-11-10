@@ -27,7 +27,7 @@ from PyQt5.QtCore import QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
-                             QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
+                             QPushButton, QScrollArea, QStyle, QStyleFactory, QTabWidget, QToolTip,
                              QVBoxLayout, QWidget)
 from mayavi import mlab
 
@@ -507,11 +507,13 @@ class MainWindow(QMainWindow):
 
         self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
         self.adark_mode.setCheckable(True)
-        if self.get_setting('dark_mode') == 'true':
+        if self.get_setting('dark_mode'):
             self.adark_mode.setChecked(True)
             self.dark_mode()
         else:
             self.adark_mode.setChecked(False)
+            self.dark_mode()
+
         self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
 
         # Settings
@@ -593,7 +595,7 @@ class MainWindow(QMainWindow):
         # Drop custom-modules, which aren't selected
         cleaned_pd_funcs = self.pd_funcs.loc[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))].copy()
         # Horizontal Border for Function-Groups
-        max_h_size = int(self.tab_func_widget.geometry().width() * 0.9)
+        max_h_size = self.tab_func_widget.geometry().width()
 
         # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
         if len(cleaned_pd_funcs) != 0:
@@ -646,15 +648,12 @@ class MainWindow(QMainWindow):
                         group_box_layout.addWidget(pb)
 
                     group_box.setLayout(group_box_layout)
-                    group_box.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
-                    tab_h_layout.addWidget(group_box)
                     h_size += group_box.sizeHint().width()
                     if h_size > max_h_size:
-                        extra_group = tab_h_layout.takeAt(tab_h_layout.count() - 1).widget()
                         tab_v_layout.addLayout(tab_h_layout)
-                        h_size = 0
+                        h_size = group_box.sizeHint().width()
                         tab_h_layout = QHBoxLayout()
-                        tab_h_layout.addWidget(extra_group)
+                    tab_h_layout.addWidget(group_box)
 
                 if tab_h_layout.count() > 0:
                     tab_v_layout.addLayout(tab_h_layout)

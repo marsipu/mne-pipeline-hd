@@ -14,9 +14,9 @@ from os.path import abspath
 from pathlib import Path
 
 import pandas
-from PyQt5.QtCore import QTimer, Qt, pyqtSignal
+from PyQt5.QtCore import QItemSelectionModel, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QGridLayout, QHBoxLayout, QInputDialog, QListView,
+from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QGridLayout, QHBoxLayout, QInputDialog, QLabel, QListView,
                              QPushButton, QSizePolicy,
                              QSpinBox,
                              QTabWidget, QTableView, QVBoxLayout, QWidget)
@@ -28,6 +28,84 @@ from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandas
                                         EditDictModel,
                                         EditListModel,
                                         EditPandasModel)
+
+
+class Base(QWidget):
+    currentChanged = pyqtSignal(object, object)
+    selectionChanged = pyqtSignal(list)
+
+    def __init__(self, model, view, parent=None, title=None):
+        super().__init__(parent)
+        self.title = title
+
+        self.model = model
+        self.view = view
+        self.view.setModel(self.model)
+
+        # Connect to custom Selection-Signal
+        self.view.selectionModel().currentChanged.connect(self._current_changed)
+        self.view.selectionModel().selectionChanged.connect(self._selection_changed)
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        if self.title:
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            layout.addWidget(title_label)
+
+        layout.addWidget(self.view)
+        self.setLayout(layout)
+
+    def get_current(self):
+        current = self.model.getData(self.view.currentIndex())
+
+        return current
+
+    def _current_changed(self, current_idx, previous_idx):
+        current = self.model.getData(current_idx)
+        previous = self.model.getData(previous_idx)
+
+        self.currentChanged.emit(current, previous)
+
+        print(f'Current changed from {previous} to {current}')
+
+    def get_selected(self):
+        selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+
+        return selected
+
+    def _selection_changed(self):
+        # Somehow, the indexes got from selectionChanged don't appear to be right
+        # (maybe some issue with QItemSelection?)
+        current = self.get_selected()
+
+        self.selectionChanged.emit(current)
+
+        print(f'Selection changed to {current}')
+
+    def select(self, values, clear_selection=True):
+        indices = [i for i, x in enumerate(self.model._data) if x in values]
+
+        if clear_selection:
+            self.view.selectionModel().clearSelection()
+
+        for idx in indices:
+            index = self.model.createIndex(idx, 0)
+            self.view.selectionModel().select(index, command=QItemSelectionModel.Select)
+
+    def content_changed(self):
+        """Informs ModelView about external change made in data
+        """
+        self.model.layoutChanged.emit()
+
+    def replace_data(self, new_data):
+        """Replaces model._data with new_data
+        """
+        self.model._data = new_data
+        self.content_changed()
 
 
 class BaseList(QWidget):
@@ -48,8 +126,9 @@ class BaseList(QWidget):
     currentChanged = pyqtSignal(object, object)
     selectionChanged = pyqtSignal(list)
 
-    def __init__(self, data=None, parent=None, extended_selection=False):
+    def __init__(self, data=None, extended_selection=False, parent=None, title=None):
         super().__init__(parent)
+        self.title = title
 
         self.model = BaseListModel(data)
         self.view = QListView()
@@ -65,8 +144,19 @@ class BaseList(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout()
+
+        if self.title:
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            layout.addWidget(title_label)
+
         layout.addWidget(self.view)
         self.setLayout(layout)
+
+    def get_current(self):
+        current = self.model.getData(self.view.currentIndex())
+
+        return current
 
     def _current_changed(self, current_idx, previous_idx):
         current = self.model.getData(current_idx)
@@ -76,14 +166,29 @@ class BaseList(QWidget):
 
         print(f'Current changed from {previous} to {current}')
 
+    def get_selected(self):
+        selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+
+        return selected
+
     def _selection_changed(self):
         # Somehow, the indexes got from selectionChanged don't appear to be right
         # (maybe some issue with QItemSelection?)
-        current = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+        current = self.get_selected()
 
         self.selectionChanged.emit(current)
 
         print(f'Selection changed to {current}')
+
+    def select(self, values, clear_selection=True):
+        indices = [i for i, x in enumerate(self.model._data) if x in values]
+
+        if clear_selection:
+            self.view.selectionModel().clearSelection()
+
+        for idx in indices:
+            index = self.model.createIndex(idx, 0)
+            self.view.selectionModel().select(index, command=QItemSelectionModel.Select)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -119,10 +224,12 @@ class EditList(QWidget):
     currentChanged = pyqtSignal(object, object)
     selectionChanged = pyqtSignal(list)
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False, parent=None):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False, parent=None,
+                 title=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
+        self.title = title
 
         self.model = EditListModel(data)
         self.view = QListView()
@@ -168,7 +275,20 @@ class EditList(QWidget):
         else:
             layout.insertWidget(0, self.view)
 
-        self.setLayout(layout)
+        if self.title:
+            super_layout = QVBoxLayout()
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            super_layout.addWidget(title_label)
+            super_layout.addLayout(layout)
+            self.setLayout(super_layout)
+        else:
+            self.setLayout(layout)
+
+    def get_current(self):
+        current = self.model.getData(self.view.currentIndex())
+
+        return current
 
     def _current_changed(self, current_idx, previous_idx):
         current = self.model.getData(current_idx)
@@ -178,14 +298,29 @@ class EditList(QWidget):
 
         print(f'Current changed from {previous} to {current}')
 
+    def get_selected(self):
+        selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+
+        return selected
+
     def _selection_changed(self):
         # Somehow, the indexes got from selectionChanged don't appear to be right
         # (maybe some issue with QItemSelection?)
-        current = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+        current = self.get_selected()
 
         self.selectionChanged.emit(current)
 
         print(f'Selection changed to {current}')
+
+    def select(self, values, clear_selection=True):
+        indices = [i for i, x in enumerate(self.model._data) if x in values]
+
+        if clear_selection:
+            self.view.selectionModel().clearSelection()
+
+        for idx in indices:
+            index = self.model.createIndex(idx, 0)
+            self.view.selectionModel().select(index, QItemSelectionModel.Select)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -236,9 +371,12 @@ class CheckList(QWidget):
 
     checkedChanged = pyqtSignal(list)
 
-    def __init__(self, data=None, checked=None, ui_buttons=True, one_check=False, parent=None):
+    def __init__(self, data=None, checked=None, ui_buttons=True, ui_button_pos='right', one_check=False, parent=None,
+                 title=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
+        self.ui_button_pos = ui_button_pos
+        self.title = title
 
         self.model = CheckListModel(data, checked, one_check=one_check)
         self.model.dataChanged.connect(self.checked_changed)
@@ -248,23 +386,41 @@ class CheckList(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.addWidget(self.view)
+
+        if self.ui_button_pos in ['top', 'bottom']:
+            layout = QVBoxLayout()
+            bt_layout = QHBoxLayout()
+        else:
+            layout = QHBoxLayout()
+            bt_layout = QVBoxLayout()
 
         if self.ui_buttons:
-            bt_layout = QHBoxLayout()
-
             all_bt = QPushButton('All')
+            all_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             all_bt.clicked.connect(self.select_all)
             bt_layout.addWidget(all_bt)
 
             clear_bt = QPushButton('Clear')
+            clear_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             clear_bt.clicked.connect(self.clear_all)
             bt_layout.addWidget(clear_bt)
 
             layout.addLayout(bt_layout)
 
-        self.setLayout(layout)
+        if self.ui_button_pos in ['top', 'left']:
+            layout.addWidget(self.view)
+        else:
+            layout.insertWidget(0, self.view)
+
+        if self.title:
+            super_layout = QVBoxLayout()
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            super_layout.addWidget(title_label)
+            super_layout.addLayout(layout)
+            self.setLayout(super_layout)
+        else:
+            self.setLayout(layout)
 
     def checked_changed(self):
         self.checkedChanged.emit(self.model._checked)
@@ -318,8 +474,9 @@ class CheckDictList(QWidget):
     currentChanged = pyqtSignal(object, object)
     selectionChanged = pyqtSignal(list)
 
-    def __init__(self, data=None, check_dict=None, parent=None, extended_selection=False):
+    def __init__(self, data=None, check_dict=None, extended_selection=False, parent=None, title=None):
         super().__init__(parent)
+        self.title = title
 
         self.model = CheckDictModel(data, check_dict)
         self.view = QListView()
@@ -335,8 +492,19 @@ class CheckDictList(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout()
+
+        if self.title:
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            layout.addWidget(title_label)
+
         layout.addWidget(self.view)
         self.setLayout(layout)
+
+    def get_current(self):
+        current = self.model.getData(self.view.currentIndex())
+
+        return current
 
     def _current_changed(self, current_idx, previous_idx):
         current = self.model.getData(current_idx)
@@ -344,12 +512,31 @@ class CheckDictList(QWidget):
 
         self.currentChanged.emit(current, previous)
 
+        print(f'Current changed from {previous} to {current}')
+
+    def get_selected(self):
+        selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+
+        return selected
+
     def _selection_changed(self):
         # Somehow, the indexes got from selectionChanged don't appear to be right
         # (maybe some issue with QItemSelection?)
-        current = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+        current = self.get_selected()
 
         self.selectionChanged.emit(current)
+
+        print(f'Selection changed to {current}')
+
+    def select(self, values, clear_selection=True):
+        indices = [i for i, x in enumerate(self.model._data) if x in values]
+
+        if clear_selection:
+            self.view.selectionModel().clearSelection()
+
+        for idx in indices:
+            index = self.model.createIndex(idx, 0)
+            self.view.selectionModel().select(index, command=QItemSelectionModel.Select)
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -381,8 +568,9 @@ class BaseDict(QWidget):
     currentChanged = pyqtSignal(dict, dict)
     selectionChanged = pyqtSignal(dict)
 
-    def __init__(self, data=None, parent=None):
+    def __init__(self, data=None, parent=None, title=None):
         super().__init__(parent)
+        self.title = title
 
         self.model = BaseDictModel(data)
         self.view = QTableView()
@@ -396,6 +584,12 @@ class BaseDict(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout()
+
+        if self.title:
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            layout.addWidget(title_label)
+
         layout.addWidget(self.view)
         self.setLayout(layout)
 
@@ -479,10 +673,11 @@ class EditDict(QWidget):
     currentChanged = pyqtSignal(dict, dict)
     selectionChanged = pyqtSignal(dict)
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
+        self.title = title
 
         self.model = EditDictModel(data)
         self.view = QTableView()
@@ -525,7 +720,15 @@ class EditDict(QWidget):
         else:
             layout.insertWidget(0, self.view)
 
-        self.setLayout(layout)
+        if self.title:
+            super_layout = QVBoxLayout()
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            super_layout.addWidget(title_label)
+            super_layout.addLayout(layout)
+            self.setLayout(super_layout)
+        else:
+            self.setLayout(layout)
 
     def get_keyvalue_by_index(self, index, data_dict):
         """For the given index, make an entry in item_dict with the data at index as key and a dict as value defining
@@ -622,8 +825,9 @@ class BasePandasTable(QWidget):
     currentChanged = pyqtSignal(dict, dict)
     selectionChanged = pyqtSignal(dict)
 
-    def __init__(self, data=None, parent=None):
+    def __init__(self, data=None, parent=None, title=None):
         super().__init__(parent)
+        self.title = title
 
         self.model = BasePandasModel(data)
         self.view = QTableView()
@@ -637,6 +841,12 @@ class BasePandasTable(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout()
+
+        if self.title:
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            layout.addWidget(title_label)
+
         layout.addWidget(self.view)
         self.setLayout(layout)
 
@@ -709,10 +919,11 @@ class EditPandasTable(QWidget):
     currentChanged = pyqtSignal(dict, dict)
     selectionChanged = pyqtSignal(dict)
 
-    def __init__(self, data=pandas.DataFrame([]), ui_buttons=True, ui_button_pos='right', parent=None):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None):
         super().__init__(parent)
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
+        self.title = title
 
         self.model = EditPandasModel(data)
         self.view = QTableView()
@@ -786,7 +997,15 @@ class EditPandasTable(QWidget):
         else:
             layout.insertWidget(0, self.view)
 
-        self.setLayout(layout)
+        if self.title:
+            super_layout = QVBoxLayout()
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            super_layout.addWidget(title_label)
+            super_layout.addLayout(layout)
+            self.setLayout(super_layout)
+        else:
+            self.setLayout(layout)
 
     def get_rowcol_by_index(self, index, data_dict):
         data = self.model.getData(index)
@@ -900,8 +1119,12 @@ class AssignWidget(QWidget):
 
     """
 
-    def __init__(self, items, properties, assignments, properties_editable=False, parent=None):
+    def __init__(self, items, properties, assignments, properties_editable=False, subtitles=None,
+                 parent=None, title=None):
         super().__init__(parent)
+        self.subtitles = subtitles
+        self.title = title
+
         self.items = items
         self.props = properties
         self.assignments = assignments
@@ -913,7 +1136,7 @@ class AssignWidget(QWidget):
         layout = QGridLayout()
 
         self.items_w = CheckDictList(self.items, self.assignments, extended_selection=True)
-        self.items_w.selectionChanged.connect()
+        self.items_w.selectionChanged.connect(self.items_selected)
         layout.addWidget(self.items_w, 0, 0)
 
         if self.props_editable:
@@ -927,10 +1150,24 @@ class AssignWidget(QWidget):
         assign_bt.clicked.connect(self.assign)
         layout.addWidget(assign_bt, 1, 0, 1, 2)
 
-        self.setLayout(layout)
+        if self.title:
+            super_layout = QVBoxLayout()
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyStyle', 14))
+            super_layout.addWidget(title_label)
+            super_layout.addLayout(layout)
+            self.setLayout(super_layout)
+        else:
+            self.setLayout(layout)
 
-    def asssign(self):
-        pass
+    def items_selected(self, selected):
+        # Get all unique values of selected items
+        values = set([self.assignments[key] for key in selected if key in self.assignments])
+        self.props_w.select(values)
+
+    def assign(self):
+        sel_items = self.items_w.get_selected()
+        sel_prop = self.props_w.get_current()
 
 
 class AllBaseWidgets(QWidget):
@@ -938,6 +1175,11 @@ class AllBaseWidgets(QWidget):
         super().__init__()
 
         self.exlist = ['Athena', 'Hephaistos', 'Zeus', 'Ares', 'Aphrodite', 'Poseidon']
+        self.exattributes = ['strong', 'smart', 'bossy', 'fishy']
+        self.exassignments = {'Athena': 'smart',
+                              'Hephaistos': 'strong',
+                              'Zeus': 'bossy',
+                              'Poseidon': 'fishy'}
         self.exdict = {'Athena': 231,
                        'Hephaistos': 44,
                        'Zeus': 'Boss',
@@ -952,18 +1194,31 @@ class AllBaseWidgets(QWidget):
                        'C': (1, 2, 3)}
 
         # self.exlist = None
+        # self.exattributes = None
         # self.exchecked = None
         # self.expd = None
         # self.extree = None
         # self.exdict = None
 
-        self.widget_dict = {'BaseList': [self.exlist],
+        self.widget_args = {'BaseList': [self.exlist],
                             'EditList': [self.exlist],
                             'CheckList': [self.exlist, self.exchecked],
+                            'CheckDictList': [self.exlist, self.exdict],
                             'BaseDict': [self.exdict],
                             'EditDict': [self.exdict],
                             'BasePandasTable': [self.expd],
-                            'EditPandasTable': [self.expd]}
+                            'EditPandasTable': [self.expd],
+                            'AssignWidget': [self.exlist, self.exattributes, self.exassignments]}
+
+        self.widget_kwargs = {'BaseList': {'extended_selection': True, 'title': 'BaseList'},
+                              'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList'},
+                              'CheckList': {'one_check': True, 'title': 'CheckList'},
+                              'CheckDictList': {'extended_selection': True, 'title': 'CheckDictList'},
+                              'BaseDict': {'title': 'BaseDict'},
+                              'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict'},
+                              'BasePandasTable': {'title': 'BasePandasTable'},
+                              'EditPandasTable': {'title': 'EditPandasTable'},
+                              'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget'}}
 
         self.tab_widget = QTabWidget()
 
@@ -973,8 +1228,8 @@ class AllBaseWidgets(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout()
-        for widget_name in self.widget_dict:
-            widget = globals()[widget_name](*self.widget_dict[widget_name])
+        for widget_name in self.widget_args:
+            widget = globals()[widget_name](*self.widget_args[widget_name], **self.widget_kwargs[widget_name])
             setattr(self, widget_name, widget)
             self.tab_widget.addTab(widget, widget_name)
 

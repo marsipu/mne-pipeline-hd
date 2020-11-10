@@ -30,7 +30,7 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QTextEdit, QVBoxLayout)
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import BaseList, EditDict, EditList
+from mne_pipeline_hd.gui.base_widgets import BaseList, CheckList, EditDict, EditList
 from mne_pipeline_hd.gui.dialogs import ErrorDialog
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
@@ -844,7 +844,9 @@ class ImportFuncs(QDialog):
 
         self.module = None
         self.loaded_cfs = []
+        self.edit_loaded_cfs = []
         self.selected_cfs = []
+        self.selected_edit_cfs = []
         self.already_existing_funcs = []
 
         self.load_function_list()
@@ -853,9 +855,18 @@ class ImportFuncs(QDialog):
         self.open()
 
     def load_function_list(self):
-        spec = util.spec_from_file_location(self.cf.file_path.stem, self.cf.file_path)
-        self.module = util.module_from_spec(spec)
+        # Load .csv-Files if
         try:
+            if self.edit_existing:
+                self.cf.pkg_name = self.cf.file_path.parent.name
+                pd_funcs_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_functions.csv')
+                pd_params_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_parameters.csv')
+                self.cf.add_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0)
+                self.cf.add_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
+            else:
+                self.cf.pkg_name = None
+            spec = util.spec_from_file_location(self.cf.file_path.stem, self.cf.file_path)
+            self.module = util.module_from_spec(spec)
             spec.loader.exec_module(self.module)
         except:
             err = get_exception_tuple()
@@ -866,10 +877,13 @@ class ImportFuncs(QDialog):
                 # Only functions are allowed (Classes should be called from function)
                 if callable(func) and func.__module__ == self.module.__name__:
                     # Check, if function is already existing
-                    if func_key not in self.cf.exst_functions or self.edit_existing:
-                        self.loaded_cfs.append(func_key)
+                    if func_key in self.cf.exst_functions:
+                        if self.edit_existing and func_key in self.cf.add_pd_funcs.index:
+                            self.edit_loaded_cfs.append(func_key)
+                        else:
+                            self.already_existing_funcs.append(func_key)
                     else:
-                        self.already_existing_funcs.append(func_key)
+                        self.loaded_cfs.append(func_key)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -879,10 +893,15 @@ class ImportFuncs(QDialog):
             exst_label.setWordWrap(True)
             layout.addWidget(exst_label)
 
-        self.list_view = QListView()
-        self.list_model = CheckListModel(self.loaded_cfs, self.selected_cfs)
-        self.list_view.setModel(self.list_model)
-        layout.addWidget(self.list_view)
+        view_layout = QHBoxLayout()
+        load_list = CheckList(self.loaded_cfs, self.selected_cfs)
+        view_layout.addWidget(load_list)
+
+        if len(self.edit_loaded_cfs) > 0:
+            edit_list = CheckList(self.edit_loaded_cfs, self.selected_edit_cfs)
+            view_layout.addWidget(edit_list)
+
+        layout.addLayout(view_layout)
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
@@ -892,18 +911,12 @@ class ImportFuncs(QDialog):
         self.setLayout(layout)
 
     def load_selected_functions(self):
-        selected_funcs = [cf for cf in self.loaded_cfs if cf in self.selected_cfs]
+        selected_funcs = [cf for cf in self.loaded_cfs if cf in self.selected_cfs] + \
+                         [cf for cf in self.edit_loaded_cfs if cf in self.selected_edit_cfs]
         if self.edit_existing:
-            self.cf.pkg_name = self.cf.file_path.parent.name
-            pd_funcs_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_functions.csv')
-            pd_params_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_parameters.csv')
-            self.cf.add_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0)
             # Drop Functions which are not selected
             self.cf.add_pd_funcs.drop(index=[f for f in self.cf.add_pd_funcs.index if f not in selected_funcs],
                                       inplace=True)
-            self.cf.add_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
-        else:
-            self.cf.pkg_name = None
 
         for func_key in selected_funcs:
             func = self.module.__dict__[func_key]
