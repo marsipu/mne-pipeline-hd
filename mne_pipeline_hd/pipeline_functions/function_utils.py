@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 """
 Pipeline-GUI for Analysis with MNE-Python
-inspired by: https://doi.org/10.3389/fnins.2018.00006
+Copyright © 2011-2019, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
+inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
 License: BSD (3-clause)
 """
+import inspect
 import logging
 import re
 import time
 
-import pandas as pd
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from ..basic_functions.loading import BaseSub, CurrentGAGroup, CurrentMRISub, CurrentSub
+from ..basic_functions.loading import CurrentGAGroup, CurrentMRISub, CurrentSub
 from ..basic_functions.plot import close_all
 from ..gui.gui_utils import Worker
 
@@ -53,21 +54,20 @@ def get_arguments(arg_names, sub, main_win):
 
 
 def func_from_def(func_name, sub, main_win):
+    # Get Package-Name, is only defined for custom-packages
+    pkg_name = main_win.pd_funcs['pkg_name'][func_name]
     # Get module, has to specified in functions.csv as it is imported
     module_name = main_win.pd_funcs['module'][func_name]
     if module_name in main_win.all_modules['basic']:
         module = main_win.all_modules['basic'][module_name]
     elif module_name in main_win.all_modules['custom']:
-        module = main_win.all_modules['custom'][module_name][0]
+        module = main_win.all_modules['custom'][pkg_name][module_name][0]
     else:
         raise ModuleNotFoundError(name=module_name)
 
-    # Get Argument-Names from functions.csv (alias pd_funcs)
-    arg_string = main_win.pd_funcs.loc[func_name, 'func_args']
-    if pd.notna(arg_string):
-        arg_names = arg_string.split(',')
-    else:
-        arg_names = []
+    # Get arguments from function signature
+    func = getattr(module, func_name)
+    arg_names = list(inspect.signature(func).parameters)
 
     keyword_arguments = get_arguments(arg_names, sub, main_win)
 
@@ -123,8 +123,8 @@ class FunctionWorker(Worker):
         self.count = 1
 
         # Signals received from main_win for canceling functions and
-        self.mw.mw_signals.cancel_functions.connect(self.check_cancel_functions)
-        self.mw.mw_signals.plot_running.connect(self.check_plot_running)
+        self.mw.cancel_functions.connect(self.check_cancel_functions)
+        self.mw.plot_running.connect(self.check_plot_running)
         self.is_cancel_functions = False
         self.is_plot_running = False
 

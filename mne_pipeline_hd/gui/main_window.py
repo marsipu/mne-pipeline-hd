@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Pipeline-GUI for Analysis with MNE-Python
-inspired by: https://doi.org/10.3389/fnins.2018.00006
+Copyright © 2011-2019, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
+inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
@@ -22,21 +23,22 @@ import matplotlib
 import mne
 import pandas as pd
 import qdarkstyle
-from PyQt5.QtCore import QObject, QSettings, QThreadPool, Qt, pyqtSignal
+from PyQt5.QtCore import QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
-                             QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
+                             QPushButton, QScrollArea, QStyle, QStyleFactory, QTabWidget, QToolTip,
                              QVBoxLayout, QWidget)
 from mayavi import mlab
 
-from .dialogs import (ChooseCustomModules, CustomFunctionImport, ParametersDock, QuickGuide, RemoveProjectsDlg,
+from .customf_widgets import ChooseCustomModules, CustomFunctionImport
+from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
                       RunDialog, SettingsDlg, SysInfoMsg)
-from .gui_utils import ErrorDialog, get_exception_tuple
-from .other_widgets import DataTerminal
+from .gui_utils import get_exception_tuple, get_ratio_geometry
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
+from .tools import DataTerminal
 from .. import basic_functions, resources
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
@@ -58,18 +60,17 @@ def get_upstream():
     print(result.stdout)
 
 
-class MainWinSignals(QObject):
-    # Signals to send into QThread to control function execution
-    cancel_functions = pyqtSignal(bool)
-    plot_running = pyqtSignal(bool)
-
-
 # Todo: Controller-Class to make MainWindow-Class more light and prepare for features as Pipeline-Freezig
 #  (you need an PyQt-independent system for that)
 class MainWindow(QMainWindow):
+    # Define Main-Window-Signals to send into QThread to control function execution
+    cancel_functions = pyqtSignal(bool)
+    plot_running = pyqtSignal(bool)
+
     def __init__(self):
         super().__init__()
         self.app = QApplication.instance()
+
         # Initiate General-Layout
         self.app.setFont(QFont('Calibri', 10))
         QToolTip.setFont(QFont('SansSerif', 10))
@@ -82,8 +83,8 @@ class MainWindow(QMainWindow):
         self.centralWidget().setLayout(self.general_layout)
 
         # Set geometry to ratio of screen-geometry
-        width, height = self.get_ratio_geometry(0.9)
-        self.resize(width, height)
+        width, height = get_ratio_geometry(0.9)
+        self.resize(int(width), int(height))
         self.center()
 
         # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
@@ -96,13 +97,14 @@ class MainWindow(QMainWindow):
         self.current_project = ''
         self.subjects_dir = ''
         self.custom_pkg_path = ''
-        self.mw_signals = MainWinSignals()
         self.module_err_dlg = None
         self.bt_dict = dict()
         self.all_modules = {'basic': {},
                             'custom': {}}
         self.subject = None
         self.available_image_formats = {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'}
+        # For functions, which should or should not be called durin initialization
+        self.first_init = True
 
         # Load QSettings (which are stored in the OS)
         # qsettings=<everything, that's OS-dependent>
@@ -146,9 +148,13 @@ class MainWindow(QMainWindow):
 
         # Call window-methods
         self.init_menu()
-        self.init_main_widget()
         self.init_toolbar()
         self.add_dock_windows()
+        self.init_main_widget()
+        self.center()
+        self.raise_win()
+
+        self.first_init = False
 
     def get_home_path(self):
         # Get home_path
@@ -184,7 +190,7 @@ class MainWindow(QMainWindow):
         self.projects_path = join(self.home_path, 'projects')
         self.subjects_dir = join(self.home_path, 'freesurfer')
         mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
-        self.custom_pkg_path = join(self.home_path, 'custom_functions')
+        self.custom_pkg_path = join(self.home_path, 'custom_packages')
         for path in [self.projects_path, self.subjects_dir, self.custom_pkg_path]:
             if not isdir(path):
                 os.mkdir(path)
@@ -352,28 +358,22 @@ class MainWindow(QMainWindow):
         return value
 
     def get_func_groups(self):
-        # Todo: Gruppen machen Probleme mit CustomFunctions!!!
-        # Todo: verbessern, um Klarheit zu schaffen bei Unterteilung in Gruppen (über einzelne Module?)
-        self.mri_funcs = self.pd_funcs[(self.pd_funcs['group'] == 'MRI-Preprocessing')
-                                       & (self.pd_funcs['subject_loop'] == True)]
-        self.file_funcs = self.pd_funcs[(self.pd_funcs['group'] != 'MRI-Preprocessing')
-                                        & (self.pd_funcs['subject_loop'] == True)]
-        self.ga_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                      & (self.pd_funcs['func_args'].str.contains('ga_group'))]
-        self.other_funcs = self.pd_funcs[(self.pd_funcs['subject_loop'] == False)
-                                         & ~ (self.pd_funcs['func_args'].str.contains('ga_group'))]
+        self.mri_funcs = self.pd_funcs[self.pd_funcs['target'] == 'FSMRI']
+        self.file_funcs = self.pd_funcs[self.pd_funcs['target'] == 'MEEG']
+        self.ga_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Group']
+        self.other_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Other']
 
     def import_custom_modules(self):
         """
         Load all modules in basic_functions and custom_functions
         """
-        # Start with empty dicts, especiall when re-importing from GUI
+        # Empty the module-dicts
         self.all_modules = {'basic': {},
                             'custom': {}}
 
-        # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
+        # Pandas-DataFrame for contextual data of basic functions (included with program)
         self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
-        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
+        # Pandas-DataFrame for contextual data of paramaters for basic functions (included with program)
         self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
 
         # Load basic-modules
@@ -387,7 +387,7 @@ class MainWindow(QMainWindow):
         for directory in [d for d in os.scandir(self.custom_pkg_path) if not d.name.startswith('.')]:
             pkg_name = directory.name
             pkg_path = directory.path
-            file_dict = {'functions': None, 'parameters': None, 'module': None}
+            file_dict = {'functions': None, 'parameters': None, 'modules': list()}
             for file_name in [f for f in listdir(pkg_path) if not f.startswith(('.', '_'))]:
                 functions_match = re.match(pd_functions_pattern, file_name)
                 parameters_match = re.match(pd_parameters_pattern, file_name)
@@ -397,41 +397,52 @@ class MainWindow(QMainWindow):
                 elif parameters_match:
                     file_dict['parameters'] = join(pkg_path, file_name)
                 elif custom_module_match and custom_module_match.group(1) != '__init__':
-                    file_dict['module'] = custom_module_match
+                    file_dict['modules'].append(custom_module_match)
 
             # Check, that there is a whole set for a custom-module (module-file, functions, parameters)
-            if all([value is not None for value in file_dict.values()]):
+            if all([value is not None or value != [] for value in file_dict.values()]):
+                self.all_modules['custom'][pkg_name] = {}
                 functions_path = file_dict['functions']
                 parameters_path = file_dict['parameters']
-                module_name = file_dict['module'].group(1)
-                module_file_name = file_dict['module'].group()
+                correct_count = 0
+                for module_match in file_dict['modules']:
+                    module_name = module_match.group(1)
+                    module_file_name = module_match.group()
 
-                spec = util.spec_from_file_location(module_name, join(pkg_path, module_file_name))
-                module = util.module_from_spec(spec)
-                try:
-                    spec.loader.exec_module(module)
-                except:
-                    exc_tuple = get_exception_tuple()
-                    self.module_err_dlg = ErrorDialog(exc_tuple,
-                                                      self, title=f'Error in import of custom-module: {module_name}')
-                else:
-                    # Add module to sys.modules
-                    sys.modules[module_name] = module
-                    # Add Module to dictionary
-                    self.all_modules['custom'][module_name] = (module, spec)
+                    spec = util.spec_from_file_location(module_name, join(pkg_path, module_file_name))
+                    module = util.module_from_spec(spec)
+                    try:
+                        spec.loader.exec_module(module)
+                    except:
+                        exc_tuple = get_exception_tuple()
+                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
+                                                          title=f'Error in import of custom-module: {module_name}')
+                    else:
+                        correct_count += 1
+                        # Add module to sys.modules
+                        sys.modules[module_name] = module
+                        # Add Module to dictionary
+                        self.all_modules['custom'][pkg_name][module_name] = (module, spec)
 
+                # Make sure, that every module in modules is imported without error
+                # (otherwise don't append to pd_funcs and pd_params)
+                if len(file_dict['modules']) == correct_count:
                     try:
                         read_pd_funcs = pd.read_csv(functions_path, sep=';', index_col=0)
                         read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
                     except:
                         exc_tuple = get_exception_tuple()
                         self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                          title=f'Error in import of .csv-file: {functions_path}')
+                                                          title=f'Error in import of custom-package: {pkg_name}')
                     else:
-                        for idx in [ix for ix in read_pd_funcs.index if ix not in self.pd_funcs.index]:
-                            self.pd_funcs = self.pd_funcs.append(read_pd_funcs.loc[idx])
-                        for idx in [ix for ix in read_pd_params.index if ix not in self.pd_params.index]:
-                            self.pd_params = self.pd_params.append(read_pd_params.loc[idx])
+                        # Add pkg_name here (would be redundant in read_pd_funcs of each custom-package)
+                        read_pd_funcs['pkg_name'] = pkg_name
+
+                        # Check, that there are no duplicates
+                        pd_funcs_to_append = read_pd_funcs.loc[~read_pd_funcs.index.isin(self.pd_funcs.index)]
+                        self.pd_funcs = self.pd_funcs.append(pd_funcs_to_append)
+                        pd_params_to_append = read_pd_params.loc[~read_pd_params.index.isin(self.pd_params.index)]
+                        self.pd_params = self.pd_params.append(pd_params_to_append)
 
             else:
                 text = f'Files for import of {pkg_name} are missing: ' \
@@ -445,11 +456,12 @@ class MainWindow(QMainWindow):
             reload(self.all_modules['basic'][module_name])
 
     def reload_custom_modules(self):
-        for module_name in self.all_modules['custom']:
-            module = self.all_modules['custom'][module_name][0]
-            spec = self.all_modules['custom'][module_name][1]
-            spec.loader.exec_module(module)
-            sys.modules[module_name] = module
+        for pkg_name in self.all_modules['custom']:
+            for module_name in self.all_modules['custom'][pkg_name]:
+                module = self.all_modules['custom'][pkg_name][module_name][0]
+                spec = self.all_modules['custom'][pkg_name][module_name][1]
+                spec.loader.exec_module(module)
+                sys.modules[module_name] = module
 
     def init_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
@@ -482,13 +494,12 @@ class MainWindow(QMainWindow):
 
         # Custom-Functions
         self.customf_menu = self.menuBar().addMenu('&Custom Functions')
-        self.aadd_customf = self.customf_menu.addAction('&Add custom Functions', partial(CustomFunctionImport, self))
+        self.aadd_customf = self.customf_menu.addAction('&Import', partial(CustomFunctionImport, self))
 
         self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
 
-        self.areload_custom_modules = QAction('Reload Custom-Modules')
-        self.areload_custom_modules.triggered.connect(self.reload_custom_modules)
-        self.customf_menu.addAction(self.areload_custom_modules)
+        self.areload_basic_modules = self.customf_menu.addAction('&Reload Basic-Modules', self.reload_basic_modules)
+        self.areload_custom_modules = self.customf_menu.addAction('&Reload Custom-Modules', self.reload_custom_modules)
 
         # Tools
         self.tool_menu = self.menuBar().addMenu('&Tools')
@@ -499,11 +510,13 @@ class MainWindow(QMainWindow):
 
         self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
         self.adark_mode.setCheckable(True)
-        if self.get_setting('dark_mode') == 'true':
+        if self.get_setting('dark_mode'):
             self.adark_mode.setChecked(True)
             self.dark_mode()
         else:
             self.adark_mode.setChecked(False)
+            self.dark_mode()
+
         self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
 
         # Settings
@@ -512,10 +525,6 @@ class MainWindow(QMainWindow):
         self.settings_menu.addAction('&Open Settings', partial(SettingsDlg, self))
         self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
 
-        self.areload_basic_modules = QAction('Reload Basic-Modules')
-        self.areload_basic_modules.triggered.connect(self.reload_basic_modules)
-        self.settings_menu.addAction(self.areload_basic_modules)
-
         # About
         about_menu = self.menuBar().addMenu('About')
         # about_menu.addAction('Update Pipeline', self.update_pipeline)
@@ -523,6 +532,7 @@ class MainWindow(QMainWindow):
         about_menu.addAction('Quick-Guide', partial(QuickGuide, self))
         about_menu.addAction('MNE System-Info', self.show_sys_info)
         about_menu.addAction('About', self.about)
+        about_menu.addAction('About MNE-Python', self.about_mne)
         about_menu.addAction('About QT', self.app.aboutQt)
 
     def init_toolbar(self):
@@ -555,6 +565,13 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(close_all_bt)
 
     def init_main_widget(self):
+        self.tab_func_widget = QTabWidget()
+        self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
+
+        # Show already here to get the width of tab_func_widget to fit the function-groups inside
+        self.show()
+        self.general_layout.invalidate()
+
         # Add Function-Buttons
         self.add_func_bts()
 
@@ -578,9 +595,10 @@ class MainWindow(QMainWindow):
     # Todo: Make Buttons more appealing, mark when check
     #   make button-dependencies
     def add_func_bts(self):
-        self.tab_func_widget = QTabWidget()
         # Drop custom-modules, which aren't selected
         cleaned_pd_funcs = self.pd_funcs.loc[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))].copy()
+        # Horizontal Border for Function-Groups
+        max_h_size = self.tab_func_widget.geometry().width()
 
         # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
         if len(cleaned_pd_funcs) != 0:
@@ -611,7 +629,6 @@ class MainWindow(QMainWindow):
                 tab_v_layout = QVBoxLayout()
                 tab_h_layout = QHBoxLayout()
                 h_size = 0
-                max_h_size = int(self.app.desktop().availableGeometry().width() / 3)
                 # Add groupbox for each group
                 for function_group, _ in group_grouped:
                     group_box = QGroupBox(function_group, self)
@@ -634,27 +651,28 @@ class MainWindow(QMainWindow):
                         group_box_layout.addWidget(pb)
 
                     group_box.setLayout(group_box_layout)
-                    group_box.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
-                    tab_h_layout.addWidget(group_box)
                     h_size += group_box.sizeHint().width()
                     if h_size > max_h_size:
                         tab_v_layout.addLayout(tab_h_layout)
-                        h_size = 0
+                        h_size = group_box.sizeHint().width()
                         tab_h_layout = QHBoxLayout()
+                    tab_h_layout.addWidget(group_box)
 
-                if not tab_h_layout.isEmpty():
+                if tab_h_layout.count() > 0:
                     tab_v_layout.addLayout(tab_h_layout)
 
                 child_w.setLayout(tab_v_layout)
                 tab.setWidget(child_w)
                 self.tab_func_widget.addTab(tab, tab_name)
 
-        self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
-
     def update_func_bts(self):
-        self.general_layout.removeWidget(self.tab_func_widget)
-        self.tab_func_widget.close()
-        del self.tab_func_widget
+        # Remove tabs in tab_func_widget
+        while self.tab_func_widget.count():
+            tab = self.tab_func_widget.removeTab(0)
+            if tab:
+                tab.deleteLater()
+        self.bt_dict = dict()
+
         self.add_func_bts()
 
     def update_func_and_param(self):
@@ -689,13 +707,6 @@ class MainWindow(QMainWindow):
         self.parameters_dock = ParametersDock(self)
         self.addDockWidget(Qt.RightDockWidgetArea, self.parameters_dock)
         self.view_menu.addAction(self.parameters_dock.toggleViewAction())
-
-    def get_ratio_geometry(self, size_ratio):
-        self.desk_geometry = self.app.desktop().availableGeometry()
-        height = int(self.desk_geometry.height() * size_ratio)
-        width = int(self.desk_geometry.width() * size_ratio)
-
-        return width, height
 
     def dark_mode(self):
         if self.adark_mode.isChecked():
@@ -749,6 +760,10 @@ class MainWindow(QMainWindow):
 
         # Save Main-Window-Settings and project before possible Errors happen
         self.save_main()
+
+        # Reload modules to get latest changes
+        self.reload_basic_modules()
+        self.reload_custom_modules()
 
         # Make sure, every function is in sel_functions
         for func in [f for f in self.pd_funcs.index if f not in self.pr.sel_functions]:
@@ -807,7 +822,7 @@ class MainWindow(QMainWindow):
             exc_tuple = get_exception_tuple()
             self.run_dialog.show_errors(exc_tuple)
         # Send Signal to Function-Worker to continue execution after plot-function in main-thread finishes
-        self.mw_signals.plot_running.emit(False)
+        self.plot_running.emit(False)
 
     def thread_complete(self):
         print('Finished')
@@ -907,7 +922,6 @@ class MainWindow(QMainWindow):
         mne.sys_info()
 
     def about(self):
-
         with open(join(resources.__path__[0], 'license.txt'), 'r') as file:
             license_text = file.read()
         license_text = license_text.replace('\n', '<br>')
@@ -930,10 +944,28 @@ class MainWindow(QMainWindow):
                + license_text
 
         msgbox = QMessageBox(self)
-        msgbox.setWindowTitle('about')
+        msgbox.setWindowTitle('About')
         msgbox.setStyleSheet('QLabel{min-width: 600px; max-height: 700px}')
         msgbox.setText(text)
         msgbox.open()
+
+    def about_mne(self):
+        with open(join(resources.__path__[0], 'mne_license.txt'), 'r') as file:
+            license_text = file.read()
+        license_text = license_text.replace('\n', '<br>')
+        text = '<h1>MNE-Python</h1>' \
+               + license_text
+
+        msgbox = QMessageBox(self)
+        msgbox.setWindowTitle('About MNE-Python')
+        msgbox.setStyleSheet('QLabel{min-width: 600px; max-height: 700px}')
+        msgbox.setText(text)
+        msgbox.open()
+
+    def resizeEvent(self, event):
+        if not self.first_init:
+            self.update_func_bts()
+        event.accept()
 
     def save_main(self):
         # Save Parameters

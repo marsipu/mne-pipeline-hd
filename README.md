@@ -51,12 +51,11 @@ and should have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-
 
 ## Acknowledgments
 This Pipeline is build on top of [MNE-Python](https://mne.tools/stable/index.html)
-> Andersen LM. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for 
-> Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group 
-> Source Space Representation. Front Neurosci. 2018 Jan 22;12:6. doi: 10.3389/fnins.2018.00006. PMID: 29403349; 
-> PMCID: PMC5786561.
+> A. Gramfort, M. Luessi, E. Larson, D. Engemann, D. Strohmeier, C. Brodbeck, L. Parkkonen, M. Hämäläinen,
+> MNE software for processing MEG and EEG data, NeuroImage, Volume 86, 1 February 2014, Pages 446-460, ISSN 1053-8119,
+> [DOI](https://doi.org/10.1016/j.neuroimage.2013.10.027)
 
-It originated from a pipeline by [Lau M. Andersen](https://doi.org/10.3389/fnins.2018.00006)
+It was inspired by a pipeline from [Lau M. Andersen](https://doi.org/10.3389/fnins.2018.00006)
 > Andersen LM. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for 
 > Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group 
 > Source Space Representation. Front Neurosci. 2018 Jan 22;12:6. doi: 10.3389/fnins.2018.00006. PMID: 29403349; 

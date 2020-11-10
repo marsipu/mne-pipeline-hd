@@ -13,6 +13,7 @@ PyQt5>=5.10,<5.14; platform_system == "darwin"
 https://api.github.com/repos/autoreject/autoreject/zipball/master
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 qdarkstyle
+pygments
 
 # Requirement for deployment
 # PyQtWebEngine
