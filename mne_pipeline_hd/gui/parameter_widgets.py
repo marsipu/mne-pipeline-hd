@@ -490,7 +490,7 @@ class ListDialog(QDialog):
 class ListGui(Param):
     """A GUI for List-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, hint=None):
+    def __init__(self, data, param_name, param_alias=None, default=None, hint=None, param_unit=None):
         super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = list()
@@ -498,6 +498,7 @@ class ListGui(Param):
         self.value_label = QLabel('')
         if hint:
             self.name_label.setToolTip(hint)
+        self.param_unit = param_unit
 
         self.read_param()
         self.set_param()
@@ -518,7 +519,10 @@ class ListGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        val_str = ', '.join([str(item) for item in self.param_value])
+        if self.param_unit:
+            val_str = ', '.join([str(item) + f' {self.param_unit}' for item in self.param_value])
+        else:
+            val_str = ', '.join([str(item) for item in self.param_value])
         if len(val_str) > 30:
             self.value_label.setText(f'{val_str[:30]} ...')
         else:
@@ -558,11 +562,13 @@ class CheckListDialog(QDialog):
 class CheckListGui(Param):
     """A GUI for List-Parameters"""
 
-    def __init__(self, data, param_name, options, param_alias=None, default=None, hint=None, one_check=False):
+    def __init__(self, data, param_name, options, param_alias=None, default=None, hint=None, param_unit=None,
+                 one_check=False):
         super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.options = options
         self.param_value = list()
+        self.param_unit = param_unit
         self.one_check = one_check
 
         self.name_label = QLabel(f'{self.param_alias}:')
@@ -591,7 +597,10 @@ class CheckListGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        val_str = ', '.join([str(item) for item in self.param_value])
+        if self.param_unit:
+            val_str = ', '.join([str(item) + f' {self.param_unit}' for item in self.param_value])
+        else:
+            val_str = ', '.join([str(item) for item in self.param_value])
         if len(val_str) > 30:
             self.value_label.setText(f'{val_str[:30]} ...')
         else:
@@ -628,10 +637,11 @@ class DictDialog(QDialog):
 class DictGui(Param):
     """A GUI for Dictionary-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, hint=None):
+    def __init__(self, data, param_name, param_alias=None, default=None, hint=None, param_unit=None):
         super().__init__(data, param_name, param_alias, default)
         self.param_name = param_name
         self.param_value = dict()
+        self.param_unit = param_unit
 
         self.name_label = QLabel(f'{self.param_alias}:')
         if hint:
@@ -657,7 +667,11 @@ class DictGui(Param):
         self.setLayout(layout)
 
     def set_param(self):
-        val_str = ', '.join([f'{key}: {value}' for key, value in self.param_value.items()])
+        if self.param_unit:
+            val_str = ', '.join([f'{key} {self.param_unit}: {value} {self.param_unit}'
+                                 for key, value in self.param_value.items()])
+        else:
+            val_str = ', '.join([f'{key}: {value}' for key, value in self.param_value.items()])
         if len(val_str) > 30:
             self.value_label.setText(f'{val_str[:30]} ...')
         else:
@@ -811,17 +825,17 @@ if __name__ == '__main__':
                   'TestCheckList': ['bananaaa']}
 
     a = IntGui(parameters, 'TestInt', min_val=-4, max_val=10, param_unit='t')
-    b = ListGui(parameters, 'TestList')
-    c = DictGui(parameters, 'TextDict')
-    d = BoolGui(parameters, 'Huba?')
+    b = ListGui(parameters, 'TestList', param_unit='a')
+    c = DictGui(parameters, 'TextDict', param_unit='a')
+    d = BoolGui(parameters, 'Huba?', param_unit='a')
     e = FloatGui(parameters, 'TestFloat', min_val=-18, max_val=+64, step=0.4, decimals=6, param_unit='flurbo')
-    f = StringGui(parameters, 'TestString', input_mask='ppAAA.AA;_')
+    f = StringGui(parameters, 'TestString', input_mask='ppAAA.AA;_', param_unit='a')
     g = SliderGui(parameters, 'TestSlider', min_val=-10, max_val=10, step=1, param_unit='Hz')
     h = SliderGui(parameters, 'TestSlider2', min_val=0, max_val=20.25, step=1.3, param_unit='Fz')
-    i = FuncGui(parameters, 'TestFunc')
-    j = TupleGui(parameters, 'TestTuple', min_val=-10, max_val=20, step=1, decimals=3)
-    k = ComboGui(parameters, 'TestCombo', options=['a', 'b', 'c'])
-    l = CheckListGui(parameters, 'TestCheckList', options=['lemon', 'pineapple', 'bananaaa'])
+    i = FuncGui(parameters, 'TestFunc', param_unit='a')
+    j = TupleGui(parameters, 'TestTuple', min_val=-10, max_val=20, step=1, decimals=3, param_unit='a')
+    k = ComboGui(parameters, 'TestCombo', options=['a', 'b', 'c'], param_unit='a')
+    l = CheckListGui(parameters, 'TestCheckList', options=['lemon', 'pineapple', 'bananaaa'], param_unit='a')
     sub_layout.addWidget(a, 0, 0)
     sub_layout.addWidget(b, 0, 1)
     sub_layout.addWidget(c, 0, 2)

@@ -276,6 +276,10 @@ class ParametersDock(QDockWidget):
                     hint = parameter['description']
                 else:
                     hint = ''
+                if pd.notna(parameter['unit']):
+                    unit = parameter['unit']
+                else:
+                    unit = None
                 try:
                     gui_args = literal_eval(parameter['gui_args'])
                 except (SyntaxError, ValueError):
@@ -283,7 +287,7 @@ class ParametersDock(QDockWidget):
 
                 gui_handle = getattr(parameter_widgets, gui_name)
                 self.param_guis[idx] = gui_handle(self.mw, param_name=idx, param_alias=param_alias,
-                                                  hint=hint, **gui_args)
+                                                  hint=hint, param_unit=unit, **gui_args)
 
                 layout.addWidget(self.param_guis[idx])
 
