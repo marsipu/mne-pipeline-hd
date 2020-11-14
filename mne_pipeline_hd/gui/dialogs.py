@@ -20,11 +20,9 @@ from os.path import join
 
 import pandas as pd
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QFont, QTextCursor
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
                              QInputDialog,
-                             QLabel, QLineEdit, QListView, QListWidget, QListWidgetItem, QMessageBox, QProgressBar,
-                             QPushButton,
+                             QLabel, QLineEdit, QListView, QMessageBox, QPushButton,
                              QScrollArea, QSizePolicy, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui import parameter_widgets
@@ -342,128 +340,6 @@ class ParametersDock(QDockWidget):
         if msgbox == QMessageBox.Yes:
             self.mw.pr.load_default_parameters()
             self.update_all_param_guis()
-
-
-class RunDialog(QDialog):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-
-        width, height = get_ratio_geometry(0.6)
-        self.setGeometry(0, 0, width, height)
-        self.center()
-
-        self.current_sub = None
-        self.current_func = None
-        self.prog_running = False
-
-        self.init_ui()
-        self.center()
-
-    def init_ui(self):
-        self.layout = QGridLayout()
-
-        self.sub_listw = QListWidget()
-        self.sub_listw.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        self.layout.addWidget(self.sub_listw, 0, 0)
-        self.func_listw = QListWidget()
-        self.func_listw.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        self.layout.addWidget(self.func_listw, 0, 1)
-        self.console_widget = QTextEdit()
-        self.console_widget.setReadOnly(True)
-        self.layout.addWidget(self.console_widget, 1, 0, 1, 2)
-
-        self.pgbar = QProgressBar()
-        self.pgbar.setValue(0)
-        self.layout.addWidget(self.pgbar, 2, 0, 1, 2)
-
-        self.cancel_bt = QPushButton('Cancel')
-        self.cancel_bt.setFont(QFont('AnyStyle', 14))
-        self.cancel_bt.clicked.connect(self.cancel_funcs)
-        self.layout.addWidget(self.cancel_bt, 3, 0)
-
-        self.close_bt = QPushButton('Close')
-        self.close_bt.setFont(QFont('AnyStyle', 14))
-        self.close_bt.setEnabled(False)
-        self.close_bt.clicked.connect(self.close)
-        self.layout.addWidget(self.close_bt, 3, 1)
-
-        self.setLayout(self.layout)
-
-    def cancel_funcs(self):
-        self.mw.cancel_functions.emit(True)
-        self.console_widget.insertHtml('<b><big><center>---Finishing last function...---</center></big></b><br>')
-        self.console_widget.ensureCursorVisible()
-
-    def populate(self, mode):
-        if mode == 'mri':
-            self.populate_listw(self.mw.pr.sel_mri_files, self.mw.sel_mri_funcs)
-        elif mode == 'file':
-            self.populate_listw(self.mw.pr.sel_files, self.mw.sel_file_funcs)
-        elif mode == 'ga':
-            self.populate_listw(self.mw.pr.sel_ga_groups, self.mw.sel_ga_funcs)
-        elif mode == 'other':
-            self.populate_listw(['Other Functions'], self.mw.sel_other_funcs)
-
-    def populate_listw(self, files, funcs):
-        for file in files:
-            item = QListWidgetItem(file)
-            item.setFlags(Qt.ItemIsEnabled)
-            self.sub_listw.addItem(item)
-        for func in funcs:
-            item = QListWidgetItem(func)
-            item.setFlags(Qt.ItemIsEnabled)
-            self.func_listw.addItem(item)
-
-    def mark_subfunc(self, subfunc):
-        if self.current_sub is not None:
-            self.current_sub.setBackground(QColor('white'))
-        try:
-            self.current_sub = self.sub_listw.findItems(subfunc[0], Qt.MatchExactly)[0]
-            self.current_sub.setBackground(QColor('green'))
-        except IndexError:
-            pass
-        if self.current_func is not None:
-            self.current_func.setBackground(QColor('white'))
-        try:
-            self.current_func = self.func_listw.findItems(subfunc[1], Qt.MatchExactly)[0]
-            self.current_func.setBackground(QColor('green'))
-        except IndexError:
-            pass
-
-    def clear_marks(self):
-        if self.current_sub is not None:
-            self.current_sub.setBackground(QColor('white'))
-        if self.current_func is not None:
-            self.current_func.setBackground(QColor('white'))
-
-    def add_text(self, text):
-        self.prog_running = False
-        self.console_widget.insertPlainText(text)
-        self.console_widget.ensureCursorVisible()
-
-    def progress_text(self, text):
-        if self.prog_running:
-            # Delete last line
-            cursor = self.console_widget.textCursor()
-            cursor.select(QTextCursor.LineUnderCursor)
-            cursor.removeSelectedText()
-            self.console_widget.insertPlainText(text)
-
-        else:
-            self.prog_running = True
-            self.console_widget.insertPlainText(text)
-
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
-    def show_errors(self, err):
-        ErrorDialog(err, self)
-        self.pgbar.setValue(self.mw.all_prog)
-        self.close_bt.setEnabled(True)
 
 
 class SysInfoMsg(QDialog):

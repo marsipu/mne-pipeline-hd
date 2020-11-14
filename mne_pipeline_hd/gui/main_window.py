@@ -33,7 +33,7 @@ from mayavi import mlab
 
 from .customf_widgets import ChooseCustomModules, CustomFunctionImport
 from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
-                      RunDialog, SettingsDlg, SysInfoMsg)
+                      SettingsDlg, SysInfoMsg)
 from .gui_utils import get_exception_tuple, get_ratio_geometry
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .subject_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsDialog, SubDictDialog,
@@ -42,7 +42,7 @@ from .tools import DataTerminal
 from .. import basic_functions, resources
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
-from ..pipeline_functions.function_utils import (FunctionWorker, func_from_def)
+from ..pipeline_functions.function_utils import (FunctionWorker, RunDialog, func_from_def)
 from ..pipeline_functions.pipeline_utils import shutdown
 from ..pipeline_functions.project import Project
 
