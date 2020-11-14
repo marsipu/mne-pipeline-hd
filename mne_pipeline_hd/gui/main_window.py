@@ -27,7 +27,7 @@ from PyQt5.QtCore import QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
-                             QPushButton, QScrollArea, QStyle, QStyleFactory, QTabWidget, QToolTip,
+                             QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
                              QVBoxLayout, QWidget)
 from mayavi import mlab
 
@@ -632,6 +632,7 @@ class MainWindow(QMainWindow):
                 # Add groupbox for each group
                 for function_group, _ in group_grouped:
                     group_box = QGroupBox(function_group, self)
+                    group_box.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
                     setattr(self, f'{function_group}_gbox', group_box)
                     group_box.setCheckable(True)
                     group_box.toggled.connect(self.func_group_toggled)
@@ -656,7 +657,7 @@ class MainWindow(QMainWindow):
                         tab_v_layout.addLayout(tab_h_layout)
                         h_size = group_box.sizeHint().width()
                         tab_h_layout = QHBoxLayout()
-                    tab_h_layout.addWidget(group_box)
+                    tab_h_layout.addWidget(group_box, alignment=Qt.AlignLeft | Qt.AlignTop)
 
                 if tab_h_layout.count() > 0:
                     tab_v_layout.addLayout(tab_h_layout)
