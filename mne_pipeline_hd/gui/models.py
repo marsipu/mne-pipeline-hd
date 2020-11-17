@@ -12,6 +12,7 @@ from ast import literal_eval
 
 import pandas as pd
 from PyQt5.QtCore import QAbstractItemModel, QAbstractListModel, QAbstractTableModel, QModelIndex, Qt
+from PyQt5.QtGui import QBrush, QFont
 from PyQt5.QtWidgets import QApplication, QStyle
 
 
@@ -183,10 +184,15 @@ class BaseDictModel(QAbstractTableModel):
             self._data = data
 
     def getData(self, index=QModelIndex()):
-        if index.column() == 0:
-            return list(self._data.keys())[index.row()]
-        elif index.column() == 1:
-            return list(self._data.values())[index.row()]
+        try:
+            if index.column() == 0:
+                return list(self._data.keys())[index.row()]
+            elif index.column() == 1:
+                return list(self._data.values())[index.row()]
+        # Happens, when a duplicate key is entered
+        except IndexError:
+            self.layoutChanged.emit()
+            return ''
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
@@ -506,3 +512,70 @@ class CustomFunctionModel(QAbstractListModel):
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data.index)
+
+
+class RunModel(QAbstractListModel):
+    """A model for the items/functions of a Pipeline-Run
+    """
+
+    def __init__(self, data, mode):
+        super().__init__()
+        self.app = QApplication.instance()
+        self._data = data
+        self.mode = mode
+
+    def getKey(self, index=QModelIndex()):
+        return list(self._data.keys())[index.row()]
+
+    def getValue(self, index=QModelIndex()):
+        if self.mode == 'object':
+            return self._data[self.getKey(index)]['status']
+        else:
+            return self._data[self.getKey(index)]
+
+    def getType(self, index=QModelIndex()):
+        return self._data[self.getKey(index)]['type']
+
+    def data(self, index, role=None):
+        if role == Qt.DisplayRole:
+            if self.mode == 'object':
+                return f'{self.getType(index)}: {self.getKey(index)}'
+            return self.getKey(index)
+
+        # Object/Function-States:
+        # 0 = Finished
+        # 1 = Pending
+        # 2 = Currently Runnning
+        # Return Foreground depending on state of object/function
+        elif role == Qt.ForegroundRole:
+            if self.getValue(index) == 0:
+                return QBrush(Qt.darkGray)
+            elif self.getValue(index) == 1:
+                return QBrush(Qt.darkBlue)
+            elif self.getValue(index) == 2:
+                return QBrush(Qt.darkGreen)
+
+        # Return Background depending on state of object/function
+        elif role == Qt.BackgroundRole:
+            if self.getValue(index) == 0:
+                return QBrush(Qt.lightGray)
+            elif self.getValue(index) == 1:
+                return QBrush(Qt.blue)
+            elif self.getValue(index) == 2:
+                return QBrush(Qt.green)
+
+        # Mark objects/functions if they are already done, mark objects according to their type (color-code)
+        elif role == Qt.DecorationRole:
+            if self.getValue(index) == 0:
+                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+            elif self.getValue(index) == 2:
+                return self.app.style().standardIcon(QStyle.SP_ArrowRight)
+
+        elif role == Qt.FontRole:
+            if self.getValue(index) == 2:
+                bold_font = QFont()
+                bold_font.setBold(True)
+                return bold_font
+
+    def rowCount(self, index=QModelIndex()):
+        return len(self._data)

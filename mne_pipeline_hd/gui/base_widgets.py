@@ -618,6 +618,7 @@ class BasePandasTable(Base):
                 for idx in zip(itertools.repeat(row, n_cols), range(n_cols)):
                     indexes.append(idx)
 
+        # Select complete columns
         if columns:
             # Convert names into indexes
             column_idxs = [list(self.model._data.columns).index(col) for col in columns]

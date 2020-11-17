@@ -29,7 +29,6 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, Q
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
                              QVBoxLayout, QWidget)
-from mayavi import mlab
 
 from .customf_widgets import ChooseCustomModules, CustomFunctionImport
 from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
@@ -42,8 +41,7 @@ from .tools import DataTerminal
 from .. import basic_functions, resources
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
-from ..pipeline_functions.function_utils import (FunctionWorker, RunDialog, func_from_def)
-from ..pipeline_functions.pipeline_utils import shutdown
+from ..pipeline_functions.function_utils import (RunDialog)
 from ..pipeline_functions.project import Project
 
 
@@ -358,9 +356,9 @@ class MainWindow(QMainWindow):
         return value
 
     def get_func_groups(self):
-        self.mri_funcs = self.pd_funcs[self.pd_funcs['target'] == 'FSMRI']
-        self.file_funcs = self.pd_funcs[self.pd_funcs['target'] == 'MEEG']
-        self.ga_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Group']
+        self.fsmri_funcs = self.pd_funcs[self.pd_funcs['target'] == 'FSMRI']
+        self.meeg_funcs = self.pd_funcs[self.pd_funcs['target'] == 'MEEG']
+        self.group_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Group']
         self.other_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Other']
 
     def import_custom_modules(self):
@@ -766,31 +764,6 @@ class MainWindow(QMainWindow):
         self.reload_basic_modules()
         self.reload_custom_modules()
 
-        # Make sure, every function is in sel_functions
-        for func in [f for f in self.pd_funcs.index if f not in self.pr.sel_functions]:
-            self.pr.sel_functions[func] = 0
-
-        # Lists of selected functions
-        self.sel_mri_funcs = [mf for mf in self.mri_funcs.index if self.pr.sel_functions[mf]]
-        self.sel_file_funcs = [ff for ff in self.file_funcs.index if self.pr.sel_functions[ff]]
-        self.sel_ga_funcs = [gf for gf in self.ga_funcs.index if self.pr.sel_functions[gf]]
-        self.sel_other_funcs = [of for of in self.other_funcs.index if self.pr.sel_functions[of]]
-
-        # Determine steps in progress for all selected subjects and functions
-        self.all_prog = (len(self.pr.sel_mri_files) * len(self.sel_mri_funcs) +
-                         len(self.pr.sel_files) * len(self.sel_file_funcs) +
-                         len(self.pr.sel_ga_groups) * len(self.sel_ga_funcs) +
-                         len(self.sel_other_funcs))
-
-        self.run_dialog = RunDialog(self)
-        self.run_dialog.pgbar.setMaximum(self.all_prog)
-        self.run_dialog.open()
-
-        sys.stdout.signal.text_written.connect(self.run_dialog.add_text)
-        sys.stderr.signal.text_written.connect(self.run_dialog.add_text)
-        # Handle tqdm-progress-bars
-        sys.stderr.signal.text_updated.connect(self.run_dialog.progress_text)
-
         # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
         # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
         # function-modules here, but you had to import them for each run then
@@ -799,41 +772,7 @@ class MainWindow(QMainWindow):
         else:
             matplotlib.use('agg')
 
-        self.fworker = FunctionWorker(self)
-
-        self.fworker.signals.error.connect(self.run_dialog.show_errors)
-        self.fworker.signals.finished.connect(self.thread_complete)
-        self.fworker.signals.pgbar_n.connect(self.run_dialog.pgbar.setValue)
-        self.fworker.signals.pg_which_loop.connect(self.run_dialog.populate)
-        self.fworker.signals.pg_subfunc.connect(self.update_subfunc)
-        self.fworker.signals.func_sig.connect(self.thread_func)
-
-        self.threadpool.start(self.fworker)
-
-    def update_subfunc(self, subfunc):
-        self.run_dialog.mark_subfunc(subfunc)
-        self.statusBar().showMessage(f'{subfunc[0]}: {subfunc[1]}')
-
-    def thread_func(self, kwargs):
-        try:
-            func_from_def(**kwargs)
-            if self.pd_funcs.loc[kwargs['func_name'], 'mayavi'] and not self.get_setting('show_plots'):
-                mlab.close(all=True)
-        except:
-            exc_tuple = get_exception_tuple()
-            self.run_dialog.show_errors(exc_tuple)
-        # Send Signal to Function-Worker to continue execution after plot-function in main-thread finishes
-        self.plot_running.emit(False)
-
-    def thread_complete(self):
-        print('Finished')
-        self.run_dialog.pgbar.setValue(self.all_prog)
-        self.run_dialog.close_bt.setEnabled(True)
-        if not self.get_setting('show_plots'):
-            close_all()
-        if self.get_setting('shutdown'):
-            self.save_main()
-            shutdown()
+        self.run_dialog = RunDialog(self)
 
     # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):

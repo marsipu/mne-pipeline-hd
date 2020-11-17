@@ -25,18 +25,16 @@ from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
-                             QListView, QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
+                             QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
                              QScrollArea, QSizePolicy, QStyle, QTabWidget, QTableView, QTextEdit, QTreeWidget,
-                             QTreeWidgetItem,
-                             QVBoxLayout, QWidget, QWizard, QWizardPage)
+                             QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
-from .base_widgets import CheckDictList, CheckList, EditDict, EditList, EditPandasTable
+from .base_widgets import CheckDictList, CheckList, EditDict, EditList
 from .dialogs import ErrorDialog
 from .gui_utils import (Worker, get_ratio_geometry)
-from .models import AddFilesModel, CheckDictModel
+from .models import AddFilesModel
 from ..basic_functions.loading import CurrentSub
-from ..basic_functions.operations import find_6ch_binary_events
 
 
 def file_indexing(which_file, all_files):
@@ -230,8 +228,8 @@ class SubjectDock(QDockWidget):
             idx += 1  # Let index start with 1
             item = QListWidgetItem(f'{idx}: {file}')
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            if self.mw.pr.sel_files:
-                if file in self.mw.pr.sel_files:
+            if self.mw.pr.sel_meeg:
+                if file in self.mw.pr.sel_meeg:
                     item.setCheckState(Qt.Checked)
                 else:
                     item.setCheckState(Qt.Unchecked)
@@ -248,8 +246,8 @@ class SubjectDock(QDockWidget):
             idx += 1  # Let index start with 1
             item = QListWidgetItem(f'{idx}: {file}')
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            if self.mw.pr.sel_mri_files:
-                if file in self.mw.pr.sel_mri_files:
+            if self.mw.pr.sel_fsmri:
+                if file in self.mw.pr.sel_fsmri:
                     item.setCheckState(Qt.Checked)
                 else:
                     item.setCheckState(Qt.Unchecked)
@@ -265,7 +263,7 @@ class SubjectDock(QDockWidget):
             if item.checkState() == Qt.Checked:
                 # Index in front of name has to be deleted Todo: can be done better (maybe QTableWidget?)
                 sel_files.append(item.text()[len(str(idx + 1)) + 2:])
-        self.mw.pr.sel_files = sel_files
+        self.mw.pr.sel_meeg = sel_files
 
     def get_mri_selection(self):
         sel_mri = []
@@ -274,11 +272,11 @@ class SubjectDock(QDockWidget):
             if item.checkState() == Qt.Checked:
                 # Index in front of name has to be deleted Todo: can be done better (maybe QTableWidget?)
                 sel_mri.append(item.text()[len(str(idx + 1)) + 2:])
-        self.mw.pr.sel_mri_files = sel_mri
+        self.mw.pr.sel_fsmri = sel_mri
 
     def update_sub_selection(self):
         which_file = self.sub_ledit.text()
-        self.mw.pr.sel_files, idxs = file_indexing(which_file, self.mw.pr.all_files)
+        self.mw.pr.sel_meeg, idxs = file_indexing(which_file, self.mw.pr.all_files)
         if len(idxs) > 0:
             # Clear all check-states
             self.sub_clear_all()
@@ -289,7 +287,7 @@ class SubjectDock(QDockWidget):
 
     def update_mri_selection(self):
         which_file = self.mri_ledit.text()
-        self.mw.pr.sel_mri_files, idxs = file_indexing(which_file, self.mw.pr.all_mri_subjects)
+        self.mw.pr.sel_fsmri, idxs = file_indexing(which_file, self.mw.pr.all_mri_subjects)
         if len(idxs) > 0:
             # Clear all check-states
             self.mri_clear_all()
@@ -307,20 +305,20 @@ class SubjectDock(QDockWidget):
             self.mri_listw.item(idx).setCheckState(Qt.Unchecked)
 
     def remove_files(self):
-        if len(self.mw.pr.sel_files) > 0:
+        if len(self.mw.pr.sel_meeg) > 0:
             def remove_only_list():
-                for file in self.mw.pr.sel_files:
+                for file in self.mw.pr.sel_meeg:
                     self.mw.pr.all_files.remove(file)
                     self.mw.pr.erm_dict.pop(file, None)
                     self.mw.pr.sub_dict.pop(file, None)
                     self.mw.pr.info_dict.pop(file, None)
                     self.mw.pr.bad_channels_dict.pop(file, None)
-                self.mw.pr.sel_files = []
+                self.mw.pr.sel_meeg = []
                 self.update_subjects_list()
                 self.sub_msg_box.close()
 
             def remove_with_files():
-                for file in self.mw.pr.sel_files:
+                for file in self.mw.pr.sel_meeg:
                     self.mw.pr.all_files.remove(file)
                     self.mw.pr.erm_dict.pop(file, None)
                     self.mw.pr.sub_dict.pop(file, None)
@@ -330,7 +328,7 @@ class SubjectDock(QDockWidget):
                         shutil.rmtree(join(self.mw.pr.data_path, file))
                     except FileNotFoundError:
                         print(join(self.mw.pr.data_path, file) + ' not found!')
-                self.mw.pr.sel_files = []
+                self.mw.pr.sel_meeg = []
                 self.update_subjects_list()
                 self.sub_msg_box.close()
 
@@ -353,22 +351,22 @@ class SubjectDock(QDockWidget):
             pass
 
     def remove_mri_subjects(self):
-        if len(self.mw.pr.sel_mri_files) > 0:
+        if len(self.mw.pr.sel_fsmri) > 0:
             def remove_only_list():
-                for mri_subject in self.mw.pr.sel_mri_files:
+                for mri_subject in self.mw.pr.sel_fsmri:
                     self.mw.pr.all_mri_subjects.remove(mri_subject)
-                self.mw.pr.sel_mri_files = []
+                self.mw.pr.sel_fsmri = []
                 self.update_mri_subjects_list()
                 self.mri_msg_box.close()
 
             def remove_with_files():
-                for mri_subject in self.mw.pr.sel_mri_files:
+                for mri_subject in self.mw.pr.sel_fsmri:
                     self.mw.pr.all_mri_subjects.remove(mri_subject)
                     try:
                         shutil.rmtree(join(self.mw.subjects_dir, mri_subject))
                     except FileNotFoundError:
                         print(join(self.mw.subjects_dir, mri_subject) + ' not found!')
-                self.mw.pr.sel_mri_files = []
+                self.mw.pr.sel_fsmri = []
                 self.update_mri_subjects_list()
                 self.mri_msg_box.close()
 
@@ -430,7 +428,7 @@ class GrandAvgWidget(QWidget):
             top_item = QTreeWidgetItem()
             top_item.setText(0, group)
             top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEditable)
-            if group in self.mw.pr.sel_ga_groups:
+            if group in self.mw.pr.sel_groups:
                 top_item.setCheckState(0, Qt.Checked)
             else:
                 top_item.setCheckState(0, Qt.Unchecked)
@@ -442,7 +440,7 @@ class GrandAvgWidget(QWidget):
 
     def get_treew(self):
         new_dict = {}
-        self.mw.pr.sel_ga_groups = []
+        self.mw.pr.sel_groups = []
         for top_idx in range(self.treew.topLevelItemCount()):
             top_item = self.treew.topLevelItem(top_idx)
             top_text = top_item.text(0)
@@ -451,7 +449,7 @@ class GrandAvgWidget(QWidget):
                 child_item = top_item.child(child_idx)
                 new_dict[top_text].append(child_item.text(0))
             if top_item.checkState(0) == Qt.Checked:
-                self.mw.pr.sel_ga_groups.append(top_text)
+                self.mw.pr.sel_groups.append(top_text)
         self.mw.pr.grand_avg_dict = new_dict
 
     def add_group(self):
@@ -558,7 +556,7 @@ class GrandAvgFileAdd(QDialog):
             self.listw.item(idx).setCheckState(Qt.Checked)
 
 
-def extract_info(project, raw, new_fname):
+def extract_info(project, raw, new_fname, path):
     info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
                  'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
                  'helium_info']
@@ -582,6 +580,7 @@ def extract_info(project, raw, new_fname):
         except AttributeError:
             project.info_dict[new_fname]['ch_types'] = list()
         project.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
+        project.info_dict[new_fname]['n_times'] = raw.n_times
     except (KeyError, TypeError):
         pass
 
@@ -795,7 +794,7 @@ class AddFilesWidget(QWidget):
                 signals['which_sub'].emit(f'Copying {file}')
 
                 raw = self.load_file(idx)
-                extract_info(self.mw.pr, raw, file)
+                extract_info(self.mw.pr, raw, file, path=self.pd_files.loc[idx, 'Path'])
 
                 if not self.addf_dialog.wasCanceled():
                     # Copy Empty-Room-Files to their directory
@@ -1565,7 +1564,7 @@ class SubBadsWidget(QWidget):
         if self.name not in self.mw.pr.info_dict:
             sub = CurrentSub(self.name, self.mw)
             raw = sub.load_raw()
-            extract_info(self.mw.pr, raw, self.name)
+            extract_info(self.mw.pr, raw, self.name, path=sub.raw_path)
 
         # Make Checkboxes for channels from info_dict
         for x, ch_name in enumerate(self.mw.pr.info_dict[self.name]['ch_names']):
@@ -1754,8 +1753,6 @@ class EventIDGui(QDialog):
 
         self.name = None
         self.event_id = dict()
-        self.ids = None
-        self.pd_evid = None
         self.labels = list()
         self.checked_labels = list()
 
@@ -1767,24 +1764,28 @@ class EventIDGui(QDialog):
     def init_ui(self):
         list_layout = QHBoxLayout()
 
-        self.files_model = CheckDictModel(self.mw.pr.all_files, self.mw.pr.event_id_dict)
-        self.files_view = QListView()
-        self.files_view.setModel(self.files_model)
-        self.files_view.selectionModel().currentChanged.connect(self.file_selected)
+        self.files = CheckDictList(self.mw.pr.all_files, self.mw.pr.event_id_dict, title='Files')
+        self.files.currentChanged.connect(self.file_selected)
 
-        list_layout.addWidget(self.files_view)
+        list_layout.addWidget(self.files)
 
-        self.event_id_widget = EditPandasTable(ui_buttons=False)
-        self.event_id_widget.view.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        event_id_layout = QVBoxLayout()
+
+        self.event_id_widget = EditDict(self.event_id, ui_buttons=True, title='Event-ID')
         # Connect editing of Event-ID-Table to update of Check-List
-        self.event_id_widget.model.dataChanged.connect(self.update_check_list)
-        self.event_id_widget.setToolTip('Add a Trial-Descriptor for each Event-ID, '
-                                        'if you want to include it in you analysis.\n'
+        self.event_id_widget.dataChanged.connect(self.update_check_list)
+        self.event_id_widget.setToolTip('Add a Trial-Descriptor (as key) for each Event-ID (as value) '
+                                        'you want to include it in you analysis.\n'
                                         'You can assign multiple descriptors per ID by '
                                         'separating them by "/"')
-        list_layout.addWidget(self.event_id_widget)
+        event_id_layout.addWidget(self.event_id_widget)
 
-        self.check_widget = CheckList()
+        self.event_id_label = QLabel()
+        event_id_layout.addWidget(self.event_id_label)
+
+        list_layout.addLayout(event_id_layout)
+
+        self.check_widget = CheckList(title='Select IDs')
         list_layout.addWidget(self.check_widget)
 
         self.layout.addLayout(list_layout)
@@ -1805,39 +1806,24 @@ class EventIDGui(QDialog):
 
     def get_event_id(self):
         """Get unique event-ids from events"""
-        # Load Events from File
-        sub = CurrentSub(self.name, self.mw, suppress_warnings=True)
-        try:
-            events = sub.load_events()
-        except FileNotFoundError:
-            # Todo: You should be able to choose between different find_event-functions
-            find_6ch_binary_events(sub,
-                                   self.mw.pr.parameters[self.mw.pr.p_preset]['min_duration'],
-                                   self.mw.pr.parameters[self.mw.pr.p_preset]['shortest_event'],
-                                   self.mw.pr.parameters[self.mw.pr.p_preset]['adjust_timeline_by_msec'])
-
-            events = sub.load_events()
-        self.ids = np.unique(events[:, 2])
-        self.pd_evid = pd.DataFrame(index=self.ids, columns=['ID-Name(s)'])
-        self.pd_evid['ID-Name(s)'] = ''
-
         if self.name in self.mw.pr.event_id_dict:
             self.event_id = self.mw.pr.event_id_dict[self.name]
+        else:
+            self.event_id = dict()
+        self.event_id_widget.replace_data(self.event_id)
 
-            # Convert Event-ID to Pandas DataFrame
-            for key in self.event_id:
-                self.pd_evid.loc[self.event_id[key], 'ID-Name(s)'] = key
+        try:
+            # Load Events from File
+            sub = CurrentSub(self.name, self.mw, suppress_warnings=True)
+            events = sub.load_events()
+        except FileNotFoundError:
+            self.event_id_label.setText(f'No events found for {self.name}')
+        else:
+            ids = np.unique(events[:, 2])
+            self.event_id_label.setText(f'Events found: {ids}')
 
     def save_event_id(self):
         if self.name:
-            self.event_id = {}
-            # Convert Pandas DataFrame to Event-ID-Dict
-            for idx in self.pd_evid.index:
-                # Get trial(s) for ID
-                key = str(self.pd_evid.loc[idx, 'ID-Name(s)'])
-                if key != '':
-                    self.event_id[key] = int(idx)
-
             if len(self.event_id) > 0:
                 # Write Event-ID to Project
                 self.mw.pr.event_id_dict[self.name] = self.event_id
@@ -1851,9 +1837,8 @@ class EventIDGui(QDialog):
         self.save_event_id()
 
         # Get event-id for selected file and update widget
-        self.name = self.files_model.getData(current)
+        self.name = current
         self.get_event_id()
-        self.event_id_widget.replace_data(self.pd_evid)
 
         # Load checked trials
         if self.name in self.mw.pr.sel_trials_dict:
@@ -1865,7 +1850,7 @@ class EventIDGui(QDialog):
     def update_check_list(self):
 
         # Get selectable trials and update widget
-        prelabels = [i.split('/') for i in self.pd_evid['ID-Name(s)'] if i != '']
+        prelabels = [i.split('/') for i in self.event_id.keys() if i != '']
         if len(prelabels) > 0:
             # Concatenate all lists
             conc_labels = prelabels[0]

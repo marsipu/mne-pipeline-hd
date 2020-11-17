@@ -18,6 +18,7 @@ from email.mime.text import MIMEText
 from functools import partial
 from os.path import join
 
+import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
@@ -270,6 +271,13 @@ class ParametersDock(QDockWidget):
                     gui_name = parameter['gui_type']
                 else:
                     gui_name = 'FuncGui'
+                try:
+                    default = literal_eval(parameter['default'])
+                except (SyntaxError, ValueError):
+                    if gui_name == 'FuncGui':
+                        default = eval(parameter['default'], {'np': np})
+                    else:
+                        default = parameter['default']
                 if pd.notna(parameter['description']):
                     hint = parameter['description']
                 else:
@@ -284,7 +292,7 @@ class ParametersDock(QDockWidget):
                     gui_args = {}
 
                 gui_handle = getattr(parameter_widgets, gui_name)
-                self.param_guis[idx] = gui_handle(self.mw, param_name=idx, param_alias=param_alias,
+                self.param_guis[idx] = gui_handle(self.mw, param_name=idx, param_alias=param_alias, default=default,
                                                   hint=hint, param_unit=unit, **gui_args)
 
                 layout.addWidget(self.param_guis[idx])

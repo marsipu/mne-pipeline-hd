@@ -54,11 +54,11 @@ class Project:
         # Stores selected Info-Attributes for each file
         self.info_dict = {}
         # Stores selected files
-        self.sel_files = []
+        self.sel_meeg = []
         # Stores selected Freesurfer-Segmentations
-        self.sel_mri_files = []
+        self.sel_fsmri = []
         # Stores selected Grand-Average-Groups
-        self.sel_ga_groups = []
+        self.sel_groups = []
         # Stores functions and if they are selected
         self.sel_functions = {}
         # Stores parameters for each Parameter-Preset
@@ -171,9 +171,9 @@ class Project:
                      self.sel_trials_dict_path: self.sel_trials_dict,
                      self.grand_avg_dict_path: self.grand_avg_dict,
                      self.info_dict_path: self.info_dict,
-                     self.sel_files_path: self.sel_files,
-                     self.sel_mri_files_path: self.sel_mri_files,
-                     self.sel_ga_groups_path: self.sel_ga_groups,
+                     self.sel_files_path: self.sel_meeg,
+                     self.sel_mri_files_path: self.sel_fsmri,
+                     self.sel_ga_groups_path: self.sel_groups,
                      self.sel_funcs_path: self.sel_functions}
 
         for path in save_dict:

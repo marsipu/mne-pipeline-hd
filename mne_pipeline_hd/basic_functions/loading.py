@@ -13,7 +13,7 @@ from __future__ import print_function
 import pickle
 from datetime import datetime
 from os import listdir, makedirs, remove
-from os.path import exists, join
+from os.path import exists, getsize, join
 from pathlib import Path
 
 import mne
@@ -55,6 +55,7 @@ class BaseSub:
         file_name = Path(path).name
         self.pr.file_parameters.loc[file_name, 'PATH'] = path
         self.pr.file_parameters.loc[file_name, 'TIME'] = datetime.now()
+        self.pr.file_parameters.loc[file_name, 'SIZE'] = getsize(path)
         for p_name in self.pr.parameters[self.p_preset]:
             self.pr.file_parameters.loc[file_name, p_name] = str(self.pr.parameters[self.p_preset][p_name])
 
