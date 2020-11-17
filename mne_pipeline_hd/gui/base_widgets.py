@@ -8,11 +8,13 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 @github: https://github.com/marsipu/mne_pipeline_hd
 License: BSD (3-clause)
 """
+import itertools
 import sys
 from inspect import getsourcefile
 from os.path import abspath
 from pathlib import Path
 
+import numpy as np
 import pandas
 from PyQt5.QtCore import QItemSelectionModel, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -34,6 +36,7 @@ from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandas
 class Base(QWidget):
     currentChanged = pyqtSignal(object, object)
     selectionChanged = pyqtSignal(object)
+    dataChanged = pyqtSignal(object, object)
 
     def __init__(self, model, view, parent, title):
         super().__init__(parent)
@@ -46,6 +49,7 @@ class Base(QWidget):
         # Connect to custom Selection-Signal
         self.view.selectionModel().currentChanged.connect(self._current_changed)
         self.view.selectionModel().selectionChanged.connect(self._selection_changed)
+        self.model.dataChanged.connect(self._data_changed)
 
         self.init_ui()
 
@@ -86,6 +90,13 @@ class Base(QWidget):
         self.selectionChanged.emit(selected)
 
         print(f'Selection changed to {selected}')
+
+    def _data_changed(self, index, _):
+        data = self.model.getData(index)
+
+        self.dataChanged.emit(data, index)
+
+        print(f'{data} changed at {index}')
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -414,6 +425,21 @@ class BaseDict(Base):
 
         print(f'Selection changed to {selection_dict}')
 
+    def select(self, keys, values, clear_selection=True):
+        key_indices = [i for i, x in enumerate(self.model._data.keys()) if x in keys]
+        value_indices = [i for i, x in enumerate(self.model._data.values()) if x in values]
+
+        if clear_selection:
+            self.view.selectionModel().clearSelection()
+
+        for idx in key_indices:
+            index = self.model.createIndex(idx, 0)
+            self.view.selectionModel().select(index, QItemSelectionModel.Select)
+
+        for idx in value_indices:
+            index = self.model.createIndex(idx, 1)
+            self.view.selectionModel().select(index, QItemSelectionModel.Select)
+
 
 class SimpleDict(BaseDict):
     """A Widget to display a Dictionary
@@ -558,6 +584,54 @@ class BasePandasTable(Base):
         self.selectionChanged.emit(selection_dict)
 
         print(f'Selection changed to {selection_dict}')
+
+    def select(self, values=None, rows=None, columns=None, clear_selection=True):
+        """
+        Select items in Pandas DataFrame by value or select complete rows/columns
+
+        Parameters
+        ----------
+        values: list | None
+            Names of values in DataFrame
+        rows: list | None
+            Names of rows(index)
+        columns: list | None
+            Names of columns
+        clear_selection: bool | None
+            Set True if you want to clear the selection before selecting
+
+        """
+        indexes = list()
+        # Get indexes for matching items in pd_data (even if there are multiple matches)
+        if values:
+            for value in values:
+                row, column = np.nonzero((self.model._data == value).values)
+                for idx in zip(row, column):
+                    indexes.append(idx)
+
+        # Select complete rows
+        if rows:
+            # Convert names into indexes
+            row_idxs = [list(self.model._data.index).index(row) for row in rows]
+            n_cols = len(self.model._data.columns)
+            for row in row_idxs:
+                for idx in zip(itertools.repeat(row, n_cols), range(n_cols)):
+                    indexes.append(idx)
+
+        if columns:
+            # Convert names into indexes
+            column_idxs = [list(self.model._data.columns).index(col) for col in columns]
+            n_rows = len(self.model._data.index)
+            for column in column_idxs:
+                for idx in zip(range(n_rows), itertools.repeat(column, n_rows)):
+                    indexes.append(idx)
+
+        if clear_selection:
+            self.view.selectionModel().clearSelection()
+
+        for row, column in indexes:
+            index = self.model.createIndex(row, column)
+            self.view.selectionModel().select(index, QItemSelectionModel.Select)
 
 
 class SimplePandasTable(BasePandasTable):
