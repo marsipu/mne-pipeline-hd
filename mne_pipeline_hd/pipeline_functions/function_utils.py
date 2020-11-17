@@ -12,7 +12,6 @@ import inspect
 import logging
 import re
 import sys
-import time
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QFont, QTextCursor
@@ -111,134 +110,6 @@ class FunctionWorkerSignals(QObject):
     finished = pyqtSignal()
     # An Error occured
     error = pyqtSignal(tuple)
-
-
-class FunctionWorkerOld(Worker):
-    def __init__(self, main_win):
-        self.signals = FunctionWorkerSignals()
-        super().__init__(self.call_functions, self.signals)
-
-        self.mw = main_win
-        self.count = 1
-
-        # Signals received from main_win for canceling functions and
-        self.is_cancel_functions = False
-        self.is_plot_running = False
-
-    def check_cancel_functions(self, is_canceled):
-        if is_canceled:
-            self.is_cancel_functions = True
-        else:
-            self.is_cancel_functions = False
-
-    def check_plot_running(self, is_running):
-        if is_running:
-            self.is_plot_running = True
-        else:
-            self.is_plot_running = False
-
-    def call_functions(self):
-        """
-        Call activated functions in main_window, read function-parameters from functions_empty.csv
-        """
-
-        # Check if any mri-subject is selected
-        if len(self.mw.pr.sel_fsmri) * len(self.mw.sel_fsmri_funcs) > 0:
-            self.signals.pg_which_loop.emit('mri')
-            self.subject_loop('mri')
-
-        # Call the functions for selected Files
-        if len(self.mw.pr.sel_meeg) * len(self.mw.sel_meeg_funcs) > 0:
-            self.signals.pg_which_loop.emit('file')
-            self.subject_loop('file')
-
-        # Call functions outside the subject-loop for Grand-Average-Groups
-        if len(self.mw.pr.sel_groups) * len(self.mw.sel_group_funcs) > 0:
-            self.signals.pg_which_loop.emit('ga')
-            self.subject_loop('ga')
-
-        # Calls functions, which have no Sub
-        elif len(self.mw.sel_other_funcs) > 0:
-            self.signals.pg_which_loop.emit('other')
-            self.subject_loop('other')
-
-    def subject_loop(self, subject_type):
-        if subject_type == 'mri':
-            selected_subjects = self.mw.pr.sel_fsmri
-            selected_functions = self.mw.sel_fsmri_funcs
-        elif subject_type == 'file':
-            selected_subjects = self.mw.pr.sel_meeg
-            selected_functions = self.mw.sel_meeg_funcs
-        elif subject_type == 'ga':
-            selected_subjects = self.mw.pr.sel_groups
-            selected_functions = self.mw.sel_group_funcs
-        elif subject_type == 'other':
-            selected_subjects = ['Other Functions']
-            selected_functions = self.mw.sel_other_funcs
-        else:
-            raise RuntimeError(f'Subject-Type: {subject_type} not supported')
-
-        running_mri_sub = None
-        for name in selected_subjects:
-            if not self.is_cancel_functions:
-                if subject_type == 'mri':
-                    sub = CurrentMRISub(name, self.mw)
-                    running_mri_sub = sub
-                    self.mw.subject = sub
-
-                elif subject_type == 'file':
-                    # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
-                    if running_mri_sub and running_mri_sub.name == self.mw.pr.sub_dict[name]:
-                        sub = CurrentSub(name, self.mw, mri_sub=running_mri_sub)
-                    else:
-                        sub = CurrentSub(name, self.mw)
-                    running_mri_sub = sub.mri_sub
-                    self.mw.subject = sub
-
-                elif subject_type == 'ga':
-                    sub = CurrentGAGroup(name, self.mw)
-                    self.mw.subject = sub
-
-                elif subject_type == 'other':
-                    sub = CurrentSub(name, self.mw)
-
-                else:
-                    break
-
-                if not self.mw.get_setting('show_plots'):
-                    close_all()
-
-                # Print Subject Console Header
-                print('=' * 60 + '\n', name + '\n')
-                for func in selected_functions:
-                    # Todo: Resolve Dependencies and Function-Order
-                    # Wait for main-thread-function to finish
-                    while self.is_plot_running:
-                        time.sleep(1)
-                    if not self.is_cancel_functions:
-                        if self.mw.pd_funcs.loc[func, 'mayavi']:
-                            self.is_plot_running = True
-                            self.signals.pg_subfunc.emit((name, func))
-                            # Mayavi-Plots need to be called in the main thread
-                            self.signals.func_sig.emit({'func_name': func, 'sub': sub, 'main_win': self.mw})
-                            self.signals.pgbar_n.emit(self.count)
-                            self.count += 1
-                        elif self.mw.pd_funcs.loc[func, 'matplotlib'] and self.mw.get_setting('show_plots'):
-                            self.signals.pg_subfunc.emit((name, func))
-                            # Matplotlib-Plots can be called without showing (backend: agg),
-                            # but to be shown, they have to be called in the main thread
-                            self.signals.func_sig.emit({'func_name': func, 'sub': sub, 'main_win': self.mw})
-                            self.signals.pgbar_n.emit(self.count)
-                            self.count += 1
-                        else:
-                            self.signals.pg_subfunc.emit((name, func))
-                            func_from_def(func, sub, self.mw)
-                            self.signals.pgbar_n.emit(self.count)
-                            self.count += 1
-                    else:
-                        break
-            else:
-                break
 
 
 class FunctionWorker(Worker):
@@ -430,7 +301,7 @@ class RunDialog(QDialog):
             # Load object if the preceding object is not the same
             if not self.current_object or self.current_object.name != object_name:
                 # Print Headline for object
-                self.add_html('<h1>object_name</h1><br>')
+                self.add_html(f'<h1>{object_name}</h1><br>')
 
                 if self.current_type == 'FSMRI':
                     self.current_object = CurrentMRISub(object_name, self.mw)
@@ -549,7 +420,8 @@ class RunDialog(QDialog):
     def show_error(self, current, _):
         self.autoscroll = False
         self.autoscroll_bt.setChecked(False)
-        self.console_widget.scrollToAnchor(self.errors[current][2])
+        search_text = self.errors[current][2].replace('\n', '<br>')
+        self.console_widget.scrollToAnchor(search_text)
 
     def add_text(self, text):
         self.is_prog_text = False
@@ -559,6 +431,7 @@ class RunDialog(QDialog):
 
     def add_error_text(self, text):
         self.is_prog_text = False
+        text = text.replace('\n', '<br>')
         text = f'<font color="red">{text}</font>'
         self.console_widget.insertHtml(text)
         if self.autoscroll:

@@ -550,19 +550,13 @@ class RunModel(QAbstractListModel):
         elif role == Qt.ForegroundRole:
             if self.getValue(index) == 0:
                 return QBrush(Qt.darkGray)
-            elif self.getValue(index) == 1:
-                return QBrush(Qt.darkBlue)
             elif self.getValue(index) == 2:
-                return QBrush(Qt.darkGreen)
+                return QBrush(Qt.green)
 
         # Return Background depending on state of object/function
         elif role == Qt.BackgroundRole:
-            if self.getValue(index) == 0:
-                return QBrush(Qt.lightGray)
-            elif self.getValue(index) == 1:
-                return QBrush(Qt.blue)
-            elif self.getValue(index) == 2:
-                return QBrush(Qt.green)
+            if self.getValue(index) == 2:
+                return QBrush(Qt.darkGreen)
 
         # Mark objects/functions if they are already done, mark objects according to their type (color-code)
         elif role == Qt.DecorationRole:

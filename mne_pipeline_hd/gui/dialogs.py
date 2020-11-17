@@ -21,10 +21,10 @@ from os.path import join
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
+from PyQt5.QtWidgets import (QComboBox, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
                              QInputDialog,
                              QLabel, QLineEdit, QListView, QMessageBox, QPushButton,
-                             QScrollArea, QSizePolicy, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
+                             QScrollArea, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.gui_utils import get_ratio_geometry
@@ -411,8 +411,7 @@ class ErrorDialog(QDialog):
             self.setWindowTitle('An Error ocurred!')
 
         width, height = get_ratio_geometry(0.7)
-        self.setGeometry(0, 0, width, height)
-        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.resize(width, height)
 
         self.init_ui()
 
@@ -420,11 +419,11 @@ class ErrorDialog(QDialog):
             self.open()
         else:
             self.show()
-        self.center()
-        self.raise_win()
 
     def init_ui(self):
         layout = QGridLayout()
+
+        scroll_area = QScrollArea()
 
         self.label = QLabel()
         self.formated_tb_text = self.err[2].replace('\n', '<br>')
@@ -436,7 +435,10 @@ class ErrorDialog(QDialog):
             self.html_text = f'<h1>{self.err[1]}</h1>' \
                              f'{self.formated_tb_text}'
         self.label.setText(self.html_text)
-        layout.addWidget(self.label, 0, 0, 1, 2)
+
+        scroll_area.setWidget(self.label)
+
+        layout.addWidget(scroll_area, 0, 0, 1, 2)
 
         self.name_le = QLineEdit()
         self.name_le.setPlaceholderText('Enter your Name (optional)')
@@ -455,29 +457,6 @@ class ErrorDialog(QDialog):
         layout.addWidget(self.close_bt, 2, 1)
 
         self.setLayout(layout)
-
-        self.desk_geometry = QApplication.instance().desktop().availableGeometry()
-        self.size_ratio = 0.7
-        height = int(self.desk_geometry.height() * self.size_ratio)
-        width = int(self.desk_geometry.width() * self.size_ratio)
-        self.setMaximumSize(width, height)
-
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
-    def raise_win(self):
-        if sys.platform == 'win32':
-            # on windows we can raise the window by minimizing and restoring
-            self.showMinimized()
-            self.setWindowState(Qt.WindowActive)
-            self.showNormal()
-        else:
-            # on osx we can raise the window. on unity the icon in the tray will just flash.
-            self.activateWindow()
-            self.raise_()
 
     # Todo: Rework with Token
     def send_report(self):
