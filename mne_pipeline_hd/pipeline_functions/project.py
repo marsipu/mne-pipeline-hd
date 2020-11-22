@@ -186,14 +186,6 @@ class Project:
                     fl.write('')
                 print(f'{file} created')
 
-        # create grand-average-paths
-        ga_folders = ['statistics', 'evoked', 'stc', 'ltc', 'tfr', 'connect']
-        for subfolder in ga_folders:
-            grand_average_path = join(self.data_path, 'grand_averages', subfolder)
-            if not exists(grand_average_path):
-                makedirs(grand_average_path)
-                print(grand_average_path + ' has been created')
-
     def load_lists(self):
         # Map Paths to their attributes
         load_dict = {self.all_meeg_path: 'all_meeg',

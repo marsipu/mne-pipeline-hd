@@ -712,9 +712,16 @@ class GROUP(BaseLoading):
         ################################################################################################################
         # Paths
         ################################################################################################################
+        self.ga_evokeds_folder = join(self.save_dir, 'ave')
+        self.ga_evokeds_path = join(self.ga_evokeds_folder, f'{self.name}_{self.p_preset}-ave.fif')
 
-        self.ga_evokeds_path = join(self.save_dir, 'evoked',
-                                    f'{self.name}_{self.p_preset}-ave.fif')
+        self.ga_tfr_folder = join(self.save_dir, 'tfr')
+
+        self.ga_stc_folder = join(self.save_dir, 'stc')
+
+        self.ga_ltc_folder = join(self.save_dir, 'ltc')
+
+        self.ga_con_folder = join(self.save_dir, 'con')
 
     ####################################################################################################################
     # Load- & Save-Methods
@@ -734,7 +741,7 @@ class GROUP(BaseLoading):
         if self._ga_tfr is None:
             self._ga_tfr = {}
             for trial in self.sel_trials:
-                ga_path = join(self.pr.save_dir_averages, 'tfr',
+                ga_path = join(self.ga_tfr_folder,
                                f'{self.name}_{trial}_{self.p_preset}_{self.p["tfr_method"]}-tfr.h5')
                 power = mne.time_frequency.read_tfrs(ga_path)[0]
                 self._ga_tfr[trial] = power
@@ -742,7 +749,7 @@ class GROUP(BaseLoading):
         return self._ga_tfr
 
     def save_ga_tfr(self, ga_tfr, trial):
-        ga_path = join(self.pr.save_dir_averages, 'tfr',
+        ga_path = join(self.ga_tfr_folder,
                        f'{self.name}_{trial}_{self.p_preset}_{self.p["tfr_method"]}-tfr.h5')
         ga_tfr.save(ga_path)
         self.save_file_params(ga_path)
@@ -751,7 +758,8 @@ class GROUP(BaseLoading):
         if self._ga_stcs is None:
             self._ga_stcs = {}
             for trial in self.sel_trials:
-                ga_stc_path = join(self.save_dir, 'stc', f'{self.name}_{trial}_{self.p_preset}')
+                ga_stc_path = join(self.ga_stc_folder,
+                                   f'{self.name}_{trial}_{self.p_preset}')
                 self._ga_stcs[trial] = mne.read_source_estimate(ga_stc_path)
 
         return self._ga_stcs
@@ -759,7 +767,8 @@ class GROUP(BaseLoading):
     def save_ga_source_estimate(self, ga_stcs):
         self._ga_stcs = ga_stcs
         for trial in ga_stcs:
-            ga_stc_path = join(self.save_dir, 'stc', f'{self.name}_{trial}_{self.p_preset}')
+            ga_stc_path = join(self.ga_stc_folder,
+                               f'{self.name}_{trial}_{self.p_preset}')
             ga_stcs[trial].save(ga_stc_path)
             self.save_file_params(ga_stc_path)
 
@@ -769,7 +778,8 @@ class GROUP(BaseLoading):
             for trial in self.sel_trials:
                 self._ga_ltc[trial] = {}
                 for label in self.p['target_labels']:
-                    ga_ltc_path = join(self.save_dir, 'ltc', f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                    ga_ltc_path = join(self.ga_ltc_folder,
+                                       f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
                     try:
                         self._ga_ltc[trial][label] = np.load(ga_ltc_path)
                     except FileNotFoundError:
@@ -781,7 +791,8 @@ class GROUP(BaseLoading):
         self._ga_ltc = ga_ltc
         for trial in ga_ltc:
             for label in ga_ltc[trial]:
-                ga_ltc_path = join(self.save_dir, 'ltc', f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                ga_ltc_path = join(self.ga_ltc_folder,
+                                   f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
                 np.save(ga_ltc_path, ga_ltc[trial][label])
                 self.save_file_params(ga_ltc_path)
 
@@ -791,7 +802,8 @@ class GROUP(BaseLoading):
             for trial in self.sel_trials:
                 self._ga_connect[trial] = {}
                 for con_method in self.p['con_methods']:
-                    con_path = join(self.save_dir, 'connect', f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
+                    con_path = join(self.ga_con_folder,
+                                    f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
                     try:
                         self._ga_connect[trial][con_method] = np.load(con_path)
                     except FileNotFoundError:
@@ -803,6 +815,7 @@ class GROUP(BaseLoading):
         self._ga_connect = ga_con
         for trial in ga_con:
             for con_method in ga_con[trial]:
-                con_path = join(self.save_dir, 'connect', f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
+                con_path = join(self.ga_con_folder,
+                                f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
                 np.save(con_path, ga_con[trial][con_method])
                 self.save_file_params(con_path)
