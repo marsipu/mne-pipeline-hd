@@ -34,7 +34,7 @@ from .base_widgets import CheckDictList, CheckList, EditDict, EditList
 from .dialogs import ErrorDialog
 from .gui_utils import (Worker, get_ratio_geometry)
 from .models import AddFilesModel
-from ..basic_functions.loading import CurrentSub
+from ..basic_functions.loading import MEEG
 
 
 def file_indexing(which_file, all_files):
@@ -123,9 +123,9 @@ def get_existing_mri_subjects(subjects_dir):
     existing_mri_subs = list()
     # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
     read_dir = sorted([f for f in os.listdir(subjects_dir) if not f.startswith('.')], key=str.lower)
-    for mri_sub in read_dir:
-        if exists(join(subjects_dir, mri_sub, 'surf')):
-            existing_mri_subs.append(mri_sub)
+    for fsmri in read_dir:
+        if exists(join(subjects_dir, fsmri, 'surf')):
+            existing_mri_subs.append(fsmri)
 
     return existing_mri_subs
 
@@ -224,7 +224,7 @@ class SubjectDock(QDockWidget):
 
     def update_subjects_list(self):
         self.sub_listw.clear()
-        for idx, file in enumerate(self.mw.pr.all_files):
+        for idx, file in enumerate(self.mw.pr.all_meeg):
             idx += 1  # Let index start with 1
             item = QListWidgetItem(f'{idx}: {file}')
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -240,9 +240,9 @@ class SubjectDock(QDockWidget):
 
     def update_mri_subjects_list(self):
         # Also get all freesurfe-directories from Freesurfer-Folder (maybe user added some manually)
-        self.mw.pr.all_mri_subjects = get_existing_mri_subjects(self.mw.subjects_dir)
+        self.mw.pr.all_fsmri = get_existing_mri_subjects(self.mw.subjects_dir)
         self.mri_listw.clear()
-        for idx, file in enumerate(self.mw.pr.all_mri_subjects):
+        for idx, file in enumerate(self.mw.pr.all_fsmri):
             idx += 1  # Let index start with 1
             item = QListWidgetItem(f'{idx}: {file}')
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -276,7 +276,7 @@ class SubjectDock(QDockWidget):
 
     def update_sub_selection(self):
         which_file = self.sub_ledit.text()
-        self.mw.pr.sel_meeg, idxs = file_indexing(which_file, self.mw.pr.all_files)
+        self.mw.pr.sel_meeg, idxs = file_indexing(which_file, self.mw.pr.all_meeg)
         if len(idxs) > 0:
             # Clear all check-states
             self.sub_clear_all()
@@ -287,7 +287,7 @@ class SubjectDock(QDockWidget):
 
     def update_mri_selection(self):
         which_file = self.mri_ledit.text()
-        self.mw.pr.sel_fsmri, idxs = file_indexing(which_file, self.mw.pr.all_mri_subjects)
+        self.mw.pr.sel_fsmri, idxs = file_indexing(which_file, self.mw.pr.all_fsmri)
         if len(idxs) > 0:
             # Clear all check-states
             self.mri_clear_all()
@@ -308,22 +308,22 @@ class SubjectDock(QDockWidget):
         if len(self.mw.pr.sel_meeg) > 0:
             def remove_only_list():
                 for file in self.mw.pr.sel_meeg:
-                    self.mw.pr.all_files.remove(file)
-                    self.mw.pr.erm_dict.pop(file, None)
-                    self.mw.pr.sub_dict.pop(file, None)
-                    self.mw.pr.info_dict.pop(file, None)
-                    self.mw.pr.bad_channels_dict.pop(file, None)
+                    self.mw.pr.all_meeg.remove(file)
+                    self.mw.pr.meeg_to_erm.pop(file, None)
+                    self.mw.pr.meeg_to_fsmri.pop(file, None)
+                    self.mw.pr.all_info.pop(file, None)
+                    self.mw.pr.meeg_bad_channels.pop(file, None)
                 self.mw.pr.sel_meeg = []
                 self.update_subjects_list()
                 self.sub_msg_box.close()
 
             def remove_with_files():
                 for file in self.mw.pr.sel_meeg:
-                    self.mw.pr.all_files.remove(file)
-                    self.mw.pr.erm_dict.pop(file, None)
-                    self.mw.pr.sub_dict.pop(file, None)
-                    self.mw.pr.info_dict.pop(file, None)
-                    self.mw.pr.bad_channels_dict.pop(file, None)
+                    self.mw.pr.all_meeg.remove(file)
+                    self.mw.pr.meeg_to_erm.pop(file, None)
+                    self.mw.pr.meeg_to_fsmri.pop(file, None)
+                    self.mw.pr.all_info.pop(file, None)
+                    self.mw.pr.meeg_bad_channels.pop(file, None)
                     try:
                         shutil.rmtree(join(self.mw.pr.data_path, file))
                     except FileNotFoundError:
@@ -354,14 +354,14 @@ class SubjectDock(QDockWidget):
         if len(self.mw.pr.sel_fsmri) > 0:
             def remove_only_list():
                 for mri_subject in self.mw.pr.sel_fsmri:
-                    self.mw.pr.all_mri_subjects.remove(mri_subject)
+                    self.mw.pr.all_fsmri.remove(mri_subject)
                 self.mw.pr.sel_fsmri = []
                 self.update_mri_subjects_list()
                 self.mri_msg_box.close()
 
             def remove_with_files():
                 for mri_subject in self.mw.pr.sel_fsmri:
-                    self.mw.pr.all_mri_subjects.remove(mri_subject)
+                    self.mw.pr.all_fsmri.remove(mri_subject)
                     try:
                         shutil.rmtree(join(self.mw.subjects_dir, mri_subject))
                     except FileNotFoundError:
@@ -424,7 +424,7 @@ class GrandAvgWidget(QWidget):
     def update_treew(self):
         self.treew.clear()
         top_items = []
-        for group in self.mw.pr.grand_avg_dict:
+        for group in self.mw.pr.all_groups:
             top_item = QTreeWidgetItem()
             top_item.setText(0, group)
             top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEditable)
@@ -432,7 +432,7 @@ class GrandAvgWidget(QWidget):
                 top_item.setCheckState(0, Qt.Checked)
             else:
                 top_item.setCheckState(0, Qt.Unchecked)
-            for file in self.mw.pr.grand_avg_dict[group]:
+            for file in self.mw.pr.all_groups[group]:
                 sub_item = QTreeWidgetItem(top_item)
                 sub_item.setText(0, file)
             top_items.append(top_item)
@@ -450,7 +450,7 @@ class GrandAvgWidget(QWidget):
                 new_dict[top_text].append(child_item.text(0))
             if top_item.checkState(0) == Qt.Checked:
                 self.mw.pr.sel_groups.append(top_text)
-        self.mw.pr.grand_avg_dict = new_dict
+        self.mw.pr.all_groups = new_dict
 
     def add_group(self):
         text, ok = QInputDialog.getText(self, 'New Group', 'Enter the name for a new group:')
@@ -540,8 +540,8 @@ class GrandAvgFileAdd(QDialog):
         self.load_list()
 
     def load_list(self):
-        for item_name in self.mw.pr.all_files:
-            if item_name not in self.mw.pr.grand_avg_dict[self.group.text(0)]:
+        for item_name in self.mw.pr.all_meeg:
+            if item_name not in self.mw.pr.all_groups[self.group.text(0)]:
                 item = QListWidgetItem(item_name)
                 item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
                 item.setCheckState(Qt.Unchecked)
@@ -561,9 +561,9 @@ def extract_info(project, raw, new_fname, path):
                  'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
                  'helium_info']
     try:
-        project.info_dict[new_fname] = {}
+        project.all_info[new_fname] = {}
         for key in info_keys:
-            project.info_dict[new_fname][key] = raw.info[key]
+            project.all_info[new_fname][key] = raw.info[key]
         # Add arrays of digitization-points and save it to json to make the trans-file-management possible
         # (same digitization = same trans-file)
         if raw.info['dig'] is not None:
@@ -572,15 +572,15 @@ def extract_info(project, raw, new_fname, path):
                 dig_dict[dig_point['ident']] = {}
                 dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
                 dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
-            project.info_dict[new_fname]['dig'] = dig_dict
-        project.info_dict[new_fname]['meas_date'] = str(raw.info['meas_date'])
+            project.all_info[new_fname]['dig'] = dig_dict
+        project.all_info[new_fname]['meas_date'] = str(raw.info['meas_date'])
         # Some raw-files don't have get_channel_types?
         try:
-            project.info_dict[new_fname]['ch_types'] = list(set(raw.get_channel_types()))
+            project.all_info[new_fname]['ch_types'] = list(set(raw.get_channel_types()))
         except AttributeError:
-            project.info_dict[new_fname]['ch_types'] = list()
-        project.info_dict[new_fname]['proj_id'] = int(raw.info['proj_id'])
-        project.info_dict[new_fname]['n_times'] = raw.n_times
+            project.all_info[new_fname]['ch_types'] = list()
+        project.all_info[new_fname]['proj_id'] = int(raw.info['proj_id'])
+        project.all_info[new_fname]['n_times'] = raw.n_times
     except (KeyError, TypeError):
         pass
 
@@ -702,9 +702,8 @@ class AddFilesWidget(QWidget):
                 file_name = p.stem
                 # Get already existing files and skip them
                 if file_path in list(self.pd_files['Path']) \
-                        or file_name in self.mw.pr.all_files \
-                        or file_name in self.mw.pr.erm_files:
-
+                        or file_name in self.mw.pr.all_meeg \
+                        or file_name in self.mw.pr.all_erm:
                     existing_files.append(file_name)
                     continue
 
@@ -737,7 +736,7 @@ class AddFilesWidget(QWidget):
         folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder to import your raw-Files from (including '
                                                              'subfolders)')
         if folder_path != '':
-            # create a list of file and sub directories
+            # create a list of file and obj directories
             # names in the given directory
             list_of_file = os.walk(folder_path)
             files_list = list()
@@ -800,12 +799,12 @@ class AddFilesWidget(QWidget):
                     # Copy Empty-Room-Files to their directory
                     if self.pd_files.loc[idx, 'Empty-Room?']:
                         # Organize ERMs
-                        self.mw.pr.erm_files.append(file)
+                        self.mw.pr.all_erm.append(file)
                         save_path = join(self.mw.pr.data_path, 'empty_room_data',
                                          file, file + '-raw.fif')
                     else:
                         # Organize sub_files
-                        self.mw.pr.all_files.append(file)
+                        self.mw.pr.all_meeg.append(file)
                         save_path = join(self.mw.pr.data_path, file,
                                          file + '-raw.fif')
                     # Make sure, that all directories exist
@@ -826,7 +825,7 @@ class AddFilesWidget(QWidget):
 
         self.addf_dialog.close()
 
-        self.mw.pr.save_sub_lists()
+        self.mw.pr.save_lists()
         self.mw.subject_dock.update_subjects_list()
 
     def load_file(self, idx):
@@ -1011,13 +1010,13 @@ class AddMRIWidget(QWidget):
 
         if folder_path != '':
             if exists(join(folder_path, 'surf')):
-                mri_sub = Path(folder_path).name
-                if mri_sub not in mri_subjects and mri_sub not in self.folders:
-                    self.folders.append(mri_sub)
-                    self.paths.update({mri_sub: folder_path})
+                fsmri = Path(folder_path).name
+                if fsmri not in mri_subjects and fsmri not in self.folders:
+                    self.folders.append(fsmri)
+                    self.paths.update({fsmri: folder_path})
                     self.populate_list_widget()
                 else:
-                    print(f'{mri_sub} already existing in {self.mw.subjects_dir}')
+                    print(f'{fsmri} already existing in {self.mw.subjects_dir}')
             else:
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
 
@@ -1027,14 +1026,14 @@ class AddMRIWidget(QWidget):
                                                                'Freesurfer-Segmentations')
         folder_list = sorted([f for f in os.listdir(parent_folder) if not f.startswith('.')], key=str.lower)
 
-        for mri_sub in folder_list:
-            folder_path = join(parent_folder, mri_sub)
+        for fsmri in folder_list:
+            folder_path = join(parent_folder, fsmri)
             if exists(join(folder_path, 'surf')):
-                if mri_sub not in mri_subjects and mri_sub not in self.folders:
-                    self.folders.append(mri_sub)
-                    self.paths.update({mri_sub: folder_path})
+                if fsmri not in mri_subjects and fsmri not in self.folders:
+                    self.folders.append(fsmri)
+                    self.paths.update({fsmri: folder_path})
                 else:
-                    print(f'{mri_sub} already existing in {self.mw.subjects_dir}')
+                    print(f'{fsmri} already existing in {self.mw.subjects_dir}')
             else:
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
         self.populate_list_widget()
@@ -1054,12 +1053,12 @@ class AddMRIWidget(QWidget):
 
     def add_mri_subjects(self, signals):
         count = 1
-        for mri_sub in self.folders:
+        for fsmri in self.folders:
             if not self.add_mri_dialog.wasCanceled():
-                signals['which_sub'].emit(f'Copying {mri_sub}')
-                src = self.paths[mri_sub]
-                dst = join(self.mw.subjects_dir, mri_sub)
-                self.mw.pr.all_mri_subjects.append(mri_sub)
+                signals['which_sub'].emit(f'Copying {fsmri}')
+                src = self.paths[fsmri]
+                dst = join(self.mw.subjects_dir, fsmri)
+                self.mw.pr.all_fsmri.append(fsmri)
                 if not isdir(dst):
                     print(f'Copying Folder from {src}...')
                     try:
@@ -1082,7 +1081,7 @@ class AddMRIWidget(QWidget):
         self.folders = list()
         self.paths = dict()
 
-        self.mw.pr.save_sub_lists()
+        self.mw.pr.save_lists()
         self.mw.subject_dock.update_mri_subjects_list()
 
 
@@ -1220,16 +1219,16 @@ class SubDictWidget(QWidget):
 
     def populate_lists(self):
         # Check, that item is not already present (for Wizard-Page)
-        for file in [f for f in self.mw.pr.all_files if len(self.list_widget1.findItems(f, Qt.MatchExactly)) == 0]:
+        for file in [f for f in self.mw.pr.all_meeg if len(self.list_widget1.findItems(f, Qt.MatchExactly)) == 0]:
             self.list_widget1.addItem(file)
         if len(self.list_widget2.findItems('None', Qt.MatchExactly)) == 0:
             self.list_widget2.addItem('None')
         if self.mode == 'mri':
-            for file in [f for f in self.mw.pr.all_mri_subjects
+            for file in [f for f in self.mw.pr.all_fsmri
                          if len(self.list_widget2.findItems(f, Qt.MatchExactly)) == 0]:
                 self.list_widget2.addItem(file)
         else:
-            for file in [f for f in self.mw.pr.erm_files
+            for file in [f for f in self.mw.pr.all_erm
                          if len(self.list_widget2.findItems(f, Qt.MatchExactly)) == 0]:
                 self.list_widget2.addItem(file)
 
@@ -1237,14 +1236,14 @@ class SubDictWidget(QWidget):
         for idx in range(self.list_widget1.count()):
             item_name = self.list_widget1.item(idx).text()
             if self.mode == 'mri':
-                if item_name in self.mw.pr.sub_dict:
+                if item_name in self.mw.pr.meeg_to_fsmri:
                     self.list_widget1.item(idx).setBackground(QColor('green'))
                     self.list_widget1.item(idx).setForeground(QColor('white'))
                 else:
                     self.list_widget1.item(idx).setBackground(QColor('red'))
                     self.list_widget1.item(idx).setForeground(QColor('white'))
             else:
-                if item_name in self.mw.pr.erm_dict:
+                if item_name in self.mw.pr.meeg_to_erm:
                     self.list_widget1.item(idx).setBackground(QColor('green'))
                     self.list_widget1.item(idx).setForeground(QColor('white'))
                 else:
@@ -1267,7 +1266,7 @@ class SubDictWidget(QWidget):
         ErrorDialog(err, self)
 
     def update_lists(self):
-        if self.template_brain not in self.mw.pr.all_mri_subjects:
+        if self.template_brain not in self.mw.pr.all_fsmri:
             self.mw.subject_dock.update_mri_subjects_list()
             self.list_widget2.addItem(self.template_brain)
 
@@ -1281,9 +1280,9 @@ class SubDictWidget(QWidget):
     def sub_dict_selected(self):
         choice = self.list_widget1.currentItem().text()
         if self.mode == 'mri':
-            existing_dict = self.mw.pr.sub_dict
+            existing_dict = self.mw.pr.meeg_to_fsmri
         else:
-            existing_dict = self.mw.pr.erm_dict
+            existing_dict = self.mw.pr.meeg_to_erm
         if choice in existing_dict:
             try:
                 it2 = self.list_widget2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
@@ -1298,9 +1297,9 @@ class SubDictWidget(QWidget):
         choices1 = self.list_widget1.selectedItems()
         choice2 = self.list_widget2.currentItem().text()
         if self.mode == 'mri':
-            existing_dict = self.mw.pr.sub_dict
+            existing_dict = self.mw.pr.meeg_to_fsmri
         else:
-            existing_dict = self.mw.pr.erm_dict
+            existing_dict = self.mw.pr.meeg_to_erm
         for item in choices1:
             item.setBackground(QColor('green'))
             item.setForeground(QColor('white'))
@@ -1310,17 +1309,17 @@ class SubDictWidget(QWidget):
             else:
                 existing_dict.update({choice1: choice2})
         if self.mode == 'mri':
-            self.mw.pr.sub_dict = existing_dict
+            self.mw.pr.meeg_to_fsmri = existing_dict
         else:
-            self.mw.pr.erm_dict = existing_dict
-        self.mw.pr.save_sub_lists()
+            self.mw.pr.meeg_to_erm = existing_dict
+        self.mw.pr.save_lists()
 
     def sub_dict_assign_none(self):
         choices = self.list_widget1.selectedItems()
         if self.mode == 'mri':
-            existing_dict = self.mw.pr.sub_dict
+            existing_dict = self.mw.pr.meeg_to_fsmri
         else:
-            existing_dict = self.mw.pr.erm_dict
+            existing_dict = self.mw.pr.meeg_to_erm
         for item in choices:
             item.setBackground(QColor('green'))
             item.setForeground(QColor('white'))
@@ -1334,10 +1333,10 @@ class SubDictWidget(QWidget):
             self.list_widget2.setCurrentItem(none_item)
 
         if self.mode == 'mri':
-            self.mw.pr.sub_dict = existing_dict
+            self.mw.pr.meeg_to_fsmri = existing_dict
         else:
-            self.mw.pr.erm_dict = existing_dict
-        self.mw.pr.save_sub_lists()
+            self.mw.pr.meeg_to_erm = existing_dict
+        self.mw.pr.save_lists()
 
     def sub_dict_assign_to_all(self):
         try:
@@ -1352,10 +1351,10 @@ class SubDictWidget(QWidget):
                     self.list_widget1.item(i).setForeground(QColor('white'))
                     all_items.update({self.list_widget1.item(i).text(): selected})
                 if self.mode == 'mri':
-                    self.mw.pr.sub_dict = all_items
+                    self.mw.pr.meeg_to_fsmri = all_items
                 elif self.mode == 'erm':
-                    self.mw.pr.erm_dict = all_items
-            self.mw.pr.save_sub_lists()
+                    self.mw.pr.meeg_to_erm = all_items
+            self.mw.pr.save_lists()
         except AttributeError:
             # When no second item is selected
             pass
@@ -1374,10 +1373,10 @@ class SubDictWidget(QWidget):
             self.list_widget2.setCurrentItem(none_item)
 
             if self.mode == 'mri':
-                self.mw.pr.sub_dict = all_items
+                self.mw.pr.meeg_to_fsmri = all_items
             elif self.mode == 'erm':
-                self.mw.pr.erm_dict = all_items
-            self.mw.pr.save_sub_lists()
+                self.mw.pr.meeg_to_erm = all_items
+            self.mw.pr.save_lists()
 
     def show_assignments(self):
         self.show_ass_dialog = QDialog(self)
@@ -1386,9 +1385,9 @@ class SubDictWidget(QWidget):
         list_widget = QListWidget()
         list_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
         if self.mode == 'mri':
-            the_dict = self.mw.pr.sub_dict
+            the_dict = self.mw.pr.meeg_to_fsmri
         else:
-            the_dict = self.mw.pr.erm_dict
+            the_dict = self.mw.pr.meeg_to_erm
         item_list = []
         for key, value in the_dict.items():
             item_list.append(f'{key}: {value}')
@@ -1413,9 +1412,9 @@ class SubDictWidget(QWidget):
             item_text = item.text()
             key_text = item_text[:item_text.find(':')]
             if self.mode == 'mri':
-                self.mw.pr.sub_dict.pop(key_text, None)
+                self.mw.pr.meeg_to_fsmri.pop(key_text, None)
             else:
-                self.mw.pr.erm_dict.pop(key_text, None)
+                self.mw.pr.meeg_to_erm.pop(key_text, None)
 
     def show_assignments_close(self):
         self.show_ass_dialog.close()
@@ -1460,9 +1459,9 @@ class CopyBadsDialog(QDialog):
     def __init__(self, parent_w):
         super().__init__(parent_w)
 
-        self.all_files = parent_w.mw.pr.all_files
-        self.bad_channels_dict = parent_w.mw.pr.bad_channels_dict
-        self.info_dict = parent_w.mw.pr.info_dict
+        self.all_files = parent_w.mw.pr.all_meeg
+        self.bad_channels_dict = parent_w.mw.pr.meeg_bad_channels
+        self.info_dict = parent_w.mw.pr.all_info
 
         self.init_ui()
         self.open()
@@ -1495,7 +1494,7 @@ class CopyBadsDialog(QDialog):
         self.setLayout(layout)
 
     def copy_bads(self):
-        # Check, that at least one item is selected in each list and that the copy_from-item is in bad_channels_dict
+        # Check, that at least one item is selected in each list and that the copy_from-item is in meeg_bad_channels
         if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[0] in self.bad_channels_dict:
             copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
             for copy_to in self.copy_tos:
@@ -1525,7 +1524,7 @@ class SubBadsWidget(QWidget):
     def init_ui(self):
         self.layout = QGridLayout()
 
-        self.files_widget = CheckDictList(self.mw.pr.all_files, self.mw.pr.bad_channels_dict, title='Files')
+        self.files_widget = CheckDictList(self.mw.pr.all_meeg, self.mw.pr.meeg_bad_channels, title='Files')
         self.files_widget.currentChanged.connect(self.bad_dict_selected)
         self.files_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.layout.addWidget(self.files_widget, 0, 0)
@@ -1560,14 +1559,14 @@ class SubBadsWidget(QWidget):
 
         self.bad_chkbts = dict()
 
-        # Load info into info_dict if not already existing
-        if self.name not in self.mw.pr.info_dict:
-            sub = CurrentSub(self.name, self.mw)
-            raw = sub.load_raw()
-            extract_info(self.mw.pr, raw, self.name, path=sub.raw_path)
+        # Load info into all_info if not already existing
+        if self.name not in self.mw.pr.all_info:
+            meeg = MEEG(self.name, self.mw)
+            raw = meeg.load_raw()
+            extract_info(self.mw.pr, raw, self.name, path=meeg.raw_path)
 
-        # Make Checkboxes for channels from info_dict
-        for x, ch_name in enumerate(self.mw.pr.info_dict[self.name]['ch_names']):
+        # Make Checkboxes for channels from all_info
+        for x, ch_name in enumerate(self.mw.pr.all_info[self.name]['ch_names']):
             chkbt = QCheckBox(ch_name, self)
             chkbt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             chkbt.clicked.connect(self.bad_dict_assign)
@@ -1595,8 +1594,8 @@ class SubBadsWidget(QWidget):
             plt.close(self.raw_fig)
 
         # Reload Bad-Chkbts if other than before
-        if self.name in self.mw.pr.info_dict and old_name:
-            if self.mw.pr.info_dict[self.name]['ch_names'] != self.mw.pr.info_dict[old_name]['ch_names']:
+        if self.name in self.mw.pr.all_info and old_name:
+            if self.mw.pr.all_info[self.name]['ch_names'] != self.mw.pr.all_info[old_name]['ch_names']:
                 self.make_bad_chbxs()
         else:
             self.make_bad_chbxs()
@@ -1605,39 +1604,39 @@ class SubBadsWidget(QWidget):
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
 
-        # Catch Channels, which are present in bad_channels_dict, but not in bad_chkbts
+        # Catch Channels, which are present in meeg_bad_channels, but not in bad_chkbts
         error_list = list()
         # Then load existing bads for choice
-        if self.name in self.mw.pr.bad_channels_dict:
-            for bad in self.mw.pr.bad_channels_dict[self.name]:
+        if self.name in self.mw.pr.meeg_bad_channels:
+            for bad in self.mw.pr.meeg_bad_channels[self.name]:
                 try:
                     self.bad_chkbts[bad].setChecked(True)
                 except KeyError:
                     error_list.append(bad)
 
         for error_ch in error_list:
-            self.mw.pr.bad_channels_dict[self.name].remove(error_ch)
+            self.mw.pr.meeg_bad_channels[self.name].remove(error_ch)
 
     def bad_dict_assign(self):
         bad_channels = []
         for ch in self.bad_chkbts:
             if self.bad_chkbts[ch].isChecked():
                 bad_channels.append(ch)
-        self.mw.pr.bad_channels_dict.update({self.name: bad_channels})
-        self.mw.pr.save_sub_lists()
+        self.mw.pr.meeg_bad_channels.update({self.name: bad_channels})
+        self.mw.pr.save_lists()
         self.files_widget.content_changed()
 
     # Todo: Automatic bad-channel-detection
     def plot_raw_bad(self):
         # Use interactiv backend again if show_plots have been turned off before
         matplotlib.use('Qt5Agg')
-        sub = CurrentSub(self.name, self.mw)
+        meeg = MEEG(self.name, self.mw)
         dialog = QDialog(self)
         dialog.setWindowTitle('Opening...')
         dialog.open()
-        self.raw = sub.load_raw()
-        if self.name in self.mw.pr.bad_channels_dict:
-            self.raw.info['bads'] = self.mw.pr.bad_channels_dict[self.name]
+        self.raw = meeg.load_raw()
+        if self.name in self.mw.pr.meeg_bad_channels:
+            self.raw.info['bads'] = self.mw.pr.meeg_bad_channels[self.name]
         self.raw_fig = self.raw.plot(n_channels=30, bad_color='red',
                                      scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), title=self.name)
         # Connect Closing of Matplotlib-Figure to assignment of bad-channels
@@ -1646,12 +1645,12 @@ class SubBadsWidget(QWidget):
 
     def get_selected_bads(self, evt):
         # evt has to be in parameters, otherwise it won't work
-        self.mw.pr.bad_channels_dict.update({self.name: self.raw.info['bads']})
-        self.mw.pr.save_sub_lists()
+        self.mw.pr.meeg_bad_channels.update({self.name: self.raw.info['bads']})
+        self.mw.pr.save_lists()
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
-        for ch in self.mw.pr.bad_channels_dict[self.name]:
+        for ch in self.mw.pr.meeg_bad_channels[self.name]:
             self.bad_chkbts[ch].setChecked(True)
         self.files_widget.content_changed()
 
@@ -1764,7 +1763,7 @@ class EventIDGui(QDialog):
     def init_ui(self):
         list_layout = QHBoxLayout()
 
-        self.files = CheckDictList(self.mw.pr.all_files, self.mw.pr.event_id_dict, title='Files')
+        self.files = CheckDictList(self.mw.pr.all_meeg, self.mw.pr.meeg_event_id, title='Files')
         self.files.currentChanged.connect(self.file_selected)
 
         list_layout.addWidget(self.files)
@@ -1806,16 +1805,16 @@ class EventIDGui(QDialog):
 
     def get_event_id(self):
         """Get unique event-ids from events"""
-        if self.name in self.mw.pr.event_id_dict:
-            self.event_id = self.mw.pr.event_id_dict[self.name]
+        if self.name in self.mw.pr.meeg_event_id:
+            self.event_id = self.mw.pr.meeg_event_id[self.name]
         else:
             self.event_id = dict()
         self.event_id_widget.replace_data(self.event_id)
 
         try:
             # Load Events from File
-            sub = CurrentSub(self.name, self.mw, suppress_warnings=True)
-            events = sub.load_events()
+            meeg = MEEG(self.name, self.mw, suppress_warnings=True)
+            events = meeg.load_events()
         except FileNotFoundError:
             self.event_id_label.setText(f'No events found for {self.name}')
         else:
@@ -1826,10 +1825,10 @@ class EventIDGui(QDialog):
         if self.name:
             if len(self.event_id) > 0:
                 # Write Event-ID to Project
-                self.mw.pr.event_id_dict[self.name] = self.event_id
+                self.mw.pr.meeg_event_id[self.name] = self.event_id
 
                 # Get selected Trials and write them to project
-                self.mw.pr.sel_trials_dict[self.name] = self.checked_labels
+                self.mw.pr.sel_event_id[self.name] = self.checked_labels
 
     def file_selected(self, current, _):
         """Called when File from file_widget is selected"""
@@ -1841,8 +1840,8 @@ class EventIDGui(QDialog):
         self.get_event_id()
 
         # Load checked trials
-        if self.name in self.mw.pr.sel_trials_dict:
-            self.checked_labels = self.mw.pr.sel_trials_dict[self.name]
+        if self.name in self.mw.pr.sel_event_id:
+            self.checked_labels = self.mw.pr.sel_event_id[self.name]
         else:
             self.checked_labels = list()
         self.update_check_list()
@@ -1891,7 +1890,7 @@ class EvIDApply(QDialog):
         label = QLabel(f'Apply {self.p.name} to:')
         self.layout.addWidget(label)
 
-        self.check_listw = CheckList(self.p.mw.pr.all_files, self.apply_to)
+        self.check_listw = CheckList(self.p.mw.pr.all_meeg, self.apply_to)
         self.layout.addWidget(self.check_listw)
 
         bt_layout = QHBoxLayout()
@@ -1910,5 +1909,5 @@ class EvIDApply(QDialog):
     def apply_evid(self):
         for file in self.apply_to:
             # Avoid with copy that CheckList-Model changes selected for all afterwards (same reference)
-            self.p.mw.pr.event_id_dict[file] = self.p.event_id.copy()
-            self.p.mw.pr.sel_trials_dict[file] = self.p.checked_labels.copy()
+            self.p.mw.pr.meeg_event_id[file] = self.p.event_id.copy()
+            self.p.mw.pr.sel_event_id[file] = self.p.checked_labels.copy()

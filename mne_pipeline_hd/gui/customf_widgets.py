@@ -153,7 +153,7 @@ class CustomFunctionImport(QDialog):
         self.oblig_params = ['default', 'gui_type']
 
         self.exst_functions = list(self.mw.pd_funcs.index)
-        self.exst_parameters = ['mw', 'pr', 'sub', 'mri_sub', 'ga_group', 'name', 'save_dir', 'ermsub', 'bad_channels']
+        self.exst_parameters = ['mw', 'pr', 'obj', 'fsmri', 'group', 'name', 'save_dir', 'ermsub', 'bad_channels']
         self.exst_parameters.append(vars(self.mw.pr))
         self.exst_parameters.append(list(self.mw.pr.parameters[self.mw.pr.p_preset].keys()))
         self.param_exst_dict = dict()

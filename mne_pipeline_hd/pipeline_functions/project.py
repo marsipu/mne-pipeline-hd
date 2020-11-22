@@ -28,54 +28,64 @@ class Project:
     """
     A class with attributes for all the paths, file-lists/dicts and parameters of the selected project
     """
+
     def __init__(self, main_win, name):
         self.mw = main_win
         self.name = name
 
         # Initiate Project-Lists and Dicts
         # Stores the names of all MEG/EEG-Files
-        self.all_files = []
-        # Stores the names of all Freesurfer-Segmentation-Folders in Subjects-Dir
-        self.all_mri_subjects = []
-        # Stres the names of all Empty-Room-Files (MEG/EEG)
-        self.erm_files = []
-        # Maps each MEG/EEG-File to a Freesurfer-Segmentation or None
-        self.sub_dict = {}
-        # Maps each MEG/EEG-File to a Empty-Room-File or None
-        self.erm_dict = {}
-        # Stores Bad-Channels for each MEG/EEG-File
-        self.bad_channels_dict = {}
-        # Stores Event-ID for each MEG/EEG-File
-        self.event_id_dict = {}
-        # Stores selected event-id-labels
-        self.sel_trials_dict = {}
-        # Groups MEG/EEG-Files for Grand-Average
-        self.grand_avg_dict = {}
-        # Stores selected Info-Attributes for each file
-        self.info_dict = {}
-        # Stores selected files
+        self.all_meeg = []
+        # Stores selected MEG/EEG-Files
         self.sel_meeg = []
+
+        # Stores Bad-Channels for each MEG/EEG-File
+        self.meeg_bad_channels = {}
+
+        # Stores Event-ID for each MEG/EEG-File
+        self.meeg_event_id = {}
+        # Stores selected event-id-labels
+        self.sel_event_id = {}
+
+        # Stores the names of all Empty-Room-Files (MEG/EEG)
+        self.all_erm = []
+        # Stores selected Empty-Room-Files (MEG/EEG)
+        self.sel_erm = []
+        # Maps each MEG/EEG-File to a Empty-Room-File or None
+        self.meeg_to_erm = {}
+
+        # Stores the names of all Freesurfer-Segmentation-Folders in Subjects-Dir
+        self.all_fsmri = []
         # Stores selected Freesurfer-Segmentations
         self.sel_fsmri = []
+        # Maps each MEG/EEG-File to a Freesurfer-Segmentation or None
+        self.meeg_to_fsmri = {}
+
+        # Groups MEG/EEG-Files e.g. for Grand-Average
+        self.all_groups = {}
         # Stores selected Grand-Average-Groups
         self.sel_groups = []
+
+        # Stores selected Info-Attributes for each file
+        self.all_info = {}
+
         # Stores functions and if they are selected
         self.sel_functions = {}
+
         # Stores parameters for each Parameter-Preset
         self.parameters = {}
         # Paramter-Preset
         self.p_preset = 'Default'
         # Stores parameters for each file saved to disk from the current run (know, what you did to your data)
         self.file_parameters = pd.DataFrame([])
+
         # paths to existing files
         self.file_orga_paths = {}
-        # checks in file-categories for each sub
+        # checks in file-categories for each obj
         self.file_orga_checks = {}
-        # Stores selected info-parameters on file-import for later retrival
-        self.info_dict = {}
 
         self.make_paths()
-        self.load_sub_lists()
+        self.load_lists()
         # self.check_data()
 
         # Parameter-Dict, contains parameters for each parameter-preset
@@ -84,50 +94,99 @@ class Project:
         self.load_file_parameters()
 
     def make_paths(self):
-        # Initiate other paths
+        # Create or check folders
         self.project_path = join(self.mw.projects_path, self.name)
         self.data_path = join(self.project_path, 'data')
         self.figures_path = join(self.project_path, 'figures', self.p_preset)
         self.save_dir_averages = join(self.data_path, 'grand_averages')
         self.erm_data_path = join(self.data_path, 'empty_room_data')
-        # Subject-List/Dict-Path
-        self.pscripts_path = join(self.project_path, '_pipeline_scripts')
-        self.file_list_path = join(self.pscripts_path, 'file_list.json')
-        self.erm_list_path = join(self.pscripts_path, 'erm_list.json')
-        self.mri_sub_list_path = join(self.pscripts_path, 'mri_sub_list.json')
-        self.sub_dict_path = join(self.pscripts_path, 'sub_dict.json')
-        self.erm_dict_path = join(self.pscripts_path, 'erm_dict.json')
-        self.bad_channels_dict_path = join(self.pscripts_path, 'bad_channels_dict.json')
-        self.event_id_dict_path = join(self.pscripts_path, 'event_id_dict.json')
-        self.sel_trials_dict_path = join(self.pscripts_path, 'selected_evid_labels.json')
-        self.grand_avg_dict_path = join(self.pscripts_path, 'grand_avg_dict.json')
-        self.info_dict_path = join(self.pscripts_path, 'info_dict.json')
-        self.file_parameters_path = join(self.pscripts_path, 'file_parameters.csv')
-        self.sel_files_path = join(self.pscripts_path, 'selected_files.json')
-        self.sel_mri_files_path = join(self.pscripts_path, 'selected_mri_files.json')
-        self.sel_ga_groups_path = join(self.pscripts_path, 'selected_grand_average_groups.json')
-        self.sel_funcs_path = join(self.pscripts_path, 'selected_funcs.json')
 
         path_lists = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
                       self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
-        file_lists = [self.file_list_path, self.erm_list_path, self.mri_sub_list_path,
-                      self.sub_dict_path, self.erm_dict_path, self.bad_channels_dict_path, self.event_id_dict_path,
-                      self.grand_avg_dict_path, self.info_dict_path, self.file_parameters_path, self.sel_files_path,
-                      self.sel_mri_files_path, self.sel_ga_groups_path, self.sel_funcs_path,
-                      self.sel_trials_dict_path]
 
         for path in path_lists:
             if not exists(path):
                 makedirs(path)
                 print(f'{path} created')
 
-        for file in file_lists:
+        # List/Dict-Paths
+        # A folder to store all .json-files
+        self.pscripts_path = join(self.project_path, '_pipeline_scripts')
+
+        self.all_meeg_path = join(self.pscripts_path, 'all_meeg.json')
+        self.sel_meeg_path = join(self.pscripts_path, 'selected_meeg.json')
+        self.meeg_bad_channels_path = join(self.pscripts_path, 'meeg_bad_channels.json')
+        self.meeg_event_id_path = join(self.pscripts_path, 'meeg_event_id.json')
+        self.sel_event_id_path = join(self.pscripts_path, 'selected_event_ids.json')
+        self.all_erm_path = join(self.pscripts_path, 'all_erm.json')
+        self.sel_erm_path = join(self.pscripts_path, 'selected_erm.json')
+        self.meeg_to_erm_path = join(self.pscripts_path, 'meeg_to_erm.json')
+        self.all_fsmri_path = join(self.pscripts_path, 'all_fsmri.json')
+        self.sel_fsmri_path = join(self.pscripts_path, 'selected_fsmri.json')
+        self.meeg_to_fsmri_path = join(self.pscripts_path, 'meeg_to_fsmri.json')
+        self.all_groups_path = join(self.pscripts_path, 'all_groups.json')
+        self.sel_groups_path = join(self.pscripts_path, 'selected_groups.json')
+        self.all_info_path = join(self.pscripts_path, 'all_info.json')
+        self.sel_functions_path = join(self.pscripts_path, 'selected_functions.json')
+        self.file_parameters_path = join(self.pscripts_path, 'file_parameters.csv')
+
+        # Old Paths to allow transition (22.11.2020)
+        self.old_all_meeg_path = join(self.pscripts_path, 'file_list.json')
+        self.old_sel_meeg_path = join(self.pscripts_path, 'selected_files.json')
+        self.old_meeg_bad_channels_path = join(self.pscripts_path, 'bad_channels_dict.json')
+        self.old_meeg_event_id_path = join(self.pscripts_path, 'event_id_dict.json')
+        self.old_sel_event_id_path = join(self.pscripts_path, 'selected_evid_labels.json')
+        self.old_all_erm_path = join(self.pscripts_path, 'erm_list.json')
+        self.old_meeg_to_erm_path = join(self.pscripts_path, 'erm_dict.json')
+        self.old_all_fsmri_path = join(self.pscripts_path, 'mri_sub_list.json')
+        self.old_sel_fsmri_path = join(self.pscripts_path, 'selected_mri_files.json')
+        self.old_meeg_to_fsmri_path = join(self.pscripts_path, 'sub_dict.json')
+        self.old_all_groups_path = join(self.pscripts_path, 'grand_avg_dict.json')
+        self.old_sel_groups_path = join(self.pscripts_path, 'selected_grand_average_groups.json')
+        self.old_all_info_path = join(self.pscripts_path, 'info_dict.json')
+        self.old_sel_funcs_path = join(self.pscripts_path, 'selected_funcs.json')
+
+        file_paths = [self.all_meeg_path,
+                      self.sel_meeg_path,
+                      self.meeg_bad_channels_path,
+                      self.meeg_event_id_path,
+                      self.sel_event_id_path,
+                      self.all_erm_path,
+                      self.sel_erm_path,
+                      self.meeg_to_erm_path,
+                      self.all_fsmri_path,
+                      self.sel_fsmri_path,
+                      self.meeg_to_fsmri_path,
+                      self.all_groups_path,
+                      self.sel_groups_path,
+                      self.all_info_path,
+                      self.sel_functions_path,
+                      self.file_parameters_path]
+
+        # Old Paths to allow transition (22.11.2020)
+        self.old_paths = {self.all_meeg_path: self.old_all_meeg_path,
+                          self.sel_meeg_path: self.old_sel_meeg_path,
+                          self.meeg_bad_channels_path: self.old_meeg_bad_channels_path,
+                          self.meeg_event_id_path: self.old_meeg_event_id_path,
+                          self.sel_event_id_path: self.old_sel_event_id_path,
+                          self.all_erm_path: self.old_all_erm_path,
+                          self.meeg_to_erm_path: self.old_meeg_to_erm_path,
+                          self.all_fsmri_path: self.old_all_fsmri_path,
+                          self.sel_fsmri_path: self.old_sel_fsmri_path,
+                          self.meeg_to_fsmri_path: self.old_meeg_to_fsmri_path,
+                          self.all_groups_path: self.old_all_groups_path,
+                          self.sel_groups_path: self.old_sel_groups_path,
+                          self.all_info_path: self.old_all_info_path,
+                          self.sel_functions_path: self.old_sel_funcs_path}
+
+        # Create empty files if files are not existing
+        for file in file_paths:
             if not isfile(file):
                 with open(file, 'w') as fl:
                     fl.write('')
                 print(f'{file} created')
 
-        # create grand average-paths
+        # create grand-average-paths
         ga_folders = ['statistics', 'evoked', 'stc', 'ltc', 'tfr', 'connect']
         for subfolder in ga_folders:
             grand_average_path = join(self.data_path, 'grand_averages', subfolder)
@@ -135,46 +194,54 @@ class Project:
                 makedirs(grand_average_path)
                 print(grand_average_path + ' has been created')
 
-    def load_sub_lists(self):
-        load_dict = {self.file_list_path: 'all_files',
-                     self.mri_sub_list_path: 'all_mri_subjects',
-                     self.erm_list_path: 'erm_files',
-                     self.sub_dict_path: 'sub_dict',
-                     self.erm_dict_path: 'erm_dict',
-                     self.bad_channels_dict_path: 'bad_channels_dict',
-                     self.event_id_dict_path: 'event_id_dict',
-                     self.sel_trials_dict_path: 'sel_trials_dict',
-                     self.grand_avg_dict_path: 'grand_avg_dict',
-                     self.info_dict_path: 'info_dict',
-                     self.sel_files_path: 'sel_files',
-                     self.sel_mri_files_path: 'sel_mri_files',
-                     self.sel_ga_groups_path: 'sel_ga_groups',
-                     self.sel_funcs_path: 'sel_functions'
+    def load_lists(self):
+        # Map Paths to their attributes
+        load_dict = {self.all_meeg_path: 'all_meeg',
+                     self.sel_meeg_path: 'sel_meeg',
+                     self.meeg_bad_channels_path: 'meeg_bad_channels',
+                     self.meeg_event_id_path: 'meeg_event_id',
+                     self.sel_event_id_path: 'sel_event_id',
+                     self.all_erm_path: 'all_erm',
+                     self.sel_erm_path: 'sel_erm',
+                     self.meeg_to_erm_path: 'meeg_to_erm',
+                     self.all_fsmri_path: 'all_fsmri',
+                     self.sel_fsmri_path: 'sel_fsmri',
+                     self.meeg_to_fsmri_path: 'meeg_to_fsmri',
+                     self.all_groups_path: 'all_groups',
+                     self.sel_groups_path: 'sel_groups',
+                     self.all_info_path: 'all_info',
+                     self.sel_functions_path: 'sel_functions'
                      }
 
         for path in load_dict:
             try:
                 with open(path, 'r') as file:
                     setattr(self, load_dict[path], json.load(file, object_hook=numpy_json_hook))
-            # Either empty file or no file, take default from __init__
-            except json.decoder.JSONDecodeError:
-                pass
+            # Either empty file or no file, leaving default from __init__
+            except (json.decoder.JSONDecodeError, FileNotFoundError):
+                # Old Paths to allow transition (22.11.2020)
+                try:
+                    with open(self.old_paths[path], 'r') as file:
+                        setattr(self, load_dict[path], json.load(file, object_hook=numpy_json_hook))
+                except (json.decoder.JSONDecodeError, FileNotFoundError):
+                    pass
 
-    def save_sub_lists(self):
-        save_dict = {self.file_list_path: self.all_files,
-                     self.erm_list_path: self.erm_files,
-                     self.mri_sub_list_path: self.all_mri_subjects,
-                     self.sub_dict_path: self.sub_dict,
-                     self.erm_dict_path: self.erm_dict,
-                     self.bad_channels_dict_path: self.bad_channels_dict,
-                     self.event_id_dict_path: self.event_id_dict,
-                     self.sel_trials_dict_path: self.sel_trials_dict,
-                     self.grand_avg_dict_path: self.grand_avg_dict,
-                     self.info_dict_path: self.info_dict,
-                     self.sel_files_path: self.sel_meeg,
-                     self.sel_mri_files_path: self.sel_fsmri,
-                     self.sel_ga_groups_path: self.sel_groups,
-                     self.sel_funcs_path: self.sel_functions}
+    def save_lists(self):
+        save_dict = {self.all_meeg_path: self.all_meeg,
+                     self.sel_meeg_path: self.sel_meeg,
+                     self.meeg_bad_channels_path: self.meeg_bad_channels,
+                     self.meeg_event_id_path: self.meeg_event_id,
+                     self.sel_event_id_path: self.sel_event_id,
+                     self.all_erm_path: self.all_erm,
+                     self.sel_erm_path: self.sel_erm,
+                     self.meeg_to_erm_path: self.meeg_to_erm,
+                     self.all_fsmri_path: self.all_fsmri,
+                     self.sel_fsmri_path: self.sel_fsmri,
+                     self.meeg_to_fsmri_path: self.meeg_to_fsmri,
+                     self.all_groups_path: self.all_groups,
+                     self.sel_groups_path: self.sel_groups,
+                     self.all_info_path: self.all_info,
+                     self.sel_functions_path: self.sel_functions}
 
         for path in save_dict:
             try:
@@ -264,17 +331,17 @@ class Project:
         self.file_parameters.to_csv(self.file_parameters_path, sep=';')
 
     def check_data(self):
-        missing_subjects = [x for x in listdir(self.data_path) if
-                            x not in ['grand_averages', 'empty_room_data'] and x not in self.all_files]
+        missing_objects = [x for x in listdir(self.data_path) if
+                           x not in ['grand_averages', 'empty_room_data'] and x not in self.all_meeg]
 
-        for sub in missing_subjects:
-            self.all_files.append(sub)
+        for obj in missing_objects:
+            self.all_meeg.append(obj)
 
-        missing_erm = [x for x in listdir(self.erm_data_path) if x not in self.erm_files]
+        missing_erm = [x for x in listdir(self.erm_data_path) if x not in self.all_erm]
         for erm in missing_erm:
-            self.erm_files.append(erm)
+            self.all_erm.append(erm)
 
-        self.save_sub_lists()
+        self.save_lists()
 
     def find_files(self):
         # Order files under tags which correspond to columns in the DataFrame below
@@ -285,14 +352,14 @@ class Project:
             self.file_orga_paths[p_preset] = {}
             self.file_orga_checks[p_preset] = pd.DataFrame([], columns=['Events', 'Epochs', 'ICA', 'Evokeds',
                                                                         'Forward', 'NoiseCov', 'Inverse'], dtype='bool')
-            for sub in self.all_files:
-                print(f'Doing: {sub}')
-                self.file_orga_paths[p_preset][sub] = []
+            for meeg in self.all_meeg:
+                print(f'Doing: {meeg}')
+                self.file_orga_paths[p_preset][meeg] = []
                 # Todo: Some File-I/O has to be changed to make '-' the only delimiter for format
                 # Todo: Filter-String can be removed from regexp-pattern
                 #  when everyone switched with files to parameter-presets
-                file_pattern = rf'{sub}(_\w*_)?(\w*)([\-a-z]+.[a-z]*)'
-                save_dir = join(self.data_path, sub)
+                file_pattern = rf'{meeg}(_\w*_)?(\w*)([\-a-z]+.[a-z]*)'
+                save_dir = join(self.data_path, meeg)
 
                 try:
                     for file_name in os.listdir(save_dir):
@@ -300,23 +367,23 @@ class Project:
                         if match:
                             if p_preset == match.group(1):
                                 # Add paths to dict for each subject under each parameter-preset
-                                self.file_orga_paths[p_preset][sub].append(file_name)
-                                # Set True for sub, when tag is matching the file
+                                self.file_orga_paths[p_preset][meeg].append(file_name)
+                                # Set True for obj, when tag is matching the file
                                 for tag in file_tags:
                                     if any(x == match.group(4) for x in file_tags[tag]):
-                                        self.file_orga_checks[p_preset].loc[sub, tag] = True
+                                        self.file_orga_checks[p_preset].loc[meeg, tag] = True
                             # Concerns files, which were created befor
                             elif not match.group(1):
-                                if file_name not in self.file_orga_paths['Default'][sub]:
+                                if file_name not in self.file_orga_paths['Default'][meeg]:
                                     # Add paths to dict for each subject under default parameter-preset
-                                    self.file_orga_paths['Default'][sub].append(file_name)
-                                # Set True for sub, when tag is matching the file
+                                    self.file_orga_paths['Default'][meeg].append(file_name)
+                                # Set True for obj, when tag is matching the file
                                 for tag in file_tags:
                                     if any(x == match.group(4) for x in file_tags[tag]):
-                                        self.file_orga_checks['Default'].loc[sub, tag] = True
+                                        self.file_orga_checks['Default'].loc[meeg, tag] = True
 
                 except FileNotFoundError:
-                    print(f'{sub} not found in {self.data_path}')
+                    print(f'{meeg} not found in {self.data_path}')
 
 
 class FileManagement(QDialog):

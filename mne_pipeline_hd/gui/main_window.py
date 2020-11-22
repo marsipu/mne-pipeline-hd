@@ -34,9 +34,9 @@ from .customf_widgets import ChooseCustomModules, CustomFunctionImport
 from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
 from .gui_utils import get_exception_tuple, get_ratio_geometry
-from .parameter_widgets import BoolGui, ComboGui, IntGui
-from .subject_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsDialog, SubDictDialog,
+from .loading_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
+from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal
 from .. import basic_functions, resources
 from ..basic_functions.plot import close_all
@@ -911,7 +911,7 @@ class MainWindow(QMainWindow):
         # Save Parameters
         self.pr.save_parameters()
         self.pr.save_file_parameters()
-        self.pr.save_sub_lists()
+        self.pr.save_lists()
 
         self.settings['current_project'] = self.current_project
         self.save_settings()

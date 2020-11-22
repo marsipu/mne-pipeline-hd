@@ -1,70 +1,70 @@
 ;alias;target;tab;group;matplotlib;mayavi;dependencies;module;func_args
-filter_raw;Filter Raw;MEEG;Compute;Preprocessing;False;False;;operations;sub,highpass,lowpass,n_jobs,enable_cuda,erm_t_limit
-find_events;Find Events;MEEG;Compute;Events;False;False;;operations;sub,stim_channels,min_duration,shortest_event,adjust_timeline_by_msec
-find_6ch_binary_events;Find Events HD;MEEG;Compute;Events;False;False;;operations;sub,min_duration,shortest_event,adjust_timeline_by_msec
-epoch_raw;Get Epochs;MEEG;Compute;Events;False;False;;operations;sub,ch_types,t_epoch,baseline,reject,flat,autoreject_interpolation,consensus_percs,n_interpolates,autoreject_threshold,overwrite_ar,decim,n_jobs
-run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;sub,eog_channel,ecg_channel,reject,flat,autoreject_interpolation,autoreject_threshold,save_plots,figures_path,pscripts_path
-apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;sub
-interpolate_bad_chs;Interpolate Bad-Channels;MEEG;Compute;Preprocessing;False;False;;operations;sub,bad_interpolation,enable_ica
-get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;sub,enable_ica
-tfr;;FSMRI;Compute;Time-Frequency;False;False;;operations;sub,enable_ica,tfr_freqs,overwrite_tfr,tfr_method,multitaper_bandwith,stockwell_width,n_jobs
-apply_watershed;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;mri_sub
-prepare_bem;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;mri_sub,bem_spacing
-setup_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;mri_sub,source_space_spacing,surface,n_jobs
-compute_src_distances;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;mri_sub,n_jobs
-setup_vol_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;mri_sub
-morph_subject;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;mri_sub,morph_to
-morph_labels_from_fsaverage;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;mri_sub
-create_forward_solution;;MEEG;Compute;Forward;False;False;;operations;sub,n_jobs,eeg_fwd
-estimate_noise_covariance;;MEEG;Compute;Inverse;False;False;;operations;sub,baseline,n_jobs,erm_noise_cov,calm_noise_cov,enable_ica
-create_inverse_operator;;MEEG;Compute;Inverse;False;False;;operations;sub
-source_estimate;;MEEG;Compute;Inverse;False;False;;operations;sub,inverse_method,pick_ori,lambda2
-mixed_norm_estimate;;MEEG;Compute;Inverse;False;False;;operations;sub,pick_ori,inverse_method
-apply_morph;;MEEG;Compute;Inverse;False;False;;operations;sub
-label_time_course;;MEEG;Compute;Inverse;False;False;;operations;sub,target_labels,parcellation,extract_mode
-ecd_fit;;MEEG;Compute;Inverse;False;False;;operations;sub,ecd_times,ecd_positions,ecd_orientations,t_epoch
-source_space_connectivity;;MEEG;Compute;Inverse;False;False;;operations;sub,parcellation,target_labels,inverse_method,lambda2,con_methods,con_fmin,con_fmax,n_jobs,enable_ica
-grand_avg_evokeds;;Group;Compute;Grand-Average;False;False;;operations;ga_group
-grand_avg_tfr;;Group;Compute;Grand-Average;False;False;;operations;ga_group
-grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;ga_group
-grand_avg_ltc;;Group;Compute;Grand-Average;False;False;;operations;ga_group
-grand_avg_connect;;Group;Compute;Grand-Average;False;False;;operations;ga_group
-plot_source_space;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;mri_sub
-plot_bem;;FSMRI;Plot;MRI-Preprocessing;True;False;;plot;mri_sub
-plot_labels;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;mri_sub,parcellation
-plot_noise_covariance;;MEEG;Plot;Inverse;True;False;;plot;sub
-plot_transformation;;MEEG;Plot;Forward;True;True;;plot;sub
-plot_sensitivity_maps;;MEEG;Plot;Inverse;True;True;;plot;sub,ch_types
-plot_sensors;;MEEG;Plot;Forward;True;False;;plot;sub
-plot_raw;;MEEG;Plot;Raw;True;False;;plot;sub
-plot_filtered;;MEEG;Plot;Raw;True;False;;plot;sub
-plot_events;;MEEG;Plot;Events;True;False;;plot;sub
-plot_power_spectra;;MEEG;Plot;Time-Frequency;True;False;;plot;sub
-plot_power_spectra_epochs;;MEEG;Plot;Time-Frequency;True;False;;plot;sub
-plot_power_spectra_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;sub
-plot_tfr;;MEEG;Plot;Time-Frequency;True;False;;plot;sub,t_epoch,baseline
-plot_epochs;;MEEG;Plot;Epochs;True;False;;plot;sub
-plot_epochs_image;;MEEG;Plot;Epochs;True;False;;plot;sub
-plot_epochs_topo;;MEEG;Plot;Epochs;True;False;;plot;sub
-plot_epochs_drop_log;;MEEG;Plot;Epochs;True;False;;plot;sub
-plot_autoreject_log;;MEEG;Plot;Epochs;True;False;;plot;sub
-plot_evoked_topo;;MEEG;Plot;Evoked;True;False;;plot;sub
-plot_evoked_topomap;;MEEG;Plot;Evoked;True;False;;plot;sub
-plot_evoked_butterfly;;MEEG;Plot;Evoked;True;False;;plot;sub
-plot_evoked_joint;;MEEG;Plot;Evoked;True;False;;plot;sub
-plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;sub
-plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;sub
-plot_gfp;;MEEG;Plot;Evoked;True;False;;plot;sub
-plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;sub,mne_evoked_time
-plot_mixn;Plot Mixed-Norm-Solution;MEEG;Plot;Inverse;True;True;;plot;sub,mne_evoked_time,parcellation
-plot_animated_stc;Plot Source-Estimate Video;MEEG;Plot;Inverse;True;True;;plot;sub,stc_animation,stc_animation_dilat
-plot_snr;;MEEG;Plot;Inverse;True;False;;plot;sub
-plot_label_time_course;;MEEG;Plot;Inverse;True;False;;plot;sub
-plot_ecd;;MEEG;Plot;Inverse;True;True;;plot;sub
-plot_source_space_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;sub,target_labels,con_fmin,con_fmax
-plot_grand_avg_evokeds;;Group;Plot;Grand-Average;True;False;;plot;ga_group
-plot_grand_avg_tfr;;Group;Plot;Grand-Average;True;False;;plot;ga_group,baseline,t_epoch
-plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;ga_group,morph_to,mne_evoked_time
-plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;ga_group,stc_animation,stc_animation_dilat,morph_to
-plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;ga_group
-plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;ga_group,con_fmin,con_fmax,parcellation,target_labels,morph_to
+filter_raw;Filter Raw;MEEG;Compute;Preprocessing;False;False;;operations;meeg,highpass,lowpass,n_jobs,enable_cuda,erm_t_limit
+find_events;Find Events;MEEG;Compute;Events;False;False;;operations;meeg,stim_channels,min_duration,shortest_event,adjust_timeline_by_msec
+find_6ch_binary_events;Find Events HD;MEEG;Compute;Events;False;False;;operations;meeg,min_duration,shortest_event,adjust_timeline_by_msec
+epoch_raw;Get Epochs;MEEG;Compute;Events;False;False;;operations;meeg,ch_types,t_epoch,baseline,reject,flat,autoreject_interpolation,consensus_percs,n_interpolates,autoreject_threshold,overwrite_ar,decim,n_jobs
+run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg,eog_channel,ecg_channel,reject,flat,autoreject_interpolation,autoreject_threshold,save_plots,figures_path,pscripts_path
+apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg
+interpolate_bad_chs;Interpolate Bad-Channels;MEEG;Compute;Preprocessing;False;False;;operations;meeg,bad_interpolation,enable_ica
+get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;meeg,enable_ica
+tfr;;FSMRI;Compute;Time-Frequency;False;False;;operations;meeg,enable_ica,tfr_freqs,overwrite_tfr,tfr_method,multitaper_bandwith,stockwell_width,n_jobs
+apply_watershed;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri
+prepare_bem;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,bem_spacing
+setup_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,source_space_spacing,surface,n_jobs
+compute_src_distances;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,n_jobs
+setup_vol_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri
+morph_meegject;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,morph_to
+morph_labels_from_fsaverage;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri
+create_forward_solution;;MEEG;Compute;Forward;False;False;;operations;meeg,n_jobs,eeg_fwd
+estimate_noise_covariance;;MEEG;Compute;Inverse;False;False;;operations;meeg,baseline,n_jobs,erm_noise_cov,calm_noise_cov,enable_ica
+create_inverse_operator;;MEEG;Compute;Inverse;False;False;;operations;meeg
+source_estimate;;MEEG;Compute;Inverse;False;False;;operations;meeg,inverse_method,pick_ori,lambda2
+mixed_norm_estimate;;MEEG;Compute;Inverse;False;False;;operations;meeg,pick_ori,inverse_method
+apply_morph;;MEEG;Compute;Inverse;False;False;;operations;meeg
+label_time_course;;MEEG;Compute;Inverse;False;False;;operations;meeg,target_labels,parcellation,extract_mode
+ecd_fit;;MEEG;Compute;Inverse;False;False;;operations;meeg,ecd_times,ecd_positions,ecd_orientations,t_epoch
+source_space_connectivity;;MEEG;Compute;Inverse;False;False;;operations;meeg,parcellation,target_labels,inverse_method,lambda2,con_methods,con_fmin,con_fmax,n_jobs,enable_ica
+grand_avg_evokeds;;GROUP;Compute;Grand-Average;False;False;;operations;group
+grand_avg_tfr;;GROUP;Compute;Grand-Average;False;False;;operations;group
+grand_avg_morphed;;GROUP;Compute;Grand-Average;False;False;;operations;group
+grand_avg_ltc;;GROUP;Compute;Grand-Average;False;False;;operations;group
+grand_avg_connect;;GROUP;Compute;Grand-Average;False;False;;operations;group
+plot_source_space;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;fsmri
+plot_bem;;FSMRI;Plot;MRI-Preprocessing;True;False;;plot;fsmri
+plot_labels;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;fsmri,parcellation
+plot_noise_covariance;;MEEG;Plot;Inverse;True;False;;plot;meeg
+plot_transformation;;MEEG;Plot;Forward;True;True;;plot;meeg
+plot_sensitivity_maps;;MEEG;Plot;Inverse;True;True;;plot;meeg,ch_types
+plot_sensors;;MEEG;Plot;Forward;True;False;;plot;meeg
+plot_raw;;MEEG;Plot;Raw;True;False;;plot;meeg
+plot_filtered;;MEEG;Plot;Raw;True;False;;plot;meeg
+plot_events;;MEEG;Plot;Events;True;False;;plot;meeg
+plot_power_spectra;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg
+plot_power_spectra_epochs;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg
+plot_power_spectra_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg
+plot_tfr;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg,t_epoch,baseline
+plot_epochs;;MEEG;Plot;Epochs;True;False;;plot;meeg
+plot_epochs_image;;MEEG;Plot;Epochs;True;False;;plot;meeg
+plot_epochs_topo;;MEEG;Plot;Epochs;True;False;;plot;meeg
+plot_epochs_drop_log;;MEEG;Plot;Epochs;True;False;;plot;meeg
+plot_autoreject_log;;MEEG;Plot;Epochs;True;False;;plot;meeg
+plot_evoked_topo;;MEEG;Plot;Evoked;True;False;;plot;meeg
+plot_evoked_topomap;;MEEG;Plot;Evoked;True;False;;plot;meeg
+plot_evoked_butterfly;;MEEG;Plot;Evoked;True;False;;plot;meeg
+plot_evoked_joint;;MEEG;Plot;Evoked;True;False;;plot;meeg
+plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;meeg
+plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;meeg
+plot_gfp;;MEEG;Plot;Evoked;True;False;;plot;meeg
+plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;meeg,mne_evoked_time
+plot_mixn;Plot Mixed-Norm-Solution;MEEG;Plot;Inverse;True;True;;plot;meeg,mne_evoked_time,parcellation
+plot_animated_stc;Plot Source-Estimate Video;MEEG;Plot;Inverse;True;True;;plot;meeg,stc_animation,stc_animation_dilat
+plot_snr;;MEEG;Plot;Inverse;True;False;;plot;meeg
+plot_label_time_course;;MEEG;Plot;Inverse;True;False;;plot;meeg
+plot_ecd;;MEEG;Plot;Inverse;True;True;;plot;meeg
+plot_source_space_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg,target_labels,con_fmin,con_fmax
+plot_grand_avg_evokeds;;GROUP;Plot;Grand-Average;True;False;;plot;group
+plot_grand_avg_tfr;;GROUP;Plot;Grand-Average;True;False;;plot;group,baseline,t_epoch
+plot_grand_avg_stc;;GROUP;Plot;Grand-Average;True;True;;plot;group,morph_to,mne_evoked_time
+plot_grand_avg_stc_anim;;GROUP;Plot;Grand-Average;True;True;;plot;group,stc_animation,stc_animation_dilat,morph_to
+plot_grand_avg_ltc;;GROUP;Plot;Grand-Average;True;False;;plot;group
+plot_grand_avg_connect;;GROUP;Plot;Grand-Average;True;False;;plot;group,con_fmin,con_fmax,parcellation,target_labels,morph_to

@@ -35,7 +35,7 @@ def pick_types_helper(data, ch_types):
     return data
 
 
-class BaseSub:
+class BaseLoading:
     """ Base-Class for Sub (The current File/MRI-File/Grand-Average-Group, which is executed)"""
 
     def __init__(self, name, main_win):
@@ -60,10 +60,10 @@ class BaseSub:
             self.pr.file_parameters.loc[file_name, p_name] = str(self.pr.parameters[self.p_preset][p_name])
 
 
-class CurrentSub(BaseSub):
+class MEEG(BaseLoading):
     """ Class for File-Data in File-Loop"""
 
-    def __init__(self, name, main_win, mri_sub=None, suppress_warnings=True):
+    def __init__(self, name, main_win, fsmri=None, suppress_warnings=True):
 
         super().__init__(name, main_win)
 
@@ -72,28 +72,28 @@ class CurrentSub(BaseSub):
 
         # Attributes, which are needed to run the subject
         try:
-            self.ermsub = self.mw.pr.erm_dict[name]
+            self.ermsub = self.mw.pr.meeg_to_erm[name]
         except KeyError as k:
             self.ermsub = None
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No ERM',
                                     f'No Empty-Room-Measurement assigned for {k}, defaulting to None')
         try:
-            self.subtomri = self.mw.pr.sub_dict[name]
+            self.subtomri = self.mw.pr.meeg_to_fsmri[name]
         except KeyError as k:
             self.subtomri = None
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No MRI',
                                     f'No MRI-Subject assigned for {k}, defaulting to None')
         try:
-            self.bad_channels = self.mw.pr.bad_channels_dict[name]
+            self.bad_channels = self.mw.pr.meeg_bad_channels[name]
         except KeyError as k:
             self.bad_channels = list()
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No Bad Channels',
                                     f'No bad channels assigned for {k}, defaulting to empty list')
         try:
-            self.event_id = self.mw.pr.event_id_dict[name]
+            self.event_id = self.mw.pr.meeg_event_id[name]
             if len(self.event_id) == 0:
                 raise RuntimeError(name)
         except (KeyError, RuntimeError) as k:
@@ -102,7 +102,7 @@ class CurrentSub(BaseSub):
                 QMessageBox.warning(self.mw, 'No Event-ID',
                                     f'No EventID assigned for {k}, defaulting to empty dictionary')
         try:
-            self.sel_trials = self.mw.pr.sel_trials_dict[name]
+            self.sel_trials = self.mw.pr.sel_event_id[name]
             if len(self.sel_trials) == 0:
                 raise RuntimeError(name)
         except (KeyError, RuntimeError) as k:
@@ -112,7 +112,7 @@ class CurrentSub(BaseSub):
                                     f'No Trials selected for {k}, defaulting to empty list')
 
         if self.subtomri is not None:
-            self.mri_sub = mri_sub or CurrentMRISub(self.subtomri, main_win)
+            self.fsmri = fsmri or FSMRI(self.subtomri, main_win)
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)
@@ -185,15 +185,15 @@ class CurrentSub(BaseSub):
                                   for trial in self.sel_trials}
 
     def update_file_data(self):
-        self.ermsub = self.mw.pr.erm_dict[self.name]
-        self.subtomri = self.mw.pr.sub_dict[self.name]
-        self.bad_channels = self.mw.pr.bad_channels_dict[self.name]
+        self.ermsub = self.mw.pr.meeg_to_erm[self.name]
+        self.subtomri = self.mw.pr.meeg_to_fsmri[self.name]
+        self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
 
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
     def load_info(self):
-        """Get raw-info, either from info_dict in project or from raw-file if not in info_dict"""
+        """Get raw-info, either from all_info in project or from raw-file if not in all_info"""
         if self._info is None:
             self._info = mne.io.read_info(self.raw_path)
 
@@ -205,7 +205,7 @@ class CurrentSub(BaseSub):
 
         self._raw = pick_types_helper(self._raw, self.p['ch_types'])
 
-        # Insert/Update BadChannels from bad_channels_dict
+        # Insert/Update BadChannels from meeg_bad_channels
         self._raw.info['bads'] = self.bad_channels
 
         return self._raw
@@ -213,7 +213,7 @@ class CurrentSub(BaseSub):
     def save_raw(self, raw):
         self._raw = raw
 
-        # Insert/Update BadChannels from bad_channels_dict
+        # Insert/Update BadChannels from meeg_bad_channels
         self._raw.info['bads'] = self.bad_channels
 
         raw.save(self.raw_path, overwrite=True)
@@ -225,7 +225,7 @@ class CurrentSub(BaseSub):
 
         self._raw_filtered = pick_types_helper(self._raw_filtered, self.p['ch_types'])
 
-        # Insert/Update BadChannels from bad_channels_dict
+        # Insert/Update BadChannels from meeg_bad_channels
         self._raw_filtered.info['bads'] = self.bad_channels
 
         return self._raw_filtered
@@ -234,7 +234,7 @@ class CurrentSub(BaseSub):
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
 
-        # Insert/Update BadChannels from bad_channels_dict
+        # Insert/Update BadChannels from meeg_bad_channels
         self._raw.info['bads'] = self.bad_channels
 
         if not self.mw.get_setting('save_storage'):
@@ -242,7 +242,7 @@ class CurrentSub(BaseSub):
             self.save_file_params(self.raw_filtered_path)
 
     def load_erm(self):
-        # unfiltered erm is not considered important enough to be a sub-attribute
+        # unfiltered erm is not considered important enough to be a obj-attribute
         erm = mne.io.read_raw_fif(self.erm_path, preload=True)
         erm = pick_types_helper(erm, self.p['ch_types'])
         return erm
@@ -566,7 +566,7 @@ class CurrentSub(BaseSub):
                 self.save_file_params(con_path)
 
 
-class CurrentMRISub(BaseSub):
+class FSMRI(BaseLoading):
     # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?)
     def __init__(self, name, main_win):
 
@@ -671,17 +671,17 @@ class CurrentMRISub(BaseSub):
         return self._labels
 
 
-class CurrentGAGroup(BaseSub):
+class GROUP(BaseLoading):
     def __init__(self, name, main_win, suppress_warnings=True):
 
         super().__init__(name, main_win)
 
         # Additional Attributes
         self.save_dir = self.pr.save_dir_averages
-        self.group_list = self.pr.grand_avg_dict[name]
+        self.group_list = self.pr.all_groups[name]
 
         try:
-            self.event_id = self.mw.pr.event_id_dict[self.group_list[0]]
+            self.event_id = self.mw.pr.meeg_event_id[self.group_list[0]]
             if len(self.event_id) == 0:
                 raise RuntimeError(name)
         except (KeyError, RuntimeError) as k:
@@ -690,7 +690,7 @@ class CurrentGAGroup(BaseSub):
                 QMessageBox.warning(self.mw, 'No Event-ID',
                                     f'No EventID assigned for {k}, defaulting to empty dictionary')
         try:
-            self.sel_trials = self.mw.pr.sel_trials_dict[self.group_list[0]]
+            self.sel_trials = self.mw.pr.sel_event_id[self.group_list[0]]
             if len(self.sel_trials) == 0:
                 raise RuntimeError(name)
         except (KeyError, RuntimeError) as k:

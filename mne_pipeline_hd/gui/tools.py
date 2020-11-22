@@ -17,7 +17,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QTextEdit, \
     QVBoxLayout
 
-from mne_pipeline_hd.basic_functions.loading import CurrentSub
+from mne_pipeline_hd.basic_functions.loading import MEEG
 from mne_pipeline_hd.gui.base_widgets import CheckList
 from mne_pipeline_hd.gui.gui_utils import Worker, get_exception_tuple
 
@@ -67,10 +67,10 @@ class HistoryDlg(QDialog):
 # Todo: Syntax Formatting
 # Todo: Add Looping over defined Subject-Selection
 class DataTerminal(QDialog):
-    def __init__(self, main_win, subject=None):
+    def __init__(self, main_win, current_object=None):
         super().__init__(main_win)
         self.mw = main_win
-        self.sub = subject
+        self.obj = current_object
         self.history = list()
 
         self.default_t_globals = ['mw', 'main_window', 'pr', 'project', 'par', 'parameters']
@@ -83,8 +83,8 @@ class DataTerminal(QDialog):
                           'parameters': self.mw.pr.parameters}
 
         # Load the subject in globals if given in Class-Call
-        if self.sub:
-            self.t_globals['sub'] = self.sub
+        if self.obj:
+            self.t_globals['obj'] = self.obj
 
         self.bt_dict = {}
 
@@ -109,9 +109,9 @@ class DataTerminal(QDialog):
         self.layout = QVBoxLayout()
 
         self.sub_cmbx = QComboBox()
-        self.sub_cmbx.addItems(self.mw.pr.all_files)
-        if self.sub:
-            self.sub_cmbx.setCurrentText(self.sub.name)
+        self.sub_cmbx.addItems(self.mw.pr.all_meeg)
+        if self.obj:
+            self.sub_cmbx.setCurrentText(self.obj.name)
         else:
             self.sub_cmbx.setCurrentIndex(-1)
         self.sub_cmbx.activated.connect(self.sub_selected)
@@ -124,7 +124,7 @@ class DataTerminal(QDialog):
             self.bt_dict[bt_name] = bt
             bt.clicked.connect(partial(self.load_bt_pressed, bt_name))
             bt_layout.addWidget(bt)
-            if self.sub is None:
+            if self.obj is None:
                 bt.setEnabled(False)
 
         self.layout.addLayout(bt_layout)
@@ -161,28 +161,28 @@ class DataTerminal(QDialog):
         self.setLayout(self.layout)
 
     def sub_selected(self, index):
-        # Enable all Buttons for the first time, if no sub was given to call at the beginning
-        if self.sub is None:
+        # Enable all Buttons for the first time, if no obj was given to call at the beginning
+        if self.obj is None:
             for bt_name in self.bt_dict:
                 self.bt_dict[bt_name].setEnabled(True)
 
         name = self.sub_cmbx.itemText(index)
         try:
-            self.sub = CurrentSub(name, self.mw)
+            self.obj = MEEG(name, self.mw)
         except:
             self.print_exception()
             # Return ComboBox to previous state
-            if self.sub is None:
+            if self.obj is None:
                 self.sub_cmbx.setCurrentIndex(-1)
             else:
-                self.sub_cmbx.setCurrentText(self.sub.name)
+                self.sub_cmbx.setCurrentText(self.obj.name)
         else:
             # Reset globals to default
             for key in [k for k in self.t_globals.keys() if k not in self.default_t_globals]:
                 self.t_globals.pop(key)
-            self.t_globals['sub'] = self.sub
+            self.t_globals['obj'] = self.obj
             self.displayw.clear()
-            self.displayw.insertHtml(f'<b>Subject: {self.sub.name} loaded</b><br>')
+            self.displayw.insertHtml(f'<b>Subject: {self.obj.name} loaded</b><br>')
             self.displayw.ensureCursorVisible()
 
     def load_bt_pressed(self, bt_name):
@@ -203,7 +203,7 @@ class DataTerminal(QDialog):
 
     def start_load(self, bt_name):
         try:
-            load_fn = getattr(self.sub, self.load_mapping[bt_name])
+            load_fn = getattr(self.obj, self.load_mapping[bt_name])
             self.t_globals[bt_name] = load_fn()
         except (FileNotFoundError, OSError):
             self.displayw.insertHtml(f'<b><center>No file found for {bt_name}</center></b><br>')

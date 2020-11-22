@@ -191,17 +191,17 @@ def delete_files(data_path, pattern):
                 print(f'{f} removed')
 
 
-def compare_prev_run(sub, path, parameters):
+def compare_prev_run(obj, path, parameters):
     """Compare the file-parameters of the previous run for the given path"""
     result_dict = dict()
     file_name = Path(path).name
     for param in parameters:
         try:
             try:
-                previous_value = literal_eval(sub.pr.file_parameters.loc[file_name, param])
+                previous_value = literal_eval(obj.pr.file_parameters.loc[file_name, param])
             except (SyntaxError, ValueError):
-                previous_value = sub.pr.file_parameters.loc[file_name, param]
-            current_value = sub.p[param]
+                previous_value = obj.pr.file_parameters.loc[file_name, param]
+            current_value = obj.p[param]
 
             if previous_value != current_value:
                 result_dict[param] = (previous_value, current_value)

@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QDialog, QGridLayout, QHBoxLayout, QLabel, QListView
     QStyle, QTextEdit, QVBoxLayout
 
 from .pipeline_utils import shutdown
-from ..basic_functions.loading import BaseSub, CurrentGAGroup, CurrentMRISub, CurrentSub
+from ..basic_functions.loading import BaseLoading, FSMRI, GROUP, MEEG
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
 from ..gui.gui_utils import Worker, get_ratio_geometry
@@ -41,12 +41,12 @@ def get_arguments(arg_names, obj, main_win):
             keyword_arguments.update({'main_win': main_win})
         elif arg_name == 'pr':
             keyword_arguments.update({'pr': main_win.pr})
-        elif arg_name == 'sub':
-            keyword_arguments.update({'sub': obj})
-        elif arg_name == 'mri_sub':
-            keyword_arguments.update({'mri_sub': obj})
-        elif arg_name == 'ga_group':
-            keyword_arguments.update({'ga_group': obj})
+        elif arg_name == 'meeg':
+            keyword_arguments.update({'meeg': obj})
+        elif arg_name == 'fsmri':
+            keyword_arguments.update({'fsmri': obj})
+        elif arg_name == 'group':
+            keyword_arguments.update({'group': obj})
         elif arg_name in project_attributes:
             keyword_arguments.update({arg_name: project_attributes[arg_name]})
         elif arg_name in main_win.pr.parameters[main_win.pr.p_preset]:
@@ -304,22 +304,22 @@ class RunDialog(QDialog):
                 self.add_html(f'<h1>{object_name}</h1><br>')
 
                 if self.current_type == 'FSMRI':
-                    self.current_object = CurrentMRISub(object_name, self.mw)
+                    self.current_object = FSMRI(object_name, self.mw)
                     self.loaded_fsmri = self.current_object
 
                 elif self.current_type == 'MEEG':
                     # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
-                    if self.loaded_fsmri and self.loaded_fsmri.name == self.mw.pr.sub_dict[object_name]:
-                        self.current_object = CurrentSub(object_name, self.mw, mri_sub=self.loaded_fsmri)
+                    if self.loaded_fsmri and self.loaded_fsmri.name == self.mw.pr.meeg_to_fsmri[object_name]:
+                        self.current_object = MEEG(object_name, self.mw, fsmri=self.loaded_fsmri)
                     else:
-                        self.current_object = CurrentSub(object_name, self.mw)
-                    self.loaded_fsmri = self.current_object.mri_sub
+                        self.current_object = MEEG(object_name, self.mw)
+                    self.loaded_fsmri = self.current_object.fsmri
 
-                elif self.current_type == 'Group':
-                    self.current_object = CurrentGAGroup(object_name, self.mw)
+                elif self.current_type == 'GROUP':
+                    self.current_object = GROUP(object_name, self.mw)
 
                 elif self.current_type == 'Other':
-                    self.current_object = BaseSub(object_name, self.mw)
+                    self.current_object = BaseLoading(object_name, self.mw)
 
                 # Load functions for object into func_model (which displays functions in func_listview)
                 self.current_all_funcs = self.all_objects[object_name]['functions']
