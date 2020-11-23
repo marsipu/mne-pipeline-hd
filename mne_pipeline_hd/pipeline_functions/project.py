@@ -94,13 +94,20 @@ class Project:
         self.load_file_parameters()
 
     def make_paths(self):
-        # Create or check folders
+        # Main folder of project
         self.project_path = join(self.mw.projects_path, self.name)
+        # Folder to store the data
         self.data_path = join(self.project_path, 'data')
+        # Folder to store the figures (with an additional subfolder for each parameter-preset)
         self.figures_path = join(self.project_path, 'figures', self.p_preset)
+        # A dedicated folder to store grand-average data
         self.save_dir_averages = join(self.data_path, 'grand_averages')
+        # A dedicated folder to store empty-room measurements
         self.erm_data_path = join(self.data_path, 'empty_room_data')
+        # A folder to store all pipeline-scripts as .json-files
+        self.pscripts_path = join(self.project_path, '_pipeline_scripts')
 
+        # Create or check existence of folders
         path_lists = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
                       self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
 
@@ -109,10 +116,7 @@ class Project:
                 makedirs(path)
                 print(f'{path} created')
 
-        # List/Dict-Paths
-        # A folder to store all .json-files
-        self.pscripts_path = join(self.project_path, '_pipeline_scripts')
-
+        # List/Dict-Paths (stored in pscripts_path)
         self.all_meeg_path = join(self.pscripts_path, 'all_meeg.json')
         self.sel_meeg_path = join(self.pscripts_path, 'selected_meeg.json')
         self.meeg_bad_channels_path = join(self.pscripts_path, 'meeg_bad_channels.json')
@@ -215,7 +219,7 @@ class Project:
                 try:
                     with open(self.old_paths[path], 'r') as file:
                         setattr(self, load_dict[path], json.load(file, object_hook=numpy_json_hook))
-                except (json.decoder.JSONDecodeError, FileNotFoundError):
+                except (json.decoder.JSONDecodeError, FileNotFoundError, KeyError):
                     pass
 
     def save_lists(self):

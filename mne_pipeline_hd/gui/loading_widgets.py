@@ -556,12 +556,12 @@ class GrandAvgFileAdd(QDialog):
             self.listw.item(idx).setCheckState(Qt.Checked)
 
 
-def extract_info(project, raw, new_fname, path):
+def extract_info(project, raw, new_fname):
+    project.all_info[new_fname] = {}
     info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
                  'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
                  'helium_info']
     try:
-        project.all_info[new_fname] = {}
         for key in info_keys:
             project.all_info[new_fname][key] = raw.info[key]
         # Add arrays of digitization-points and save it to json to make the trans-file-management possible
@@ -793,7 +793,7 @@ class AddFilesWidget(QWidget):
                 signals['which_sub'].emit(f'Copying {file}')
 
                 raw = self.load_file(idx)
-                extract_info(self.mw.pr, raw, file, path=self.pd_files.loc[idx, 'Path'])
+                extract_info(self.mw.pr, raw, file)
 
                 if not self.addf_dialog.wasCanceled():
                     # Copy Empty-Room-Files to their directory
@@ -1563,7 +1563,7 @@ class SubBadsWidget(QWidget):
         if self.name not in self.mw.pr.all_info:
             meeg = MEEG(self.name, self.mw)
             raw = meeg.load_raw()
-            extract_info(self.mw.pr, raw, self.name, path=meeg.raw_path)
+            extract_info(self.mw.pr, raw, self.name)
 
         # Make Checkboxes for channels from all_info
         for x, ch_name in enumerate(self.mw.pr.all_info[self.name]['ch_names']):

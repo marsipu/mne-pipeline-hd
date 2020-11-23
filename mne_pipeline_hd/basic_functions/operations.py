@@ -52,7 +52,7 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
         print(f'{meeg.name} already filtered with highpass={highpass} and lowpass={lowpass}')
 
     # Filter Empty-Room-Data too
-    if meeg.ermsub is not None:
+    if meeg.erm is not None:
         erm_results = compare_prev_run(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
         if erm_results['highpass'] is not None or erm_results['lowpass'] is not None:
             raw = meeg.load_raw()
@@ -75,7 +75,7 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
             meeg.save_erm_filtered(erm_raw)
             print('ERM-Data filtered and saved')
         else:
-            print(f'{meeg.ermsub} already filtered with highpass={highpass} and lowpass={lowpass}')
+            print(f'{meeg.erm} already filtered with highpass={highpass} and lowpass={lowpass}')
 
     else:
         print('no erm_file assigned')
@@ -803,7 +803,7 @@ def prepare_bem(fsmri, bem_spacing):
     fsmri.save_bem_solution(bem_solution)
 
 
-def morph_subject(fsmri, morph_to):
+def morph_fsmri(fsmri, morph_to):
     src = fsmri.load_source_space()
     morph = mne.compute_source_morph(src, subject_from=fsmri.name,
                                      subject_to=morph_to, subjects_dir=fsmri.subjects_dir)
@@ -861,7 +861,7 @@ def estimate_noise_covariance(meeg, baseline, n_jobs, erm_noise_cov, calm_noise_
                                                       method='empirical')
         meeg.save_noise_covariance(noise_covariance, 'calm')
 
-    elif meeg.ermsub == 'None' or erm_noise_cov is False:
+    elif meeg.erm == 'None' or erm_noise_cov is False:
         print('Noise Covariance on Epochs')
         if enable_ica:
             epochs = meeg.load_ica_epochs()
@@ -911,7 +911,7 @@ def label_time_course(meeg, target_labels, parcellation, extract_mode):
     stcs = meeg.load_source_estimates()
     src = meeg.fsmri.load_source_space()
 
-    labels = mne.read_labels_from_annot(meeg.subtomri,
+    labels = mne.read_labels_from_annot(meeg.fsmri,
                                         subjects_dir=meeg.subjects_dir,
                                         parc=parcellation)
     chosen_labels = [label for label in labels if label.name in target_labels]
@@ -1047,7 +1047,7 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
                                                      pick_ori="normal", return_generator=True)
 
         # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
-        labels = mne.read_labels_from_annot(meeg.subtomri, parc=parcellation,
+        labels = mne.read_labels_from_annot(meeg.fsmri, parc=parcellation,
                                             subjects_dir=meeg.subjects_dir)
 
         actual_labels = [lb for lb in labels if lb.name in target_labels]

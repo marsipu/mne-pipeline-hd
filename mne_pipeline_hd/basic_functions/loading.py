@@ -72,47 +72,47 @@ class MEEG(BaseLoading):
 
         # Attributes, which are needed to run the subject
         try:
-            self.ermsub = self.mw.pr.meeg_to_erm[name]
-        except KeyError as k:
-            self.ermsub = None
+            self.erm = self.mw.pr.meeg_to_erm[name]
+        except KeyError:
+            self.erm = None
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No ERM',
-                                    f'No Empty-Room-Measurement assigned for {k}, defaulting to None')
+                                    f'No Empty-Room-Measurement assigned for {self.name}, defaulting to None')
         try:
-            self.subtomri = self.mw.pr.meeg_to_fsmri[name]
-        except KeyError as k:
-            self.subtomri = None
+            self.fsmri = self.mw.pr.meeg_to_fsmri[name]
+        except KeyError:
+            self.fsmri = None
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No MRI',
-                                    f'No MRI-Subject assigned for {k}, defaulting to None')
+                                    f'No MRI-Subject assigned for {self.name}, defaulting to None')
         try:
             self.bad_channels = self.mw.pr.meeg_bad_channels[name]
-        except KeyError as k:
+        except KeyError:
             self.bad_channels = list()
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No Bad Channels',
-                                    f'No bad channels assigned for {k}, defaulting to empty list')
+                                    f'No bad channels assigned for {self.name}, defaulting to empty list')
         try:
             self.event_id = self.mw.pr.meeg_event_id[name]
             if len(self.event_id) == 0:
                 raise RuntimeError(name)
-        except (KeyError, RuntimeError) as k:
+        except (KeyError, RuntimeError):
             self.event_id = dict()
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No Event-ID',
-                                    f'No EventID assigned for {k}, defaulting to empty dictionary')
+                                    f'No EventID assigned for {self.name}, defaulting to empty dictionary')
         try:
             self.sel_trials = self.mw.pr.sel_event_id[name]
             if len(self.sel_trials) == 0:
                 raise RuntimeError(name)
-        except (KeyError, RuntimeError) as k:
+        except (KeyError, RuntimeError):
             self.sel_trials = list()
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No Trials',
-                                    f'No Trials selected for {k}, defaulting to empty list')
+                                    f'No Trials selected for {self.name}, defaulting to empty list')
 
-        if self.subtomri is not None:
-            self.fsmri = fsmri or FSMRI(self.subtomri, main_win)
+        if self.fsmri is not None:
+            self.fsmri = fsmri or FSMRI(self.fsmri, main_win)
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)
@@ -149,9 +149,9 @@ class MEEG(BaseLoading):
         self.raw_path = join(self.save_dir, f'{name}-raw.fif')
         self.raw_filtered_path = join(self.save_dir, f'{name}_{self.p_preset}-filtered-raw.fif')
 
-        if self.ermsub is not None:
-            self.erm_path = join(self.pr.erm_data_path, self.ermsub, f'{self.ermsub}-raw.fif')
-            self.erm_filtered_path = join(self.pr.erm_data_path, self.ermsub, f'{self.ermsub}_{self.p_preset}-raw.fif')
+        if self.erm is not None:
+            self.erm_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}-raw.fif')
+            self.erm_filtered_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
 
         self.events_path = join(self.save_dir, f'{name}_{self.p_preset}-eve.fif')
 
@@ -168,7 +168,7 @@ class MEEG(BaseLoading):
         self.power_tfr_path = join(self.save_dir, f'{name}_{self.p_preset}_{self.p["tfr_method"]}-pw-tfr.h5')
         self.itc_tfr_path = join(self.save_dir, f'{name}_{self.p_preset}_{self.p["tfr_method"]}-itc-tfr.h5')
 
-        self.trans_path = join(self.save_dir, f'{self.subtomri}-trans.fif')
+        self.trans_path = join(self.save_dir, f'{self.fsmri}-trans.fif')
 
         self.forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
 
@@ -185,8 +185,8 @@ class MEEG(BaseLoading):
                                   for trial in self.sel_trials}
 
     def update_file_data(self):
-        self.ermsub = self.mw.pr.meeg_to_erm[self.name]
-        self.subtomri = self.mw.pr.meeg_to_fsmri[self.name]
+        self.erm = self.mw.pr.meeg_to_erm[self.name]
+        self.fsmri = self.mw.pr.meeg_to_fsmri[self.name]
         self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
 
     ####################################################################################################################
@@ -378,7 +378,7 @@ class MEEG(BaseLoading):
                 self._noise_cov = mne.read_cov(self.calm_cov_path)
                 print('Reading Noise-Covariance from 1-min Calm in raw')
 
-            elif self.ermsub == 'None' or self.p['erm_noise_cov'] is False:
+            elif self.erm == 'None' or self.p['erm_noise_cov'] is False:
                 self._noise_cov = mne.read_cov(self.cov_path)
                 print('Reading Noise-Covariance from Epochs')
             else:
@@ -671,7 +671,7 @@ class FSMRI(BaseLoading):
         return self._labels
 
 
-class GROUP(BaseLoading):
+class Group(BaseLoading):
     def __init__(self, name, main_win, suppress_warnings=True):
 
         super().__init__(name, main_win)
@@ -684,20 +684,20 @@ class GROUP(BaseLoading):
             self.event_id = self.mw.pr.meeg_event_id[self.group_list[0]]
             if len(self.event_id) == 0:
                 raise RuntimeError(name)
-        except (KeyError, RuntimeError) as k:
+        except (KeyError, RuntimeError):
             self.event_id = dict()
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No Event-ID',
-                                    f'No EventID assigned for {k}, defaulting to empty dictionary')
+                                    f'No EventID assigned for {self.name}, defaulting to empty dictionary')
         try:
             self.sel_trials = self.mw.pr.sel_event_id[self.group_list[0]]
             if len(self.sel_trials) == 0:
                 raise RuntimeError(name)
-        except (KeyError, RuntimeError) as k:
+        except (KeyError, RuntimeError):
             self.sel_trials = list()
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No Trials',
-                                    f'No Trials selected for {k}, defaulting to empty list')
+                                    f'No Trials selected for {self.name}, defaulting to empty list')
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)
