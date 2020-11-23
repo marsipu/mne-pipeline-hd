@@ -28,9 +28,7 @@ package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.paren
 sys.path.insert(0, package_parent)
 
 from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel, CheckDictModel, CheckListModel,
-                                        EditDictModel,
-                                        EditListModel,
-                                        EditPandasModel)
+                                        EditDictModel, EditListModel, EditPandasModel)
 
 
 class Base(QWidget):
@@ -38,9 +36,10 @@ class Base(QWidget):
     selectionChanged = pyqtSignal(object)
     dataChanged = pyqtSignal(object, object)
 
-    def __init__(self, model, view, parent, title):
+    def __init__(self, model, view, parent, title, verbose=False):
         super().__init__(parent)
         self.title = title
+        self.verbose = verbose
 
         self.model = model
         self.view = view
@@ -75,7 +74,8 @@ class Base(QWidget):
 
         self.currentChanged.emit(current, previous)
 
-        print(f'Current changed from {previous} to {current}')
+        if self.verbose:
+            print(f'Current changed from {previous} to {current}')
 
     def get_selected(self):
         selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
@@ -88,15 +88,15 @@ class Base(QWidget):
         selected = self.get_selected()
 
         self.selectionChanged.emit(selected)
-
-        print(f'Selection changed to {selected}')
+        if self.verbose:
+            print(f'Selection changed to {selected}')
 
     def _data_changed(self, index, _):
         data = self.model.getData(index)
 
         self.dataChanged.emit(data, index)
-
-        print(f'{data} changed at {index}')
+        if self.verbose:
+            print(f'{data} changed at {index}')
 
     def content_changed(self):
         """Informs ModelView about external change made in data
@@ -111,8 +111,8 @@ class Base(QWidget):
 
 
 class BaseList(Base):
-    def __init__(self, model, view, extended_selection, parent, title):
-        super().__init__(model, view, parent, title)
+    def __init__(self, model, view, extended_selection, parent, title, verbose=False):
+        super().__init__(model, view, parent, title, verbose=verbose)
 
         if extended_selection:
             self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -170,13 +170,13 @@ class EditList(BaseList):
     """
 
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False, parent=None,
-                 title=None):
+                 title=None, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
         super().__init__(model=EditListModel(data), view=QListView(),
-                         extended_selection=extended_selection, parent=parent, title=title)
+                         extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -258,13 +258,13 @@ class CheckList(BaseList):
     checkedChanged = pyqtSignal(list)
 
     def __init__(self, data=None, checked=None, ui_buttons=True, ui_button_pos='right', one_check=False, parent=None,
-                 title=None):
+                 title=None, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
         super().__init__(model=CheckListModel(data, checked, one_check=one_check),
-                         view=QListView(), extended_selection=False, parent=parent, title=title)
+                         view=QListView(), extended_selection=False, parent=parent, title=title, verbose=verbose)
 
         self.model.dataChanged.connect(self._checked_changed)
 
@@ -348,9 +348,9 @@ class CheckDictList(BaseList):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, check_dict=None, extended_selection=False, parent=None, title=None):
+    def __init__(self, data=None, check_dict=None, extended_selection=False, parent=None, title=None, verbose=False):
         super().__init__(model=CheckDictModel(data, check_dict), view=QListView(),
-                         extended_selection=extended_selection, parent=parent, title=title)
+                         extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
 
     def replace_check_dict(self, new_check_dict=None):
         """Replaces model.check_dict with new check_dict
@@ -362,8 +362,8 @@ class CheckDictList(BaseList):
 
 class BaseDict(Base):
 
-    def __init__(self, model, view, parent, title):
-        super().__init__(model, view, parent, title)
+    def __init__(self, model, view, parent, title, verbose=False):
+        super().__init__(model, view, parent, title, verbose=verbose)
 
     def get_keyvalue_by_index(self, index, data_dict):
         """For the given index, make an entry in item_dict with the data at index as key and a dict as value defining
@@ -453,8 +453,8 @@ class SimpleDict(BaseDict):
 
     """
 
-    def __init__(self, data=None, parent=None, title=None):
-        super().__init__(model=BaseDictModel(data), view=QTableView(), parent=parent, title=title)
+    def __init__(self, data=None, parent=None, title=None, verbose=False):
+        super().__init__(model=BaseDictModel(data), view=QTableView(), parent=parent, title=title, verbose=verbose)
 
 
 class EditDict(BaseDict):
@@ -473,12 +473,12 @@ class EditDict(BaseDict):
 
     """
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditDictModel(data), view=QTableView(), parent=parent, title=title)
+        super().__init__(model=EditDictModel(data), view=QTableView(), parent=parent, title=title, verbose=verbose)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -538,8 +538,8 @@ class EditDict(BaseDict):
 
 class BasePandasTable(Base):
 
-    def __init__(self, model, view, parent, title):
-        super().__init__(model, view, parent, title)
+    def __init__(self, model, view, parent, title, verbose=False):
+        super().__init__(model, view, parent, title, verbose=verbose)
 
     def get_rowcol_by_index(self, index, data_dict):
         data = self.model.getData(index)
@@ -651,8 +651,8 @@ class SimplePandasTable(BasePandasTable):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=None, parent=None, title=None):
-        super().__init__(model=BasePandasModel(data), view=QTableView(), parent=parent, title=title)
+    def __init__(self, data=None, parent=None, title=None, verbose=False):
+        super().__init__(model=BasePandasModel(data), view=QTableView(), parent=parent, title=title, verbose=verbose)
 
 
 class EditPandasTable(BasePandasTable):
@@ -945,15 +945,16 @@ class AllBaseWidgets(QWidget):
                             'EditPandasTable': [self.expd],
                             'AssignWidget': [self.exlist, self.exattributes, self.exassignments]}
 
-        self.widget_kwargs = {'SimpleList': {'extended_selection': True, 'title': 'BaseList'},
-                              'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList'},
-                              'CheckList': {'one_check': False, 'title': 'CheckList'},
-                              'CheckDictList': {'extended_selection': True, 'title': 'CheckDictList'},
-                              'SimpleDict': {'title': 'BaseDict'},
-                              'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict'},
-                              'SimplePandasTable': {'title': 'BasePandasTable'},
-                              'EditPandasTable': {'title': 'EditPandasTable'},
-                              'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget'}}
+        self.widget_kwargs = {'SimpleList': {'extended_selection': True, 'title': 'BaseList', 'verbose': True},
+                              'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList',
+                                           'verbose': True},
+                              'CheckList': {'one_check': False, 'title': 'CheckList', 'verbose': True},
+                              'CheckDictList': {'extended_selection': True, 'title': 'CheckDictList', 'verbose': True},
+                              'SimpleDict': {'title': 'BaseDict', 'verbose': True},
+                              'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict', 'verbose': True},
+                              'SimplePandasTable': {'title': 'BasePandasTable', 'verbose': True},
+                              'EditPandasTable': {'title': 'EditPandasTable', 'verbose': True},
+                              'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget', 'verbose': True}}
 
         self.tab_widget = QTabWidget()
 
