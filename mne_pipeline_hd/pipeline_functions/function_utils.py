@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QDialog, QGridLayout, QHBoxLayout, QLabel, QListView
     QStyle, QTextEdit, QVBoxLayout
 
 from .pipeline_utils import shutdown
-from ..basic_functions.loading import BaseLoading, FSMRI, GROUP, MEEG
+from ..basic_functions.loading import BaseLoading, FSMRI, Group, MEEG
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
 from ..gui.gui_utils import Worker, get_ratio_geometry
@@ -41,6 +41,8 @@ def get_arguments(arg_names, obj, main_win):
             keyword_arguments.update({'main_win': main_win})
         elif arg_name == 'pr':
             keyword_arguments.update({'pr': main_win.pr})
+        elif arg_name == 'project':
+            keyword_arguments.update({'project': main_win.pr})
         elif arg_name == 'meeg':
             keyword_arguments.update({'meeg': obj})
         elif arg_name == 'fsmri':
@@ -152,6 +154,7 @@ class RunDialog(QDialog):
         self.current_func = None
 
         self.errors = dict()
+        self.error_count = 0
         self.prog_count = 0
         self.is_prog_text = False
         self.paused = False
@@ -315,8 +318,8 @@ class RunDialog(QDialog):
                         self.current_object = MEEG(object_name, self.mw)
                     self.loaded_fsmri = self.current_object.fsmri
 
-                elif self.current_type == 'GROUP':
-                    self.current_object = GROUP(object_name, self.mw)
+                elif self.current_type == 'Group':
+                    self.current_object = Group(object_name, self.mw)
 
                 elif self.current_type == 'Other':
                     self.current_object = BaseLoading(object_name, self.mw)
@@ -381,11 +384,17 @@ class RunDialog(QDialog):
             self.close_bt.setEnabled(True)
 
     def thread_error(self, err):
-        error_cause = f'{self.current_object.name} <- {self.current_func}'
-        self.errors[error_cause] = err
+        error_cause = f'{self.error_count}: {self.current_object.name} <- {self.current_func}'
+        self.errors[error_cause] = (err, self.error_count)
         # Update Error-Widget
         self.error_widget.replace_data(list(self.errors.keys()))
 
+        # Insert Error-Number into console-widget as an anchor for later inspection
+        self.console_widget.insertHtml(f'<a name=\"{self.error_count}\" href={self.error_count}>'
+                                       f'<i>Error No.{self.error_count}</i><br></a>')
+        # Increase Error-Count by one
+        self.error_count += 1
+        # Continue with next object
         self.thread_finished()
 
     def pause_funcs(self):
@@ -406,7 +415,7 @@ class RunDialog(QDialog):
         self.object_model.layoutChanged.emit()
         self.func_model._data = self.current_all_funcs
         self.func_model.layoutChanged.emit()
-        self.error_widget.replace_data(self.errors)
+        self.error_widget.replace_data(list(self.errors.keys()))
 
         # Restart
         self.start_thread()
@@ -420,8 +429,7 @@ class RunDialog(QDialog):
     def show_error(self, current, _):
         self.autoscroll = False
         self.autoscroll_bt.setChecked(False)
-        search_text = self.errors[current][2].replace('\n', '<br>')
-        self.console_widget.scrollToAnchor(search_text)
+        self.console_widget.scrollToAnchor(str(self.errors[current][1]))
 
     def add_text(self, text):
         self.is_prog_text = False
