@@ -52,7 +52,7 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
         print(f'{meeg.name} already filtered with highpass={highpass} and lowpass={lowpass}')
 
     # Filter Empty-Room-Data too
-    if meeg.erm is not None:
+    if meeg.erm != 'None':
         erm_results = compare_prev_run(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
         if erm_results['highpass'] is not None or erm_results['lowpass'] is not None:
             raw = meeg.load_raw()

@@ -12,6 +12,7 @@ import inspect
 import logging
 import re
 import sys
+from collections import OrderedDict
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QFont, QTextCursor
@@ -146,7 +147,7 @@ class RunDialog(QDialog):
     def init_attributes(self):
         # Initialize class-attributes (in method to be repeatable by self.restart)
         self.all_steps = list()
-        self.all_objects = dict()
+        self.all_objects = OrderedDict()
         self.current_all_funcs = dict()
         self.current_step = None
         self.current_object = None
@@ -278,11 +279,19 @@ class RunDialog(QDialog):
         self.setLayout(layout)
 
     def mark_current_items(self, status):
-        # Mark current-items in listmodels with status
+        # Mark current object with status
         self.all_objects[self.current_object.name]['status'] = status
         self.object_model.layoutChanged.emit()
+        # Scroll to current object
+        self.object_listview.scrollTo(self.object_model.createIndex(
+                list(self.all_objects.keys()).index(self.current_object.name), 0))
+
+        # Mark current function with status
         self.all_objects[self.current_object.name]['functions'][self.current_func] = status
         self.func_model.layoutChanged.emit()
+        # Scroll to current function
+        self.func_listview.scrollTo(self.func_model.createIndex(
+                list(self.all_objects[self.current_object.name]['functions'].keys()).index(self.current_func), 0))
 
     def start_thread(self):
         # Save all Main-Scripts in case of error
@@ -304,7 +313,7 @@ class RunDialog(QDialog):
             # Load object if the preceding object is not the same
             if not self.current_object or self.current_object.name != object_name:
                 # Print Headline for object
-                self.add_html(f'<h1>{object_name}</h1><br>')
+                self.add_html(f'<br><h1>{object_name}</h1>')
 
                 if self.current_type == 'FSMRI':
                     self.current_object = FSMRI(object_name, self.mw)
@@ -399,7 +408,7 @@ class RunDialog(QDialog):
 
     def pause_funcs(self):
         self.paused = True
-        self.console_widget.insertHtml('<br><b>Finishing last function...</big><br>')
+        self.console_widget.insertHtml('<br><b>Finishing last function...</b><br>')
         if self.autoscroll:
             self.console_widget.ensureCursorVisible()
 
@@ -464,3 +473,7 @@ class RunDialog(QDialog):
 
         if self.autoscroll:
             self.console_widget.ensureCursorVisible()
+
+    def closeEvent(self, event):
+        self.mw.pipeline_running = False
+        event.accept()

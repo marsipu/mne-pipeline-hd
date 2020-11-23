@@ -168,12 +168,12 @@ class BaseDictModel(QAbstractTableModel):
 
     Parameters
     ----------
-    data : dict | None
+    data : dict | OrderedDict | None
         Dictionary with keys and values to be displayed, default to empty Dictionary
 
     Notes
     -----
-    Python 3.7 is required to ensure order in dictionary
+    Python 3.7 is required to ensure order in dictionary when inserting a normal dict (or use OrderedDict)
     """
 
     def __init__(self, data=None):
@@ -220,15 +220,15 @@ class EditDictModel(BaseDictModel):
 
     Parameters
     ----------
-    data : dict | None
-        Dictionary with keys and values to be displayed and edited, default to empty Dictionary.
+    data : dict | OrderedDict | None
+        Dictionary with keys and values to be displayed, default to empty Dictionary
 
     only_edit : 'keys' | 'values' | None
         Makes only keys or only values editable. Both are editable if None.
 
     Notes
     -----
-    Python 3.7 is required to ensure order in dictionary
+    Python 3.7 is required to ensure order in dictionary when inserting a normal dict (or use OrderedDict)
     """
 
     def __init__(self, data=None, only_edit=None):

@@ -99,10 +99,11 @@ class MainWindow(QMainWindow):
         self.bt_dict = dict()
         self.all_modules = {'basic': {},
                             'custom': {}}
-        self.subject = None
         self.available_image_formats = {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'}
         # For functions, which should or should not be called durin initialization
         self.first_init = True
+        # True, if Pipeline is running (to avoid parallel starts of RunDialog)
+        self.pipeline_running = False
 
         # Load QSettings (which are stored in the OS)
         # qsettings=<everything, that's OS-dependent>
@@ -756,23 +757,25 @@ class MainWindow(QMainWindow):
             self.pr.sel_functions[x] = 0
 
     def start(self):
-
-        # Save Main-Window-Settings and project before possible Errors happen
-        self.save_main()
-
-        # Reload modules to get latest changes
-        self.reload_basic_modules()
-        self.reload_custom_modules()
-
-        # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
-        # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
-        # function-modules here, but you had to import them for each run then
-        if self.get_setting('show_plots'):
-            matplotlib.use('Qt5Agg')
+        if self.pipeline_running:
+            QMessageBox.warning(self, 'Already running!', 'The Pipeline is already running!')
         else:
-            matplotlib.use('agg')
+            # Save Main-Window-Settings and project before possible Errors happen
+            self.save_main()
 
-        self.run_dialog = RunDialog(self)
+            # Reload modules to get latest changes
+            self.reload_basic_modules()
+            self.reload_custom_modules()
+
+            # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
+            # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
+            # function-modules here, but you had to import them for each run then
+            if self.get_setting('show_plots'):
+                matplotlib.use('Qt5Agg')
+            else:
+                matplotlib.use('agg')
+
+            self.run_dialog = RunDialog(self)
 
     # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):
