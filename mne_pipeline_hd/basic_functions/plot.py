@@ -18,9 +18,13 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from mayavi import mlab
-from nilearn.plotting import plot_anat
-from surfer import Brain
+
+try:
+    from mayavi import mlab
+    from nilearn.plotting import plot_anat
+    from surfer import Brain
+except ModuleNotFoundError:
+    pass
 
 from . import operations as op
 

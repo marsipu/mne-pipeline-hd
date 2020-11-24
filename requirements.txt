@@ -1,5 +1,6 @@
 # MNE-Python-Requirements
 mne
+pandas
 
 # Special Pipeline-Requirements
 https://api.github.com/repos/autoreject/autoreject/zipball/master
@@ -7,5 +8,7 @@ pyobjc-framework-Cocoa; sys_platform == "darwin"
 qdarkstyle
 pygments
 
-# Requirement for deployment
-# PyQtWebEngine
+# Requirement for deployment (only source-space)
+PyQtWebEngine
+joblib
+sklearn
