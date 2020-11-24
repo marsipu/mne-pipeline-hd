@@ -307,7 +307,8 @@ class CheckList(BaseList):
 
     def _checked_changed(self):
         self.checkedChanged.emit(self.model._checked)
-        print(f'Changed values: {self.model._checked}')
+        if self.verbose:
+            print(f'Changed values: {self.model._checked}')
 
     def replace_checked(self, new_checked):
         """Replaces model._checked with new check_dict

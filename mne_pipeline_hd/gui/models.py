@@ -23,11 +23,14 @@ class BaseListModel(QAbstractListModel):
     ----------
     data : list()
         input existing list here, otherwise defaults to empty list
+    show_index : bool
+        Set True if you want to display the list-index in front of each value
 
     """
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, show_index=False):
         super().__init__()
+        self.show_index = show_index
         if data is None:
             self._data = list()
         else:
@@ -38,7 +41,10 @@ class BaseListModel(QAbstractListModel):
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return str(self.getData(index))
+            if self.show_index:
+                return f'{index.row()}: {self.getData(index)}'
+            else:
+                return str(self.getData(index))
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data)
@@ -51,14 +57,13 @@ class EditListModel(BaseListModel):
     ----------
     data : list()
         input existing list here, otherwise defaults to empty list
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
 
-    Notes
-    -----
-    This model only returns strings, so any value entered will be converted to a string
     """
 
-    def __init__(self, data):
-        super().__init__(data)
+    def __init__(self, data, show_index=False):
+        super().__init__(data, show_index=show_index)
 
     def flags(self, index=QModelIndex()):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
@@ -96,17 +101,15 @@ class CheckListModel(BaseListModel):
     ----------
     data : list()
         list with content to be displayed, defaults to empty list
-
     checked : list()
         list which stores the checked items from data
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
 
-    Notes
-    -----
-    This model only returns strings, so any value entered will be converted to a string
     """
 
-    def __init__(self, data, checked, one_check=False):
-        super().__init__(data)
+    def __init__(self, data, checked, one_check=False, show_index=False):
+        super().__init__(data, show_index=show_index)
         self.one_check = one_check
 
         if data is None:
@@ -119,9 +122,15 @@ class CheckListModel(BaseListModel):
         else:
             self._checked = checked
 
+    def getChecked(self, index=QModelIndex()):
+        return self.checked[index.row()]
+
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return str(self.getData(index))
+            if self.show_index:
+                return f'{index.row()}: {self.getData(index)}'
+            else:
+                return str(self.getData(index))
 
         if role == Qt.CheckStateRole:
             if self.getData(index) in self._checked:
@@ -147,14 +156,30 @@ class CheckListModel(BaseListModel):
 
 
 class CheckDictModel(BaseListModel):
-    def __init__(self, data, check_dict):
-        super().__init__(data)
+    """
+    A Model for a list, which marks items which are present in a dictionary
+
+    Parameters
+    ----------
+    data : list()
+        list with content to be displayed, defaults to empty list
+    check_dict : dict()
+        dictionary which may contain items from data as keys
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
+    """
+
+    def __init__(self, data, check_dict, show_index=False):
+        super().__init__(data, show_index)
         self._check_dict = check_dict
         self.app = QApplication.instance()
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            return str(self.getData(index))
+            if self.show_index:
+                return f'{index.row()}: {self.getData(index)}'
+            else:
+                return str(self.getData(index))
 
         elif role == Qt.DecorationRole:
             if self.getData(index) in self._check_dict:

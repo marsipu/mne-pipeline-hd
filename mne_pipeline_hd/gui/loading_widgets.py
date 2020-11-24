@@ -37,95 +37,93 @@ from .models import AddFilesModel
 from ..basic_functions.loading import MEEG
 
 
-def file_indexing(which_file, all_files):
-    if which_file == '':
-        return [], []
-    else:
-        # Turn string input into according sub_list-Index
-        try:
-            if 'all' in which_file:
-                if ',' in which_file:
-                    splits = which_file.split(',')
-                    rm = []
-                    run = []
-                    for sp in splits:
-                        if '!' in sp and '-' in sp:
-                            x, y = sp.split('-')
-                            x = x[1:]
-                            for n in range(int(x) - 1, int(y)):
-                                rm.append(n)
-                        elif '!' in sp:
-                            rm.append(int(sp[1:]) - 1)
-                        elif 'all' in sp:
-                            for i in range(0, len(all_files)):
-                                run.append(i)
-                    for r in rm:
-                        if r in run:
-                            run.remove(r)
-                else:
-                    run = [x for x in range(0, len(all_files))]
+def index_parser(index, all_items):
+    """
+    Parses indices from a index-string in all_items
 
-            elif ',' in which_file and '-' in which_file:
-                z = which_file.split(',')
-                run = []
-                rm = []
-                for i in z:
-                    if '-' in i and '!' not in i:
-                        x, y = i.split('-')
-                        for n in range(int(x) - 1, int(y)):
-                            run.append(n)
-                    elif '!' not in i:
-                        run.append(int(i) - 1)
-                    elif '!' in i and '-' in i:
-                        x, y = i.split('-')
-                        x = x[1:]
-                        for n in range(int(x) - 1, int(y)):
-                            rm.append(n)
-                    elif '!' in i:
-                        rm.append(int(i[1:]) - 1)
+    Parameters
+    ----------
+    index: str
+        A string which contains information about indices
+    all_items
+        All items
+    Returns
+    -------
 
-                for r in rm:
-                    if r in run:
-                        run.remove(r)
+    """
+    run = list()
+    rm = list()
 
-            elif '-' in which_file and ',' not in which_file:
-                x, y = which_file.split('-')
-                run = [x for x in range(int(x) - 1, int(y))]
-
-            elif ',' in which_file and '-' not in which_file:
-                splits = which_file.split(',')
-                rm = []
-                run = []
-                for sp in splits:
-                    if '!' in sp:
-                        rm.append(int(sp) - 1)
-                    else:
-                        run.append(int(sp) - 1)
-                if len(rm) > 0:
-                    for r in rm:
-                        run.remove(r)
-
-            else:
-                if len(all_files) < int(which_file) or int(which_file) <= 0:
-                    run = []
-                else:
-                    run = [int(which_file) - 1]
-
-            files = [x for (i, x) in enumerate(all_files) if i in run]
-
-            return files, run
-
-        except ValueError:
+    try:
+        if index == '':
             return [], []
+        elif 'all' in index:
+            if ',' in index:
+                splits = index.split(',')
+                for sp in splits:
+                    if '!' in sp and '-' in sp:
+                        x, y = sp.split('-')
+                        x = x[1:]
+                        for n in range(int(x), int(y) + 1):
+                            rm.append(n)
+                    elif '!' in sp:
+                        rm.append(int(sp[1:]))
+                    elif 'all' in sp:
+                        for i in range(len(all_items)):
+                            run.append(i)
+            else:
+                run = [x for x in range(len(all_items))]
+
+        elif ',' in index and '-' in index:
+            z = index.split(',')
+            for i in z:
+                if '-' in i and '!' not in i:
+                    x, y = i.split('-')
+                    for n in range(int(x), int(y) + 1):
+                        run.append(n)
+                elif '!' not in i:
+                    run.append(int(i))
+                elif '!' in i and '-' in i:
+                    x, y = i.split('-')
+                    x = x[1:]
+                    for n in range(int(x), int(y) + 1):
+                        rm.append(n)
+                elif '!' in i:
+                    rm.append(int(i[1:]))
+
+        elif '-' in index and ',' not in index:
+            x, y = index.split('-')
+            run = [x for x in range(int(x), int(y) + 1)]
+
+        elif ',' in index and '-' not in index:
+            splits = index.split(',')
+            for sp in splits:
+                if '!' in sp:
+                    rm.append(int(sp))
+                else:
+                    run.append(int(sp))
+
+        else:
+            if len(all_items) < int(index) or int(index) < \
+                    0:
+                run = []
+            else:
+                run = [int(index)]
+
+        run = [i for i in run if i not in rm]
+        files = [x for (i, x) in enumerate(all_items) if i in run]
+
+        return files, run
+
+    except ValueError:
+        return [], []
 
 
 def get_existing_mri_subjects(subjects_dir):
-    existing_mri_subs = list()
+
     # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
     read_dir = sorted([f for f in os.listdir(subjects_dir) if not f.startswith('.')], key=str.lower)
-    for fsmri in read_dir:
-        if exists(join(subjects_dir, fsmri, 'surf')):
-            existing_mri_subs.append(fsmri)
+    existing_mri_subs = [fsmri for fsmri in read_dir if exists(join(subjects_dir, fsmri, 'surf'))]
 
     return existing_mri_subs
 
@@ -133,7 +131,7 @@ def get_existing_mri_subjects(subjects_dir):
 # Todo: Subject-Selection according to having or not specified Files (Combobox)
 class SubjectDock(QDockWidget):
     def __init__(self, main_win):
-        super().__init__('Subject-Selection', main_win)
+        super().__init__('Object-Selection', main_win)
         self.mw = main_win
         self.setAllowedAreas(Qt.LeftDockWidgetArea)
 
@@ -142,9 +140,9 @@ class SubjectDock(QDockWidget):
         self.update_mri_subjects_list()
 
     def init_ui(self):
-        self.main_widget = QWidget(self)
-        self.layout = QVBoxLayout()
-        self.tab_widget = QTabWidget(self)
+        self.central_widget = QWidget(self)
+        layout = QVBoxLayout()
+        tab_widget = QTabWidget(self)
 
         idx_example = "Examples:\n" \
                       "'5' (One File)\n" \
@@ -155,35 +153,34 @@ class SubjectDock(QDockWidget):
                       "'all' (All files in file_list.py)\n" \
                       "'all,!4-6' (All files except 4-6)"
 
-        # Subjects-List + Index-Line-Edit
-        self.sub_widget = QWidget()
-        self.sub_layout = QVBoxLayout()
-        self.sub_listw = QListWidget()
-        self.sub_listw.itemChanged.connect(self.get_sub_selection)
-        self.sub_layout.addWidget(self.sub_listw)
+        # MEEG-List + Index-Line-Edit
+        meeg_widget = QWidget()
+        meeg_layout = QVBoxLayout()
+        self.meeg_list = CheckList(self.mw.pr.all_meeg, self.mw.pr.sel_meeg)
+        meeg_layout.addWidget(self.meeg_list)
 
-        self.sub_ledit = QLineEdit()
-        self.sub_ledit.setPlaceholderText('Subject-Index')
-        self.sub_ledit.textEdited.connect(self.update_sub_selection)
-        self.sub_ledit.setToolTip(idx_example)
-        self.sub_ledit_layout = QGridLayout()
-        self.sub_ledit_layout.addWidget(self.sub_ledit, 0, 0)
-        self.sub_clear_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogCancelButton))
-        self.sub_clear_bt.clicked.connect(self.sub_clear_all)
-        self.sub_ledit_layout.addWidget(self.sub_clear_bt, 0, 1)
+        sub_ledit = QLineEdit()
+        sub_ledit.setPlaceholderText('Subject-Index')
+        sub_ledit.textEdited.connect(self.update_sub_selection)
+        sub_ledit.setToolTip(idx_example)
+        sub_ledit_layout = QGridLayout()
+        sub_ledit_layout.addWidget(self.sub_ledit, 0, 0)
+        sub_clear_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogCancelButton))
+        sub_clear_bt.clicked.connect(self.sub_clear_all)
+        sub_ledit_layout.addWidget(self.sub_clear_bt, 0, 1)
 
         # Add and Remove-Buttons
         file_add_bt = QPushButton('Add')
         file_add_bt.clicked.connect(partial(AddFilesDialog, self.mw))
-        self.sub_ledit_layout.addWidget(file_add_bt, 1, 0)
+        sub_ledit_layout.addWidget(file_add_bt, 1, 0)
         file_rm_bt = QPushButton('Remove')
         file_rm_bt.clicked.connect(self.remove_files)
-        self.sub_ledit_layout.addWidget(file_rm_bt, 1, 1)
+        sub_ledit_layout.addWidget(file_rm_bt, 1, 1)
 
-        self.sub_layout.addLayout(self.sub_ledit_layout)
-        self.sub_widget.setLayout(self.sub_layout)
+        meeg_layout.addLayout(sub_ledit_layout)
+        meeg_widget.setLayout(meeg_layout)
 
-        self.tab_widget.addTab(self.sub_widget, 'MEG/EEG')
+        tab_widget.addTab(meeg_widget, 'MEG/EEG')
 
         # MRI-Subjects-List + Index-Line-Edit
         self.mri_widget = QWidget()
@@ -213,14 +210,18 @@ class SubjectDock(QDockWidget):
         self.mri_layout.addLayout(self.mri_bt_layout)
         self.mri_widget.setLayout(self.mri_layout)
 
-        self.tab_widget.addTab(self.mri_widget, 'MRI')
+        tab_widget.addTab(self.mri_widget, 'MRI')
 
         self.ga_widget = GrandAvgWidget(self.mw)
-        self.tab_widget.addTab(self.ga_widget, 'Grand-Average')
+        tab_widget.addTab(self.ga_widget, 'Grand-Average')
 
-        self.layout.addWidget(self.tab_widget)
-        self.main_widget.setLayout(self.layout)
-        self.setWidget(self.main_widget)
+        layout.addWidget(self.tab_widget)
+        self.central_widget.setLayout(self.layout)
+        self.setWidget(self.central_widget)
+
+    def reload_dock(self):
+        self.init_ui()
+        self.central_widget.show()
 
     def update_subjects_list(self):
         self.sub_listw.clear()
@@ -276,7 +277,7 @@ class SubjectDock(QDockWidget):
 
     def update_sub_selection(self):
         which_file = self.sub_ledit.text()
-        self.mw.pr.sel_meeg, idxs = file_indexing(which_file, self.mw.pr.all_meeg)
+        self.mw.pr.sel_meeg, idxs = index_parser(which_file, self.mw.pr.all_meeg)
         if len(idxs) > 0:
             # Clear all check-states
             self.sub_clear_all()
@@ -287,7 +288,7 @@ class SubjectDock(QDockWidget):
 
     def update_mri_selection(self):
         which_file = self.mri_ledit.text()
-        self.mw.pr.sel_fsmri, idxs = file_indexing(which_file, self.mw.pr.all_fsmri)
+        self.mw.pr.sel_fsmri, idxs = index_parser(which_file, self.mw.pr.all_fsmri)
         if len(idxs) > 0:
             # Clear all check-states
             self.mri_clear_all()
