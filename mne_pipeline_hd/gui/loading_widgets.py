@@ -26,11 +26,11 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
                              QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
-                             QScrollArea, QSizePolicy, QStyle, QTabWidget, QTableView, QTextEdit, QTreeWidget,
+                             QScrollArea, QSizePolicy, QTabWidget, QTableView, QTextEdit, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
-from .base_widgets import CheckDictList, CheckList, EditDict, EditList
+from .base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleList
 from .dialogs import ErrorDialog
 from .gui_utils import (Worker, get_ratio_geometry)
 from .models import AddFilesModel
@@ -119,13 +119,68 @@ def index_parser(index, all_items):
         return [], []
 
 
-def get_existing_mri_subjects(subjects_dir):
+class RemoveDialog(QDialog):
+    def __init__(self, parentw, mode):
+        super().__init__(parentw)
+        self.pw = parentw
+        self.pr = parentw.mw.pr
+        self.mode = mode
 
-    # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
-    read_dir = sorted([f for f in os.listdir(subjects_dir) if not f.startswith('.')], key=str.lower)
-    existing_mri_subs = [fsmri for fsmri in read_dir if exists(join(subjects_dir, fsmri, 'surf'))]
+        self.init_ui()
+        self.open()
 
-    return existing_mri_subs
+    def init_ui(self):
+        layout = QVBoxLayout()
+        label = QLabel(f'Do you really want to remove the selected {self.mode}?')
+        layout.addWidget(label)
+
+        if self.mode == 'MEEG':
+            layout.addWidget(SimpleList(self.pr.sel_meeg))
+        elif self.mode == 'FSMRI':
+            layout.addWidget(SimpleList(self.pr.sel_fsmri))
+
+        only_list_bt = QPushButton('Remove only from List')
+        only_list_bt.clicked.connect(partial(self.remove_objects, False))
+        layout.addWidget(only_list_bt)
+        remove_files_bt = QPushButton('Remove with all Files')
+        remove_files_bt.clicked.connect(partial(self.remove_objects, True))
+        layout.addWidget(remove_files_bt)
+        cancel_bt = QPushButton('Cancel')
+        cancel_bt.clicked.connect(self.close)
+        layout.addWidget(cancel_bt)
+        self.setLayout(layout)
+
+    def remove_objects(self, remove_files):
+        if self.mode == 'MEEG':
+            for meeg in self.pr.sel_meeg:
+                # Remove MEEG from Lists/Dictionaries
+                self.pr.all_meeg.remove(meeg)
+                self.pr.meeg_to_erm.pop(meeg, None)
+                self.pr.meeg_to_fsmri.pop(meeg, None)
+                self.pr.all_info.pop(meeg, None)
+                self.pr.meeg_bad_channels.pop(meeg, None)
+                self.pr.meeg_event_id.pop(meeg, None)
+                self.pr.file_parameters.drop(index=[i for i in self.pr.file_parameters.index if meeg in i],
+                                             inplace=True)
+                if remove_files:
+                    try:
+                        shutil.rmtree(join(self.pr.data_path, meeg))
+                    except FileNotFoundError:
+                        print(join(self.pr.data_path, meeg) + ' not found!')
+            self.pr.sel_meeg.clear()
+            self.pw.meeg_list.content_changed()
+
+        elif self.mode == 'FSMRI':
+            for fsmri in self.pr.sel_fsmri:
+                self.pr.all_fsmri.remove(fsmri)
+                if remove_files:
+                    try:
+                        shutil.rmtree(join(self.pw.mw.subjects_dir, fsmri))
+                    except FileNotFoundError:
+                        print(join(self.pw.mw.subjects_dir, fsmri) + ' not found!')
+            self.pr.sel_fsmri.clear()
+            self.pw.fsmri_list.content_changed()
+        self.close()
 
 
 # Todo: Subject-Selection according to having or not specified Files (Combobox)
@@ -136,8 +191,6 @@ class SubjectDock(QDockWidget):
         self.setAllowedAreas(Qt.LeftDockWidgetArea)
 
         self.init_ui()
-        self.update_subjects_list()
-        self.update_mri_subjects_list()
 
     def init_ui(self):
         self.central_widget = QWidget(self)
@@ -156,238 +209,97 @@ class SubjectDock(QDockWidget):
         # MEEG-List + Index-Line-Edit
         meeg_widget = QWidget()
         meeg_layout = QVBoxLayout()
-        self.meeg_list = CheckList(self.mw.pr.all_meeg, self.mw.pr.sel_meeg)
+        self.meeg_list = CheckList(self.mw.pr.all_meeg, self.mw.pr.sel_meeg, ui_button_pos='top', show_index=True,
+                                   title='Select MEG/EEG')
         meeg_layout.addWidget(self.meeg_list)
 
-        sub_ledit = QLineEdit()
-        sub_ledit.setPlaceholderText('Subject-Index')
-        sub_ledit.textEdited.connect(self.update_sub_selection)
-        sub_ledit.setToolTip(idx_example)
-        sub_ledit_layout = QGridLayout()
-        sub_ledit_layout.addWidget(self.sub_ledit, 0, 0)
-        sub_clear_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogCancelButton))
-        sub_clear_bt.clicked.connect(self.sub_clear_all)
-        sub_ledit_layout.addWidget(self.sub_clear_bt, 0, 1)
+        meeg_ledit = QLineEdit()
+        meeg_ledit.setPlaceholderText('MEEG-Index')
+        meeg_ledit.textEdited.connect(self.select_meeg)
+        meeg_ledit.setToolTip(idx_example)
+        meeg_layout.addWidget(meeg_ledit)
 
         # Add and Remove-Buttons
-        file_add_bt = QPushButton('Add')
+        meeg_bt_layout = QHBoxLayout()
+        file_add_bt = QPushButton('Add MEEG')
         file_add_bt.clicked.connect(partial(AddFilesDialog, self.mw))
-        sub_ledit_layout.addWidget(file_add_bt, 1, 0)
-        file_rm_bt = QPushButton('Remove')
-        file_rm_bt.clicked.connect(self.remove_files)
-        sub_ledit_layout.addWidget(file_rm_bt, 1, 1)
+        meeg_bt_layout.addWidget(file_add_bt)
+        file_rm_bt = QPushButton('Remove MEEG')
+        file_rm_bt.clicked.connect(self.remove_meeg)
+        meeg_bt_layout.addWidget(file_rm_bt)
 
-        meeg_layout.addLayout(sub_ledit_layout)
+        meeg_layout.addLayout(meeg_bt_layout)
         meeg_widget.setLayout(meeg_layout)
 
         tab_widget.addTab(meeg_widget, 'MEG/EEG')
 
         # MRI-Subjects-List + Index-Line-Edit
-        self.mri_widget = QWidget()
-        self.mri_layout = QVBoxLayout()
-        self.mri_listw = QListWidget()
-        self.mri_listw.itemChanged.connect(self.get_mri_selection)
-        self.mri_layout.addWidget(self.mri_listw)
+        fsmri_widget = QWidget()
+        fsmri_layout = QVBoxLayout()
+        self.fsmri_list = CheckList(self.mw.pr.all_fsmri, self.mw.pr.sel_fsmri, ui_button_pos='top',
+                                    show_index=True, title='Select Freesurfer-MRI')
+        fsmri_layout.addWidget(self.fsmri_list)
 
-        self.mri_ledit = QLineEdit()
-        self.mri_ledit.setPlaceholderText('MRI-Subject-Index')
-        self.mri_ledit.textEdited.connect(self.update_mri_selection)
-        self.mri_ledit.setToolTip(idx_example)
-        self.mri_bt_layout = QGridLayout()
-        self.mri_bt_layout.addWidget(self.mri_ledit, 0, 0)
-        self.mri_clear_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogCancelButton))
-        # self.mri_clear_bt = QPushButton(icon=QIcon(':/abort_icon.svg'))
-        self.mri_clear_bt.clicked.connect(self.mri_clear_all)
-        self.mri_bt_layout.addWidget(self.mri_clear_bt, 0, 1)
+        fsmri_ledit = QLineEdit()
+        fsmri_ledit.setPlaceholderText('FS-MRI-Index')
+        fsmri_ledit.textEdited.connect(self.select_fsmri)
+        fsmri_ledit.setToolTip(idx_example)
+        fsmri_layout.addWidget(fsmri_ledit)
+
         # Add and Remove-Buttons
-        mri_add_bt = QPushButton('Add MRI-Subject/s')
+        fsmri_bt_layout = QHBoxLayout()
+        mri_add_bt = QPushButton('Add FS-MRI')
         mri_add_bt.clicked.connect(partial(AddMRIDialog, self.mw))
-        self.mri_bt_layout.addWidget(mri_add_bt, 1, 0)
-        mri_rm_bt = QPushButton('Remove MRI-Subject/s')
-        mri_rm_bt.clicked.connect(self.remove_mri_subjects)
-        self.mri_bt_layout.addWidget(mri_rm_bt, 1, 1)
+        fsmri_bt_layout.addWidget(mri_add_bt)
+        mri_rm_bt = QPushButton('Remove FS-MRI')
+        mri_rm_bt.clicked.connect(self.remove_fsmri)
+        fsmri_bt_layout.addWidget(mri_rm_bt)
 
-        self.mri_layout.addLayout(self.mri_bt_layout)
-        self.mri_widget.setLayout(self.mri_layout)
+        fsmri_layout.addLayout(fsmri_bt_layout)
+        fsmri_widget.setLayout(fsmri_layout)
 
-        tab_widget.addTab(self.mri_widget, 'MRI')
+        tab_widget.addTab(fsmri_widget, 'FS-MRI')
 
         self.ga_widget = GrandAvgWidget(self.mw)
-        tab_widget.addTab(self.ga_widget, 'Grand-Average')
+        tab_widget.addTab(self.ga_widget, 'Groups')
 
-        layout.addWidget(self.tab_widget)
-        self.central_widget.setLayout(self.layout)
+        layout.addWidget(tab_widget)
+        self.central_widget.setLayout(layout)
         self.setWidget(self.central_widget)
+
+    def update_dock(self):
+        # Update lists when rereferenced elsewhere
+        self.meeg_list.replace_data(self.mw.pr.all_meeg)
+        self.meeg_list.replace_checked(self.mw.pr.sel_meeg)
+
+        self.fsmri_list.replace_data(self.mw.pr.all_fsmri)
+        self.fsmri_list.replace_checked(self.mw.pr.sel_fsmri)
+
+        self.ga_widget.update_treew()
 
     def reload_dock(self):
         self.init_ui()
         self.central_widget.show()
 
-    def update_subjects_list(self):
-        self.sub_listw.clear()
-        for idx, file in enumerate(self.mw.pr.all_meeg):
-            idx += 1  # Let index start with 1
-            item = QListWidgetItem(f'{idx}: {file}')
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            if self.mw.pr.sel_meeg:
-                if file in self.mw.pr.sel_meeg:
-                    item.setCheckState(Qt.Checked)
-                else:
-                    item.setCheckState(Qt.Unchecked)
-            else:
-                item.setCheckState(Qt.Unchecked)
-            self.sub_listw.addItem(item)
-        self.get_sub_selection()
+    def select_meeg(self):
+        index = self.sub_ledit.text()
+        self.mw.pr.sel_meeg, idxs = index_parser(index, self.mw.pr.all_meeg)
+        # Replace _checked in CheckListModel because of rereferencing above
+        self.meeg_list.replace_checked(self.mw.pr.sel_meeg)
 
-    def update_mri_subjects_list(self):
-        # Also get all freesurfe-directories from Freesurfer-Folder (maybe user added some manually)
-        self.mw.pr.all_fsmri = get_existing_mri_subjects(self.mw.subjects_dir)
-        self.mri_listw.clear()
-        for idx, file in enumerate(self.mw.pr.all_fsmri):
-            idx += 1  # Let index start with 1
-            item = QListWidgetItem(f'{idx}: {file}')
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            if self.mw.pr.sel_fsmri:
-                if file in self.mw.pr.sel_fsmri:
-                    item.setCheckState(Qt.Checked)
-                else:
-                    item.setCheckState(Qt.Unchecked)
-            else:
-                item.setCheckState(Qt.Unchecked)
-            self.mri_listw.addItem(item)
-        self.get_mri_selection()
+    def select_fsmri(self):
+        index = self.mri_ledit.text()
+        self.mw.pr.sel_fsmri, idxs = index_parser(index, self.mw.pr.all_fsmri)
+        # Replace _checked in CheckListModel because of rereferencing above
+        self.fsmri_list.replace_checked(self.mw.pr.sel_fsmri)
 
-    def get_sub_selection(self):
-        sel_files = []
-        for idx in range(self.sub_listw.count()):
-            item = self.sub_listw.item(idx)
-            if item.checkState() == Qt.Checked:
-                # Index in front of name has to be deleted Todo: can be done better (maybe QTableWidget?)
-                sel_files.append(item.text()[len(str(idx + 1)) + 2:])
-        self.mw.pr.sel_meeg = sel_files
-
-    def get_mri_selection(self):
-        sel_mri = []
-        for idx in range(self.mri_listw.count()):
-            item = self.mri_listw.item(idx)
-            if item.checkState() == Qt.Checked:
-                # Index in front of name has to be deleted Todo: can be done better (maybe QTableWidget?)
-                sel_mri.append(item.text()[len(str(idx + 1)) + 2:])
-        self.mw.pr.sel_fsmri = sel_mri
-
-    def update_sub_selection(self):
-        which_file = self.sub_ledit.text()
-        self.mw.pr.sel_meeg, idxs = index_parser(which_file, self.mw.pr.all_meeg)
-        if len(idxs) > 0:
-            # Clear all check-states
-            self.sub_clear_all()
-            for idx in idxs:
-                self.sub_listw.item(idx).setCheckState(Qt.Checked)
-        else:
-            pass
-
-    def update_mri_selection(self):
-        which_file = self.mri_ledit.text()
-        self.mw.pr.sel_fsmri, idxs = index_parser(which_file, self.mw.pr.all_fsmri)
-        if len(idxs) > 0:
-            # Clear all check-states
-            self.mri_clear_all()
-            for idx in idxs:
-                self.mri_listw.item(idx).setCheckState(Qt.Checked)
-        else:
-            pass
-
-    def sub_clear_all(self):
-        for idx in range(self.sub_listw.count()):
-            self.sub_listw.item(idx).setCheckState(Qt.Unchecked)
-
-    def mri_clear_all(self):
-        for idx in range(self.mri_listw.count()):
-            self.mri_listw.item(idx).setCheckState(Qt.Unchecked)
-
-    def remove_files(self):
+    def remove_meeg(self):
         if len(self.mw.pr.sel_meeg) > 0:
-            def remove_only_list():
-                for file in self.mw.pr.sel_meeg:
-                    self.mw.pr.all_meeg.remove(file)
-                    self.mw.pr.meeg_to_erm.pop(file, None)
-                    self.mw.pr.meeg_to_fsmri.pop(file, None)
-                    self.mw.pr.all_info.pop(file, None)
-                    self.mw.pr.meeg_bad_channels.pop(file, None)
-                self.mw.pr.sel_meeg = []
-                self.update_subjects_list()
-                self.sub_msg_box.close()
+            RemoveDialog(self, 'MEEG')
 
-            def remove_with_files():
-                for file in self.mw.pr.sel_meeg:
-                    self.mw.pr.all_meeg.remove(file)
-                    self.mw.pr.meeg_to_erm.pop(file, None)
-                    self.mw.pr.meeg_to_fsmri.pop(file, None)
-                    self.mw.pr.all_info.pop(file, None)
-                    self.mw.pr.meeg_bad_channels.pop(file, None)
-                    try:
-                        shutil.rmtree(join(self.mw.pr.data_path, file))
-                    except FileNotFoundError:
-                        print(join(self.mw.pr.data_path, file) + ' not found!')
-                self.mw.pr.sel_meeg = []
-                self.update_subjects_list()
-                self.sub_msg_box.close()
-
-            self.sub_msg_box = QDialog(self.mw)
-            msg_box_layout = QGridLayout()
-            label = QLabel('Do you really want to remove the selected files?')
-            msg_box_layout.addWidget(label, 0, 0, 1, 3)
-            only_list_bt = QPushButton('Remove only from List')
-            only_list_bt.clicked.connect(remove_only_list)
-            msg_box_layout.addWidget(only_list_bt, 1, 0)
-            remove_files_bt = QPushButton('Remove with all Files')
-            remove_files_bt.clicked.connect(remove_with_files)
-            msg_box_layout.addWidget(remove_files_bt, 1, 1)
-            cancel_bt = QPushButton('Cancel')
-            cancel_bt.clicked.connect(self.sub_msg_box.close)
-            msg_box_layout.addWidget(cancel_bt, 1, 2)
-            self.sub_msg_box.setLayout(msg_box_layout)
-            self.sub_msg_box.open()
-        else:
-            pass
-
-    def remove_mri_subjects(self):
+    def remove_fsmri(self):
         if len(self.mw.pr.sel_fsmri) > 0:
-            def remove_only_list():
-                for mri_subject in self.mw.pr.sel_fsmri:
-                    self.mw.pr.all_fsmri.remove(mri_subject)
-                self.mw.pr.sel_fsmri = []
-                self.update_mri_subjects_list()
-                self.mri_msg_box.close()
-
-            def remove_with_files():
-                for mri_subject in self.mw.pr.sel_fsmri:
-                    self.mw.pr.all_fsmri.remove(mri_subject)
-                    try:
-                        shutil.rmtree(join(self.mw.subjects_dir, mri_subject))
-                    except FileNotFoundError:
-                        print(join(self.mw.subjects_dir, mri_subject) + ' not found!')
-                self.mw.pr.sel_fsmri = []
-                self.update_mri_subjects_list()
-                self.mri_msg_box.close()
-
-            self.mri_msg_box = QDialog(self.mw)
-            msg_box_layout = QGridLayout()
-            label = QLabel('Do you really want to remove the selected mri_subjects?')
-            msg_box_layout.addWidget(label, 0, 0, 1, 3)
-            only_list_bt = QPushButton('Remove from List')
-            only_list_bt.clicked.connect(remove_only_list)
-            msg_box_layout.addWidget(only_list_bt, 1, 0)
-            remove_files_bt = QPushButton('Remove with Files')
-            remove_files_bt.clicked.connect(remove_with_files)
-            msg_box_layout.addWidget(remove_files_bt, 1, 1)
-            cancel_bt = QPushButton('Cancel')
-            cancel_bt.clicked.connect(self.mri_msg_box.close)
-            msg_box_layout.addWidget(cancel_bt, 1, 2)
-            self.mri_msg_box.setLayout(msg_box_layout)
-            self.mri_msg_box.open()
-        else:
-            pass
+            RemoveDialog(self, 'FSMRI')
 
 
 class GrandAvgWidget(QWidget):
@@ -827,7 +739,7 @@ class AddFilesWidget(QWidget):
         self.addf_dialog.close()
 
         self.mw.pr.save_lists()
-        self.mw.subject_dock.update_subjects_list()
+        self.mw.subject_dock.update_dock()
 
     def load_file(self, idx):
         path = self.pd_files.loc[idx, 'Path']
@@ -916,9 +828,6 @@ class AddFilesDialog(AddFilesWidget):
 
         self.dialog = QDialog(main_win)
         self.dialog.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Minimum)
-        width, height = get_ratio_geometry(0.7)
-        self.resize(int(width), int(height))
-        self.center()
 
         close_bt = QPushButton('Close', self)
         close_bt.clicked.connect(self.dialog.close)
@@ -926,16 +835,10 @@ class AddFilesDialog(AddFilesWidget):
 
         self.dialog.setLayout(self.layout)
 
-        width, height = get_ratio_geometry(0.8)
+        width, height = get_ratio_geometry(0.7)
         self.resize(width, height)
 
         self.dialog.open()
-
-    def center(self):
-        qr = self.dialog.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.dialog.move(qr.topLeft())
 
 
 class AddMRIWidget(QWidget):
@@ -1006,13 +909,12 @@ class AddMRIWidget(QWidget):
             self.paths[new_name] = self.paths[old_name]
 
     def import_mri_subject(self):
-        mri_subjects = get_existing_mri_subjects(self.mw.subjects_dir)
         folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder with a subject\'s Freesurfe-Segmentation')
 
         if folder_path != '':
             if exists(join(folder_path, 'surf')):
                 fsmri = Path(folder_path).name
-                if fsmri not in mri_subjects and fsmri not in self.folders:
+                if fsmri not in self.mw.pr.all_fsmri and fsmri not in self.folders:
                     self.folders.append(fsmri)
                     self.paths.update({fsmri: folder_path})
                     self.populate_list_widget()
@@ -1022,7 +924,6 @@ class AddMRIWidget(QWidget):
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
 
     def import_mri_subjects(self):
-        mri_subjects = get_existing_mri_subjects(self.mw.subjects_dir)
         parent_folder = QFileDialog.getExistingDirectory(self, 'Choose a folder containting several '
                                                                'Freesurfer-Segmentations')
         folder_list = sorted([f for f in os.listdir(parent_folder) if not f.startswith('.')], key=str.lower)
@@ -1030,7 +931,7 @@ class AddMRIWidget(QWidget):
         for fsmri in folder_list:
             folder_path = join(parent_folder, fsmri)
             if exists(join(folder_path, 'surf')):
-                if fsmri not in mri_subjects and fsmri not in self.folders:
+                if fsmri not in self.mw.pr.all_fsmri and fsmri not in self.folders:
                     self.folders.append(fsmri)
                     self.paths.update({fsmri: folder_path})
                 else:
@@ -1083,7 +984,7 @@ class AddMRIWidget(QWidget):
         self.paths = dict()
 
         self.mw.pr.save_lists()
-        self.mw.subject_dock.update_mri_subjects_list()
+        self.mw.subject_dock.update_dock()
 
 
 class AddMRIDialog(AddMRIWidget):
@@ -1268,7 +1169,7 @@ class SubDictWidget(QWidget):
 
     def update_lists(self):
         if self.template_brain not in self.mw.pr.all_fsmri:
-            self.mw.subject_dock.update_mri_subjects_list()
+            self.mw.subject_dock.update_dock()
             self.list_widget2.addItem(self.template_brain)
 
     def add_template_brain(self, signals):

@@ -49,8 +49,6 @@ class Project:
 
         # Stores the names of all Empty-Room-Files (MEG/EEG)
         self.all_erm = []
-        # Stores selected Empty-Room-Files (MEG/EEG)
-        self.sel_erm = []
         # Maps each MEG/EEG-File to a Empty-Room-File or None
         self.meeg_to_erm = {}
 
@@ -86,7 +84,7 @@ class Project:
 
         self.make_paths()
         self.load_lists()
-        # self.check_data()
+        self.check_data()
 
         # Parameter-Dict, contains parameters for each parameter-preset
         self.load_parameters()
@@ -123,7 +121,6 @@ class Project:
         self.meeg_event_id_path = join(self.pscripts_path, 'meeg_event_id.json')
         self.sel_event_id_path = join(self.pscripts_path, 'selected_event_ids.json')
         self.all_erm_path = join(self.pscripts_path, 'all_erm.json')
-        self.sel_erm_path = join(self.pscripts_path, 'selected_erm.json')
         self.meeg_to_erm_path = join(self.pscripts_path, 'meeg_to_erm.json')
         self.all_fsmri_path = join(self.pscripts_path, 'all_fsmri.json')
         self.sel_fsmri_path = join(self.pscripts_path, 'selected_fsmri.json')
@@ -156,7 +153,6 @@ class Project:
                       self.meeg_event_id_path,
                       self.sel_event_id_path,
                       self.all_erm_path,
-                      self.sel_erm_path,
                       self.meeg_to_erm_path,
                       self.all_fsmri_path,
                       self.sel_fsmri_path,
@@ -198,7 +194,6 @@ class Project:
                      self.meeg_event_id_path: 'meeg_event_id',
                      self.sel_event_id_path: 'sel_event_id',
                      self.all_erm_path: 'all_erm',
-                     self.sel_erm_path: 'sel_erm',
                      self.meeg_to_erm_path: 'meeg_to_erm',
                      self.all_fsmri_path: 'all_fsmri',
                      self.sel_fsmri_path: 'sel_fsmri',
@@ -229,7 +224,6 @@ class Project:
                      self.meeg_event_id_path: self.meeg_event_id,
                      self.sel_event_id_path: self.sel_event_id,
                      self.all_erm_path: self.all_erm,
-                     self.sel_erm_path: self.sel_erm,
                      self.meeg_to_erm_path: self.meeg_to_erm,
                      self.all_fsmri_path: self.all_fsmri,
                      self.sel_fsmri_path: self.sel_fsmri,
@@ -327,6 +321,7 @@ class Project:
         self.file_parameters.to_csv(self.file_parameters_path, sep=';')
 
     def check_data(self):
+
         missing_objects = [x for x in listdir(self.data_path) if
                            x not in ['grand_averages', 'empty_room_data'] and x not in self.all_meeg]
 
@@ -336,6 +331,10 @@ class Project:
         missing_erm = [x for x in listdir(self.erm_data_path) if x not in self.all_erm]
         for erm in missing_erm:
             self.all_erm.append(erm)
+
+        # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
+        read_dir = sorted([f for f in os.listdir(self.mw.subjects_dir) if not f.startswith('.')], key=str.lower)
+        self.all_fsmri = [fsmri for fsmri in read_dir if exists(join(self.mw.subjects_dir, fsmri, 'surf'))]
 
         self.save_lists()
 

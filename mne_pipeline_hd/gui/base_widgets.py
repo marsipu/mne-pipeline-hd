@@ -137,6 +137,8 @@ class SimpleList(BaseList):
         Input a list with contents to display
     extended_selection: bool
         Set True, if you want to select more than one item in the list
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -145,8 +147,8 @@ class SimpleList(BaseList):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, extended_selection=False, parent=None, title=None):
-        super().__init__(model=BaseListModel(data), view=QListView(),
+    def __init__(self, data=None, extended_selection=False, show_index=False, parent=None, title=None):
+        super().__init__(model=BaseListModel(data, show_index=show_index), view=QListView(),
                          extended_selection=extended_selection, parent=parent, title=title)
 
 
@@ -161,6 +163,8 @@ class EditList(BaseList):
         If to display Buttons or not
     ui_button_pos: str
         The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -169,13 +173,13 @@ class EditList(BaseList):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False, parent=None,
-                 title=None, verbose=False):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
+                 show_index=False, parent=None, title=None, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditListModel(data), view=QListView(),
+        super().__init__(model=EditListModel(data, show_index=show_index), view=QListView(),
                          extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
 
     def init_ui(self):
@@ -247,6 +251,8 @@ class CheckList(BaseList):
         If to display Buttons or not
     one_check : bool
         If only one Item in the CheckList can be checked at the same time
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -257,13 +263,13 @@ class CheckList(BaseList):
 
     checkedChanged = pyqtSignal(list)
 
-    def __init__(self, data=None, checked=None, ui_buttons=True, ui_button_pos='right', one_check=False, parent=None,
-                 title=None, verbose=False):
+    def __init__(self, data=None, checked=None, ui_buttons=True, ui_button_pos='right', one_check=False,
+                 show_index=False, parent=None, title=None, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=CheckListModel(data, checked, one_check=one_check),
+        super().__init__(model=CheckListModel(data, checked, one_check=one_check, show_index=show_index),
                          view=QListView(), extended_selection=False, parent=parent, title=title, verbose=verbose)
 
         self.model.dataChanged.connect(self._checked_changed)
@@ -341,6 +347,8 @@ class CheckDictList(BaseList):
         A list with items to display
     check_dict : dict | None
         A dictionary that may contain items from data as keys
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
 
@@ -349,8 +357,9 @@ class CheckDictList(BaseList):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, check_dict=None, extended_selection=False, parent=None, title=None, verbose=False):
-        super().__init__(model=CheckDictModel(data, check_dict), view=QListView(),
+    def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False,
+                 parent=None, title=None, verbose=False):
+        super().__init__(model=CheckDictModel(data, check_dict, show_index=show_index), view=QListView(),
                          extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
 
     def replace_check_dict(self, new_check_dict=None):

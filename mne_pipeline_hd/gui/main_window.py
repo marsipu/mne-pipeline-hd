@@ -229,9 +229,7 @@ class MainWindow(QMainWindow):
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
         # Update Subject-Lists
-        self.subject_dock.update_subjects_list()
-        self.subject_dock.update_mri_subjects_list()
-        self.subject_dock.ga_widget.update_treew()
+        self.subject_dock.update_dock()
 
         # Update Parameters
         self.parameters_dock.update_all_param_guis()

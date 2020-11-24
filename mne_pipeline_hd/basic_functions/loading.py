@@ -53,6 +53,7 @@ class BaseLoading:
 
     def save_file_params(self, path):
         file_name = Path(path).name
+        self.pr.file_parameters.loc[file_name, 'NAME'] = self.name
         self.pr.file_parameters.loc[file_name, 'PATH'] = path
         self.pr.file_parameters.loc[file_name, 'TIME'] = datetime.now()
         self.pr.file_parameters.loc[file_name, 'SIZE'] = getsize(path)
