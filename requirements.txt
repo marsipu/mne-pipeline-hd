@@ -1,13 +1,5 @@
 # MNE-Python-Requirements
-scipy
-nilearn
-numpy
-mayavi
-pandas
-matplotlib
-setuptools
 mne
-PyQt5>=5.10,<5.14; platform_system == "darwin"
 
 # Special Pipeline-Requirements
 https://api.github.com/repos/autoreject/autoreject/zipball/master
