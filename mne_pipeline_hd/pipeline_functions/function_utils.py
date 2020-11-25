@@ -25,7 +25,7 @@ from .pipeline_utils import shutdown
 from ..basic_functions.loading import BaseLoading, FSMRI, Group, MEEG
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
-from ..gui.gui_utils import Worker, get_ratio_geometry
+from ..gui.gui_utils import Worker, get_exception_tuple, get_ratio_geometry
 from ..gui.models import RunModel
 
 
@@ -313,7 +313,7 @@ class RunDialog(QDialog):
             # Load object if the preceding object is not the same
             if not self.current_object or self.current_object.name != object_name:
                 # Print Headline for object
-                self.add_html(f'<br><h1>{object_name}</h1>')
+                self.add_html(f'<br><h1>{object_name}</h1><br>')
 
                 if self.current_type == 'FSMRI':
                     self.current_object = FSMRI(object_name, self.mw)
@@ -346,11 +346,16 @@ class RunDialog(QDialog):
             # Print Headline for function
             self.add_html(f'<h2>{self.current_func}</h2><br>')
 
-            if (self.mw.pd_funcs.loc[self.current_func, 'mayavi'] or self.mw.pd_funcs.loc[
-                self.current_func, 'matplotlib']
-                    and self.mw.get_setting('show_plots')):
+            if (self.mw.pd_funcs.loc[self.current_func, 'mayavi']
+                    or self.mw.pd_funcs.loc[self.current_func, 'matplotlib'] and self.mw.get_setting('show_plots')):
                 # Plot functions with interactive plots currently can't run in a separate thread
-                func_from_def(self.current_func, self.current_object, self.mw)
+                try:
+                    func_from_def(self.current_func, self.current_object, self.mw)
+                except:
+                    exc_tuple = get_exception_tuple()
+                    self.thread_error(exc_tuple)
+                else:
+                    self.thread_finished()
             else:
                 self.fworker = FunctionWorker(self.current_func, self.current_object, self.mw)
                 self.fworker.signals.error.connect(self.thread_error)

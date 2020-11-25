@@ -12,8 +12,8 @@ from __future__ import print_function
 
 import pickle
 from datetime import datetime
-from os import listdir, makedirs, remove
-from os.path import exists, getsize, join
+from os import listdir, makedirs, mkdir, remove
+from os.path import exists, getsize, isdir, join
 from pathlib import Path
 
 import mne
@@ -75,14 +75,14 @@ class MEEG(BaseLoading):
         try:
             self.erm = self.mw.pr.meeg_to_erm[name]
         except KeyError:
-            self.erm = None
+            self.erm = 'None'
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No ERM',
                                     f'No Empty-Room-Measurement assigned for {self.name}, defaulting to None')
         try:
             self.fsmri = self.mw.pr.meeg_to_fsmri[name]
         except KeyError:
-            self.fsmri = None
+            self.fsmri = 'None'
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No MRI',
                                     f'No MRI-Subject assigned for {self.name}, defaulting to None')
@@ -112,7 +112,7 @@ class MEEG(BaseLoading):
                 QMessageBox.warning(self.mw, 'No Trials',
                                     f'No Trials selected for {self.name}, defaulting to empty list')
 
-        if self.fsmri is not None:
+        if self.fsmri != 'None':
             self.fsmri = fsmri or FSMRI(self.fsmri, main_win)
 
         ################################################################################################################
@@ -723,6 +723,11 @@ class Group(BaseLoading):
         self.ga_ltc_folder = join(self.save_dir, 'ltc')
 
         self.ga_con_folder = join(self.save_dir, 'con')
+
+        group_folders = [self.ga_evokeds_folder, self.ga_tfr_folder, self.ga_stc_folder, self.ga_ltc_folder,
+                         self.ga_con_folder]
+        for folder in [f for f in group_folders if not isdir(f)]:
+            mkdir(folder)
 
     ####################################################################################################################
     # Load- & Save-Methods

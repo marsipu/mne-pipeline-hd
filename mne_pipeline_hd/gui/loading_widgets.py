@@ -213,11 +213,11 @@ class SubjectDock(QDockWidget):
                                    title='Select MEG/EEG')
         meeg_layout.addWidget(self.meeg_list)
 
-        meeg_ledit = QLineEdit()
-        meeg_ledit.setPlaceholderText('MEEG-Index')
-        meeg_ledit.textEdited.connect(self.select_meeg)
-        meeg_ledit.setToolTip(idx_example)
-        meeg_layout.addWidget(meeg_ledit)
+        self.meeg_ledit = QLineEdit()
+        self.meeg_ledit.setPlaceholderText('MEEG-Index')
+        self.meeg_ledit.textEdited.connect(self.select_meeg)
+        self.meeg_ledit.setToolTip(idx_example)
+        meeg_layout.addWidget(self.meeg_ledit)
 
         # Add and Remove-Buttons
         meeg_bt_layout = QHBoxLayout()
@@ -240,11 +240,11 @@ class SubjectDock(QDockWidget):
                                     show_index=True, title='Select Freesurfer-MRI')
         fsmri_layout.addWidget(self.fsmri_list)
 
-        fsmri_ledit = QLineEdit()
-        fsmri_ledit.setPlaceholderText('FS-MRI-Index')
-        fsmri_ledit.textEdited.connect(self.select_fsmri)
-        fsmri_ledit.setToolTip(idx_example)
-        fsmri_layout.addWidget(fsmri_ledit)
+        self.fsmri_ledit = QLineEdit()
+        self.fsmri_ledit.setPlaceholderText('FS-MRI-Index')
+        self.fsmri_ledit.textEdited.connect(self.select_fsmri)
+        self.fsmri_ledit.setToolTip(idx_example)
+        fsmri_layout.addWidget(self.fsmri_ledit)
 
         # Add and Remove-Buttons
         fsmri_bt_layout = QHBoxLayout()
@@ -282,13 +282,13 @@ class SubjectDock(QDockWidget):
         self.central_widget.show()
 
     def select_meeg(self):
-        index = self.sub_ledit.text()
+        index = self.meeg_ledit.text()
         self.mw.pr.sel_meeg, idxs = index_parser(index, self.mw.pr.all_meeg)
         # Replace _checked in CheckListModel because of rereferencing above
         self.meeg_list.replace_checked(self.mw.pr.sel_meeg)
 
     def select_fsmri(self):
-        index = self.mri_ledit.text()
+        index = self.fsmri_ledit.text()
         self.mw.pr.sel_fsmri, idxs = index_parser(index, self.mw.pr.all_fsmri)
         # Replace _checked in CheckListModel because of rereferencing above
         self.fsmri_list.replace_checked(self.mw.pr.sel_fsmri)
