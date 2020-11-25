@@ -139,25 +139,25 @@ class SettingsDlg(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        layout.addWidget(IntGui(self.mw.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
-                                hint='Set to the amount of cores of your machine '
-                                     'you want to use for multiprocessing', default=-1))
-        layout.addWidget(BoolGui(self.mw.settings, 'show_plots', param_alias='Show Plots',
-                                 hint='Do you want to show plots?\n'
-                                      '(or just save them without showing, then just check "Save Plots")',
-                                 default=True))
-        layout.addWidget(BoolGui(self.mw.settings, 'save_plots', param_alias='Save Plots',
-                                 hint='Do you want to save the plots made to a file?', default=True))
-        layout.addWidget(BoolGui(self.mw.qsettings, 'enable_cuda', param_alias='Enable CUDA',
-                                 hint='Do you want to enable CUDA? (system has to be setup for cuda)',
-                                 default=False))
-        layout.addWidget(BoolGui(self.mw.settings, 'shutdown', param_alias='Shutdown',
-                                 hint='Do you want to shut your system down after execution of all subjects?'))
-        layout.addWidget(IntGui(self.mw.settings, 'dpi', min_val=0, max_val=10000,
-                                hint='Set dpi for saved plots', default=300))
-        layout.addWidget(ComboGui(self.mw.settings, 'img_format', self.mw.available_image_formats,
-                                  param_alias='Image-Format', hint='Choose the image format for plots',
-                                  default='.png'))
+        # layout.addWidget(IntGui(self.mw.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
+        #                         hint='Set to the amount of cores of your machine '
+        #                              'you want to use for multiprocessing', default=-1))
+        # layout.addWidget(BoolGui(self.mw.settings, 'show_plots', param_alias='Show Plots',
+        #                          hint='Do you want to show plots?\n'
+        #                               '(or just save them without showing, then just check "Save Plots")',
+        #                          default=True))
+        # layout.addWidget(BoolGui(self.mw.settings, 'save_plots', param_alias='Save Plots',
+        #                          hint='Do you want to save the plots made to a file?', default=True))
+        # layout.addWidget(BoolGui(self.mw.qsettings, 'enable_cuda', param_alias='Enable CUDA',
+        #                          hint='Do you want to enable CUDA? (system has to be setup for cuda)',
+        #                          default=False))
+        # layout.addWidget(BoolGui(self.mw.settings, 'shutdown', param_alias='Shutdown',
+        #                          hint='Do you want to shut your system down after execution of all subjects?'))
+        # layout.addWidget(IntGui(self.mw.settings, 'dpi', min_val=0, max_val=10000,
+        #                         hint='Set dpi for saved plots', default=300))
+        # layout.addWidget(ComboGui(self.mw.settings, 'img_format', self.mw.available_image_formats,
+        #                           param_alias='Image-Format', hint='Choose the image format for plots',
+        #                           default='.png'))
         layout.addWidget(StringGui(self.mw.qsettings, 'fs_path', param_alias='FREESURFER_HOME-Path',
                                    hint='Set the Path to the "freesurfer"-directory of your Freesurfer-Installation '
                                         '(for Windows to the LINUX-Path of the Freesurfer-Installation '

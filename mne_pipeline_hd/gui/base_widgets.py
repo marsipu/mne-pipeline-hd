@@ -147,9 +147,9 @@ class SimpleList(BaseList):
     If you change the list outside of this class, call content_changed to update this widget
     """
 
-    def __init__(self, data=None, extended_selection=False, show_index=False, parent=None, title=None):
+    def __init__(self, data=None, extended_selection=False, show_index=False, parent=None, title=None, verbose=False):
         super().__init__(model=BaseListModel(data, show_index=show_index), view=QListView(),
-                         extended_selection=extended_selection, parent=parent, title=title)
+                         extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
 
 
 class EditList(BaseList):
@@ -685,12 +685,12 @@ class EditPandasTable(BasePandasTable):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditPandasModel(data), view=QTableView(), parent=parent, title=title)
+        super().__init__(model=EditPandasModel(data), view=QTableView(), parent=parent, title=title, verbose=verbose)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -851,10 +851,11 @@ class AssignWidget(QWidget):
     """
 
     def __init__(self, items, properties, assignments, properties_editable=False, subtitles=None,
-                 parent=None, title=None):
+                 parent=None, title=None, verbose=False):
         super().__init__(parent)
         self.subtitles = subtitles
         self.title = title
+        self.verbose = verbose
 
         self.items = items
         self.props = properties
@@ -866,14 +867,14 @@ class AssignWidget(QWidget):
     def init_ui(self):
         layout = QGridLayout()
 
-        self.items_w = CheckDictList(self.items, self.assignments, extended_selection=True)
+        self.items_w = CheckDictList(self.items, self.assignments, extended_selection=True, verbose=self.verbose)
         self.items_w.selectionChanged.connect(self.items_selected)
         layout.addWidget(self.items_w, 0, 0)
 
         if self.props_editable:
-            self.props_w = EditList(self.props, extended_selection=False)
+            self.props_w = EditList(self.props, extended_selection=False, verbose=self.verbose)
         else:
-            self.props_w = SimpleList(self.props, extended_selection=False)
+            self.props_w = SimpleList(self.props, extended_selection=False, verbose=self.verbose)
         layout.addWidget(self.props_w, 0, 1)
 
         assign_bt = QPushButton('Assign')

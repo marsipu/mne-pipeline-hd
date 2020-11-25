@@ -596,7 +596,8 @@ class AddFilesWidget(QWidget):
         self.setLayout(self.layout)
 
     def delete_item(self):
-        row_idxs = set([idx.row() for idx in self.view.selectionModel().selectedIndexes()])
+        # Sorted indexes in reverse to avoid problems when removing several indices at once
+        row_idxs = sorted(set([idx.row() for idx in self.view.selectionModel().selectedIndexes()]), reverse=True)
         for row_idx in row_idxs:
             self.model.removeRow(row_idx)
         # Update pd_files, because reference is changed with model.removeRow()
