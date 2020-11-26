@@ -73,7 +73,7 @@ def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite
                 if only_read:
                     raise Exception('New Autoreject-Threshold only from epoch_raw')
                 print('Rejection with Autoreject')
-                reject = ar.get_rejection_threshold(epochs, ch_types=['grad'], random_state=8)
+                reject = ar.get_rejection_threshold(epochs, random_state=8)
                 prae_reject = read_reject[name]
                 read_reject[name] = reject
                 if prae_reject == reject:
@@ -91,7 +91,7 @@ def autoreject_handler(name, epochs, highpass, lowpass, pscripts_path, overwrite
             if only_read:
                 raise Exception('New Autoreject-Threshold only from epoch_raw')
             print('Rejection with Autoreject')
-            reject = ar.get_rejection_threshold(epochs, ch_types=['grad'], random_state=8)
+            reject = ar.get_rejection_threshold(epochs, random_state=8)
             read_reject.update({name: reject})
             print(f'Added AR-Threshold {reject} for {name}')
             with open(reject_value_path, 'w') as rv:
