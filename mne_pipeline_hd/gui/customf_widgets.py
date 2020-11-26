@@ -17,6 +17,7 @@ from importlib import util
 from os import mkdir
 from os.path import isdir, isfile, join
 from pathlib import Path
+from types import FunctionType
 
 import pandas as pd
 from PyQt5.QtCore import QSize, Qt
@@ -453,7 +454,7 @@ class CustomFunctionImport(QDialog):
                 self.code_view.update_code()
             self.update_func_setup()
 
-            if any([self.current_function in x for x in list(self.add_pd_params['functions'])]):
+            if any([self.current_function in x for x in self.add_pd_params['functions']]):
                 self.param_setup_gbox.setEnabled(True)
                 self.update_param_view()
                 self.current_parameter = \
@@ -879,7 +880,7 @@ class ImportFuncs(QDialog):
             for func_key in self.module.__dict__:
                 func = self.module.__dict__[func_key]
                 # Only functions are allowed (Classes should be called from function)
-                if callable(func) and func.__module__ == self.module.__name__:
+                if type(func) == FunctionType and func.__module__ == self.module.__name__:
                     # Check, if function is already existing
                     if func_key in self.cf.exst_functions:
                         if self.edit_existing and func_key in self.cf.add_pd_funcs.index:
@@ -958,12 +959,13 @@ class ImportFuncs(QDialog):
                     else:
                         self.cf.add_pd_params.loc[param_key, 'functions'] = func_key
 
-            # If add_pd_params stays empty
-            if len(self.cf.add_pd_params.index) == 0:
-                self.cf.add_pd_params['ready'] = None
-                self.cf.add_pd_params['functions'] = None
-
             self.cf.param_exst_dict[func_key] = existing_parameters
+
+        # Check, if mandatory columns exist
+        if 'ready' not in self.cf.add_pd_params.columns:
+            self.cf.add_pd_params['ready'] = 0
+        if 'functions' not in self.cf.add_pd_params.columns:
+            self.cf.add_pd_params['functions'] = ''
 
     def closeEvent(self, event):
         self.load_selected_functions()
