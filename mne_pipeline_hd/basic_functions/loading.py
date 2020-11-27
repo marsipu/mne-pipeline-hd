@@ -169,7 +169,7 @@ class MEEG(BaseLoading):
         self.power_tfr_path = join(self.save_dir, f'{name}_{self.p_preset}_{self.p["tfr_method"]}-pw-tfr.h5')
         self.itc_tfr_path = join(self.save_dir, f'{name}_{self.p_preset}_{self.p["tfr_method"]}-itc-tfr.h5')
 
-        self.trans_path = join(self.save_dir, f'{self.fsmri}-trans.fif')
+        self.trans_path = join(self.save_dir, f'{self.fsmri.name}-trans.fif')
 
         self.forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
 
