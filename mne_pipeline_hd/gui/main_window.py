@@ -34,7 +34,7 @@ from .customf_widgets import ChooseCustomModules, CustomFunctionImport
 from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
 from .gui_utils import get_exception_tuple, get_ratio_geometry
-from .loading_widgets import (AddFilesDialog, AddMRIDialog, EventIDGui, SubBadsDialog, SubDictDialog,
+from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, SubBadsDialog, SubDictDialog,
                               SubjectDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal
@@ -467,27 +467,28 @@ class MainWindow(QMainWindow):
 
         input_menu.addAction('Subject-Wizard', partial(SubjectWizard, self))
         input_menu.addSeparator()
-        aaddfiles = QAction('Add Files', parent=self)
-        aaddfiles.setShortcut('Ctrl+F')
+        aaddfiles = QAction('Add MEEG', parent=self)
+        aaddfiles.setShortcut('Ctrl+M')
         aaddfiles.setStatusTip('Add your MEG-Files here')
         aaddfiles.triggered.connect(partial(AddFilesDialog, self))
         input_menu.addAction(aaddfiles)
 
-        aaddmri = QAction('Add MRI-Subject', self)
-        aaddmri.setShortcut('Ctrl+M')
-        aaddmri.setStatusTip('Add your Freesurfer-Files here')
+        aaddmri = QAction('Add Freesurfer-MRI', self)
+        aaddmri.setShortcut('Ctrl+F')
+        aaddmri.setStatusTip('Add your Freesurfer-Segmentations here')
         aaddmri.triggered.connect(partial(AddMRIDialog, self))
         input_menu.addAction(aaddmri)
 
-        input_menu.addAction('Assign File --> MRI-Subject',
+        input_menu.addAction('Assign MEEG --> Freesurfer-MRI',
                              partial(SubDictDialog, self, 'mri'))
-        input_menu.addAction('Assign File --> ERM-File',
+        input_menu.addAction('Assign MEEG --> Empty-Room',
                              partial(SubDictDialog, self, 'erm'))
-        input_menu.addAction('Assign Bad-Channels --> File',
+        input_menu.addAction('Assign Bad-Channels --> MEEG',
                              partial(SubBadsDialog, self))
-        input_menu.addAction('Assign Event-IDs', partial(EventIDGui, self))
+        input_menu.addAction('Assign Event-IDs --> MEEG', partial(EventIDGui, self))
         input_menu.addSeparator()
         input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
+        input_menu.addAction('Copy Transformation', partial(CopyTrans, self))
 
         # Custom-Functions
         self.customf_menu = self.menuBar().addMenu('&Custom Functions')

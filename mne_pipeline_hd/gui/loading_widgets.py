@@ -14,7 +14,7 @@ import shutil
 import sys
 from collections import Counter
 from functools import partial
-from os.path import exists, isdir, join
+from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
 import matplotlib
@@ -1814,3 +1814,75 @@ class EvIDApply(QDialog):
             # Avoid with copy that CheckList-Model changes selected for all afterwards (same reference)
             self.p.mw.pr.meeg_event_id[file] = self.p.event_id.copy()
             self.p.mw.pr.sel_event_id[file] = self.p.checked_labels.copy()
+
+
+class CopyTrans(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+
+        # Get MEEGs, where a trans-file is already existing
+        self.from_meegs = list()
+        for meeg_name in self.mw.pr.all_meeg:
+            meeg = MEEG(meeg_name, self.mw)
+            if isfile(meeg.trans_path):
+                self.from_meegs.append(meeg_name)
+
+        # Get the other MEEGs (wihtout trans-file)
+        self.to_meegs = [meeg for meeg in self.mw.pr.all_meeg if meeg not in self.from_meegs]
+
+        self.current_meeg = None
+        self.copy_tos = list()
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QGridLayout()
+
+        from_list = SimpleList(self.from_meegs, title='From:')
+        from_list.currentChanged.connect(self.from_selected)
+        layout.addWidget(from_list, 0, 0)
+
+        self.to_list = CheckList(self.to_meegs, self.copy_tos, ui_button_pos='bottom', title='To:')
+        layout.addWidget(self.to_list, 0, 1)
+
+        copy_bt = QPushButton('Copy')
+        copy_bt.clicked.connect(self.copy_trans)
+        layout.addWidget(copy_bt, 1, 0)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt, 1, 1)
+
+        self.setLayout(layout)
+
+    def from_selected(self, current_meeg):
+        self.current_meeg = current_meeg
+        self.copy_tos.clear()
+        if current_meeg in self.mw.pr.all_info:
+            # Get Digitization points, which were stored at import into all_info
+            current_dig = self.mw.pr.all_info[current_meeg]['dig']
+
+            # Add all meeg, which have the exact same digitization points
+            # (assuming, that they can use the same trans-file)
+            for k in self.to_meegs:
+                if k not in self.copy_tos and self.mw.pr.all_info[k]['dig'] == current_dig:
+                    self.copy_tos.append(k)
+        self.to_list.content_changed()
+
+    def copy_trans(self):
+        if self.current_meeg:
+            meeg = MEEG(self.current_meeg, self.mw)
+            from_path = meeg.trans_path
+
+            for copy_to in self.copy_tos:
+                to_meeg = MEEG(copy_to, self.mw)
+                to_path = to_meeg.trans_path
+
+                shutil.copy2(from_path, to_path)
+
+                self.to_meegs.remove(copy_to)
+
+            self.copy_tos.clear()
+            self.to_list.content_changed()
