@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import mne
 import numpy as np
 
+# Make use of program also possible with sensor-space installation of mne
 try:
     from mayavi import mlab
     from nilearn.plotting import plot_anat
@@ -328,7 +329,7 @@ def plot_transformation(meeg):
     info = meeg.load_info()
     trans = meeg.load_transformation()
 
-    mne.viz.plot_alignment(info, trans, meeg.fsmri, meeg.subjects_dir,
+    mne.viz.plot_alignment(info, trans, meeg.fsmri.name, meeg.subjects_dir,
                            surfaces=['head-dense', 'inner_skull', 'brain'],
                            show_axes=True, dig=True)
 
@@ -404,14 +405,14 @@ def brain_plot(meeg, stcs, folder_name, subject, mne_evoked_time):
             brain.save_image_sequence(mne_evoked_time, fname_pattern=file_patternrh)
 
         else:
-            stc.plot(subject=meeg.fsmri, surface='inflated', subjects_dir=meeg.subjects_dir,
+            stc.plot(subject=meeg.fsmri.name, surface='inflated', subjects_dir=meeg.subjects_dir,
                      hemi='split', title=f'{meeg.name}-{trial}', size=(1200, 600),
                      initial_time=0)
 
 
 def plot_stc(meeg, mne_evoked_time):
     stcs = meeg.load_source_estimates()
-    brain_plot(meeg, stcs, 'source-estimate', meeg.fsmri, mne_evoked_time)
+    brain_plot(meeg, stcs, 'source-estimate', meeg.fsmri.name, mne_evoked_time)
 
 
 def plot_mixn(meeg, mne_evoked_time, parcellation):
@@ -442,21 +443,21 @@ def plot_mixn(meeg, mne_evoked_time, parcellation):
             else:
                 side = 'right'
                 hemi = 'rh'
-            fig2 = mne.viz.plot_dipole_locations(dipole, trans=trans, subject=meeg.fsmri,
+            fig2 = mne.viz.plot_dipole_locations(dipole, trans=trans, subject=meeg.fsmri.name,
                                                  subjects_dir=meeg.subjects_dir, coord_frame='mri')
             fig2.suptitle(f'Dipole {idx + 1} {side}', fontsize=16)
 
             plot_save(meeg, 'mixed-norm-estimate', subfolder='dipoles', trial=trial, idx=idx, matplotlib_figure=fig2)
 
-            brain = Brain(meeg.fsmri, hemi=hemi, surf='pial', views='lat')
-            dip_loc = mne.head_to_mri(dipole.pos, meeg.fsmri, trans, subjects_dir=meeg.subjects_dir)
+            brain = Brain(meeg.fsmri.name, hemi=hemi, surf='pial', views='lat')
+            dip_loc = mne.head_to_mri(dipole.pos, meeg.fsmri.name, trans, subjects_dir=meeg.subjects_dir)
             brain.add_foci(dip_loc[0])
             brain.add_annotation(parcellation)
             # Todo: Comparision with label
             plot_save(meeg, 'mixed-norm-estimate', subfolder='dipoles', trial=trial, idx=idx, brain=brain)
 
     stcs = meeg.load_mixn_source_estimates()
-    brain_plot(meeg, stcs, 'mixed-norm-estimate/stc', meeg.fsmri, mne_evoked_time)
+    brain_plot(meeg, stcs, 'mixed-norm-estimate/stc', meeg.fsmri.name, mne_evoked_time)
 
 
 def plot_animated_stc(meeg, stc_animation, stc_animation_dilat):
@@ -468,7 +469,7 @@ def plot_animated_stc(meeg, stc_animation, stc_animation_dilat):
         save_path = join(meeg.figures_path, 'stcs_movie', trial,
                          f'{meeg.name}_{trial}_{meeg.p_preset}-stc_movie.mp4')
 
-        brain = mne.viz.plot_source_estimates(stc=n_stc, subject=meeg.fsmri, surface='inflated',
+        brain = mne.viz.plot_source_estimates(stc=n_stc, subject=meeg.fsmri.name, surface='inflated',
                                               subjects_dir=meeg.subjects_dir, size=(1600, 800),
                                               hemi='split', views='lat',
                                               title=meeg.name + '_movie')
@@ -485,7 +486,7 @@ def plot_ecd(meeg):
 
     for trial in ecd_dips:
         for dipole in ecd_dips[trial]:
-            fig = dipole.plot_locations(trans, meeg.fsmri, meeg.subjects_dir,
+            fig = dipole.plot_locations(trans, meeg.fsmri.name, meeg.subjects_dir,
                                         mode='orthoview', idx='gof')
             fig.suptitle(meeg.name, horizontalalignment='right')
 
@@ -498,11 +499,11 @@ def plot_ecd(meeg):
             print(f'Highest GOF {dipole.gof[best_idx]:.2f}% at t={best_time * 1000:.1f} ms with confidence volume'
                   f'{dipole.conf["vol"][best_idx] * 100 ** 3} cm^3')
 
-            mri_pos = mne.head_to_mri(dipole.pos, meeg.fsmri, trans, meeg.subjects_dir)
+            mri_pos = mne.head_to_mri(dipole.pos, meeg.fsmri.name, trans, meeg.subjects_dir)
 
             save_path_anat = join(meeg.obj.figures_path, 'ECD', dipole, trial,
                                   f'{meeg.name}-{trial}_{meeg.pr.p_preset}_ECD-{dipole}{meeg.img_format}')
-            t1_path = join(meeg.subjects_dir, meeg.fsmri, 'mri', 'T1.mgz')
+            t1_path = join(meeg.subjects_dir, meeg.fsmri.name, 'mri', 'T1.mgz')
             plot_anat(t1_path, cut_coords=mri_pos[best_idx], output_file=save_path_anat,
                       title=f'{meeg.name}-{trial}_{dipole}',
                       annotate=True, draw_cross=True)

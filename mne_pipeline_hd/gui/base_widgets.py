@@ -144,7 +144,8 @@ class SimpleList(BaseList):
 
     Notes
     -----
-    If you change the list outside of this class, call content_changed to update this widget
+    If you change the contents of a list outside of this class, call content_changed to update this widget.
+    If you change the reference to a list, call the appropriate  replace-function.
     """
 
     def __init__(self, data=None, extended_selection=False, show_index=False, parent=None, title=None, verbose=False):
@@ -170,7 +171,8 @@ class EditList(BaseList):
 
     Notes
     -----
-    If you change the list outside of this class, call content_changed to update this widget
+    If you change the contents of the list outside of this class, call content_changed to update this widget.
+    If you change the referemce tp tje öost
     """
 
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
@@ -258,7 +260,8 @@ class CheckList(BaseList):
 
     Notes
     -----
-    If you change the list outside of this class, call content_changed to update this widget
+    If you change the contents of a list outside of this class, call content_changed to update this widget.
+    If you change the reference to a list, call the appropriate  replace-function.
     """
 
     checkedChanged = pyqtSignal(list)
@@ -354,7 +357,8 @@ class CheckDictList(BaseList):
 
     Notes
     -----
-    If you change the list outside of this class, call content_changed to update this widget
+    If you change the contents of a list outside of this class, call content_changed to update this widget.
+    If you change the reference to a list, call the appropriate  replace-function.
     """
 
     def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False,

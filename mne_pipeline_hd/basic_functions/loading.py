@@ -80,9 +80,9 @@ class MEEG(BaseLoading):
                 QMessageBox.warning(self.mw, 'No ERM',
                                     f'No Empty-Room-Measurement assigned for {self.name}, defaulting to None')
         try:
-            self.fsmri = self.mw.pr.meeg_to_fsmri[name]
+            self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[name], main_win)
         except KeyError:
-            self.fsmri = 'None'
+            self.fsmri = FSMRI('None', main_win)
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No MRI',
                                     f'No MRI-Subject assigned for {self.name}, defaulting to None')
@@ -111,9 +111,6 @@ class MEEG(BaseLoading):
             if not suppress_warnings:
                 QMessageBox.warning(self.mw, 'No Trials',
                                     f'No Trials selected for {self.name}, defaulting to empty list')
-
-        if self.fsmri != 'None':
-            self.fsmri = fsmri or FSMRI(self.fsmri, main_win)
 
         ################################################################################################################
         # Data-Attributes (not to be called directly)
@@ -150,7 +147,7 @@ class MEEG(BaseLoading):
         self.raw_path = join(self.save_dir, f'{name}-raw.fif')
         self.raw_filtered_path = join(self.save_dir, f'{name}_{self.p_preset}-filtered-raw.fif')
 
-        if self.erm is not None:
+        if self.erm != 'None':
             self.erm_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}-raw.fif')
             self.erm_filtered_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
 

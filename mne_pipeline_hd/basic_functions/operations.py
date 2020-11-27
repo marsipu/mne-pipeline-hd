@@ -911,7 +911,7 @@ def label_time_course(meeg, target_labels, parcellation, extract_mode):
     stcs = meeg.load_source_estimates()
     src = meeg.fsmri.load_source_space()
 
-    labels = mne.read_labels_from_annot(meeg.fsmri,
+    labels = mne.read_labels_from_annot(meeg.fsmri.name,
                                         subjects_dir=meeg.subjects_dir,
                                         parc=parcellation)
     chosen_labels = [label for label in labels if label.name in target_labels]
@@ -1047,7 +1047,7 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
                                                      pick_ori="normal", return_generator=True)
 
         # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
-        labels = mne.read_labels_from_annot(meeg.fsmri, parc=parcellation,
+        labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation,
                                             subjects_dir=meeg.subjects_dir)
 
         actual_labels = [lb for lb in labels if lb.name in target_labels]
