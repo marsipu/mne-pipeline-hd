@@ -10,6 +10,7 @@ License: BSD (3-clause)
 """
 from __future__ import print_function
 
+import inspect
 import pickle
 from datetime import datetime
 from os import listdir, makedirs, mkdir, remove
@@ -53,6 +54,8 @@ class BaseLoading:
 
     def save_file_params(self, path):
         file_name = Path(path).name
+        # Get the name of the calling function (assuming it is 2 Frames above)
+        self.pr.file_parameters.loc[file_name, 'FUNCTION'] = inspect.stack()[2][3]
         self.pr.file_parameters.loc[file_name, 'NAME'] = self.name
         self.pr.file_parameters.loc[file_name, 'PATH'] = path
         self.pr.file_parameters.loc[file_name, 'TIME'] = datetime.now()
