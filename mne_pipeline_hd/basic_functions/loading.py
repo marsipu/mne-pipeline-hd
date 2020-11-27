@@ -713,16 +713,16 @@ class Group(BaseLoading):
         ################################################################################################################
         # Paths
         ################################################################################################################
-        self.ga_evokeds_folder = join(self.save_dir, 'ave')
+        self.ga_evokeds_folder = join(self.save_dir, 'evokeds')
         self.ga_evokeds_path = join(self.ga_evokeds_folder, f'{self.name}_{self.p_preset}-ave.fif')
 
-        self.ga_tfr_folder = join(self.save_dir, 'tfr')
+        self.ga_tfr_folder = join(self.save_dir, 'time-frequency')
 
-        self.ga_stc_folder = join(self.save_dir, 'stc')
+        self.ga_stc_folder = join(self.save_dir, 'source-estimate')
 
-        self.ga_ltc_folder = join(self.save_dir, 'ltc')
+        self.ga_ltc_folder = join(self.save_dir, 'label-time-course')
 
-        self.ga_con_folder = join(self.save_dir, 'con')
+        self.ga_con_folder = join(self.save_dir, 'connectivity')
 
         group_folders = [self.ga_evokeds_folder, self.ga_tfr_folder, self.ga_stc_folder, self.ga_ltc_folder,
                          self.ga_con_folder]
