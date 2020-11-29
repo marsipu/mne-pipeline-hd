@@ -35,28 +35,38 @@ def get_exception_tuple():
     return exctype, value, traceback_str
 
 
+class WorkerSignals(QObject):
+    """Class for standard Worker-Signals
+    """
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+
+
 class Worker(QRunnable):
+    """A class to execute a function in a seperate Thread
+
+    Parameters
+    ----------
+    function
+        A reference to the function which is to be executed in the thread
+    signal_object : QObject | None
+        A QObject (or inherited) which got at least "finished" and "error" as signals (QRunnable is no QObject, that is
+        why signals have to be inserted externally)
+    args
+        Arguments passed to the executed function
+    kwargs
+        Keyword-Arguments passed to the executed function
+
     """
-    Worker thread
 
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-
-    """
-
-    def __init__(self, fn, signal_class, *args, **kwargs):
+    def __init__(self, function, signal_object=None, *args, **kwargs):
         super().__init__()
 
         # Store constructor arguments (re-used for processing)
-        self.fn = fn
+        self.function = function
         self.args = args
         self.kwargs = kwargs
-        self.signals = signal_class
+        self.signals = signal_object or WorkerSignals()
 
     @pyqtSlot()
     def run(self):
@@ -66,7 +76,7 @@ class Worker(QRunnable):
 
         # Retrieve args/kwargs here; and fire processing using them
         try:
-            self.fn(*self.args, **self.kwargs)
+            self.function(*self.args, **self.kwargs)
         except:
             exc_tuple = get_exception_tuple()
             self.signals.error.emit(exc_tuple)

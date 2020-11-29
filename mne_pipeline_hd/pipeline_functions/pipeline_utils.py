@@ -191,27 +191,55 @@ def delete_files(data_path, pattern):
                 print(f'{f} removed')
 
 
-def compare_prev_run(obj, path, parameters):
-    """Compare the file-parameters of the previous run for the given path"""
+def compare_filep(obj, path, target_parameters=None):
+    """Compare the parameters of the previous run to the current parameters for the given path
+
+    Parameters
+    ----------
+    obj : MEEG | FSMRI | Group
+        A Data-Object to get the information needed
+    path : str
+        The path for the file to compare the parameters
+    target_parameters : list | None
+        The parameters to compare (set None for all)
+
+    Returns
+    -------
+    result_dict : dict
+        A dictionary with every parameter from target_parameters with a value as result:
+            None, if nothing changed |
+            tuple (previous_value, current_value, critical) |
+            'missing', if path hasn't been saved yet
+    """
+
     result_dict = dict()
     file_name = Path(path).name
-    for param in parameters:
+    # Try to get the parameters relevant for the last function, which altered the data at path
+    try:
+        function = obj.pr.file_parameters[file_name]['FUNCTION']
+        critical_params = obj.mw.pd_funcs[function]['func_args'].split(',')
+    except KeyError:
+        critical_params = list()
+
+    if not target_parameters:
+        target_parameters = obj.p.keys()
+    for param in target_parameters:
         try:
             try:
-                previous_value = literal_eval(obj.pr.file_parameters.loc[file_name, param])
+                previous_value = obj.pr.file_parameters[file_name][param]
             except (SyntaxError, ValueError):
-                previous_value = obj.pr.file_parameters.loc[file_name, param]
+                previous_value = obj.pr.file_parameters[file_name][param]
             current_value = obj.p[param]
 
             if previous_value != current_value:
-                result_dict[param] = (previous_value, current_value)
-                print(f'{file_name}: "{param}" changed from {previous_value} to {current_value}')
+                if param in critical_params:
+                    result_dict[param] = (previous_value, current_value, True)
+                else:
+                    result_dict[param] = (previous_value, current_value, False)
             else:
-                result_dict[param] = None
-                print(f'{file_name}: "{param}" is unchanged')
+                result_dict[param] = 'equal'
         except KeyError:
             result_dict[param] = 'missing'
-            print(f'{file_name}: "{param}" was not recorded yet')
 
     return result_dict
 

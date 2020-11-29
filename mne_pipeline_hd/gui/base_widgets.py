@@ -28,7 +28,7 @@ package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.paren
 sys.path.insert(0, package_parent)
 
 from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel, CheckDictModel, CheckListModel,
-                                        EditDictModel, EditListModel, EditPandasModel)
+                                        EditDictModel, EditListModel, EditPandasModel, FileManagementModel)
 
 
 class Base(QWidget):
@@ -141,11 +141,15 @@ class SimpleList(BaseList):
         Set True if you want to display the list-index in front of each value
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    verbose : bool
+        Set True to see debugging for signals
 
     Notes
     -----
     If you change the contents of a list outside of this class, call content_changed to update this widget.
-    If you change the reference to a list, call the appropriate  replace-function.
+    If you change the reference to a list, call the appropriate replace_data.
     """
 
     def __init__(self, data=None, extended_selection=False, show_index=False, parent=None, title=None, verbose=False):
@@ -168,11 +172,15 @@ class EditList(BaseList):
         Set True if you want to display the list-index in front of each value
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    verbose : bool
+        Set True to see debugging for signals
 
     Notes
     -----
     If you change the contents of the list outside of this class, call content_changed to update this widget.
-    If you change the referemce tp tje öost
+    If you change the reference to a list, call replace_data.
     """
 
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
@@ -257,11 +265,15 @@ class CheckList(BaseList):
         Set True if you want to display the list-index in front of each value
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    verbose : bool
+        Set True to see debugging for signals
 
     Notes
     -----
     If you change the contents of a list outside of this class, call content_changed to update this widget.
-    If you change the reference to a list, call the appropriate  replace-function.
+    If you change the reference to a list, call replace_data or replace_checked.
     """
 
     checkedChanged = pyqtSignal(list)
@@ -354,11 +366,15 @@ class CheckDictList(BaseList):
         Set True if you want to display the list-index in front of each value
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    verbose : bool
+        Set True to see debugging for signals
 
     Notes
     -----
     If you change the contents of a list outside of this class, call content_changed to update this widget.
-    If you change the reference to a list, call the appropriate  replace-function.
+    If you change the reference to a list, call replace_data.
     """
 
     def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False,
@@ -376,8 +392,16 @@ class CheckDictList(BaseList):
 
 class BaseDict(Base):
 
-    def __init__(self, model, view, parent, title, verbose=False):
+    def __init__(self, model, view, parent, title, resize_rows=False, resize_columns=False, verbose=False):
         super().__init__(model, view, parent, title, verbose=verbose)
+        self.verbose = verbose
+
+        if resize_rows:
+            model.layoutChanged.connect(self.view.resizeRowsToContents)
+            model.layoutChanged.emit()
+        if resize_columns:
+            model.layoutChanged.connect(self.view.resizeColumnsToContents)
+            model.layoutChanged.emit()
 
     def get_keyvalue_by_index(self, index, data_dict):
         """For the given index, make an entry in item_dict with the data at index as key and a dict as value defining
@@ -422,7 +446,8 @@ class BaseDict(Base):
 
         self.currentChanged.emit(current_dict, previous_dict)
 
-        print(f'Current changed from {previous_dict} to {current_dict}')
+        if self.verbose:
+            print(f'Current changed from {previous_dict} to {current_dict}')
 
     def get_selected(self):
         selection_dict = dict()
@@ -437,7 +462,8 @@ class BaseDict(Base):
         # (maybe some issue with QItemSelection?)
         selection_dict = self.selectionChanged.emit(self.get_selected())
 
-        print(f'Selection changed to {selection_dict}')
+        if self.verbose:
+            print(f'Selection changed to {selection_dict}')
 
     def select(self, keys, values, clear_selection=True):
         key_indices = [i for i, x in enumerate(self.model._data.keys()) if x in keys]
@@ -464,11 +490,20 @@ class SimpleDict(BaseDict):
         Input a pandas DataFrame with contents to display
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    resize_rows : bool
+        Set True to resize the rows to contents
+    resize_columns : bool
+        Set True to resize the columns to contents
+    verbose : bool
+        Set True to see debugging for signals
 
     """
 
-    def __init__(self, data=None, parent=None, title=None, verbose=False):
-        super().__init__(model=BaseDictModel(data), view=QTableView(), parent=parent, title=title, verbose=verbose)
+    def __init__(self, data=None, parent=None, title=None, resize_rows=False, resize_columns=False, verbose=False):
+        super().__init__(model=BaseDictModel(data), view=QTableView(), parent=parent, title=title,
+                         resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
 
 class EditDict(BaseDict):
@@ -484,15 +519,25 @@ class EditDict(BaseDict):
         The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    resize_rows : bool
+        Set True to resize the rows to contents
+    resize_columns : bool
+        Set True to resize the columns to contents
+    verbose : bool
+        Set True to see debugging for signals
 
     """
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None, verbose=False):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None,
+                 resize_rows=False, resize_columns=False, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditDictModel(data), view=QTableView(), parent=parent, title=title, verbose=verbose)
+        super().__init__(model=EditDictModel(data), view=QTableView(), parent=parent, title=title,
+                         resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -551,11 +596,47 @@ class EditDict(BaseDict):
 
 
 class BasePandasTable(Base):
+    """
+    The Base-Class for a table from a pandas DataFrame
 
-    def __init__(self, model, view, parent, title, verbose=False):
+    Parameters
+    ----------
+    model
+        The model for the pandas DataFrame
+    view
+        The view for the pandas DataFrame
+    title : str | None
+        An optional title
+    verbose : bool
+        Set True to see debugging for signals
+    """
+
+    def __init__(self, model, view, parent, title, resize_rows=False, resize_columns=False, verbose=False):
         super().__init__(model, view, parent, title, verbose=verbose)
+        self.verbose = verbose
+
+        if resize_rows:
+            model.layoutChanged.connect(self.view.resizeRowsToContents)
+            model.layoutChanged.emit()
+        if resize_columns:
+            model.layoutChanged.connect(self.view.resizeColumnsToContents)
+            model.layoutChanged.emit()
 
     def get_rowcol_by_index(self, index, data_dict):
+        """Get the data at index and the row and column of this data
+
+        Parameters
+        ----------
+        index : QModelIndex
+            The index to get data, row and column for
+        data_dict :
+            The dictionary in which the information about data, rows and columns is stored
+        Notes
+        -----
+        A datum can be present at multiple indices, thus row and column are lists. Because this function
+        is supposed to be called consecutively, the information is stored in an existing dict (data_dict)
+
+        """
         data = self.model.getData(index)
         row = self.model.headerData(index.row(), orientation=Qt.Vertical, role=Qt.DisplayRole)
         column = self.model.headerData(index.column(), orientation=Qt.Horizontal, role=Qt.DisplayRole)
@@ -582,7 +663,8 @@ class BasePandasTable(Base):
 
         self.currentChanged.emit(current_dict, previous_dict)
 
-        print(f'Current changed from {previous_dict} to {current_dict}')
+        if self.verbose:
+            print(f'Current changed from {previous_dict} to {current_dict}')
 
     def get_selected(self):
         # Somehow, the indexes got from selectionChanged don't appear to be right
@@ -597,7 +679,8 @@ class BasePandasTable(Base):
         selection_dict = self.get_selected()
         self.selectionChanged.emit(selection_dict)
 
-        print(f'Selection changed to {selection_dict}')
+        if self.verbose:
+            print(f'Selection changed to {selection_dict}')
 
     def select(self, values=None, rows=None, columns=None, clear_selection=True):
         """
@@ -658,6 +741,14 @@ class SimplePandasTable(BasePandasTable):
         Input a pandas DataFrame with contents to display
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    resize_rows : bool
+        Set True to resize the rows to contents
+    resize_columns : bool
+        Set True to resize the columns to contents
+    verbose : bool
+        Set True to see debugging for signals
 
     Notes
     -----
@@ -665,8 +756,9 @@ class SimplePandasTable(BasePandasTable):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=None, parent=None, title=None, verbose=False):
-        super().__init__(model=BasePandasModel(data), view=QTableView(), parent=parent, title=title, verbose=verbose)
+    def __init__(self, data=None, parent=None, title=None, resize_rows=False, resize_columns=False, verbose=False):
+        super().__init__(model=BasePandasModel(data), view=QTableView(), parent=parent, title=title,
+                         resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
 
 class EditPandasTable(BasePandasTable):
@@ -682,6 +774,14 @@ class EditPandasTable(BasePandasTable):
         The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    resize_rows : bool
+        Set True to resize the rows to contents
+    resize_columns : bool
+        Set True to resize the columns to contents
+    verbose : bool
+        Set True to see debugging for signals
 
     Notes
     -----
@@ -689,12 +789,14 @@ class EditPandasTable(BasePandasTable):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None, verbose=False):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None, resize_rows=False,
+                 resize_columns=False, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditPandasModel(data), view=QTableView(), parent=parent, title=title, verbose=verbose)
+        super().__init__(model=EditPandasModel(data), view=QTableView(), parent=parent, title=title,
+                         resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -768,8 +870,7 @@ class EditPandasTable(BasePandasTable):
             self.setLayout(layout)
 
     def update_data(self):
-        """Has to be called, when model._data is rereferenced by for example add_row
-        to keep external data updated
+        """Has to be called, when model._data is rereferenced by for example add_row to keep external data updated
 
         Returns
         -------
@@ -830,11 +931,40 @@ class EditPandasTable(BasePandasTable):
             self.model.setHeaderData(column, Qt.Horizontal, text)
 
 
+class FilePandasTable(BasePandasTable):
+    """A Widget to display the files in a table (stored in a pandas DataFrame)
+
+    Parameters
+    ----------
+    data : pandas.DataFrame | None
+        Input a pandas DataFrame with contents to display
+    parent : QWidget | None
+        Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    verbose : bool
+        Set True to see debugging for signals
+
+    Notes
+    -----
+    If you change the Reference to data outside of this class,
+    give the changed DataFrame to replace_data to update this widget
+    """
+
+    def __init__(self, data=None, parent=None, title=None, verbose=False):
+        super().__init__(model=FileManagementModel(data), view=QTableView(), parent=parent, title=title,
+                         resize_rows=True, resize_columns=True, verbose=verbose)
+
+
 class SimpleDialog(QDialog):
-    def __init__(self, widget, parent=None, modal=True, scroll=True):
+    def __init__(self, widget, parent=None, modal=True, scroll=False, title=None):
         super().__init__(parent)
 
         layout = QVBoxLayout()
+
+        if title:
+            layout.addWidget(QLabel(title))
+
         if scroll:
             scroll_area = QScrollArea()
             scroll_area.setWidget(widget)
@@ -850,10 +980,9 @@ class SimpleDialog(QDialog):
 
 
 class AssignWidget(QWidget):
-    """A Widget to assign a property from properties to each item in items
-
     """
 
+    """
     def __init__(self, items, properties, assignments, properties_editable=False, subtitles=None,
                  parent=None, title=None, verbose=False):
         super().__init__(parent)

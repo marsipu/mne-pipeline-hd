@@ -28,8 +28,8 @@ class LoadSignals(QObject):
 
 
 class LoadWorker(Worker):
-    def __init__(self, fn, *args, **kwargs):
-        super().__init__(fn, LoadSignals(), *args, *kwargs)
+    def __init__(self, function, *args, **kwargs):
+        super().__init__(function, LoadSignals(), *args, *kwargs)
 
 
 class HistoryDlg(QDialog):

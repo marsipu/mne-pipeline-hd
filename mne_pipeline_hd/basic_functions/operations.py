@@ -25,7 +25,7 @@ import numpy as np
 
 from .loading import MEEG
 from ..pipeline_functions import ismac, iswin, pipeline_utils as ut
-from ..pipeline_functions.pipeline_utils import compare_prev_run
+from ..pipeline_functions.pipeline_utils import compare_filep
 
 
 # Todo: Change normal comments to docstrings
@@ -35,8 +35,8 @@ from ..pipeline_functions.pipeline_utils import compare_prev_run
 # ==============================================================================
 
 def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
-    results = compare_prev_run(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass'])
-    if results['highpass'] is not None or results['lowpass'] is not None:
+    results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass'])
+    if results['highpass'] != 'equal' or results['lowpass'] != 'equal':
         # Get raw from Subject-class, load as copy to avoid changing attribute value inplace
         raw = meeg.load_raw().copy()
         if enable_cuda:  # use cuda for filtering
@@ -53,8 +53,8 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
 
     # Filter Empty-Room-Data too
     if meeg.erm != 'None':
-        erm_results = compare_prev_run(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
-        if erm_results['highpass'] is not None or erm_results['lowpass'] is not None:
+        erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
+        if erm_results['highpass'] != 'equal' or erm_results['lowpass'] != 'equal':
             raw = meeg.load_raw()
             erm_raw = meeg.load_erm().copy()
 

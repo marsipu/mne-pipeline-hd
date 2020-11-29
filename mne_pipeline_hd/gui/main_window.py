@@ -34,8 +34,8 @@ from .customf_widgets import ChooseCustomModules, CustomFunctionImport
 from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
 from .gui_utils import get_exception_tuple, get_ratio_geometry
-from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, SubBadsDialog, SubDictDialog,
-                              SubjectDock, SubjectWizard)
+from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, SubBadsDialog,
+                              SubDictDialog, SubjectDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal
 from .. import basic_functions, resources
@@ -489,6 +489,8 @@ class MainWindow(QMainWindow):
         input_menu.addSeparator()
         input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
         input_menu.addAction('Copy Transformation', partial(CopyTrans, self))
+        input_menu.addSeparator()
+        input_menu.addAction('File-Management', partial(FileManagment, self))
 
         # Custom-Functions
         self.customf_menu = self.menuBar().addMenu('&Custom Functions')

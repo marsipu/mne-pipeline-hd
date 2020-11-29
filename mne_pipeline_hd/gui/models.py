@@ -505,9 +505,41 @@ class AddFilesModel(BasePandasModel):
         return True
 
 
+class FileManagementModel(BasePandasModel):
+    """A model for the Pandas-DataFrames containing information about the existing files"""
+
+    def __init__(self, data):
+        super().__init__(data)
+        self.app = QApplication.instance()
+
+    def data(self, index, role=None):
+        value = self.getData(index)
+        if role == Qt.DecorationRole:
+            if pd.isna(value):
+                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
+            elif value == 'exists':
+                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+            elif value == 'possible_conflict':
+                return self.app.style().standardIcon(QStyle.SP_MessageBoxQuestion)
+            elif value == 'critical_conflict':
+                return self.app.style().standardIcon(QStyle.SP_MessageBoxWarning)
+
+        elif role == Qt.BackgroundRole:
+            if pd.isna(value):
+                return QBrush(Qt.darkRed)
+            elif value == 'exists':
+                return QBrush(Qt.green)
+            elif value == 'possible_conflict':
+                return QBrush(Qt.lightGray)
+            elif value == 'critical_conflict':
+                return QBrush(Qt.darkYellow)
+
+
 class CustomFunctionModel(QAbstractListModel):
-    """A Model for the Pandas-DataFrames containing information for new custom functions/their paramers
-    Parameters to display only their name and if they are ready
+    """A Model for the Pandas-DataFrames containing information about new custom functions/their paramers
+     to display only their name and if they are ready
+
+    Parameters
     ----------
     data : DataFrame
     add_pd_funcs or add_pd_params

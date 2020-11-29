@@ -25,16 +25,18 @@ from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
-                             QListWidget, QListWidgetItem, QMessageBox, QProgressDialog, QPushButton,
+                             QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QProgressDialog, QPushButton,
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTextEdit, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
-from .base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleList
+from .base_widgets import CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList, \
+    SimplePandasTable
 from .dialogs import ErrorDialog
-from .gui_utils import (Worker, get_ratio_geometry)
+from .gui_utils import (Worker, WorkerSignals, get_ratio_geometry)
 from .models import AddFilesModel
-from ..basic_functions.loading import MEEG
+from ..basic_functions.loading import FSMRI, Group, MEEG
+from ..pipeline_functions.pipeline_utils import compare_filep
 
 
 def index_parser(index, all_items):
@@ -160,8 +162,8 @@ class RemoveDialog(QDialog):
                 self.pr.all_info.pop(meeg, None)
                 self.pr.meeg_bad_channels.pop(meeg, None)
                 self.pr.meeg_event_id.pop(meeg, None)
-                self.pr.file_parameters.drop(index=[i for i in self.pr.file_parameters.index if meeg in i],
-                                             inplace=True)
+                for key in [k for k in self.pr.file_parameters.keys() if meeg in key]:
+                    self.pr.file_parameters.drop(key)
                 if remove_files:
                     try:
                         shutil.rmtree(join(self.pr.data_path, meeg))
@@ -511,12 +513,12 @@ class AddFileSignals(QObject):
 
 
 class AddFileWorker(Worker):
-    def __init__(self, fn, *args, **kwargs):
+    def __init__(self, function, *args, **kwargs):
         self.signal_class = AddFileSignals()
         kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
                              'which_sub': self.signal_class.which_sub}
 
-        super().__init__(fn, self.signal_class, *args, **kwargs)
+        super().__init__(function, self.signal_class, *args, **kwargs)
 
 
 # Todo: Enable Drag&Drop
@@ -1013,12 +1015,12 @@ class TmpBrainSignals(QObject):
 
 
 class TmpBrainWorker(Worker):
-    def __init__(self, fn, *args, **kwargs):
+    def __init__(self, function, *args, **kwargs):
         self.signal_class = TmpBrainSignals()
 
         kwargs['signals'] = {'update_lists': self.signal_class.update_lists}
 
-        super().__init__(fn, self.signal_class, *args, **kwargs)
+        super().__init__(function, self.signal_class, *args, **kwargs)
 
 
 class TmpBrainDialog(QDialog):
@@ -1716,7 +1718,7 @@ class EventIDGui(QDialog):
 
         try:
             # Load Events from File
-            meeg = MEEG(self.name, self.mw, suppress_warnings=True)
+            meeg = MEEG(self.name, self.mw, suppress_msgbx=True)
             events = meeg.load_events()
         except FileNotFoundError:
             self.event_id_label.setText(f'No events found for {self.name}')
@@ -1886,3 +1888,267 @@ class CopyTrans(QDialog):
 
             self.copy_tos.clear()
             self.to_list.content_changed()
+
+
+class FileManagment(QDialog):
+    """A Dialog for File-Management
+
+    Parameters
+    ----------
+    main_win
+        A reference to Main-Window
+    """
+
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+
+        self.load_prog = 0
+
+        self.pd_meeg = pd.DataFrame(index=self.mw.pr.all_meeg)
+        self.pd_fsmri = pd.DataFrame(index=self.mw.pr.all_fsmri)
+        self.pd_group = pd.DataFrame(index=self.mw.pr.all_groups)
+        self.param_results = dict()
+
+        self.init_ui()
+
+        width, height = get_ratio_geometry(0.8)
+        self.resize(width, height)
+        self.open()
+
+        self.start_load_threads()
+
+    def get_file_tables(self, kind):
+
+        if kind == 'MEEG':
+            obj_list = self.mw.pr.all_meeg
+            obj_pd = self.pd_meeg
+        elif kind == 'FSMRI':
+            obj_list = self.mw.pr.all_fsmri
+            obj_pd = self.pd_fsmri
+        else:
+            obj_list = self.mw.pr.all_groups
+            obj_pd = self.pd_group
+        print(f'Loading {kind}')
+
+        for obj_name in obj_list:
+            if kind == 'MEEG':
+                obj = MEEG(obj_name, self.mw)
+            elif kind == 'FSMRI':
+                obj = FSMRI(obj_name, self.mw)
+            else:
+                obj = Group(obj_name, self.mw)
+
+            obj.get_existing_paths()
+
+            self.param_results[obj_name] = dict()
+
+            for path_type in obj.existing_paths:
+                obj_pd.loc[obj_name, path_type] = 'exists'
+
+                for path in obj.existing_paths[path_type]:
+                    # Compare all parameters from last run to now
+                    result_dict = compare_filep(obj, path)
+                    # Store parameter-conflicts for later retrieval
+                    self.param_results[obj_name][path_type] = result_dict
+
+                    for parameter in result_dict:
+                        if isinstance(result_dict[parameter], tuple):
+                            if result_dict[parameter][2]:
+                                obj_pd.loc[obj_name, path_type] = 'critical_conflict'
+                            else:
+                                obj_pd.loc[obj_name, path_type] = 'possible_conflict'
+
+    def open_prog_dlg(self):
+        # Create Progress-Dialog
+        self.prog_bar = QProgressBar()
+        self.prog_bar.setMinimum(0)
+        self.prog_bar.setMaximum(3)
+
+        self.prog_dlg = SimpleDialog(self.prog_bar, self, title='Loading Files...')
+
+    def _finish_loading(self):
+        self.load_prog += 1
+        self.prog_bar.setValue(self.load_prog)
+        if self.load_prog == 3:
+            self.prog_dlg.close()
+            self.meeg_table.content_changed()
+            self.fsmri_table.content_changed()
+            self.group_table.content_changed()
+
+    def thread_finished(self):
+        self._finish_loading()
+
+    def thread_error(self, err):
+        self._finish_loading()
+        ErrorDialog(err, self)
+
+    def start_load_threads(self):
+        self.open_prog_dlg()
+
+        meeg_worker = Worker(function=self.get_file_tables, signal_object=WorkerSignals(), kind='MEEG')
+        meeg_worker.signals.error.connect(self.thread_error)
+        meeg_worker.signals.finished.connect(self.thread_finished)
+
+        fsmri_worker = Worker(function=self.get_file_tables, signal_object=WorkerSignals(), kind='FSMRI')
+        fsmri_worker.signals.error.connect(self.thread_error)
+        fsmri_worker.signals.finished.connect(self.thread_finished)
+
+        group_worker = Worker(function=self.get_file_tables, signal_object=WorkerSignals(), kind='Group')
+        group_worker.signals.error.connect(self.thread_error)
+        group_worker.signals.finished.connect(self.thread_finished)
+
+        self.mw.threadpool.start(meeg_worker)
+        self.mw.threadpool.start(fsmri_worker)
+        self.mw.threadpool.start(group_worker)
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        tab_widget = QTabWidget()
+
+        # MEEG
+        meeg_widget = QWidget()
+        meeg_layout = QVBoxLayout()
+
+        self.meeg_table = FilePandasTable(self.pd_meeg)
+        meeg_layout.addWidget(self.meeg_table)
+
+        meeg_bt_layout = QHBoxLayout()
+
+        meeg_showp_bt = QPushButton('Show Parameters')
+        meeg_showp_bt.clicked.connect(partial(self.show_parameters, 'MEEG'))
+        meeg_bt_layout.addWidget(meeg_showp_bt)
+
+        meeg_remove_bt = QPushButton('Remove File')
+        meeg_remove_bt.clicked.connect(partial(self.remove_file, 'MEEG'))
+        meeg_bt_layout.addWidget(meeg_remove_bt)
+
+        meeg_layout.addLayout(meeg_bt_layout)
+        meeg_widget.setLayout(meeg_layout)
+
+        tab_widget.addTab(meeg_widget, 'MEEG')
+
+        # FSMRI
+        fsmri_widget = QWidget()
+        fsmri_layout = QVBoxLayout()
+
+        self.fsmri_table = FilePandasTable(self.pd_fsmri)
+        fsmri_layout.addWidget(self.fsmri_table)
+
+        fsmri_bt_layout = QHBoxLayout()
+
+        fsmri_showp_bt = QPushButton('Show Parameters')
+        fsmri_showp_bt.clicked.connect(partial(self.show_parameters, 'FSMRI'))
+        fsmri_bt_layout.addWidget(fsmri_showp_bt)
+
+        fsmri_remove_bt = QPushButton('Remove File')
+        fsmri_remove_bt.clicked.connect(partial(self.remove_file, 'FSMRI'))
+        fsmri_bt_layout.addWidget(fsmri_remove_bt)
+
+        fsmri_layout.addLayout(fsmri_bt_layout)
+        fsmri_widget.setLayout(fsmri_layout)
+
+        tab_widget.addTab(fsmri_widget, 'FSMRI')
+
+        # Group
+        group_widget = QWidget()
+        group_layout = QVBoxLayout()
+
+        self.group_table = FilePandasTable(self.pd_group)
+        group_layout.addWidget(self.group_table)
+
+        group_bt_layout = QHBoxLayout()
+
+        group_showp_bt = QPushButton('Show Parameters')
+        group_showp_bt.clicked.connect(partial(self.show_parameters, 'Group'))
+        group_bt_layout.addWidget(group_showp_bt)
+
+        group_remove_bt = QPushButton('Remove File')
+        group_remove_bt.clicked.connect(partial(self.remove_file, 'Group'))
+        group_bt_layout.addWidget(group_remove_bt)
+
+        group_layout.addLayout(group_bt_layout)
+        group_widget.setLayout(group_layout)
+
+        tab_widget.addTab(group_widget, 'Group')
+
+        layout.addWidget(tab_widget)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def _get_current(self, kind):
+        if kind == 'MEEG':
+            current_dict = self.meeg_table.get_current()
+        elif kind == 'FSMRI':
+            current_dict = self.fsmri_table.get_current()
+        else:
+            current_dict = self.group_table.get_current()
+
+        if len(current_dict) > 0:
+            obj_name = current_dict[list(current_dict.keys())[0]]['row'][0]
+            path_type = current_dict[list(current_dict.keys())[0]]['column'][0]
+        else:
+            obj_name = None
+            path_type = None
+
+        return obj_name, path_type
+
+    def show_parameters(self, kind):
+        """Show the parameters, which are different for the selected cell
+
+        Parameters
+        ----------
+        kind : str
+            If it is MEEG, FSMRI or Group
+        """
+
+        # Pandas DataFrame to store parameters to be compared
+        compare_pd = pd.DataFrame(columns=['Previous', 'Current', 'Critical?'])
+
+        obj_name, path_type = self._get_current(kind)
+
+        if obj_name and path_type and obj_name in self.param_results and path_type in self.param_results[obj_name]:
+            result_dict = self.param_results[obj_name][path_type]
+
+            for param in result_dict:
+                if isinstance(result_dict[param], tuple):
+                    compare_pd.loc[param] = result_dict[param]
+
+            if len(compare_pd.index) > 0:
+                # Show changed parameters
+                SimpleDialog(widget=SimplePandasTable(compare_pd, title='Changed Parameters', resize_rows=True,
+                                                      resize_columns=True), parent=self, scroll=True)
+
+    def remove_file(self, kind):
+        """ Remove the file at the path of the current cell
+
+        Parameters
+        ----------
+        kind : str
+            If it is MEEG, FSMRI or Group
+
+        """
+        obj_name, path_type = self._get_current(kind)
+
+        if obj_name and path_type:
+            if kind == 'MEEG':
+                obj = MEEG(obj_name, self.mw)
+                obj_pd = self.pd_meeg
+                obj_table = self.meeg_table
+            elif kind == 'FSMRI':
+                obj = FSMRI(obj_name, self.mw)
+                obj_pd = self.pd_fsmri
+                obj_table = self.fsmri_table
+            else:
+                obj = Group(obj_name, self.mw)
+                obj_pd = self.pd_group
+                obj_table = self.group_table
+
+            obj_pd.loc[obj_name, path_type] = None
+            obj_table.content_changed()
+            obj.remove_path(path_type)

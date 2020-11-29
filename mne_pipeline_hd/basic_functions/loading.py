@@ -14,7 +14,7 @@ import inspect
 import pickle
 from datetime import datetime
 from os import listdir, makedirs, mkdir, remove
-from os.path import exists, getsize, isdir, join
+from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
 import mne
@@ -52,22 +52,65 @@ class BaseLoading:
         self.img_format = self.mw.get_setting('img_format')
         self.dpi = self.mw.get_setting('dpi')
 
+        self.save_dir = None
+        self.paths_dict = dict()
+        self.methods_dict = dict()
+        self.existing_paths = dict()
+
     def save_file_params(self, path):
         file_name = Path(path).name
+        self.pr.file_parameters[file_name] = dict()
         # Get the name of the calling function (assuming it is 2 Frames above)
-        self.pr.file_parameters.loc[file_name, 'FUNCTION'] = inspect.stack()[2][3]
-        self.pr.file_parameters.loc[file_name, 'NAME'] = self.name
-        self.pr.file_parameters.loc[file_name, 'PATH'] = path
-        self.pr.file_parameters.loc[file_name, 'TIME'] = datetime.now()
-        self.pr.file_parameters.loc[file_name, 'SIZE'] = getsize(path)
+        self.pr.file_parameters[file_name]['FUNCTION'] = inspect.stack()[2][3]
+        self.pr.file_parameters[file_name]['NAME'] = self.name
+        self.pr.file_parameters[file_name]['PATH'] = path
+        self.pr.file_parameters[file_name]['TIME'] = datetime.now()
+        self.pr.file_parameters[file_name]['SIZE'] = getsize(path)
         for p_name in self.pr.parameters[self.p_preset]:
-            self.pr.file_parameters.loc[file_name, p_name] = str(self.pr.parameters[self.p_preset][p_name])
+            self.pr.file_parameters[file_name][p_name] = self.pr.parameters[self.p_preset][p_name]
+
+    def get_existing_paths(self):
+        """Get existing paths and add the mapped File-Type to existing_paths (set)"""
+        self.existing_paths.clear()
+        for path_type in self.paths_dict:
+            path = self.paths_dict[path_type]
+            if isinstance(path, str) and isfile(path):
+                self.existing_paths[path_type] = [path]
+            elif isinstance(path, list):
+                exst_paths = [p for p in path if isfile(p)]
+                if len(exst_paths) > 0:
+                    self.existing_paths[path_type] = exst_paths
+            elif isinstance(path, dict):
+                exst_paths = [p for p in path.values() if isfile(p)]
+                if len(exst_paths) > 0:
+                    self.existing_paths[path_type] = exst_paths
+
+    def remove_path(self, path_type):
+        # Remove path specified by path_type (which is the name mapped to the path in self.paths_dict)
+        # Dependent on Paramter-Preset
+        path = self.paths_dict[path_type]
+        remove_list = list()
+        if isinstance(path, str) and isfile(path):
+            remove_list.append(path)
+        elif isinstance(path, list):
+            for path_item in [p for p in path if isfile(p)]:
+                remove_list.append(path_item)
+        elif isinstance(path, dict):
+            for path_value in [p for p in path.values() if isfile(p)]:
+                remove_list.append(path_value)
+
+        for p in remove_list:
+            try:
+                remove(p)
+                print(f'{p} was removed')
+            except (IsADirectoryError, OSError) as err:
+                print(f'{p} could not be removed due to {err}')
 
 
 class MEEG(BaseLoading):
     """ Class for File-Data in File-Loop"""
 
-    def __init__(self, name, main_win, fsmri=None, suppress_warnings=True):
+    def __init__(self, name, main_win, fsmri=None, suppress_msgbx=True):
 
         super().__init__(name, main_win)
 
@@ -79,46 +122,57 @@ class MEEG(BaseLoading):
             self.erm = self.mw.pr.meeg_to_erm[name]
         except KeyError:
             self.erm = 'None'
-            if not suppress_warnings:
-                QMessageBox.warning(self.mw, 'No ERM',
-                                    f'No Empty-Room-Measurement assigned for {self.name}, defaulting to None')
+            warning = f'No Empty-Room-Measurement assigned for {self.name}, defaulting to "None"'
+            print(warning)
+            if not suppress_msgbx:
+                QMessageBox.warning(self.mw, 'No ERM', warning)
         try:
-            self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[name], main_win)
+            if fsmri and fsmri.name == self.mw.pr.meeg_to_fsmri[name]:
+                self.fsmri = fsmri
+            else:
+                self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[name], main_win)
         except KeyError:
             self.fsmri = FSMRI('None', main_win)
-            if not suppress_warnings:
-                QMessageBox.warning(self.mw, 'No MRI',
-                                    f'No MRI-Subject assigned for {self.name}, defaulting to None')
+            warning = f'No MRI-Subject assigned for {self.name}, defaulting to "None"'
+            print(warning)
+            if not suppress_msgbx:
+                QMessageBox.warning(self.mw, 'No MRI', warning)
         try:
             self.bad_channels = self.mw.pr.meeg_bad_channels[name]
         except KeyError:
             self.bad_channels = list()
-            if not suppress_warnings:
-                QMessageBox.warning(self.mw, 'No Bad Channels',
-                                    f'No bad channels assigned for {self.name}, defaulting to empty list')
+            warning = f'No bad channels assigned for {self.name}, defaulting to empty list'
+            print(warning)
+            if not suppress_msgbx:
+                QMessageBox.warning(self.mw, 'No Bad Channels', warning)
         try:
             self.event_id = self.mw.pr.meeg_event_id[name]
             if len(self.event_id) == 0:
                 raise RuntimeError(name)
         except (KeyError, RuntimeError):
             self.event_id = dict()
-            if not suppress_warnings:
-                QMessageBox.warning(self.mw, 'No Event-ID',
-                                    f'No EventID assigned for {self.name}, defaulting to empty dictionary')
+            warning = f'No EventID assigned for {self.name}, defaulting to empty dictionary'
+            print(warning)
+            if not suppress_msgbx:
+                QMessageBox.warning(self.mw, 'No Event-ID', warning)
         try:
             self.sel_trials = self.mw.pr.sel_event_id[name]
             if len(self.sel_trials) == 0:
                 raise RuntimeError(name)
         except (KeyError, RuntimeError):
             self.sel_trials = list()
-            if not suppress_warnings:
-                QMessageBox.warning(self.mw, 'No Trials',
-                                    f'No Trials selected for {self.name}, defaulting to empty list')
+            warning = f'No Trials selected for {self.name}, defaulting to empty list'
+            print(warning)
+            if not suppress_msgbx:
+                QMessageBox.warning(self.mw, 'No Trials', warning)
 
-        ################################################################################################################
+        self.load_attributes()
+        self.load_paths()
+
+    def load_attributes(self):
+        """Set all Data-Attributes to None"""
         # Data-Attributes (not to be called directly)
-        ################################################################################################################
-
+        # Make Data-Objects usable by consecutive functions without reloading
         self._info = None
         self._raw = None
         self._raw_filtered = None
@@ -143,41 +197,38 @@ class MEEG(BaseLoading):
         self._mixn_dips = None
         self._ecd_dips = None
 
-        ################################################################################################################
-        # Paths
-        ################################################################################################################
+    def load_paths(self):
+        """Load Paths as attributes (depending on which Parameter-Preset is selected)"""
+        self.raw_path = join(self.save_dir, f'{self.name}-raw.fif')
+        self.raw_filtered_path = join(self.save_dir, f'{self.name}_{self.p_preset}-filtered-raw.fif')
 
-        self.raw_path = join(self.save_dir, f'{name}-raw.fif')
-        self.raw_filtered_path = join(self.save_dir, f'{name}_{self.p_preset}-filtered-raw.fif')
+        self.erm_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}-raw.fif')
+        self.erm_filtered_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
 
-        if self.erm != 'None':
-            self.erm_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}-raw.fif')
-            self.erm_filtered_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
+        self.events_path = join(self.save_dir, f'{self.name}_{self.p_preset}-eve.fif')
 
-        self.events_path = join(self.save_dir, f'{name}_{self.p_preset}-eve.fif')
+        self.epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-epo.fif')
 
-        self.epochs_path = join(self.save_dir, f'{name}_{self.p_preset}-epo.fif')
+        self.reject_log_path = join(self.save_dir, f'{self.name}_{self.p_preset}-arlog.py')
 
-        self.reject_log_path = join(self.save_dir, f'{name}_{self.p_preset}-arlog.py')
+        self.ica_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ica.fif')
 
-        self.ica_path = join(self.save_dir, f'{name}_{self.p_preset}-ica.fif')
+        self.ica_epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ica-epo.fif')
 
-        self.ica_epochs_path = join(self.save_dir, f'{name}_{self.p_preset}-ica-epo.fif')
+        self.evokeds_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ave.fif')
 
-        self.evokeds_path = join(self.save_dir, f'{name}_{self.p_preset}-ave.fif')
-
-        self.power_tfr_path = join(self.save_dir, f'{name}_{self.p_preset}_{self.p["tfr_method"]}-pw-tfr.h5')
-        self.itc_tfr_path = join(self.save_dir, f'{name}_{self.p_preset}_{self.p["tfr_method"]}-itc-tfr.h5')
+        self.power_tfr_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-pw-tfr.h5')
+        self.itc_tfr_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-itc-tfr.h5')
 
         self.trans_path = join(self.save_dir, f'{self.fsmri.name}-trans.fif')
 
         self.forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
 
-        self.calm_cov_path = join(self.save_dir, f'{name}_{self.p_preset}-calm-cov.fif')
-        self.erm_cov_path = join(self.save_dir, f'{name}_{self.p_preset}-erm-cov.fif')
-        self.cov_path = join(self.save_dir, f'{name}_{self.p_preset}-cov.fif')
+        self.calm_cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-calm-cov.fif')
+        self.erm_cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-erm-cov.fif')
+        self.cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-cov.fif')
 
-        self.inverse_path = join(self.save_dir, f'{name}_{self.p_preset}-inv.fif')
+        self.inverse_path = join(self.save_dir, f'{self.name}_{self.p_preset}-inv.fif')
 
         self.stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}')
                           for trial in self.sel_trials}
@@ -185,10 +236,53 @@ class MEEG(BaseLoading):
         self.morphed_stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
                                   for trial in self.sel_trials}
 
+        self.paths_dict = {'Raw': self.raw_path,
+                           'Raw (Filtered)': self.raw_filtered_path,
+                           'EmptyRoom': self.erm_path,
+                           'EmptyRoom (Filtered)': self.erm_filtered_path,
+                           'Events': self.events_path,
+                           'Epochs': self.epochs_path,
+                           'RejectLog': self.reject_log_path,
+                           'ICA': self.ica_path,
+                           'Epochs (ICA)': self.ica_epochs_path,
+                           'Evokeds': self.evokeds_path,
+                           'TF Power': self.power_tfr_path,
+                           'TF ITC': self.itc_tfr_path,
+                           'Transformation': self.trans_path,
+                           'Forward Solution': self.forward_path,
+                           'Noise-Covariance (Calm)': self.calm_cov_path,
+                           'Noise-Covariance (ERM)': self.erm_cov_path,
+                           'Noise-Covariance': self.cov_path,
+                           'Inverse Operator': self.inverse_path,
+                           'Source Estimate': self.stc_paths,
+                           'Source Estimate (Morphed)': self.morphed_stc_paths}
+
+        self.methods_dict = {'load_info': 'Raw',
+                             'load_raw': 'Raw',
+                             'load_filtered': 'Raw (Filtered)',
+                             'load_erm': 'EmptyRoom',
+                             'load_erm_filtered': 'EmptyRoom (Filtered)',
+                             'load_events': 'Events',
+                             'load_epochs': 'Epochs',
+                             'load_reject_log': 'RejectLog',
+                             'load_ica': 'ICA',
+                             'load_ica_epohcs': 'Epochs (ICA)',
+                             'load_evokeds': 'Evokeds',
+                             'load_power_tfr': 'TF Power',
+                             'load_itc_tfr': 'TF ITC',
+                             'load_transformation': 'Transformation',
+                             'load_forward': 'Forward Solution',
+                             'load_noise_covariance': 'Noise Covariance',
+                             'load_inverse_operator': 'Inverse Operator',
+                             'load_source_estimates': 'Source Estimate',
+                             'load_morphed_source_estimates': 'Source Estimate (Morphed)'}
+
     def update_file_data(self):
         self.erm = self.mw.pr.meeg_to_erm[self.name]
         self.fsmri = self.mw.pr.meeg_to_fsmri[self.name]
         self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
+        self.events_id = self.mw.pr.meeg_event_id[self.name]
+        self.sel_trials = self.mw.pr.sel_event_id[self.name]
 
     ####################################################################################################################
     # Load- & Save-Methods
@@ -231,7 +325,6 @@ class MEEG(BaseLoading):
 
         return self._raw_filtered
 
-    # Todo: Save Storage with GUI (and also look to
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
 
@@ -578,10 +671,13 @@ class FSMRI(BaseLoading):
         self.fs_path = self.mw.qsettings.value('fs_path')
         self.mne_path = self.mw.qsettings.value('mne_path')
 
-        ################################################################################################################
-        # Data-Attributes (not to be called directly)
-        ################################################################################################################
+        self.load_attributes()
+        self.load_paths()
 
+    def load_attributes(self):
+        """Set all Data-Attributes to None"""
+        # Data-Attributes (not to be called directly)
+        # Make Data-Objects usable by consecutive functions without reloading
         self._source_space = None
         self._bem_model = None
         self._bem_solution = None
@@ -589,10 +685,7 @@ class FSMRI(BaseLoading):
         self._source_morph = None
         self._labels = None
 
-        ################################################################################################################
-        # Paths
-        ################################################################################################################
-
+    def load_paths(self):
         self.source_space_path = join(self.save_dir, 'bem', f'{self.name}_{self.p["source_space_spacing"]}-src.fif')
         self.bem_model_path = join(self.save_dir, 'bem', f'{self.name}-bem.fif')
         self.bem_solution_path = join(self.save_dir, 'bem', f'{self.name}-bem-sol.fif')
@@ -603,6 +696,18 @@ class FSMRI(BaseLoading):
         self.old_source_morph_path = join(self.save_dir,
                                           f'{self.name}--to--{self.p["morph_to"]}-'
                                           f'{self.p["source_space_spacing"]}-morph.h5')
+
+        self.paths_dict = {'Source-Space': self.source_space_path,
+                           'BEM-Model': self.bem_model_path,
+                           'BEM-Solution': self.bem_solution_path,
+                           'Volume-Source-Space': self.vol_source_space_path,
+                           'Source-Morph': self.source_morph_path}
+
+        self.methods_dict = {'load_source_space': 'Source-Space',
+                             'load_bem_model': 'BEM-Model',
+                             'load_bem_solution': 'BEM-Solution',
+                             'load_vol_source_space': 'Volume-Source-Space',
+                             'load_source_morph': 'Source-Morph'}
 
     ####################################################################################################################
     # Load- & Save-Methods
@@ -700,19 +805,20 @@ class Group(BaseLoading):
                 QMessageBox.warning(self.mw, 'No Trials',
                                     f'No Trials selected for {self.name}, defaulting to empty list')
 
-        ################################################################################################################
-        # Data-Attributes (not to be called directly)
-        ################################################################################################################
+        self.load_attributes()
+        self.load_paths()
 
+    def load_attributes(self):
+        """Set all Data-Attributes to None"""
+        # Data-Attributes (not to be called directly)
+        # Make Data-Objects usable by consecutive functions without reloading
         self._ga_evokeds = None
         self._ga_tfr = None
         self._ga_stcs = None
         self._ga_ltc = None
         self._ga_connect = None
 
-        ################################################################################################################
-        # Paths
-        ################################################################################################################
+    def load_paths(self):
         self.ga_evokeds_folder = join(self.save_dir, 'evokeds')
         self.ga_evokeds_path = join(self.ga_evokeds_folder, f'{self.name}_{self.p_preset}-ave.fif')
 
@@ -728,6 +834,10 @@ class Group(BaseLoading):
                          self.ga_con_folder]
         for folder in [f for f in group_folders if not isdir(f)]:
             mkdir(folder)
+
+        self.paths_dict = {'Grand-Average Evokeds': self.ga_evokeds_path}
+
+        self.methods_dict = {'load_ga_evokeds': 'Grand-Average Evokeds'}
 
     ####################################################################################################################
     # Load- & Save-Methods
