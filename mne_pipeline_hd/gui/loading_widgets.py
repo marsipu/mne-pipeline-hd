@@ -1952,6 +1952,7 @@ class FileManagment(QDialog):
                     # Store parameter-conflicts for later retrieval
                     self.param_results[obj_name][path_type] = result_dict
 
+                    # Change status of path_type from object if there are conflicts
                     for parameter in result_dict:
                         if isinstance(result_dict[parameter], tuple):
                             if result_dict[parameter][2]:
@@ -2083,15 +2084,15 @@ class FileManagment(QDialog):
 
     def _get_current(self, kind):
         if kind == 'MEEG':
-            current_dict = self.meeg_table.get_current()
+            current_list = self.meeg_table.get_current()
         elif kind == 'FSMRI':
-            current_dict = self.fsmri_table.get_current()
+            current_list = self.fsmri_table.get_current()
         else:
-            current_dict = self.group_table.get_current()
+            current_list = self.group_table.get_current()
 
-        if len(current_dict) > 0:
-            obj_name = current_dict[list(current_dict.keys())[0]]['row'][0]
-            path_type = current_dict[list(current_dict.keys())[0]]['column'][0]
+        if len(current_list) > 0:
+            obj_name = current_list[0][1]
+            path_type = current_list[0][2]
         else:
             obj_name = None
             path_type = None
@@ -2122,8 +2123,13 @@ class FileManagment(QDialog):
             if len(compare_pd.index) > 0:
                 # Show changed parameters
                 SimpleDialog(widget=SimplePandasTable(compare_pd, title='Changed Parameters', resize_rows=True,
-                                                      resize_columns=True), parent=self, scroll=True)
+                                                      resize_columns=True), parent=self, scroll=False)
 
+            else:
+                QMessageBox.information(self, 'All parameters equal!',
+                                        'For the selected file all parameters are equal!')
+
+    # Todo: Put into Thread with ProgressBar
     def remove_file(self, kind):
         """ Remove the file at the path of the current cell
 
@@ -2133,22 +2139,30 @@ class FileManagment(QDialog):
             If it is MEEG, FSMRI or Group
 
         """
-        obj_name, path_type = self._get_current(kind)
+        if kind == 'MEEG':
+            selected_list = self.meeg_table.get_selected()
+        elif kind == 'FSMRI':
+            selected_list = self.fsmri_table.get_selected()
+        else:
+            selected_list = self.group_table.get_selected()
 
-        if obj_name and path_type:
-            if kind == 'MEEG':
-                obj = MEEG(obj_name, self.mw)
-                obj_pd = self.pd_meeg
-                obj_table = self.meeg_table
-            elif kind == 'FSMRI':
-                obj = FSMRI(obj_name, self.mw)
-                obj_pd = self.pd_fsmri
-                obj_table = self.fsmri_table
-            else:
-                obj = Group(obj_name, self.mw)
-                obj_pd = self.pd_group
-                obj_table = self.group_table
+        msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selcted Files?')
 
-            obj_pd.loc[obj_name, path_type] = None
-            obj_table.content_changed()
-            obj.remove_path(path_type)
+        if msgbx == QMessageBox.Yes:
+            for _, obj_name, path_type in selected_list:
+                if kind == 'MEEG':
+                    obj = MEEG(obj_name, self.mw)
+                    obj_pd = self.pd_meeg
+                    obj_table = self.meeg_table
+                elif kind == 'FSMRI':
+                    obj = FSMRI(obj_name, self.mw)
+                    obj_pd = self.pd_fsmri
+                    obj_table = self.fsmri_table
+                else:
+                    obj = Group(obj_name, self.mw)
+                    obj_pd = self.pd_group
+                    obj_table = self.group_table
+
+                obj_pd.loc[obj_name, path_type] = None
+                obj_table.content_changed()
+                obj.remove_path(path_type)

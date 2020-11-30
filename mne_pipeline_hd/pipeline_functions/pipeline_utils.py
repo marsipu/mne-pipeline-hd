@@ -12,6 +12,7 @@ import json
 import os
 import re
 from ast import literal_eval
+from datetime import datetime
 from os import makedirs
 from os.path import exists, isfile, join
 from pathlib import Path
@@ -20,6 +21,8 @@ import autoreject as ar
 import numpy as np
 
 from . import islin, ismac, iswin
+
+datetime_format = '%d.%m.%Y %H:%M:%S'
 
 
 class NumpyJSONEncoder(json.JSONEncoder):
@@ -33,6 +36,9 @@ class NumpyJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return {'numpy_array': obj.tolist()}
 
+        elif isinstance(obj, datetime):
+            return {'datetime': obj.strftime(datetime_format)}
+
         return json.JSONEncoder.default(self, obj)
 
 
@@ -41,6 +47,8 @@ def numpy_json_hook(obj):
         return np.asarray(obj['numpy_array'])
     elif 'tuple_type' in obj.keys():
         return tuple(obj['tuple_type'])
+    elif 'datetime' in obj.keys():
+        return datetime.strptime(obj['datetime'], datetime_format)
     else:
         return obj
 
@@ -231,13 +239,22 @@ def compare_filep(obj, path, target_parameters=None):
                 previous_value = obj.pr.file_parameters[file_name][param]
             current_value = obj.p[param]
 
-            if previous_value != current_value:
+            equality_check = previous_value == current_value
+            if isinstance(equality_check, bool):
+                equality = equality_check
+            else:
+                try:
+                    equality = equality_check.all()
+                except AttributeError:
+                    equality = False
+
+            if equality:
+                result_dict[param] = 'equal'
+            else:
                 if param in critical_params:
                     result_dict[param] = (previous_value, current_value, True)
                 else:
                     result_dict[param] = (previous_value, current_value, False)
-            else:
-                result_dict[param] = 'equal'
         except KeyError:
             result_dict[param] = 'missing'
 

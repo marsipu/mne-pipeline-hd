@@ -622,65 +622,60 @@ class BasePandasTable(Base):
             model.layoutChanged.connect(self.view.resizeColumnsToContents)
             model.layoutChanged.emit()
 
-    def get_rowcol_by_index(self, index, data_dict):
+    def get_rowcol_by_index(self, index, data_list):
         """Get the data at index and the row and column of this data
 
         Parameters
         ----------
         index : QModelIndex
             The index to get data, row and column for
-        data_dict :
-            The dictionary in which the information about data, rows and columns is stored
+        data_list :
+            The list in which the information about data, rows and columns is stored
         Notes
         -----
-        A datum can be present at multiple indices, thus row and column are lists. Because this function
-        is supposed to be called consecutively, the information is stored in an existing dict (data_dict)
+        Because this function is supposed to be called consecutively,
+        the information is stored in an existing list (data_list)
 
         """
         data = self.model.getData(index)
         row = self.model.headerData(index.row(), orientation=Qt.Vertical, role=Qt.DisplayRole)
         column = self.model.headerData(index.column(), orientation=Qt.Horizontal, role=Qt.DisplayRole)
 
-        if data and row and column:
-            if data in data_dict:
-                data_dict[data]['row'].append(row)
-                data_dict[data]['column'].append(column)
-            else:
-                data_dict[data] = {'row': [row], 'column': [column]}
+        data_list.append((data, row, column))
 
     def get_current(self):
-        current_dict = dict()
-        self.get_rowcol_by_index(self.view.currentIndex(), current_dict)
+        current_list = list()
+        self.get_rowcol_by_index(self.view.currentIndex(), current_list)
 
-        return current_dict
+        return current_list
 
     def _current_changed(self, current_idx, previous_idx):
-        current_dict = dict()
-        previous_dict = dict()
+        current_list = list()
+        previous_list = list()
 
-        self.get_rowcol_by_index(current_idx, current_dict)
-        self.get_rowcol_by_index(previous_idx, previous_dict)
+        self.get_rowcol_by_index(current_idx, current_list)
+        self.get_rowcol_by_index(previous_idx, previous_list)
 
-        self.currentChanged.emit(current_dict, previous_dict)
+        self.currentChanged.emit(current_list, previous_list)
 
         if self.verbose:
-            print(f'Current changed from {previous_dict} to {current_dict}')
+            print(f'Current changed from {previous_list} to {current_list}')
 
     def get_selected(self):
         # Somehow, the indexes got from selectionChanged don't appear to be right
         # (maybe some issue with QItemSelection?)
-        selection_dict = dict()
+        selection_list = list()
         for idx in self.view.selectedIndexes():
-            self.get_rowcol_by_index(idx, selection_dict)
+            self.get_rowcol_by_index(idx, selection_list)
 
-        return selection_dict
+        return selection_list
 
     def _selection_changed(self):
-        selection_dict = self.get_selected()
-        self.selectionChanged.emit(selection_dict)
+        selection_list = self.get_selected()
+        self.selectionChanged.emit(selection_list)
 
         if self.verbose:
-            print(f'Selection changed to {selection_dict}')
+            print(f'Selection changed to {selection_list}')
 
     def select(self, values=None, rows=None, columns=None, clear_selection=True):
         """
@@ -971,6 +966,11 @@ class SimpleDialog(QDialog):
             layout.addWidget(scroll_area)
         else:
             layout.addWidget(widget)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
         self.setLayout(layout)
 
         if modal:
