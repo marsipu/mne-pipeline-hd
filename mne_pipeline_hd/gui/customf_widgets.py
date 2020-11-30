@@ -154,7 +154,7 @@ class CustomFunctionImport(QDialog):
         self.oblig_params = ['default', 'gui_type']
 
         self.exst_functions = list(self.mw.pd_funcs.index)
-        self.exst_parameters = ['mw', 'pr', 'obj', 'fsmri', 'group', 'name', 'save_dir', 'erm', 'bad_channels']
+        self.exst_parameters = ['mw', 'pr', 'meeg', 'fsmri', 'group', 'name', 'save_dir', 'erm', 'bad_channels']
         self.exst_parameters.append(vars(self.mw.pr))
         self.exst_parameters.append(list(self.mw.pr.parameters[self.mw.pr.p_preset].keys()))
         self.param_exst_dict = dict()
@@ -454,12 +454,12 @@ class CustomFunctionImport(QDialog):
                 self.code_view.update_code()
             self.update_func_setup()
 
-            if any([self.current_function in x for x in self.add_pd_params['functions']]):
+            if any([self.current_function in str(x) for x in self.add_pd_params['functions']]):
                 self.param_setup_gbox.setEnabled(True)
                 self.update_param_view()
                 self.current_parameter = \
                     self.add_pd_params.loc[
-                        [self.current_function in x for x in self.add_pd_params['functions']]].index[0]
+                        [self.current_function in str(x) for x in self.add_pd_params['functions']]].index[0]
                 self.update_exst_param_label()
                 self.update_param_setup()
             else:
@@ -553,7 +553,7 @@ class CustomFunctionImport(QDialog):
         # Check, that all obligatory items of the Subject-Setup and the Parameter-Setup are set
         if all([pd.notna(self.add_pd_funcs.loc[self.current_function, i]) for i in self.oblig_func]):
             function_params = self.add_pd_params.loc[
-                [self.current_function in x for x in self.add_pd_params['functions']]]
+                [self.current_function in str(x) for x in self.add_pd_params['functions']]]
             if pd.notna(self.add_pd_params.loc[function_params.index, self.oblig_params]).all().all():
                 self.func_chkl.setPixmap(self.yes_icon.pixmap(16, 16))
                 self.add_pd_funcs.loc[self.current_function, 'ready'] = 1
@@ -564,7 +564,7 @@ class CustomFunctionImport(QDialog):
     def update_param_view(self):
         # Update Param-Model with new pd_params of current_function
         current_pd_params = self.add_pd_params.loc[
-            [self.current_function in x for x in self.add_pd_params['functions']]
+            [self.current_function in str(x) for x in self.add_pd_params['functions']]
         ]
         self.param_model.updateData(current_pd_params)
 
@@ -1103,7 +1103,7 @@ class SavePkgDialog(QDialog):
 
             drop_params = list()
             for param in self.cf.add_pd_params.index:
-                if not any([f in self.cf.add_pd_params.loc[param, 'functions'] for f in final_add_pd_funcs.index]):
+                if not any([f in str(self.cf.add_pd_params.loc[param, 'functions']) for f in final_add_pd_funcs.index]):
                     drop_params.append(param)
             final_add_pd_params = self.cf.add_pd_params.drop(index=drop_params)
 

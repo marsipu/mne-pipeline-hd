@@ -336,8 +336,12 @@ def run_ica(meeg, eog_channel, ecg_channel, reject, flat, autoreject_interpolati
 
         eog_epochs = mne.preprocessing.create_eog_epochs(raw, picks=eeg_picks,
                                                          reject=reject, flat=flat, ch_name=eog_channel)
-        ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, picks=eeg_picks,
-                                                         reject=reject, flat=flat, ch_name=ecg_channel)
+        if ecg_channel:
+            ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, picks=eeg_picks,
+                                                             reject=reject, flat=flat, ch_name=ecg_channel)
+        else:
+            ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, picks=eeg_picks,
+                                                             reject=reject, flat=flat)
 
         if len(eog_epochs) != 0:
             eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel)
@@ -369,7 +373,10 @@ def run_ica(meeg, eog_channel, ecg_channel, reject, flat, autoreject_interpolati
                     print('figure: ' + save_path + ' has been saved')
 
         if len(ecg_epochs) != 0:
-            ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name=ecg_channel)
+            if ecg_channel:
+                ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, threshold='auto', ch_name=ecg_channel)
+            else:
+                ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, threshold='auto')
             ica.exclude.extend(ecg_indices)
             print('ECG-Components: ', ecg_indices)
             print(len(ecg_indices))

@@ -3,7 +3,7 @@ filter_raw;Filter Raw;MEEG;Compute;Preprocessing;False;False;;operations;meeg,hi
 find_events;Find Events;MEEG;Compute;Events;False;False;;operations;meeg,stim_channels,min_duration,shortest_event,adjust_timeline_by_msec
 find_6ch_binary_events;Find Events HD;MEEG;Compute;Events;False;False;;operations;meeg,min_duration,shortest_event,adjust_timeline_by_msec
 epoch_raw;Get Epochs;MEEG;Compute;Events;False;False;;operations;meeg,ch_types,t_epoch,baseline,reject,flat,autoreject_interpolation,consensus_percs,n_interpolates,autoreject_threshold,overwrite_ar,decim,n_jobs
-run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg,eog_channel,ecg_channel,reject,flat,autoreject_interpolation,autoreject_threshold,save_plots,figures_path,pscripts_path
+run_ica;Run ICA;MEEG;Compute;Preprocessing;True;False;;operations;meeg,eog_channel,ecg_channel,reject,flat,autoreject_interpolation,autoreject_threshold,save_plots,figures_path,pscripts_path
 apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg
 interpolate_bad_chs;Interpolate Bad-Channels;MEEG;Compute;Preprocessing;False;False;;operations;meeg,bad_interpolation,enable_ica
 get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;meeg,enable_ica

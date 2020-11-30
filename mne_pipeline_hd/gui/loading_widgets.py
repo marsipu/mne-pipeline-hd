@@ -2165,4 +2165,8 @@ class FileManagment(QDialog):
 
                 obj_pd.loc[obj_name, path_type] = None
                 obj_table.content_changed()
+                # Drop from file-parameters
+                path = Path(obj.paths_dict[path_type]).name
+                self.mw.pr.file_parameters.pop(path, None)
+                # Remove File
                 obj.remove_path(path_type)
