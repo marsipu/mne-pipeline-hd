@@ -30,12 +30,12 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWi
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
+from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList, \
     SimplePandasTable
 from .dialogs import ErrorDialog
 from .gui_utils import (Worker, WorkerSignals, get_ratio_geometry)
 from .models import AddFilesModel
-from ..basic_functions.loading import FSMRI, Group, MEEG
 from ..pipeline_functions.pipeline_utils import compare_filep
 
 

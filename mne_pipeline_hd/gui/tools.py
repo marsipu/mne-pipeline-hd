@@ -17,9 +17,9 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QTextEdit, \
     QVBoxLayout
 
-from mne_pipeline_hd.basic_functions.loading import MEEG
 from mne_pipeline_hd.gui.base_widgets import CheckList
 from mne_pipeline_hd.gui.gui_utils import Worker, get_exception_tuple
+from mne_pipeline_hd.pipeline_functions.loading import MEEG
 
 
 class LoadSignals(QObject):

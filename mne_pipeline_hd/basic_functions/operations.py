@@ -23,7 +23,7 @@ import autoreject as ar
 import mne
 import numpy as np
 
-from .loading import MEEG
+from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from ..pipeline_functions import ismac, iswin, pipeline_utils as ut
 from ..pipeline_functions.pipeline_utils import compare_filep
 

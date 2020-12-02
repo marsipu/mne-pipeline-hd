@@ -21,8 +21,8 @@ from PyQt5.QtWidgets import QDialog, QGridLayout, QHBoxLayout, QLabel, QListView
     QPushButton, QSizePolicy, \
     QStyle, QTextEdit, QVBoxLayout
 
+from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, Group, MEEG
 from .pipeline_utils import shutdown
-from ..basic_functions.loading import BaseLoading, FSMRI, Group, MEEG
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
 from ..gui.gui_utils import Worker, get_exception_tuple, get_ratio_geometry
