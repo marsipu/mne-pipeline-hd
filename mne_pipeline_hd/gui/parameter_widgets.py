@@ -697,14 +697,14 @@ class SliderGui(Param):
         self.max_val = max_val
         self.param_widget = QSlider()
         self.param_unit = param_unit
-        self.decimal_count = max([abs(Decimal(str(value)).as_tuple().exponent) for value in (min_val, max_val, step)])
+        self.decimal_count = max([abs(Decimal(str(value)).as_tuple().exponent) for value in (min_val, max_val)])
         if self.decimal_count > 0:
-            self.param_widget.setMinimum(self.min_val * 10 ** self.decimal_count)
-            self.param_widget.setMaximum(self.max_val * 10 ** self.decimal_count)
+            self.param_widget.setMinimum(int(self.min_val * 10 ** self.decimal_count))
+            self.param_widget.setMaximum(int(self.max_val * 10 ** self.decimal_count))
         else:
             self.param_widget.setMinimum(self.min_val)
             self.param_widget.setMaximum(self.max_val)
-        self.param_widget.setSingleStep(step)
+        self.param_widget.setSingleStep(int(step))
         self.param_widget.setOrientation(Qt.Horizontal)
         self.param_widget.setTracking(True)
         if hint:
@@ -831,7 +831,7 @@ if __name__ == '__main__':
     e = FloatGui(parameters, 'TestFloat', min_val=-18, max_val=+64, step=0.4, decimals=6, param_unit='flurbo')
     f = StringGui(parameters, 'TestString', input_mask='ppAAA.AA;_', param_unit='a')
     g = SliderGui(parameters, 'TestSlider', min_val=-10, max_val=10, step=1, param_unit='Hz')
-    h = SliderGui(parameters, 'TestSlider2', min_val=0, max_val=20.25, step=1.3, param_unit='Fz')
+    h = SliderGui(parameters, 'TestSlider2', min_val=0, max_val=20.258, step=5, param_unit='Fz')
     i = FuncGui(parameters, 'TestFunc', param_unit='a')
     j = TupleGui(parameters, 'TestTuple', min_val=-10, max_val=20, step=1, decimals=3, param_unit='a')
     k = ComboGui(parameters, 'TestCombo', options=['a', 'b', 'c'], param_unit='a')
