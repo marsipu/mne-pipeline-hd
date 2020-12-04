@@ -6,4 +6,3 @@ cachedir/*
 environment.yml
 .build
 .dist
-/mne_pipeline_hd/development/*

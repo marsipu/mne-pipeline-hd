@@ -377,6 +377,7 @@ class MainWindow(QMainWindow):
         basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
         for module_name in basic_functions_list:
             self.all_modules['basic'][module_name] = getattr(basic_functions, module_name)
+
         # Load custom_modules
         pd_functions_pattern = r'.*_functions\.csv'
         pd_parameters_pattern = r'.*_parameters\.csv'

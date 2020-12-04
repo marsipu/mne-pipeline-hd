@@ -250,8 +250,30 @@ def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, autoreject_interp
     meeg.save_epochs(epochs)
 
 
-def run_ica_new(meeg, ica_method, n_components, max_pca_components, n_pca_components, ica_noise_cov, **kwargs):
-    pass
+def run_ica_new(meeg, ica_method, ica_fitto, n_components, max_pca_components, n_pca_components,
+                ica_noise_cov, **kwargs):
+    if ica_fitto == 'Raw':
+        data = meeg.load_filtered()
+    elif ica_fitto == 'Epochs':
+        data = meeg.load_epochs()
+    else:
+        data = meeg.load_evokeds()
+
+    if data.info['highpass'] < 1:
+        filt_data = data.copy().filter(1, None)
+    else:
+        filt_data = data
+
+    if ica_noise_cov:
+        noise_cov = meeg.load_noise_covariance()
+    else:
+        noise_cov = None
+
+    ica = mne.preprocessing.ICA(n_components=n_components, max_pca_components=max_pca_components,
+                                n_pca_components=n_pca_components, noise_cov=noise_cov, random_state=8,
+                                method=ica_method, **kwargs)
+
+    ica.fit(filt_data)
 
 
 # TODO: Organize run_ica properly

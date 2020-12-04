@@ -24,8 +24,8 @@ overwrite_tfr;;Time-Frequency;True;;Recalculate and overwrite Time-Frequency-Dat
 tfr_method;;Time-Frequency;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}
 multitaper_bandwith;;Time-Frequency;4.0;;;FloatGui;
 stockwell_width;;Time-Frequency;1.0;;;FloatGui;
-eog_channel;;Preprocessing;EEG 001;;Set Vertical EOG-Channel;StringGui;
-ecg_channel;;Preprocessing;EEG 003;;Set ECG-Channel;StringGui;
+eog_channel;;Preprocessing;None;;Set Vertical EOG-Channel;StringGui;
+ecg_channel;;Preprocessing;None;;Set ECG-Channel;StringGui;
 bem_spacing;;Forward;4;;See the MNE-Documentation for further details;IntGui;
 source_space_spacing;;Forward;ico5;;See the MNE-Documentation for further details;StringGui;
 vol_source_space_spacing;;Forward;5.0;;Spacing between sources in 3D-Grid;FloatGui;
