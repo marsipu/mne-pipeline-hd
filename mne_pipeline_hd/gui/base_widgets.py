@@ -148,8 +148,8 @@ class SimpleList(BaseList):
 
     Notes
     -----
-    If you change the contents of a list outside of this class, call content_changed to update this widget.
-    If you change the reference to a list, call the appropriate replace_data.
+    If you change the contents of data outside of this class, call content_changed to update this widget.
+    If you change the reference to data, call the appropriate replace_data.
     """
 
     def __init__(self, data=None, extended_selection=False, show_index=False, parent=None, title=None, verbose=False):
@@ -180,7 +180,7 @@ class EditList(BaseList):
     Notes
     -----
     If you change the contents of the list outside of this class, call content_changed to update this widget.
-    If you change the reference to a list, call replace_data.
+    If you change the reference to data, call replace_data.
     """
 
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
@@ -272,8 +272,8 @@ class CheckList(BaseList):
 
     Notes
     -----
-    If you change the contents of a list outside of this class, call content_changed to update this widget.
-    If you change the reference to a list, call replace_data or replace_checked.
+    If you change the contents of data outside of this class, call content_changed to update this widget.
+    If you change the reference to data, call replace_data or replace_checked.
     """
 
     checkedChanged = pyqtSignal(list)
@@ -364,6 +364,10 @@ class CheckDictList(BaseList):
         A dictionary that may contain items from data as keys
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    yes_bt: int | None
+        Supply a identifier for an icon to mark the items existing in check_dict, set None for standard icon
+    no_bt: int | None
+        Supply a identifier for an icon to mark the items not existing in check_dict, set None for standard icon
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -373,13 +377,18 @@ class CheckDictList(BaseList):
 
     Notes
     -----
-    If you change the contents of a list outside of this class, call content_changed to update this widget.
-    If you change the reference to a list, call replace_data.
+    If you change the contents of data outside of this class, call content_changed to update this widget.
+    If you change the reference to data, call replace_data.
+    If you change the reference to check_dict, call replace_check_dict.
+
+    Identifiers for QT standard-icons:
+    https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False,
+    def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False, yes_bt=None, no_bt=None,
                  parent=None, title=None, verbose=False):
-        super().__init__(model=CheckDictModel(data, check_dict, show_index=show_index), view=QListView(),
+        model = CheckDictModel(data, check_dict, show_index=show_index, yes_bt=yes_bt, no_bt=no_bt)
+        super().__init__(model=model, view=QListView(),
                          extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
 
     def replace_check_dict(self, new_check_dict=None):
@@ -983,10 +992,10 @@ class AssignWidget(QWidget):
     """
 
     """
-    def __init__(self, items, properties, assignments, properties_editable=False, subtitles=None,
+
+    def __init__(self, items, properties, assignments, properties_editable=False,
                  parent=None, title=None, verbose=False):
         super().__init__(parent)
-        self.subtitles = subtitles
         self.title = title
         self.verbose = verbose
 

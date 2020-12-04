@@ -66,6 +66,9 @@ class Project:
         # Stores functions and if they are selected
         self.sel_functions = dict()
 
+        # Stores additional keyword-arguments for functions by function-name
+        self.add_kwargs = dict()
+
         # Stores parameters for each Parameter-Preset
         self.parameters = dict()
         # Paramter-Preset
@@ -124,6 +127,7 @@ class Project:
         self.sel_groups_path = join(self.pscripts_path, f'selected_groups_{self.name}.json')
         self.all_info_path = join(self.pscripts_path, f'all_info_{self.name}.json')
         self.sel_functions_path = join(self.pscripts_path, f'selected_functions_{self.name}.json')
+        self.add_kwargs_path = join(self.pscripts_path, f'additional_kwargs_{self.name}.json')
         self.parameters_path = join(self.pscripts_path, f'parameters_{self.name}.json')
         self.sel_p_preset_path = join(self.pscripts_path, f'sel_p_preset_{self.name}.json')
         self.file_parameters_path = join(self.pscripts_path, f'file_parameters_{self.name}.json')
@@ -158,6 +162,7 @@ class Project:
                       self.sel_groups_path,
                       self.all_info_path,
                       self.sel_functions_path,
+                      self.add_kwargs_path,
                       self.parameters_path,
                       self.sel_p_preset_path,
                       self.file_parameters_path]
@@ -201,6 +206,7 @@ class Project:
                      self.sel_groups_path: 'sel_groups',
                      self.all_info_path: 'all_info',
                      self.sel_functions_path: 'sel_functions',
+                     self.add_kwargs_path: 'add_kwargs',
                      self.file_parameters_path: 'file_parameters'
                      }
 
@@ -232,6 +238,7 @@ class Project:
                      self.sel_groups_path: self.sel_groups,
                      self.all_info_path: self.all_info,
                      self.sel_functions_path: self.sel_functions,
+                     self.add_kwargs_path: self.add_kwargs,
                      self.sel_p_preset_path: self.p_preset}
 
         for path in save_dict:

@@ -162,7 +162,7 @@ class RemoveDialog(QDialog):
                 self.pr.all_info.pop(meeg, None)
                 self.pr.meeg_bad_channels.pop(meeg, None)
                 self.pr.meeg_event_id.pop(meeg, None)
-                for key in [k for k in self.pr.file_parameters.keys() if meeg in key]:
+                for key in [k for k in self.pr.file_parameters.keys() if meeg in k]:
                     self.pr.file_parameters.drop(key)
                 if remove_files:
                     try:
@@ -1550,6 +1550,7 @@ class SubBadsWidget(QWidget):
 
     def get_selected_bads(self, evt):
         # evt has to be in parameters, otherwise it won't work
+        _ = evt
         self.mw.pr.meeg_bad_channels.update({self.name: self.raw.info['bads']})
         self.mw.pr.save_lists()
         # Clear all entries

@@ -32,6 +32,13 @@ from ..gui.models import RunModel
 def get_arguments(arg_names, obj, main_win):
     keyword_arguments = {}
     project_attributes = vars(main_win.pr)
+
+    # Remove args/kwargs
+    if 'args' in arg_names:
+        arg_names.remove('args')
+    if 'kwargs' in arg_names:
+        arg_names.remove('kwargs')
+
     # Get the values for parameter-names
     for arg_name in arg_names:
         # Remove trailing spaces
@@ -81,6 +88,11 @@ def func_from_def(name, obj, main_win):
     arg_names = list(inspect.signature(func).parameters)
 
     keyword_arguments = get_arguments(arg_names, obj, main_win)
+
+    # Add additional keyword-arguments if added for function by user
+    if name in main_win.pr.add_kwargs:
+        for kwarg in main_win.pr.add_kwargs[name]:
+            keyword_arguments[kwarg] = main_win.pr.add_kwargs[name][kwarg]
 
     # Catch one error due to unexpected or missing keywords
     unexp_kw_pattern = r"(.*) got an unexpected keyword argument \'(.*)\'"

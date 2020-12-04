@@ -250,6 +250,10 @@ def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, autoreject_interp
     meeg.save_epochs(epochs)
 
 
+def run_ica_new(meeg, ica_method, n_components, max_pca_components, n_pca_components, ica_noise_cov, **kwargs):
+    pass
+
+
 # TODO: Organize run_ica properly
 # Todo: Choices for: Fit(Raw, Epochs, Evokeds), Apply (Raw, Epochs, Evokeds)
 

@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QTextEdit, QVBoxLayout)
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList, SimpleList
+from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleList
 from mne_pipeline_hd.gui.dialogs import ErrorDialog
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
@@ -1210,4 +1210,56 @@ class ChooseCustomModules(QDialog):
         self.mw.settings['selected_modules'] = self.selected_modules
         self.mw.import_custom_modules()
         self.mw.update_func_and_param()
+        event.accept()
+
+
+class AddKwargs(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+        self.current_func = None
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        list_layout = QHBoxLayout()
+        func_list = CheckDictList(self.mw.pd_funcs.index, self.mw.pr.add_kwargs,
+                                  no_bt=QStyle.SP_MessageBoxQuestion)
+        func_list.currentChanged.connect(self.func_selected)
+        list_layout.addWidget(func_list)
+
+        self.kwarg_dict = EditDict(dict(), title='Add Keyword-Arguments:',
+                                   resize_rows=True, resize_columns=True)
+        list_layout.addWidget(self.kwarg_dict)
+
+        layout.addLayout(list_layout)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def _check_empty(self):
+        """Check if the dict for current_func in add_kwargs is empty, then remove it"""
+        if self.current_func:
+            if self.current_func in self.mw.pr.add_kwargs:
+                if len(self.mw.pr.add_kwargs[self.current_func]) == 0:
+                    self.mw.pr.add_kwargs.pop(self.current_func)
+
+    def func_selected(self, func_name):
+        # Remove dict of previous selected func if empty
+        self._check_empty()
+        self.current_func = func_name
+        # Add dict for func_name if not present
+        if func_name not in self.mw.pr.add_kwargs:
+            self.mw.pr.add_kwargs[func_name] = dict()
+        # Give reference to this dictionary to the DictModel
+        self.kwarg_dict.replace_data(self.mw.pr.add_kwargs[func_name])
+
+    def closeEvent(self, event):
+        self._check_empty()
         event.accept()

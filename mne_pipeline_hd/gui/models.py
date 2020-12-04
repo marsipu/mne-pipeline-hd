@@ -167,12 +167,25 @@ class CheckDictModel(BaseListModel):
         dictionary which may contain items from data as keys
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    yes_bt: int | None
+        Supply a identifier for an icon to mark the items existing in check_dict
+    no_bt: int | None
+        Supply a identifier for an icon to mark the items not existing in check_dict
+
+    Notes
+    -----
+    Identifiers for QT standard-icons:
+    https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data, check_dict, show_index=False):
+    def __init__(self, data, check_dict, show_index=False,
+                 yes_bt=None, no_bt=None):
         super().__init__(data, show_index)
         self._check_dict = check_dict
         self.app = QApplication.instance()
+
+        self.yes_bt = yes_bt or QStyle.SP_DialogApplyButton
+        self.no_bt = no_bt or QStyle.SP_DialogCancelButton
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
@@ -183,9 +196,9 @@ class CheckDictModel(BaseListModel):
 
         elif role == Qt.DecorationRole:
             if self.getData(index) in self._check_dict:
-                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+                return self.app.style().standardIcon(self.yes_bt)
             else:
-                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
+                return self.app.style().standardIcon(self.no_bt)
 
 
 class BaseDictModel(QAbstractTableModel):

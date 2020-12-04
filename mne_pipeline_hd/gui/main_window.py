@@ -30,9 +30,9 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, Q
                              QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
                              QVBoxLayout, QWidget)
 
-from .customf_widgets import ChooseCustomModules, CustomFunctionImport
 from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
+from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
 from .gui_utils import get_exception_tuple, get_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, SubBadsDialog,
                               SubDictDialog, SubjectDock, SubjectWizard)
@@ -493,17 +493,19 @@ class MainWindow(QMainWindow):
         input_menu.addAction('File-Management', partial(FileManagment, self))
 
         # Custom-Functions
-        self.customf_menu = self.menuBar().addMenu('&Custom Functions')
-        self.aadd_customf = self.customf_menu.addAction('&Import', partial(CustomFunctionImport, self))
+        func_menu = self.menuBar().addMenu('&Functions')
+        func_menu.addAction('&Import Custom', partial(CustomFunctionImport, self))
 
-        self.achoose_customf = self.customf_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
+        func_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
 
-        self.areload_basic_modules = self.customf_menu.addAction('&Reload Basic-Modules', self.reload_basic_modules)
-        self.areload_custom_modules = self.customf_menu.addAction('&Reload Custom-Modules', self.reload_custom_modules)
+        func_menu.addAction('&Reload Basic-Modules', self.reload_basic_modules)
+        func_menu.addAction('&Reload Custom-Modules', self.reload_custom_modules)
+        func_menu.addSeparator()
+        func_menu.addAction('Additional Keyword-Arguments', partial(AddKwargs, self))
 
         # Tools
-        self.tool_menu = self.menuBar().addMenu('&Tools')
-        self.asub_terminal = self.tool_menu.addAction('&Data-Terminal', partial(DataTerminal, self))
+        tool_menu = self.menuBar().addMenu('&Tools')
+        tool_menu.addAction('&Data-Terminal', partial(DataTerminal, self))
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
@@ -520,10 +522,10 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
 
         # Settings
-        self.settings_menu = self.menuBar().addMenu('&Settings')
+        settings_menu = self.menuBar().addMenu('&Settings')
 
-        self.settings_menu.addAction('&Open Settings', partial(SettingsDlg, self))
-        self.settings_menu.addAction('&Change Home-Path', self.change_home_path)
+        settings_menu.addAction('&Open Settings', partial(SettingsDlg, self))
+        settings_menu.addAction('&Change Home-Path', self.change_home_path)
 
         # About
         about_menu = self.menuBar().addMenu('About')
