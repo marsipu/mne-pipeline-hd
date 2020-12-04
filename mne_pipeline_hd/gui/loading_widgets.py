@@ -491,7 +491,7 @@ def extract_info(project, raw, new_fname):
         project.all_info[new_fname]['meas_date'] = str(raw.info['meas_date'])
         # Some raw-files don't have get_channel_types?
         try:
-            project.all_info[new_fname]['ch_types'] = list(set(raw.get_channel_types()))
+            project.all_info[new_fname]['ch_types'] = raw.get_channel_types(unique=True)
         except AttributeError:
             project.all_info[new_fname]['ch_types'] = list()
         project.all_info[new_fname]['proj_id'] = int(raw.info['proj_id'])

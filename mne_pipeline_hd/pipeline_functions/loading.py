@@ -25,17 +25,6 @@ from PyQt5.QtWidgets import QMessageBox
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
-def pick_types_helper(data, ch_types):
-    kwargs = {'stim': True, 'eog': True, 'ecg': True, 'emg': True, 'ref_meg': 'auto', 'misc': True,
-              'resp': True, 'chpi': True, 'exci': True, 'ias': True, 'syst': True, 'seeg': True,
-              'dipole': True, 'gof': True, 'bio': True, 'ecog': True, 'fnirs': True, 'csd': True}
-    # Only exclude MEG or EEG if not selected, should not affect other channel-types
-    data.pick_types(meg='meg' in ch_types, eeg='eeg' in ch_types,
-                    exclude=[], **kwargs)
-    print(f'Picked Types: {ch_types}')
-    return data
-
-
 class BaseLoading:
     """ Base-Class for Sub (The current File/MRI-File/Grand-Average-Group, which is executed)"""
 
@@ -294,22 +283,37 @@ class MEEG(BaseLoading):
 
         return self._info
 
+    def pick_types_helper(self, data):
+        # Include all selected Channel-Types if present in data
+        sel_ch_types = self.p['ch_types'].copy()
+        existing_ch_types = data.get_channel_types(unique=True)
+        # Remove channel-types, which are not present in data
+        for ch_type in [ct for ct in sel_ch_types if ct not in existing_ch_types]:
+            sel_ch_types.remove(ch_type)
+
+        data = data.pick(sel_ch_types)
+        print(f'Picked Types: {sel_ch_types}')
+
+        return data
+
+    def _update_raw_info(self):
+        # Insert/Update BadChannels from meeg_bad_channels and add description
+        self._raw.info['bads'] = self.bad_channels
+        self._raw.info['description'] = self.name
+
     def load_raw(self):
         if self._raw is None:
             self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
 
-        self._raw = pick_types_helper(self._raw, self.p['ch_types'])
-
-        # Insert/Update BadChannels from meeg_bad_channels
-        self._raw.info['bads'] = self.bad_channels
+        self._raw = self.pick_types_helper(self._raw)
+        self._update_raw_info()
 
         return self._raw
 
     def save_raw(self, raw):
         self._raw = raw
 
-        # Insert/Update BadChannels from meeg_bad_channels
-        self._raw.info['bads'] = self.bad_channels
+        self._update_raw_info()
 
         raw.save(self.raw_path, overwrite=True)
         self.save_file_params(self.raw_path)
@@ -318,18 +322,16 @@ class MEEG(BaseLoading):
         if self._raw_filtered is None:
             self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
 
-        self._raw_filtered = pick_types_helper(self._raw_filtered, self.p['ch_types'])
+        self._raw_filtered = self.pick_types_helper(self._raw_filtered)
 
-        # Insert/Update BadChannels from meeg_bad_channels
-        self._raw_filtered.info['bads'] = self.bad_channels
+        self._update_raw_info()
 
         return self._raw_filtered
 
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
 
-        # Insert/Update BadChannels from meeg_bad_channels
-        self._raw.info['bads'] = self.bad_channels
+        self._update_raw_info()
 
         if not self.mw.get_setting('save_storage'):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
@@ -338,7 +340,7 @@ class MEEG(BaseLoading):
     def load_erm(self):
         # unfiltered erm is not considered important enough to be a obj-attribute
         erm = mne.io.read_raw_fif(self.erm_path, preload=True)
-        erm = pick_types_helper(erm, self.p['ch_types'])
+        erm = self.pick_types_helper(erm)
         return erm
 
     def load_erm_filtered(self):
@@ -368,7 +370,7 @@ class MEEG(BaseLoading):
         if self._epochs is None:
             self._epochs = mne.read_epochs(self.epochs_path)
 
-        self._epochs = pick_types_helper(self._epochs, self.p['ch_types'])
+        self._epochs = self.pick_types_helper(self._epochs)
 
         return self._epochs
 
@@ -417,7 +419,7 @@ class MEEG(BaseLoading):
             self._evokeds = mne.read_evokeds(self.evokeds_path)
 
         for idx, evoked in enumerate(self._evokeds):
-            self._evokeds[idx] = pick_types_helper(evoked, self.p['ch_types'])
+            self._evokeds[idx] = self.pick_types_helper(evoked)
 
         return self._evokeds
 

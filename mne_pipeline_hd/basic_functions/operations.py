@@ -43,10 +43,6 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
 
-        # Save some data in the info-dictionary and finally save it
-        raw.info['description'] = meeg.name
-        raw.info['bads'] = meeg.bad_channels
-
         meeg.save_filtered(raw)
     else:
         print(f'{meeg.name} already filtered with highpass={highpass} and lowpass={lowpass}')
@@ -254,6 +250,7 @@ def run_ica_new(meeg, ica_method, ica_fitto, n_components, max_pca_components, n
                 ica_noise_cov, **kwargs):
     if ica_fitto == 'Raw':
         data = meeg.load_filtered()
+        data.pick('all', exclude='bads')
     elif ica_fitto == 'Epochs':
         data = meeg.load_epochs()
     else:

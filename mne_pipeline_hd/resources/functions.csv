@@ -12,7 +12,7 @@ apply_watershed;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri
 prepare_bem;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,bem_spacing
 setup_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,source_space_spacing,surface,n_jobs
 compute_src_distances;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,n_jobs
-setup_vol_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri
+setup_vol_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,vol_source_space_spacing
 morph_fsmri;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,morph_to
 morph_labels_from_fsaverage;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri
 create_forward_solution;;MEEG;Compute;Forward;False;False;;operations;meeg,n_jobs,eeg_fwd
@@ -31,7 +31,6 @@ grand_avg_ltc;;Group;Compute;Grand-Average;False;False;;operations;group
 grand_avg_connect;;Group;Compute;Grand-Average;False;False;;operations;group
 plot_source_space;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;fsmri
 plot_bem;;FSMRI;Plot;MRI-Preprocessing;True;False;;plot;fsmri
-plot_labels;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;fsmri,parcellation
 plot_noise_covariance;;MEEG;Plot;Inverse;True;False;;plot;meeg
 plot_transformation;;MEEG;Plot;Forward;True;True;;plot;meeg
 plot_sensitivity_maps;;MEEG;Plot;Inverse;True;True;;plot;meeg,ch_types
