@@ -102,9 +102,7 @@ def plot_raw(meeg):
         events = None
         print('No events found')
 
-    raw.plot(events=events, n_channels=30, bad_color='red',
-             scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-             title=f'{meeg.name}')
+    raw.plot(events=events, n_channels=30, bad_color='red', scalings='auto', title=f'{meeg.name}')
 
 
 def plot_filtered(meeg):

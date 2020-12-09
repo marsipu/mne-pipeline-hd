@@ -334,8 +334,11 @@ class RunDialog(QDialog):
 
                 elif self.current_type == 'MEEG':
                     # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
-                    if self.loaded_fsmri and self.loaded_fsmri.name == self.mw.pr.meeg_to_fsmri[object_name]:
-                        self.current_object = MEEG(object_name, self.mw, fsmri=self.loaded_fsmri)
+                    if object_name in self.mw.pr.meeg_to_fsmri:
+                        if self.loaded_fsmri and self.loaded_fsmri.name == self.mw.pr.meeg_to_fsmri[object_name]:
+                            self.current_object = MEEG(object_name, self.mw, fsmri=self.loaded_fsmri)
+                        else:
+                            self.current_object = MEEG(object_name, self.mw)
                     else:
                         self.current_object = MEEG(object_name, self.mw)
                     self.loaded_fsmri = self.current_object.fsmri
