@@ -30,73 +30,12 @@ class Project:
         self.mw = main_win
         self.name = name
 
-        # Initiate Project-Lists and Dicts
-        # Stores the names of all MEG/EEG-Files
-        self.all_meeg = list()
-        # Stores selected MEG/EEG-Files
-        self.sel_meeg = list()
-
-        # Stores Bad-Channels for each MEG/EEG-File
-        self.meeg_bad_channels = dict()
-
-        # Stores Event-ID for each MEG/EEG-File
-        self.meeg_event_id = dict()
-        # Stores selected event-id-labels
-        self.sel_event_id = dict()
-
-        # Stores the names of all Empty-Room-Files (MEG/EEG)
-        self.all_erm = list()
-        # Maps each MEG/EEG-File to a Empty-Room-File or None
-        self.meeg_to_erm = dict()
-
-        # Stores the names of all Freesurfer-Segmentation-Folders in Subjects-Dir
-        self.all_fsmri = list()
-        # Stores selected Freesurfer-Segmentations
-        self.sel_fsmri = list()
-        # Maps each MEG/EEG-File to a Freesurfer-Segmentation or None
-        self.meeg_to_fsmri = {}
-
-        # Groups MEG/EEG-Files e.g. for Grand-Average
-        self.all_groups = {}
-        # Stores selected Grand-Average-Groups
-        self.sel_groups = list()
-
-        # Stores selected Info-Attributes for each file
-        self.all_info = dict()
-
-        # Stores functions and if they are selected
-        self.sel_functions = dict()
-
-        # Stores additional keyword-arguments for functions by function-name
-        self.add_kwargs = dict()
-
-        # Stores parameters for each Parameter-Preset
-        self.parameters = dict()
-        # Paramter-Preset
-        self.p_preset = 'Default'
-        # Stores parameters for each file saved to disk from the current run (know, what you did to your data)
-        self.file_parameters = dict()
-
-        # paths to existing files
-        self.file_orga_paths = dict()
-        # checks in file-categories for each obj
-        self.file_orga_checks = dict()
-
-        self.make_paths()
-        self.load_lists()
-        self.check_data()
-
-        # Parameter-Dict, contains parameters for each parameter-preset
-        self.load_parameters()
-        self.load_last_p_preset()
-
-    def make_paths(self):
         # Main folder of project
         self.project_path = join(self.mw.projects_path, self.name)
         # Folder to store the data
         self.data_path = join(self.project_path, 'data')
         # Folder to store the figures (with an additional subfolder for each parameter-preset)
-        self.figures_path = join(self.project_path, 'figures', self.p_preset)
+        self.figures_path = join(self.project_path, 'figures')
         # A dedicated folder to store grand-average data
         self.save_dir_averages = join(self.data_path, 'grand_averages')
         # A dedicated folder to store empty-room measurements
@@ -104,35 +43,129 @@ class Project:
         # A folder to store all pipeline-scripts as .json-files
         self.pscripts_path = join(self.project_path, '_pipeline_scripts')
 
-        # Create or check existence of folders
-        path_lists = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
-                      self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
+        self.main_paths = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
+                           self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
 
-        for path in path_lists:
+        # Initiate Project-Lists and Dicts
+        # Stores the names of all MEG/EEG-Files
+        self.all_meeg = list()
+        self.all_meeg_path = join(self.pscripts_path, f'all_meeg_{self.name}.json')
+        # Stores selected MEG/EEG-Files
+        self.sel_meeg = list()
+        self.sel_meeg_path = join(self.pscripts_path, f'selected_meeg_{self.name}.json')
+
+        # Stores Bad-Channels for each MEG/EEG-File
+        self.meeg_bad_channels = dict()
+        self.meeg_bad_channels_path = join(self.pscripts_path, f'meeg_bad_channels_{self.name}.json')
+
+        # Stores Event-ID for each MEG/EEG-File
+        self.meeg_event_id = dict()
+        self.meeg_event_id_path = join(self.pscripts_path, f'meeg_event_id_{self.name}.json')
+        # Stores selected event-id-labels
+        self.sel_event_id = dict()
+        self.sel_event_id_path = join(self.pscripts_path, f'selected_event_ids_{self.name}.json')
+
+        # Stores the names of all Empty-Room-Files (MEG/EEG)
+        self.all_erm = list()
+        self.all_erm_path = join(self.pscripts_path, f'all_erm_{self.name}.json')
+
+        # Maps each MEG/EEG-File to a Empty-Room-File or None
+        self.meeg_to_erm = dict()
+        self.meeg_to_erm_path = join(self.pscripts_path, f'meeg_to_erm_{self.name}.json')
+
+        # Stores the names of all Freesurfer-Segmentation-Folders in Subjects-Dir
+        self.all_fsmri = list()
+        self.all_fsmri_path = join(self.pscripts_path, f'all_fsmri_{self.name}.json')
+
+        # Stores selected Freesurfer-Segmentations
+        self.sel_fsmri = list()
+        self.sel_fsmri_path = join(self.pscripts_path, f'selected_fsmri_{self.name}.json')
+
+        # Maps each MEG/EEG-File to a Freesurfer-Segmentation or None
+        self.meeg_to_fsmri = {}
+        self.meeg_to_fsmri_path = join(self.pscripts_path, f'meeg_to_fsmri_{self.name}.json')
+
+        self.ica_components = dict()
+        self.ica_components_path = join(self.pscripts_path, f'ica_components_{self.name}.json')
+
+        # Groups MEG/EEG-Files e.g. for Grand-Average
+        self.all_groups = {}
+        self.all_groups_path = join(self.pscripts_path, f'all_groups_{self.name}.json')
+
+        # Stores selected Grand-Average-Groups
+        self.sel_groups = list()
+        self.sel_groups_path = join(self.pscripts_path, f'selected_groups_{self.name}.json')
+
+        # Stores selected Info-Attributes for each file
+        self.all_info = dict()
+        self.all_info_path = join(self.pscripts_path, f'all_info_{self.name}.json')
+
+        # Stores functions and if they are selected
+        self.sel_functions = dict()
+        self.sel_functions_path = join(self.pscripts_path, f'selected_functions_{self.name}.json')
+
+        # Stores additional keyword-arguments for functions by function-name
+        self.add_kwargs = dict()
+        self.add_kwargs_path = join(self.pscripts_path, f'additional_kwargs_{self.name}.json')
+
+        # Stores parameters for each Parameter-Preset
+        self.parameters = dict()
+        self.parameters_path = join(self.pscripts_path, f'parameters_{self.name}.json')
+
+        # Paramter-Preset
+        self.p_preset = 'Default'
+        self.sel_p_preset_path = join(self.pscripts_path, f'sel_p_preset_{self.name}.json')
+
+        # Stores parameters for each file saved to disk from the current run (know, what you did to your data)
+        self.file_parameters = dict()
+        self.file_parameters_path = join(self.pscripts_path, f'file_parameters_{self.name}.json')
+
+        # Map the paths to their attribute in the Project-Class
+        self.path_to_attribute = {self.all_meeg_path: 'all_meeg',
+                                  self.sel_meeg_path: 'sel_meeg',
+                                  self.meeg_bad_channels_path: 'meeg_bad_channels',
+                                  self.meeg_event_id_path: 'meeg_event_id',
+                                  self.sel_event_id_path: 'sel_event_id',
+                                  self.all_erm_path: 'all_erm',
+                                  self.meeg_to_erm_path: 'meeg_to_erm',
+                                  self.all_fsmri_path: 'all_fsmri',
+                                  self.sel_fsmri_path: 'sel_fsmri',
+                                  self.meeg_to_fsmri_path: 'meeg_to_fsmri',
+                                  self.all_groups_path: 'all_groups',
+                                  self.sel_groups_path: 'sel_groups',
+                                  self.all_info_path: 'all_info',
+                                  self.sel_functions_path: 'sel_functions',
+                                  self.add_kwargs_path: 'add_kwargs',
+                                  self.parameters_path: 'parameters',
+                                  self.sel_p_preset_path: 'p_preset',
+                                  self.file_parameters_path: 'file_parameters'}
+
+        # Attributes, which have their own special function for loading
+        self.special_loads = ['parameters', 'p_preset']
+
+        # Attributes, which have their own special function for saving
+        self.special_saves = ['parameters']
+
+        self.make_paths()
+        self.load()
+        self.check_data()
+
+    def make_paths(self):
+
+        # Create or check existence of main_paths
+        for path in self.main_paths:
             if not exists(path):
                 makedirs(path)
                 print(f'{path} created')
 
-        # List/Dict-Paths (stored in pscripts_path)
-        self.all_meeg_path = join(self.pscripts_path, f'all_meeg_{self.name}.json')
-        self.sel_meeg_path = join(self.pscripts_path, f'selected_meeg_{self.name}.json')
-        self.meeg_bad_channels_path = join(self.pscripts_path, f'meeg_bad_channels_{self.name}.json')
-        self.meeg_event_id_path = join(self.pscripts_path, f'meeg_event_id_{self.name}.json')
-        self.sel_event_id_path = join(self.pscripts_path, f'selected_event_ids_{self.name}.json')
-        self.all_erm_path = join(self.pscripts_path, f'all_erm_{self.name}.json')
-        self.meeg_to_erm_path = join(self.pscripts_path, f'meeg_to_erm_{self.name}.json')
-        self.all_fsmri_path = join(self.pscripts_path, f'all_fsmri_{self.name}.json')
-        self.sel_fsmri_path = join(self.pscripts_path, f'selected_fsmri_{self.name}.json')
-        self.meeg_to_fsmri_path = join(self.pscripts_path, f'meeg_to_fsmri_{self.name}.json')
-        self.all_groups_path = join(self.pscripts_path, f'all_groups_{self.name}.json')
-        self.sel_groups_path = join(self.pscripts_path, f'selected_groups_{self.name}.json')
-        self.all_info_path = join(self.pscripts_path, f'all_info_{self.name}.json')
-        self.sel_functions_path = join(self.pscripts_path, f'selected_functions_{self.name}.json')
-        self.add_kwargs_path = join(self.pscripts_path, f'additional_kwargs_{self.name}.json')
-        self.parameters_path = join(self.pscripts_path, f'parameters_{self.name}.json')
-        self.sel_p_preset_path = join(self.pscripts_path, f'sel_p_preset_{self.name}.json')
-        self.file_parameters_path = join(self.pscripts_path, f'file_parameters_{self.name}.json')
+        # Create empty files if files are not existing
+        for file_path in self.path_to_attribute:
+            if not isfile(file_path):
+                with open(file_path, 'w') as fl:
+                    fl.write('')
+                print(f'{file_path} created')
 
+    def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
         self.old_all_meeg_path = join(self.pscripts_path, 'file_list.json')
         self.old_sel_meeg_path = join(self.pscripts_path, 'selected_files.json')
@@ -148,25 +181,6 @@ class Project:
         self.old_sel_groups_path = join(self.pscripts_path, 'selected_grand_average_groups.json')
         self.old_all_info_path = join(self.pscripts_path, 'info_dict.json')
         self.old_sel_funcs_path = join(self.pscripts_path, 'selected_funcs.json')
-
-        file_paths = [self.all_meeg_path,
-                      self.sel_meeg_path,
-                      self.meeg_bad_channels_path,
-                      self.meeg_event_id_path,
-                      self.sel_event_id_path,
-                      self.all_erm_path,
-                      self.meeg_to_erm_path,
-                      self.all_fsmri_path,
-                      self.sel_fsmri_path,
-                      self.meeg_to_fsmri_path,
-                      self.all_groups_path,
-                      self.sel_groups_path,
-                      self.all_info_path,
-                      self.sel_functions_path,
-                      self.add_kwargs_path,
-                      self.parameters_path,
-                      self.sel_p_preset_path,
-                      self.file_parameters_path]
 
         # Old Paths to allow transition (22.11.2020)
         self.old_paths = {self.all_meeg_path: self.old_all_meeg_path,
@@ -184,68 +198,25 @@ class Project:
                           self.all_info_path: self.old_all_info_path,
                           self.sel_functions_path: self.old_sel_funcs_path}
 
-        # Create empty files if files are not existing
-        for file in file_paths:
-            if not isfile(file):
-                with open(file, 'w') as fl:
-                    fl.write('')
-                print(f'{file} created')
-
-    def load_lists(self):
-        # Map Paths to their attributes
-        load_dict = {self.all_meeg_path: 'all_meeg',
-                     self.sel_meeg_path: 'sel_meeg',
-                     self.meeg_bad_channels_path: 'meeg_bad_channels',
-                     self.meeg_event_id_path: 'meeg_event_id',
-                     self.sel_event_id_path: 'sel_event_id',
-                     self.all_erm_path: 'all_erm',
-                     self.meeg_to_erm_path: 'meeg_to_erm',
-                     self.all_fsmri_path: 'all_fsmri',
-                     self.sel_fsmri_path: 'sel_fsmri',
-                     self.meeg_to_fsmri_path: 'meeg_to_fsmri',
-                     self.all_groups_path: 'all_groups',
-                     self.sel_groups_path: 'sel_groups',
-                     self.all_info_path: 'all_info',
-                     self.sel_functions_path: 'sel_functions',
-                     self.add_kwargs_path: 'add_kwargs',
-                     self.file_parameters_path: 'file_parameters'
-                     }
-
-        for path in load_dict:
+        for path in [p for p in self.path_to_attribute if self.path_to_attribute[p] not in self.special_loads]:
             try:
                 with open(path, 'r') as file:
-                    setattr(self, load_dict[path], json.load(file, object_hook=numpy_json_hook))
+                    setattr(self, self.path_to_attribute[path], json.load(file, object_hook=numpy_json_hook))
             # Either empty file or no file, leaving default from __init__
-            except (json.decoder.JSONDecodeError, FileNotFoundError):
+            except (json.JSONDecodeError, FileNotFoundError):
                 # Old Paths to allow transition (22.11.2020)
                 try:
                     with open(self.old_paths[path], 'r') as file:
-                        setattr(self, load_dict[path], json.load(file, object_hook=numpy_json_hook))
-                except (json.decoder.JSONDecodeError, FileNotFoundError, KeyError):
+                        setattr(self, self.path_to_attribute[path], json.load(file, object_hook=numpy_json_hook))
+                except (json.JSONDecodeError, FileNotFoundError, KeyError):
                     pass
 
     def save_lists(self):
-        save_dict = {self.all_meeg_path: self.all_meeg,
-                     self.sel_meeg_path: self.sel_meeg,
-                     self.meeg_bad_channels_path: self.meeg_bad_channels,
-                     self.meeg_event_id_path: self.meeg_event_id,
-                     self.sel_event_id_path: self.sel_event_id,
-                     self.all_erm_path: self.all_erm,
-                     self.meeg_to_erm_path: self.meeg_to_erm,
-                     self.all_fsmri_path: self.all_fsmri,
-                     self.sel_fsmri_path: self.sel_fsmri,
-                     self.meeg_to_fsmri_path: self.meeg_to_fsmri,
-                     self.all_groups_path: self.all_groups,
-                     self.sel_groups_path: self.sel_groups,
-                     self.all_info_path: self.all_info,
-                     self.sel_functions_path: self.sel_functions,
-                     self.add_kwargs_path: self.add_kwargs,
-                     self.sel_p_preset_path: self.p_preset}
-
-        for path in save_dict:
+        for path in [p for p in self.path_to_attribute if self.path_to_attribute[p] not in self.special_saves]:
+            attribute = getattr(self, self.path_to_attribute[path], None)
             try:
                 with open(path, 'w') as file:
-                    json.dump(save_dict[path], file, cls=NumpyJSONEncoder, indent=4)
+                    json.dump(attribute, file, cls=NumpyJSONEncoder, indent=4)
             except json.JSONDecodeError as err:
                 print(f'There is a problem with path:\n'
                       f'{err}')
@@ -319,25 +290,14 @@ class Project:
         except FileNotFoundError:
             self.p_preset = list(self.parameters.keys())[0]
 
-    def load_file_parameters(self):
-        try:
-            with open(self.file_parameters_path, 'r') as read_file:
-                self.file_parameters = json.load(read_file, object_hook=numpy_json_hook)
+    def load(self):
+        self.load_lists()
+        self.load_parameters()
+        self.load_last_p_preset()
 
-        except (FileNotFoundError, json.decoder.JSONDecodeError):
-            self.file_parameters = dict()
-
-    def save_file_parameters(self):
-        # Encoding Tuples
-        save_file_parameters = deepcopy(self.file_parameters)
-        for file in self.file_parameters:
-            for key in self.file_parameters[file]:
-                if isinstance(self.file_parameters[file][key], tuple):
-                    save_file_parameters[file][key] = {'tuple_type': self.file_parameters[file][key]}
-
-        with open(self.file_parameters_path, 'w') as write_file:
-            # Use customized Encoder to deal with arrays
-            json.dump(save_file_parameters, write_file, cls=NumpyJSONEncoder, indent=4)
+    def save(self):
+        self.save_lists()
+        self.load_parameters()
 
     def check_data(self):
 

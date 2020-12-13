@@ -12,20 +12,31 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 from __future__ import print_function
 
 import inspect
+import json
 import pickle
 from datetime import datetime
 from os import listdir, makedirs, mkdir, remove
 from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+
+# Make use of program also possible with sensor-space installation of mne
+try:
+    from mayavi import mlab
+except ModuleNotFoundError:
+    pass
+
 import mne
 import numpy as np
 from PyQt5.QtWidgets import QMessageBox
 
-
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import NumpyJSONEncoder, numpy_json_hook
+
+
 class BaseLoading:
     """ Base-Class for Sub (The current File/MRI-File/Grand-Average-Group, which is executed)"""
 
@@ -41,6 +52,10 @@ class BaseLoading:
         self.figures_path = self.pr.figures_path
         self.img_format = self.mw.get_setting('img_format')
         self.dpi = self.mw.get_setting('dpi')
+        if self.name in self.mw.pr.all_info:
+            self.info = self.mw.pr.all_info[self.name]
+        else:
+            self.info = dict()
 
         self.save_dir = None
         self.paths_dict = dict()
@@ -58,6 +73,86 @@ class BaseLoading:
         self.pr.file_parameters[file_name]['SIZE'] = getsize(path)
         for p_name in self.pr.parameters[self.p_preset]:
             self.pr.file_parameters[file_name][p_name] = self.pr.parameters[self.p_preset][p_name]
+
+    def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
+                  mayavi_figure=None, brain=None, dpi=None):
+        # Take DPI from Settings if not defined by call
+        if not dpi:
+            dpi = self.dpi
+
+        if self.save_plots:
+            # Folder is named by plot_name
+            dir_path = join(self.figures_path, self.p_preset, plot_name)
+
+            # Create Subfolder if necessary
+            if subfolder:
+                dir_path = join(dir_path, subfolder)
+
+            # Create Subfolder for trial if necessary
+            if trial:
+                dir_path = join(dir_path, trial)
+
+            # Create not existent folders
+            if not isdir(dir_path):
+                makedirs(dir_path)
+
+            if subfolder and trial and idx:
+                file_name = f'{self.name}-{trial}_{self.p_preset}_{plot_name}-{subfolder}-{idx}{self.img_format}'
+            elif subfolder and trial:
+                file_name = f'{self.name}-{trial}_{self.p_preset}_{plot_name}-{subfolder}{self.img_format}'
+            elif trial and idx:
+                file_name = f'{self.name}-{trial}_{self.p_preset}_{plot_name}-{idx}{self.img_format}'
+            elif trial:
+                file_name = f'{self.name}-{trial}_{self.p_preset}_{plot_name}{self.img_format}'
+            elif idx:
+                file_name = f'{self.name}_{self.p_preset}_{plot_name}-{idx}{self.img_format}'
+            else:
+                file_name = f'{self.name}_{self.p_preset}_{plot_name}{self.img_format}'
+
+            save_path = join(dir_path, file_name)
+
+            if matplotlib_figure:
+                if isinstance(matplotlib_figure, list):
+                    for idx, figure in enumerate(matplotlib_figure):
+                        figure.savefig(join(dir_path, f'{idx}_' + file_name))
+                else:
+                    matplotlib_figure.savefig(save_path, dpi=dpi)
+            elif mayavi_figure:
+                mayavi_figure.savefig(save_path)
+            elif brain:
+                brain.save_image(save_path)
+            elif mayavi:
+                mlab.savefig(save_path, figure=mlab.gcf())
+            else:
+                plt.savefig(save_path, dpi=dpi)
+
+            print('figure: ' + save_path + ' has been saved')
+        else:
+            print('Not saving plots; set "save_plots" to "True" to save')
+
+    def load_json(self, file_name):
+        file_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{file_name}.json')
+        try:
+            with open(file_path, 'r') as file:
+                data = json.load(file, object_hook=numpy_json_hook)
+        except json.JSONDecodeError:
+            print(f'{file_path} could not be loaded')
+            data = None
+        except FileNotFoundError:
+            print(f'{file_path} could not be found')
+            data = None
+
+        return data
+
+    def save_json(self, file_name, data):
+        file_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{file_name}.json')
+        try:
+            with open(file_path, 'w') as file:
+                json.dump(data, file, cls=NumpyJSONEncoder, indent=4)
+        except json.JSONDecodeError:
+            print(f'{file_path} could not be saved')
+
+        self.save_file_params(file_path)
 
     def get_existing_paths(self):
         """Get existing paths and add the mapped File-Type to existing_paths (set)"""
@@ -171,7 +266,8 @@ class MEEG(BaseLoading):
         self._epochs = None
         self._reject_log = None
         self._ica = None
-        self._ica_epochs = None
+        self._eog_epochs = None
+        self._ecg_epochs = None
         self._evokeds = None
         self._power_tfr = None
         self._itc_tfr = None
@@ -203,7 +299,9 @@ class MEEG(BaseLoading):
 
         self.ica_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ica.fif')
 
-        self.ica_epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ica-epo.fif')
+        self.eog_epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-eog-epo.fif')
+
+        self.ecg_epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ecg-epo.fif')
 
         self.evokeds_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ave.fif')
 
@@ -234,7 +332,8 @@ class MEEG(BaseLoading):
                            'Epochs': self.epochs_path,
                            'RejectLog': self.reject_log_path,
                            'ICA': self.ica_path,
-                           'Epochs (ICA)': self.ica_epochs_path,
+                           'Epochs (EOG)': self.eog_epochs_path,
+                           'Epochs (ECG)': self.ecg_epochs_path,
                            'Evokeds': self.evokeds_path,
                            'TF Power': self.power_tfr_path,
                            'TF ITC': self.itc_tfr_path,
@@ -256,7 +355,8 @@ class MEEG(BaseLoading):
                              'load_epochs': 'Epochs',
                              'load_reject_log': 'RejectLog',
                              'load_ica': 'ICA',
-                             'load_ica_epohcs': 'Epochs (ICA)',
+                             'load_eog_epochs': 'Epochs (EOG)',
+                             'load_ecg_epochs': 'Epochs (ECG)',
                              'load_evokeds': 'Evokeds',
                              'load_power_tfr': 'TF Power',
                              'load_itc_tfr': 'TF ITC',
@@ -404,16 +504,27 @@ class MEEG(BaseLoading):
         ica.save(self.ica_path)
         self.save_file_params(self.ica_path)
 
-    def load_ica_epochs(self):
-        if self._ica_epochs is None:
-            self._ica_epochs = mne.read_epochs(self.ica_epochs_path)
+    def load_eog_epochs(self):
+        if self._eog_epochs is None:
+            self._eog_epochs = mne.read_epochs(self.eog_epochs_path)
 
-        return self._ica_epochs
+        return self._eog_epochs
 
-    def save_ica_epochs(self, ica_epochs):
-        self._ica_epochs = ica_epochs
-        ica_epochs.save(self.ica_epochs_path, overwrite=True)
-        self.save_file_params(self.ica_epochs_path)
+    def save_eog_epochs(self, eog_epochs):
+        self._eog_epochs = eog_epochs
+        eog_epochs.save(self.eog_epochs_path, overwrite=True)
+        self.save_file_params(self.eog_epochs_path)
+
+    def load_ecg_epochs(self):
+        if self._ecg_epochs is None:
+            self._ecg_epochs = mne.read_epochs(self.ecg_epochs_path)
+
+        return self._ecg_epochs
+
+    def save_ecg_epochs(self, ecg_epochs):
+        self._ecg_epochs = ecg_epochs
+        ecg_epochs.save(self.ecg_epochs_path, overwrite=True)
+        self.save_file_params(self.ecg_epochs_path)
 
     def load_evokeds(self):
         if self._evokeds is None:

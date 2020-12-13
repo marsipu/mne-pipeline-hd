@@ -113,7 +113,7 @@ class MainWindow(QMainWindow):
         self.get_home_path()
         # Load settings (which are stored as .json-file in home_path)
         # settings=<everything, that's OS-independent>
-        self.settings = {}
+        self.settings = dict()
         self.load_settings()
         # Get projects and current_project (need settings for this, thus after self.load_settings()
         self.get_projects()
@@ -837,7 +837,7 @@ class MainWindow(QMainWindow):
 
         if msg.Yes:
             result = run('conda env list', shell=True, capture_output=True, text=True)
-            if 'buba' in result.stdout:
+            if result.stdout:
                 if iswin:
                     command = command_upd_win
                 else:
@@ -916,10 +916,8 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def save_main(self):
-        # Save Parameters
-        self.pr.save_parameters()
-        self.pr.save_file_parameters()
-        self.pr.save_lists()
+        # Save Project
+        self.pr.save()
 
         self.settings['current_project'] = self.current_project
         self.save_settings()
