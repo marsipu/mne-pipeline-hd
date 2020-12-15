@@ -343,12 +343,11 @@ class StringGui(Param):
         return self.param_value
 
 
-# Todo: Fix not working correctly with default=object
 class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy
     """
 
-    def __init__(self, data, param_name, param_alias=None, default=object(), none_select=False, description=None,
+    def __init__(self, data, param_name, param_alias=None, default=None, none_select=False, description=None,
                  param_unit=None):
         """
         Parameters
@@ -374,7 +373,6 @@ class FuncGui(Param):
             Supply an optional suffix with the name of the unit.
         """
         super().__init__(data, param_name, param_alias, default, none_select, description)
-        self.param_alias = param_alias
         self.param_exp = None
         self.param_widget = QLineEdit()
         self.param_unit = param_unit
@@ -426,6 +424,8 @@ class FuncGui(Param):
         real_value = self.param_value
         self.param_name = self.param_name + '_exp'
         super().read_param()
+        if self.param_value == self.default:
+            self.param_value = ''
         self.param_exp = self.param_value
         self.param_name = self.param_name[:-4]
         self.param_value = real_value
@@ -778,9 +778,8 @@ class CheckListGui(Param):
     """A GUI to select items from a list of options
     """
 
-    def __init__(self, data, param_name, options, param_alias=None, default='Empty', none_select=False,
-                 description=None,
-                 param_unit=None, value_string_length=30, one_check=False):
+    def __init__(self, data, param_name, options, param_alias=None, default=None, none_select=False,
+                 description=None, param_unit=None, value_string_length=30, one_check=False):
         """
         Parameters
         ----------
@@ -813,6 +812,7 @@ class CheckListGui(Param):
 
         if not isinstance(options, list) or len(options) == 0:
             options = ['Empty']
+            default = 'Empty'
 
         super().__init__(data, param_name, param_alias, default, none_select, description)
         self.options = options
@@ -976,7 +976,6 @@ class DictGui(Param):
         return self.param_value
 
 
-# Todo: Fix Name not showing
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
@@ -1012,7 +1011,6 @@ class SliderGui(Param):
             Set the step-size, defaults to 1.
         """
         super().__init__(data, param_name, param_alias, default, none_select, description)
-        self.param_alias = param_alias
         self.min_val = min_val
         self.max_val = max_val
         self.param_widget = QSlider()
