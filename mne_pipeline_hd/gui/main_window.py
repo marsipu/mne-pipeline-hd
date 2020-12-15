@@ -26,15 +26,16 @@ import pandas as pd
 import qdarkstyle
 from PyQt5.QtCore import QSettings, QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog,
+from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
                              QVBoxLayout, QWidget)
 
 from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
+from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
-from .gui_utils import get_exception_tuple, get_ratio_geometry
+from .gui_utils import center, get_exception_tuple, get_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, SubBadsDialog,
                               SubDictDialog, SubjectDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
@@ -66,7 +67,7 @@ class MainWindow(QMainWindow):
     cancel_functions = pyqtSignal(bool)
     plot_running = pyqtSignal(bool)
 
-    def __init__(self):
+    def __init__(self, home_path, welcome_window, edu_program_name=None):
         super().__init__()
         self.app = QApplication.instance()
 
@@ -81,17 +82,17 @@ class MainWindow(QMainWindow):
         self.general_layout = QGridLayout()
         self.centralWidget().setLayout(self.general_layout)
 
-        # Set geometry to ratio of screen-geometry
-        width, height = get_ratio_geometry(0.9)
-        self.resize(int(width), int(height))
-        self.center()
-
         # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
         self.threadpool = QThreadPool()
         print(f'Multithreading with maximum {self.threadpool.maxThreadCount()} threads')
 
         # Initiate attributes for Main-Window
-        self.home_path = ''
+        self.home_path = home_path
+        self.welcome_window = welcome_window
+        self.edu_program_name = edu_program_name
+        self.edu_program = None
+        self.edu_tour = None
+        self.all_pd_funcs = None
         self.projects_path = ''
         self.current_project = ''
         self.subjects_dir = ''
@@ -109,12 +110,14 @@ class MainWindow(QMainWindow):
         # Load QSettings (which are stored in the OS)
         # qsettings=<everything, that's OS-dependent>
         self.qsettings = QSettings()
-        # Get the Home-Path (OS-dependent)
-        self.get_home_path()
+
         # Load settings (which are stored as .json-file in home_path)
         # settings=<everything, that's OS-independent>
         self.settings = dict()
         self.load_settings()
+
+        # Make base-paths (if not already existing)
+        self.make_base_paths()
         # Get projects and current_project (need settings for this, thus after self.load_settings()
         self.get_projects()
 
@@ -143,6 +146,9 @@ class MainWindow(QMainWindow):
         # Call project-class
         self.pr = Project(self, self.current_project)
 
+        # Load Education-Program if given
+        self.load_edu()
+
         # Set logging
         logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
@@ -152,40 +158,17 @@ class MainWindow(QMainWindow):
         self.init_toolbar()
         self.add_dock_windows()
         self.init_main_widget()
-        self.center()
+
+        # Set geometry to ratio of screen-geometry
+        width, height = get_ratio_geometry(0.9)
+        self.resize(int(width), int(height))
+        center(self)
         self.raise_win()
 
         self.first_init = False
 
-    def get_home_path(self):
-        # Get home_path
-        hp = self.qsettings.value('home_path')
-        checking_home_path = True
-        while checking_home_path:
-            if hp is None or hp == '':
-                hp = QFileDialog.getExistingDirectory(self, 'Select a folder to store your Pipeline-Projects')
-            elif not isdir(hp):
-                hp = QFileDialog.getExistingDirectory(self, f'{hp} not found!'
-                                                            f'Select a folder to store your Pipeline-Projects')
-            # Check, if path is writable
-            elif not os.access(hp, os.W_OK):
-                hp = QFileDialog.getExistingDirectory(self, f'{hp} not writable!'
-                                                            f'Select a folder to store your Pipeline-Projects')
-            if hp == '':
-                answer = QMessageBox.question(self, 'Cancel Start?',
-                                              'You can\'t start without this step, '
-                                              'do you want to cancel the start?')
-                if answer == QMessageBox.Yes:
-                    raise RuntimeError('User canceled start')
-            # Check, if the new selected Path from the Dialog is writable
-            elif not os.access(hp, os.W_OK):
-                pass
-            else:
-                self.home_path = str(hp)
-                self.qsettings.setValue('home_path', self.home_path)
-                self.make_base_paths()
-                print(f'Home-Path: {self.home_path}')
-                checking_home_path = False
+        # Start Education-Tour
+        self.start_edu()
 
     def make_base_paths(self):
         self.projects_path = join(self.home_path, 'projects')
@@ -463,6 +446,30 @@ class MainWindow(QMainWindow):
                 spec.loader.exec_module(module)
                 sys.modules[module_name] = module
 
+    def load_edu(self):
+        if self.edu_program_name:
+            edu_path = join(self.home_path, 'edu_programs', self.edu_program_name)
+            with open(edu_path, 'r') as file:
+                self.edu_program = json.load(file)
+
+            self.all_pd_funcs = self.pd_funcs.copy()
+            # Exclude functions which are not selected
+            self.pd_funcs = self.pd_funcs.loc[self.pd_funcs.index.isin(self.edu_program['functions'])]
+
+            self.pr.pscripts_path = join(self.pr.project_path, f'_pipeline_scripts{self.edu_program["name"]}')
+
+            # Exclude MEEG
+            self.pr._all_meeg = self.pr.all_meeg.copy()
+            self.pr.all_meeg = [meeg for meeg in self.pr.all_meeg if meeg in self.edu_program['meeg']]
+
+            # Exclude FSMRI
+            self.pr._all_fsmri = self.pr.all_fsmri.copy()
+            self.pr.all_fsmri = [meeg for meeg in self.pr.all_meeg if meeg in self.edu_program['meeg']]
+
+    def start_edu(self):
+        if self.edu_program and len(self.edu_program['tour_list']) > 0:
+            self.edu_tour = EducationTour(self, self.edu_program)
+
     def init_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
         # Input
@@ -505,6 +512,10 @@ class MainWindow(QMainWindow):
         func_menu.addAction('&Reload Custom-Modules', self.reload_custom_modules)
         func_menu.addSeparator()
         func_menu.addAction('Additional Keyword-Arguments', partial(AddKwargs, self))
+
+        # Education
+        education_menu = self.menuBar().addMenu('&Education')
+        education_menu.addAction('&Education-Editor', partial(EducationEditor, self))
 
         # Tools
         tool_menu = self.menuBar().addMenu('&Tools')
@@ -559,7 +570,8 @@ class MainWindow(QMainWindow):
                                        description='Do you want to enable CUDA? (system has to be setup for cuda)',
                                        default=False))
         self.toolbar.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
-                                       description='Do you want to shut your system down after execution of all subjects?'))
+                                       description='Do you want to shut your system down'
+                                                   ' after execution of all subjects?'))
         self.toolbar.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
                                       description='Set dpi for saved plots', default=300))
         self.toolbar.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
@@ -706,7 +718,11 @@ class MainWindow(QMainWindow):
                     self.bt_dict[function].setChecked(True)
 
     def add_dock_windows(self):
-        self.subject_dock = SubjectDock(self)
+        if self.edu_program:
+            dock_kwargs = self.edu_program['dock_kwargs']
+        else:
+            dock_kwargs = dict()
+        self.subject_dock = SubjectDock(self, **dock_kwargs)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
         self.view_menu.addAction(self.subject_dock.toggleViewAction())
 
@@ -727,12 +743,6 @@ class MainWindow(QMainWindow):
             self.showNormal()
         else:
             self.showFullScreen()
-
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
 
     def raise_win(self):
         if iswin:
@@ -755,7 +765,7 @@ class MainWindow(QMainWindow):
     def change_style(self, style_name):
         self.app.setStyle(QStyleFactory.create(style_name))
         self.app.setPalette(QApplication.style().standardPalette())
-        self.center()
+        center(self)
 
     def clear(self):
         for x in self.bt_dict:
@@ -925,4 +935,19 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.save_main()
-        event.accept()
+        answer = QMessageBox.question(self, 'Closing MNE-Pipeline', 'Do you want to return to the Welcome-Window?',
+                                      buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                      defaultButton=QMessageBox.Yes)
+        if answer == QMessageBox.Yes:
+            self.welcome_window.check_home_path()
+            self.welcome_window.show()
+            if self.edu_tour:
+                self.edu_tour.close()
+            event.accept()
+        elif answer == QMessageBox.No:
+            self.welcome_window.close()
+            if self.edu_tour:
+                self.edu_tour.close()
+            event.accept()
+        else:
+            event.ignore()

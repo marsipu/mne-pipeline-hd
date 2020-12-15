@@ -288,7 +288,7 @@ class Project:
                 # If parameter-preset not in Parameters, load first Parameter-Key(=Parameter-Preset)
                 if self.p_preset not in self.parameters:
                     self.p_preset = list(self.parameters.keys())[0]
-        except FileNotFoundError:
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.p_preset = list(self.parameters.keys())[0]
 
     def load(self):

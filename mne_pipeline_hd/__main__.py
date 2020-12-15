@@ -21,7 +21,7 @@ package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent)
 if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
 
-from mne_pipeline_hd.gui import main_window
+from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.gui.gui_utils import StderrStream, StdoutStream
 from mne_pipeline_hd.pipeline_functions import ismac
 
@@ -48,8 +48,8 @@ def main():
         # Workaround for MAC menu-bar-focusing issue
         app.setAttribute(Qt.AA_DontUseNativeMenuBar, True)
 
-    # Initiate MainWindow-Class (this class also contains all the functionalities and data of the program)
-    mw = main_window.MainWindow()
+    # Initiate WelcomeWindow
+    ww = WelcomeWindow()
 
     # Redirect stdout to capture it later in GUI
     sys.stdout = StdoutStream()
@@ -58,6 +58,7 @@ def main():
 
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()
+    mw = ww.mw
     timer.timeout.connect(lambda: mw)
     timer.start(500)
 

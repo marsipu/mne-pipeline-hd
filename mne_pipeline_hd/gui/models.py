@@ -29,8 +29,8 @@ class BaseListModel(QAbstractListModel):
 
     """
 
-    def __init__(self, data=None, show_index=False):
-        super().__init__()
+    def __init__(self, data=None, show_index=False, **kwargs):
+        super().__init__(**kwargs)
         self.show_index = show_index
         if data is None:
             self._data = list()
@@ -63,8 +63,8 @@ class EditListModel(BaseListModel):
 
     """
 
-    def __init__(self, data, show_index=False):
-        super().__init__(data, show_index=show_index)
+    def __init__(self, data, show_index=False, **kwargs):
+        super().__init__(data, show_index=show_index, **kwargs)
 
     def flags(self, index=QModelIndex()):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
@@ -109,8 +109,8 @@ class CheckListModel(BaseListModel):
 
     """
 
-    def __init__(self, data, checked, one_check=False, show_index=False):
-        super().__init__(data, show_index=show_index)
+    def __init__(self, data, checked, one_check=False, show_index=False, **kwargs):
+        super().__init__(data, show_index=show_index, **kwargs)
         self.one_check = one_check
 
         if data is None:
@@ -180,8 +180,8 @@ class CheckDictModel(BaseListModel):
     """
 
     def __init__(self, data, check_dict, show_index=False,
-                 yes_bt=None, no_bt=None):
-        super().__init__(data, show_index)
+                 yes_bt=None, no_bt=None, **kwargs):
+        super().__init__(data, show_index, **kwargs)
         self._check_dict = check_dict
         self.app = QApplication.instance()
 
@@ -202,6 +202,33 @@ class CheckDictModel(BaseListModel):
                 return self.app.style().standardIcon(self.no_bt)
 
 
+class CheckDictEditModel(CheckDictModel, EditListModel):
+    """An editable List-Model
+
+    Parameters
+    ----------
+    data : list()
+        list with content to be displayed, defaults to empty list
+    check_dict : dict()
+        dictionary which may contain items from data as keys
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
+    yes_bt: int | None
+        Supply a identifier for an icon to mark the items existing in check_dict
+    no_bt: int | None
+        Supply a identifier for an icon to mark the items not existing in check_dict
+
+    Notes
+    -----
+    Identifiers for QT standard-icons:
+    https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
+    """
+
+    def __init__(self, data, check_dict, show_index=False,
+                 yes_bt=None, no_bt=None):
+        super().__init__(data, check_dict, show_index, yes_bt, no_bt)
+
+
 class BaseDictModel(QAbstractTableModel):
     """Basic Model for Dictonaries
 
@@ -215,8 +242,8 @@ class BaseDictModel(QAbstractTableModel):
     Python 3.7 is required to ensure order in dictionary when inserting a normal dict (or use OrderedDict)
     """
 
-    def __init__(self, data=None):
-        super().__init__()
+    def __init__(self, data=None, **kwargs):
+        super().__init__(**kwargs)
         if data is None:
             self._data = dict()
         else:
@@ -270,8 +297,8 @@ class EditDictModel(BaseDictModel):
     Python 3.7 is required to ensure order in dictionary when inserting a normal dict (or use OrderedDict)
     """
 
-    def __init__(self, data=None, only_edit=None):
-        super().__init__(data)
+    def __init__(self, data=None, only_edit=None, **kwargs):
+        super().__init__(data, **kwargs)
         self.only_edit = only_edit
 
     def setData(self, index, value, role=None):
@@ -332,8 +359,8 @@ class BasePandasModel(QAbstractTableModel):
         pandas DataFrame with contents to be displayed, defaults to empty DataFrame
     """
 
-    def __init__(self, data=None):
-        super().__init__()
+    def __init__(self, data=None, **kwargs):
+        super().__init__(**kwargs)
         if data is None:
             self._data = pd.DataFrame([])
         else:
@@ -372,8 +399,9 @@ class EditPandasModel(BasePandasModel):
     The reference of the original input-DataFrame is lost when edited by this Model,
     you need to retrieve it directly from the model after editing
     """
-    def __init__(self, data=None):
-        super().__init__(data)
+
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def setData(self, index, value, role=None):
         if role == Qt.EditRole:
@@ -469,8 +497,8 @@ class EditPandasModel(BasePandasModel):
 
 
 class AddFilesModel(BasePandasModel):
-    def __init__(self, data):
-        super().__init__(data)
+    def __init__(self, data, **kwargs):
+        super().__init__(data, **kwargs)
 
     def data(self, index, role=None):
         column = self._data.columns[index.column()]
@@ -522,8 +550,8 @@ class AddFilesModel(BasePandasModel):
 class FileManagementModel(BasePandasModel):
     """A model for the Pandas-DataFrames containing information about the existing files"""
 
-    def __init__(self, data):
-        super().__init__(data)
+    def __init__(self, data, **kwargs):
+        super().__init__(data, **kwargs)
         self.app = QApplication.instance()
 
     def data(self, index, role=None):
@@ -559,8 +587,8 @@ class CustomFunctionModel(QAbstractListModel):
     add_pd_funcs or add_pd_params
     """
 
-    def __init__(self, data):
-        super().__init__()
+    def __init__(self, data, **kwargs):
+        super().__init__(**kwargs)
         self._data = data
         self.app = QApplication.instance()
 

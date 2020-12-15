@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDesktopWidget, QDialog, QDockWidget, QFileDialog,
+from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDockWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
                              QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QProgressDialog, QPushButton,
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTextEdit, QTreeWidget,
@@ -35,7 +35,7 @@ from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList, \
     SimplePandasTable
 from .dialogs import ErrorDialog
-from .gui_utils import (Worker, WorkerSignals, get_ratio_geometry)
+from .gui_utils import (Worker, WorkerSignals, center, get_ratio_geometry)
 from .models import AddFilesModel
 from ..pipeline_functions.pipeline_utils import compare_filep
 
@@ -188,9 +188,11 @@ class RemoveDialog(QDialog):
 
 # Todo: Subject-Selection according to having or not specified Files (Combobox)
 class SubjectDock(QDockWidget):
-    def __init__(self, main_win):
+    def __init__(self, main_win, meeg_view=True, fsmri_view=True):
         super().__init__('Object-Selection', main_win)
         self.mw = main_win
+        self.meeg_view = meeg_view
+        self.fsmri_view = fsmri_view
         self.setAllowedAreas(Qt.LeftDockWidgetArea)
 
         self.init_ui()
@@ -209,66 +211,68 @@ class SubjectDock(QDockWidget):
                       "'all' (All files in file_list.py)\n" \
                       "'all,!4-6' (All files except 4-6)"
 
-        # MEEG-List + Index-Line-Edit
-        meeg_widget = QWidget()
-        meeg_layout = QVBoxLayout()
-        self.meeg_list = CheckList(self.mw.pr.all_meeg, self.mw.pr.sel_meeg, ui_button_pos='top', show_index=True,
-                                   title='Select MEG/EEG')
-        meeg_layout.addWidget(self.meeg_list)
+        if self.meeg_view:
+            # MEEG-List + Index-Line-Edit
+            meeg_widget = QWidget()
+            meeg_layout = QVBoxLayout()
+            self.meeg_list = CheckList(self.mw.pr.all_meeg, self.mw.pr.sel_meeg, ui_button_pos='top', show_index=True,
+                                       title='Select MEG/EEG')
+            meeg_layout.addWidget(self.meeg_list)
 
-        self.meeg_ledit = QLineEdit()
-        self.meeg_ledit.setPlaceholderText('MEEG-Index')
-        self.meeg_ledit.textEdited.connect(self.select_meeg)
-        self.meeg_ledit.setToolTip(idx_example)
-        meeg_layout.addWidget(self.meeg_ledit)
+            self.meeg_ledit = QLineEdit()
+            self.meeg_ledit.setPlaceholderText('MEEG-Index')
+            self.meeg_ledit.textEdited.connect(self.select_meeg)
+            self.meeg_ledit.setToolTip(idx_example)
+            meeg_layout.addWidget(self.meeg_ledit)
 
-        # Add and Remove-Buttons
-        meeg_bt_layout = QHBoxLayout()
-        file_add_bt = QPushButton('Add MEEG')
-        file_add_bt.clicked.connect(partial(AddFilesDialog, self.mw))
-        meeg_bt_layout.addWidget(file_add_bt)
-        file_rm_bt = QPushButton('Remove MEEG')
-        file_rm_bt.clicked.connect(self.remove_meeg)
-        meeg_bt_layout.addWidget(file_rm_bt)
+            # Add and Remove-Buttons
+            meeg_bt_layout = QHBoxLayout()
+            file_add_bt = QPushButton('Add MEEG')
+            file_add_bt.clicked.connect(partial(AddFilesDialog, self.mw))
+            meeg_bt_layout.addWidget(file_add_bt)
+            file_rm_bt = QPushButton('Remove MEEG')
+            file_rm_bt.clicked.connect(self.remove_meeg)
+            meeg_bt_layout.addWidget(file_rm_bt)
 
-        meeg_layout.addLayout(meeg_bt_layout)
-        meeg_widget.setLayout(meeg_layout)
+            meeg_layout.addLayout(meeg_bt_layout)
+            meeg_widget.setLayout(meeg_layout)
 
-        tab_widget.addTab(meeg_widget, 'MEG/EEG')
+            tab_widget.addTab(meeg_widget, 'MEG/EEG')
 
-        # MRI-Subjects-List + Index-Line-Edit
-        fsmri_widget = QWidget()
-        fsmri_layout = QVBoxLayout()
-        self.fsmri_list = CheckList(self.mw.pr.all_fsmri, self.mw.pr.sel_fsmri, ui_button_pos='top',
-                                    show_index=True, title='Select Freesurfer-MRI')
-        fsmri_layout.addWidget(self.fsmri_list)
+        if self.fsmri_view:
+            # MRI-Subjects-List + Index-Line-Edit
+            fsmri_widget = QWidget()
+            fsmri_layout = QVBoxLayout()
+            self.fsmri_list = CheckList(self.mw.pr.all_fsmri, self.mw.pr.sel_fsmri, ui_button_pos='top',
+                                        show_index=True, title='Select Freesurfer-MRI')
+            fsmri_layout.addWidget(self.fsmri_list)
 
-        self.fsmri_ledit = QLineEdit()
-        self.fsmri_ledit.setPlaceholderText('FS-MRI-Index')
-        self.fsmri_ledit.textEdited.connect(self.select_fsmri)
-        self.fsmri_ledit.setToolTip(idx_example)
-        fsmri_layout.addWidget(self.fsmri_ledit)
+            self.fsmri_ledit = QLineEdit()
+            self.fsmri_ledit.setPlaceholderText('FS-MRI-Index')
+            self.fsmri_ledit.textEdited.connect(self.select_fsmri)
+            self.fsmri_ledit.setToolTip(idx_example)
+            fsmri_layout.addWidget(self.fsmri_ledit)
 
-        # Add and Remove-Buttons
-        fsmri_bt_layout = QHBoxLayout()
-        mri_add_bt = QPushButton('Add FS-MRI')
-        mri_add_bt.clicked.connect(partial(AddMRIDialog, self.mw))
-        fsmri_bt_layout.addWidget(mri_add_bt)
-        mri_rm_bt = QPushButton('Remove FS-MRI')
-        mri_rm_bt.clicked.connect(self.remove_fsmri)
-        fsmri_bt_layout.addWidget(mri_rm_bt)
+            # Add and Remove-Buttons
+            fsmri_bt_layout = QHBoxLayout()
+            mri_add_bt = QPushButton('Add FS-MRI')
+            mri_add_bt.clicked.connect(partial(AddMRIDialog, self.mw))
+            fsmri_bt_layout.addWidget(mri_add_bt)
+            mri_rm_bt = QPushButton('Remove FS-MRI')
+            mri_rm_bt.clicked.connect(self.remove_fsmri)
+            fsmri_bt_layout.addWidget(mri_rm_bt)
 
-        fsmri_layout.addLayout(fsmri_bt_layout)
-        fsmri_widget.setLayout(fsmri_layout)
+            fsmri_layout.addLayout(fsmri_bt_layout)
+            fsmri_widget.setLayout(fsmri_layout)
 
-        tab_widget.addTab(fsmri_widget, 'FS-MRI')
+            tab_widget.addTab(fsmri_widget, 'FS-MRI')
 
-        self.ga_widget = GrandAvgWidget(self.mw)
-        tab_widget.addTab(self.ga_widget, 'Groups')
+            self.ga_widget = GrandAvgWidget(self.mw)
+            tab_widget.addTab(self.ga_widget, 'Groups')
 
-        layout.addWidget(tab_widget)
-        self.central_widget.setLayout(layout)
-        self.setWidget(self.central_widget)
+            layout.addWidget(tab_widget)
+            self.central_widget.setLayout(layout)
+            self.setWidget(self.central_widget)
 
     def update_dock(self):
         # Update lists when rereferenced elsewhere
@@ -1616,17 +1620,11 @@ class SubjectWizard(QWizard):
         self.setOption(QWizard.HaveHelpButton, False)
 
         width, height = get_ratio_geometry(0.6)
-        self.setGeometry(0, 0, width, height)
-        self.center()
+        self.resize(width, height)
+        center(self)
 
         self.add_pages()
         self.open()
-
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
 
     def add_pages(self):
         self.add_files_page = QWizardPage()

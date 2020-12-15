@@ -15,7 +15,14 @@ import sys
 import traceback
 
 from PyQt5.QtCore import QObject, QRunnable, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QDesktopWidget
+
+
+def center(widget):
+    qr = widget.frameGeometry()
+    cp = QDesktopWidget().availableGeometry().center()
+    qr.moveCenter(cp)
+    widget.move(qr.topLeft())
 
 
 def get_ratio_geometry(size_ratio):

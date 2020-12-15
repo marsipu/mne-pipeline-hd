@@ -28,7 +28,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QGridLayo
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
 
-from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel, CheckDictModel, CheckListModel,
+from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel, CheckDictEditModel,
+                                        CheckDictModel, CheckListModel,
                                         EditDictModel, EditListModel, EditPandasModel, FileManagementModel)
 
 
@@ -185,12 +186,15 @@ class EditList(BaseList):
     """
 
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
-                 show_index=False, parent=None, title=None, verbose=False):
+                 show_index=False, parent=None, title=None, verbose=False, model=None):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditListModel(data, show_index=show_index), view=QListView(),
+        if model is None:
+            model = EditListModel(data, show_index=show_index)
+
+        super().__init__(model=model, view=QListView(),
                          extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
 
     def init_ui(self):
@@ -234,10 +238,11 @@ class EditList(BaseList):
         else:
             self.setLayout(layout)
 
+    # Todo: Add Rows at all possible positions
     def add_row(self):
-        row = self.view.selectionModel().currentIndex().row()
+        row = self.view.selectionModel().currentIndex().row() + 1
         if row == -1:
-            row = len(self.model._data)
+            row = 0
         self.model.insertRow(row)
 
     def remove_row(self):
@@ -391,6 +396,55 @@ class CheckDictList(BaseList):
         model = CheckDictModel(data, check_dict, show_index=show_index, yes_bt=yes_bt, no_bt=no_bt)
         super().__init__(model=model, view=QListView(),
                          extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
+
+    def replace_check_dict(self, new_check_dict=None):
+        """Replaces model.check_dict with new check_dict
+        """
+        if new_check_dict:
+            self.model._check_dict = new_check_dict
+        self.content_changed()
+
+
+class CheckDictEditList(EditList):
+    """A List-Widget to display the items of a list and mark them depending of their appearance in check_dict
+
+    Parameters
+    ----------
+    data : List of str | None
+        A list with items to display
+    check_dict : dict | None
+        A dictionary that may contain items from data as keys
+    ui_buttons : bool
+        If to display Buttons or not
+    ui_button_pos: str
+        The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
+    yes_bt: int | None
+        Supply a identifier for an icon to mark the items existing in check_dict, set None for standard icon
+    no_bt: int | None
+        Supply a identifier for an icon to mark the items not existing in check_dict, set None for standard icon
+    parent : QWidget | None
+        Parent Widget (QWidget or inherited) or None if there is no parent
+    title : str | None
+        An optional title
+    verbose : bool
+        Set True to see debugging for signals
+
+    Notes
+    -----
+    If you change the contents of data outside of this class, call content_changed to update this widget.
+    If you change the reference to data, call replace_data.
+    If you change the reference to check_dict, call replace_check_dict.
+
+    Identifiers for QT standard-icons:
+    https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
+    """
+
+    def __init__(self, data=None, check_dict=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
+                 show_index=False, yes_bt=None, no_bt=None, parent=None, title=None, verbose=False):
+        model = CheckDictEditModel(data, check_dict, show_index=show_index, yes_bt=yes_bt, no_bt=no_bt)
+        super().__init__(data, ui_buttons, ui_button_pos, extended_selection, show_index, parent, title, verbose, model)
 
     def replace_check_dict(self, new_check_dict=None):
         """Replaces model.check_dict with new check_dict
@@ -591,9 +645,9 @@ class EditDict(BaseDict):
             self.setLayout(layout)
 
     def add_row(self):
-        row = self.view.selectionModel().currentIndex().row()
+        row = self.view.selectionModel().currentIndex().row() + 1
         if row == -1:
-            row = len(self.model._data)
+            row = 0
         self.model.insertRow(row)
 
     def remove_row(self):
@@ -891,18 +945,18 @@ class EditPandasTable(BasePandasTable):
         return self.model._data
 
     def add_row(self):
-        row = self.view.selectionModel().currentIndex().row()
+        row = self.view.selectionModel().currentIndex().row() + 1
         # Add row at the bottom if nothing is selected
         if row == -1 or len(self.view.selectionModel().selectedIndexes()) == 0:
-            row = len(self.model._data.index)
+            row = 0
         self.model.insertRows(row, self.rows_chkbx.value())
         self.update_data()
 
     def add_column(self):
-        column = self.view.selectionModel().currentIndex().column()
+        column = self.view.selectionModel().currentIndex().column() + 1
         # Add column to the right if nothing is selected
         if column == -1 or len(self.view.selectionModel().selectedIndexes()) == 0:
-            column = len(self.model._data.columns)
+            column = 0
         self.model.insertColumns(column, self.cols_chkbx.value())
         self.update_data()
 
@@ -1093,6 +1147,7 @@ class AllBaseWidgets(QWidget):
                             'EditList': [self.exlist],
                             'CheckList': [self.exlist, self.exchecked],
                             'CheckDictList': [self.exlist, self.exdict],
+                            'CheckDictEditList': [self.exlist, self.exdict],
                             'SimpleDict': [self.exdict],
                             'EditDict': [self.exdict],
                             'SimplePandasTable': [self.expd],
@@ -1104,6 +1159,7 @@ class AllBaseWidgets(QWidget):
                                            'verbose': True},
                               'CheckList': {'one_check': False, 'title': 'CheckList', 'verbose': True},
                               'CheckDictList': {'extended_selection': True, 'title': 'CheckDictList', 'verbose': True},
+                              'CheckDictEditList': {'title': 'CheckDictEditList', 'verbose': True},
                               'SimpleDict': {'title': 'BaseDict', 'verbose': True},
                               'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict', 'verbose': True},
                               'SimplePandasTable': {'title': 'BasePandasTable', 'verbose': True},
