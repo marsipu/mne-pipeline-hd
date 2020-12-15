@@ -2172,3 +2172,19 @@ class FileManagment(QDialog):
                 self.mw.pr.file_parameters.pop(path, None)
                 # Remove File
                 obj.remove_path(path_type)
+
+
+class ICASelect(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        file_list = CheckDictList(self.mw.all_meeg)
+
+        self.setLayout(layout)

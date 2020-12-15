@@ -8,24 +8,34 @@ min_duration;Minimum Duration;Events;0.002;s;Minimum-Duration for Events;FloatGu
 shortest_event;Shortest Event;Events;2;sample;Shortest possible Event;IntGui;{'min_val': 0}
 adjust_timeline_by_msec;Adjust Time;Events;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;Epoch-Timeframe;Epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
-baseline;Baseline-Timeframe;Epochs;(-0.5,0);s;start and end of baseline;CheckTupleGui;{'max_val':0, 'unchecked_value': None}
-enable_ica;Enable ICA;Preprocessing;False;;If to use epochs from ICA;BoolGui;
+baseline;Baseline-Timeframe;Epochs;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val':0, 'none_select': True}
 bad_interpolation;Bad-Channel-Interpolation;Preprocessing;'Epochs';;Choose where to apply bad-channels-interpolation;ComboGui;{'options': ['Raw', 'Epochs', 'Evokeds']}
-autoreject_interpolation;Autoreject(Interpolation);Epochs;False;;Use autoreject to interpolate Epochs with autoreject;BoolGui;
+reject_by_annotation;;Epochs;True;;If to reject by Annotations;BoolGui;
+use_autoreject;Autoreject;Epochs;Off;;If to use autoreject and if to use it for getting the reject-threshold or for interpolating the Epochs;ComboGui;{'options': ['Off', 'Threshold', 'Interpolation']}
 n_interpolates;;Epochs;np.array([1, 4, 32]);;p-values for autoreject;FuncGui;
 consensus_percs;;Epochs;np.linspace(0, 1.0, 11);;k-values for autoreject;FuncGui;
-autoreject_threshold;Autoreject(Threshold);Epochs;False;;Use autoreject to find reject-threshold for Epochs;BoolGui;
-overwrite_ar;Overwrite Autoreject(Threshold);Epochs;False;;if to calculate new threshold sort ouse previously calculated;BoolGui;
-reject;;Epochs;{'grad':8e-10};;default reject parameter if not reject with autoreject_threshold;DictGui;
-flat;;Epochs;{'grad':1e-15};;default flat parameter;DictGui;
+overwrite_ar;Overwrite Autoreject(Threshold);Epochs;False;;if to calculate new threshold or use the previously calculated;BoolGui;
+reject;;Epochs;{'mag':3000e-15, 'grad':3000e-13, 'eeg':100e-6, 'eog':200e-6};;default reject parameter if not reject with autoreject_threshold;DictGui;
+flat;;Epochs;{'mag': 1e-15, 'grad':1e-13, 'eeg': 1e-6};;default flat parameter;DictGui;
 decim;;Preprocessing;1;;down samplingfactor;IntGui;
+ica_method;ICA-Method;ICA;fastica;;The method for calculating ICA;ComboGui;{'options': ['fastica', 'infomax', 'picard']}
+ica_fitto;Fit ICA to: ;ICA;'Raw (Filtered)';;The data to fit the ICA to;ComboGui;{'options': ['Raw (Unfiltered)', 'Raw (Filtered)', 'Epochs']}
+n_components;;ICA;25;;The number of components for ICA;IntGui;
+max_pca_components;;ICA;None;;;IntGui;{'none_select': True}
+n_pca_components;;ICA;None;;;IntGui;{'none_select': True}
+ica_noise_cov;Use Noise-Covariance;ICA;False;;If to use a noise-covariance for pre-whitening;BoolGui;
+ica_remove_proj;Remove projections;ICA;False;;If to remove projections from the data before fitting;BoolGui;
+ica_reject;Reject-Parameters;ICA;{'mag':3000e-15, 'grad':3000e-13, 'eeg':100e-6, 'eog':200e-6};;Reject-Parameters for ICA;DictGui;
+ica_autoreject;Autoreject;ICA;False;;If to use Autoreject for ICA;BoolGui;
+ica_eog;Use EOG;ICA;False;;If to use EOG-Channels for automatic selection of components;BoolGui;
+eog_channel;;ICA;None;;Set Vertical EOG-Channel;StringGui;
+ica_ecg;Use ECG;ICA;False;;If to use automatic ECG-detection either by ECG-Channel (if provided) or by an artificial ECG-Channel;BoolGui;
+ecg_channel;;ICA;None;;Set ECG-Channel;StringGui;
 tfr_freqs;;Time-Frequency;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
 overwrite_tfr;;Time-Frequency;True;;Recalculate and overwrite Time-Frequency-Data;BoolGui;
 tfr_method;;Time-Frequency;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}
 multitaper_bandwith;;Time-Frequency;4.0;;;FloatGui;
 stockwell_width;;Time-Frequency;1.0;;;FloatGui;
-eog_channel;;Preprocessing;None;;Set Vertical EOG-Channel;StringGui;
-ecg_channel;;Preprocessing;None;;Set ECG-Channel;StringGui;
 bem_spacing;;Forward;4;;See the MNE-Documentation for further details;IntGui;
 source_space_spacing;;Forward;ico5;;See the MNE-Documentation for further details;StringGui;
 vol_source_space_spacing;;Forward;5.0;;Spacing between sources in 3D-Grid;FloatGui;
@@ -49,3 +59,6 @@ ecd_times;;Inverse;{};;;DictGui;
 ecd_positions;;Inverse;{};;;DictGui;
 ecd_orientations;;Inverse;{};;;DictGui;
 morph_to;;Grand-Average;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
+ica_source_data;;ICA;Raw (Filtered)';;Which data to plot in sources-plot from ICA;ComboGui;{'options':['Raw (Unfiltered)', 'Raw (Filtered)', 'Epochs', 'Epochs (EOG)', 'Epochs (ECG)',  'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
+ica_overlay_data;;ICA;Evokeds';;Which data to plot in overlay-plot from ICA;ComboGui;{'options':['Raw (Unfiltered)', 'Raw (Filtered)', 'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
+ica_properties_indices;;ICA;[0];;Select from which ICA-components you want to plot the properties;ListGui;

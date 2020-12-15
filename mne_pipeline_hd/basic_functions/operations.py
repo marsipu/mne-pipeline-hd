@@ -23,10 +23,11 @@ from os.path import exists, isdir, isfile, join
 import autoreject as ar
 import mne
 import numpy as np
+from mne.preprocessing import ICA
 
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from ..pipeline_functions import ismac, iswin, pipeline_utils as ut
-from ..pipeline_functions.pipeline_utils import compare_filep
+from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
 
 # Todo: Change normal comments to docstrings
@@ -218,24 +219,24 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
         print('No events found')
 
 
-def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, autoreject_interpolation, consensus_percs,
-              n_interpolates, autoreject_threshold, overwrite_ar, decim, n_jobs):
+def epoch_raw(meeg, t_epoch, baseline, reject, flat, use_autoreject, consensus_percs,
+              n_interpolates, overwrite_ar, decim, n_jobs):
     raw = meeg.load_filtered()
     events = meeg.load_events()
 
-    raw_picked = raw.copy().pick(ch_types, exclude=meeg.bad_channels)
+    raw_picked = raw.copy().pick('data', exclude='bads')
 
     epochs = mne.Epochs(raw_picked, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, proj=False, reject=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=True)
 
-    if autoreject_interpolation:
+    if use_autoreject == 'Interpolation':
         ar_object = ar.AutoReject(n_interpolates, consensus_percs, random_state=8,
                                   n_jobs=n_jobs)
         epochs, reject_log = ar_object.fit_transform(epochs, return_log=True)
         meeg.save_reject_log(reject_log)
 
-    elif autoreject_threshold:
+    elif use_autoreject == 'Threshold':
         reject = ut.autoreject_handler(meeg.name, epochs, meeg.p["highpass"], meeg.p["lowpass"],
                                        meeg.pr.pscripts_path, overwrite_ar=overwrite_ar)
         print(f'Autoreject Rejection-Threshold: {reject}')
@@ -247,15 +248,21 @@ def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, autoreject_interp
     meeg.save_epochs(epochs)
 
 
-def run_ica_new(meeg, ica_method, ica_fitto, n_components, max_pca_components, n_pca_components,
-                ica_noise_cov, **kwargs):
-    if ica_fitto == 'Raw':
+def run_ica(meeg, ica_method, ica_fitto, n_components, max_pca_components, n_pca_components,
+            ica_noise_cov, ica_remove_proj, ica_reject, ica_autoreject, ch_types, reject_by_annotation, ica_eog,
+            eog_channel, ica_ecg, ecg_channel, **kwargs):
+    if ica_fitto == 'Raw (Unfiltered)':
+        data = meeg.load_raw()
+        # Exclude bad- and non-data-channels
+        data.pick('data', exclude='bads')
+
+    elif ica_fitto == 'Raw (Filtered)':
         data = meeg.load_filtered()
-        data.pick('all', exclude='bads')
-    elif ica_fitto == 'Epochs':
-        data = meeg.load_epochs()
+        # Exclude bad- and non-data-channels
+        data.pick('data', exclude='bads')
+
     else:
-        data = meeg.load_evokeds()
+        data = meeg.load_epochs()
 
     if data.info['highpass'] < 1:
         filt_data = data.copy().filter(1, None)
@@ -267,298 +274,222 @@ def run_ica_new(meeg, ica_method, ica_fitto, n_components, max_pca_components, n
     else:
         noise_cov = None
 
-    ica = mne.preprocessing.ICA(n_components=n_components, max_pca_components=max_pca_components,
-                                n_pca_components=n_pca_components, noise_cov=noise_cov, random_state=8,
-                                method=ica_method, **kwargs)
+    ica_kwargs = check_kwargs(kwargs, ICA)
+    ica = ICA(n_components=n_components, max_pca_components=max_pca_components,
+              n_pca_components=n_pca_components, noise_cov=noise_cov, random_state=8,
+              method=ica_method, **ica_kwargs)
 
-    ica.fit(filt_data)
-
-
-# TODO: Organize run_ica properly
-# Todo: Choices for: Fit(Raw, Epochs, Evokeds), Apply (Raw, Epochs, Evokeds)
-
-def run_ica(meeg, eog_channel, ecg_channel, reject, flat, autoreject_interpolation,
-            autoreject_threshold, save_plots, figures_path, pscripts_path):
-    info = meeg.load_info()
-
-    ica_dict = ut.dict_filehandler(meeg.name, f'ica_components_{meeg.p_preset}',
-                                   pscripts_path,
-                                   onlyread=True)
-
-    raw = meeg.load_filtered()
-    if raw.info['highpass'] < 1:
-        raw.filter(l_freq=1., h_freq=None)
-    epochs = meeg.load_epochs()
-    picks = mne.pick_types(raw.info, meg=True, eeg=True, eog=False,
-                           stim=False, exclude=meeg.bad_channels)
-
-    if not isdir(join(figures_path, 'ica')):
-        makedirs(join(figures_path, 'ica'))
-
-    # Calculate ICA
-    ica = mne.preprocessing.ICA(n_components=25, method='fastica', random_state=8)
-
-    if autoreject_interpolation:
-        # Avoid calculation of rejection-threshold again on already cleaned epochs, therefore creating new epochs
-        simulated_events = mne.make_fixed_length_events(raw, duration=5)
-        simulated_epochs = mne.Epochs(raw, simulated_events, baseline=None, picks=picks, tmin=0, tmax=2)
+    if ica_autoreject and ica_fitto != 'Epochs':
+        # Estimate Reject-Thresholds on simulated epochs
+        simulated_events = mne.make_fixed_length_events(data, duration=1)
+        simulated_epochs = mne.Epochs(data, simulated_events, baseline=None, tmin=0, tmax=1)
         reject = ar.get_rejection_threshold(simulated_epochs)
         print(f'Autoreject Rejection-Threshold: {reject}')
-    elif autoreject_threshold:
-        reject = ut.autoreject_handler(meeg.name, epochs, meeg.p["highpass"], meeg.p["lowpass"], meeg.pr.pscripts_path,
-                                       overwrite_ar=False, only_read=True)
-        print(f'Autoreject Rejection-Threshold: {reject}')
+    elif ica_autoreject and ica_fitto == 'Epochs':
+        reject = meeg.load_json('autoreject_threshold')
+        if not reject:
+            reject = ar.get_rejection_threshold(data, ch_types=ch_types)
+    elif len(ica_reject) > 0:
+        reject = ica_reject
     else:
-        print(f'Chosen Rejection-Threshold: {reject}')
+        reject = None
 
-    ica.fit(raw, picks, reject=reject, flat=flat,
-            reject_by_annotation=True)
+    # Remove projections
+    if ica_remove_proj:
+        filt_data.info['proj'] = list()
 
-    if meeg.name in ica_dict and ica_dict[meeg.name] != [] and ica_dict[meeg.name]:
-        indices = ica_dict[meeg.name]
-        ica.exclude += indices
-        print(f'{indices} added to ica.exclude from ica_components.py')
-        meeg.save_ica(ica)
+    fit_kwargs = check_kwargs(kwargs, ica.fit)
+    ica.fit(filt_data, reject=reject, reject_by_annotation=reject_by_annotation, **fit_kwargs)
 
-        comp_list = []
-        for c in range(ica.n_components):
-            comp_list.append(c)
-        fig1 = ica.plot_components(picks=comp_list, title=meeg.name, show=False)
-        fig3 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=meeg.name, show=False)
-        fig4 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=meeg.name, show=False)
-        for trial in meeg.sel_trials:
-            fig = ica.plot_overlay(epochs[trial].average(), title=meeg.name + '-' + trial, show=False)
-            if not exists(join(figures_path, 'ica/evoked_overlay')):
-                makedirs(join(figures_path, 'ica/evoked_overlay'))
-            save_path = join(figures_path, 'ica/evoked_overlay', meeg.name + '-' + trial +
-                             '_ica_ovl' + '_' + meeg.pr.p_preset + '.jpg')
-            fig.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
-        if save_plots and save_plots != 'false':
+    if ica_eog:
+        raw = meeg.load_raw()
+        create_eog_kwargs = check_kwargs(kwargs, mne.preprocessing.create_eog_epochs)
+        find_eog_kwargs = check_kwargs(kwargs, ica.find_bads_eog)
 
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_comp' + '_' + meeg.pr.p_preset + '.jpg')
-            fig1.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
-
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_src' + '_' + meeg.pr.p_preset + '_0.jpg')
-            fig3.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
-
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_src' + '_' + meeg.pr.p_preset + '_1.jpg')
-            fig4.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
-
+        # Using an EOG channel to select components if possible
+        if 'eog' in meeg.info['ch_types']:
+            eog_epochs = mne.preprocessing.create_eog_epochs(raw, **create_eog_kwargs)
+            eog_indices, eog_scores = ica.find_bads_eog(raw, **find_eog_kwargs)
+        elif eog_channel:
+            eog_epochs = mne.preprocessing.create_eog_epochs(raw, ch_name=eog_channel, **create_eog_kwargs)
+            eog_indices, eog_scores = ica.find_bads_eog(raw, ch_name=eog_channel, **find_eog_kwargs)
         else:
-            print('Not saving plots; set "save_plots" to "True" to save')
+            eog_indices, eog_scores, eog_epochs = None, None, None
+            print('No EOG-Channel found or set, thus EOG can\'t be used for Component-Selection')
 
-    elif eog_channel in info['ch_names']:
-        eeg_picks = mne.pick_types(raw.info, meg=True, eeg=True, eog=True,
-                                   stim=False, exclude=meeg.bad_channels)
+        if eog_epochs:
+            ica.exclude.append(eog_indices)
+            meeg.save_eog_epochs(eog_epochs)
+            meeg.save_json('eog_indices', eog_indices)
+            meeg.save_json('eog_scores', eog_scores)
 
-        eog_epochs = mne.preprocessing.create_eog_epochs(raw, picks=eeg_picks,
-                                                         reject=reject, flat=flat, ch_name=eog_channel)
+    if ica_ecg:
+        raw = meeg.load_raw()
+        create_ecg_kwargs = check_kwargs(kwargs, mne.preprocessing.create_ecg_epochs)
+        ecg_kwargs = check_kwargs(kwargs, ica.find_bads_ecg)
+
+        # Using an ECG channel to select components
         if ecg_channel:
-            ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, picks=eeg_picks,
-                                                             reject=reject, flat=flat, ch_name=ecg_channel)
+            ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, **create_ecg_kwargs)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(raw, ch_name=ecg_channel, **ecg_kwargs)
         else:
-            ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, picks=eeg_picks,
-                                                             reject=reject, flat=flat)
+            ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, ch_name=ecg_channel, **create_ecg_kwargs)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(raw, **ecg_kwargs)
 
-        if len(eog_epochs) != 0:
-            eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel)
-            ica.exclude.extend(eog_indices)
-            print('EOG-Components: ', eog_indices)
-            if len(eog_indices) != 0:
-                # Plot EOG-Plots
-                fig3 = ica.plot_scores(eog_scores, title=meeg.name + '_eog', show=False)
-                fig2 = ica.plot_properties(eog_epochs, eog_indices, psd_args={'fmax': meeg.p["lowpass"]},
-                                           image_args={'sigma': 1.}, show=False)
-                fig7 = ica.plot_overlay(eog_epochs.average(), exclude=eog_indices, title=meeg.name + '_eog',
-                                        show=False)
-                if save_plots and save_plots != 'false':
-                    for f in fig2:
-                        save_path = join(figures_path, 'ica', meeg.name +
-                                         '_ica_prop_eog' + '_' + meeg.pr.p_preset +
-                                         f'_{fig2.index(f)}.jpg')
-                        f.savefig(save_path, dpi=300)
-                        print('figure: ' + save_path + ' has been saved')
+        if ecg_epochs:
+            ica.exclude.append(ecg_indices)
+            meeg.save_ecg_epochs(ecg_epochs)
+            meeg.save_json('ecg_indices', ecg_indices)
+            meeg.save_json('ecg_scores', ecg_scores)
 
-                    save_path = join(figures_path, 'ica', meeg.name +
-                                     '_ica_scor_eog' + '_' + meeg.pr.p_preset + '.jpg')
-                    fig3.savefig(save_path, dpi=300)
-                    print('figure: ' + save_path + ' has been saved')
+    meeg.save_ica(ica)
+    # Add components to ica_exclude-dictionary
+    meeg.pr.ica_exclude[meeg.name] = ica.exclude
 
-                    save_path = join(figures_path, 'ica', meeg.name +
-                                     '_ica_ovl_eog' + '_' + meeg.pr.p_preset + '.jpg')
-                    fig7.savefig(save_path, dpi=300)
-                    print('figure: ' + save_path + ' has been saved')
 
-        if len(ecg_epochs) != 0:
-            if ecg_channel:
-                ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, threshold='auto', ch_name=ecg_channel)
-            else:
-                ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, threshold='auto')
-            ica.exclude.extend(ecg_indices)
-            print('ECG-Components: ', ecg_indices)
-            print(len(ecg_indices))
-            if len(ecg_indices) != 0:
-                # Plot ECG-Plots
-                fig4 = ica.plot_scores(ecg_scores, title=meeg.name + '_ecg', show=False)
-                fig9 = ica.plot_properties(ecg_epochs, ecg_indices, psd_args={'fmax': meeg.p["lowpass"]},
-                                           image_args={'sigma': 1.}, show=False)
-                fig8 = ica.plot_overlay(ecg_epochs.average(), exclude=ecg_indices, title=meeg.name + '_ecg',
-                                        show=False)
-                if save_plots and save_plots != 'false':
-                    for f in fig9:
-                        save_path = join(figures_path, 'ica', meeg.name +
-                                         '_ica_prop_ecg' + '_' + meeg.pr.p_preset +
-                                         f'_{fig9.index(f)}.jpg')
-                        f.savefig(save_path, dpi=300)
-                        print('figure: ' + save_path + ' has been saved')
+def _ica_plotto_helper(meeg, ica_plotto):
+    ica = meeg.load_ica()
 
-                    save_path = join(figures_path, 'ica', meeg.name +
-                                     '_ica_scor_ecg' + '_' + meeg.pr.p_preset + '.jpg')
-                    fig4.savefig(save_path, dpi=300)
-                    print('figure: ' + save_path + ' has been saved')
+    if ica_plotto == 'Raw (Unfiltered)':
+        data = meeg.load_raw()
+        # Exclude bad- and non-data-channels
+        data.pick('data', exclude='bads')
 
-                    save_path = join(figures_path, 'ica', meeg.name +
-                                     '_ica_ovl_ecg' + '_' + meeg.pr.p_preset + '.jpg')
-                    fig8.savefig(save_path, dpi=300)
-                    print('figure: ' + save_path + ' has been saved')
+    elif ica_plotto == 'Raw (Filtered)':
+        data = meeg.load_filtered()
+        # Exclude bad- and non-data-channels
+        data.pick('data', exclude='bads')
 
-        meeg.save_ica(ica)
+    elif ica_plotto == 'Epochs':
+        data = meeg.load_epochs()
 
-        # Reading and Writing ICA-Components to a .py-file
-        exes = ica.exclude
-        indices = []
-        for i in exes:
-            indices.append(int(i))
+    elif ica_plotto == 'Epochs (EOG)':
+        data = meeg.load_eog_epochs()
 
-        ut.dict_filehandler(meeg.name, f'ica_components_{meeg.pr.p_preset}', pscripts_path,
-                            values=indices, overwrite=True)
+    elif ica_plotto == 'Epochs (ECG)':
+        data = meeg.load_ecg_epochs()
 
-        # Plot ICA integrated
-        comp_list = []
-        for c in range(ica.n_components):
-            comp_list.append(c)
-        fig1 = ica.plot_components(picks=comp_list, title=meeg.name, show=False)
-        fig5 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=meeg.name, show=False)
-        fig6 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=meeg.name, show=False)
-        fig10 = ica.plot_overlay(epochs.average(), title=meeg.name, show=False)
+    elif ica_plotto == 'Evokeds':
+        data = meeg.load_evokeds()
 
-        if save_plots and save_plots != 'false':
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_comp' + '_' + meeg.pr.p_preset + '.jpg')
-            fig1.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
-            if not exists(join(figures_path, 'ica/evoked_overlay')):
-                makedirs(join(figures_path, 'ica/evoked_overlay'))
-            save_path = join(figures_path, 'ica/evoked_overlay', meeg.name +
-                             '_ica_ovl' + '_' + meeg.pr.p_preset + '.jpg')
-            fig10.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
+    elif ica_plotto == 'Evokeds (EOG)':
+        data = meeg.load_eog_epochs().average()
 
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_src' + '_' + meeg.pr.p_preset + '_0.jpg')
-            fig5.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
+    elif ica_plotto == 'Evokeds (ECG)':
+        data = meeg.load_ecg_epochs().average()
 
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_src' + '_' + meeg.pr.p_preset + '_1.jpg')
-            fig6.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
-
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-
-    # No EEG was acquired during the measurement,
-    # components have to be selected manually in the ica_components.py
     else:
-        print('No EEG-Channels to read EOG/EEG from')
-        meg_picks = mne.pick_types(raw.info, meg=True, eeg=True, eog=False,
-                                   stim=False, exclude=meeg.bad_channels)
-        ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, picks=meg_picks,
-                                                         reject=reject, flat=flat)
+        data = None
 
-        if len(ecg_epochs) != 0:
-            ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs)
-            print('ECG-Components: ', ecg_indices)
-            if len(ecg_indices) != 0:
-                fig4 = ica.plot_scores(ecg_scores, title=meeg.name + '_ecg', show=False)
-                fig5 = ica.plot_properties(ecg_epochs, ecg_indices, psd_args={'fmax': meeg.p["lowpass"]},
-                                           image_args={'sigma': 1.}, show=False)
-                fig6 = ica.plot_overlay(ecg_epochs.average(), exclude=ecg_indices, title=meeg.name + '_ecg',
-                                        show=False)
+    return ica, data
 
-                save_path = join(figures_path, 'ica', meeg.name +
-                                 '_ica_scor_ecg' + '_' + meeg.pr.p_preset + '.jpg')
-                fig4.savefig(save_path, dpi=300)
-                print('figure: ' + save_path + ' has been saved')
-                for f in fig5:
-                    save_path = join(figures_path, 'ica', meeg.name +
-                                     '_ica_prop_ecg' + '_' + meeg.pr.p_preset
-                                     + f'_{fig5.index(f)}.jpg')
-                    f.savefig(save_path, dpi=300)
-                    print('figure: ' + save_path + ' has been saved')
-                save_path = join(figures_path, 'ica', meeg.name +
-                                 '_ica_ovl_ecg' + '_' + meeg.pr.p_preset + '.jpg')
-                fig6.savefig(save_path, dpi=300)
-                print('figure: ' + save_path + ' has been saved')
 
-        ut.dict_filehandler(meeg.name, f'ica_components_{meeg.pr.p_preset}', pscripts_path, values=[])
+def plot_ica_components(meeg, show_plots):
+    ica = meeg.load_ica()
+    components_fig = ica.plot_components(title=meeg.name, show=show_plots)
+    meeg.plot_save('ICA', subfolder='components', matplotlib_figure=components_fig)
 
-        meeg.save_ica(ica)
-        comp_list = []
-        for c in range(ica.n_components):
-            comp_list.append(c)
-        fig1 = ica.plot_components(picks=comp_list, title=meeg.name, show=False)
-        fig2 = ica.plot_sources(raw, picks=comp_list[:12], start=150, stop=200, title=meeg.name, show=False)
-        fig3 = ica.plot_sources(raw, picks=comp_list[12:], start=150, stop=200, title=meeg.name, show=False)
+    return components_fig
 
-        if save_plots and save_plots != 'false':
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_comp' + '_' + meeg.pr.p_preset + '.jpg')
-            fig1.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
 
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_src' + '_' + meeg.pr.p_preset + '_0.jpg')
-            fig2.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
+def plot_ica_sources(meeg, ica_source_data, show_plots):
+    ica, data = _ica_plotto_helper(meeg, ica_source_data)
+    sources_fig = ica.plot_sources(data, stop=ica.n_components, title=meeg.name, show=show_plots)
+    meeg.plot_save('ICA', subfolder='sources', matplotlib_figure=sources_fig)
 
-            save_path = join(figures_path, 'ica', meeg.name +
-                             '_ica_src' + '_' + meeg.pr.p_preset + '_1.jpg')
-            fig3.savefig(save_path, dpi=300)
-            print('figure: ' + save_path + ' has been saved')
+    return sources_fig
 
-        else:
-            print('Not saving plots; set "save_plots" to "True" to save')
+
+def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
+    ica, data = _ica_plotto_helper(meeg, ica_overlay_data)
+    overlay_figs = list()
+
+    if ica_overlay_data == 'Evokeds':
+        for evoked in [e for e in data if e.comment in meeg.sel_trials]:
+            ovl_fig = ica.plot_overlay(evoked, title=f'{meeg.name}-{evoked.comment}', show=show_plots)
+            overlay_figs.append(ovl_fig)
+    else:
+        ovl_fig = ica.plot_overlay(data, title=meeg.name, show=show_plots)
+        overlay_figs.append(ovl_fig)
+
+    meeg.plot_save('ICA', subfolder='overlay', matplotlib_figure=overlay_figs)
+
+    return overlay_figs
+
+
+def plot_ica_properties(meeg, ica_properties_indices, show_plots):
+    ica = meeg.load_ica()
+    epochs = meeg.load_epochs()
+
+    eog_indices = [i for i in meeg.load_json('eog_indices') if i in ica_properties_indices]
+    ecg_indices = [i for i in meeg.load_json('ecg_indices') if i in ica_properties_indices]
+    psd_args = {'fmax': meeg.p["lowpass"]}
+
+    if len(eog_indices) > 0:
+        eog_epochs = meeg.load_eog_epochs()
+        eog_prop_figs = ica.plot_properties(eog_epochs, eog_indices, psd_args=psd_args,
+                                            show=show_plots)
+        for ix in eog_indices:
+            ica_properties_indices.remove(ix)
+    else:
+        eog_prop_figs = list()
+
+    if len(ecg_indices) > 0:
+        ecg_epochs = meeg.load_ecg_epochs()
+        ecg_prop_figs = ica.plot_properties(ecg_epochs, ecg_indices, psd_args=psd_args,
+                                            show=show_plots)
+        for ix in ecg_indices:
+            ica_properties_indices.remove(ix)
+    else:
+        ecg_prop_figs = list()
+
+    prop_figs = ica.plot_properties(epochs, ica_properties_indices, psd_args=psd_args,
+                                    show=show_plots)
+
+    meeg.plot_save('ICA', subfolder='properties', matplotlib_figure=prop_figs)
+
+    return prop_figs + eog_prop_figs + ecg_prop_figs
+
+
+def plot_ica_scores(meeg, show_plots):
+    ica = meeg.load_ica()
+    eog_scores = meeg.load_json('eog_scores')
+    eog_score_fig = ica.plot_scores(eog_scores, title=f'{meeg.name}: EOG', show=show_plots)
+    meeg.plot_save('ICA', subfolder='scores', trial='eog', matplotlib_figure=eog_score_fig)
+
+    return eog_score_fig
+
+
+def plot_ica_ecg_scores(meeg, show_plots):
+    ica = meeg.load_ica()
+    ecg_scores = meeg.load_json('ecg_scores')
+    ecg_score_fig = ica.plot_scores(ecg_scores, title=f'{meeg.name}: ECG', show=show_plots)
+    meeg.plot_save('ICA', subfolder='scores', trial='ecg', matplotlib_figure=ecg_score_fig)
+
+    return ecg_score_fig
 
 
 def apply_ica(meeg):
     epochs = meeg.load_epochs()
     ica = meeg.load_ica()
 
+    # Load the ica-components to exclude
+    ica.exclude = meeg.pr.ica_exclude[meeg.name]
+
     if len(ica.exclude) == 0:
-        print('No components excluded here')
+        print(f'No components excluded for {meeg.name}')
+    else:
+        ica_epochs = ica.apply(epochs)
+        meeg.save_epochs(ica_epochs)
 
-    ica_epochs = ica.apply(epochs)
-    meeg.save_ica_epochs(ica_epochs)
 
-
-def interpolate_bad_chs(meeg, bad_interpolation, enable_ica):
+def interpolate_bad_chs(meeg, bad_interpolation):
     if bad_interpolation == 'Raw':
         raw = meeg.load_raw_filtered()
         new_raw = raw.interpolate_bads(reset_bads=False)
         meeg.save_filtered(new_raw)
     elif bad_interpolation == 'Epochs':
-        if enable_ica:
-            epochs = meeg.load_ica_epochs()
-        else:
-            epochs = meeg.load_epochs()
+        epochs = meeg.load_epochs()
         new_epochs = epochs.interpolate_bads(reset_bads=False)
         meeg.save_epochs(new_epochs)
     elif bad_interpolation == 'Evokeds':
@@ -569,13 +500,8 @@ def interpolate_bad_chs(meeg, bad_interpolation, enable_ica):
         meeg.save_evokeds(new_evokeds)
 
 
-def get_evokeds(meeg, enable_ica):
-    if enable_ica:
-        epochs = meeg.load_ica_epochs()
-        print('Evokeds from ICA-Epochs')
-    else:
-        epochs = meeg.load_epochs()
-        print('Evokeds from (normal) Epochs')
+def get_evokeds(meeg):
+    epochs = meeg.load_epochs()
     evokeds = []
     for trial in meeg.sel_trials:
         print(f'Evoked for {trial}')
@@ -621,17 +547,14 @@ def grand_avg_evokeds(group):
     group.save_ga_evokeds(ga_evokeds)
 
 
-def tfr(meeg, enable_ica, tfr_freqs, overwrite_tfr,
+def tfr(meeg, tfr_freqs, overwrite_tfr,
         tfr_method, multitaper_bandwith, stockwell_width, n_jobs):
     n_cycles = [freq / 2 for freq in tfr_freqs]
     powers = []
     itcs = []
 
     if overwrite_tfr or not isfile(meeg.power_tfr_path) or not isfile(meeg.itc_tfr_path):
-        if enable_ica:
-            epochs = meeg.load_ica_epochs()
-        else:
-            epochs = meeg.load_epochs()
+        epochs = meeg.load_epochs()
 
         for trial in meeg.sel_trials:
             if tfr_method == 'morlet':
@@ -880,7 +803,7 @@ def create_forward_solution(meeg, n_jobs, eeg_fwd):
     meeg.save_forward(forward)
 
 
-def estimate_noise_covariance(meeg, baseline, n_jobs, erm_noise_cov, calm_noise_cov, enable_ica):
+def estimate_noise_covariance(meeg, baseline, n_jobs, erm_noise_cov, calm_noise_cov):
     if calm_noise_cov:
         print('Noise Covariance on 1-Minute-Calm')
 
@@ -894,10 +817,7 @@ def estimate_noise_covariance(meeg, baseline, n_jobs, erm_noise_cov, calm_noise_
 
     elif meeg.erm == 'None' or erm_noise_cov is False:
         print('Noise Covariance on Epochs')
-        if enable_ica:
-            epochs = meeg.load_ica_epochs()
-        else:
-            epochs = meeg.load_epochs()
+        epochs = meeg.load_epochs()
 
         tmin, tmax = baseline
         noise_covariance = mne.compute_covariance(epochs, tmin=tmin, tmax=tmax,
@@ -1059,12 +979,9 @@ def apply_morph(meeg):
 
 
 def source_space_connectivity(meeg, parcellation, target_labels, inverse_method, lambda2, con_methods,
-                              con_fmin, con_fmax, n_jobs, enable_ica):
+                              con_fmin, con_fmax, n_jobs):
     info = meeg.load_info()
-    if enable_ica:
-        all_epochs = meeg.load_ica_epochs()
-    else:
-        all_epochs = meeg.load_epochs()
+    all_epochs = meeg.load_epochs()
     inverse_operator = meeg.load_inverse_operator()
     src = inverse_operator['src']
 

@@ -78,7 +78,7 @@ class EditGuiArgsDlg(QDialog):
         self.default_gui_args = dict()
 
         if self.cf.current_parameter:
-            covered_params = ['data', 'param_name', 'param_alias', 'default', 'param_unit', 'hint']
+            covered_params = ['data', 'param_name', 'param_alias', 'default', 'param_unit', 'description']
             # Get possible default GUI-Args additional to those covered by the Main-GUI
             gui_type = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type']
             if pd.notna(gui_type):
@@ -782,9 +782,9 @@ class CustomFunctionImport(QDialog):
         else:
             param_alias = self.current_parameter
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'description']):
-            hint = self.cf.add_pd_params.loc[self.cf.current_parameter, 'description']
+            description = self.cf.add_pd_params.loc[self.cf.current_parameter, 'description']
         else:
-            hint = None
+            description = None
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'unit']):
             param_unit = self.add_pd_params.loc[self.current_parameter, 'unit']
         else:
@@ -795,10 +795,10 @@ class CustomFunctionImport(QDialog):
         try:
             if 'param_unit' in handle_params:
                 gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
-                                 param_alias=param_alias, hint=hint, param_unit=param_unit, **gui_args)
+                                 param_alias=param_alias, description=description, param_unit=param_unit, **gui_args)
             else:
                 gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
-                                 param_alias=param_alias, hint=hint, **gui_args)
+                                 param_alias=param_alias, description=description, **gui_args)
         except Exception as e:
             gui = None
             result = e

@@ -128,6 +128,7 @@ class MainWindow(QMainWindow):
         self.group_order = {'General': 0,
                             'Raw': 1,
                             'Preprocessing': 2,
+                            'ICA': 2,
                             'Events': 3,
                             'Epochs': 3,
                             'Evoked': 3,
@@ -546,23 +547,23 @@ class MainWindow(QMainWindow):
         self.toolbar.addSeparator()
 
         self.toolbar.addWidget(IntGui(self.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
-                                      hint='Set to the amount of cores of your machine '
-                                           'you want to use for multiprocessing', default=-1))
+                                      description='Set to the amount of cores of your machine '
+                                                  'you want to use for multiprocessing', default=-1))
         self.toolbar.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
-                                       hint='Do you want to show plots?\n'
-                                            '(or just save them without showing, then just check "Save Plots")',
+                                       description='Do you want to show plots?\n'
+                                                   '(or just save them without showing, then just check "Save Plots")',
                                        default=True))
         self.toolbar.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
-                                       hint='Do you want to save the plots made to a file?', default=True))
+                                       description='Do you want to save the plots made to a file?', default=True))
         self.toolbar.addWidget(BoolGui(self.qsettings, 'enable_cuda', param_alias='Enable CUDA',
-                                       hint='Do you want to enable CUDA? (system has to be setup for cuda)',
+                                       description='Do you want to enable CUDA? (system has to be setup for cuda)',
                                        default=False))
         self.toolbar.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
-                                       hint='Do you want to shut your system down after execution of all subjects?'))
+                                       description='Do you want to shut your system down after execution of all subjects?'))
         self.toolbar.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
-                                      hint='Set dpi for saved plots', default=300))
+                                      description='Set dpi for saved plots', default=300))
         self.toolbar.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
-                                        param_alias='Image-Format', hint='Choose the image format for plots',
+                                        param_alias='Image-Format', description='Choose the image format for plots',
                                         default='.png'))
         close_all_bt = QPushButton('Close All Plots')
         close_all_bt.pressed.connect(close_all)

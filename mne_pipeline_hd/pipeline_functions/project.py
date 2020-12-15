@@ -85,8 +85,8 @@ class Project:
         self.meeg_to_fsmri = {}
         self.meeg_to_fsmri_path = join(self.pscripts_path, f'meeg_to_fsmri_{self.name}.json')
 
-        self.ica_components = dict()
-        self.ica_components_path = join(self.pscripts_path, f'ica_components_{self.name}.json')
+        self.ica_exclude = dict()
+        self.ica_exclude_path = join(self.pscripts_path, f'ica_exclude_{self.name}.json')
 
         # Groups MEG/EEG-Files e.g. for Grand-Average
         self.all_groups = {}
@@ -131,6 +131,7 @@ class Project:
                                   self.all_fsmri_path: 'all_fsmri',
                                   self.sel_fsmri_path: 'sel_fsmri',
                                   self.meeg_to_fsmri_path: 'meeg_to_fsmri',
+                                  self.ica_exclude_path: 'ica_exclude',
                                   self.all_groups_path: 'all_groups',
                                   self.sel_groups_path: 'sel_groups',
                                   self.all_info_path: 'all_info',
@@ -297,7 +298,7 @@ class Project:
 
     def save(self):
         self.save_lists()
-        self.load_parameters()
+        self.save_parameters()
 
     def check_data(self):
 

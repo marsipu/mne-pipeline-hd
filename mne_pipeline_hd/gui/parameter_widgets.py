@@ -141,10 +141,6 @@ class Param(QWidget):
         else:
             value = self.default
 
-        # Check if type of value and default match
-        if not isinstance(value, type(self.default)) and value is not None:
-            value = self.default
-
         self.param_value = value
 
     def save_param(self):
@@ -424,7 +420,7 @@ class FuncGui(Param):
         real_value = self.param_value
         self.param_name = self.param_name + '_exp'
         super().read_param()
-        if self.param_value == self.default:
+        if str(self.param_value) == str(self.default):
             self.param_value = ''
         self.param_exp = self.param_value
         self.param_name = self.param_name[:-4]
@@ -773,7 +769,6 @@ class CheckListDialog(QDialog):
         event.accept()
 
 
-# Todo: Default not working
 class CheckListGui(Param):
     """A GUI to select items from a list of options
     """

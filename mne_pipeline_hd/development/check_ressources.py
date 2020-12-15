@@ -19,7 +19,10 @@ for func_name in pd_funcs.index:
     module = pd_funcs.loc[func_name, 'module']
     try:
         func = getattr(getattr(basic_functions, module), func_name)
-        real_func_args = ','.join(list(inspect.signature(func).parameters))
+        real_func_args_list = list(inspect.signature(func).parameters)
+        if 'kwargs' in real_func_args_list:
+            real_func_args_list.remove('kwargs')
+        real_func_args = ','.join(real_func_args_list)
         loaded_func_args = pd_funcs.loc[func_name, 'func_args']
 
         if real_func_args != loaded_func_args:

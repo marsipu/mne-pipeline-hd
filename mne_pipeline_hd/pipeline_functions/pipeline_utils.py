@@ -9,6 +9,7 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
+import inspect
 import json
 import os
 import re
@@ -40,16 +41,19 @@ class NumpyJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, datetime):
             return {'datetime': obj.strftime(datetime_format)}
 
-        return json.JSONEncoder.default(self, obj)
+        elif isinstance(obj, tuple):
+            return {'tuple_type': obj}
+        else:
+            return json.JSONEncoder.default(self, obj)
 
 
 def numpy_json_hook(obj):
     if 'numpy_array' in obj.keys():
         return np.asarray(obj['numpy_array'])
-    elif 'tuple_type' in obj.keys():
-        return tuple(obj['tuple_type'])
     elif 'datetime' in obj.keys():
         return datetime.strptime(obj['datetime'], datetime_format)
+    elif 'tuple_type' in obj.keys():
+        return tuple(obj['tuple_type'])
     else:
         return obj
 
@@ -260,6 +264,17 @@ def compare_filep(obj, path, target_parameters=None):
             result_dict[param] = 'missing'
 
     return result_dict
+
+
+def check_kwargs(kwargs, function):
+    kwargs = kwargs.copy()
+
+    existing_kwargs = inspect.signature(function).parameters
+
+    for kwarg in [k for k in kwargs if k not in existing_kwargs]:
+        kwargs.pop(kwarg)
+
+    return kwargs
 
 
 def shutdown():

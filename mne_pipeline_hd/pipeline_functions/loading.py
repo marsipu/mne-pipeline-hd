@@ -76,6 +76,32 @@ class BaseLoading:
 
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):
+        """
+        Save a plot with this method either by letting the figure be detected by the backend (pyplot, mayavi) or by
+        supplying the figure directly.
+
+        Parameters
+        ----------
+        plot_name : str
+            The name of the folder and a part of the filename.
+        subfolder : str | None
+            An optional name for a subfolder, which will be also part of the filename.
+        trial : str | None
+            An optinal name of the trial if you have several trials from the same run.
+        idx : int | str | None
+            An optional index or additional enumerator for multiple plots.
+        matplotlib_figure : matplotlib.figure.Figure | None
+            Supply a matplotlib-figure here (if none is given, the current-figure will be taken with plt.savefig()).
+        mayavi : bool
+            Set to True without supplying a mayavi-figure to save the current figure with mlab.savefig().
+        mayavi_figure : mayavi.core.scene.Scene | None
+            Supply a mayavi-figure here.
+        brain : surfer.Brain | None
+            Supply a Brain-instance here.
+        dpi :
+            Set the dpi-setting if you want another than specified in the MainWindow-Settings
+
+        """
         # Take DPI from Settings if not defined by call
         if not dpi:
             dpi = self.dpi
@@ -397,24 +423,24 @@ class MEEG(BaseLoading):
 
         return data
 
-    def _update_raw_info(self):
+    def _update_raw_info(self, raw):
         # Insert/Update BadChannels from meeg_bad_channels and add description
-        self._raw.info['bads'] = self.bad_channels
-        self._raw.info['description'] = self.name
+        raw.info['bads'] = self.bad_channels
+        raw.info['description'] = self.name
 
     def load_raw(self):
         if self._raw is None:
             self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
 
         self._raw = self.pick_types_helper(self._raw)
-        self._update_raw_info()
+        self._update_raw_info(self._raw)
 
         return self._raw
 
     def save_raw(self, raw):
         self._raw = raw
 
-        self._update_raw_info()
+        self._update_raw_info(self._raw)
 
         raw.save(self.raw_path, overwrite=True)
         self.save_file_params(self.raw_path)
@@ -425,14 +451,14 @@ class MEEG(BaseLoading):
 
         self._raw_filtered = self.pick_types_helper(self._raw_filtered)
 
-        self._update_raw_info()
+        self._update_raw_info(self._raw_filtered)
 
         return self._raw_filtered
 
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
 
-        self._update_raw_info()
+        self._update_raw_info(self._raw_filtered)
 
         if not self.mw.get_setting('save_storage'):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
