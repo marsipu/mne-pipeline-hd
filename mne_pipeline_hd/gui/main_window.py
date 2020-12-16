@@ -153,15 +153,16 @@ class MainWindow(QMainWindow):
         logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
+        # Set geometry to ratio of screen-geometry (before adding func-buttons to allow adjustment to size)
+        width, height = get_ratio_geometry(0.9)
+        self.resize(int(width), int(height))
+
         # Call window-methods
         self.init_menu()
         self.init_toolbar()
         self.add_dock_windows()
         self.init_main_widget()
 
-        # Set geometry to ratio of screen-geometry
-        width, height = get_ratio_geometry(0.9)
-        self.resize(int(width), int(height))
         center(self)
         self.raise_win()
 

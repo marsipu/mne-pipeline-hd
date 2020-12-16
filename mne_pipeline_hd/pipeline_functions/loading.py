@@ -13,6 +13,7 @@ from __future__ import print_function
 
 import inspect
 import json
+import os
 import pickle
 from datetime import datetime
 from os import listdir, makedirs, mkdir, remove
@@ -399,6 +400,15 @@ class MEEG(BaseLoading):
         self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
         self.events_id = self.mw.pr.meeg_event_id[self.name]
         self.sel_trials = self.mw.pr.sel_event_id[self.name]
+
+    # Todo: Rename-Function
+    def rename(self, new_name):
+        for data_type in self.paths_dict:
+            path = self.paths_dict[data_type]
+
+            Path(path).name
+
+            os.rename(path)
 
     ####################################################################################################################
     # Load- & Save-Methods
