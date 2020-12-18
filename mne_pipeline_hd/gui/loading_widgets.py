@@ -702,9 +702,8 @@ class AddFilesWidget(QWidget):
                     os.makedirs(parent_dir, exist_ok=True)
                     # Copy sub_files to destination (with MEEG-Class to also include raw into file_parameters)
                     meeg = MEEG(file, self.mw)
-                    meeg.extract_info()
-                    meeg._raw = raw
                     meeg.save_raw(raw)
+                    meeg.extract_info()
                     signals['pgbar_n'].emit(count)
                     count += 1
                 else:
