@@ -120,7 +120,7 @@ class WelcomeWindow(QWidget):
         self.check_home_path()
 
     def init_main_window(self):
-        sel_edu_program = self.edu_selection.get_current()
+        sel_edu_program = self.edu_selection.get_selected()
         if self.edu_groupbox.isChecked():
             self.mw = MainWindow(self.home_path, self, sel_edu_program)
         else:
