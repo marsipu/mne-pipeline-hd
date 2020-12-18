@@ -7,7 +7,7 @@ run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg,ica_meth
 apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg
 interpolate_bad_chs;Interpolate Bad-Channels;MEEG;Compute;Preprocessing;False;False;;operations;meeg,bad_interpolation
 get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;meeg
-tfr;;FSMRI;Compute;Time-Frequency;False;False;;operations;meeg,tfr_freqs,overwrite_tfr,tfr_method,multitaper_bandwith,stockwell_width,n_jobs
+tfr;Time-Frequency;MEEG;Compute;Time-Frequency;False;False;;operations;meeg,tfr_freqs,tfr_n_cycles,tfr_average,tfr_use_fft,tfr_baseline,tfr_baseline_mode,tfr_method,multitaper_bandwidth,stockwell_width,n_jobs
 apply_watershed;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri
 prepare_bem;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,bem_spacing
 setup_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;fsmri,source_space_spacing,surface,n_jobs
@@ -67,8 +67,8 @@ plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;group,morph_to,mne_
 plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;group,stc_animation,stc_animation_dilat,morph_to
 plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;group
 plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;group,con_fmin,con_fmax,parcellation,target_labels,morph_to
-plot_ica_components;Plot ICA-Components;MEEG;Plot;ICA;True;False;;operations;meeg, show_plots
-plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;operations;meeg, ica_source_data, show_plots
-plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;operations;meeg, ica_overlay_data, show_plots
-plot_ica_properties;Plot ICA-Properties;MEEG;Plot;ICA;True;False;;operations;meeg, ica_properties_indices, show_plots
-plot_ica_scores;Plot ICA-Scores;MEEG;Plot;ICA;True;False;;operations;meeg, show_plots
+plot_ica_components;Plot ICA-Components;MEEG;Plot;ICA;True;False;;operations;meeg,show_plots
+plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;operations;meeg,ica_source_data,show_plots
+plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;operations;meeg,ica_overlay_data,show_plots
+plot_ica_properties;Plot ICA-Properties;MEEG;Plot;ICA;True;False;;operations;meeg,ica_properties_indices,show_plots
+plot_ica_scores;Plot ICA-Scores;MEEG;Plot;ICA;True;False;;operations;meeg,show_plots

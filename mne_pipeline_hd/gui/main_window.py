@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
         self.init_main_widget()
 
         center(self)
-        self.raise_win()
+        # self.raise_win()
 
         self.first_init = False
 

@@ -332,8 +332,15 @@ class MEEG(BaseLoading):
 
         self.evokeds_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ave.fif')
 
-        self.power_tfr_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-pw-tfr.h5')
-        self.itc_tfr_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-itc-tfr.h5')
+        self.power_tfr_epochs_path = join(self.save_dir,
+                                          f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-epo-pw-tfr.h5')
+        self.itc_tfr_epochs_path = join(self.save_dir,
+                                        f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-epo-itc-tfr.h5')
+
+        self.power_tfr_average_path = join(self.save_dir,
+                                           f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-ave-pw-tfr.h5')
+        self.itc_tfr_average_path = join(self.save_dir,
+                                         f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-ave-itc-tfr.h5')
 
         self.trans_path = join(self.save_dir, f'{self.fsmri.name}-trans.fif')
 
@@ -362,8 +369,10 @@ class MEEG(BaseLoading):
                            'Epochs (EOG)': self.eog_epochs_path,
                            'Epochs (ECG)': self.ecg_epochs_path,
                            'Evokeds': self.evokeds_path,
-                           'TF Power': self.power_tfr_path,
-                           'TF ITC': self.itc_tfr_path,
+                           'TF Power Epochs': self.power_tfr_epochs_path,
+                           'TF ITC Epochs': self.itc_tfr_epochs_path,
+                           'TF Power Average': self.power_tfr_average_path,
+                           'TF ITC Average': self.itc_tfr_average_path,
                            'Transformation': self.trans_path,
                            'Forward Solution': self.forward_path,
                            'Noise-Covariance (Calm)': self.calm_cov_path,
@@ -385,8 +394,10 @@ class MEEG(BaseLoading):
                              'load_eog_epochs': 'Epochs (EOG)',
                              'load_ecg_epochs': 'Epochs (ECG)',
                              'load_evokeds': 'Evokeds',
-                             'load_power_tfr': 'TF Power',
-                             'load_itc_tfr': 'TF ITC',
+                             'load_power_tfr_epochs': 'TF Power Epochs',
+                             'load_itc_tfr_epochs': 'TF ITC Epochs',
+                             'load_power_tfr_average': 'TF Power Average',
+                             'load_itc_tfr_average': 'TF ITC Average',
                              'load_transformation': 'Transformation',
                              'load_forward': 'Forward Solution',
                              'load_noise_covariance': 'Noise Covariance',
@@ -401,6 +412,35 @@ class MEEG(BaseLoading):
         self.events_id = self.mw.pr.meeg_event_id[self.name]
         self.sel_trials = self.mw.pr.sel_event_id[self.name]
 
+    def extract_info(self):
+        raw = self.load_raw()
+        self.pr.all_info[self.name] = {}
+        info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
+                     'utc_offset', 'nchan', 'proj_meeg.name', 'sfreq', 'subject_info', 'device_info',
+                     'helium_info']
+        try:
+            for key in info_keys:
+                self.pr.all_info[self.name][key] = raw.info[key]
+            # Add arrays of digitization-points and save it to json to make the trans-file-management possible
+            # (same digitization = same trans-file)
+            if raw.info['dig'] is not None:
+                dig_dict = {}
+                for dig_point in raw.info['dig']:
+                    dig_dict[dig_point['ident']] = {}
+                    dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
+                    dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
+                self.pr.all_info[self.name]['dig'] = dig_dict
+            self.pr.all_info[self.name]['meas_date'] = str(raw.info['meas_date'])
+            # Some raw-files don't have get_channel_types?
+            try:
+                self.pr.all_info[self.name]['ch_types'] = raw.get_channel_types(unique=True)
+            except AttributeError:
+                self.pr.all_info[self.name]['ch_types'] = list()
+            self.pr.all_info[self.name]['proj_id'] = int(raw.info['proj_id'])
+            self.pr.all_info[self.name]['n_times'] = raw.n_times
+        except (KeyError, TypeError):
+            pass
+
     # Todo: Rename-Function
     def rename(self, new_name):
         for data_type in self.paths_dict:
@@ -413,14 +453,7 @@ class MEEG(BaseLoading):
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
-    def load_info(self):
-        """Get raw-info, either from all_info in project or from raw-file if not in all_info"""
-        if self._info is None:
-            self._info = mne.io.read_info(self.raw_path)
-
-        return self._info
-
-    def pick_types_helper(self, data):
+    def _pick_types_helper(self, data):
         # Include all selected Channel-Types if present in data
         sel_ch_types = self.p['ch_types'].copy()
         existing_ch_types = data.get_channel_types(unique=True)
@@ -438,11 +471,19 @@ class MEEG(BaseLoading):
         raw.info['bads'] = self.bad_channels
         raw.info['description'] = self.name
 
-    def load_raw(self):
+    def load_info(self):
+        """Get raw-info, either from all_info in project or from raw-file if not in all_info"""
+        if self._info is None:
+            self._info = mne.io.read_info(self.raw_path)
+
+        return self._info
+
+    def load_raw(self, pick_types=True):
         if self._raw is None:
             self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
 
-        self._raw = self.pick_types_helper(self._raw)
+        if pick_types:
+            self._raw = self._pick_types_helper(self._raw)
         self._update_raw_info(self._raw)
 
         return self._raw
@@ -455,11 +496,12 @@ class MEEG(BaseLoading):
         raw.save(self.raw_path, overwrite=True)
         self.save_file_params(self.raw_path)
 
-    def load_filtered(self):
+    def load_filtered(self, pick_types=True):
         if self._raw_filtered is None:
             self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
 
-        self._raw_filtered = self.pick_types_helper(self._raw_filtered)
+        if pick_types:
+            self._raw_filtered = self._pick_types_helper(self._raw_filtered)
 
         self._update_raw_info(self._raw_filtered)
 
@@ -474,10 +516,11 @@ class MEEG(BaseLoading):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
             self.save_file_params(self.raw_filtered_path)
 
-    def load_erm(self):
+    def load_erm(self, pick_types=True):
         # unfiltered erm is not considered important enough to be a obj-attribute
         erm = mne.io.read_raw_fif(self.erm_path, preload=True)
-        erm = self.pick_types_helper(erm)
+        if pick_types:
+            erm = self._pick_types_helper(erm)
         return erm
 
     def load_erm_filtered(self):
@@ -503,11 +546,11 @@ class MEEG(BaseLoading):
         mne.event.write_events(self.events_path, events)
         self.save_file_params(self.events_path)
 
-    def load_epochs(self):
+    def load_epochs(self, pick_types=True):
         if self._epochs is None:
             self._epochs = mne.read_epochs(self.epochs_path)
-
-        self._epochs = self.pick_types_helper(self._epochs)
+        if pick_types:
+            self._epochs = self._pick_types_helper(self._epochs)
 
         return self._epochs
 
@@ -562,12 +605,13 @@ class MEEG(BaseLoading):
         ecg_epochs.save(self.ecg_epochs_path, overwrite=True)
         self.save_file_params(self.ecg_epochs_path)
 
-    def load_evokeds(self):
+    def load_evokeds(self, pick_types=True):
         if self._evokeds is None:
             self._evokeds = mne.read_evokeds(self.evokeds_path)
 
-        for idx, evoked in enumerate(self._evokeds):
-            self._evokeds[idx] = self.pick_types_helper(evoked)
+        if pick_types:
+            for idx, evoked in enumerate(self._evokeds):
+                self._evokeds[idx] = self._pick_types_helper(evoked)
 
         return self._evokeds
 
@@ -576,27 +620,49 @@ class MEEG(BaseLoading):
         mne.evoked.write_evokeds(self.evokeds_path, evokeds)
         self.save_file_params(self.evokeds_path)
 
-    def load_power_tfr(self):
+    def load_power_tfr_epochs(self):
         if self._power_tfr is None:
-            self._power_tfr = mne.time_frequency.read_tfrs(self.power_tfr_path)
+            self._power_tfr = mne.time_frequency.read_tfrs(self.power_tfr_epochs_path)
 
         return self._power_tfr
 
-    def save_power_tfr(self, powers):
+    def save_power_tfr_epochs(self, powers):
         self._power_tfr = powers
-        mne.time_frequency.write_tfrs(self.power_tfr_path, powers, overwrite=True)
-        self.save_file_params(self.power_tfr_path)
+        mne.time_frequency.write_tfrs(self.power_tfr_epochs_path, powers, overwrite=True)
+        self.save_file_params(self.power_tfr_epochs_path)
 
-    def load_itc_tfr(self):
+    def load_itc_tfr_epochs(self):
         if self._itc_tfr is None:
-            self._itc_tfr = mne.time_frequency.read_tfrs(self.itc_tfr_path)
+            self._itc_tfr = mne.time_frequency.read_tfrs(self.itc_tfr_epochs_path)
 
         return self._itc_tfr
 
-    def save_itc_tfr(self, itcs):
+    def save_itc_tfr_epochs(self, itcs):
         self._itc_tfr = itcs
-        mne.time_frequency.write_tfrs(self.itc_tfr_path, itcs, overwrite=True)
-        self.save_file_params(self.itc_tfr_path)
+        mne.time_frequency.write_tfrs(self.itc_tfr_epochs_path, itcs, overwrite=True)
+        self.save_file_params(self.itc_tfr_epochs_path)
+
+    def load_power_tfr_average(self):
+        if self._power_tfr is None:
+            self._power_tfr = mne.time_frequency.read_tfrs(self.power_tfr_average_path)
+
+        return self._power_tfr
+
+    def save_power_tfr_average(self, powers):
+        self._power_tfr = powers
+        mne.time_frequency.write_tfrs(self.power_tfr_average_path, powers, overwrite=True)
+        self.save_file_params(self.power_tfr_average_path)
+
+    def load_itc_tfr_average(self):
+        if self._itc_tfr is None:
+            self._itc_tfr = mne.time_frequency.read_tfrs(self.itc_tfr_average_path)
+
+        return self._itc_tfr
+
+    def save_itc_tfr_average(self, itcs):
+        self._itc_tfr = itcs
+        mne.time_frequency.write_tfrs(self.itc_tfr_average_path, itcs, overwrite=True)
+        self.save_file_params(self.itc_tfr_average_path)
 
     # Source-Space
     def load_transformation(self):

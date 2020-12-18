@@ -434,6 +434,10 @@ class RunDialog(QDialog):
             self.console_widget.ensureCursorVisible()
 
     def restart(self):
+        # Reload modules to get latest changes
+        self.mw.reload_basic_modules()
+        self.mw.reload_custom_modules()
+
         self.init_attributes()
         self.init_lists()
 

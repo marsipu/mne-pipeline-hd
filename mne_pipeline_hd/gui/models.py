@@ -10,6 +10,7 @@ Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.201
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 from ast import literal_eval
+from datetime import datetime
 
 import pandas as pd
 from PyQt5.QtCore import QAbstractItemModel, QAbstractListModel, QAbstractTableModel, QModelIndex, Qt
@@ -556,6 +557,21 @@ class FileManagementModel(BasePandasModel):
 
     def data(self, index, role=None):
         value = self.getData(index)
+        if role == Qt.DisplayRole:
+            if pd.isna(value) or value in ['existst', 'possible_conflict', 'critical_conflict']:
+                pass
+            elif isinstance(value, datetime):
+                return value.strftime('%d.%m.%y %H:%M')
+            elif isinstance(value, float):
+                if value == 0:
+                    pass
+                elif value / 1024 < 1000:
+                    return f'{int(value / 1024)} KB'
+                elif value / 1024 ** 2 < 1000:
+                    return f'{int(value / 1024 ** 2)} MB'
+                else:
+                    return f'{int(value / 1024 ** 3)} GB'
+
         if role == Qt.DecorationRole:
             if pd.isna(value):
                 return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)

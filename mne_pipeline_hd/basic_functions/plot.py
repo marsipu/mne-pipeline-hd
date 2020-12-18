@@ -103,42 +103,25 @@ def plot_power_spectra_topo(meeg):
         meeg.plot_save('power_spectra', subfolder='topo', trial=trial, matplotlib_figure=fig)
 
 
-def plot_tfr(meeg, t_epoch, baseline):
-    powers = meeg.load_power_tfr()
-    itcs = meeg.load_itc_tfr()
+def plot_tfr(meeg):
+    powers = meeg.load_power_tfr_average()
 
     for power in powers:
-        fig1 = power.plot(baseline=baseline, mode='logratio', tmin=t_epoch[0],
-                          tmax=t_epoch[1], title=f'{meeg.name}-{power.comment}')
-        fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=t_epoch[0],
-                               tmax=t_epoch[1], title=f'{meeg.name}-{power.comment}')
-        fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=t_epoch[0],
-                                tmax=t_epoch[1], title=f'{meeg.name}-{power.comment}')
-
-        fig4, axis = plt.subplots(1, 5, figsize=(15, 2))
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=5, fmax=8,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[0],
-                           title='Theta 5-8 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=8, fmax=12,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[1],
-                           title='Alpha 8-12 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=13, fmax=30,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[2],
-                           title='Beta 13-30 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=31, fmax=60,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[3],
-                           title='Low Gamma 30-60 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=61, fmax=100,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[4],
-                           title='High Gamma 60-100 Hz', show=False)
-        mne.viz.tight_layout()
-        fig4.suptitle(f'{meeg.name}-{power.comment}')
-        plt.show()
+        fig1 = power.plot(title=f'{meeg.name}-{power.comment}')
+        fig2 = power.plot_topo(title=f'{meeg.name}-{power.comment}')
+        fig3 = power.plot_joint(title=f'{meeg.name}-{power.comment}')
+        fig4 = power.plot_topomap(title=f'{meeg.name}-{power.comment}')
 
         meeg.plot_save('time_frequency', subfolder='plot', trial=power.comment, matplotlib_figure=fig1)
         meeg.plot_save('time_frequency', subfolder='topo', trial=power.comment, matplotlib_figure=fig2)
         meeg.plot_save('time_frequency', subfolder='joint', trial=power.comment, matplotlib_figure=fig3)
-        meeg.plot_save('time_frequency', subfolder='osc', trial=power.comment, matplotlib_figure=fig4)
+        meeg.plot_save('time_frequency', subfolder='topomap', trial=power.comment, matplotlib_figure=fig4)
+
+    try:
+        itcs = meeg.load_itc_tfr_average()
+    except FileNotFoundError:
+        print(f'{meeg.itc_tfr_average_path} not found!')
+    else:
         for itc in itcs:
             fig5 = itc.plot_topo(title=f'{meeg.name}-{itc.comment}-itc',
                                  vmin=0., vmax=1., cmap='Reds')

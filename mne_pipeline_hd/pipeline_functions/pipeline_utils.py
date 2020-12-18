@@ -43,6 +43,8 @@ class NumpyJSONEncoder(json.JSONEncoder):
 
         elif isinstance(obj, tuple):
             return {'tuple_type': obj}
+        elif isinstance(obj, set):
+            return {'set_type': list(obj)}
         else:
             return json.JSONEncoder.default(self, obj)
 
@@ -54,6 +56,8 @@ def numpy_json_hook(obj):
         return datetime.strptime(obj['datetime'], datetime_format)
     elif 'tuple_type' in obj.keys():
         return tuple(obj['tuple_type'])
+    elif 'set_type' in obj.keys():
+        return set(obj['set_type'])
     else:
         return obj
 
@@ -244,14 +248,7 @@ def compare_filep(obj, path, target_parameters=None):
                 previous_value = obj.pr.file_parameters[file_name][param]
             current_value = obj.p[param]
 
-            equality_check = previous_value == current_value
-            if isinstance(equality_check, bool):
-                equality = equality_check
-            else:
-                try:
-                    equality = equality_check.all()
-                except AttributeError:
-                    equality = False
+            equality = str(previous_value) == str(current_value)
 
             if equality:
                 result_dict[param] = 'equal'

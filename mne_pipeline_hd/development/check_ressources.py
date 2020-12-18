@@ -27,7 +27,9 @@ for func_name in pd_funcs.index:
 
         if real_func_args != loaded_func_args:
             pd_funcs.loc[func_name, 'func_args'] = real_func_args
-            print(f'Changed function-arguments for {func_name}')
+            print(f'Changed function-arguments for {func_name}\n'
+                  f'from {loaded_func_args}\n'
+                  f'to {real_func_args}')
     except AttributeError:
         pd_funcs.drop(index=func_name, inplace=True)
         print(f'Droped {func_name}, because there is no corresponding function in {module}')

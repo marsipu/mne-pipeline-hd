@@ -17,8 +17,8 @@ import subprocess
 import sys
 from functools import reduce
 from itertools import combinations
-from os import environ, makedirs
-from os.path import exists, isdir, isfile, join
+from os import environ
+from os.path import isdir, isfile, join
 
 import autoreject as ar
 import mne
@@ -547,45 +547,71 @@ def grand_avg_evokeds(group):
     group.save_ga_evokeds(ga_evokeds)
 
 
-def tfr(meeg, tfr_freqs, overwrite_tfr,
-        tfr_method, multitaper_bandwith, stockwell_width, n_jobs):
-    n_cycles = [freq / 2 for freq in tfr_freqs]
-    powers = []
-    itcs = []
+def tfr(meeg, tfr_freqs, tfr_n_cycles, tfr_average, tfr_use_fft, tfr_baseline, tfr_baseline_mode,
+        tfr_method, multitaper_bandwidth, stockwell_width, n_jobs, **kwargs):
+    powers = list()
+    itcs = list()
 
-    if overwrite_tfr or not isfile(meeg.power_tfr_path) or not isfile(meeg.itc_tfr_path):
-        epochs = meeg.load_epochs()
+    epochs = meeg.load_epochs()
 
-        for trial in meeg.sel_trials:
-            if tfr_method == 'morlet':
-                power, itc = mne.time_frequency.tfr_morlet(epochs[trial],
-                                                           freqs=tfr_freqs,
-                                                           n_cycles=n_cycles,
-                                                           n_jobs=n_jobs)
-            elif tfr_method == 'multitaper':
-                power, itc = mne.time_frequency.tfr_multitaper(epochs[trial],
-                                                               freqs=tfr_freqs,
-                                                               n_cycles=n_cycles,
-                                                               time_bandwith=multitaper_bandwith,
-                                                               n_jobs=n_jobs)
-            elif tfr_method == 'stockwell':
-                fmin, fmax = tfr_freqs[[0, -1]]
-                power, itc = mne.time_frequency.tfr_stockwell(epochs[trial],
-                                                              fmin=fmin, fmax=fmax,
-                                                              width=stockwell_width,
-                                                              n_jobs=n_jobs)
-            else:
-                power, itc = [], []
-                print('No appropriate tfr_method defined in pipeline')
+    # Calculate Time-Frequency for each trial from epochs using the selected method
+    for trial in meeg.sel_trials:
+        if tfr_method == 'multitaper':
+            multitaper_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_multitaper)
+            tfr = mne.time_frequency.tfr_multitaper(epochs[trial],
+                                                    freqs=tfr_freqs,
+                                                    n_cycles=tfr_n_cycles,
+                                                    time_bandwidth=multitaper_bandwidth,
+                                                    n_jobs=n_jobs, use_fft=tfr_use_fft,
+                                                    return_itc=tfr_average, average=tfr_average,
+                                                    **multitaper_kwargs)
+        elif tfr_method == 'stockwell':
+            fmin, fmax = tfr_freqs[[0, -1]]
+            stockwell_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_stockwell)
+            tfr = mne.time_frequency.tfr_stockwell(epochs[trial],
+                                                   fmin=fmin, fmax=fmax,
+                                                   width=stockwell_width,
+                                                   n_jobs=n_jobs, return_itc=True,
+                                                   **stockwell_kwargs)
+        else:
+            morlet_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_morlet)
+            tfr = mne.time_frequency.tfr_morlet(epochs[trial],
+                                                freqs=tfr_freqs,
+                                                n_cycles=tfr_n_cycles,
+                                                n_jobs=n_jobs, use_fft=tfr_use_fft,
+                                                return_itc=tfr_average, average=tfr_average, **morlet_kwargs)
 
-            power.comment = trial
+        if isinstance(tfr, tuple):
+            power = tfr[0]
+            itc = tfr[1]
+        else:
+            power = tfr
+            itc = None
+
+        power.comment = trial
+        if itc:
             itc.comment = trial
 
-            powers.append(power)
+        if tfr_baseline:
+            power = power.apply_baseline(tfr_baseline, mode=tfr_baseline_mode)
+            if itc:
+                itc = itc.apply_baseline(tfr_baseline, mode=tfr_baseline_mode)
+
+        powers.append(power)
+        if itc:
             itcs.append(itc)
 
-        meeg.save_power_tfr(powers)
-        meeg.save_itc_tfr(itcs)
+    if tfr_average or tfr_method == 'stockwell':
+        meeg.save_power_tfr_average(powers)
+        meeg.save_itc_tfr_average(itcs)
+
+    else:
+        meeg.save_power_tfr_epochs(powers)
+
+        # Saving average TFR
+        powers_ave = [p.average() for p in powers]
+
+        meeg.save_power_tfr_average(powers_ave)
 
 
 def grand_avg_tfr(group):
@@ -593,7 +619,7 @@ def grand_avg_tfr(group):
     for name in group.group_list:
         meeg = MEEG(name, group.mw)
         print(f'Add {name} to grand_average')
-        powers = meeg.load_power_tfr()
+        powers = meeg.load_power_tfr_epochs()
         for pw in powers:
             if pw.nave != 0:
                 if pw.comment in trial_dict:

@@ -475,36 +475,6 @@ class GrandAvgFileAdd(QDialog):
         for idx in range(self.listw.count()):
             self.listw.item(idx).setCheckState(Qt.Checked)
 
-
-def extract_info(project, raw, new_fname):
-    project.all_info[new_fname] = {}
-    info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
-                 'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
-                 'helium_info']
-    try:
-        for key in info_keys:
-            project.all_info[new_fname][key] = raw.info[key]
-        # Add arrays of digitization-points and save it to json to make the trans-file-management possible
-        # (same digitization = same trans-file)
-        if raw.info['dig'] is not None:
-            dig_dict = {}
-            for dig_point in raw.info['dig']:
-                dig_dict[dig_point['ident']] = {}
-                dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
-                dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
-            project.all_info[new_fname]['dig'] = dig_dict
-        project.all_info[new_fname]['meas_date'] = str(raw.info['meas_date'])
-        # Some raw-files don't have get_channel_types?
-        try:
-            project.all_info[new_fname]['ch_types'] = raw.get_channel_types(unique=True)
-        except AttributeError:
-            project.all_info[new_fname]['ch_types'] = list()
-        project.all_info[new_fname]['proj_id'] = int(raw.info['proj_id'])
-        project.all_info[new_fname]['n_times'] = raw.n_times
-    except (KeyError, TypeError):
-        pass
-
-
 class AddFileSignals(QObject):
     """
     Defines the Signals for the Worker and add_files
@@ -644,7 +614,7 @@ class AddFilesWidget(QWidget):
 
             if len(existing_files) > 0:
                 QMessageBox.information(self, 'Existing Files',
-                                        f'These files already exist in your project: {existing_files}')
+                                        f'These files already exist in your meeg.pr: {existing_files}')
 
     def get_files_path(self):
         filter_list = [f'{self.supported_file_types[key]} (*{key})' for key in self.supported_file_types]
@@ -714,7 +684,6 @@ class AddFilesWidget(QWidget):
                 signals['which_sub'].emit(f'Copying {file}')
 
                 raw = self.load_file(idx)
-                extract_info(self.mw.pr, raw, file)
 
                 if not self.addf_dialog.wasCanceled():
                     # Copy Empty-Room-Files to their directory
@@ -731,8 +700,11 @@ class AddFilesWidget(QWidget):
                     # Make sure, that all directories exist
                     parent_dir = Path(save_path).parent
                     os.makedirs(parent_dir, exist_ok=True)
-                    # Copy sub_files to destination
-                    raw.save(save_path, overwrite=True)
+                    # Copy sub_files to destination (with MEEG-Class to also include raw into file_parameters)
+                    meeg = MEEG(file, self.mw)
+                    meeg.extract_info()
+                    meeg._raw = raw
+                    meeg.save_raw(raw)
                     signals['pgbar_n'].emit(count)
                     count += 1
                 else:
@@ -1469,12 +1441,6 @@ class SubBadsWidget(QWidget):
 
         self.bad_chkbts = dict()
 
-        # Load info into all_info if not already existing
-        if self.name not in self.mw.pr.all_info:
-            meeg = MEEG(self.name, self.mw)
-            raw = meeg.load_raw()
-            extract_info(self.mw.pr, raw, self.name)
-
         # Make Checkboxes for channels from all_info
         for x, ch_name in enumerate(self.mw.pr.all_info[self.name]['ch_names']):
             chkbt = QCheckBox(ch_name, self)
@@ -1732,7 +1698,7 @@ class EventIDGui(QDialog):
                 # Write Event-ID to Project
                 self.mw.pr.meeg_event_id[self.name] = self.event_id
 
-                # Get selected Trials and write them to project
+                # Get selected Trials and write them to meeg.pr
                 self.mw.pr.sel_event_id[self.name] = self.checked_labels
 
     def file_selected(self, current, _):
@@ -1906,8 +1872,17 @@ class FileManagment(QDialog):
         self.load_prog = 0
 
         self.pd_meeg = pd.DataFrame(index=self.mw.pr.all_meeg)
+        self.pd_meeg_time = pd.DataFrame(index=self.mw.pr.all_meeg)
+        self.pd_meeg_size = pd.DataFrame(index=self.mw.pr.all_meeg)
+
         self.pd_fsmri = pd.DataFrame(index=self.mw.pr.all_fsmri)
+        self.pd_fsmri_time = pd.DataFrame(index=self.mw.pr.all_fsmri)
+        self.pd_fsmri_size = pd.DataFrame(index=self.mw.pr.all_fsmri)
+
         self.pd_group = pd.DataFrame(index=self.mw.pr.all_groups)
+        self.pd_group_time = pd.DataFrame(index=self.mw.pr.all_groups)
+        self.pd_group_size = pd.DataFrame(index=self.mw.pr.all_groups)
+
         self.param_results = dict()
 
         self.init_ui()
@@ -1923,12 +1898,18 @@ class FileManagment(QDialog):
         if kind == 'MEEG':
             obj_list = self.mw.pr.all_meeg
             obj_pd = self.pd_meeg
+            obj_pd_time = self.pd_meeg_time
+            obj_pd_size = self.pd_meeg_size
         elif kind == 'FSMRI':
             obj_list = self.mw.pr.all_fsmri
             obj_pd = self.pd_fsmri
+            obj_pd_time = self.pd_fsmri_time
+            obj_pd_size = self.pd_fsmri_size
         else:
             obj_list = self.mw.pr.all_groups
             obj_pd = self.pd_group
+            obj_pd_time = self.pd_group_time
+            obj_pd_size = self.pd_group_size
         print(f'Loading {kind}')
 
         for obj_name in obj_list:
@@ -1940,13 +1921,21 @@ class FileManagment(QDialog):
                 obj = Group(obj_name, self.mw)
 
             obj.get_existing_paths()
-
             self.param_results[obj_name] = dict()
 
             for path_type in obj.existing_paths:
                 obj_pd.loc[obj_name, path_type] = 'exists'
+                obj_pd_size.loc[obj_name, path_type] = 0
 
                 for path in obj.existing_paths[path_type]:
+                    try:
+                        # Add Time
+                        obj_pd_time.loc[obj_name, path_type] = self.mw.pr.file_parameters[Path(path).name]['TIME']
+                        # Add Size (accumulate, if there are several files
+                        obj_pd_size.loc[obj_name, path_type] += self.mw.pr.file_parameters[Path(path).name]['SIZE']
+                    except KeyError:
+                        print(f'Time or Size not found for {Path(path).name}')
+
                     # Compare all parameters from last run to now
                     result_dict = compare_filep(obj, path)
                     # Store parameter-conflicts for later retrieval
@@ -1968,7 +1957,7 @@ class FileManagment(QDialog):
 
         self.prog_dlg = SimpleDialog(self.prog_bar, self, title='Loading Files...')
 
-    def _finish_loading(self):
+    def thread_finished(self):
         self.load_prog += 1
         self.prog_bar.setValue(self.load_prog)
         if self.load_prog == 3:
@@ -1977,11 +1966,8 @@ class FileManagment(QDialog):
             self.fsmri_table.content_changed()
             self.group_table.content_changed()
 
-    def thread_finished(self):
-        self._finish_loading()
-
     def thread_error(self, err):
-        self._finish_loading()
+        self.thread_finished()
         ErrorDialog(err, self)
 
     def start_load_threads(self):
@@ -2005,6 +1991,12 @@ class FileManagment(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout()
+
+        mode_cmbx = QComboBox()
+        mode_cmbx.addItems(['Existence', 'Time', 'Size'])
+        mode_cmbx.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        mode_cmbx.currentTextChanged.connect(self.mode_changed)
+        layout.addWidget(mode_cmbx, alignment=Qt.AlignLeft)
 
         tab_widget = QTabWidget()
 
@@ -2081,6 +2073,20 @@ class FileManagment(QDialog):
         layout.addWidget(close_bt)
 
         self.setLayout(layout)
+
+    def mode_changed(self, mode):
+        if mode == 'Existence':
+            self.meeg_table.replace_data(self.pd_meeg)
+            self.fsmri_table.replace_data(self.pd_fsmri)
+            self.group_table.replace_data(self.pd_group)
+        elif mode == 'Time':
+            self.meeg_table.replace_data(self.pd_meeg_time)
+            self.fsmri_table.replace_data(self.pd_fsmri_time)
+            self.group_table.replace_data(self.pd_group_time)
+        elif mode == 'Size':
+            self.meeg_table.replace_data(self.pd_meeg_size)
+            self.fsmri_table.replace_data(self.pd_fsmri_size)
+            self.group_table.replace_data(self.pd_group_size)
 
     def _get_current(self, kind):
         if kind == 'MEEG':

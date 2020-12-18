@@ -31,10 +31,14 @@ ica_eog;Use EOG;ICA;False;;If to use EOG-Channels for automatic selection of com
 eog_channel;;ICA;None;;Set Vertical EOG-Channel;StringGui;
 ica_ecg;Use ECG;ICA;False;;If to use automatic ECG-detection either by ECG-Channel (if provided) or by an artificial ECG-Channel;BoolGui;
 ecg_channel;;ICA;None;;Set ECG-Channel;StringGui;
-tfr_freqs;;Time-Frequency;[5,10,20,30,60,90];Hz;Frequencies to analyze;ListGui;
-overwrite_tfr;;Time-Frequency;True;;Recalculate and overwrite Time-Frequency-Data;BoolGui;
+tfr_freqs;;Time-Frequency;np.arange(7,40,3) ;Hz;Select the frequencies of interest (Array/List);FuncGui;
 tfr_method;;Time-Frequency;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}
-multitaper_bandwith;;Time-Frequency;4.0;;;FloatGui;
+tfr_n_cycles;n_cycles;Time-Frequency;np.arange(7,40,3) / 2;;Select the number of cycles for each frequency;FuncGui;
+tfr_average;;Time-Frequency;True;;If to take the average of the Time-Frequency across observations;BoolGui;
+tfr_use_fft;use_fft;Time-Frequency;False;;If to use fft based convolution;BoolGui;
+tfr_baseline;;Time-Frequency;None;;Check to apply the entered baseline;TupleGui;{'none_select': True}
+tfr_baseline_mode;;Time-Frequency;mean;;Select the mode for baseline-application (if enabled);ComboGui;{'options':['mean', 'ration', 'logratio', 'percent', 'zscore', 'zlogratio']}
+multitaper_bandwidth;;Time-Frequency;4.0;;;FloatGui;
 stockwell_width;;Time-Frequency;1.0;;;FloatGui;
 bem_spacing;;Forward;4;;See the MNE-Documentation for further details;IntGui;
 source_space_spacing;;Forward;ico5;;See the MNE-Documentation for further details;StringGui;
@@ -52,9 +56,9 @@ stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
 parcellation;;Inverse;aparc;;;StringGui;
 target_labels;;Inverse;[];;;ListGui;
 extract_mode;Label-Extraction-Mode;Inverse;mean_flip;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['max', 'mean', 'mean_flip', 'pca_flip']}
-con_methods;;Time-Frequency;{'coh': 0, 'cohy': 0, 'imcoh': 0, 'plv': 0, 'ciplv': 0, 'ppc': 0, 'pli': 0, 'pli2_unbiased': 0, 'wpli': 0, 'wpli2_debiased': 0};;methods for connectivity plots;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}
-con_fmin;;Time-Frequency;30;;fmin for connectivity plot;IntGui;
-con_fmax;;Time-Frequency;80;;fmax for connectivity plot;IntGui;
+con_methods;;Connectivity;{'coh': 0, 'cohy': 0, 'imcoh': 0, 'plv': 0, 'ciplv': 0, 'ppc': 0, 'pli': 0, 'pli2_unbiased': 0, 'wpli': 0, 'wpli2_debiased': 0};;methods for connectivity plots;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}
+con_fmin;;Connectivity;30;;fmin for connectivity plot;IntGui;
+con_fmax;;Connectivity;80;;fmax for connectivity plot;IntGui;
 ecd_times;;Inverse;{};;;DictGui;
 ecd_positions;;Inverse;{};;;DictGui;
 ecd_orientations;;Inverse;{};;;DictGui;

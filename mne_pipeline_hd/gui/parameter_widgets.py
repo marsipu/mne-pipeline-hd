@@ -560,8 +560,8 @@ class TupleGui(Param):
 
     def init_tuple_layout(self):
         tuple_layout = QHBoxLayout()
-        tuple_layout.addWidget(self.param_widget2)
         tuple_layout.addWidget(self.param_widget1)
+        tuple_layout.addWidget(self.param_widget2)
         self.init_ui(tuple_layout)
 
     def set_param(self):

@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import (QComboBox, QDialog, QDockWidget, QGridLayout, QHBox
                              QScrollArea, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui import parameter_widgets
+from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import get_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
 from mne_pipeline_hd.gui.parameter_widgets import StringGui
@@ -488,3 +489,35 @@ class ErrorDialog(QDialog):
                                                              'Thank you for the Report!')
             except OSError:
                 QMessageBox.information(self, 'E-Mail not sent', 'Sending an E-Mail is not possible on your OS')
+
+
+class MEEGInfo(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+        self.info_string = None
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QGridLayout()
+        meeg_list = SimpleList(self.mw.pr.all_meeg)
+        meeg_list.currentChanged(self.meeg_selected)
+        layout.addWidget(meeg_list, 0, 0)
+
+        self.info_label = QLabel()
+        layout.addWidget(self.info_label, 0, 1)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt, 1, 0, 1, 2)
+
+        self.setLayout(layout)
+
+    def meeg_selected(self, meeg_name):
+        # Get size in Mebibytes of all files associated to this
+        fp = self.mw.pr.file_parameters
+        sizes = [fp[key]['SIZE'] / 1024 ** 2 for key in fp if fp[key]['NAME'] == meeg_name]
+        no_files = len(sizes)
+        total_size = int(sum(sizes))
