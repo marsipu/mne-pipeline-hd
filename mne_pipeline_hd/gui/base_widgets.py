@@ -68,7 +68,7 @@ class Base(QWidget):
     def get_current(self):
         try:
             current = self.model.getData(self.view.currentIndex())
-        except KeyError:
+        except (KeyError, IndexError):
             current = None
 
         return current
@@ -85,7 +85,7 @@ class Base(QWidget):
     def get_selected(self):
         try:
             selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
-        except KeyError:
+        except (KeyError, IndexError):
             selected = list()
 
         return selected
