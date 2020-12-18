@@ -36,8 +36,8 @@ class WelcomeWindow(QWidget):
         self.init_ui()
         self.check_home_path()
 
-        center(self)
         self.show()
+        center(self)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -102,13 +102,14 @@ class WelcomeWindow(QWidget):
             print(f'Home-Path: {self.home_path}')
             self.start_bt.setEnabled(True)
 
-        self.education_programs.clear()
-        edu_path = join(self.home_path, 'edu_programs')
-        if isdir(edu_path):
-            for file in [f for f in listdir(edu_path) if f[-9:] == '-edu.json']:
-                self.education_programs.append(file)
+        if self.home_path is not None:
+            self.education_programs.clear()
+            edu_path = join(self.home_path, 'edu_programs')
+            if isdir(edu_path):
+                for file in [f for f in listdir(edu_path) if f[-9:] == '-edu.json']:
+                    self.education_programs.append(file)
 
-        self.edu_selection.content_changed()
+            self.edu_selection.content_changed()
 
     def set_home_path(self):
         loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.home_path} not writable!'
