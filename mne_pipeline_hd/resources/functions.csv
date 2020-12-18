@@ -3,8 +3,8 @@ filter_raw;Filter Raw;MEEG;Compute;Preprocessing;False;False;;operations;meeg,hi
 find_events;Find Events;MEEG;Compute;Events;False;False;;operations;meeg,stim_channels,min_duration,shortest_event,adjust_timeline_by_msec
 find_6ch_binary_events;Find Events HD;MEEG;Compute;Events;False;False;;operations;meeg,min_duration,shortest_event,adjust_timeline_by_msec
 epoch_raw;Get Epochs;MEEG;Compute;Events;False;False;;operations;meeg,t_epoch,baseline,reject,flat,use_autoreject,consensus_percs,n_interpolates,overwrite_ar,decim,n_jobs
-run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg,ica_method,ica_fitto,n_components,max_pca_components,n_pca_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,ch_types,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
-apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg
+run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg,ica_method,ica_fitto,n_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,ch_types,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
+apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;meeg,n_pca_components
 interpolate_bad_chs;Interpolate Bad-Channels;MEEG;Compute;Preprocessing;False;False;;operations;meeg,bad_interpolation
 get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;meeg
 tfr;Time-Frequency;MEEG;Compute;Time-Frequency;False;False;;operations;meeg,tfr_freqs,tfr_n_cycles,tfr_average,tfr_use_fft,tfr_baseline,tfr_baseline_mode,tfr_method,multitaper_bandwidth,stockwell_width,n_jobs
@@ -41,7 +41,7 @@ plot_events;;MEEG;Plot;Events;True;False;;plot;meeg
 plot_power_spectra;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg
 plot_power_spectra_epochs;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg
 plot_power_spectra_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg
-plot_tfr;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg,t_epoch,baseline
+plot_tfr;;MEEG;Plot;Time-Frequency;True;False;;plot;meeg
 plot_epochs;;MEEG;Plot;Epochs;True;False;;plot;meeg
 plot_epochs_image;;MEEG;Plot;Epochs;True;False;;plot;meeg
 plot_epochs_topo;;MEEG;Plot;Epochs;True;False;;plot;meeg

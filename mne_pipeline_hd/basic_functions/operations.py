@@ -248,9 +248,8 @@ def epoch_raw(meeg, t_epoch, baseline, reject, flat, use_autoreject, consensus_p
     meeg.save_epochs(epochs)
 
 
-def run_ica(meeg, ica_method, ica_fitto, n_components, max_pca_components, n_pca_components,
-            ica_noise_cov, ica_remove_proj, ica_reject, ica_autoreject, ch_types, reject_by_annotation, ica_eog,
-            eog_channel, ica_ecg, ecg_channel, **kwargs):
+def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove_proj, ica_reject, ica_autoreject,
+            ch_types, reject_by_annotation, ica_eog, eog_channel, ica_ecg, ecg_channel, **kwargs):
     if ica_fitto == 'Raw (Unfiltered)':
         data = meeg.load_raw()
         # Exclude bad- and non-data-channels
@@ -275,8 +274,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, max_pca_components, n_pca
         noise_cov = None
 
     ica_kwargs = check_kwargs(kwargs, ICA)
-    ica = ICA(n_components=n_components, max_pca_components=max_pca_components,
-              n_pca_components=n_pca_components, noise_cov=noise_cov, random_state=8,
+    ica = ICA(n_components=n_components, noise_cov=noise_cov, random_state=8,
               method=ica_method, **ica_kwargs)
 
     if ica_autoreject and ica_fitto != 'Epochs':
@@ -469,7 +467,7 @@ def plot_ica_ecg_scores(meeg, show_plots):
     return ecg_score_fig
 
 
-def apply_ica(meeg):
+def apply_ica(meeg, n_pca_components):
     epochs = meeg.load_epochs()
     ica = meeg.load_ica()
 
@@ -479,7 +477,7 @@ def apply_ica(meeg):
     if len(ica.exclude) == 0:
         print(f'No components excluded for {meeg.name}')
     else:
-        ica_epochs = ica.apply(epochs)
+        ica_epochs = ica.apply(epochs, n_pca_components=n_pca_components)
         meeg.save_epochs(ica_epochs)
 
 

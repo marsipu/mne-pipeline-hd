@@ -498,8 +498,6 @@ class RawInfo(QDialog):
         self.info_string = None
 
         self.init_ui()
-        # set_ratio_geometry(0.7, self)
-
         self.open()
 
     def init_ui(self):
