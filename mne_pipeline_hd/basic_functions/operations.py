@@ -41,7 +41,7 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
     if results['highpass'] != 'equal' or results['lowpass'] != 'equal':
         # Get raw from Subject-class, load as copy to avoid changing attribute value inplace
         raw = meeg.load_raw().copy()
-        if enable_cuda:  # use cuda for filtering
+        if enable_cuda == 'true':  # use cuda for filtering
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
 
