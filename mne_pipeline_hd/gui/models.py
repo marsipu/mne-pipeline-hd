@@ -83,7 +83,7 @@ class EditListModel(BaseListModel):
     def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
         for pos in range(row, row + count):
-            self._data.insert(pos, '__new__')
+            self._data.insert(pos, f'{pos}__new__')
         self.endInsertRows()
         return True
 
