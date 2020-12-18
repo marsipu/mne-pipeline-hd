@@ -31,7 +31,8 @@ class Param(QWidget):
     Inherited Clases should have "Gui" in their name to get identified correctly
     """
 
-    def __init__(self, data, param_name, param_alias=None, default=None, none_select=False, description=None):
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+                 none_select=False, description=None):
         """
         Parameters
         ----------
@@ -46,6 +47,8 @@ class Param(QWidget):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : object
             The default value depending on GUI-Type.
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox 
             (on the left of the name).
@@ -63,6 +66,7 @@ class Param(QWidget):
             self.param_alias = self.param_name
         self.param_value = None
         self.default = default
+        self.groupbox_layout = groupbox_layout
         self.none_select = none_select
         if description:
             self.setToolTip(description)
@@ -71,22 +75,31 @@ class Param(QWidget):
     def init_ui(self, layout):
         """Base layout initialization, which adds the given layout to a group-box with the parameters name"""
 
-        self.group_box = QGroupBox(self.param_alias)
-        self.group_box.setLayout(layout)
-
-        if self.none_select:
-            self.group_box.setCheckable(True)
-            self.group_box.toggled.connect(self.groupbox_toggled)
-
-            if self.param_value is None:
-                self.group_box.setChecked(False)
-            else:
-                self.group_box.setChecked(True)
-        else:
-            self.group_box.setCheckable(False)
-
         main_layout = QVBoxLayout()
-        main_layout.addWidget(self.group_box)
+
+        if self.groupbox_layout:
+            self.group_box = QGroupBox(self.param_alias)
+            self.group_box.setLayout(layout)
+
+            if self.none_select:
+                self.group_box.setCheckable(True)
+                self.group_box.toggled.connect(self.groupbox_toggled)
+
+                if self.param_value is None:
+                    self.group_box.setChecked(False)
+                else:
+                    self.group_box.setChecked(True)
+            else:
+                self.group_box.setCheckable(False)
+
+            main_layout.addWidget(self.group_box)
+
+        else:
+            label_layout = QHBoxLayout()
+            label_layout.addWidget(QLabel(self.param_alias))
+            label_layout.addLayout(layout)
+            main_layout.addLayout(label_layout)
+
         self.setLayout(main_layout)
 
     def init_h_layout(self):
@@ -155,8 +168,8 @@ class Param(QWidget):
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1, none_select=False, description=None,
-                 param_unit=None, min_val=0, max_val=100, special_value_text=None):
+    def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None, min_val=0, max_val=100, special_value_text=None):
         """
         Parameters
         ----------
@@ -171,6 +184,8 @@ class IntGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : int | None
             The default value, if None defaults to 1.
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -187,7 +202,7 @@ class IntGui(Param):
             Supply an optional text for the value 0.
         """
 
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
 
         self.param_widget = QSpinBox()
         self.param_widget.setMinimum(min_val)
@@ -219,8 +234,8 @@ class IntGui(Param):
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1., none_select=False, description=None,
-                 param_unit=None, min_val=-100., max_val=100., step=0.1, decimals=2):
+    def __init__(self, data, param_name, param_alias=None, default=1., groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None, min_val=-100., max_val=100., step=0.1, decimals=2):
         """
         Parameters
         ----------
@@ -235,6 +250,8 @@ class FloatGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : float | None
             The default value, if None defaults to 1..
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -253,7 +270,7 @@ class FloatGui(Param):
             Set the number of decimals of the value.
         """
 
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.param_widget = QDoubleSpinBox()
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
@@ -286,8 +303,8 @@ class StringGui(Param):
     A GUI for String-Parameters
     """
 
-    def __init__(self, data, param_name, param_alias=None, default='Empty', none_select=False, description=None,
-                 param_unit=None, input_mask=None):
+    def __init__(self, data, param_name, param_alias=None, default='Empty', groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None, input_mask=None):
         """
 
         Parameters
@@ -303,6 +320,8 @@ class StringGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : str | None
             The default value, if None defaults to 'Empty'
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -315,7 +334,7 @@ class StringGui(Param):
             Define a string as in https://doc.qt.io/qt-5/qlineedit.html#inputMask-prop
         """
 
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.param_widget = QLineEdit()
         self.param_unit = param_unit
         if input_mask:
@@ -343,8 +362,8 @@ class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy
     """
 
-    def __init__(self, data, param_name, param_alias=None, default=None, none_select=False, description=None,
-                 param_unit=None):
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None):
         """
         Parameters
         ----------
@@ -359,6 +378,8 @@ class FuncGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : str
             The default value, defaulting to None
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -368,7 +389,7 @@ class FuncGui(Param):
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         """
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.param_exp = None
         self.param_widget = QLineEdit()
         self.param_unit = param_unit
@@ -439,8 +460,8 @@ class FuncGui(Param):
 class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=False, none_select=False, description=None,
-                 param_unit=None):
+    def __init__(self, data, param_name, param_alias=None, default=False, groupbox_layout=False, none_select=False,
+                 description=None, param_unit=None):
         """
         Parameters
         ----------
@@ -455,6 +476,8 @@ class BoolGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : object
             The default value, defaulting to False.
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -464,7 +487,7 @@ class BoolGui(Param):
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         """
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.param_unit = param_unit
         self.param_widget = QCheckBox()
         self.param_widget.toggled.connect(self.get_param)
@@ -495,8 +518,8 @@ class BoolGui(Param):
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, none_select=False, description=None,
-                 param_unit=None, min_val=-1000., max_val=1000., step=.1, decimals=2):
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None, min_val=-1000., max_val=1000., step=.1, decimals=2):
         """
         Parameters
         ----------
@@ -511,6 +534,8 @@ class TupleGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : object
             The default value, defaulting to (0, 1).
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -531,7 +556,7 @@ class TupleGui(Param):
         if default is None:
             default = (0, 1)
 
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
 
         self.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\nDecimals = {decimals}')
 
@@ -583,9 +608,8 @@ class TupleGui(Param):
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
 
-    def __init__(self, data, param_name, options, param_alias=None, default=object(), none_select=False,
-                 description=None,
-                 param_unit=None):
+    def __init__(self, data, param_name, options, param_alias=None, default=object(), groupbox_layout=True,
+                 none_select=False, description=None, param_unit=None):
         """
         Parameters
         ----------
@@ -600,6 +624,8 @@ class ComboGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : object
             The default value, defaulting to an empty object
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -609,7 +635,7 @@ class ComboGui(Param):
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         """
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.options = options
         self.param_widget = QComboBox()
         self.param_widget.activated.connect(self.get_param)
@@ -662,8 +688,8 @@ class ListDialog(QDialog):
 class ListGui(Param):
     """A GUI for as list"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, none_select=False, description=None,
-                 param_unit=None, value_string_length=30):
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None, value_string_length=30):
         """
         Parameters
         ----------
@@ -678,6 +704,8 @@ class ListGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : object
             The default value, defaulting to None
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -692,7 +720,7 @@ class ListGui(Param):
 
         default = default or list()
 
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.param_unit = param_unit
         self.value_string_length = value_string_length
         # Cache param_value to use after
@@ -773,8 +801,8 @@ class CheckListGui(Param):
     """A GUI to select items from a list of options
     """
 
-    def __init__(self, data, param_name, options, param_alias=None, default=None, none_select=False,
-                 description=None, param_unit=None, value_string_length=30, one_check=False):
+    def __init__(self, data, param_name, options, param_alias=None, default=None, groupbox_layout=True,
+                 none_select=False, description=None, param_unit=None, value_string_length=30, one_check=False):
         """
         Parameters
         ----------
@@ -791,6 +819,8 @@ class CheckListGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : int | None
             The default value, if None defaults to 1.
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -809,7 +839,7 @@ class CheckListGui(Param):
             options = ['Empty']
             default = 'Empty'
 
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.options = options
         self.param_unit = param_unit
         self.value_string_length = value_string_length
@@ -887,8 +917,8 @@ class DictDialog(QDialog):
 class DictGui(Param):
     """A GUI for a dictionary"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, none_select=False, description=None,
-                 param_unit=None, value_string_length=30):
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None, value_string_length=30):
         """
         
         Parameters
@@ -904,6 +934,8 @@ class DictGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : int | None
             The default value, if None defaults to an empty dict.
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -918,7 +950,7 @@ class DictGui(Param):
 
         default = default or dict()
 
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.param_unit = param_unit
         self.value_string_length = value_string_length
         # Cache param_value to use after setting param_value to None with GroupBox-Checkbox
@@ -974,8 +1006,8 @@ class DictGui(Param):
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1, none_select=False, description=None,
-                 param_unit=None, min_val=0, max_val=100, step=1):
+    def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None, min_val=0, max_val=100, step=1):
         """
         Parameters
         ----------
@@ -990,6 +1022,8 @@ class SliderGui(Param):
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
         default : int | None
             The default value, if None defaults to 1.
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox
             (on the left of the name).
@@ -1005,7 +1039,7 @@ class SliderGui(Param):
         step : int | float
             Set the step-size, defaults to 1.
         """
-        super().__init__(data, param_name, param_alias, default, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.min_val = min_val
         self.max_val = max_val
         self.param_widget = QSlider()

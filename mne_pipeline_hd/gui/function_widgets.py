@@ -176,9 +176,6 @@ class CustomFunctionImport(QDialog):
 
         self.setWindowTitle('Custom-Functions-Setup')
 
-        # width, height = get_ratio_geometry(0.7)
-        # self.resize(int(width), int(height))
-
         self.init_ui()
         self.open()
 

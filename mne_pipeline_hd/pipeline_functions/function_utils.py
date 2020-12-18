@@ -26,7 +26,7 @@ from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, Group
 from .pipeline_utils import shutdown
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
-from ..gui.gui_utils import Worker, get_exception_tuple, get_ratio_geometry
+from ..gui.gui_utils import Worker, get_exception_tuple, set_ratio_geometry
 from ..gui.models import RunModel
 
 
@@ -151,8 +151,7 @@ class RunDialog(QDialog):
         self.init_lists()
         self.init_ui()
 
-        width, height = get_ratio_geometry(0.6)
-        self.resize(width, height)
+        set_ratio_geometry(0.6, self)
         self.show()
 
         self.start_thread()

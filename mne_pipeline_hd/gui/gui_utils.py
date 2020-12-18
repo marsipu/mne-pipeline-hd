@@ -25,10 +25,12 @@ def center(widget):
     widget.move(qr.topLeft())
 
 
-def get_ratio_geometry(size_ratio):
+def set_ratio_geometry(size_ratio, widget=None):
     desk_geometry = QApplication.instance().desktop().availableGeometry()
     height = int(desk_geometry.height() * size_ratio)
     width = int(desk_geometry.width() * size_ratio)
+    if widget:
+        widget.resize(width, height)
 
     return width, height
 

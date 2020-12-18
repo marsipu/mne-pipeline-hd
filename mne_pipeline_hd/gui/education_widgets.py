@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel
     QWizardPage
 
 from mne_pipeline_hd.gui.base_widgets import CheckDictEditList, CheckList
-from mne_pipeline_hd.gui.gui_utils import center, get_ratio_geometry
+from mne_pipeline_hd.gui.gui_utils import center, set_ratio_geometry
 
 
 class EducationTour(QWizard):
@@ -36,8 +36,7 @@ class EducationTour(QWizard):
         self.setWizardStyle(QWizard.ModernStyle)
         self.setOption(QWizard.HaveHelpButton, False)
 
-        width, height = get_ratio_geometry(0.4)
-        self.resize(width, height)
+        set_ratio_geometry(0.4, self)
         center(self)
 
         self.add_pages()
@@ -78,8 +77,7 @@ class EducationEditor(QDialog):
         self.edu['tour_list'] = list()
         self.edu['tour'] = dict()
 
-        width, height = get_ratio_geometry(0.8)
-        self.resize(width, height)
+        set_ratio_geometry(0.8, self)
 
         self.init_ui()
         self.open()

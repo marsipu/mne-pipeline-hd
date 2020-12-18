@@ -31,11 +31,11 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
                              QVBoxLayout, QWidget)
 
-from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RemoveProjectsDlg,
+from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RawInfo, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
-from .gui_utils import center, get_exception_tuple, get_ratio_geometry
+from .gui_utils import center, get_exception_tuple, set_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, SubBadsDialog,
                               SubDictDialog, SubjectDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
@@ -154,8 +154,7 @@ class MainWindow(QMainWindow):
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
         # Set geometry to ratio of screen-geometry (before adding func-buttons to allow adjustment to size)
-        width, height = get_ratio_geometry(0.9)
-        self.resize(int(width), int(height))
+        set_ratio_geometry(0.9, self)
 
         # Call window-methods
         self.init_menu()
@@ -502,6 +501,7 @@ class MainWindow(QMainWindow):
         input_menu.addAction('Copy Transformation', partial(CopyTrans, self))
         input_menu.addSeparator()
         input_menu.addAction('File-Management', partial(FileManagment, self))
+        input_menu.addAction('Raw-Info', partial(RawInfo, self))
 
         # Custom-Functions
         func_menu = self.menuBar().addMenu('&Functions')
@@ -560,7 +560,8 @@ class MainWindow(QMainWindow):
 
         self.toolbar.addWidget(IntGui(self.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
                                       description='Set to the amount of cores of your machine '
-                                                  'you want to use for multiprocessing', default=-1))
+                                                  'you want to use for multiprocessing', default=-1,
+                                      groupbox_layout=False))
         self.toolbar.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
                                        description='Do you want to show plots?\n'
                                                    '(or just save them without showing, then just check "Save Plots")',
@@ -574,10 +575,10 @@ class MainWindow(QMainWindow):
                                        description='Do you want to shut your system down'
                                                    ' after execution of all subjects?'))
         self.toolbar.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
-                                      description='Set dpi for saved plots', default=300))
+                                      description='Set dpi for saved plots', default=300, groupbox_layout=False))
         self.toolbar.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
                                         param_alias='Image-Format', description='Choose the image format for plots',
-                                        default='.png'))
+                                        default='.png', groupbox_layout=False))
         close_all_bt = QPushButton('Close All Plots')
         close_all_bt.pressed.connect(close_all)
         self.toolbar.addWidget(close_all_bt)

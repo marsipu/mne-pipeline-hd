@@ -35,7 +35,7 @@ from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList, \
     SimplePandasTable
 from .dialogs import ErrorDialog
-from .gui_utils import (Worker, WorkerSignals, center, get_ratio_geometry)
+from .gui_utils import (Worker, WorkerSignals, center, set_ratio_geometry)
 from .models import AddFilesModel
 from ..pipeline_functions.pipeline_utils import compare_filep
 
@@ -814,8 +814,7 @@ class AddFilesDialog(AddFilesWidget):
 
         self.dialog.setLayout(self.layout)
 
-        width, height = get_ratio_geometry(0.7)
-        self.resize(width, height)
+        set_ratio_geometry(0.7, self)
 
         self.dialog.open()
 
@@ -1314,8 +1313,7 @@ class SubDictDialog(SubDictWidget):
 
         self.dialog.setLayout(self.layout)
 
-        width, height = get_ratio_geometry(0.8)
-        self.resize(width, height)
+        set_ratio_geometry(0.8, self)
 
         self.dialog.open()
 
@@ -1558,8 +1556,7 @@ class SubBadsDialog(QDialog):
 
         self.setLayout(layout)
 
-        width, height = get_ratio_geometry(0.8)
-        self.resize(width, height)
+        set_ratio_geometry(0.8, self)
 
         self.open()
 
@@ -1584,8 +1581,7 @@ class SubjectWizard(QWizard):
         self.setWizardStyle(QWizard.ModernStyle)
         self.setOption(QWizard.HaveHelpButton, False)
 
-        width, height = get_ratio_geometry(0.6)
-        self.resize(width, height)
+        set_ratio_geometry(0.6, self)
         center(self)
 
         self.add_pages()
@@ -1886,8 +1882,7 @@ class FileManagment(QDialog):
 
         self.init_ui()
 
-        width, height = get_ratio_geometry(0.8)
-        self.resize(width, height)
+        set_ratio_geometry(0.8, self)
         self.open()
 
         self.start_load_threads()
@@ -1933,7 +1928,7 @@ class FileManagment(QDialog):
                         # Add Size (accumulate, if there are several files
                         obj_pd_size.loc[obj_name, path_type] += self.mw.pr.file_parameters[Path(path).name]['SIZE']
                     except KeyError:
-                        print(f'Time or Size not found for {Path(path).name}')
+                        pass
 
                     # Compare all parameters from last run to now
                     result_dict = compare_filep(obj, path)

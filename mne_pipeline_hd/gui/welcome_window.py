@@ -15,7 +15,7 @@ from os.path import isdir, join
 
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QFileDialog, QGroupBox, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
 
 from mne_pipeline_hd import resources
 from mne_pipeline_hd.gui.base_widgets import SimpleList
@@ -121,11 +121,19 @@ class WelcomeWindow(QWidget):
 
     def init_main_window(self):
         sel_edu_program = self.edu_selection.get_current()
-        if self.edu_groupbox.isChecked():
-            self.mw = MainWindow(self.home_path, self, sel_edu_program)
+
+        # Check if MNE-Python is installed
+        try:
+            import mne
+        except ModuleNotFoundError:
+            QMessageBox.critical(self, 'MNE-Python not found!', 'MNE-Python was not found,'
+                                                                ' please install it before using MNE-Pipeline!')
         else:
-            self.mw = MainWindow(self.home_path, self)
-        self.hide()
+            if self.edu_groupbox.isChecked():
+                self.mw = MainWindow(self.home_path, self, sel_edu_program)
+            else:
+                self.mw = MainWindow(self.home_path, self)
+            self.hide()
 
     def closeEvent(self, event):
         if self.edu_groupbox.isChecked():

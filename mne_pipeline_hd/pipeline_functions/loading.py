@@ -416,7 +416,7 @@ class MEEG(BaseLoading):
         raw = self.load_raw()
         self.pr.all_info[self.name] = {}
         info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
-                     'utc_offset', 'nchan', 'proj_meeg.name', 'sfreq', 'subject_info', 'device_info',
+                     'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
                      'helium_info']
         try:
             for key in info_keys:

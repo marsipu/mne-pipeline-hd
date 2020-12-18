@@ -18,6 +18,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import partial
 from os.path import join
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -25,14 +26,15 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
                              QInputDialog,
                              QLabel, QLineEdit, QListView, QMessageBox, QPushButton,
-                             QScrollArea, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
+                             QScrollArea, QSizePolicy, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import get_ratio_geometry
+from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
 from mne_pipeline_hd.gui.parameter_widgets import StringGui
 from mne_pipeline_hd.pipeline_functions import iswin
+from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from mne_pipeline_hd.pipeline_functions.project import Project
 
 
@@ -365,8 +367,7 @@ class SysInfoMsg(QDialog):
         layout.addWidget(close_bt)
 
         # Set geometry to ratio of screen-geometry
-        width, height = get_ratio_geometry(0.4)
-        self.resize(int(width), int(height))
+        set_ratio_geometry(0.4, self)
 
         self.setLayout(layout)
         self.show()
@@ -412,8 +413,7 @@ class ErrorDialog(QDialog):
         else:
             self.setWindowTitle('An Error ocurred!')
 
-        width, height = get_ratio_geometry(0.7)
-        self.resize(width, height)
+        set_ratio_geometry(0.7, self)
 
         self.init_ui()
 
@@ -491,22 +491,27 @@ class ErrorDialog(QDialog):
                 QMessageBox.information(self, 'E-Mail not sent', 'Sending an E-Mail is not possible on your OS')
 
 
-class MEEGInfo(QDialog):
+class RawInfo(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
         self.info_string = None
 
         self.init_ui()
+        # set_ratio_geometry(0.7, self)
+
         self.open()
 
     def init_ui(self):
         layout = QGridLayout()
         meeg_list = SimpleList(self.mw.pr.all_meeg)
-        meeg_list.currentChanged(self.meeg_selected)
+        meeg_list.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        meeg_list.currentChanged.connect(self.meeg_selected)
         layout.addWidget(meeg_list, 0, 0)
 
-        self.info_label = QLabel()
+        self.info_label = QTextEdit()
+        self.info_label.setReadOnly(True)
+        self.info_label.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         layout.addWidget(self.info_label, 0, 1)
 
         close_bt = QPushButton('Close')
@@ -518,6 +523,45 @@ class MEEGInfo(QDialog):
     def meeg_selected(self, meeg_name):
         # Get size in Mebibytes of all files associated to this
         fp = self.mw.pr.file_parameters
-        sizes = [fp[key]['SIZE'] / 1024 ** 2 for key in fp if fp[key]['NAME'] == meeg_name]
+        meeg = MEEG(meeg_name, self.mw)
+        meeg.get_existing_paths()
+        sizes = list()
+        for path_type in meeg.existing_paths:
+            for path in meeg.existing_paths[path_type]:
+                file_name = Path(path).name
+                if file_name in fp and 'SIZE' in fp[file_name]:
+                    sizes.append(fp[file_name]['SIZE'])
         no_files = len(sizes)
-        total_size = int(sum(sizes))
+
+        key_list = [('proj_name', 'Project-Name'),
+                    ('experimenter', 'Experimenter'),
+                    ('line_freq', 'Powerline-Frequency', 'Hz'),
+                    ('sfreq', 'Samplerate', 'Hz'),
+                    ('highpass', 'Highpass', 'Hz'),
+                    ('lowpass', 'Lowpass', 'Hz'),
+                    ('nchan', 'Number of channels'),
+                    ('subject_info', 'Subject-Info'),
+                    ('device_info', 'Device-Info'),
+                    ('helium_info', 'Helium-Info')]
+
+        self.info_string = f'<h1>{meeg_name}</h1>'
+
+        self.info_string += f'<b>Number of associated files:</b> {no_files}<br>'
+
+        sizes_sum = sum(sizes)
+        if sizes_sum / 1024 < 1000:
+            size_string = f'{int(sizes_sum / 1024)} KB'
+        else:
+            size_string = f'{int(sizes_sum / 1024 ** 2)} MB'
+        self.info_string += f'<b>Size of all associated files:</b> {size_string}<br>'
+
+        for key_tuple in key_list:
+            key = key_tuple[0]
+            if key in meeg.info:
+                value = meeg.info[key]
+                if len(key_tuple) == 2:
+                    self.info_string += f'<b>{key_tuple[1]}:</b> {value}<br>'
+                else:
+                    self.info_string += f'<b>{key_tuple[1]}:</b> {value} <i>{key_tuple[2]}</i><br>'
+
+        self.info_label.setHtml(self.info_string)

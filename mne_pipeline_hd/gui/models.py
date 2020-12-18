@@ -572,13 +572,11 @@ class FileManagementModel(BasePandasModel):
                     pass
                 elif value / 1024 < 1000:
                     return f'{int(value / 1024)} KB'
-                elif value / 1024 ** 2 < 1000:
-                    return f'{int(value / 1024 ** 2)} MB'
                 else:
-                    return f'{int(value / 1024 ** 3)} GB'
+                    return f'{int(value / 1024 ** 2)} MB'
 
         if role == Qt.DecorationRole:
-            if pd.isna(value):
+            if pd.isna(value) or value == 0:
                 return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
             elif value == 'exists':
                 return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
@@ -588,7 +586,7 @@ class FileManagementModel(BasePandasModel):
                 return self.app.style().standardIcon(QStyle.SP_MessageBoxWarning)
 
         elif role == Qt.BackgroundRole:
-            if pd.isna(value):
+            if pd.isna(value) or value == 0:
                 return QBrush(Qt.darkRed)
             elif value == 'exists':
                 return QBrush(Qt.green)
