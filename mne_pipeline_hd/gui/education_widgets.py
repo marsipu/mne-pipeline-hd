@@ -197,4 +197,4 @@ class EducationEditor(QDialog):
 
         new_pscripts_path = join(self.mw.pr.project_path, f'_pipeline_scripts{self.edu["name"]}')
         # Copy Pipeline-Scripts
-        copytree(self.mw.pr.pscripts_path, new_pscripts_path)
+        copytree(self.mw.pr.pscripts_path, new_pscripts_path, dirs_exist_ok=True)
