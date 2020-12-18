@@ -115,7 +115,7 @@ class EducationEditor(QDialog):
         layout.addWidget(format_cmbx)
 
         self.page_list = CheckDictEditList(self.edu['tour_list'], self.edu['tour'], show_index=True)
-        self.page_list.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximums)
+        self.page_list.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.page_list.currentChanged.connect(self.page_changed)
         layout.addWidget(self.page_list)
 
