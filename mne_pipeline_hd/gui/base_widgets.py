@@ -66,7 +66,10 @@ class Base(QWidget):
         self.setLayout(layout)
 
     def get_current(self):
-        current = self.model.getData(self.view.currentIndex())
+        try:
+            current = self.model.getData(self.view.currentIndex())
+        except KeyError:
+            current = None
 
         return current
 
@@ -80,7 +83,10 @@ class Base(QWidget):
             print(f'Current changed from {previous} to {current}')
 
     def get_selected(self):
-        selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+        try:
+            selected = [self.model.getData(idx) for idx in self.view.selectedIndexes()]
+        except KeyError:
+            selected = list()
 
         return selected
 
