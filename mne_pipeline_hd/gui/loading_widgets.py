@@ -32,10 +32,10 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
 from matplotlib import pyplot as plt
 
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
-from .base_widgets import CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList, \
-    SimplePandasTable
+from .base_widgets import (CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList,
+                           SimplePandasTable)
 from .dialogs import ErrorDialog
-from .gui_utils import (Worker, WorkerSignals, center, set_ratio_geometry)
+from .gui_utils import (Worker, center, set_ratio_geometry)
 from .models import AddFilesModel
 from ..pipeline_functions.pipeline_utils import compare_filep
 
@@ -475,25 +475,17 @@ class GrandAvgFileAdd(QDialog):
         for idx in range(self.listw.count()):
             self.listw.item(idx).setCheckState(Qt.Checked)
 
+
 class AddFileSignals(QObject):
     """
     Defines the Signals for the Worker and add_files
     """
     # Worker Signals
-    finished = pyqtSignal()
+    finished = pyqtSignal(object)
     error = pyqtSignal(tuple)
     # Signals for call_functions
     pgbar_n = pyqtSignal(int)
     which_sub = pyqtSignal(str)
-
-
-class AddFileWorker(Worker):
-    def __init__(self, function, *args, **kwargs):
-        self.signal_class = AddFileSignals()
-        kwargs['signals'] = {'pgbar_n': self.signal_class.pgbar_n,
-                             'which_sub': self.signal_class.which_sub}
-
-        super().__init__(function, self.signal_class, *args, **kwargs)
 
 
 # Todo: Enable Drag&Drop
@@ -657,11 +649,12 @@ class AddFilesWidget(QWidget):
         self.addf_dialog.setMaximum(len(self.pd_files.index))
         self.addf_dialog.open()
 
-        worker = AddFileWorker(self.add_files)
-        worker.signal_class.finished.connect(self.addf_finished)
-        worker.signal_class.error.connect(self.show_errors)
-        worker.signal_class.pgbar_n.connect(self.addf_dialog.setValue)
-        worker.signal_class.which_sub.connect(self.addf_dialog.setLabelText)
+        worker = Worker(self.add_files)
+        worker.signals = AddFileSignals()
+        worker.signals.finished.connect(self.addf_finished)
+        worker.signals.error.connect(self.show_errors)
+        worker.signals.pgbar_n.connect(self.addf_dialog.setValue)
+        worker.signals.which_sub.connect(self.addf_dialog.setLabelText)
         self.mw.threadpool.start(worker)
 
     def show_errors(self, err):
@@ -711,7 +704,7 @@ class AddFilesWidget(QWidget):
             else:
                 break
 
-    def addf_finished(self):
+    def addf_finished(self, _):
         self.pd_files = pd.DataFrame([], columns=['Name', 'File-Type', 'Empty-Room?', 'Path'])
         self.update_model()
 
@@ -924,11 +917,12 @@ class AddMRIWidget(QWidget):
         self.add_mri_dialog.setMaximum(len(self.folders))
         self.add_mri_dialog.open()
 
-        worker = AddFileWorker(self.add_mri_subjects)
-        worker.signal_class.finished.connect(self.add_mri_finished)
-        worker.signal_class.error.connect(self.show_errors)
-        worker.signal_class.pgbar_n.connect(self.add_mri_dialog.setValue)
-        worker.signal_class.which_sub.connect(self.add_mri_dialog.setLabelText)
+        worker = Worker(self.add_mri_subjects)
+        worker.signals = AddFileSignals()
+        worker.signals.finished.connect(self.add_mri_finished)
+        worker.signals.error.connect(self.show_errors)
+        worker.signals.pgbar_n.connect(self.add_mri_dialog.setValue)
+        worker.signals.which_sub.connect(self.add_mri_dialog.setLabelText)
         self.mw.threadpool.start(worker)
 
     def add_mri_subjects(self, signals):
@@ -956,7 +950,7 @@ class AddMRIWidget(QWidget):
     def show_errors(self, err):
         ErrorDialog(err, self)
 
-    def add_mri_finished(self):
+    def add_mri_finished(self, _):
         self.list_widget.clear()
         self.folders = list()
         self.paths = dict()
@@ -984,18 +978,9 @@ class TmpBrainSignals(QObject):
     Defines the Signals for the Worker and add_files
     """
     # Worker Signals
-    finished = pyqtSignal()
+    finished = pyqtSignal(object)
     error = pyqtSignal(tuple)
     update_lists = pyqtSignal()
-
-
-class TmpBrainWorker(Worker):
-    def __init__(self, function, *args, **kwargs):
-        self.signal_class = TmpBrainSignals()
-
-        kwargs['signals'] = {'update_lists': self.signal_class.update_lists}
-
-        super().__init__(function, self.signal_class, *args, **kwargs)
 
 
 class TmpBrainDialog(QDialog):
@@ -1136,10 +1121,12 @@ class SubDictWidget(QWidget):
         # Redirect stdout to capture it
         sys.stdout.signal.text_written.connect(self.tmpb_dlg.update_text_edit)
 
-        worker = TmpBrainWorker(self.add_template_brain)
-        worker.signal_class.finished.connect(self.tmpb_dlg.close)
-        worker.signal_class.error.connect(self.show_errors)
-        worker.signal_class.update_lists.connect(self.update_lists)
+        worker = Worker(self.add_template_brain)
+        # Overwrite signals with custom-signals
+        worker.signals = TmpBrainSignals()
+        worker.signals.finished.connect(self.tmpb_dlg.close)
+        worker.signals.error.connect(self.show_errors)
+        worker.signals.update_lists.connect(self.update_lists)
         self.mw.threadpool.start(worker)
 
     def show_errors(self, err):
@@ -1951,7 +1938,7 @@ class FileManagment(QDialog):
 
         self.prog_dlg = SimpleDialog(self.prog_bar, self, title='Loading Files...')
 
-    def thread_finished(self):
+    def thread_finished(self, _):
         self.load_prog += 1
         self.prog_bar.setValue(self.load_prog)
         if self.load_prog == 3:
@@ -1961,21 +1948,21 @@ class FileManagment(QDialog):
             self.group_table.content_changed()
 
     def thread_error(self, err):
-        self.thread_finished()
+        self.thread_finished(None)
         ErrorDialog(err, self)
 
     def start_load_threads(self):
         self.open_prog_dlg()
 
-        meeg_worker = Worker(function=self.get_file_tables, signal_object=WorkerSignals(), kind='MEEG')
+        meeg_worker = Worker(function=self.get_file_tables, kind='MEEG')
         meeg_worker.signals.error.connect(self.thread_error)
         meeg_worker.signals.finished.connect(self.thread_finished)
 
-        fsmri_worker = Worker(function=self.get_file_tables, signal_object=WorkerSignals(), kind='FSMRI')
+        fsmri_worker = Worker(function=self.get_file_tables, kind='FSMRI')
         fsmri_worker.signals.error.connect(self.thread_error)
         fsmri_worker.signals.finished.connect(self.thread_finished)
 
-        group_worker = Worker(function=self.get_file_tables, signal_object=WorkerSignals(), kind='Group')
+        group_worker = Worker(function=self.get_file_tables, kind='Group')
         group_worker.signals.error.connect(self.thread_error)
         group_worker.signals.finished.connect(self.thread_finished)
 

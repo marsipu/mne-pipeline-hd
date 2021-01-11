@@ -53,13 +53,13 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
     if meeg.erm != 'None':
         erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
         if erm_results['highpass'] != 'equal' or erm_results['lowpass'] != 'equal':
-            raw = meeg.load_raw()
+            # raw = meeg.load_raw()
             erm_raw = meeg.load_erm().copy()
 
-            # Due to channel-deletion sometimes in HPI-Fitting-Process
-            ch_list = set(erm_raw.info['ch_names']) & set(raw.info['ch_names'])
-            erm_raw.pick_channels(ch_list)
-            erm_raw.pick_types(meg=True, exclude=meeg.bad_channels)
+            # # Due to channel-deletion sometimes in HPI-Fitting-Process
+            # ch_list = set(erm_raw.info['ch_names']) & set(raw.info['ch_names'])
+            # erm_raw.pick_channels(ch_list)
+            # erm_raw.pick_types(meg=True, exclude=meeg.bad_channels)
             erm_raw.filter(highpass, lowpass)
 
             erm_length = erm_raw.n_times / erm_raw.info['sfreq']  # in s
@@ -229,6 +229,14 @@ def epoch_raw(meeg, t_epoch, baseline, reject, flat, use_autoreject, consensus_p
     epochs = mne.Epochs(raw_picked, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, proj=False, reject=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=True)
+
+    existing_ch_types = epochs.get_channel_types(unique=True, only_data_chs=True)
+    reject = reject.copy()
+    flat = flat.copy()
+    for key in [k for k in reject if k not in existing_ch_types]:
+        reject.pop(key)
+    for key in [k for k in flat if k not in existing_ch_types]:
+        flat.pop(key)
 
     if use_autoreject == 'Interpolation':
         ar_object = ar.AutoReject(n_interpolates, consensus_percs, random_state=8,
@@ -556,34 +564,34 @@ def tfr(meeg, tfr_freqs, tfr_n_cycles, tfr_average, tfr_use_fft, tfr_baseline, t
     for trial in meeg.sel_trials:
         if tfr_method == 'multitaper':
             multitaper_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_multitaper)
-            tfr = mne.time_frequency.tfr_multitaper(epochs[trial],
-                                                    freqs=tfr_freqs,
-                                                    n_cycles=tfr_n_cycles,
-                                                    time_bandwidth=multitaper_bandwidth,
-                                                    n_jobs=n_jobs, use_fft=tfr_use_fft,
-                                                    return_itc=tfr_average, average=tfr_average,
-                                                    **multitaper_kwargs)
+            tfr_result = mne.time_frequency.tfr_multitaper(epochs[trial],
+                                                           freqs=tfr_freqs,
+                                                           n_cycles=tfr_n_cycles,
+                                                           time_bandwidth=multitaper_bandwidth,
+                                                           n_jobs=n_jobs, use_fft=tfr_use_fft,
+                                                           return_itc=tfr_average, average=tfr_average,
+                                                           **multitaper_kwargs)
         elif tfr_method == 'stockwell':
             fmin, fmax = tfr_freqs[[0, -1]]
             stockwell_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_stockwell)
-            tfr = mne.time_frequency.tfr_stockwell(epochs[trial],
-                                                   fmin=fmin, fmax=fmax,
-                                                   width=stockwell_width,
-                                                   n_jobs=n_jobs, return_itc=True,
-                                                   **stockwell_kwargs)
+            tfr_result = mne.time_frequency.tfr_stockwell(epochs[trial],
+                                                          fmin=fmin, fmax=fmax,
+                                                          width=stockwell_width,
+                                                          n_jobs=n_jobs, return_itc=True,
+                                                          **stockwell_kwargs)
         else:
             morlet_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_morlet)
-            tfr = mne.time_frequency.tfr_morlet(epochs[trial],
-                                                freqs=tfr_freqs,
-                                                n_cycles=tfr_n_cycles,
-                                                n_jobs=n_jobs, use_fft=tfr_use_fft,
-                                                return_itc=tfr_average, average=tfr_average, **morlet_kwargs)
+            tfr_result = mne.time_frequency.tfr_morlet(epochs[trial],
+                                                       freqs=tfr_freqs,
+                                                       n_cycles=tfr_n_cycles,
+                                                       n_jobs=n_jobs, use_fft=tfr_use_fft,
+                                                       return_itc=tfr_average, average=tfr_average, **morlet_kwargs)
 
-        if isinstance(tfr, tuple):
-            power = tfr[0]
-            itc = tfr[1]
+        if isinstance(tfr_result, tuple):
+            power = tfr_result[0]
+            itc = tfr_result[1]
         else:
-            power = tfr
+            power = tfr_result
             itc = None
 
         power.comment = trial
@@ -605,11 +613,14 @@ def tfr(meeg, tfr_freqs, tfr_n_cycles, tfr_average, tfr_use_fft, tfr_baseline, t
 
     else:
         meeg.save_power_tfr_epochs(powers)
+        meeg.save_itc_tfr_epochs(itcs)
 
         # Saving average TFR
         powers_ave = [p.average() for p in powers]
+        itcs_ave = [i.average() for i in itcs]
 
         meeg.save_power_tfr_average(powers_ave)
+        meeg.save_itc_tfr_average(itcs_ave)
 
 
 def grand_avg_tfr(group):
@@ -617,7 +628,7 @@ def grand_avg_tfr(group):
     for name in group.group_list:
         meeg = MEEG(name, group.mw)
         print(f'Add {name} to grand_average')
-        powers = meeg.load_power_tfr_epochs()
+        powers = meeg.load_power_tfr_average()
         for pw in powers:
             if pw.nave != 0:
                 if pw.comment in trial_dict:

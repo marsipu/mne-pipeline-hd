@@ -10,6 +10,7 @@ Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.201
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import os
+from importlib import resources
 from os import listdir
 from os.path import isdir, join
 
@@ -17,7 +18,6 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QGroupBox, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
 
-from mne_pipeline_hd import resources
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import center
 from mne_pipeline_hd.gui.main_window import MainWindow
@@ -46,7 +46,8 @@ class WelcomeWindow(QWidget):
         layout.addWidget(title_label)
 
         image_label = QLabel()
-        image_label.setPixmap(QPixmap(join(resources.__path__[0], 'mne_pipeline_logo_evee_smaller.jpg')))
+        with resources.path('mne_pipeline_hd.pipeline_resources', 'mne_pipeline_logo_evee_smaller.jpg') as img_path:
+            image_label.setPixmap(QPixmap(str(img_path)))
         layout.addWidget(image_label)
 
         self.home_path_label = QLabel()

@@ -59,7 +59,10 @@ class Base(QWidget):
 
         if self.title:
             title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
+            if len(self.title) <= 12:
+                title_label.setFont(QFont('AnyStyle', 14))
+            else:
+                title_label.setFont(QFont('AnyStyle', 12))
             layout.addWidget(title_label)
 
         layout.addWidget(self.view)
@@ -1081,12 +1084,12 @@ class AssignWidget(QWidget):
         layout.addWidget(self.props_w, 0, 1)
 
         assign_bt = QPushButton('Assign')
-        assign_bt.setFont(QFont('AnyStyle', 16))
+        assign_bt.setFont(QFont('AnyStyle', 13))
         assign_bt.clicked.connect(self.assign)
         layout.addWidget(assign_bt, 1, 0, 1, 2)
 
         show_assign_bt = QPushButton('Show Assignments')
-        show_assign_bt.setFont(QFont('AnyStyle', 16))
+        show_assign_bt.setFont(QFont('AnyStyle', 13))
         show_assign_bt.clicked.connect(self.show_assignments)
         layout.addWidget(show_assign_bt, 2, 0, 1, 2)
 

@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QLineEdit,
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QPushButton,
                              QSizePolicy, QStyle,
-                             QTextEdit, QVBoxLayout)
+                             QTabWidget, QTextEdit, QVBoxLayout)
 
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleList
@@ -1155,6 +1155,9 @@ class SavePkgDialog(QDialog):
                 dest_path = join(self.pkg_path, self.cf.file_path.name)
                 shutil.copy2(self.cf.file_path, dest_path)
 
+            # Add pkg_name as column
+            final_add_pd_funcs.insert(len(final_add_pd_funcs) - 1, 'pkg_name', self.my_pkg_name)
+
             final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
             final_add_pd_params.to_csv(pd_params_path, sep=';')
 
@@ -1179,12 +1182,7 @@ class ChooseCustomModules(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
-        self.modules_list = list(self.mw.all_modules['basic'].keys())
-        for key in self.mw.all_modules['custom']:
-            for module in self.mw.all_modules['custom'][key]:
-                self.modules_list.append(module)
-        # Don't include loading-module (should be used by functions)
-        self.modules_list.remove('loading')
+        self.modules = {pkg_name: list(self.mw.all_modules[pkg_name].keys()) for pkg_name in self.mw.all_modules}
         self.selected_modules = self.mw.get_setting('selected_modules')
 
         self.init_ui()
@@ -1193,10 +1191,13 @@ class ChooseCustomModules(QDialog):
     def init_ui(self):
         self.layout = QVBoxLayout()
 
-        self.list_view = QListView()
-        self.list_model = CheckListModel(data=self.modules_list, checked=self.selected_modules)
-        self.list_view.setModel(self.list_model)
-        self.layout.addWidget(self.list_view)
+        tab_widget = QTabWidget()
+
+        for pkg_name in self.modules:
+            list_widget = CheckList(data=self.modules[pkg_name], checked=self.selected_modules)
+            tab_widget.addTab(list_widget, pkg_name)
+
+        self.layout.addWidget(tab_widget)
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)

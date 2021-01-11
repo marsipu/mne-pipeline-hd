@@ -63,7 +63,7 @@ def plot_filtered(meeg):
 
 def plot_sensors(meeg):
     loaded_info = meeg.load_info()
-    mne.viz.plot_sensors(loaded_info, kind='topomap', title=meeg.name, show_names=True, ch_groups='position')
+    mne.viz.plot_sensors(loaded_info, kind='topomap', ch_type='all', title=meeg.name, show_names=True)
 
 
 def plot_events(meeg):
@@ -107,9 +107,13 @@ def plot_tfr(meeg):
     powers = meeg.load_power_tfr_average()
 
     for power in powers:
-        fig1 = power.plot(title=f'{meeg.name}-{power.comment}')
+        print('Plotting TFR')
+        fig1 = power.plot(title=f'{meeg.name}-{power.comment}', combine='mean')
+        print('Plotting TFR-Topo')
         fig2 = power.plot_topo(title=f'{meeg.name}-{power.comment}')
+        print('Plotting TFR-Joint')
         fig3 = power.plot_joint(title=f'{meeg.name}-{power.comment}')
+        print('Plotting TFR-Topomap')
         fig4 = power.plot_topomap(title=f'{meeg.name}-{power.comment}')
 
         meeg.plot_save('time_frequency', subfolder='plot', trial=power.comment, matplotlib_figure=fig1)
@@ -199,15 +203,19 @@ def plot_evoked_joint(meeg):
         meeg.plot_save('evokeds', subfolder='joint', trial=evoked.comment, matplotlib_figure=fig)
 
 
-def plot_evoked_butterfly(meeg):
+def plot_evoked_butterfly(meeg, show_plots):
     evokeds = meeg.load_evokeds()
     titles_dict = {'eeg': f'{meeg.name} - EEG'}
+    evoked_figs = list()
     for evoked in evokeds:
         fig = evoked.plot(spatial_colors=True, titles=titles_dict,
                           window_title=meeg.name + ' - ' + evoked.comment,
-                          selectable=True, gfp=True, zorder='std')
+                          selectable=True, gfp=True, zorder='std', show=show_plots)
 
         meeg.plot_save('evokeds', subfolder='butterfly', trial=evoked.comment, matplotlib_figure=fig)
+        evoked_figs.append(fig)
+
+    return evoked_figs
 
 
 def plot_evoked_white(meeg):
@@ -267,20 +275,20 @@ def plot_source_space(fsmri):
     source_space.plot()
     mlab.view(-90, 7)
 
-    plot_save(fsmri, 'source_space', mayavi=True)
+    fsmri.plot_save('source_space', mayavi=True)
 
 
 def plot_bem(fsmri):
     source_space = fsmri.load_source_space()
     fig1 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=source_space)
 
-    plot_save(fsmri, 'bem', subfolder='source-space', matplotlib_figure=fig1)
+    fsmri.plot_save('bem', subfolder='source-space', matplotlib_figure=fig1)
 
     try:
         vol_src = fsmri.load_vol_source_space()
         fig2 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=vol_src)
 
-        plot_save(fsmri, 'bem', subfolder='volume-source-space', matplotlib_figure=fig2)
+        fsmri.plot_save('bem', subfolder='volume-source-space', matplotlib_figure=fig2)
 
     except FileNotFoundError:
         pass
@@ -454,7 +462,7 @@ def plot_annotation(fsmri, parcellation):
     brain = Brain(fsmri.name, hemi='lh', surf='inflated', views='lat')
     brain.add_annotation(parcellation)
 
-    plot_save(fsmri, 'Labels', brain=brain)
+    fsmri.plot_save('Labels', brain=brain)
 
 
 def plot_label_time_course(meeg):
@@ -532,45 +540,23 @@ def plot_grand_avg_evokeds(group):
         fig = evoked.plot(window_title=f'{group.name}-{evoked.comment}',
                           spatial_colors=True, gfp=True)
 
-        plot_save(group, 'ga_evokeds', trial=evoked.comment, matplotlib_figure=fig)
+        group.plot_save('ga_evokeds', trial=evoked.comment, matplotlib_figure=fig)
 
 
-def plot_grand_avg_tfr(group, baseline, t_epoch):
+def plot_grand_avg_tfr(group):
     ga_dict = group.load_ga_tfr()
 
     for trial in ga_dict:
         power = ga_dict[trial]
-        fig1 = power.plot(baseline=baseline, mode='logratio', tmin=t_epoch[0],
-                          tmax=t_epoch[1], title=f'{trial}')
-        fig2 = power.plot_topo(baseline=baseline, mode='logratio', tmin=t_epoch[0],
-                               tmax=t_epoch[1], title=f'{trial}')
-        fig3 = power.plot_joint(baseline=baseline, mode='mean', tmin=t_epoch[0],
-                                tmax=t_epoch[1], title=f'{trial}')
+        fig1 = power.plot(title=f'{group.name}-{power.comment}')
+        fig2 = power.plot_topo(title=f'{group.name}-{power.comment}')
+        fig3 = power.plot_joint(title=f'{group.name}-{power.comment}')
+        fig4 = power.plot_topomap(title=f'{group.name}-{power.comment}')
 
-        fig4, axis = plt.subplots(1, 5, figsize=(15, 2))
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=5, fmax=8,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[0],
-                           title='Theta 5-8 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=8, fmax=12,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[1],
-                           title='Alpha 8-12 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=13, fmax=30,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[2],
-                           title='Beta 13-30 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=31, fmax=60,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[3],
-                           title='Low Gamma 30-60 Hz', show=False)
-        power.plot_topomap(ch_type='grad', tmin=t_epoch[0], tmax=t_epoch[1], fmin=61, fmax=100,
-                           baseline=(-0.5, 0), mode='logratio', axes=axis[4],
-                           title='High Gamma 60-100 Hz', show=False)
-        mne.viz.tight_layout()
-        plt.title(f'{trial}')
-        plt.show()
-
-        plot_save(group, 'ga_tfr', subfolder='plot', trial=power.comment, matplotlib_figure=fig1)
-        plot_save(group, 'ga_tfr', subfolder='topo', trial=power.comment, matplotlib_figure=fig2)
-        plot_save(group, 'ga_tfr', subfolder='joint', trial=power.comment, matplotlib_figure=fig3)
-        plot_save(group, 'ga_tfr', subfolder='osc', trial=power.comment, matplotlib_figure=fig4)
+        group.plot_save('ga_tfr', subfolder='plot', trial=power.comment, matplotlib_figure=fig1)
+        group.plot_save('ga_tfr', subfolder='topo', trial=power.comment, matplotlib_figure=fig2)
+        group.plot_save('ga_tfr', subfolder='joint', trial=power.comment, matplotlib_figure=fig3)
+        group.plot_save('ga_tfr', subfolder='topomap', trial=power.comment, matplotlib_figure=fig4)
 
 
 def plot_grand_avg_stc(group, morph_to, mne_evoked_time):
@@ -608,7 +594,7 @@ def plot_grand_avg_ltc(group):
             plt.ylabel('Source amplitude')
             plt.show()
 
-            plot_save(group, 'ga_label-time-course', subfolder=label, trial=trial)
+            group.plot_save('ga_label-time-course', subfolder=label, trial=trial)
 
 
 def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation, target_labels, morph_to):
@@ -668,7 +654,7 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation, target_label
                                                          title=f'{method}: {str(con_fmin)}-{str(con_fmax)}',
                                                          fontsize_names=16)
 
-            plot_save(group, 'ga_connectivity', subfolder=method, trial=trial, matplotlib_figure=fig)
+            group.plot_save('ga_connectivity', subfolder=method, trial=trial, matplotlib_figure=fig)
 
 
 def close_all():

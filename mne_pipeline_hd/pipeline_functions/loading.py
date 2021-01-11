@@ -53,10 +53,14 @@ class BaseLoading:
         self.figures_path = self.pr.figures_path
         self.img_format = self.mw.get_setting('img_format')
         self.dpi = self.mw.get_setting('dpi')
-        if self.name in self.mw.pr.all_info:
-            self.info = self.mw.pr.all_info[self.name]
-        else:
-            self.info = dict()
+
+        if self.name not in self.mw.pr.all_info:
+            self.pr.all_info[self.name] = dict()
+        self.info = self.mw.pr.all_info[self.name]
+
+        if self.name not in self.mw.pr.plot_files:
+            self.pr.plot_files[self.name] = dict()
+        self.plot_files = self.pr.plot_files[self.name]
 
         self.save_dir = None
         self.paths_dict = dict()
@@ -72,6 +76,7 @@ class BaseLoading:
         self.pr.file_parameters[file_name]['PATH'] = path
         self.pr.file_parameters[file_name]['TIME'] = datetime.now()
         self.pr.file_parameters[file_name]['SIZE'] = getsize(path)
+        self.pr.file_parameters[file_name]['P_PRESET'] = self.p_preset
         for p_name in self.pr.parameters[self.p_preset]:
             self.pr.file_parameters[file_name][p_name] = self.pr.parameters[self.p_preset][p_name]
 
@@ -90,7 +95,7 @@ class BaseLoading:
         trial : str | None
             An optinal name of the trial if you have several trials from the same run.
         idx : int | str | None
-            An optional index or additional enumerator for multiple plots.
+            An optional index as enumerator for multiple plots.
         matplotlib_figure : matplotlib.figure.Figure | None
             Supply a matplotlib-figure here (if none is given, the current-figure will be taken with plt.savefig()).
         mayavi : bool
@@ -123,25 +128,40 @@ class BaseLoading:
             if not isdir(dir_path):
                 makedirs(dir_path)
 
-            if subfolder and trial and idx:
-                file_name = f'{self.name}-{trial}_{self.p_preset}_{plot_name}-{subfolder}-{idx}{self.img_format}'
-            elif subfolder and trial:
-                file_name = f'{self.name}-{trial}_{self.p_preset}_{plot_name}-{subfolder}{self.img_format}'
-            elif trial and idx:
-                file_name = f'{self.name}-{trial}_{self.p_preset}_{plot_name}-{idx}{self.img_format}'
-            elif trial:
-                file_name = f'{self.name}-{trial}_{self.p_preset}_{plot_name}{self.img_format}'
-            elif idx:
-                file_name = f'{self.name}_{self.p_preset}_{plot_name}-{idx}{self.img_format}'
-            else:
-                file_name = f'{self.name}_{self.p_preset}_{plot_name}{self.img_format}'
+            # Get file_name depending on present attributes
+            base_name_sequence = [self.name, self.p_preset, plot_name]
+            if trial:
+                base_name_sequence.insert(1, trial)
+            if subfolder:
+                base_name_sequence.append(subfolder)
+            if idx:
+                base_name_sequence.append(subfolder)
+
+            # Join name-parts together with "--" and append the image-format
+            file_name = '--'.join(base_name_sequence)
+            file_name += self.img_format
 
             save_path = join(dir_path, file_name)
+            # Get the plot-function and the save the path to the image
+            calling_func = inspect.stack()[1][3]
+
+            # Check if required keys are in the dictionary-levels
+            if calling_func not in self.plot_files:
+                self.plot_files[calling_func] = dict()
+            if self.p_preset not in self.plot_files[calling_func]:
+                self.plot_files[calling_func][self.p_preset] = list()
 
             if matplotlib_figure:
                 if isinstance(matplotlib_figure, list):
-                    for idx, figure in enumerate(matplotlib_figure):
-                        figure.savefig(join(dir_path, f'{idx}_' + file_name))
+                    for ix, figure in enumerate(matplotlib_figure):
+                        # Insert additional index in front of image-format (easier with removesuffix when moving to 3.9)
+                        idx_file_name = f'{file_name[:-len(self.img_format)]}--{ix}{self.img_format}'
+                        idx_file_path = join(dir_path, idx_file_name)
+                        figure.savefig(idx_file_path)
+                        print(f'figure: {idx_file_path} has been saved')
+                        # Add Plot-Save-Path to plot_files if not already contained
+                        if idx_file_path not in self.plot_files[calling_func][self.p_preset]:
+                            self.plot_files[calling_func][self.p_preset].append(idx_file_path)
                 else:
                     matplotlib_figure.savefig(save_path, dpi=dpi)
             elif mayavi_figure:
@@ -153,7 +173,12 @@ class BaseLoading:
             else:
                 plt.savefig(save_path, dpi=dpi)
 
-            print('figure: ' + save_path + ' has been saved')
+            if not isinstance(matplotlib_figure, list):
+                print(f'figure: {save_path} has been saved')
+
+                # Add Plot-Save-Path to plot_files if not already contained
+                if save_path not in self.plot_files[calling_func][self.p_preset]:
+                    self.plot_files[calling_func][self.p_preset].append(save_path)
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
@@ -296,8 +321,10 @@ class MEEG(BaseLoading):
         self._eog_epochs = None
         self._ecg_epochs = None
         self._evokeds = None
-        self._power_tfr = None
-        self._itc_tfr = None
+        self._power_tfr_epochs = None
+        self._power_tfr_average = None
+        self._itc_tfr_epochs = None
+        self._itc_tfr_average = None
 
         self._trans = None
         self._forward = None
@@ -368,7 +395,7 @@ class MEEG(BaseLoading):
                            'ICA': self.ica_path,
                            'Epochs (EOG)': self.eog_epochs_path,
                            'Epochs (ECG)': self.ecg_epochs_path,
-                           'Evokeds': self.evokeds_path,
+                           'Evoked': self.evokeds_path,
                            'TF Power Epochs': self.power_tfr_epochs_path,
                            'TF ITC Epochs': self.itc_tfr_epochs_path,
                            'TF Power Average': self.power_tfr_average_path,
@@ -393,7 +420,7 @@ class MEEG(BaseLoading):
                              'load_ica': 'ICA',
                              'load_eog_epochs': 'Epochs (EOG)',
                              'load_ecg_epochs': 'Epochs (ECG)',
-                             'load_evokeds': 'Evokeds',
+                             'load_evokeds': 'Evoked',
                              'load_power_tfr_epochs': 'TF Power Epochs',
                              'load_itc_tfr_epochs': 'TF ITC Epochs',
                              'load_power_tfr_average': 'TF Power Average',
@@ -468,7 +495,8 @@ class MEEG(BaseLoading):
 
     def _update_raw_info(self, raw):
         # Insert/Update BadChannels from meeg_bad_channels and add description
-        raw.info['bads'] = self.bad_channels
+        add_bad_channels = [bad_ch for bad_ch in self.bad_channels if bad_ch in raw.ch_names]
+        raw.info['bads'] = add_bad_channels
         raw.info['description'] = self.name
 
     def load_info(self):
@@ -516,11 +544,9 @@ class MEEG(BaseLoading):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
             self.save_file_params(self.raw_filtered_path)
 
-    def load_erm(self, pick_types=True):
+    def load_erm(self):
         # unfiltered erm is not considered important enough to be a obj-attribute
         erm = mne.io.read_raw_fif(self.erm_path, preload=True)
-        if pick_types:
-            erm = self._pick_types_helper(erm)
         return erm
 
     def load_erm_filtered(self):
@@ -621,46 +647,46 @@ class MEEG(BaseLoading):
         self.save_file_params(self.evokeds_path)
 
     def load_power_tfr_epochs(self):
-        if self._power_tfr is None:
-            self._power_tfr = mne.time_frequency.read_tfrs(self.power_tfr_epochs_path)
+        if self._power_tfr_epochs is None:
+            self._power_tfr_epochs = mne.time_frequency.read_tfrs(self.power_tfr_epochs_path)
 
-        return self._power_tfr
+        return self._power_tfr_epochs
 
     def save_power_tfr_epochs(self, powers):
-        self._power_tfr = powers
+        self._power_tfr_epochs = powers
         mne.time_frequency.write_tfrs(self.power_tfr_epochs_path, powers, overwrite=True)
         self.save_file_params(self.power_tfr_epochs_path)
 
     def load_itc_tfr_epochs(self):
-        if self._itc_tfr is None:
-            self._itc_tfr = mne.time_frequency.read_tfrs(self.itc_tfr_epochs_path)
+        if self._itc_tfr_epochs is None:
+            self._itc_tfr_epochs = mne.time_frequency.read_tfrs(self.itc_tfr_epochs_path)
 
-        return self._itc_tfr
+        return self._itc_tfr_epochs
 
     def save_itc_tfr_epochs(self, itcs):
-        self._itc_tfr = itcs
+        self._itc_tfr_epochs = itcs
         mne.time_frequency.write_tfrs(self.itc_tfr_epochs_path, itcs, overwrite=True)
         self.save_file_params(self.itc_tfr_epochs_path)
 
     def load_power_tfr_average(self):
-        if self._power_tfr is None:
-            self._power_tfr = mne.time_frequency.read_tfrs(self.power_tfr_average_path)
+        if self._power_tfr_average is None:
+            self._power_tfr_average = mne.time_frequency.read_tfrs(self.power_tfr_average_path)
 
-        return self._power_tfr
+        return self._power_tfr_average
 
     def save_power_tfr_average(self, powers):
-        self._power_tfr = powers
+        self._power_tfr_average = powers
         mne.time_frequency.write_tfrs(self.power_tfr_average_path, powers, overwrite=True)
         self.save_file_params(self.power_tfr_average_path)
 
     def load_itc_tfr_average(self):
-        if self._itc_tfr is None:
-            self._itc_tfr = mne.time_frequency.read_tfrs(self.itc_tfr_average_path)
+        if self._itc_tfr_average is None:
+            self._itc_tfr_average = mne.time_frequency.read_tfrs(self.itc_tfr_average_path)
 
-        return self._itc_tfr
+        return self._itc_tfr_average
 
     def save_itc_tfr_average(self, itcs):
-        self._itc_tfr = itcs
+        self._itc_tfr_average = itcs
         mne.time_frequency.write_tfrs(self.itc_tfr_average_path, itcs, overwrite=True)
         self.save_file_params(self.itc_tfr_average_path)
 

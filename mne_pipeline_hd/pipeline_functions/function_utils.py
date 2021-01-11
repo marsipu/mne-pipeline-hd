@@ -30,9 +30,13 @@ from ..gui.gui_utils import Worker, get_exception_tuple, set_ratio_geometry
 from ..gui.models import RunModel
 
 
-def get_arguments(arg_names, obj, main_win):
+def get_arguments(func_name, module, obj, main_win):
     keyword_arguments = {}
     project_attributes = vars(main_win.pr)
+
+    # Get arguments from function signature
+    func = getattr(module, func_name)
+    arg_names = list(inspect.signature(func).parameters)
 
     # Remove args/kwargs
     if 'args' in arg_names:
@@ -69,50 +73,41 @@ def get_arguments(arg_names, obj, main_win):
         else:
             raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
 
+    # Add additional keyword-arguments if added for function by user
+    if func_name in main_win.pr.add_kwargs:
+        for kwarg in main_win.pr.add_kwargs[func_name]:
+            keyword_arguments[kwarg] = main_win.pr.add_kwargs[func_name][kwarg]
+
     return keyword_arguments
 
 
-def func_from_def(name, obj, main_win):
-    # Get module, has to specified in functions.csv as it is imported
-    module_name = main_win.pd_funcs['module'][name]
-    if module_name in main_win.all_modules['basic']:
-        module = main_win.all_modules['basic'][module_name]
-    elif module_name in main_win.all_modules['custom']:
-        # Get Package-Name, is only defined for custom-packages
-        pkg_name = main_win.pd_funcs['pkg_name'][name]
-        module = main_win.all_modules['custom'][pkg_name][module_name][0]
-    else:
-        raise ModuleNotFoundError(name=module_name)
+def func_from_def(func_name, obj, main_win):
+    # Get module- and package-name, has to specified in pd_funcs
+    # (which imports from functions.csv or the <custom_package>.csv)
+    pkg_name = main_win.pd_funcs.loc[func_name, 'pkg_name']
+    module_name = main_win.pd_funcs.loc[func_name, 'module']
+    module = main_win.all_modules[pkg_name][module_name][0]
 
-    # Get arguments from function signature
-    func = getattr(module, name)
-    arg_names = list(inspect.signature(func).parameters)
-
-    keyword_arguments = get_arguments(arg_names, obj, main_win)
-
-    # Add additional keyword-arguments if added for function by user
-    if name in main_win.pr.add_kwargs:
-        for kwarg in main_win.pr.add_kwargs[name]:
-            keyword_arguments[kwarg] = main_win.pr.add_kwargs[name][kwarg]
+    keyword_arguments = get_arguments(func_name, module, obj, main_win)
 
     # Catch one error due to unexpected or missing keywords
     unexp_kw_pattern = r"(.*) got an unexpected keyword argument \'(.*)\'"
     miss_kw_pattern = r"(.*) missing 1 required positional argument: \'(.*)\'"
     try:
         # Call Function from specified module with arguments from unpacked list/dictionary
-        getattr(module, name)(**keyword_arguments)
+        getattr(module, func_name)(**keyword_arguments)
     except TypeError as te:
         match_unexp_kw = re.match(unexp_kw_pattern, str(te))
         match_miss_kw = re.match(miss_kw_pattern, str(te))
         if match_unexp_kw:
             keyword_arguments.pop(match_unexp_kw.group(2))
-            logging.warning(f'Caught unexpected keyword \"{match_unexp_kw.group(2)}\" for {name}')
-            getattr(module, name)(**keyword_arguments)
+            logging.warning(f'Caught unexpected keyword \"{match_unexp_kw.group(2)}\" for {func_name}')
+            getattr(module, func_name)(**keyword_arguments)
         elif match_miss_kw:
             add_kw_args = get_arguments([match_miss_kw.group(2)], obj, main_win)
             keyword_arguments.update(add_kw_args)
-            logging.warning(f'Caught missing keyword \"{match_miss_kw.group(2)}\" for {name}')
-            getattr(module, name)(**keyword_arguments)
+            logging.warning(f'Caught missing keyword \"{match_miss_kw.group(2)}\" for {func_name}')
+            getattr(module, func_name)(**keyword_arguments)
         else:
             raise te
 
@@ -123,15 +118,25 @@ class FunctionWorkerSignals(QObject):
     """
     # Worker-Signals
     # The Thread finished
-    finished = pyqtSignal()
+    function_finished = pyqtSignal(object, int)
     # An Error occured
-    error = pyqtSignal(tuple)
+    function_error = pyqtSignal(tuple, int)
 
 
-class FunctionWorker(Worker):
-    def __init__(self, function, obj, main_win):
-        self.signals = FunctionWorkerSignals()
-        super().__init__(func_from_def, self.signals, name=function, obj=obj, main_win=main_win)
+#
+#
+# class FunctionWorker(Worker):
+#     def __init__(self, function, obj, main_win, thread_idx):
+#         super().__init__(function=func_from_def, name=function, obj=obj, main_win=main_win)
+#         self.function_signals = FunctionWorkerSignals()
+#         self.thread_index = thread_idx
+#
+#         # Modify Worker-Signals to add the Thread-Index
+#         self.signals.finished.connect(self.handle_finished)
+#         self.signals.error.connect(self.handle_error)
+#
+#     def handle_finished(self, return_value):
+#         self.function_signals.function_finished.emit(return_value, self.thread_index)
 
 
 class RunDialog(QDialog):
@@ -159,6 +164,7 @@ class RunDialog(QDialog):
     def init_attributes(self):
         # Initialize class-attributes (in method to be repeatable by self.restart)
         self.all_steps = list()
+        self.thread_idx_count = 0
         self.all_objects = OrderedDict()
         self.current_all_funcs = dict()
         self.current_step = None
@@ -322,6 +328,7 @@ class RunDialog(QDialog):
             self.current_step = self.all_steps.pop(0)
             object_name = self.current_step[0]
             self.current_type = self.all_objects[object_name]['type']
+
             # Load object if the preceding object is not the same
             if not self.current_object or self.current_object.name != object_name:
                 # Print Headline for object
@@ -333,11 +340,10 @@ class RunDialog(QDialog):
 
                 elif self.current_type == 'MEEG':
                     # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
-                    if object_name in self.mw.pr.meeg_to_fsmri:
-                        if self.loaded_fsmri and self.loaded_fsmri.name == self.mw.pr.meeg_to_fsmri[object_name]:
-                            self.current_object = MEEG(object_name, self.mw, fsmri=self.loaded_fsmri)
-                        else:
-                            self.current_object = MEEG(object_name, self.mw)
+                    if object_name in self.mw.pr.meeg_to_fsmri \
+                            and self.loaded_fsmri \
+                            and self.loaded_fsmri.name == self.mw.pr.meeg_to_fsmri[object_name]:
+                        self.current_object = MEEG(object_name, self.mw, fsmri=self.loaded_fsmri)
                     else:
                         self.current_object = MEEG(object_name, self.mw)
                     self.loaded_fsmri = self.current_object.fsmri
@@ -370,9 +376,10 @@ class RunDialog(QDialog):
                     exc_tuple = get_exception_tuple()
                     self.thread_error(exc_tuple)
                 else:
-                    self.thread_finished()
+                    self.thread_finished(None)
             else:
-                self.fworker = FunctionWorker(self.current_func, self.current_object, self.mw)
+                self.fworker = Worker(function=func_from_def,
+                                      func_name=self.current_func, obj=self.current_object, main_win=self.mw)
                 self.fworker.signals.error.connect(self.thread_error)
                 self.fworker.signals.finished.connect(self.thread_finished)
                 self.mw.threadpool.start(self.fworker)
@@ -391,7 +398,7 @@ class RunDialog(QDialog):
                 self.save_main()
                 shutdown()
 
-    def thread_finished(self):
+    def thread_finished(self, _):
         self.prog_count += 1
         self.pgbar.setValue(self.prog_count)
         self.mark_current_items(0)
@@ -424,7 +431,7 @@ class RunDialog(QDialog):
         # Increase Error-Count by one
         self.error_count += 1
         # Continue with next object
-        self.thread_finished()
+        self.thread_finished(None)
 
     def pause_funcs(self):
         self.paused = True
@@ -434,8 +441,7 @@ class RunDialog(QDialog):
 
     def restart(self):
         # Reload modules to get latest changes
-        self.mw.reload_basic_modules()
-        self.mw.reload_custom_modules()
+        self.mw.reload_modules()
 
         self.init_attributes()
         self.init_lists()

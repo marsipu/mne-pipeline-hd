@@ -498,7 +498,6 @@ class BoolGui(Param):
         self.save_param()
 
     def set_param(self):
-        self.check_groupbox_state()
         if self.param_value is not None:
             if self.param_value:
                 self.param_widget.setChecked(True)

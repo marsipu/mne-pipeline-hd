@@ -23,16 +23,6 @@ from mne_pipeline_hd.gui.gui_utils import Worker, get_exception_tuple
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
 
 
-class LoadSignals(QObject):
-    error = pyqtSignal()
-    finished = pyqtSignal()
-
-
-class LoadWorker(Worker):
-    def __init__(self, function, *args, **kwargs):
-        super().__init__(function, LoadSignals(), *args, *kwargs)
-
-
 class HistoryDlg(QDialog):
     def __init__(self, dt):
         super().__init__(dt)
@@ -95,6 +85,8 @@ class DataTerminal(QDialog):
                              'events': 'load_events',
                              'epochs': 'load_epochs',
                              'evokeds': 'load_evokeds',
+                             'tfr_epochs': 'load_power_tfr_epochs',
+                             'tfr_average': 'load_power_tfr_average',
                              'trans': 'load_transformation',
                              'forward': 'load_forward',
                              'noise_cov': 'load_noise_covariance',
@@ -193,14 +185,17 @@ class DataTerminal(QDialog):
         layout.addWidget(QLabel(f'<h1>Loading {bt_name}...</h1>'))
         self.load_dlg.setLayout(layout)
         self.load_dlg.open()
-        worker = LoadWorker(self.start_load, bt_name)
-        worker.signals.finished.connect(self.load_dlg.close)
+        worker = Worker(self.start_load, bt_name)
+        worker.signals.finished.connect(self.finished_handling)
         worker.signals.error.connect(self.error_handling)
         self.mw.threadpool.start(worker)
 
-    def error_handling(self):
+    def error_handling(self, _):
         self.load_dlg.close()
         self.print_exception()
+
+    def finished_handling(self, _):
+        self.load_dlg.close()
 
     def start_load(self, bt_name):
         try:

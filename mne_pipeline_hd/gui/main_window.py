@@ -15,7 +15,7 @@ import os
 import re
 import sys
 from functools import partial
-from importlib import reload, util
+from importlib import reload, util, resources
 from os import listdir
 from os.path import isdir, join
 from subprocess import run
@@ -39,8 +39,9 @@ from .gui_utils import center, get_exception_tuple, set_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, SubBadsDialog,
                               SubDictDialog, SubjectDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
+from .plot_widgets import PlotViewSelection
 from .tools import DataTerminal
-from .. import basic_functions, resources
+from .. import basic_functions
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
 from ..pipeline_functions.function_utils import (RunDialog)
@@ -99,8 +100,7 @@ class MainWindow(QMainWindow):
         self.custom_pkg_path = ''
         self.module_err_dlg = None
         self.bt_dict = dict()
-        self.all_modules = {'basic': {},
-                            'custom': {}}
+        self.all_modules = dict()
         self.available_image_formats = {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'}
         # For functions, which should or should not be called durin initialization
         self.first_init = True
@@ -121,11 +121,12 @@ class MainWindow(QMainWindow):
         # Get projects and current_project (need settings for this, thus after self.load_settings()
         self.get_projects()
 
-        # Load CSV-Files for Functions & Parameters
-        # Lists of functions separated in execution groups (mri_subject, subject, grand-average)
-        self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
-        # Pandas-DataFrame for Parameter-Pipeline-Data (parameter-values are stored in main_win.pr.parameters)
-        self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
+        # Pandas-DataFrame for contextual data of basic functions (included with program)
+        with resources.path('mne_pipeline_hd.pipeline_resources', 'functions.csv') as pd_funcs_path:
+            self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';', index_col=0)
+        # Pandas-DataFrame for contextual data of paramaters for basic functions (included with program)
+        with resources.path('mne_pipeline_hd.pipeline_resources', 'parameters.csv') as pd_params_path:
+            self.pd_params = pd.read_csv(str(pd_params_path), sep=';', index_col=0)
 
         # Set a dramaturgically order for the groups (which applies for func_groups and parameter_groups)
         self.group_order = {'General': 0,
@@ -313,7 +314,7 @@ class MainWindow(QMainWindow):
             self.project_box.setCurrentText(self.projects[0])
 
     def load_default_settings(self):
-        with open(join(resources.__path__[0], 'default_settings.json'), 'r') as file:
+        with resources.open_text('mne_pipeline_hd.pipeline_resources', 'default_settings.json') as file:
             self.default_settings = json.load(file)
 
     def load_settings(self):
@@ -349,19 +350,12 @@ class MainWindow(QMainWindow):
         """
         Load all modules in basic_functions and custom_functions
         """
-        # Empty the module-dicts
-        self.all_modules = {'basic': {},
-                            'custom': {}}
-
-        # Pandas-DataFrame for contextual data of basic functions (included with program)
-        self.pd_funcs = pd.read_csv(join(resources.__path__[0], 'functions.csv'), sep=';', index_col=0)
-        # Pandas-DataFrame for contextual data of paramaters for basic functions (included with program)
-        self.pd_params = pd.read_csv(join(resources.__path__[0], 'parameters.csv'), sep=';', index_col=0)
 
         # Load basic-modules
         basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
+        self.all_modules['basic'] = dict()
         for module_name in basic_functions_list:
-            self.all_modules['basic'][module_name] = getattr(basic_functions, module_name)
+            self.all_modules['basic'][module_name] = (getattr(basic_functions, module_name), None)
 
         # Load custom_modules
         pd_functions_pattern = r'.*_functions\.csv'
@@ -384,7 +378,7 @@ class MainWindow(QMainWindow):
 
             # Check, that there is a whole set for a custom-module (module-file, functions, parameters)
             if all([value is not None or value != [] for value in file_dict.values()]):
-                self.all_modules['custom'][pkg_name] = {}
+                self.all_modules[pkg_name] = dict()
                 functions_path = file_dict['functions']
                 parameters_path = file_dict['parameters']
                 correct_count = 0
@@ -405,7 +399,7 @@ class MainWindow(QMainWindow):
                         # Add module to sys.modules
                         sys.modules[module_name] = module
                         # Add Module to dictionary
-                        self.all_modules['custom'][pkg_name][module_name] = (module, spec)
+                        self.all_modules[pkg_name][module_name] = (module, spec)
 
                 # Make sure, that every module in modules is imported without error
                 # (otherwise don't append to pd_funcs and pd_params)
@@ -434,17 +428,20 @@ class MainWindow(QMainWindow):
 
         self.get_func_groups()
 
-    def reload_basic_modules(self):
-        for module_name in self.all_modules['basic']:
-            reload(self.all_modules['basic'][module_name])
-
-    def reload_custom_modules(self):
-        for pkg_name in self.all_modules['custom']:
-            for module_name in self.all_modules['custom'][pkg_name]:
-                module = self.all_modules['custom'][pkg_name][module_name][0]
-                spec = self.all_modules['custom'][pkg_name][module_name][1]
-                spec.loader.exec_module(module)
-                sys.modules[module_name] = module
+    def reload_modules(self):
+        for pkg_name in self.all_modules:
+            for module_name in self.all_modules[pkg_name]:
+                module = self.all_modules[pkg_name][module_name][0]
+                try:
+                    reload(module)
+                # Custom-Modules somehow can't be reloaded because spec is not found
+                except ModuleNotFoundError:
+                    spec = self.all_modules[pkg_name][module_name][1]
+                    if spec:
+                        spec.loader.exec_module(module)
+                        sys.modules[module_name] = module
+                    else:
+                        raise RuntimeError(f'{module_name} from {pkg_name} could not be reloaded')
 
     def load_edu(self):
         if self.edu_program_name:
@@ -509,8 +506,7 @@ class MainWindow(QMainWindow):
 
         func_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
 
-        func_menu.addAction('&Reload Basic-Modules', self.reload_basic_modules)
-        func_menu.addAction('&Reload Custom-Modules', self.reload_custom_modules)
+        func_menu.addAction('&Reload Modules', self.reload_modules)
         func_menu.addSeparator()
         func_menu.addAction('Additional Keyword-Arguments', partial(AddKwargs, self))
 
@@ -521,6 +517,7 @@ class MainWindow(QMainWindow):
         # Tools
         tool_menu = self.menuBar().addMenu('&Tools')
         tool_menu.addAction('&Data-Terminal', partial(DataTerminal, self))
+        tool_menu.addAction('&Plot-Viewer', partial(PlotViewSelection, self))
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
@@ -558,8 +555,11 @@ class MainWindow(QMainWindow):
         self.project_tools()
         self.toolbar.addSeparator()
 
+        self.toolbar.addWidget(IntGui(self.qsettings, 'n_threads', min_val=1,
+                                      description='Set to the amount of threads you want to run simultaneously '
+                                                  'in the pipeline', default=1, groupbox_layout=False))
         self.toolbar.addWidget(IntGui(self.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
-                                      description='Set to the amount of cores of your machine '
+                                      description='Set to the amount of (virtual) cores of your machine '
                                                   'you want to use for multiprocessing', default=-1,
                                       groupbox_layout=False))
         self.toolbar.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
@@ -782,8 +782,7 @@ class MainWindow(QMainWindow):
             self.save_main()
 
             # Reload modules to get latest changes
-            self.reload_basic_modules()
-            self.reload_custom_modules()
+            self.reload_modules()
 
             # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
             # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
@@ -883,7 +882,7 @@ class MainWindow(QMainWindow):
         mne.sys_info()
 
     def about(self):
-        with open(join(resources.__path__[0], 'license.txt'), 'r') as file:
+        with resources.open_text('mne_pipeline_hd.pipeline_resources', 'license.txt') as file:
             license_text = file.read()
         license_text = license_text.replace('\n', '<br>')
         text = '<h1>MNE-Pipeline HD</h1>' \
@@ -911,7 +910,7 @@ class MainWindow(QMainWindow):
         msgbox.open()
 
     def about_mne(self):
-        with open(join(resources.__path__[0], 'mne_license.txt'), 'r') as file:
+        with resources.open_text('mne_pipeline_hd.pipeline_resources', 'mne_license.txt') as file:
             license_text = file.read()
         license_text = license_text.replace('\n', '<br>')
         text = '<h1>MNE-Python</h1>' \

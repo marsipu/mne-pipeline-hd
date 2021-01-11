@@ -100,6 +100,10 @@ class Project:
         self.all_info = dict()
         self.all_info_path = join(self.pscripts_path, f'all_info_{self.name}.json')
 
+        # Stores paths of saved plots
+        self.plot_files = dict()
+        self.plot_files_path = join(self.pscripts_path, f'plot_files_{self.name}.json')
+
         # Stores functions and if they are selected
         self.sel_functions = dict()
         self.sel_functions_path = join(self.pscripts_path, f'selected_functions_{self.name}.json')
@@ -135,6 +139,7 @@ class Project:
                                   self.all_groups_path: 'all_groups',
                                   self.sel_groups_path: 'sel_groups',
                                   self.all_info_path: 'all_info',
+                                  self.plot_files_path: 'plot_files',
                                   self.sel_functions_path: 'sel_functions',
                                   self.add_kwargs_path: 'add_kwargs',
                                   self.parameters_path: 'parameters',
@@ -159,12 +164,12 @@ class Project:
                 makedirs(path)
                 print(f'{path} created')
 
-        # Create empty files if files are not existing
-        for file_path in self.path_to_attribute:
-            if not isfile(file_path):
-                with open(file_path, 'w') as fl:
-                    fl.write('')
-                print(f'{file_path} created')
+        # # Create empty files if files are not existing
+        # for file_path in self.path_to_attribute:
+        #     if not isfile(file_path):
+        #         with open(file_path, 'w') as fl:
+        #             fl.write('')
+        #         print(f'{file_path} created')
 
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
@@ -233,7 +238,7 @@ class Project:
                         if '_exp' not in param:
                             loaded_parameters[p_preset].pop(param)
 
-                    # Add parameters, which exist in resources/parameters.csv,
+                    # Add parameters, which exist in pipeline_resources/parameters.csv,
                     # but not in loaded-parameters (e.g. added with custom-module)
                     for param in [p for p in self.mw.pd_params.index if p not in loaded_parameters[p_preset]]:
                         try:
