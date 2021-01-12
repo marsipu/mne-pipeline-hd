@@ -1911,7 +1911,8 @@ class FileManagment(QDialog):
                 for path in obj.existing_paths[path_type]:
                     try:
                         # Add Time
-                        obj_pd_time.loc[obj_name, path_type] = self.mw.pr.file_parameters[Path(path).name]['TIME']
+                        # Last entry in TIME should be the most recent one
+                        obj_pd_time.loc[obj_name, path_type] = self.mw.pr.file_parameters[Path(path).name]['TIME'][-1]
                         # Add Size (accumulate, if there are several files
                         obj_pd_size.loc[obj_name, path_type] += self.mw.pr.file_parameters[Path(path).name]['SIZE']
                     except KeyError:

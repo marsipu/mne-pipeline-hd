@@ -233,7 +233,8 @@ def compare_filep(obj, path, target_parameters=None):
     file_name = Path(path).name
     # Try to get the parameters relevant for the last function, which altered the data at path
     try:
-        function = obj.pr.file_parameters[file_name]['FUNCTION']
+        # The last entry in FUNCTION should be the most recent
+        function = obj.pr.file_parameters[file_name]['FUNCTION'][-1]
         critical_params = obj.mw.pd_funcs[function]['func_args'].split(',')
     except KeyError:
         critical_params = list()

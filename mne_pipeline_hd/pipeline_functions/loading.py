@@ -69,16 +69,28 @@ class BaseLoading:
 
     def save_file_params(self, path):
         file_name = Path(path).name
-        self.pr.file_parameters[file_name] = dict()
+
+        if file_name not in self.pr.file_parameters:
+            self.pr.file_parameters[file_name] = dict()
         # Get the name of the calling function (assuming it is 2 Frames above)
-        self.pr.file_parameters[file_name]['FUNCTION'] = inspect.stack()[2][3]
+        if 'FUNCTION' in self.pr.file_parameters[file_name]:
+            self.pr.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
+        else:
+            self.pr.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
         self.pr.file_parameters[file_name]['NAME'] = self.name
         self.pr.file_parameters[file_name]['PATH'] = path
-        self.pr.file_parameters[file_name]['TIME'] = datetime.now()
+        if 'TIME' in self.pr.file_parameters[file_name]:
+            self.pr.file_parameters[file_name]['TIME'].append(datetime.now())
+        else:
+            self.pr.file_parameters[file_name]['TIME'] = [datetime.now()]
         self.pr.file_parameters[file_name]['SIZE'] = getsize(path)
         self.pr.file_parameters[file_name]['P_PRESET'] = self.p_preset
-        for p_name in self.pr.parameters[self.p_preset]:
-            self.pr.file_parameters[file_name][p_name] = self.pr.parameters[self.p_preset][p_name]
+        for p_name in self.p:
+            self.pr.file_parameters[file_name][p_name] = self.p[p_name]
+        # Clean unused parameters
+        for unused_p in self.pr.file_parameters[file_name]:
+            if unused_p not in self.p and unused_p not in ['FUNCTION', 'NAME', 'PATH', 'TIME', 'SIZE', 'P_PRESET']:
+                self.pr.file_parameters[file_name].pop(unused_p)
 
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):
