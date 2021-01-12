@@ -12,12 +12,11 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 from functools import partial
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImageReader, QPixmap
-from PyQt5.QtWidgets import (QCheckBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QProgressDialog, QPushButton,
-                             QScrollArea,
-                             QSizePolicy,
-                             QSlider, QSpinBox, QTabWidget, QVBoxLayout, QWidget)
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg, NavigationToolbar2QT)
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import (QCheckBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
+                             QProgressDialog,
+                             QPushButton, QScrollArea, QSpinBox, QTabWidget, QToolBar, QVBoxLayout, QWidget)
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg)
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
 from mne_pipeline_hd.gui.gui_utils import Worker, set_ratio_geometry
@@ -35,8 +34,12 @@ class PlotViewSelection(QDialog):
         self.selected_obj = {'MEEG': list(),
                              'FSMRI': list(),
                              'Group': list()}
-        self.selected_ppreset = list()
-        self.interactive = False
+        self.selected_ppresets = list()
+
+        # Stores the widgets for parameter-presets/objects
+        self.all_figs = dict()
+        # Stores all widget-items (including single widgets for plot_functions with multiple plots as output)
+        self.all_images = dict()
 
         self.init_ui()
         self.open()
@@ -53,8 +56,8 @@ class PlotViewSelection(QDialog):
         self.obj_select = CheckList(title='Select Objects')
         list_layout.addWidget(self.obj_select)
 
-        self.p_preset_select = CheckList(list(self.mw.pr.parameters.keys()), self.selected_ppreset,
-                                         title='Select P-Preset\n(Default if none selected)')
+        self.p_preset_select = CheckList(list(self.mw.pr.parameters.keys()), self.selected_ppresets,
+                                         title='Select Parameter-Preset')
         list_layout.addWidget(self.p_preset_select)
 
         layout.addLayout(list_layout)
@@ -65,7 +68,7 @@ class PlotViewSelection(QDialog):
         bt_layout.addWidget(self.interactive_chkbx)
 
         start_bt = QPushButton('Start')
-        start_bt.clicked.connect(self.start)
+        start_bt.clicked.connect(self.load_plots)
         bt_layout.addWidget(start_bt)
 
         cancel_bt = QPushButton('Cancel')
@@ -89,303 +92,296 @@ class PlotViewSelection(QDialog):
             self.obj_select.replace_data(list(self.mw.pr.all_groups.keys()))
             self.obj_select.replace_checked(self.selected_obj['Group'])
 
-    def start(self):
-        """Start PlotViewer with the selected parameters from this function and hide this window"""
-        PlotViewer(self.mw, func_name=self.selected_func, objs=self.selected_obj[self.target], target=self.target,
-                   p_presets=self.selected_ppreset,
-                   interactive=self.interactive_chkbx.isChecked())
-        self.close()
-
-
-class PlotViewer(QDialog):
-    def __init__(self, main_win, func_name, objs, target, p_presets, interactive):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.func_name = func_name
-        self.objs = objs
-        self.target = target
-        self.p_presets = p_presets
-        self.interactive = interactive
-
-        # Stores the widgets for parameter-presets/objects
-        self.plot_widgets = dict()
-        # Stores all widget-items (including single widgets for plot_functions with multiple plots as output)
-        self.plot_items = dict()
-        # Stores references to all tab-widgets to control them simultaneously
-        self.all_tab_widgets = list()
-
-        for p_preset in self.p_presets:
-            self.plot_widgets[p_preset] = dict()
-            self.plot_items[p_preset] = dict()
-            self.init_widgets[p_preset] = dict()
-            for obj_name in self.objs:
-                self.plot_items[p_preset][obj_name] = list()
-                self.plot_widgets[p_preset][obj_name] = None
-
-        # Stores layouts
-        self.layout_dict = dict()
-
-        # A list to store all toolbars to collectively hide&show them
-        self.all_toolbars = list()
-
-        set_ratio_geometry(0.85, self)
-
-        self.load_plots()
-        self.open()
-
     def load_plots(self):
 
         # Show ProgressBar
-        self.total_loads = len(self.objs) * len(self.p_presets)
-        self.prog_dlg = QProgressDialog('Loading Plots...', maximum=self.total_loads)
-        self.prog_dlg.setCancelButton(None)
-        self.prog_cnt = 0
+        self.total_loads = len(self.selected_obj[self.target]) * len(self.selected_ppresets)
+        if self.total_loads == 0:
+            QMessageBox.warning(self, 'Not enought selected!', 'An important parameter seems to be missing')
+        else:
+            self.prog_dlg = QProgressDialog()
+            self.prog_dlg.setLabelText('Loading Plots...')
+            self.prog_dlg.setMaximum(self.total_loads)
+            self.prog_dlg.setCancelButton(None)
+            self.prog_dlg.setMinimumDuration(0)
+            self.prog_cnt = 0
+            self.prog_dlg.setValue(self.prog_cnt)
 
-        for obj_name in self.objs:
-            if self.target == 'MEEG':
-                obj = MEEG(obj_name, self.mw)
-            elif self.target == 'FSMRI':
-                obj = FSMRI(obj_name, self.mw)
-            elif self.target == 'Group':
-                obj = Group(obj_name, self.mw)
-            else:
-                break
-
-            for p_preset in self.p_presets:
-
-                # Load Matplotlib-Plots
-                if self.interactive:
-                    # Get module of plot_function
-                    pkg_name = self.mw.pd_funcs.loc[self.func_name, 'pkg_name']
-                    module_name = self.mw.pd_funcs.loc[self.func_name, 'module']
-                    module = self.mw.all_modules[pkg_name][module_name]
+            for p_preset in self.selected_ppresets:
+                self.all_images[p_preset] = dict()
+                self.all_figs[p_preset] = dict()
+                for obj_name in self.selected_obj[self.target]:
+                    if self.target == 'MEEG':
+                        obj = MEEG(obj_name, self.mw)
+                    elif self.target == 'FSMRI':
+                        obj = FSMRI(obj_name, self.mw)
+                    elif self.target == 'Group':
+                        obj = Group(obj_name, self.mw)
+                    else:
+                        break
 
                     # Replace Parameter-Preset for the loaded object and reload load/save-paths
                     if p_preset != obj.p_preset:
                         obj.p_preset = p_preset
                         obj.load_paths()
 
-                    # Get Arguments for Plot-Function
-                    keyword_arguments = get_arguments(self.func_name, module, obj, self.mw)
-                    plot_func = getattr(module, self.func_name)
+                    # Load Matplotlib-Plots
+                    if self.interactive_chkbx.isChecked():
+                        # Get module of plot_function
+                        pkg_name = self.mw.pd_funcs.loc[self.selected_func, 'pkg_name']
+                        module_name = self.mw.pd_funcs.loc[self.selected_func, 'module']
+                        module = self.mw.all_modules[pkg_name][module_name][0]
 
-                    # Create Thread for Plot-Function
-                    worker = Worker(plot_func, **keyword_arguments)
-                    # Pass Object-Name into the plot_finished-Slot
-                    # (needs to be set as default in lambda-function to survive loop)
-                    worker.signals.finished.connect(lambda val, o_name=obj_name, ppreset=p_preset:
-                                                    self.plot_finished(val, o_name, ppreset))
-                    worker.signals.error.connect(lambda err_tuple, o_name=obj_name, ppreset=p_preset:
-                                                 self.plot_error(err_tuple, o_name, ppreset))
-                    print(f'Starting Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
-                    self.mw.threadpool.start(worker)
+                        # Get Arguments for Plot-Function
+                        keyword_arguments = get_arguments(self.selected_func, module, obj, self.mw)
+                        plot_func = getattr(module, self.selected_func)
 
-                # Load Plot-Images
-                else:
-                    try:
-                        image_paths = obj.plot_files[self.func_name][p_preset]
-                    except KeyError as ke:
-                        self.plot_widgets[p_preset][obj_name] = QLabel(f'{ke} not found for {obj_name}')
-                    else:
-                        keyword_arguments = {'image_paths': image_paths,
-                                             'obj_name': obj_name,
-                                             'p_preset': p_preset}
-                        worker = Worker(self.load_images, **keyword_arguments)
+                        # Create Thread for Plot-Function
+                        worker = Worker(plot_func, **keyword_arguments)
+                        # Pass Object-Name into the plot_finished-Slot
+                        # (needs to be set as default in lambda-function to survive loop)
                         worker.signals.finished.connect(lambda val, o_name=obj_name, ppreset=p_preset:
-                                                        self.load_finished(val, o_name, ppreset))
+                                                        self.plot_finished(val, o_name, ppreset))
                         worker.signals.error.connect(lambda err_tuple, o_name=obj_name, ppreset=p_preset:
-                                                     self.plot_error(err_tuple, o_name, ppreset))
+                                                     self.thread_error(err_tuple, o_name, ppreset, 'plot'))
                         print(f'Starting Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
                         self.mw.threadpool.start(worker)
 
+                    # Load Plot-Images
+                    else:
+                        try:
+                            image_paths = obj.plot_files[self.selected_func][p_preset]
+                        except KeyError as ke:
+                            self.all_images[p_preset][obj_name] = f'{ke} not found for {obj_name}'
+                            self.thread_finished(None, obj_name, p_preset)
+                        else:
+                            keyword_arguments = {'image_paths': image_paths,
+                                                 'obj_name': obj_name,
+                                                 'p_preset': p_preset}
+                            worker = Worker(self.load_images, **keyword_arguments)
+                            worker.signals.finished.connect(lambda val, o_name=obj_name, ppreset=p_preset:
+                                                            self.thread_finished(val, o_name, ppreset))
+                            worker.signals.error.connect(lambda err_tuple, o_name=obj_name, ppreset=p_preset:
+                                                         self.thread_error(err_tuple, o_name, ppreset, 'image'))
+                            print(f'Starting Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
+                            self.mw.threadpool.start(worker)
+
     def load_images(self, image_paths, obj_name, p_preset):
 
-        # Load Images from Image-Paths and build a QTabWidget
-        widget = QWidget()
-        widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        layout = QVBoxLayout()
+        # Load pixmaps from Image-Paths
+        pixmaps = list()
 
-        if len(image_paths) > 1:
-            tab_widget = QTabWidget()
-            self.all_tab_widgets.append(tab_widget)
-            for idx, image_path in enumerate(image_paths):
-                image_label = QLabel()
-                image_label.setScaledContents(True)
-                image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-                image_label.setPixmap(QPixmap(image_path))
-                image_label.adjustSize()
-                self.plot_items[p_preset][obj_name].append(image_label)
-                tab_widget.addTab(image_label, str(idx))
-            layout.addWidget(tab_widget)
+        for image_path in image_paths:
+            pixmap = QPixmap(image_path)
+            pixmaps.append(pixmap)
 
-            # Button to show all plots of this object in a separate Window
-            show_bt = QPushButton('Show')
-            show_bt.clicked.connect(partial(self.show_single_items, p_preset, obj_name))
-            layout.addWidget(show_bt)
+        self.all_images[p_preset][obj_name] = pixmaps
 
-        elif len(image_paths) == 1:
-            image_label = QLabel()
-            image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-            image_label.setScaledContents(True)
-            image_label.setPixmap(QPixmap(image_paths[0]))
-            self.plot_items[p_preset][obj_name].append(image_label)
-            layout.addWidget(image_label)
+    def thread_finished(self, _, obj_name, p_preset):
+        self.prog_cnt += 1
+        self.prog_dlg.setValue(self.prog_cnt)
+        print(f'Finished PlotLoading-Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
 
-        widget.setLayout(layout)
-        self.plot_widgets[p_preset][obj_name] = widget
-
-    def show_single_items(self, p_preset, obj_name):
-        widgets = self.plot_items[p_preset][obj_name]
-        SingleItemViewer(self, widgets)
+        if self.prog_cnt == self.total_loads:
+            # Start PlotViewer
+            interactive = self.interactive_chkbx.isChecked()
+            if interactive:
+                items = self.all_figs
+            else:
+                items = self.all_images
+            PlotViewer(self, items, interactive, True)
+            self.hide()
 
     def plot_finished(self, return_value, obj_name, p_preset):
 
+        # Check if multiple figures are given
         if not isinstance(return_value, list):
+            # Make sure, that return_value is a list
             return_value = [return_value]
 
-        widget = QWidget()
-        widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        layout = QVBoxLayout()
+        fig_list = list()
+        for fig in return_value:
+            # Add the default size of the figure for later zooming
+            fig_list.append((fig, fig.get_size_inches()))
 
-        if len(return_value) > 1:
-            tab_widget = QTabWidget()
-            self.all_tab_widgets.append(tab_widget)
-            for idx, fig in enumerate(return_value):
-                plot_widget = QWidget()
-                plot_widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-                plot_layout = QVBoxLayout()
-                fig_widget = FigureCanvasQTAgg(fig)
-                plot_layout.addWidget(fig_widget)
-                toolbar = NavigationToolbar2QT(fig_widget, plot_widget)
-                self.all_toolbars.append(toolbar)
-                plot_layout.addWidget(toolbar)
-                plot_widget.setLayout(plot_layout)
-                plot_widget.adjustSize()
-                tab_widget.addTab(plot_widget, str(idx))
-                self.plot_items[p_preset][obj_name] = plot_widget
+        self.all_figs[p_preset][obj_name] = fig_list
 
-            layout.addWidget(tab_widget)
+        self.thread_finished(None, obj_name, p_preset)
 
-            # Button to show all plots of this object in a separate Window
-            show_bt = QPushButton('Show')
-            show_bt.clicked.connect(partial(self.show_single_items, p_preset, obj_name))
-            layout.addWidget(show_bt)
+    def thread_error(self, error_tuple, obj_name, p_preset, kind):
+        if kind == 'image':
+            self.all_images[p_preset][obj_name] = f'{error_tuple[0]}: {error_tuple[1]}'
+        else:
+            self.all_figs[p_preset][obj_name] = f'{error_tuple[0]}: {error_tuple[1]}'
 
-        elif len(return_value) == 1:
-            plot_widget = QWidget()
-            plot_widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-            plot_layout = QVBoxLayout()
-            fig_widget = FigureCanvasQTAgg(return_value[0])
-            plot_layout.addWidget(fig_widget)
-            toolbar = NavigationToolbar2QT(fig_widget, plot_widget)
-            self.all_toolbars.append(toolbar)
-            plot_layout.addWidget(toolbar)
-            plot_widget.setLayout(plot_layout)
-            self.plot_items[p_preset][obj_name] = plot_widget
+        self.thread_finished(None, obj_name, p_preset)
 
-        widget.setLayout(layout)
-        self.plot_widgets[p_preset][obj_name] = widget
 
-        self.prog_cnt += 1
-        self.prog_dlg.setValue(self.prog_cnt)
-        print(f'Finished PlotLoading-Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
+class PlotViewer(QMainWindow):
+    def __init__(self, parent_dlg, items, interactive, top_level):
+        super().__init__(parent_dlg)
+        self.items = items
+        self.interactive = interactive
+        self.top_level = top_level
 
-        if self.prog_cnt == self.total_loads:
-            self.init_ui()
+        self.zoom_factor = 1
+        self.column_count = 4
 
-    def plot_error(self, error_tuple, obj_name, p_preset):
-        self.plot_widgets[p_preset][obj_name] = QLabel(f'{error_tuple[0]}: {error_tuple[1]}')
+        # Stores references to all tab-widgets to control them simultaneously
+        self.all_tab_widgets = list()
 
-    def load_finished(self, _, obj_name, p_preset):
-        self.prog_cnt += 1
-        self.prog_dlg.setValue(self.prog_cnt)
-        print(f'Finished PlotLoading-Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
+        set_ratio_geometry(0.8, self)
+        self.init_ui()
+        self.show()
 
-        if self.prog_cnt == self.total_loads:
-            self.init_ui()
+    def _setup_views(self):
+        viewer_layout = QHBoxLayout()
 
-    def init_ui(self):
-        layout = QVBoxLayout()
-
-        control_layout = QHBoxLayout()
-
-        # Add control for all tab-widgets to turn all to selected tab(index)
-        if len(self.all_tab_widgets) > 0:
-            n_tabs = self.all_tab_widgets[0].count()
-            tab_selection = QSpinBox()
-            tab_selection.valueChanged.connect(self.tab_selected)
-            tab_selection.setRange(0, n_tabs)
-            tab_selection.setWrapping(True)
-            control_layout.addWidget(tab_selection)
-
-        self.zoom_label = QLabel('Zoom: 3 per Row')
-        control_layout.addWidget(self.zoom_label)
-        zoom_in_bt = QPushButton('Zoom-In')
-        zoom_in_bt.clicked.connect(partial(self.zoom_layout, 'in'))
-        control_layout.addWidget(zoom_in_bt)
-        zoom_out_bt = QPushButton('Zoom-Out')
-        zoom_out_bt.clicked.connect(partial(self.zoom_layout, 'out'))
-        control_layout.addWidget(zoom_out_bt)
-
-        layout.addLayout(control_layout)
-
-        p_preset_layout = QHBoxLayout()
-        for p_preset in self.plot_widgets:
+        for p_preset in self.items:
             scroll_area = QScrollArea()
             scroll_widget = QWidget()
             scroll_layout = QGridLayout()
-            self.layout_dict[p_preset] = scroll_layout
 
-            for idx, obj_name in enumerate(self.plot_widgets[p_preset]):
-                row = idx // 4
-                col = idx % 4
+            for obj_idx, obj_name in enumerate(self.items[p_preset]):
+                obj_items = self.items[p_preset][obj_name]
+                row = obj_idx // self.column_count
+                col = obj_idx % self.column_count
 
-                scroll_layout.addWidget(widget, row, col)
+                if isinstance(obj_items, str):
+                    # This displays errors
+                    scroll_layout.addWidget(QLabel(obj_items), row, col)
+
+                elif isinstance(obj_items, list):
+                    tab_widget = QTabWidget()
+
+                    for item_idx, item in enumerate(obj_items):
+                        if self.interactive:
+                            fig, default_size = item
+                            # Zoom Figure
+                            fig.set_size_inches(default_size * self.zoom_factor)
+                            view_widget = FigureCanvasQTAgg(fig)
+                        else:
+                            view_widget = QLabel()
+                            # Zoom Pixmap
+                            view_widget.setPixmap(item.scaled(item.size() * self.zoom_factor,
+                                                              Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+                        if len(obj_items) > 1:
+                            tab_widget.addTab(view_widget, str(item_idx))
+                        else:
+                            scroll_layout.addWidget(view_widget, row, col)
+
+                    if len(obj_items) > 1:
+                        self.all_tab_widgets.append(tab_widget)
+                        frame_widget = QWidget()
+                        frame_layout = QVBoxLayout()
+                        frame_layout.addWidget(tab_widget)
+                        show_bt = QPushButton('Show')
+                        show_bt.clicked.connect(partial(self.show_single_items, p_preset, obj_name))
+                        frame_layout.addWidget(show_bt)
+                        frame_widget.setLayout(frame_layout)
+                        scroll_layout.addWidget(frame_widget, row, col)
 
             scroll_widget.setLayout(scroll_layout)
             scroll_area.setWidget(scroll_widget)
-            p_preset_layout.addWidget(scroll_area)
+            viewer_layout.addWidget(scroll_area)
 
-        layout.addLayout(p_preset_layout)
+        self.main_layout.addLayout(viewer_layout)
 
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(self.close)
-        layout.addWidget(close_bt)
+    def init_ui(self):
 
-        self.setLayout(layout)
+        toolbar = QToolBar('Plot-Tools')
+        self.addToolBar(toolbar)
+
+        # Zoom-Control
+        toolbar.addAction('-- Zoom', partial(self.zoom_items, '--'))
+        toolbar.addAction('- Zoom', partial(self.zoom_items, '-'))
+        self.zoom_label = QLabel(f'{self.zoom_factor * 100} %')
+        toolbar.addWidget(self.zoom_label)
+        toolbar.addAction('+ Zoom', partial(self.zoom_items, '+'))
+        toolbar.addAction('++ Zoom', partial(self.zoom_items, '++'))
+
+        # Column-Control
+        toolbar.addAction('- Column', partial(self.change_columns, '-'))
+        self.column_label = QLabel(f'{self.column_count} Columns')
+        toolbar.addWidget(self.column_label)
+        toolbar.addAction('+ Column', partial(self.change_columns, '+'))
+
+        # Add control for all tab-widgets to turn all to selected tab(index)
+        tab_sel_label = QLabel('Select Tab')
+        toolbar.addWidget(tab_sel_label)
+        tab_selection = QSpinBox()
+        tab_selection.valueChanged.connect(self.tab_selected)
+        tab_selection.setWrapping(True)
+        toolbar.addWidget(tab_selection)
+
+        toolbar.addAction('Close', self.close)
+
+        # Central Widget
+        widget = QWidget()
+        self.main_layout = QVBoxLayout()
+
+        self._setup_views()
+
+        widget.setLayout(self.main_layout)
+        self.setCentralWidget(widget)
 
     def tab_selected(self, idx):
         for tab_w in self.all_tab_widgets:
             tab_w.setCurrentIndex(idx)
 
-    def zoom_layout(self, direction):
-        pass
+    def update_layout(self):
+        old_layout = self.main_layout.itemAt(0)
+        self.main_layout.removeItem(old_layout)
+        for scroll_area in [old_layout.itemAt(idx) for idx in range(old_layout.count())]:
+            scroll_area.widget().deleteLater()
+        del old_layout
 
+        self._setup_views()
 
-class SingleItemViewer(QDialog):
-    def __init__(self, parent_dlg, widgets):
-        super().__init__(parent_dlg)
-        self.widgets = widgets
+    def change_columns(self, direction):
+        # Set Column-Count
+        if direction == '+':
+            self.column_count += 1
+        else:
+            self.column_count -= 1
 
-        set_ratio_geometry(0.8, self)
-        self.init_ui()
-        self.open()
+        # Make sure, that at least one column is shown
+        if self.column_count < 1:
+            self.column_count = 1
 
-    def init_ui(self):
-        layout = QVBoxLayout()
-        scroll_area = QScrollArea()
+        self.column_label.setText(f'{self.column_count} Columns')
+        self.update_layout()
 
-        child_widget = QWidget()
-        child_layout = QVBoxLayout()
-        for wdg in self.widgets:
-            child_layout.addWidget(wdg)
-        child_widget.setLayout(child_layout)
+    def zoom_items(self, zoom):
+        # Zoom-Labels
+        if zoom == '+':
+            self.zoom_factor += 0.1
+        elif zoom == '++':
+            self.zoom_factor += 0.5
+        elif zoom == '-':
+            self.zoom_factor -= 0.1
+        else:
+            self.zoom_factor -= 0.5
 
-        layout.addWidget(scroll_area)
+        # Make sure, that zoom is not smaller than 10%
+        if self.zoom_factor < 0.1:
+            self.zoom_factor = 0.1
 
-        close_bt = QPushButton('Close')
-        close_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
-        close_bt.clicked.connect(self.close)
-        layout.addWidget(close_bt)
+        self.zoom_label.setText(f'{self.zoom_factor * 100} %')
+        self.update_layout()
 
-        self.setLayout(layout)
+    def show_single_items(self, p_preset, obj_name):
+        # Create dictionary similar to what you get from loading to open a new viewer with just the selected items
+        if self.interactive:
+            items = self.all_figs[p_preset][obj_name]
+        else:
+            items = self.all_images[p_preset][obj_name]
+        item_dict = {'Default': {idx: value for idx, value in enumerate(items)}}
+        PlotViewer(self, item_dict, self.interactive, False)
+
+    def closeEvent(self, event):
+        if self.top_level:
+            self.parent().show()
+
+        event.accept()
