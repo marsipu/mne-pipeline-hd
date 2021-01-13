@@ -164,10 +164,12 @@ class RemoveDialog(QDialog):
                 self.pr.meeg_bad_channels.pop(meeg, None)
                 self.pr.meeg_event_id.pop(meeg, None)
                 for key in [k for k in self.pr.file_parameters.keys() if meeg in k]:
-                    self.pr.file_parameters.drop(key)
+                    self.pr.file_parameters.pop(key)
                 if remove_files:
                     try:
-                        shutil.rmtree(join(self.pr.data_path, meeg))
+                        remove_path = join(self.pr.data_path, meeg)
+                        shutil.rmtree(remove_path)
+                        print(f'Succesful removed {remove_path}')
                     except FileNotFoundError:
                         print(join(self.pr.data_path, meeg) + ' not found!')
             self.pr.sel_meeg.clear()
@@ -649,8 +651,9 @@ class AddFilesWidget(QWidget):
         self.addf_dialog.setMaximum(len(self.pd_files.index))
         self.addf_dialog.open()
 
-        worker = Worker(self.add_files)
-        worker.signals = AddFileSignals()
+        new_worker_signals = AddFileSignals()
+        worker = Worker(self.add_files, new_worker_signals)
+        worker.signals = new_worker_signals
         worker.signals.finished.connect(self.addf_finished)
         worker.signals.error.connect(self.show_errors)
         worker.signals.pgbar_n.connect(self.addf_dialog.setValue)
@@ -674,7 +677,7 @@ class AddFilesWidget(QWidget):
         for idx in self.pd_files.index:
             file = self.pd_files.loc[idx, 'Name']
             if not self.addf_dialog.wasCanceled():
-                signals['which_sub'].emit(f'Copying {file}')
+                signals.which_sub.emit(f'Copying {file}')
 
                 raw = self.load_file(idx)
 
@@ -697,7 +700,7 @@ class AddFilesWidget(QWidget):
                     meeg = MEEG(file, self.mw)
                     meeg.save_raw(raw)
                     meeg.extract_info()
-                    signals['pgbar_n'].emit(count)
+                    signals.pgbar_n.emit(count)
                     count += 1
                 else:
                     break

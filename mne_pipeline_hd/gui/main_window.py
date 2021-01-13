@@ -150,10 +150,6 @@ class MainWindow(QMainWindow):
         # Load Education-Program if given
         self.load_edu()
 
-        # Set logging
-        logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
-        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-
         # Set geometry to ratio of screen-geometry (before adding func-buttons to allow adjustment to size)
         set_ratio_geometry(0.9, self)
 
@@ -210,9 +206,6 @@ class MainWindow(QMainWindow):
         print(f'Selected-Project: {self.current_project}')
 
     def project_updated(self):
-        # Set new logging
-        logging.basicConfig(filename=join(self.pr.pscripts_path, '_pipeline.log'), filemode='w')
-        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
         # Update Subject-Lists
         self.subject_dock.update_dock()
@@ -453,7 +446,11 @@ class MainWindow(QMainWindow):
             # Exclude functions which are not selected
             self.pd_funcs = self.pd_funcs.loc[self.pd_funcs.index.isin(self.edu_program['functions'])]
 
+            # Change the Project-Scripts-Path to a new folder to store the Education-Project-Scripts separately
             self.pr.pscripts_path = join(self.pr.project_path, f'_pipeline_scripts{self.edu_program["name"]}')
+            if not isdir(self.pr.pscripts_path):
+                os.mkdir(self.pr.pscripts_path)
+            self.pr.init_pipeline_scripts()
 
             # Exclude MEEG
             self.pr._all_meeg = self.pr.all_meeg.copy()

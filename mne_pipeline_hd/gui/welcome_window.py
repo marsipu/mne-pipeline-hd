@@ -58,7 +58,7 @@ class WelcomeWindow(QWidget):
 
         self.edu_groupbox = QGroupBox('Education')
         self.edu_groupbox.setCheckable(True)
-        if self.education_on:
+        if self.education_on == 'true':
             self.edu_groupbox.setChecked(True)
         else:
             self.edu_groupbox.setChecked(False)
@@ -138,6 +138,8 @@ class WelcomeWindow(QWidget):
 
     def closeEvent(self, event):
         if self.edu_groupbox.isChecked():
-            self.qsettings.setValue('education', 1)
+            self.qsettings.setValue('education', 'true')
         else:
-            self.qsettings.setValue('education', 0)
+            self.qsettings.setValue('education', 'false')
+
+        event.accept()

@@ -128,6 +128,8 @@ class RemoveProjectsDlg(CheckListDlg):
             self.mw.get_projects()
             self.mw.pr = Project(self.mw, self.mw.current_project)
             self.mw.project_updated()
+        else:
+            self.mw.update_project_box()
 
         self.close()
 

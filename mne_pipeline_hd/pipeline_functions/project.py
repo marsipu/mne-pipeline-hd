@@ -10,7 +10,9 @@ Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.201
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import json
+import logging
 import os
+import sys
 from ast import literal_eval
 from copy import deepcopy
 from os import listdir, makedirs
@@ -30,6 +32,15 @@ class Project:
         self.mw = main_win
         self.name = name
 
+        self.init_main_paths()
+        self.init_attributes()
+        self.init_pipeline_scripts()
+        self.set_logging()
+        self.load()
+        self.check_data()
+
+    def init_main_paths(self):
+
         # Main folder of project
         self.project_path = join(self.mw.projects_path, self.name)
         # Folder to store the data
@@ -46,82 +57,83 @@ class Project:
         self.main_paths = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
                            self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
 
-        # Initiate Project-Lists and Dicts
+        # Create or check existence of main_paths
+        for path in self.main_paths:
+            if not exists(path):
+                makedirs(path)
+                print(f'{path} created')
+
+    def init_attributes(self):
         # Stores the names of all MEG/EEG-Files
         self.all_meeg = list()
-        self.all_meeg_path = join(self.pscripts_path, f'all_meeg_{self.name}.json')
         # Stores selected MEG/EEG-Files
         self.sel_meeg = list()
-        self.sel_meeg_path = join(self.pscripts_path, f'selected_meeg_{self.name}.json')
-
         # Stores Bad-Channels for each MEG/EEG-File
         self.meeg_bad_channels = dict()
-        self.meeg_bad_channels_path = join(self.pscripts_path, f'meeg_bad_channels_{self.name}.json')
-
         # Stores Event-ID for each MEG/EEG-File
         self.meeg_event_id = dict()
-        self.meeg_event_id_path = join(self.pscripts_path, f'meeg_event_id_{self.name}.json')
         # Stores selected event-id-labels
         self.sel_event_id = dict()
-        self.sel_event_id_path = join(self.pscripts_path, f'selected_event_ids_{self.name}.json')
-
         # Stores the names of all Empty-Room-Files (MEG/EEG)
         self.all_erm = list()
-        self.all_erm_path = join(self.pscripts_path, f'all_erm_{self.name}.json')
-
         # Maps each MEG/EEG-File to a Empty-Room-File or None
         self.meeg_to_erm = dict()
-        self.meeg_to_erm_path = join(self.pscripts_path, f'meeg_to_erm_{self.name}.json')
-
         # Stores the names of all Freesurfer-Segmentation-Folders in Subjects-Dir
         self.all_fsmri = list()
-        self.all_fsmri_path = join(self.pscripts_path, f'all_fsmri_{self.name}.json')
-
         # Stores selected Freesurfer-Segmentations
         self.sel_fsmri = list()
-        self.sel_fsmri_path = join(self.pscripts_path, f'selected_fsmri_{self.name}.json')
-
         # Maps each MEG/EEG-File to a Freesurfer-Segmentation or None
-        self.meeg_to_fsmri = {}
-        self.meeg_to_fsmri_path = join(self.pscripts_path, f'meeg_to_fsmri_{self.name}.json')
-
+        self.meeg_to_fsmri = dict()
+        # Stores the ICA-Components to be excluded
         self.ica_exclude = dict()
-        self.ica_exclude_path = join(self.pscripts_path, f'ica_exclude_{self.name}.json')
-
         # Groups MEG/EEG-Files e.g. for Grand-Average
-        self.all_groups = {}
-        self.all_groups_path = join(self.pscripts_path, f'all_groups_{self.name}.json')
-
+        self.all_groups = dict()
         # Stores selected Grand-Average-Groups
         self.sel_groups = list()
-        self.sel_groups_path = join(self.pscripts_path, f'selected_groups_{self.name}.json')
-
         # Stores selected Info-Attributes for each file
         self.all_info = dict()
-        self.all_info_path = join(self.pscripts_path, f'all_info_{self.name}.json')
-
         # Stores paths of saved plots
         self.plot_files = dict()
-        self.plot_files_path = join(self.pscripts_path, f'plot_files_{self.name}.json')
-
         # Stores functions and if they are selected
         self.sel_functions = dict()
-        self.sel_functions_path = join(self.pscripts_path, f'selected_functions_{self.name}.json')
-
         # Stores additional keyword-arguments for functions by function-name
         self.add_kwargs = dict()
-        self.add_kwargs_path = join(self.pscripts_path, f'additional_kwargs_{self.name}.json')
-
         # Stores parameters for each Parameter-Preset
         self.parameters = dict()
-        self.parameters_path = join(self.pscripts_path, f'parameters_{self.name}.json')
-
-        # Paramter-Preset
+        # Parameter-Preset
         self.p_preset = 'Default'
-        self.sel_p_preset_path = join(self.pscripts_path, f'sel_p_preset_{self.name}.json')
-
         # Stores parameters for each file saved to disk from the current run (know, what you did to your data)
         self.file_parameters = dict()
+
+        # Attributes, which have their own special function for loading
+        self.special_loads = ['parameters', 'p_preset']
+        # Attributes, which have their own special function for saving
+        self.special_saves = ['parameters']
+
+    def init_pipeline_scripts(self):
+        # Initiate Project-Lists and Dicts
+        # Logging Path
+        self.log_path = join(self.pscripts_path, '_pipeline.log')
+
+        self.all_meeg_path = join(self.pscripts_path, f'all_meeg_{self.name}.json')
+        self.sel_meeg_path = join(self.pscripts_path, f'selected_meeg_{self.name}.json')
+        self.meeg_bad_channels_path = join(self.pscripts_path, f'meeg_bad_channels_{self.name}.json')
+        self.meeg_event_id_path = join(self.pscripts_path, f'meeg_event_id_{self.name}.json')
+        self.sel_event_id_path = join(self.pscripts_path, f'selected_event_ids_{self.name}.json')
+        self.all_erm_path = join(self.pscripts_path, f'all_erm_{self.name}.json')
+        self.meeg_to_erm_path = join(self.pscripts_path, f'meeg_to_erm_{self.name}.json')
+        self.all_fsmri_path = join(self.pscripts_path, f'all_fsmri_{self.name}.json')
+        self.sel_fsmri_path = join(self.pscripts_path, f'selected_fsmri_{self.name}.json')
+        self.meeg_to_fsmri_path = join(self.pscripts_path, f'meeg_to_fsmri_{self.name}.json')
+        self.ica_exclude_path = join(self.pscripts_path, f'ica_exclude_{self.name}.json')
+        self.all_groups_path = join(self.pscripts_path, f'all_groups_{self.name}.json')
+        self.sel_groups_path = join(self.pscripts_path, f'selected_groups_{self.name}.json')
+        self.all_info_path = join(self.pscripts_path, f'all_info_{self.name}.json')
+        self.plot_files_path = join(self.pscripts_path, f'plot_files_{self.name}.json')
+        self.sel_functions_path = join(self.pscripts_path, f'selected_functions_{self.name}.json')
+        self.add_kwargs_path = join(self.pscripts_path, f'additional_kwargs_{self.name}.json')
+        self.parameters_path = join(self.pscripts_path, f'parameters_{self.name}.json')
+        self.sel_p_preset_path = join(self.pscripts_path, f'sel_p_preset_{self.name}.json')
         self.file_parameters_path = join(self.pscripts_path, f'file_parameters_{self.name}.json')
 
         # Map the paths to their attribute in the Project-Class
@@ -146,30 +158,10 @@ class Project:
                                   self.sel_p_preset_path: 'p_preset',
                                   self.file_parameters_path: 'file_parameters'}
 
-        # Attributes, which have their own special function for loading
-        self.special_loads = ['parameters', 'p_preset']
-
-        # Attributes, which have their own special function for saving
-        self.special_saves = ['parameters']
-
-        self.make_paths()
-        self.load()
-        self.check_data()
-
-    def make_paths(self):
-
-        # Create or check existence of main_paths
-        for path in self.main_paths:
-            if not exists(path):
-                makedirs(path)
-                print(f'{path} created')
-
-        # # Create empty files if files are not existing
-        # for file_path in self.path_to_attribute:
-        #     if not isfile(file_path):
-        #         with open(file_path, 'w') as fl:
-        #             fl.write('')
-        #         print(f'{file_path} created')
+    def set_logging(self):
+        # Set logging
+        logging.basicConfig(filename=self.log_path, filemode='w')
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
