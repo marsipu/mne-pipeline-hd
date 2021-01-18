@@ -25,15 +25,18 @@ from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 
 
 class PlotViewSelection(QDialog):
+    """The user selects the plot-function and the objects to show for this plot_function
+    """
+
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
 
         self.selected_func = None
         self.target = None
-        self.selected_obj = {'MEEG': list(),
-                             'FSMRI': list(),
-                             'Group': list()}
+        self.interactive = False
+        self.objects = list()
+        self.selected_objs = list()
         self.selected_ppresets = list()
 
         # Stores the widgets for parameter-presets/objects
@@ -64,7 +67,7 @@ class PlotViewSelection(QDialog):
 
         bt_layout = QHBoxLayout()
         self.interactive_chkbx = QCheckBox('Interactive Plots?')
-
+        self.interactive_chkbx.toggled.connect(self.interactive_toggled)
         bt_layout.addWidget(self.interactive_chkbx)
 
         start_bt = QPushButton('Start')
@@ -78,24 +81,45 @@ class PlotViewSelection(QDialog):
         layout.addLayout(bt_layout)
         self.setLayout(layout)
 
+    def update_objects(self):
+        if self.selected_func is not None and self.target is not None:
+            # Load object-list according to target
+            if self.target == 'MEEG':
+                self.objects = self.mw.pr.all_meeg
+            elif self.target == 'FSMRI':
+                self.objects = self.mw.pr.all_fsmri
+            elif self.target == 'Group':
+                self.objects = list(self.mw.pr.all_groups.keys())
+
+                # If non-interactive only list objects where a plot-image already was saved
+            if not self.interactive:
+                self.objects = [ob for ob in self.objects if ob in self.mw.pr.plot_files]
+
+            self.obj_select.replace_data(self.objects)
+            self.obj_select.replace_checked(self.selected_objs)
+
     def func_selected(self, func):
         """Get selected function and adjust contents of Object-Selection to target"""
         self.selected_func = func
         self.target = self.mw.pd_funcs.loc[func, 'target']
         if self.target == 'MEEG':
             self.obj_select.replace_data(self.mw.pr.all_meeg)
-            self.obj_select.replace_checked(self.selected_obj['MEEG'])
+            self.obj_select.replace_checked(self.selected_objs['MEEG'])
         elif self.target == 'FSMRI':
             self.obj_select.replace_data(self.mw.pr.all_fsmri)
-            self.obj_select.replace_checked(self.selected_obj['FSMRI'])
+            self.obj_select.replace_checked(self.selected_objs['FSMRI'])
         elif self.target == 'Group':
             self.obj_select.replace_data(list(self.mw.pr.all_groups.keys()))
-            self.obj_select.replace_checked(self.selected_obj['Group'])
+            self.obj_select.replace_checked(self.selected_objs['Group'])
+
+    def interactive_toggled(self, checked):
+        self.interactive = checked
+        self.update_objects()
 
     def load_plots(self):
 
         # Show ProgressBar
-        self.total_loads = len(self.selected_obj[self.target]) * len(self.selected_ppresets)
+        self.total_loads = len(self.selected_objs) * len(self.selected_ppresets)
         if self.total_loads == 0:
             QMessageBox.warning(self, 'Not enought selected!', 'An important parameter seems to be missing')
         else:
@@ -110,7 +134,7 @@ class PlotViewSelection(QDialog):
             for p_preset in self.selected_ppresets:
                 self.all_images[p_preset] = dict()
                 self.all_figs[p_preset] = dict()
-                for obj_name in self.selected_obj[self.target]:
+                for obj_name in self.selected_objs:
                     if self.target == 'MEEG':
                         obj = MEEG(obj_name, self.mw)
                     elif self.target == 'FSMRI':
@@ -333,8 +357,8 @@ class PlotViewer(QMainWindow):
     def update_layout(self):
         old_layout = self.main_layout.itemAt(0)
         self.main_layout.removeItem(old_layout)
-        for scroll_area in [old_layout.itemAt(idx) for idx in range(old_layout.count())]:
-            scroll_area.widget().deleteLater()
+        for scroll_area in [old_layout.itemAt(idx).widget() for idx in range(old_layout.count())]:
+            scroll_area.deleteLater()
         del old_layout
 
         self._setup_views()

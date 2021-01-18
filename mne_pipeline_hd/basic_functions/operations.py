@@ -475,6 +475,7 @@ def plot_ica_ecg_scores(meeg, show_plots):
     return ecg_score_fig
 
 
+# ToDo: Apply on ERM too if present
 def apply_ica(meeg, n_pca_components):
     epochs = meeg.load_epochs()
     ica = meeg.load_ica()

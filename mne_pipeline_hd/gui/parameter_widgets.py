@@ -17,9 +17,7 @@ from functools import partial
 import numpy as np
 from PyQt5.QtCore import QSettings, QTimer, Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QGridLayout, QGroupBox,
-                             QHBoxLayout,
-                             QLabel,
-                             QLineEdit, QListWidget, QMainWindow, QPushButton, QScrollArea, QSizePolicy,
+                             QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QScrollArea, QSizePolicy,
                              QSlider, QSpinBox, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList
@@ -48,7 +46,7 @@ class Param(QWidget):
         default : object
             The default value depending on GUI-Type.
         groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
+            If a groupbox should be used as layout (otherwise it is just a label), if None no label
         none_select : bool
             Set True if it should be possible to set the value to None by unchecking the GroupBox 
             (on the left of the name).
@@ -60,7 +58,7 @@ class Param(QWidget):
         super().__init__()
         self.data = data
         self.param_name = param_name
-        if param_alias:
+        if param_alias is not None:
             self.param_alias = param_alias
         else:
             self.param_alias = self.param_name
@@ -68,14 +66,21 @@ class Param(QWidget):
         self.default = default
         self.groupbox_layout = groupbox_layout
         self.none_select = none_select
-        if description:
+        self.description = description
+        if self.description:
             self.setToolTip(description)
-        self.param_unit = None
 
-    def init_ui(self, layout):
-        """Base layout initialization, which adds the given layout to a group-box with the parameters name"""
+        # Making sure, that groupbox_layout is on when none_select is one
+        # (Selection of None works by checking/unchecking the GroupBox)
+        if self.none_select:
+            self.groupbox_layout = True
 
-        main_layout = QVBoxLayout()
+    def init_ui(self, layout=None):
+        """Base layout initialization, which adds the given layout to a group-box with the parameters name
+        if groupbox_layout is enabled.
+        Else the layout will be horizontal with a QLabel for the name """
+
+        main_layout = QHBoxLayout()
 
         if self.groupbox_layout:
             self.group_box = QGroupBox(self.param_alias)
@@ -95,19 +100,10 @@ class Param(QWidget):
             main_layout.addWidget(self.group_box)
 
         else:
-            label_layout = QHBoxLayout()
-            label_layout.addWidget(QLabel(self.param_alias))
-            label_layout.addLayout(layout)
-            main_layout.addLayout(label_layout)
+            main_layout.addWidget(QLabel(self.param_alias))
+            main_layout.addLayout(layout)
 
         self.setLayout(main_layout)
-
-    def init_h_layout(self):
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(self.param_widget)
-        if self.param_unit:
-            h_layout.addWidget(QLabel(self.param_unit))
-        self.init_ui(h_layout)
 
     def groupbox_toggled(self, checked):
         if checked:
@@ -169,7 +165,7 @@ class IntGui(Param):
     """A GUI for Integer-Parameters"""
 
     def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True, none_select=False,
-                 description=None, param_unit=None, min_val=0, max_val=100, special_value_text=None):
+                 description=None, param_unit=None, min_val=0, max_val=1000, special_value_text=None):
         """
         Parameters
         ----------
@@ -182,8 +178,8 @@ class IntGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : int | None
-            The default value, if None defaults to 1.
+        default : int
+            The default value, if not given defaults to 1.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -215,9 +211,14 @@ class IntGui(Param):
         self.param_widget.valueChanged.connect(self.get_param)
 
         self.read_param()
-        self.init_h_layout()
+        self.init_layout()
         self.set_param()
         self.save_param()
+
+    def init_layout(self):
+        layout = QHBoxLayout()
+        layout.addWidget(self.param_widget)
+        self.init_ui(layout)
 
     def set_param(self):
         self.check_groupbox_state()
@@ -235,7 +236,7 @@ class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
     def __init__(self, data, param_name, param_alias=None, default=1., groupbox_layout=True, none_select=False,
-                 description=None, param_unit=None, min_val=-100., max_val=100., step=0.1, decimals=2):
+                 description=None, param_unit=None, min_val=-1000., max_val=1000., step=0.1, decimals=2):
         """
         Parameters
         ----------
@@ -248,8 +249,8 @@ class FloatGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : float | None
-            The default value, if None defaults to 1..
+        default : float
+            The default value, if not given defaults to 1.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -282,9 +283,14 @@ class FloatGui(Param):
         self.param_widget.valueChanged.connect(self.get_param)
 
         self.read_param()
-        self.init_h_layout()
+        self.init_layout()
         self.set_param()
         self.save_param()
+
+    def init_layout(self):
+        layout = QHBoxLayout()
+        layout.addWidget(self.param_widget)
+        self.init_ui(layout)
 
     def set_param(self):
         self.check_groupbox_state()
@@ -318,8 +324,8 @@ class StringGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : str | None
-            The default value, if None defaults to 'Empty'
+        default : str
+            The default value, if not given to 'Empty'
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -342,9 +348,16 @@ class StringGui(Param):
         self.param_widget.textChanged.connect(self.get_param)
 
         self.read_param()
-        self.init_h_layout()
+        self.init_layout()
         self.set_param()
         self.save_param()
+
+    def init_layout(self):
+        layout = QHBoxLayout()
+        layout.addWidget(self.param_widget)
+        if self.param_unit is not None:
+            layout.addWidget(QLabel(self.param_unit))
+        self.init_ui(layout)
 
     def set_param(self):
         self.check_groupbox_state()
@@ -362,7 +375,7 @@ class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy
     """
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default=0, groupbox_layout=True, none_select=False,
                  description=None, param_unit=None):
         """
         Parameters
@@ -376,8 +389,8 @@ class FuncGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : str
-            The default value, defaulting to None
+        default : object
+            The default value, defaulting to 0 if not given
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -474,8 +487,8 @@ class BoolGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : object
-            The default value, defaulting to False.
+        default : bool
+            The default value, defaulting to False if not given.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -493,9 +506,14 @@ class BoolGui(Param):
         self.param_widget.toggled.connect(self.get_param)
 
         self.read_param()
-        self.init_h_layout()
+        self.init_layout()
         self.set_param()
         self.save_param()
+
+    def init_layout(self):
+        layout = QVBoxLayout()
+        layout.addWidget(self.param_widget)
+        self.init_ui(layout)
 
     def set_param(self):
         if self.param_value is not None:
@@ -531,8 +549,8 @@ class TupleGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : object
-            The default value, defaulting to (0, 1).
+        default : tuple
+            The default value, defaulting to (0, 1) if not given.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -643,9 +661,16 @@ class ComboGui(Param):
             self.param_widget.addItem(str(option))
 
         self.read_param()
-        self.init_h_layout()
+        self.init_layout()
         self.set_param()
         self.save_param()
+
+    def init_layout(self):
+        layout = QHBoxLayout()
+        layout.addWidget(self.param_widget)
+        if self.param_unit is not None:
+            layout.addWidget(QLabel(self.param_unit))
+        self.init_ui(layout)
 
     def set_param(self):
         self.check_groupbox_state()
@@ -701,8 +726,8 @@ class ListGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : object
-            The default value, defaulting to None
+        default : list
+            The default value, defaulting to empty list if not given.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -816,8 +841,8 @@ class CheckListGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : int | None
-            The default value, if None defaults to 1.
+        default : None | list
+            The default value, set to empty dictionary if not given or None.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -833,6 +858,8 @@ class CheckListGui(Param):
         one_check : bool
             Set to True, if only one item should be selectable (or use ComboGUI)
         """
+
+        default = default or dict()
 
         if not isinstance(options, list) or len(options) == 0:
             options = ['Empty']
@@ -931,8 +958,8 @@ class DictGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : int | None
-            The default value, if None defaults to an empty dict.
+        default : dict | None
+            The default value, if not given or None set to an empty dict.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -1019,8 +1046,8 @@ class SliderGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : int | None
-            The default value, if None defaults to 1.
+        default : int
+            The default value, if not given to 1.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
         none_select : bool
@@ -1116,93 +1143,212 @@ class SliderGui(Param):
         return self.param_value
 
 
-# Todo: Label-GUI
-class LabelGui(Param):
-    """A GUI to select Labels depending on parcellation"""
+class MultiTypeGui(Param):
+    """A GUI which accepts multiple types of values in a single LineEdit"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, none_select=False, description=None):
-        super().__init__(data, param_name, param_alias, default, none_select, description)
-        self.param_name = param_name
-        self.param_value = []
-        self.param_widget = QListWidget()
-        self.param_widget.itemChanged.connect(self.get_param)
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+                 description=None, type_selection=False, types=None, type_kwargs=None):
+        """
+        Parameters
+        ----------
+        data : dict | QMainWindow | QSettings
+            The data-structure, in which the value of the parameter is stored
+            (depends on the scenario how the Parameter-Widget is used,
+             e.g. displaying parameters from Project or displaying Settings from Main-Window).
+        param_name : str
+            The name of the key, which stores the value in the data-structure.
+        param_alias : str | None
+            An optional alias-name for the parameter for display
+            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
+        default : int | float | bytes | bool | str | list | dict | tuple | set | None
+            The default value, if not given defaults to None.
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
+        none_select : bool
+            Set True if it should be possible to set the value to None by unchecking the GroupBox
+            (on the left of the name).
+        description : str | None
+            Supply an optional description for the parameter,
+            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
+        type_selection : bool
+            If True, the use can choose in a QComboBox which type they want to enter and then use the appropriate GUI
+        types : list of str
+            If type_selection is True, the type-selection will be limited to the given types (type-name as string)
+        type_kwargs : dict
+            Specify keyword-arguments for the different GUIs (look into their documentation), 
+            the key is the name of the GUI!
+        """
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        self.type_selection = type_selection
+        self.types = types or ['int', 'float', 'bool', 'str', 'list', 'dict', 'tuple']
+        self.type_kwargs = type_kwargs or dict()
+
+        # A dictionary to map possible types with their GUI
+        self.gui_types = {'int': 'IntGui',
+                          'float': 'FloatGui',
+                          'bool': 'BoolGui',
+                          'str': 'StringGui',
+                          'list': 'ListGui',
+                          'dict': 'DictGui',
+                          'tuple': 'TupleGui'}
+        self.param_type = self.types[0]
+
+        if self.type_selection:
+            self.type_cmbx = QComboBox()
+            self.type_cmbx.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+            self.type_cmbx.addItems(self.types)
+            self.type_cmbx.currentTextChanged.connect(self.change_type)
+        else:
+            self.param_widget = QLineEdit()
+            self.param_widget.textEdited.connect(self.get_param)
+            self.type_display = QLabel()
 
         self.read_param()
-        self.init_label_ui()
+        self.init_layout()
         self.set_param()
         self.save_param()
 
-    def init_label_ui(self):
-        label_layout = QVBoxLayout()
-        start_bt = QPushButton('Select Labels')
-        label_layout.addWidget(start_bt)
+    def add_type_gui(self):
+        gui_name = self.gui_types[self.param_type]
 
-        self.init_ui(label_layout)
+        # Load specifc keyword-arguments if given
+        if gui_name in self.type_kwargs:
+            kwargs = self.type_kwargs[gui_name]
+        else:
+            kwargs = dict()
 
-    def set_param(self):
-        pass
+        # Set standard parameter-keyword-arguments as given to MultiTypeGui
+        kwargs['data'] = self.data
+        kwargs['param_name'] = self.param_name
+        kwargs['param_alias'] = self.param_alias
+        kwargs['default'] = self.default
+        kwargs['groupbox_layout'] = self.groupbox_layout
+        kwargs['none_select'] = self.none_select
+        kwargs['description'] = self.description
 
-    def get_param(self):
-        pass
+        self.param_widget = globals()[gui_name](**kwargs)
+        self.type_layout.addWidget(self.param_widget)
+
+    def change_type(self, type_str):
+        # Set Param-Value to None to avoid conflicts whith values from other types
+        self.param_value = None
         self.save_param()
 
-        return self.param_value
+        old_widget = self.type_layout.itemAt(1)
+        self.type_layout.removeItem(old_widget)
+        old_widget.widget().deleteLater()
+        del old_widget, self.param_widget
+
+        self.param_type = type_str
+
+        self.add_type_gui()
+
+    def init_layout(self):
+        if self.type_selection:
+            self.type_layout = QVBoxLayout()
+            self.type_layout.addWidget(self.type_cmbx)
+            self.add_type_gui()
+            self.init_ui(self.type_layout)
+        else:
+            type_layout = QHBoxLayout()
+            type_layout.addWidget(self.param_widget)
+            type_layout.addWidget(self.type_display)
+            self.init_ui(type_layout)
+
+    def set_param(self):
+        if self.type_selection:
+            self.param_widget.set_param()
+        else:
+            self.check_groupbox_state()
+            if self.param_value is not None:
+                self.param_widget.setText(str(self.param_value))
+                self.type_display.setText(f'Type: {type(self.param_value).__name__}')
+
+    def get_param(self):
+        if self.type_selection:
+            self.param_widget.get_param()
+        else:
+            text = self.param_widget.text()
+            try:
+                self.param_value = literal_eval(text)
+                self.param_type = type(self.param_value).__name__
+            except ValueError:
+                self.param_value = text
+                self.param_type = 'str'
+            except SyntaxError:
+                self.param_value = None
+                self.param_type = 'error'
+            self.type_display.setText(f'Type: {self.param_type}')
+            self.save_param()
+
+            return self.param_value
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    scroll_area = QScrollArea()
-    sub_layout = QGridLayout()
-    main_win = QWidget()
+    widget = QWidget()
+    test_layout = QGridLayout()
+    max_cols = 4
+    set_none_select = True
+    set_groupbox_layout = False
+    set_param_alias = False
 
-    parameters = {'TestInt': None,
-                  'TestList': [1, 454.33, 'post_central-lh', 'raga', 5],
-                  'TextDict': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
-                  'Fugi?': True,
-                  'TestFloat': 5.3,
-                  'TestString': 'Havona',
-                  'TestSlider': 5,
-                  'TestSlider2': 4.5,
-                  'TestFunc': 5000,
-                  'TestTuple': (45, 6.5),
-                  'TestCombo': 'a',
-                  'TestCheckList': ['bananaaa']}
+    parameters = {'IntGui': None,
+                  'FloatGui': 5.3,
+                  'StringGui': 'Havona',
+                  'MultiTypeGui': 8,
+                  'FuncGui': 5000,
+                  'BoolGui': True,
+                  'TupleGui': (45, 6.5),
+                  'ComboGui': 'a',
+                  'ListGui': [1, 454.33, 'post_central-lh', 'raga', 5],
+                  'CheckListGui': ['bananaaa'],
+                  'DictGui': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
+                  'SliderGui': 5}
 
-    a = IntGui(parameters, 'TestInt', min_val=-4, max_val=10, param_unit='t', none_select=True, description='Test')
-    b = ListGui(parameters, 'TestList', param_unit='a', none_select=True, description='Test')
-    c = DictGui(parameters, 'TextDict', param_unit='a', none_select=True, description='Test')
-    d = BoolGui(parameters, 'Huba?', param_unit='a', none_select=True, description='Test')
-    e = FloatGui(parameters, 'TestFloat', min_val=-18, max_val=+64, step=0.4, decimals=6, param_unit='flurbo',
-                 none_select=True, description='Test')
-    f = StringGui(parameters, 'TestString', input_mask='ppAAA.AA;_', param_unit='a', none_select=True,
-                  description='Test')
-    g = SliderGui(parameters, 'TestSlider', min_val=-10, max_val=10, step=1, param_unit='Hz', none_select=True,
-                  description='Test')
-    h = SliderGui(parameters, 'TestSlider2', min_val=0, max_val=20.258, step=5, param_unit='Fz', none_select=True,
-                  description='Test')
-    i = FuncGui(parameters, 'TestFunc', param_unit='a', none_select=True, description='Test')
-    j = TupleGui(parameters, 'TestTuple', min_val=-10, max_val=20, step=1, decimals=3, param_unit='a', none_select=True,
-                 description='Test')
-    k = ComboGui(parameters, 'TestCombo', options=['a', 'b', 'c'], param_unit='a', none_select=True, description='Test')
-    l = CheckListGui(parameters, 'TestCheckList', options=['lemon', 'pineapple', 'bananaaa'], param_unit='a',
-                     none_select=True, description='Test')
-    m = StringGui(parameters, 'TestString2', description='Test')
-    sub_layout.addWidget(a, 0, 0)
-    sub_layout.addWidget(b, 0, 1)
-    sub_layout.addWidget(c, 0, 2)
-    sub_layout.addWidget(d, 0, 3)
-    sub_layout.addWidget(e, 0, 4)
-    sub_layout.addWidget(f, 1, 0)
-    sub_layout.addWidget(g, 1, 1)
-    sub_layout.addWidget(h, 1, 2)
-    sub_layout.addWidget(i, 1, 3)
-    sub_layout.addWidget(j, 1, 4)
-    sub_layout.addWidget(k, 2, 0)
-    sub_layout.addWidget(l, 2, 1)
-    sub_layout.addWidget(m, 2, 2)
-    main_win.setLayout(sub_layout)
-    scroll_area.setWidget(main_win)
-    scroll_area.show()
+    keyword_args = {
+        'IntGui': {'min_val': -4,
+                   'max_val': 10,
+                   'param_unit': 't'},
+        'FloatGui': {'min_val': -18,
+                     'max_val': 64,
+                     'step': 0.4,
+                     'decimals': 6,
+                     'param_unit': 'flurbo'},
+        'StringGui': {'input_mask': 'ppAAA.AA;_',
+                      'param_unit': 'N'},
+        'MultiTypeGui': {'type_selection': True},
+        'FuncGui': {'param_unit': 'u'},
+        'BoolGui': {},
+        'TupleGui': {'min_val': -10,
+                     'max_val': 20,
+                     'step': 1,
+                     'decimals': 3,
+                     'param_unit': 'Nm'},
+        'ComboGui': {'options': ['a', 'b', 'c'],
+                     'param_unit': 'g'},
+        'ListGui': {'param_unit': 'mol'},
+        'CheckListGui': {'options': ['lemon', 'pineapple', 'bananaaa'],
+                         'param_unit': 'V'},
+        'DictGui': {'param_unit': '°C'},
+        'SliderGui': {'min_val': -10,
+                      'max_val': 10,
+                      'step': 1,
+                      'param_unit': 'Hz'}
+    }
+
+    for idx, gui_nm in enumerate(keyword_args):
+        kw_args = keyword_args[gui_nm]
+        kw_args['none_select'] = set_none_select
+        kw_args['groupbox_layout'] = set_groupbox_layout
+        if set_param_alias:
+            kw_args['param_alias'] = gui_nm + '-alias'
+        kw_args['description'] = gui_nm + '-description'
+        gui = globals()[gui_nm](parameters, gui_nm, **kw_args)
+        test_layout.addWidget(gui, idx // max_cols, idx % max_cols)
+
+    widget.setLayout(test_layout)
+    widget.show()
 
     # Command-Line interrupt with Ctrl+C possible, easier debugging
     timer = QTimer()
