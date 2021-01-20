@@ -9,6 +9,7 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
+import time
 from functools import partial
 from random import random
 
@@ -17,10 +18,8 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QCheckBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
                              QProgressDialog,
                              QPushButton, QScrollArea, QSpinBox, QTabWidget, QToolBar, QVBoxLayout, QWidget)
-import matplotlib
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvas
-import time
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleDialog, SimpleList
 from mne_pipeline_hd.gui.gui_utils import Worker, set_ratio_geometry
@@ -360,7 +359,7 @@ class PlotViewer(QMainWindow):
                             fig, default_size = item
                             # Zoom Figure
                             fig.set_size_inches(default_size * (self.zoom_factor / 100))
-                            view_widget = FigureCanvas(fig)
+                            view_widget = FigureCanvasQTAgg(fig)
                         else:
                             view_widget = QLabel()
                             # Zoom Pixmap
