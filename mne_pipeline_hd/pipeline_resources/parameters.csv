@@ -30,7 +30,7 @@ ica_autoreject;Autoreject;ICA;False;;If to use Autoreject for ICA;BoolGui;
 ica_eog;Use EOG;ICA;False;;If to use EOG-Channels for automatic selection of components;BoolGui;
 eog_channel;;ICA;None;;Set Vertical EOG-Channel;StringGui;
 ica_ecg;Use ECG;ICA;False;;If to use automatic ECG-detection either by ECG-Channel (if provided) or by an artificial ECG-Channel;BoolGui;
-ecg_channel;;ICA;None;;Set ECG-Channel;StringGui;
+ecg_channel;;ICA;None;;Set ECG-Channel;StringGui;{'none_select': True}
 tfr_freqs;;Time-Frequency;np.arange(7,40,3) ;Hz;Select the frequencies of interest (Array/List);FuncGui;
 tfr_method;;Time-Frequency;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}
 tfr_n_cycles;n_cycles;Time-Frequency;np.arange(7,40,3) / 2;;Select the number of cycles for each frequency;FuncGui;
