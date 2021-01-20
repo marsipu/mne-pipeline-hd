@@ -35,7 +35,7 @@ from . import operations as op
 # PLOTTING FUNCTIONS
 # ==============================================================================
 
-def plot_raw(meeg):
+def plot_raw(meeg, show_plots):
     raw = meeg.load_raw()
 
     try:
@@ -44,10 +44,10 @@ def plot_raw(meeg):
         events = None
         print('No events found')
 
-    raw.plot(events=events, n_channels=30, bad_color='red', scalings='auto', title=f'{meeg.name}')
+    raw.plot(events=events, n_channels=30, bad_color='red', scalings='auto', title=f'{meeg.name}', show=show_plots)
 
 
-def plot_filtered(meeg):
+def plot_filtered(meeg, show_plots):
     raw = meeg.load_filtered()
 
     try:
@@ -58,63 +58,70 @@ def plot_filtered(meeg):
 
     raw.plot(events=events, n_channels=30, bad_color='red',
              scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-             title=f'{meeg.name}_highpass={meeg.p["highpass"]}_lowpass={meeg.p["lowpass"]}')
+             title=f'{meeg.name}_highpass={meeg.p["highpass"]}_lowpass={meeg.p["lowpass"]}', show=show_plots)
 
 
-def plot_sensors(meeg):
+def plot_sensors(meeg, plot_sensors_kind, show_plots):
     loaded_info = meeg.load_info()
-    mne.viz.plot_sensors(loaded_info, kind='topomap', ch_type='all', title=meeg.name, show_names=True)
+    mne.viz.plot_sensors(loaded_info, kind=plot_sensors_kind, ch_type='all', title=meeg.name, show_names=True,
+                         show=show_plots)
 
 
-def plot_events(meeg):
+def plot_events(meeg, show_plots):
     events = meeg.load_events()
 
-    fig = mne.viz.plot_events(events, event_id=meeg.event_id)
+    fig = mne.viz.plot_events(events, event_id=meeg.event_id, show=show_plots)
     fig.suptitle(meeg.name)
 
     meeg.plot_save('events', matplotlib_figure=fig)
 
 
-def plot_power_spectra(meeg):
+def plot_power_spectra(meeg, show_plots, n_jobs):
     raw = meeg.load_filtered()
-    picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=False, ecg=False,
-                           exclude=meeg.bad_channels)
 
-    fig = raw.plot_psd(fmax=meeg.p['lowpass'], picks=picks, n_jobs=1)
+    fig = raw.plot_psd(show=show_plots, n_jobs=n_jobs)
     fig.suptitle(meeg.name)
 
     meeg.plot_save('power_spectra', subfolder='raw', matplotlib_figure=fig)
 
 
-def plot_power_spectra_epochs(meeg):
+def plot_power_spectra_topo(meeg, show_plots, n_jobs):
+    raw = meeg.load_filtered()
+
+    fig = raw.plot_psd_topo(show=show_plots, n_jobs=n_jobs)
+
+    meeg.plot_save('power_spectra', subfolder='raw_topo', matplotlib_figure=fig)
+
+
+def plot_power_spectra_epochs(meeg, show_plots, n_jobs):
     epochs = meeg.load_epochs()
 
     for trial in meeg.sel_trials:
-        fig = epochs[trial].plot_psd(fmax=meeg.p['lowpass'], n_jobs=-1)
+        fig = epochs[trial].plot_psd(show=show_plots, n_jobs=n_jobs)
         fig.suptitle(meeg.name + '-' + trial)
         meeg.plot_save('power_spectra', subfolder='epochs', trial=trial, matplotlib_figure=fig)
 
 
-def plot_power_spectra_topo(meeg):
+def plot_power_spectra_epochs_topo(meeg, show_plots, n_jobs):
     epochs = meeg.load_epochs()
     for trial in meeg.sel_trials:
-        fig = epochs[trial].plot_psd_topomap(n_jobs=-1)
+        fig = epochs[trial].plot_psd_topomap(show=show_plots, n_jobs=n_jobs)
         fig.suptitle(meeg.name + '-' + trial)
-        meeg.plot_save('power_spectra', subfolder='topo', trial=trial, matplotlib_figure=fig)
+        meeg.plot_save('power_spectra', subfolder='epochs_topo', trial=trial, matplotlib_figure=fig)
 
 
-def plot_tfr(meeg):
+def plot_tfr(meeg, show_plots):
     powers = meeg.load_power_tfr_average()
 
     for power in powers:
         print('Plotting TFR')
-        fig1 = power.plot(title=f'{meeg.name}-{power.comment}', combine='mean')
+        fig1 = power.plot(title=f'{meeg.name}-{power.comment}', combine='mean', show=show_plots)
         print('Plotting TFR-Topo')
-        fig2 = power.plot_topo(title=f'{meeg.name}-{power.comment}')
+        fig2 = power.plot_topo(title=f'{meeg.name}-{power.comment}', show=show_plots)
         print('Plotting TFR-Joint')
-        fig3 = power.plot_joint(title=f'{meeg.name}-{power.comment}')
+        fig3 = power.plot_joint(title=f'{meeg.name}-{power.comment}', show=show_plots)
         print('Plotting TFR-Topomap')
-        fig4 = power.plot_topomap(title=f'{meeg.name}-{power.comment}')
+        fig4 = power.plot_topomap(title=f'{meeg.name}-{power.comment}', show=show_plots)
 
         meeg.plot_save('time_frequency', subfolder='plot', trial=power.comment, matplotlib_figure=fig1)
         meeg.plot_save('time_frequency', subfolder='topo', trial=power.comment, matplotlib_figure=fig2)
@@ -128,77 +135,77 @@ def plot_tfr(meeg):
     else:
         for itc in itcs:
             fig5 = itc.plot_topo(title=f'{meeg.name}-{itc.comment}-itc',
-                                 vmin=0., vmax=1., cmap='Reds')
+                                 vmin=0., vmax=1., cmap='Reds', show=show_plots)
             meeg.plot_save('time_frequency', subfolder='itc', trial=itc.comment, matplotlib_figure=fig5)
 
 
-def plot_epochs(meeg):
+def plot_epochs(meeg, show_plots):
     epochs = meeg.load_epochs()
 
     for trial in meeg.sel_trials:
-        fig = mne.viz.plot_epochs(epochs[trial], title=meeg.name)
+        fig = mne.viz.plot_epochs(epochs[trial], title=meeg.name, show=show_plots)
         fig.suptitle(trial)
 
 
-def plot_epochs_image(meeg):
+def plot_epochs_image(meeg, show_plots):
     epochs = meeg.load_epochs()
     for trial in meeg.sel_trials:
-        figures = mne.viz.plot_epochs_image(epochs[trial], title=meeg.name + '_' + trial)
+        figures = mne.viz.plot_epochs_image(epochs[trial], title=meeg.name + '_' + trial, show=show_plots)
 
         for idx, fig in enumerate(figures):
             meeg.plot_save('epochs', subfolder='image', trial=trial, idx=idx, matplotlib_figure=fig)
 
 
-def plot_epochs_topo(meeg):
+def plot_epochs_topo(meeg, show_plots):
     epochs = meeg.load_epochs()
     for trial in meeg.sel_trials:
-        fig = mne.viz.plot_topo_image_epochs(epochs, title=meeg.name)
+        fig = mne.viz.plot_topo_image_epochs(epochs, title=meeg.name, show=show_plots)
 
         meeg.plot_save('epochs', subfolder='topo', trial=trial, matplotlib_figure=fig)
 
 
-def plot_epochs_drop_log(meeg):
+def plot_epochs_drop_log(meeg, show_plots):
     epochs = meeg.load_epochs()
-    fig = epochs.plot_drop_log(subject=meeg.name)
+    fig = epochs.plot_drop_log(subject=meeg.name, show=show_plots)
 
     meeg.plot_save('epochs', subfolder='drop_log', matplotlib_figure=fig)
 
 
-def plot_autoreject_log(meeg):
+def plot_autoreject_log(meeg, show_plots):
     reject_log = meeg.load_reject_log()
     epochs = meeg.load_epochs()
 
-    fig1 = reject_log.plot()
+    fig1 = reject_log.plot(show=show_plots)
     meeg.plot_save('epochs', subfolder='autoreject_log', idx='reject', matplotlib_figure=fig1)
     try:
-        fig2 = reject_log.plot_epochs(epochs)
+        fig2 = reject_log.plot_epochs(epochs, show=show_plots)
         meeg.plot_save('epochs', subfolder='autoreject_log', idx='epochs', matplotlib_figure=fig2)
     except ValueError:
         print(f'{meeg.name}: No epochs-plot for autoreject-log')
 
 
-def plot_evoked_topo(meeg):
+def plot_evoked_topo(meeg, show_plots):
     evokeds = meeg.load_evokeds()
-    fig = mne.viz.plot_evoked_topo(evokeds, title=meeg.name)
+    fig = mne.viz.plot_evoked_topo(evokeds, title=meeg.name, show=show_plots)
 
     meeg.plot_save('evokeds', subfolder='topo', matplotlib_figure=fig, dpi=800)
 
 
-def plot_evoked_topomap(meeg):
+def plot_evoked_topomap(meeg, show_plots):
     evokeds = meeg.load_evokeds()
     for evoked in evokeds:
         fig = mne.viz.plot_evoked_topomap(evoked, times='auto',
-                                          title=meeg.name + '-' + evoked.comment)
+                                          title=meeg.name + '-' + evoked.comment, show=show_plots)
 
         meeg.plot_save('evokeds', subfolder='topomap', trial=evoked.comment, matplotlib_figure=fig)
 
 
-def plot_evoked_joint(meeg):
+def plot_evoked_joint(meeg, show_plots):
     evokeds = meeg.load_evokeds()
 
     for evoked in evokeds:
         fig = mne.viz.plot_evoked_joint(evoked, times='peaks',
-                                        title=meeg.name + ' - ' + evoked.comment)
+                                        title=meeg.name + ' - ' + evoked.comment, show=show_plots)
 
         meeg.plot_save('evokeds', subfolder='joint', trial=evoked.comment, matplotlib_figure=fig)
 
@@ -218,7 +225,7 @@ def plot_evoked_butterfly(meeg, show_plots):
     return evoked_figs
 
 
-def plot_evoked_white(meeg):
+def plot_evoked_white(meeg, show_plots):
     evokeds = meeg.load_evokeds()
     noise_covariance = meeg.load_noise_covariance()
 
@@ -226,24 +233,25 @@ def plot_evoked_white(meeg):
         # Check, if evokeds and noise covariance got the same channels
         channels = set(evoked.ch_names) & set(noise_covariance.ch_names)
         evoked.pick_channels(channels)
+        noise_covariance.pick_channels(channels)
 
-        fig = mne.viz.plot_evoked_white(evoked, noise_covariance)
+        fig = evoked.plot_white(noise_covariance, show=show_plots)
         fig.suptitle(meeg.name + ' - ' + evoked.comment, horizontalalignment='center')
 
         meeg.plot_save('evokeds', subfolder='white', trial=evoked.comment, matplotlib_figure=fig)
 
 
-def plot_evoked_image(meeg):
+def plot_evoked_image(meeg, show_plots):
     evokeds = meeg.load_evokeds()
 
     for evoked in evokeds:
-        fig = mne.viz.plot_evoked_image(evoked)
+        fig = evoked.plot_image(show=show_plots)
         fig.suptitle(meeg.name + ' - ' + evoked.comment, horizontalalignment='center')
 
         meeg.plot_save('evokeds', subfolder='image', trial=evoked.comment, matplotlib_figure=fig)
 
 
-def plot_gfp(meeg):
+def plot_gfp(meeg, show_plots):
     evokeds = meeg.load_evokeds()
     for evoked in evokeds:
         gfp = op.calculate_gfp(evoked)
@@ -252,7 +260,8 @@ def plot_gfp(meeg):
         plt.figure()
         plt.plot(t, gfp)
         plt.title(f'GFP of {meeg.name}-{trial}')
-        plt.show()
+        if show_plots:
+            plt.show()
 
         meeg.plot_save('evokeds', subfolder='gfp', trial=trial)
 
@@ -278,15 +287,15 @@ def plot_source_space(fsmri):
     fsmri.plot_save('source_space', mayavi=True)
 
 
-def plot_bem(fsmri):
+def plot_bem(fsmri, show_plots):
     source_space = fsmri.load_source_space()
-    fig1 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=source_space)
+    fig1 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=source_space, show=show_plots)
 
     fsmri.plot_save('bem', subfolder='source-space', matplotlib_figure=fig1)
 
     try:
         vol_src = fsmri.load_vol_source_space()
-        fig2 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=vol_src)
+        fig2 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=vol_src, show=show_plots)
 
         fsmri.plot_save('bem', subfolder='volume-source-space', matplotlib_figure=fig2)
 
@@ -305,11 +314,11 @@ def plot_sensitivity_maps(meeg, ch_types):
         meeg.plot_save('sensitivity', trial=ch_type, brain=brain)
 
 
-def plot_noise_covariance(meeg):
+def plot_noise_covariance(meeg, show_plots):
     noise_covariance = meeg.load_noise_covariance()
     info = meeg.load_info()
 
-    fig1, fig2 = noise_covariance.plot(info, show_svd=False)
+    fig1, fig2 = noise_covariance.plot(info, show_svd=False, show=show_plots)
 
     meeg.plot_save('noise-covariance', subfolder='covariance', matplotlib_figure=fig1)
     meeg.plot_save('noise-covariance', subfolder='svd-spectra', matplotlib_figure=fig2)
@@ -445,14 +454,14 @@ def plot_ecd(meeg):
                       annotate=True, draw_cross=True)
 
 
-def plot_snr(meeg):
+def plot_snr(meeg, show_plots):
     evokeds = meeg.load_evokeds()
     inv = meeg.load_inverse_operator()
 
     for evoked in evokeds:
         trial = evoked.comment
         # data snr
-        fig = mne.viz.plot_snr_estimate(evoked, inv)
+        fig = mne.viz.plot_snr_estimate(evoked, inv, show=show_plots)
         fig.suptitle(f'{meeg.name}-{evoked.comment}', horizontalalignment='center')
 
         meeg.plot_save('snr', trial=trial, matplotlib_figure=fig)
@@ -465,7 +474,7 @@ def plot_annotation(fsmri, parcellation):
     fsmri.plot_save('Labels', brain=brain)
 
 
-def plot_label_time_course(meeg):
+def plot_label_time_course(meeg, show_plots):
     ltcs = meeg.load_ltc()
     for trial in ltcs:
         for label in ltcs[trial]:
@@ -475,12 +484,13 @@ def plot_label_time_course(meeg):
                       f'Extraction-Mode: {meeg.p["extract_mode"]}')
             plt.xlabel('Time in s')
             plt.ylabel('Source amplitude')
-            plt.show()
+            if show_plots:
+                plt.show()
 
             meeg.plot_save('label-time-course', subfolder=label, trial=trial)
 
 
-def plot_source_space_connectivity(meeg, target_labels, con_fmin, con_fmax):
+def plot_source_space_connectivity(meeg, target_labels, con_fmin, con_fmax, show_plots):
     con_dict = meeg.load_connectivity()
     labels = meeg.fsmri.load_parc_labels()
 
@@ -526,32 +536,32 @@ def plot_source_space_connectivity(meeg, target_labels, con_fmin, con_fmax):
             fig, axes = mne.viz.plot_connectivity_circle(con_dict[trial][con_method], label_names, n_lines=300,
                                                          node_angles=node_angles, node_colors=label_colors,
                                                          title=f'{con_method}: {str(con_fmin)}-{str(con_fmax)}',
-                                                         fontsize_names=12)
+                                                         fontsize_names=12, show=show_plots)
 
             meeg.plot_save('connectivity', subfolder=con_method, trial=trial, matplotlib_figure=fig)
 
 
 # %% Grand-Average Plots
 
-def plot_grand_avg_evokeds(group):
+def plot_grand_avg_evokeds(group, show_plots):
     ga_evokeds = group.load_ga_evokeds()
 
     for evoked in ga_evokeds:
         fig = evoked.plot(window_title=f'{group.name}-{evoked.comment}',
-                          spatial_colors=True, gfp=True)
+                          spatial_colors=True, gfp=True, show=show_plots)
 
         group.plot_save('ga_evokeds', trial=evoked.comment, matplotlib_figure=fig)
 
 
-def plot_grand_avg_tfr(group):
+def plot_grand_avg_tfr(group, show_plots):
     ga_dict = group.load_ga_tfr()
 
     for trial in ga_dict:
         power = ga_dict[trial]
-        fig1 = power.plot(title=f'{group.name}-{power.comment}')
-        fig2 = power.plot_topo(title=f'{group.name}-{power.comment}')
-        fig3 = power.plot_joint(title=f'{group.name}-{power.comment}')
-        fig4 = power.plot_topomap(title=f'{group.name}-{power.comment}')
+        fig1 = power.plot(title=f'{group.name}-{power.comment}', show=show_plots)
+        fig2 = power.plot_topo(title=f'{group.name}-{power.comment}', show=show_plots)
+        fig3 = power.plot_joint(title=f'{group.name}-{power.comment}', show=show_plots)
+        fig4 = power.plot_topomap(title=f'{group.name}-{power.comment}', show=show_plots)
 
         group.plot_save('ga_tfr', subfolder='plot', trial=power.comment, matplotlib_figure=fig1)
         group.plot_save('ga_tfr', subfolder='topo', trial=power.comment, matplotlib_figure=fig2)
@@ -582,7 +592,7 @@ def plot_grand_avg_stc_anim(group, stc_animation, stc_animation_dilat, morph_to)
         mlab.close()
 
 
-def plot_grand_avg_ltc(group):
+def plot_grand_avg_ltc(group, show_plots):
     ga_ltc = group.load_ga_ltc()
     for trial in ga_ltc:
         for label in ga_ltc[trial]:
@@ -592,12 +602,13 @@ def plot_grand_avg_ltc(group):
                       f'with Extraction-Mode: {group.p["extract_mode"]}')
             plt.xlabel('Time in ms')
             plt.ylabel('Source amplitude')
-            plt.show()
+            if show_plots:
+                plt.show()
 
             group.plot_save('ga_label-time-course', subfolder=label, trial=trial)
 
 
-def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation, target_labels, morph_to):
+def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation, target_labels, morph_to, show_plots):
     ga_dict = group.load_ga_connect()
 
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
@@ -652,7 +663,7 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation, target_label
                                                          node_angles=node_angles,
                                                          node_colors=label_colors,
                                                          title=f'{method}: {str(con_fmin)}-{str(con_fmax)}',
-                                                         fontsize_names=16)
+                                                         fontsize_names=16, show=show_plots)
 
             group.plot_save('ga_connectivity', subfolder=method, trial=trial, matplotlib_figure=fig)
 

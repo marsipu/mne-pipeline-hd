@@ -1025,7 +1025,7 @@ class FilePandasTable(BasePandasTable):
 
 
 class SimpleDialog(QDialog):
-    def __init__(self, widget, parent=None, modal=True, scroll=False, title=None):
+    def __init__(self, widget, parent=None, modal=True, scroll=False, title=None, show_close_bt=True):
         super().__init__(parent)
 
         layout = QVBoxLayout()
@@ -1040,9 +1040,10 @@ class SimpleDialog(QDialog):
         else:
             layout.addWidget(widget)
 
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(self.close)
-        layout.addWidget(close_bt)
+        if show_close_bt:
+            close_bt = QPushButton('Close')
+            close_bt.clicked.connect(self.close)
+            layout.addWidget(close_bt)
 
         self.setLayout(layout)
 

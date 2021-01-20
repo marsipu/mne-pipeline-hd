@@ -30,6 +30,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTextEdit, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
+from matplotlib.backends.backend_qt5agg import FigureCanvasQT, FigureCanvasQTAgg
 
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList,
@@ -37,6 +39,9 @@ from .base_widgets import (CheckDictList, CheckList, EditDict, EditList, FilePan
 from .dialogs import ErrorDialog
 from .gui_utils import (Worker, center, set_ratio_geometry)
 from .models import AddFilesModel
+from .parameter_widgets import ComboGui
+from .plot_widgets import PlotImageLoader
+from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_sources
 from ..pipeline_functions.pipeline_utils import compare_filep
 
 
@@ -1385,6 +1390,7 @@ class SubBadsWidget(QWidget):
         self.setWindowTitle('Assign bad_channels for your files')
         self.bad_chkbts = {}
         self.name = None
+        self.obj = None
         self.raw = None
         self.raw_fig = None
 
@@ -1419,7 +1425,7 @@ class SubBadsWidget(QWidget):
     def make_bad_chbxs(self):
         chbx_w = QWidget()
         chbx_w.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        chbx_layout = QGridLayout()
+        self.chbx_layout = QGridLayout()
         row = 0
         column = 0
         h_size = 0
@@ -1430,19 +1436,19 @@ class SubBadsWidget(QWidget):
 
         # Make Checkboxes for channels from all_info
         for x, ch_name in enumerate(self.mw.pr.all_info[self.name]['ch_names']):
-            chkbt = QCheckBox(ch_name, self)
+            chkbt = QCheckBox(ch_name)
             chkbt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-            chkbt.clicked.connect(self.bad_dict_assign)
+            chkbt.clicked.connect(self.bad_ckbx_assigned)
             self.bad_chkbts.update({ch_name: chkbt})
             h_size += chkbt.sizeHint().width()
             if h_size > max_h_size:
                 column = 0
                 row += 1
                 h_size = chkbt.sizeHint().width()
-            chbx_layout.addWidget(chkbt, row, column)
+            self.chbx_layout.addWidget(chkbt, row, column)
             column += 1
 
-        chbx_w.setLayout(chbx_layout)
+        chbx_w.setLayout(self.chbx_layout)
 
         if self.bt_scroll.widget():
             self.bt_scroll.takeWidget()
@@ -1480,43 +1486,41 @@ class SubBadsWidget(QWidget):
         for error_ch in error_list:
             self.mw.pr.meeg_bad_channels[self.name].remove(error_ch)
 
-    def bad_dict_assign(self):
-        bad_channels = []
-        for ch in self.bad_chkbts:
-            if self.bad_chkbts[ch].isChecked():
-                bad_channels.append(ch)
-        self.mw.pr.meeg_bad_channels.update({self.name: bad_channels})
-        self.mw.pr.save_lists()
+    def bad_ckbx_assigned(self):
+        bad_channels = [ch for ch in self.bad_chkbts if self.bad_chkbts[ch].isChecked()]
+        self.mw.pr.meeg_bad_channels[self.name] = bad_channels
         self.files_widget.content_changed()
 
-    # Todo: Automatic bad-channel-detection
-    def plot_raw_bad(self):
-        # Use interactiv backend again if show_plots have been turned off before
-        matplotlib.use('Qt5Agg')
-        meeg = MEEG(self.name, self.mw)
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Opening...')
-        dialog.open()
-        self.raw = meeg.load_raw()
-        if self.name in self.mw.pr.meeg_bad_channels:
-            self.raw.info['bads'] = self.mw.pr.meeg_bad_channels[self.name]
-        self.raw_fig = self.raw.plot(n_channels=30, bad_color='red',
-                                     scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1), title=self.name)
-        # Connect Closing of Matplotlib-Figure to assignment of bad-channels
-        self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
-        dialog.close()
-
-    def get_selected_bads(self, evt):
-        # evt has to be in parameters, otherwise it won't work
-        _ = evt
-        self.mw.pr.meeg_bad_channels.update({self.name: self.raw.info['bads']})
-        self.mw.pr.save_lists()
+    def get_selected_bads(self, _):
+        self.mw.pr.meeg_bad_channels[self.name] = self.raw.info['bads']
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
         for ch in self.mw.pr.meeg_bad_channels[self.name]:
             self.bad_chkbts[ch].setChecked(True)
         self.files_widget.content_changed()
+
+    def set_chkbx_enable(self, enable):
+        for chkbx in self.bad_chkbts:
+            self.bad_chkbts[chkbx].setEnabled(enable)
+
+    def plot_closed(self):
+        self.set_chkbx_enable(True)
+
+    def plot_raw_bad(self):
+        # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+        self.set_chkbx_enable(False)
+
+        self.meeg = MEEG(self.name, self.mw)
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Opening...')
+        dialog.open()
+        self.raw = self.meeg.load_raw()
+        self.raw_fig = self.raw.plot(n_channels=30, bad_color='red', title=self.name)
+        # Connect Closing of Matplotlib-Figure to assignment of bad-channels
+        self.raw_fig.canvas.mpl_connect('button_release_event', self.get_selected_bads)
+        self.raw_fig.canvas.mpl_connect('close_event', self.plot_closed)
+        dialog.close()
 
     def resizeEvent(self, event):
         if self.name:
@@ -2167,13 +2171,162 @@ class ICASelect(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.current_obj = None
+        self.parameters = dict()
+        self.chkbxs = dict()
 
         self.init_ui()
         self.open()
 
     def init_ui(self):
         layout = QVBoxLayout()
+        self.list_layout = QHBoxLayout()
 
-        file_list = CheckDictList(self.mw.all_meeg)
+        self.file_list = CheckDictList(self.mw.pr.all_meeg, self.mw.pr.ica_exclude)
+        self.file_list.currentChanged.connect(self.obj_selected)
+        self.list_layout.addWidget(self.file_list)
+
+        # Add Checkboxes for Components
+        comp_scroll = QScrollArea()
+        comp_widget = QWidget()
+        self.comp_chkbx_layout = QGridLayout()
+
+        n_components = self.mw.pr.parameters[self.mw.pr.p_preset]['n_components']
+        for idx in range(n_components):
+            chkbx = QCheckBox(str(idx))
+            chkbx.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+            chkbx.clicked.connect(self.component_selected)
+            self.chkbxs[idx] = chkbx
+            self.comp_chkbx_layout.addWidget(chkbx, idx // 5, idx % 5)
+
+        comp_widget.setLayout(self.comp_chkbx_layout)
+        comp_scroll.setWidget(comp_widget)
+        self.list_layout.addWidget(comp_scroll)
+        layout.addLayout(self.list_layout)
+
+        bt_layout = QHBoxLayout()
+
+        plot_comp_bt = QPushButton('Plot Components')
+        plot_comp_bt.clicked.connect(self.plot_components)
+        bt_layout.addWidget(plot_comp_bt)
+
+        # Create Parameter-GUI which stores parameter in dictionary (not the same as project.parameters)
+        ica_source_data_param = ComboGui(self.parameters, 'ica_source_data',
+                                         options=['Raw (Unfiltered)', 'Raw (Filtered)',
+                                                  'Epochs', 'Epochs (EOG)', 'Epochs (ECG)',
+                                                  'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)'],
+                                         default='Raw (Filtered)')
+        bt_layout.addWidget(ica_source_data_param)
+
+        plot_source_bt = QPushButton('Plot Source')
+        plot_source_bt.clicked.connect(self.plot_sources)
+        bt_layout.addWidget(plot_source_bt)
+
+        ica_overlay_data_param = ComboGui(self.parameters, 'ica_overlay_data',
+                                          options=['Raw (Unfiltered)', 'Raw (Filtered)',
+                                                   'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)'],
+                                          default='Raw (Filtered)')
+        bt_layout.addWidget(ica_overlay_data_param)
+
+        plot_overlay_bt = QPushButton('Plot Source')
+        plot_overlay_bt.clicked.connect(self.plot_overlay)
+        bt_layout.addWidget(plot_overlay_bt)
+
+        close_plots_bt = QPushButton('Close Plots')
+        close_plots_bt.clicked.connect(partial(plt.close, 'all'))
+        bt_layout.addWidget(close_plots_bt)
+
+        layout.addLayout(bt_layout)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
 
         self.setLayout(layout)
+
+    def update_chkbxs(self):
+        # Check, if object is already in ica_exclude
+        if self.current_obj.name in self.mw.pr.ica_exclude:
+            selected_components = self.mw.pr.ica_exclude[self.current_obj.name]
+        else:
+            selected_components = list()
+
+        # Clear all checkboxes
+        for idx in self.chkbxs:
+            self.chkbxs[idx].setChecked(False)
+
+        # Select components
+        for idx in selected_components:
+            if idx in self.chkbxs:
+                self.chkbxs[idx].setChecked(True)
+            else:
+                # Remove idx if not in range(n_components)
+                self.mw.pr.ica_exclude[self.current_obj.name].remove(idx)
+
+    def obj_selected(self, current_name):
+        self.current_obj = MEEG(current_name, self.mw)
+        self.update_chkbxs()
+
+    def component_selected(self):
+        if self.current_obj:
+            self.mw.pr.ica_exclude[self.current_obj.name] = [idx for idx in self.chkbxs if self.chkbxs[idx].isChecked()]
+        self.file_list.content_changed()
+
+    def component_on_plot_selected(self, _):
+        self.mw.pr.ica_exclude[self.current_obj.name] = self.current_obj._ica.exclude
+        self.update_chkbxs()
+        self.file_list.content_changed()
+
+    def set_chkbx_enable(self, enable):
+        for chkbx in self.chkbxs:
+            self.chkbxs[chkbx].setEnabled(enable)
+
+    def plot_closed(self, _):
+        self.set_chkbx_enable(True)
+
+    def plot_components(self):
+        if self.current_obj:
+            # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+            self.set_chkbx_enable(False)
+            dialog = QDialog(self)
+            dialog.setWindowTitle('Opening...')
+            dialog.open()
+            figs = plot_ica_components(meeg=self.current_obj, show_plots=True)
+            if not isinstance(figs, list):
+                figs = [figs]
+            for fig in figs:
+                fig.canvas.mpl_connect('button_release_event', self.component_on_plot_selected)
+                fig.canvas.mpl_connect('close_event', self.plot_closed)
+            dialog.close()
+
+    def plot_sources(self):
+        if self.current_obj:
+            # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+            self.set_chkbx_enable(False)
+            dialog = QDialog(self)
+            dialog.setWindowTitle('Opening...')
+            dialog.open()
+            figs = plot_ica_sources(meeg=self.current_obj,
+                                    ica_source_data=self.parameters['ica_source_data'], show_plots=True)
+            if not isinstance(figs, list):
+                figs = [figs]
+            for fig in figs:
+                fig.canvas.mpl_connect('button_release_event', self.component_on_plot_selected)
+                fig.canvas.mpl_connect('close_event', self.plot_closed)
+            dialog.close()
+
+    def plot_overlay(self):
+        if self.current_obj:
+            # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+            self.set_chkbx_enable(False)
+            dialog = QDialog(self)
+            dialog.setWindowTitle('Opening...')
+            dialog.open()
+            figs = plot_ica_overlay(meeg=self.current_obj, ica_overlay_data=self.parameters['ica_overlay_data'],
+                                    show_plots=True)
+            if not isinstance(figs, list):
+                figs = [figs]
+            for fig in figs:
+                fig.canvas.mpl_connect('button_release_event', self.component_on_plot_selected)
+                fig.canvas.mpl_connect('close_event', self.plot_closed)
+            dialog.close()

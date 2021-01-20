@@ -104,39 +104,12 @@ def func_from_def(func_name, obj, main_win):
             logging.warning(f'Caught unexpected keyword \"{match_unexp_kw.group(2)}\" for {func_name}')
             getattr(module, func_name)(**keyword_arguments)
         elif match_miss_kw:
-            add_kw_args = get_arguments([match_miss_kw.group(2)], obj, main_win)
+            add_kw_args = get_arguments([match_miss_kw.group(2)], module, obj, main_win)
             keyword_arguments.update(add_kw_args)
             logging.warning(f'Caught missing keyword \"{match_miss_kw.group(2)}\" for {func_name}')
             getattr(module, func_name)(**keyword_arguments)
         else:
             raise te
-
-
-class FunctionWorkerSignals(QObject):
-    """
-    Defines the Signals for the Worker and call_functions
-    """
-    # Worker-Signals
-    # The Thread finished
-    function_finished = pyqtSignal(object, int)
-    # An Error occured
-    function_error = pyqtSignal(tuple, int)
-
-
-#
-#
-# class FunctionWorker(Worker):
-#     def __init__(self, function, obj, main_win, thread_idx):
-#         super().__init__(function=func_from_def, name=function, obj=obj, main_win=main_win)
-#         self.function_signals = FunctionWorkerSignals()
-#         self.thread_index = thread_idx
-#
-#         # Modify Worker-Signals to add the Thread-Index
-#         self.signals.finished.connect(self.handle_finished)
-#         self.signals.error.connect(self.handle_error)
-#
-#     def handle_finished(self, return_value):
-#         self.function_signals.function_finished.emit(return_value, self.thread_index)
 
 
 class RunDialog(QDialog):

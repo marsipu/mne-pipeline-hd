@@ -60,7 +60,9 @@ class BaseLoading:
 
         if self.name not in self.mw.pr.plot_files:
             self.pr.plot_files[self.name] = dict()
-        self.plot_files = self.pr.plot_files[self.name]
+        if self.p_preset not in self.mw.pr.plot_files[self.name]:
+            self.pr.plot_files[self.name][self.p_preset] = dict()
+        self.plot_files = self.pr.plot_files[self.name][self.p_preset]
 
         self.save_dir = None
         self.paths_dict = dict()
@@ -159,9 +161,7 @@ class BaseLoading:
 
             # Check if required keys are in the dictionary-levels
             if calling_func not in self.plot_files:
-                self.plot_files[calling_func] = dict()
-            if self.p_preset not in self.plot_files[calling_func]:
-                self.plot_files[calling_func][self.p_preset] = list()
+                self.plot_files[calling_func] = list()
 
             if matplotlib_figure:
                 if isinstance(matplotlib_figure, list):
@@ -172,8 +172,8 @@ class BaseLoading:
                         figure.savefig(idx_file_path)
                         print(f'figure: {idx_file_path} has been saved')
                         # Add Plot-Save-Path to plot_files if not already contained
-                        if idx_file_path not in self.plot_files[calling_func][self.p_preset]:
-                            self.plot_files[calling_func][self.p_preset].append(idx_file_path)
+                        if idx_file_path not in self.plot_files[calling_func]:
+                            self.plot_files[calling_func].append(idx_file_path)
                 else:
                     matplotlib_figure.savefig(save_path, dpi=dpi)
             elif mayavi_figure:
@@ -189,22 +189,22 @@ class BaseLoading:
                 print(f'figure: {save_path} has been saved')
 
                 # Add Plot-Save-Path to plot_files if not already contained
-                if save_path not in self.plot_files[calling_func][self.p_preset]:
-                    self.plot_files[calling_func][self.p_preset].append(save_path)
+                if save_path not in self.plot_files[calling_func]:
+                    self.plot_files[calling_func].append(save_path)
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
-    def load_json(self, file_name):
+    def load_json(self, file_name, default=None):
         file_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{file_name}.json')
         try:
             with open(file_path, 'r') as file:
                 data = json.load(file, object_hook=numpy_json_hook)
         except json.JSONDecodeError:
             print(f'{file_path} could not be loaded')
-            data = None
+            data = default
         except FileNotFoundError:
             print(f'{file_path} could not be found')
-            data = None
+            data = default
 
         return data
 
@@ -506,10 +506,13 @@ class MEEG(BaseLoading):
         return data
 
     def _update_raw_info(self, raw):
-        # Insert/Update BadChannels from meeg_bad_channels and add description
-        add_bad_channels = [bad_ch for bad_ch in self.bad_channels if bad_ch in raw.ch_names]
-        raw.info['bads'] = add_bad_channels
-        raw.info['description'] = self.name
+        # Take bad_channels from file if there are none in self.bad_channels
+        if len(raw.info['bads']) > 0 and len(self.bad_channels) == 0:
+            self.bad_channels = raw.info['bads']
+        else:
+            # Make sure, that only bad_chanels present in ch_names are added
+            bad_channels = [bad_ch for bad_ch in self.bad_channels if bad_ch in raw.ch_names]
+            raw.info['bads'] = bad_channels
 
     def load_info(self):
         """Get raw-info, either from all_info in project or from raw-file if not in all_info"""
@@ -613,6 +616,9 @@ class MEEG(BaseLoading):
     def load_ica(self):
         if self._ica is None:
             self._ica = mne.preprocessing.read_ica(self.ica_path)
+
+        # Change ica.exclude to indices stored in ica_exclude.py for this MEEG-Object
+        self._ica.exclude = self.pr.ica_exclude[self.name]
 
         return self._ica
 

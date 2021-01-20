@@ -56,7 +56,14 @@ This Pipeline is build on top of [MNE-Python](https://mne.tools/stable/index.htm
 > [DOI](https://doi.org/10.1016/j.neuroimage.2013.10.027)
 
 It was inspired by a pipeline from [Lau M. Andersen](https://doi.org/10.3389/fnins.2018.00006)
-> Andersen LM. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for 
-> Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group 
-> Source Space Representation. Front Neurosci. 2018 Jan 22;12:6. doi: 10.3389/fnins.2018.00006. PMID: 29403349; 
+> Andersen LM. Group Analysis in MNE-Python of Evoked Responses from a Tactile Stimulation Paradigm: A Pipeline for
+> Reproducibility at Every Step of Processing, Going from Individual Sensor Space Representations to an across-Group
+> Source Space Representation. Front Neurosci. 2018 Jan 22;12:6. doi: 10.3389/fnins.2018.00006. PMID: 29403349;
 > PMCID: PMC5786561.
+
+This program also integrates [autoreject](https://doi.org/10.1016/j.neuroimage.2017.06.030)
+> Mainak Jas, Denis Engemann, Yousra Bekhti, Federico Raimondo, and Alexandre Gramfort. 2017.
+> “Autoreject: Automated artifact rejection for MEG and EEG data”. NeuroImage, 159, 417-429.
+
+Many ideas and basics for GUI-Programming where taken from [LearnPyQt](https://www.learnpyqt.com/) and numerous
+stackoverflow-questions/solutions.

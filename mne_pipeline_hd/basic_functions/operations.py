@@ -427,16 +427,19 @@ def plot_ica_properties(meeg, ica_properties_indices, show_plots):
     ica = meeg.load_ica()
     epochs = meeg.load_epochs()
 
-    eog_indices = [i for i in meeg.load_json('eog_indices') if i in ica_properties_indices]
-    ecg_indices = [i for i in meeg.load_json('ecg_indices') if i in ica_properties_indices]
+    eog_indices = meeg.load_json('eog_indices', default=list())
+    ecg_indices = meeg.load_json('ecg_indices', default=list())
     psd_args = {'fmax': meeg.p["lowpass"]}
 
     if len(eog_indices) > 0:
         eog_epochs = meeg.load_eog_epochs()
         eog_prop_figs = ica.plot_properties(eog_epochs, eog_indices, psd_args=psd_args,
                                             show=show_plots)
-        for ix in eog_indices:
-            ica_properties_indices.remove(ix)
+        # Remove EOG-Index from ica_properties_indices to avoid plotting the same index twice
+        for idx in [idx for idx in eog_indices if idx in ica_properties_indices]:
+            ica_properties_indices.remove(idx)
+
+        meeg.plot_save('ICA', subfolder='properties', trial='eog')
     else:
         eog_prop_figs = list()
 
@@ -444,35 +447,42 @@ def plot_ica_properties(meeg, ica_properties_indices, show_plots):
         ecg_epochs = meeg.load_ecg_epochs()
         ecg_prop_figs = ica.plot_properties(ecg_epochs, ecg_indices, psd_args=psd_args,
                                             show=show_plots)
-        for ix in ecg_indices:
-            ica_properties_indices.remove(ix)
+        # Remove EOG-Index from ica_properties_indices to avoid plotting the same index twice
+        for idx in [idx for idx in ecg_indices if idx in ica_properties_indices]:
+            ica_properties_indices.remove(idx)
+
+        meeg.plot_save('ICA', subfolder='properties', trial='eog')
     else:
         ecg_prop_figs = list()
 
-    prop_figs = ica.plot_properties(epochs, ica_properties_indices, psd_args=psd_args,
-                                    show=show_plots)
+    # Plot selected properties other than EOG/ECG-Indices
+    if len(ica_properties_indices) > 1:
+        prop_figs = ica.plot_properties(epochs, ica_properties_indices, psd_args=psd_args,
+                                        show=show_plots)
 
-    meeg.plot_save('ICA', subfolder='properties', matplotlib_figure=prop_figs)
+    meeg.plot_save('ICA', subfolder='properties', trial='standard', matplotlib_figure=prop_figs)
 
     return prop_figs + eog_prop_figs + ecg_prop_figs
 
 
 def plot_ica_scores(meeg, show_plots):
-    ica = meeg.load_ica()
-    eog_scores = meeg.load_json('eog_scores')
-    eog_score_fig = ica.plot_scores(eog_scores, title=f'{meeg.name}: EOG', show=show_plots)
-    meeg.plot_save('ICA', subfolder='scores', trial='eog', matplotlib_figure=eog_score_fig)
+    eog_scores = meeg.load_json('eog_scores', default=list())
+    if len(eog_scores) > 1:
+        ica = meeg.load_ica()
+        eog_score_fig = ica.plot_scores(eog_scores, title=f'{meeg.name}: EOG', show=show_plots)
+        meeg.plot_save('ICA', subfolder='scores', trial='eog', matplotlib_figure=eog_score_fig)
+    else:
+        eog_score_fig = None
 
-    return eog_score_fig
-
-
-def plot_ica_ecg_scores(meeg, show_plots):
-    ica = meeg.load_ica()
     ecg_scores = meeg.load_json('ecg_scores')
-    ecg_score_fig = ica.plot_scores(ecg_scores, title=f'{meeg.name}: ECG', show=show_plots)
-    meeg.plot_save('ICA', subfolder='scores', trial='ecg', matplotlib_figure=ecg_score_fig)
+    if len(ecg_scores) > 1:
+        ica = meeg.load_ica()
+        ecg_score_fig = ica.plot_scores(ecg_scores, title=f'{meeg.name}: ECG', show=show_plots)
+        meeg.plot_save('ICA', subfolder='scores', trial='ecg', matplotlib_figure=ecg_score_fig)
+    else:
+        ecg_score_fig = None
 
-    return ecg_score_fig
+    return eog_score_fig, ecg_score_fig
 
 
 # ToDo: Apply on ERM too if present

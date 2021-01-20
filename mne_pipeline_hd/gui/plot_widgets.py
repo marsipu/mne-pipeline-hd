@@ -10,18 +10,79 @@ Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.201
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 from functools import partial
+from random import random
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QCheckBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
                              QProgressDialog,
                              QPushButton, QScrollArea, QSpinBox, QTabWidget, QToolBar, QVBoxLayout, QWidget)
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg)
+import matplotlib
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+import time
 
-from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
+from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleDialog, SimpleList
 from mne_pipeline_hd.gui.gui_utils import Worker, set_ratio_geometry
 from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
+
+
+class PlotImageLoader(QObject):
+    """This class loads a QPixmap of a plot-function,
+    if it wasn't plotted yet an image-file for the plot is created which is loaded"""
+    finished_loading = pyqtSignal(list)
+
+    def __init__(self, obj, function, parent_w):
+        super().__init__(parent_w)
+        self.obj = obj
+        self.function = function
+        self.parent_w = parent_w
+        # Make sure that the plot-function only runs once
+        self.already_ran_plot = False
+
+        self.load_plot_image()
+
+    def load_plot_image(self):
+        try:
+            image_paths = self.obj.plot_files[self.function]
+            pixmaps = [QPixmap(image_path) for image_path in image_paths]
+            self.finished_loading.emit(pixmaps)
+
+        except KeyError:
+            if not self.already_ran_plot:
+                self.plot_notifier = SimpleDialog(QLabel(f'Plotting {self.function} for {self.obj.name}'),
+                                                  parent=self.parent_w, show_close_bt=False)
+                # Get module of plot_function
+                pkg_name = self.obj.mw.pd_funcs.loc[self.function, 'pkg_name']
+                module_name = self.obj.mw.pd_funcs.loc[self.function, 'module']
+                module = self.obj.mw.all_modules[pkg_name][module_name][0]
+
+                # Get Arguments for Plot-Function
+                keyword_arguments = get_arguments(self.function, module, self.obj, self.obj.mw)
+                # Make sure that "show_plots" is False
+                keyword_arguments['show_plots'] = False
+                plot_func = getattr(module, self.function)
+
+                # Create Thread for Plot-Function
+                worker = Worker(plot_func, **keyword_arguments)
+                # Pass Object-Name into the plot_finished-Slot
+                # (needs to be set as default in lambda-function to survive loop)
+                worker.signals.finished.connect(self.plot_finished)
+                worker.signals.error.connect(self.plot_error)
+                self.obj.mw.threadpool.start(worker)
+            else:
+                self.finished_loading.emit(list())
+
+    def plot_finished(self):
+        self.plot_notifier.close()
+        self.already_ran_plot = True
+        self.load_plot_image()
+
+    def plot_error(self):
+        self.plot_notifier.close()
+        self.already_ran_plot = True
+        self.load_plot_image()
 
 
 class PlotViewSelection(QDialog):
@@ -91,26 +152,30 @@ class PlotViewSelection(QDialog):
             elif self.target == 'Group':
                 self.objects = list(self.mw.pr.all_groups.keys())
 
-                # If non-interactive only list objects where a plot-image already was saved
+            # If non-interactive only list objects where a plot-image already was saved
             if not self.interactive:
-                self.objects = [ob for ob in self.objects if ob in self.mw.pr.plot_files]
+                self.objects = [ob for ob in self.objects if ob in self.mw.pr.plot_files
+                                and self.mw.pr.p_preset in self.mw.pr.plot_files[ob]
+                                and self.selected_func in self.mw.pr.plot_files[ob][self.mw.pr.p_preset]]
 
             self.obj_select.replace_data(self.objects)
             self.obj_select.replace_checked(self.selected_objs)
 
     def func_selected(self, func):
         """Get selected function and adjust contents of Object-Selection to target"""
+        old_target = self.target
         self.selected_func = func
         self.target = self.mw.pd_funcs.loc[func, 'target']
-        if self.target == 'MEEG':
-            self.obj_select.replace_data(self.mw.pr.all_meeg)
-            self.obj_select.replace_checked(self.selected_objs['MEEG'])
-        elif self.target == 'FSMRI':
-            self.obj_select.replace_data(self.mw.pr.all_fsmri)
-            self.obj_select.replace_checked(self.selected_objs['FSMRI'])
-        elif self.target == 'Group':
-            self.obj_select.replace_data(list(self.mw.pr.all_groups.keys()))
-            self.obj_select.replace_checked(self.selected_objs['Group'])
+        if old_target != self.target:
+            # Clear selected objects
+            self.selected_objs.clear()
+            self.obj_select.replace_checked(self.selected_objs)
+            if self.target == 'MEEG':
+                self.obj_select.replace_data(self.mw.pr.all_meeg)
+            elif self.target == 'FSMRI':
+                self.obj_select.replace_data(self.mw.pr.all_fsmri)
+            elif self.target == 'Group':
+                self.obj_select.replace_data(list(self.mw.pr.all_groups.keys()))
 
     def interactive_toggled(self, checked):
         self.interactive = checked
@@ -158,6 +223,8 @@ class PlotViewSelection(QDialog):
 
                         # Get Arguments for Plot-Function
                         keyword_arguments = get_arguments(self.selected_func, module, obj, self.mw)
+                        # Make sure that "show_plots" is False
+                        keyword_arguments['show_plots'] = False
                         plot_func = getattr(module, self.selected_func)
 
                         # Create Thread for Plot-Function
@@ -174,7 +241,7 @@ class PlotViewSelection(QDialog):
                     # Load Plot-Images
                     else:
                         try:
-                            image_paths = obj.plot_files[self.selected_func][p_preset]
+                            image_paths = obj.plot_files[self.selected_func]
                         except KeyError as ke:
                             self.all_images[p_preset][obj_name] = f'{ke} not found for {obj_name}'
                             self.thread_finished(None, obj_name, p_preset)
@@ -200,6 +267,9 @@ class PlotViewSelection(QDialog):
             pixmaps.append(pixmap)
 
         self.all_images[p_preset][obj_name] = pixmaps
+
+        # Random sleep
+        time.sleep(random())
 
     def thread_finished(self, _, obj_name, p_preset):
         self.prog_cnt += 1
@@ -240,6 +310,12 @@ class PlotViewSelection(QDialog):
 
         self.thread_finished(None, obj_name, p_preset)
 
+    def closeEvent(self, event):
+        for p_preset in self.all_figs:
+            for obj_name in self.all_figs[p_preset]:
+                for fig_tuple in self.all_figs[p_preset][obj_name]:
+                    plt.close(fig_tuple[0])
+
 
 class PlotViewer(QMainWindow):
     def __init__(self, parent_dlg, items, interactive, top_level):
@@ -248,7 +324,7 @@ class PlotViewer(QMainWindow):
         self.interactive = interactive
         self.top_level = top_level
 
-        self.zoom_factor = 1
+        self.zoom_factor = 80  # In percent
         self.column_count = 4
 
         # Stores references to all tab-widgets to control them simultaneously
@@ -261,6 +337,7 @@ class PlotViewer(QMainWindow):
     def _setup_views(self):
         viewer_layout = QHBoxLayout()
 
+        # Get the figures/images
         for p_preset in self.items:
             scroll_area = QScrollArea()
             scroll_widget = QWidget()
@@ -282,12 +359,12 @@ class PlotViewer(QMainWindow):
                         if self.interactive:
                             fig, default_size = item
                             # Zoom Figure
-                            fig.set_size_inches(default_size * self.zoom_factor)
-                            view_widget = FigureCanvasQTAgg(fig)
+                            fig.set_size_inches(default_size * (self.zoom_factor / 100))
+                            view_widget = FigureCanvas(fig)
                         else:
                             view_widget = QLabel()
                             # Zoom Pixmap
-                            view_widget.setPixmap(item.scaled(item.size() * self.zoom_factor,
+                            view_widget.setPixmap(item.scaled(item.size() * (self.zoom_factor / 100),
                                                               Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
                         if len(obj_items) > 1:
@@ -320,7 +397,7 @@ class PlotViewer(QMainWindow):
         # Zoom-Control
         toolbar.addAction('-- Zoom', partial(self.zoom_items, '--'))
         toolbar.addAction('- Zoom', partial(self.zoom_items, '-'))
-        self.zoom_label = QLabel(f'{self.zoom_factor * 100} %')
+        self.zoom_label = QLabel(f'{self.zoom_factor} %')
         toolbar.addWidget(self.zoom_label)
         toolbar.addAction('+ Zoom', partial(self.zoom_items, '+'))
         toolbar.addAction('++ Zoom', partial(self.zoom_items, '++'))
@@ -380,19 +457,19 @@ class PlotViewer(QMainWindow):
     def zoom_items(self, zoom):
         # Zoom-Labels
         if zoom == '+':
-            self.zoom_factor += 0.1
+            self.zoom_factor += 10
         elif zoom == '++':
-            self.zoom_factor += 0.5
+            self.zoom_factor += 50
         elif zoom == '-':
-            self.zoom_factor -= 0.1
+            self.zoom_factor -= 10
         else:
-            self.zoom_factor -= 0.5
+            self.zoom_factor -= 50
 
         # Make sure, that zoom is not smaller than 10%
-        if self.zoom_factor < 0.1:
-            self.zoom_factor = 0.1
+        if self.zoom_factor < 10:
+            self.zoom_factor = 10
 
-        self.zoom_label.setText(f'{self.zoom_factor * 100} %')
+        self.zoom_label.setText(f'{self.zoom_factor} %')
         self.update_layout()
 
     def show_single_items(self, p_preset, obj_name):

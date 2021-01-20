@@ -30,43 +30,44 @@ grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;basic;gro
 grand_avg_ltc;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 grand_avg_connect;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 plot_source_space;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;basic;fsmri
-plot_bem;;FSMRI;Plot;MRI-Preprocessing;True;False;;plot;basic;fsmri
-plot_noise_covariance;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg
+plot_bem;;FSMRI;Plot;MRI-Preprocessing;True;False;;plot;basic;fsmri,show_plots
+plot_noise_covariance;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
 plot_transformation;;MEEG;Plot;Forward;True;True;;plot;basic;meeg
 plot_sensitivity_maps;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,ch_types
-plot_sensors;;MEEG;Plot;Forward;True;False;;plot;basic;meeg
-plot_raw;;MEEG;Plot;Raw;True;False;;plot;basic;meeg
-plot_filtered;;MEEG;Plot;Raw;True;False;;plot;basic;meeg
-plot_events;;MEEG;Plot;Events;True;False;;plot;basic;meeg
-plot_power_spectra;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg
-plot_power_spectra_epochs;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg
-plot_power_spectra_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg
-plot_tfr;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg
-plot_epochs;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg
-plot_epochs_image;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg
-plot_epochs_topo;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg
-plot_epochs_drop_log;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg
-plot_autoreject_log;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg
-plot_evoked_topo;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg
-plot_evoked_topomap;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg
-plot_evoked_butterfly;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg
-plot_evoked_joint;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg
-plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg
-plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg
-plot_gfp;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg
+plot_sensors;;MEEG;Plot;Forward;True;False;;plot;basic;meeg,plot_sensors_kind,show_plots
+plot_raw;;MEEG;Plot;Raw;True;False;;plot;basic;meeg,show_plots
+plot_filtered;;MEEG;Plot;Raw;True;False;;plot;basic;meeg,show_plots
+plot_events;;MEEG;Plot;Events;True;False;;plot;basic;meeg,show_plots
+plot_power_spectra;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
+plot_power_spectra_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
+plot_power_spectra_epochs;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
+plot_power_spectra_epochs_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
+plot_tfr;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots
+plot_epochs;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_epochs_image;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_epochs_topo;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_epochs_drop_log;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_autoreject_log;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_evoked_topo;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_topomap;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_butterfly;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_joint;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_gfp;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,mne_evoked_time
 plot_mixn;Plot Mixed-Norm-Solution;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,mne_evoked_time,parcellation
 plot_animated_stc;Plot Source-Estimate Video;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,stc_animation,stc_animation_dilat
-plot_snr;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg
-plot_label_time_course;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg
+plot_snr;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
+plot_label_time_course;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
 plot_ecd;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg
-plot_source_space_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,target_labels,con_fmin,con_fmax
-plot_grand_avg_evokeds;;Group;Plot;Grand-Average;True;False;;plot;basic;group
-plot_grand_avg_tfr;;Group;Plot;Grand-Average;True;False;;plot;basic;group,baseline,t_epoch
+plot_source_space_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,target_labels,con_fmin,con_fmax,show_plots
+plot_grand_avg_evokeds;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
+plot_grand_avg_tfr;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,morph_to,mne_evoked_time
 plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;basic;group,stc_animation,stc_animation_dilat,morph_to
-plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;basic;group
-plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,con_fmin,con_fmax,parcellation,target_labels,morph_to
+plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
+plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,con_fmin,con_fmax,parcellation,target_labels,morph_to,show_plots
 plot_ica_components;Plot ICA-Components;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
 plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_source_data,show_plots
 plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_overlay_data,show_plots

@@ -31,10 +31,10 @@ for func_name in pd_funcs.index:
             pd_funcs.loc[func_name, 'func_args'] = real_func_args
             print(f'Changed function-arguments for {func_name}\n'
                   f'from {loaded_func_args}\n'
-                  f'to {real_func_args}')
+                  f'to {real_func_args}\n')
     except AttributeError:
         pd_funcs.drop(index=func_name, inplace=True)
         print(f'Droped {func_name}, because there is no corresponding function in {module}')
 
 with resources.path('mne_pipeline_hd.pipeline_resources', 'functions.csv') as pd_funcs_path:
-    pd_funcs.to_csv(str(pd_funcs_path), 'functions.csv', sep=';')
+    pd_funcs.to_csv(pd_funcs_path, sep=';')

@@ -36,7 +36,8 @@ from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RawInfo, RemovePr
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
 from .gui_utils import center, get_exception_tuple, set_ratio_geometry
-from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, SubBadsDialog,
+from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, ICASelect,
+                              SubBadsDialog,
                               SubDictDialog, SubjectDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .plot_widgets import PlotViewSelection
@@ -490,6 +491,7 @@ class MainWindow(QMainWindow):
         input_menu.addAction('Assign Bad-Channels --> MEEG',
                              partial(SubBadsDialog, self))
         input_menu.addAction('Assign Event-IDs --> MEEG', partial(EventIDGui, self))
+        input_menu.addAction('Select ICA-Components', partial(ICASelect, self))
         input_menu.addSeparator()
         input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
         input_menu.addAction('Copy Transformation', partial(CopyTrans, self))
@@ -780,14 +782,6 @@ class MainWindow(QMainWindow):
 
             # Reload modules to get latest changes
             self.reload_modules()
-
-            # Set non-interactive backend for plots to be runnable in QThread This can be a problem with older versions
-            # from matplotlib, as you can set the backend only once there. This could be solved with importing all the
-            # function-modules here, but you had to import them for each run then
-            if self.get_setting('show_plots'):
-                matplotlib.use('Qt5Agg')
-            else:
-                matplotlib.use('agg')
 
             self.run_dialog = RunDialog(self)
 
