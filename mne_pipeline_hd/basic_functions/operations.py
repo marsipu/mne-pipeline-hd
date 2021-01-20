@@ -287,6 +287,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
 
     if ica_autoreject and ica_fitto != 'Epochs':
         # Estimate Reject-Thresholds on simulated epochs
+        # Creating simulated epochs with len 1s
         simulated_events = mne.make_fixed_length_events(data, duration=1)
         simulated_epochs = mne.Epochs(data, simulated_events, baseline=None, tmin=0, tmax=1)
         reject = ar.get_rejection_threshold(simulated_epochs)
@@ -324,7 +325,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
             print('No EOG-Channel found or set, thus EOG can\'t be used for Component-Selection')
 
         if eog_epochs:
-            ica.exclude.append(eog_indices)
+            ica.exclude += eog_indices
             meeg.save_eog_epochs(eog_epochs)
             meeg.save_json('eog_indices', eog_indices)
             meeg.save_json('eog_scores', eog_scores)
@@ -343,7 +344,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
             ecg_indices, ecg_scores = ica.find_bads_ecg(raw, **ecg_kwargs)
 
         if ecg_epochs:
-            ica.exclude.append(ecg_indices)
+            ica.exclude += ecg_indices
             meeg.save_ecg_epochs(ecg_epochs)
             meeg.save_json('ecg_indices', ecg_indices)
             meeg.save_json('ecg_scores', ecg_scores)

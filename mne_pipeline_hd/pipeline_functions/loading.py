@@ -90,9 +90,10 @@ class BaseLoading:
         for p_name in self.p:
             self.pr.file_parameters[file_name][p_name] = self.p[p_name]
         # Clean unused parameters
-        for unused_p in self.pr.file_parameters[file_name]:
-            if unused_p not in self.p and unused_p not in ['FUNCTION', 'NAME', 'PATH', 'TIME', 'SIZE', 'P_PRESET']:
-                self.pr.file_parameters[file_name].pop(unused_p)
+        unused_ps = [p for p in self.pr.file_parameters[file_name]
+                     if p not in self.p and p not in ['FUNCTION', 'NAME', 'PATH', 'TIME', 'SIZE', 'P_PRESET']]
+        for unused_p in unused_ps:
+            self.pr.file_parameters[file_name].pop(unused_p)
 
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):
