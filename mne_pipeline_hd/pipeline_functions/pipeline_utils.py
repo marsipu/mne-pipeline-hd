@@ -30,17 +30,13 @@ datetime_format = '%d.%m.%Y %H:%M:%S'
 class NumpyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
-            return {'numpy_int': int(obj)}
-
+            return int(obj)
         elif isinstance(obj, np.floating):
-            return {'numpy_float': float(obj)}
-
+            return float(obj)
         elif isinstance(obj, np.ndarray):
             return {'numpy_array': obj.tolist()}
-
         elif isinstance(obj, datetime):
             return {'datetime': obj.strftime(datetime_format)}
-
         elif isinstance(obj, tuple):
             return {'tuple_type': obj}
         elif isinstance(obj, set):
@@ -50,7 +46,11 @@ class NumpyJSONEncoder(json.JSONEncoder):
 
 
 def numpy_json_hook(obj):
-    if 'numpy_array' in obj.keys():
+    if 'numpy_int' in obj.keys():
+        return obj['numpy_int']
+    elif 'numpy_float' in obj.keys():
+        return obj['numpy_float']
+    elif 'numpy_array' in obj.keys():
         return np.asarray(obj['numpy_array'])
     elif 'datetime' in obj.keys():
         return datetime.strptime(obj['datetime'], datetime_format)

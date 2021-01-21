@@ -440,7 +440,7 @@ def plot_ica_properties(meeg, ica_properties_indices, show_plots):
         for idx in [idx for idx in eog_indices if idx in ica_properties_indices]:
             ica_properties_indices.remove(idx)
 
-        meeg.plot_save('ICA', subfolder='properties', trial='eog')
+        meeg.plot_save('ICA', subfolder='properties', trial='eog', matplotlib_figure=eog_prop_figs)
     else:
         eog_prop_figs = list()
 
@@ -452,7 +452,7 @@ def plot_ica_properties(meeg, ica_properties_indices, show_plots):
         for idx in [idx for idx in ecg_indices if idx in ica_properties_indices]:
             ica_properties_indices.remove(idx)
 
-        meeg.plot_save('ICA', subfolder='properties', trial='eog')
+        meeg.plot_save('ICA', subfolder='properties', trial='eog', matplotlib_figure=ecg_prop_figs)
     else:
         ecg_prop_figs = list()
 
@@ -461,9 +461,11 @@ def plot_ica_properties(meeg, ica_properties_indices, show_plots):
         prop_figs = ica.plot_properties(epochs, ica_properties_indices, psd_args=psd_args,
                                         show=show_plots)
 
-    meeg.plot_save('ICA', subfolder='properties', trial='standard', matplotlib_figure=prop_figs)
+        meeg.plot_save('ICA', subfolder='properties', trial='standard', matplotlib_figure=prop_figs)
+    else:
+        prop_figs = None
 
-    return prop_figs + eog_prop_figs + ecg_prop_figs
+    return prop_figs, eog_prop_figs, ecg_prop_figs
 
 
 def plot_ica_scores(meeg, show_plots):

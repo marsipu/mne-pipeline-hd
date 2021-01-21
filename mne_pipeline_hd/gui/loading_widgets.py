@@ -41,7 +41,7 @@ from .gui_utils import (Worker, center, set_ratio_geometry)
 from .models import AddFilesModel
 from .parameter_widgets import ComboGui
 from .plot_widgets import PlotImageLoader
-from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_sources
+from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_properties, plot_ica_sources
 from ..pipeline_functions.pipeline_utils import compare_filep
 
 
@@ -1491,21 +1491,19 @@ class SubBadsWidget(QWidget):
         self.mw.pr.meeg_bad_channels[self.name] = bad_channels
         self.files_widget.content_changed()
 
+    def set_chkbx_enable(self, enable):
+        for chkbx in self.bad_chkbts:
+            self.bad_chkbts[chkbx].setEnabled(enable)
+
     def get_selected_bads(self, _):
         self.mw.pr.meeg_bad_channels[self.name] = self.raw.info['bads']
+        self.set_chkbx_enable(True)
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
         for ch in self.mw.pr.meeg_bad_channels[self.name]:
             self.bad_chkbts[ch].setChecked(True)
         self.files_widget.content_changed()
-
-    def set_chkbx_enable(self, enable):
-        for chkbx in self.bad_chkbts:
-            self.bad_chkbts[chkbx].setEnabled(enable)
-
-    def plot_closed(self):
-        self.set_chkbx_enable(True)
 
     def plot_raw_bad(self):
         # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
@@ -1518,8 +1516,7 @@ class SubBadsWidget(QWidget):
         self.raw = self.meeg.load_raw()
         self.raw_fig = self.raw.plot(n_channels=30, bad_color='red', title=self.name)
         # Connect Closing of Matplotlib-Figure to assignment of bad-channels
-        self.raw_fig.canvas.mpl_connect('button_release_event', self.get_selected_bads)
-        self.raw_fig.canvas.mpl_connect('close_event', self.plot_closed)
+        self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
         dialog.close()
 
     def resizeEvent(self, event):
@@ -2228,8 +2225,12 @@ class ICASelect(QDialog):
                                           default='Raw (Filtered)')
         bt_layout.addWidget(ica_overlay_data_param)
 
-        plot_overlay_bt = QPushButton('Plot Source')
+        plot_overlay_bt = QPushButton('Plot Overlay')
         plot_overlay_bt.clicked.connect(self.plot_overlay)
+        bt_layout.addWidget(plot_overlay_bt)
+
+        plot_overlay_bt = QPushButton('Plot Properties')
+        plot_overlay_bt.clicked.connect(self.plot_properties)
         bt_layout.addWidget(plot_overlay_bt)
 
         close_plots_bt = QPushButton('Close Plots')
@@ -2272,17 +2273,15 @@ class ICASelect(QDialog):
             self.mw.pr.ica_exclude[self.current_obj.name] = [idx for idx in self.chkbxs if self.chkbxs[idx].isChecked()]
         self.file_list.content_changed()
 
-    def component_on_plot_selected(self, _):
-        self.mw.pr.ica_exclude[self.current_obj.name] = self.current_obj._ica.exclude
-        self.update_chkbxs()
-        self.file_list.content_changed()
-
     def set_chkbx_enable(self, enable):
         for chkbx in self.chkbxs:
             self.chkbxs[chkbx].setEnabled(enable)
 
-    def plot_closed(self, _):
+    def get_selected_components(self, _):
         self.set_chkbx_enable(True)
+        self.mw.pr.ica_exclude[self.current_obj.name] = self.current_obj._ica.exclude
+        self.update_chkbxs()
+        self.file_list.content_changed()
 
     def plot_components(self):
         if self.current_obj:
@@ -2295,8 +2294,7 @@ class ICASelect(QDialog):
             if not isinstance(figs, list):
                 figs = [figs]
             for fig in figs:
-                fig.canvas.mpl_connect('button_release_event', self.component_on_plot_selected)
-                fig.canvas.mpl_connect('close_event', self.plot_closed)
+                fig.canvas.mpl_connect('close_event', self.get_selected_components)
             dialog.close()
 
     def plot_sources(self):
@@ -2311,8 +2309,7 @@ class ICASelect(QDialog):
             if not isinstance(figs, list):
                 figs = [figs]
             for fig in figs:
-                fig.canvas.mpl_connect('button_release_event', self.component_on_plot_selected)
-                fig.canvas.mpl_connect('close_event', self.plot_closed)
+                fig.canvas.mpl_connect('close_event', self.get_selected_components)
             dialog.close()
 
     def plot_overlay(self):
@@ -2327,6 +2324,17 @@ class ICASelect(QDialog):
             if not isinstance(figs, list):
                 figs = [figs]
             for fig in figs:
-                fig.canvas.mpl_connect('button_release_event', self.component_on_plot_selected)
-                fig.canvas.mpl_connect('close_event', self.plot_closed)
+                fig.canvas.mpl_connect('close_event', self.get_selected_components)
+            dialog.close()
+
+    def plot_properties(self):
+        if self.current_obj:
+            # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+            self.set_chkbx_enable(False)
+            dialog = QDialog(self)
+            dialog.setWindowTitle('Opening...')
+            dialog.open()
+            plot_ica_properties(meeg=self.current_obj,
+                                ica_properties_indices=self.mw.pr.ica_exclude[self.current_obj.name],
+                                show_plots=True)
             dialog.close()
