@@ -326,6 +326,7 @@ class MEEG(BaseLoading):
         self._info = None
         self._raw = None
         self._raw_filtered = None
+        self._erm = None
         self._erm_filtered = None
         self._events = None
         self._epochs = None
@@ -493,7 +494,7 @@ class MEEG(BaseLoading):
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
-    def _pick_types_helper(self, data):
+    def _pick_types_helper(self, data, exclude_bads=False):
         # Include all selected Channel-Types if present in data
         sel_ch_types = self.p['ch_types'].copy()
         existing_ch_types = data.get_channel_types(unique=True)
@@ -501,10 +502,12 @@ class MEEG(BaseLoading):
         for ch_type in [ct for ct in sel_ch_types if ct not in existing_ch_types]:
             sel_ch_types.remove(ch_type)
 
-        data = data.pick(sel_ch_types)
-        print(f'Picked Types: {sel_ch_types}')
-
-        return data
+        if exclude_bads:
+            data.pick(sel_ch_types, exclude='bads')
+            print(f'Picked Types: {sel_ch_types} and excluded bad channels')
+        else:
+            data.pick(sel_ch_types)
+            print(f'Picked Types: {sel_ch_types}')
 
     def _update_raw_info(self, raw):
         # Take bad_channels from file if there are none in self.bad_channels
@@ -515,22 +518,29 @@ class MEEG(BaseLoading):
             bad_channels = [bad_ch for bad_ch in self.bad_channels if bad_ch in raw.ch_names]
             raw.info['bads'] = bad_channels
 
-    def load_info(self):
+    def load_info(self, copy=True):
         """Get raw-info, either from all_info in project or from raw-file if not in all_info"""
         if self._info is None:
             self._info = mne.io.read_info(self.raw_path)
 
-        return self._info
+        if copy:
+            return self._info.copy()
+        else:
+            return self._info
 
-    def load_raw(self, pick_types=True):
+    def load_raw(self, pick_types=True, exclude_bads=False, copy=True):
         if self._raw is None:
             self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
 
-        if pick_types:
-            self._raw = self._pick_types_helper(self._raw)
+            if pick_types:
+                self._pick_types_helper(self._raw, exclude_bads=exclude_bads)
+
         self._update_raw_info(self._raw)
 
-        return self._raw
+        if copy:
+            return self._raw.copy()
+        else:
+            return self._raw
 
     def save_raw(self, raw):
         self._raw = raw
@@ -540,16 +550,19 @@ class MEEG(BaseLoading):
         raw.save(self.raw_path, overwrite=True)
         self.save_file_params(self.raw_path)
 
-    def load_filtered(self, pick_types=True):
+    def load_filtered(self, pick_types=True, exclude_bads=False, copy=True):
         if self._raw_filtered is None:
             self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
 
-        if pick_types:
-            self._raw_filtered = self._pick_types_helper(self._raw_filtered)
+            if pick_types:
+                self._pick_types_helper(self._raw_filtered, exclude_bads=exclude_bads)
 
         self._update_raw_info(self._raw_filtered)
 
-        return self._raw_filtered
+        if copy:
+            return self._raw_filtered.copy()
+        else:
+            return self._raw_filtered
 
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
@@ -560,16 +573,29 @@ class MEEG(BaseLoading):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
             self.save_file_params(self.raw_filtered_path)
 
-    def load_erm(self):
-        # unfiltered erm is not considered important enough to be a obj-attribute
-        erm = mne.io.read_raw_fif(self.erm_path, preload=True)
-        return erm
+    def load_erm(self, pick_types=True, exclude_bads=False, copy=True):
+        if self._erm is None:
+            self._erm = mne.io.read_raw_fif(self.erm_path, preload=True)
 
-    def load_erm_filtered(self):
+            if pick_types:
+                self._pick_types_helper(self._erm, exclude_bads=exclude_bads)
+
+        if copy:
+            return self._raw.copy()
+        else:
+            return self._raw
+
+    def load_erm_filtered(self, pick_types=True, exclude_bads=False, copy=True):
         if self._erm_filtered is None:
             self._erm_filtered = mne.io.read_raw_fif(self.erm_filtered_path, preload=True)
 
-        return self._erm_filtered
+            if pick_types:
+                self._pick_types_helper(self._erm_filtered, exclude_bads=exclude_bads)
+
+        if copy:
+            return self._erm_filtered.copy()
+        else:
+            return self._erm_filtered
 
     def save_erm_filtered(self, erm_filtered):
         self._erm_filtered = erm_filtered
@@ -577,24 +603,30 @@ class MEEG(BaseLoading):
             self._erm_filtered.save(self.erm_filtered_path, overwrite=True)
             self.save_file_params(self.erm_filtered_path)
 
-    def load_events(self):
+    def load_events(self, copy=True):
         if self._events is None:
             self._events = mne.read_events(self.events_path)
 
-        return self._events
+        if copy:
+            return self._events.copy()
+        else:
+            return self._events
 
     def save_events(self, events):
         self._events = events
         mne.event.write_events(self.events_path, events)
         self.save_file_params(self.events_path)
 
-    def load_epochs(self, pick_types=True):
+    def load_epochs(self, pick_types=True, copy=True):
         if self._epochs is None:
             self._epochs = mne.read_epochs(self.epochs_path)
-        if pick_types:
-            self._epochs = self._pick_types_helper(self._epochs)
+            if pick_types:
+                self._pick_types_helper(self._epochs)
 
-        return self._epochs
+        if copy:
+            return self._epochs.copy()
+        else:
+            return self._epochs
 
     def save_epochs(self, epochs):
         self._epochs = epochs
@@ -614,95 +646,119 @@ class MEEG(BaseLoading):
             pickle.dump(reject_log, file)
         self.save_file_params(self.reject_log_path)
 
-    def load_ica(self):
+    def load_ica(self, copy=True):
         if self._ica is None:
             self._ica = mne.preprocessing.read_ica(self.ica_path)
 
         # Change ica.exclude to indices stored in ica_exclude.py for this MEEG-Object
         self._ica.exclude = self.pr.ica_exclude[self.name]
 
-        return self._ica
+        if copy:
+            return self._ica.copy()
+        else:
+            return self._ica
 
     def save_ica(self, ica):
         self._ica = ica
         ica.save(self.ica_path)
         self.save_file_params(self.ica_path)
 
-    def load_eog_epochs(self):
+    def load_eog_epochs(self, copy=True):
         if self._eog_epochs is None:
             self._eog_epochs = mne.read_epochs(self.eog_epochs_path)
 
-        return self._eog_epochs
+        if copy:
+            return self._eog_epochs.copy()
+        else:
+            return self._eog_epochs
 
     def save_eog_epochs(self, eog_epochs):
         self._eog_epochs = eog_epochs
         eog_epochs.save(self.eog_epochs_path, overwrite=True)
         self.save_file_params(self.eog_epochs_path)
 
-    def load_ecg_epochs(self):
+    def load_ecg_epochs(self, copy=True):
         if self._ecg_epochs is None:
             self._ecg_epochs = mne.read_epochs(self.ecg_epochs_path)
 
-        return self._ecg_epochs
+        if copy:
+            return self._ecg_epochs.copy()
+        else:
+            return self._ecg_epochs
 
     def save_ecg_epochs(self, ecg_epochs):
         self._ecg_epochs = ecg_epochs
         ecg_epochs.save(self.ecg_epochs_path, overwrite=True)
         self.save_file_params(self.ecg_epochs_path)
 
-    def load_evokeds(self, pick_types=True):
+    def load_evokeds(self, pick_types=True, copy=True):
         if self._evokeds is None:
             self._evokeds = mne.read_evokeds(self.evokeds_path)
 
-        if pick_types:
-            for idx, evoked in enumerate(self._evokeds):
-                self._evokeds[idx] = self._pick_types_helper(evoked)
+            if pick_types:
+                for evoked in self._evokeds:
+                    self._pick_types_helper(evoked)
 
-        return self._evokeds
+        if copy:
+            return self._evokeds.copy()
+        else:
+            return self._evokeds
 
     def save_evokeds(self, evokeds):
         self._evokeds = evokeds
         mne.evoked.write_evokeds(self.evokeds_path, evokeds)
         self.save_file_params(self.evokeds_path)
 
-    def load_power_tfr_epochs(self):
+    def load_power_tfr_epochs(self, copy=True):
         if self._power_tfr_epochs is None:
             self._power_tfr_epochs = mne.time_frequency.read_tfrs(self.power_tfr_epochs_path)
 
-        return self._power_tfr_epochs
+        if copy:
+            return self._power_tfr_epochs.copy()
+        else:
+            return self._power_tfr_epochs
 
     def save_power_tfr_epochs(self, powers):
         self._power_tfr_epochs = powers
         mne.time_frequency.write_tfrs(self.power_tfr_epochs_path, powers, overwrite=True)
         self.save_file_params(self.power_tfr_epochs_path)
 
-    def load_itc_tfr_epochs(self):
+    def load_itc_tfr_epochs(self, copy=True):
         if self._itc_tfr_epochs is None:
             self._itc_tfr_epochs = mne.time_frequency.read_tfrs(self.itc_tfr_epochs_path)
 
-        return self._itc_tfr_epochs
+        if copy:
+            return self._itc_tfr_epochs.copy()
+        else:
+            return self._itc_tfr_epochs
 
     def save_itc_tfr_epochs(self, itcs):
         self._itc_tfr_epochs = itcs
         mne.time_frequency.write_tfrs(self.itc_tfr_epochs_path, itcs, overwrite=True)
         self.save_file_params(self.itc_tfr_epochs_path)
 
-    def load_power_tfr_average(self):
+    def load_power_tfr_average(self, copy=True):
         if self._power_tfr_average is None:
             self._power_tfr_average = mne.time_frequency.read_tfrs(self.power_tfr_average_path)
 
-        return self._power_tfr_average
+        if copy:
+            return self._power_tfr_average.copy()
+        else:
+            return self._power_tfr_average
 
     def save_power_tfr_average(self, powers):
         self._power_tfr_average = powers
         mne.time_frequency.write_tfrs(self.power_tfr_average_path, powers, overwrite=True)
         self.save_file_params(self.power_tfr_average_path)
 
-    def load_itc_tfr_average(self):
+    def load_itc_tfr_average(self, copy=True):
         if self._itc_tfr_average is None:
             self._itc_tfr_average = mne.time_frequency.read_tfrs(self.itc_tfr_average_path)
 
-        return self._itc_tfr_average
+        if copy:
+            return self._itc_tfr_average.copy()
+        else:
+            return self._itc_tfr_average
 
     def save_itc_tfr_average(self, itcs):
         self._itc_tfr_average = itcs
@@ -710,24 +766,30 @@ class MEEG(BaseLoading):
         self.save_file_params(self.itc_tfr_average_path)
 
     # Source-Space
-    def load_transformation(self):
+    def load_transformation(self, copy=True):
         if self._trans is None:
             self._trans = mne.read_trans(self.trans_path)
 
-        return self._trans
+        if copy:
+            return self._trans.copy()
+        else:
+            return self._trans
 
-    def load_forward(self):
+    def load_forward(self, copy=True):
         if self._forward is None:
             self._forward = mne.read_forward_solution(self.forward_path, verbose='WARNING')
 
-        return self._forward
+        if copy:
+            return self._forward.copy()
+        else:
+            return self._forward
 
     def save_forward(self, forward):
         self._forward = forward
         mne.write_forward_solution(self.forward_path, forward, overwrite=True)
         self.save_file_params(self.forward_path)
 
-    def load_noise_covariance(self):
+    def load_noise_covariance(self, copy=True):
         if self._noise_cov is None:
             if self.p['calm_noise_cov']:
                 self._noise_cov = mne.read_cov(self.calm_cov_path)
@@ -740,7 +802,10 @@ class MEEG(BaseLoading):
                 self._noise_cov = mne.read_cov(self.erm_cov_path)
                 print('Reading Noise-Covariance from Empty-Room-Data')
 
-        return self._noise_cov
+        if copy:
+            return self._noise_cov.copy()
+        else:
+            return self._noise_cov
 
     def save_noise_covariance(self, noise_cov, cov_type):
         self._noise_cov = noise_cov
@@ -754,25 +819,31 @@ class MEEG(BaseLoading):
             mne.cov.write_cov(self.erm_cov_path, noise_cov)
             self.save_file_params(self.erm_cov_path)
 
-    def load_inverse_operator(self):
+    def load_inverse_operator(self, copy=True):
         if self._inverse is None:
             self._inverse = mne.minimum_norm.read_inverse_operator(self.inverse_path, verbose='WARNING')
 
-        return self._inverse
+        if copy:
+            return self._inverse.copy()
+        else:
+            return self._inverse
 
     def save_inverse_operator(self, inverse):
         self._inverse = inverse
         mne.minimum_norm.write_inverse_operator(self.inverse_path, inverse)
         self.save_file_params(self.inverse_path)
 
-    def load_source_estimates(self):
+    def load_source_estimates(self, copy=True):
         if self._stcs is None:
             self._stcs = dict()
             for trial in self.stc_paths:
                 stc = mne.source_estimate.read_source_estimate(self.stc_paths[trial])
                 self._stcs[trial] = stc
 
-        return self._stcs
+        if copy:
+            return self._stcs.copy()
+        else:
+            return self._stcs
 
     def save_source_estimates(self, stcs):
         self._stcs = stcs
@@ -784,12 +855,17 @@ class MEEG(BaseLoading):
                 raise RuntimeError(f'Selected Trials{list(self.stc_paths.keys())} don\'t seem to match {trial}'
                                    f'in saved source-estimate')
 
-    def load_morphed_source_estimates(self):
+    def load_morphed_source_estimates(self, copy=True):
         if self._morphed_stcs is None:
             self._morphed_stcs = dict()
             for trial in self.morphed_stc_paths:
                 morphed_stc = mne.source_estimate.read_source_estimate(self.morphed_stc_paths[trial])
                 self._morphed_stcs[trial] = morphed_stc
+
+        if copy:
+            self._morphed_stcs.copy()
+        else:
+            self._morphed_stcs
 
     def save_morphed_source_estimates(self, morphed_stcs):
         self._morphed_stcs = morphed_stcs
@@ -801,7 +877,7 @@ class MEEG(BaseLoading):
                 raise RuntimeError(f'Selected Trials{list(self.morphed_stc_paths.keys())} don\'t seem to match {trial}'
                                    f'in saved morphed source-estimate')
 
-    def load_mixn_dipoles(self):
+    def load_mixn_dipoles(self, copy=True):
         if self._mixn_dips is None:
             self._mixn_dips = dict()
             for trial in self.sel_trials:
@@ -815,7 +891,10 @@ class MEEG(BaseLoading):
                 self._mixn_dips[trial] = dip_list
                 print(f'{idx + 1} dipoles read for {self.name}-{trial}')
 
-        return self._mixn_dips
+        if copy:
+            return self._mixn_dips.copy()
+        else:
+            return self._mixn_dips
 
     def save_mixn_dipoles(self, mixn_dips):
         self._mixn_dips = mixn_dips
@@ -834,7 +913,7 @@ class MEEG(BaseLoading):
                 dip.save(mxn_dip_path)
                 self.save_file_params(mxn_dip_path)
 
-    def load_mixn_source_estimates(self):
+    def load_mixn_source_estimates(self, copy=True):
         if self._mixn_stcs is None:
             self._mixn_stcs = dict()
             for trial in self.sel_trials:
@@ -842,7 +921,10 @@ class MEEG(BaseLoading):
                 mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
                 self._mixn_stcs.update({trial: mx_stc})
 
-        return self._mixn_stcs
+        if copy:
+            return self._mixn_stcs
+        else:
+            return self._mixn_stcs.copy()
 
     def save_mixn_source_estimates(self, stcs):
         self._mixn_stcs = stcs
@@ -851,7 +933,7 @@ class MEEG(BaseLoading):
             stcs[trial].save(stc_path)
             self.save_file_params(stc_path)
 
-    def load_ecd(self):
+    def load_ecd(self, copy=True):
         if self._ecd_dips is None:
             self._ecd_dips = {}
             for trial in self.sel_trials:
@@ -860,7 +942,11 @@ class MEEG(BaseLoading):
                     ecd_dip_path = join(self.save_dir, 'ecd_dipoles',
                                         f'{self.name}_{trial}_{self.p_preset}_{dip}-ecd-dip.dip')
                     self._ecd_dips[trial][dip] = mne.read_dipole(ecd_dip_path)
-        return self._ecd_dips
+
+        if copy:
+            return self._ecd_dips.copy()
+        else:
+            return self._ecd_dips
 
     def save_ecd(self, ecd_dips):
         self._ecd_dips = ecd_dips
@@ -874,7 +960,7 @@ class MEEG(BaseLoading):
                 ecd_dips[trial][dip].save(ecd_dip_path, overwrite=True)
                 self.save_file_params(ecd_dip_path)
 
-    def load_ltc(self):
+    def load_ltc(self, copy=True):
         if self._ltc is None:
             self._ltc = {}
             for trial in self.sel_trials:
@@ -884,7 +970,10 @@ class MEEG(BaseLoading):
                                     f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
                     self._ltc[trial][label] = np.load(ltc_path)
 
-        return self._ltc
+        if copy:
+            return self._ltc.copy()
+        else:
+            return self._ltc
 
     def save_ltc(self, ltc):
         self._ltc = ltc
@@ -898,7 +987,7 @@ class MEEG(BaseLoading):
                 np.save(ltc_path, ltc[trial][label])
                 self.save_file_params(ltc_path)
 
-    def load_connectivity(self):
+    def load_connectivity(self, copy=True):
         if self._connectivity is None:
             self._connectivity = dict()
             for trial in self.sel_trials:
@@ -910,7 +999,10 @@ class MEEG(BaseLoading):
                     except FileNotFoundError:
                         pass
 
-        return self._connectivity
+        if copy:
+            return self._connectivity.copy()
+        else:
+            return self._connectivity
 
     def save_connectivity(self, con_dict):
         self._connectivity = con_dict

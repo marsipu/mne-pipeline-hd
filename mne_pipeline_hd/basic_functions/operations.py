@@ -40,7 +40,7 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
     results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass'])
     if results['highpass'] != 'equal' or results['lowpass'] != 'equal':
         # Get raw from Subject-class, load as copy to avoid changing attribute value inplace
-        raw = meeg.load_raw().copy()
+        raw = meeg.load_raw()
         if enable_cuda == 'true':  # use cuda for filtering
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
@@ -53,8 +53,7 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
     if meeg.erm != 'None':
         erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
         if erm_results['highpass'] != 'equal' or erm_results['lowpass'] != 'equal':
-            # raw = meeg.load_raw()
-            erm_raw = meeg.load_erm().copy()
+            erm_raw = meeg.load_erm()
 
             # # Due to channel-deletion sometimes in HPI-Fitting-Process
             # ch_list = set(erm_raw.info['ch_names']) & set(raw.info['ch_names'])
@@ -261,18 +260,17 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
     if ica_fitto == 'Raw (Unfiltered)':
         data = meeg.load_raw()
         # Exclude bad- and non-data-channels
-        data.pick('data', exclude='bads')
+        data.pick(None, exclude='bads')
 
     elif ica_fitto == 'Raw (Filtered)':
         data = meeg.load_filtered()
         # Exclude bad- and non-data-channels
-        data.pick('data', exclude='bads')
+        data.pick(None, exclude='bads')
 
     else:
         data = meeg.load_epochs()
-
     if data.info['highpass'] < 1:
-        filt_data = data.copy().filter(1, None)
+        filt_data = data.filter(1, None)
     else:
         filt_data = data
 
@@ -308,21 +306,29 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
     fit_kwargs = check_kwargs(kwargs, ica.fit)
     ica.fit(filt_data, reject=reject, reject_by_annotation=reject_by_annotation, **fit_kwargs)
 
+    # Load Raw for EOG/ECG-Detection
+    if ica_fitto == 'Epochs':
+        eog_ecg_raw = meeg.load_raw(pick_types=False, exclude_bads=True)
+        if eog_ecg_raw.info['highpass'] < 1:
+            eog_ecg_raw.filter(1, None)
+    else:
+        eog_ecg_raw = data
+
     if ica_eog:
-        raw = meeg.load_raw()
+
         create_eog_kwargs = check_kwargs(kwargs, mne.preprocessing.create_eog_epochs)
         find_eog_kwargs = check_kwargs(kwargs, ica.find_bads_eog)
 
         # Using an EOG channel to select components if possible
-        if 'eog' in meeg.info['ch_types']:
-            eog_epochs = mne.preprocessing.create_eog_epochs(raw, **create_eog_kwargs)
-            eog_indices, eog_scores = ica.find_bads_eog(raw, **find_eog_kwargs)
-        elif eog_channel and eog_channel in raw.ch_names:
-            eog_epochs = mne.preprocessing.create_eog_epochs(raw, ch_name=eog_channel, **create_eog_kwargs)
-            eog_indices, eog_scores = ica.find_bads_eog(raw, ch_name=eog_channel, **find_eog_kwargs)
+        if 'eog' in eog_ecg_raw.get_channel_types():
+            eog_epochs = mne.preprocessing.create_eog_epochs(eog_ecg_raw, **create_eog_kwargs)
+            eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, **find_eog_kwargs)
+        elif eog_channel and eog_channel in eog_ecg_raw.ch_names:
+            eog_epochs = mne.preprocessing.create_eog_epochs(eog_ecg_raw, ch_name=eog_channel, **create_eog_kwargs)
+            eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel, **find_eog_kwargs)
         else:
             eog_indices, eog_scores, eog_epochs = None, None, None
-            print('No EOG-Channel found or set, thus EOG can\'t be used for Component-Selection')
+            print('No EOG-Channel found or set, thus EOG can\'t be used for automatic Component-Selection')
 
         if eog_epochs:
             ica.exclude += eog_indices
@@ -331,17 +337,20 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
             meeg.save_json('eog_scores', eog_scores)
 
     if ica_ecg:
-        raw = meeg.load_raw()
         create_ecg_kwargs = check_kwargs(kwargs, mne.preprocessing.create_ecg_epochs)
-        ecg_kwargs = check_kwargs(kwargs, ica.find_bads_ecg)
+        find_ecg_kwargs = check_kwargs(kwargs, ica.find_bads_ecg)
 
         # Using an ECG channel to select components
-        if ecg_channel:
-            ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, **create_ecg_kwargs)
-            ecg_indices, ecg_scores = ica.find_bads_ecg(raw, ch_name=ecg_channel, **ecg_kwargs)
+        if ecg_channel and ecg_channel in eog_ecg_raw.ch_names:
+            ecg_epochs = mne.preprocessing.create_ecg_epochs(eog_ecg_raw, ch_name=ecg_channel, **create_ecg_kwargs)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name=ecg_channel, **find_ecg_kwargs)
+        elif any([ch_type in eog_ecg_raw.get_channel_types() for ch_type in ['mag', 'grad', 'meg']]):
+            ecg_epochs = mne.preprocessing.create_ecg_epochs(eog_ecg_raw, **create_ecg_kwargs)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, **find_ecg_kwargs)
         else:
-            ecg_epochs = mne.preprocessing.create_ecg_epochs(raw, ch_name=ecg_channel, **create_ecg_kwargs)
-            ecg_indices, ecg_scores = ica.find_bads_ecg(raw, **ecg_kwargs)
+            ecg_indices, ecg_scores, ecg_epochs = None, None, None
+            print('No ECG-Channel found or set and no MEG-Channel for ECG-Detection present, '
+                  'thus ECG can\'t be used for automatic Component-Selection')
 
         if ecg_epochs:
             ica.exclude += ecg_indices
