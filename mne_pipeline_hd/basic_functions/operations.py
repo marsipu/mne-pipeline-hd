@@ -317,7 +317,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
         if 'eog' in meeg.info['ch_types']:
             eog_epochs = mne.preprocessing.create_eog_epochs(raw, **create_eog_kwargs)
             eog_indices, eog_scores = ica.find_bads_eog(raw, **find_eog_kwargs)
-        elif eog_channel:
+        elif eog_channel and eog_channel in raw.ch_names:
             eog_epochs = mne.preprocessing.create_eog_epochs(raw, ch_name=eog_channel, **create_eog_kwargs)
             eog_indices, eog_scores = ica.find_bads_eog(raw, ch_name=eog_channel, **find_eog_kwargs)
         else:
