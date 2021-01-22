@@ -12,21 +12,17 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import inspect
 import logging
 import re
-import sys
 from collections import OrderedDict
 
-from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtGui import QFont, QTextCursor
-from PyQt5.QtWidgets import QDialog, QGridLayout, QHBoxLayout, QLabel, QListView, \
-    QProgressBar, \
-    QPushButton, QSizePolicy, \
-    QStyle, QTextEdit, QVBoxLayout
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (QDialog, QGridLayout, QHBoxLayout, QLabel, QListView, QProgressBar,
+                             QPushButton, QSizePolicy, QStyle, QVBoxLayout)
 
 from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, Group, MEEG
 from .pipeline_utils import shutdown
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
-from ..gui.gui_utils import Worker, get_exception_tuple, set_ratio_geometry
+from ..gui.gui_utils import ConsoleWidget, Worker, get_exception_tuple, set_ratio_geometry
 from ..gui.models import RunModel
 
 
@@ -120,12 +116,6 @@ class RunDialog(QDialog):
         # Initialize Attributes
         self.init_attributes()
 
-        # Connect custom stdout and stderr to display-function
-        sys.stdout.signal.text_written.connect(self.add_text)
-        sys.stderr.signal.text_written.connect(self.add_error_text)
-        # Handle tqdm-progress-bars
-        sys.stderr.signal.text_updated.connect(self.progress_text)
-
         self.init_lists()
         self.init_ui()
 
@@ -150,7 +140,6 @@ class RunDialog(QDialog):
         self.prog_count = 0
         self.is_prog_text = False
         self.paused = False
-        self.autoscroll = True
 
     def init_lists(self):
         # Make sure, every function is in sel_functions
@@ -224,8 +213,7 @@ class RunDialog(QDialog):
 
         layout.addLayout(view_layout)
 
-        self.console_widget = QTextEdit()
-        self.console_widget.setReadOnly(True)
+        self.console_widget = ConsoleWidget()
         layout.addWidget(self.console_widget)
 
         self.pgbar = QProgressBar()
@@ -305,7 +293,7 @@ class RunDialog(QDialog):
             # Load object if the preceding object is not the same
             if not self.current_object or self.current_object.name != object_name:
                 # Print Headline for object
-                self.add_html(f'<br><h1>{object_name}</h1><br>')
+                self.console_widget.add_html(f'<br><h1>{object_name}</h1><br>')
 
                 if self.current_type == 'FSMRI':
                     self.current_object = FSMRI(object_name, self.mw)
@@ -338,7 +326,7 @@ class RunDialog(QDialog):
             self.mark_current_items(2)
 
             # Print Headline for function
-            self.add_html(f'<h2>{self.current_func}</h2><br>')
+            self.console_widget.add_html(f'<h2>{self.current_func}</h2><br>')
 
             if (self.mw.pd_funcs.loc[self.current_func, 'mayavi']
                     or self.mw.pd_funcs.loc[self.current_func, 'matplotlib'] and self.mw.get_setting('show_plots')):
@@ -358,9 +346,7 @@ class RunDialog(QDialog):
                 self.mw.threadpool.start(self.fworker)
 
         else:
-            self.console_widget.insertHtml('<b><big>Finished</big></b><br>')
-            if self.autoscroll:
-                self.console_widget.ensureCursorVisible()
+            self.console_widget.add_html('<b><big>Finished</big></b><br>')
             # Enable/Disable Buttons
             self.continue_bt.setEnabled(False)
             self.pause_bt.setEnabled(False)
@@ -383,9 +369,7 @@ class RunDialog(QDialog):
         if not self.paused:
             self.start_thread()
         else:
-            self.console_widget.insertHtml('<b><big>Paused</big></b><br>')
-            if self.autoscroll:
-                self.console_widget.ensureCursorVisible()
+            self.console_widget.add_html('<b><big>Paused</big></b><br>')
             # Enable/Disable Buttons
             self.continue_bt.setEnabled(True)
             self.pause_bt.setEnabled(False)
@@ -399,8 +383,8 @@ class RunDialog(QDialog):
         self.error_widget.replace_data(list(self.errors.keys()))
 
         # Insert Error-Number into console-widget as an anchor for later inspection
-        self.console_widget.insertHtml(f'<a name=\"{self.error_count}\" href={self.error_count}>'
-                                       f'<i>Error No.{self.error_count}</i><br></a>')
+        self.console_widget.add_html(f'<a name=\"{self.error_count}\" href={self.error_count}>'
+                                     f'<i>Error No.{self.error_count}</i><br></a>')
         # Increase Error-Count by one
         self.error_count += 1
         # Continue with next object
@@ -408,9 +392,7 @@ class RunDialog(QDialog):
 
     def pause_funcs(self):
         self.paused = True
-        self.console_widget.insertHtml('<br><b>Finishing last function...</b><br>')
-        if self.autoscroll:
-            self.console_widget.ensureCursorVisible()
+        self.console_widget.add_html('<br><b>Finishing last function...</b><br>')
 
     def restart(self):
         # Reload modules to get latest changes
@@ -429,53 +411,22 @@ class RunDialog(QDialog):
         self.func_model.layoutChanged.emit()
         self.error_widget.replace_data(list(self.errors.keys()))
 
+        # Reset Progress-Bar
+        self.pgbar.setValue(0)
+
         # Restart
         self.start_thread()
 
     def toggle_autoscroll(self, state):
         if state:
-            self.autoscroll = True
+            self.console_widget.set_autoscroll(True)
         else:
-            self.autoscroll = False
+            self.console_widget.set_autoscroll(False)
 
     def show_error(self, current, _):
-        self.autoscroll = False
+        self.console_widget.set_autoscroll(False)
         self.autoscroll_bt.setChecked(False)
         self.console_widget.scrollToAnchor(str(self.errors[current][1]))
-
-    def add_text(self, text):
-        self.is_prog_text = False
-        self.console_widget.insertPlainText(text)
-        if self.autoscroll:
-            self.console_widget.ensureCursorVisible()
-
-    def add_error_text(self, text):
-        self.is_prog_text = False
-        text = text.replace('\n', '<br>')
-        text = f'<font color="red">{text}</font>'
-        self.console_widget.insertHtml(text)
-        if self.autoscroll:
-            self.console_widget.ensureCursorVisible()
-
-    def add_html(self, text):
-        self.is_prog_text = False
-        self.console_widget.insertHtml(text)
-        if self.autoscroll:
-            self.console_widget.ensureCursorVisible()
-
-    def progress_text(self, text):
-        if self.is_prog_text:
-            # Delete last line
-            cursor = self.console_widget.textCursor()
-            cursor.select(QTextCursor.LineUnderCursor)
-            cursor.removeSelectedText()
-            self.console_widget.insertPlainText(text)
-        else:
-            self.is_prog_text = True
-            self.console_widget.insertPlainText(text)
-
-        if self.autoscroll:
-            self.console_widget.ensureCursorVisible()
 
     def closeEvent(self, event):
         self.mw.pipeline_running = False

@@ -540,6 +540,7 @@ class RawInfo(QDialog):
                     ('highpass', 'Highpass', 'Hz'),
                     ('lowpass', 'Lowpass', 'Hz'),
                     ('nchan', 'Number of channels'),
+                    ('ch_types', 'Channel-Types'),
                     ('subject_info', 'Subject-Info'),
                     ('device_info', 'Device-Info'),
                     ('helium_info', 'Helium-Info')]

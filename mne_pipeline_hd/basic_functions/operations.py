@@ -223,12 +223,13 @@ def epoch_raw(meeg, t_epoch, baseline, reject, flat, use_autoreject, consensus_p
     raw = meeg.load_filtered()
     events = meeg.load_events()
 
-    raw_picked = raw.copy().pick('data', exclude='bads')
+    raw.pick('data', exclude='bads')
 
-    epochs = mne.Epochs(raw_picked, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
+    epochs = mne.Epochs(raw, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, proj=False, reject=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=True)
 
+    # Get reject-dictionaries and remove entries which are not present in channels
     existing_ch_types = epochs.get_channel_types(unique=True, only_data_chs=True)
     reject = reject.copy()
     flat = flat.copy()
@@ -259,16 +260,14 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
             ch_types, reject_by_annotation, ica_eog, eog_channel, ica_ecg, ecg_channel, **kwargs):
     if ica_fitto == 'Raw (Unfiltered)':
         data = meeg.load_raw()
-        # Exclude bad- and non-data-channels
-        data.pick(None, exclude='bads')
 
     elif ica_fitto == 'Raw (Filtered)':
         data = meeg.load_filtered()
-        # Exclude bad- and non-data-channels
-        data.pick(None, exclude='bads')
 
     else:
         data = meeg.load_epochs()
+
+    # Filter if data is not highpass-filtered >= 1
     if data.info['highpass'] < 1:
         filt_data = data.filter(1, None)
     else:
@@ -307,12 +306,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
     ica.fit(filt_data, reject=reject, reject_by_annotation=reject_by_annotation, **fit_kwargs)
 
     # Load Raw for EOG/ECG-Detection
-    if ica_fitto == 'Epochs':
-        eog_ecg_raw = meeg.load_raw(pick_types=False, exclude_bads=True)
-        if eog_ecg_raw.info['highpass'] < 1:
-            eog_ecg_raw.filter(1, None)
-    else:
-        eog_ecg_raw = data
+    eog_ecg_raw = meeg.load_raw()
 
     if ica_eog:
 
@@ -368,13 +362,9 @@ def _ica_plotto_helper(meeg, ica_plotto):
 
     if ica_plotto == 'Raw (Unfiltered)':
         data = meeg.load_raw()
-        # Exclude bad- and non-data-channels
-        data.pick('data', exclude='bads')
 
     elif ica_plotto == 'Raw (Filtered)':
         data = meeg.load_filtered()
-        # Exclude bad- and non-data-channels
-        data.pick('data', exclude='bads')
 
     elif ica_plotto == 'Epochs':
         data = meeg.load_epochs()

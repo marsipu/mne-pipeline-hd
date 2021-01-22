@@ -37,7 +37,7 @@ from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
 from .gui_utils import center, get_exception_tuple, set_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, ICASelect,
-                              SubBadsDialog,
+                              ReloadRaw, SubBadsDialog,
                               SubDictDialog, SubjectDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .plot_widgets import PlotViewSelection
@@ -471,18 +471,24 @@ class MainWindow(QMainWindow):
         input_menu = self.menuBar().addMenu('&Input')
 
         input_menu.addAction('Subject-Wizard', partial(SubjectWizard, self))
+
         input_menu.addSeparator()
+
         aaddfiles = QAction('Add MEEG', parent=self)
         aaddfiles.setShortcut('Ctrl+M')
         aaddfiles.setStatusTip('Add your MEG-Files here')
         aaddfiles.triggered.connect(partial(AddFilesDialog, self))
         input_menu.addAction(aaddfiles)
 
+        input_menu.addAction('Reload Raw', partial(ReloadRaw, self))
+
         aaddmri = QAction('Add Freesurfer-MRI', self)
         aaddmri.setShortcut('Ctrl+F')
         aaddmri.setStatusTip('Add your Freesurfer-Segmentations here')
         aaddmri.triggered.connect(partial(AddMRIDialog, self))
         input_menu.addAction(aaddmri)
+
+        input_menu.addSeparator()
 
         input_menu.addAction('Assign MEEG --> Freesurfer-MRI',
                              partial(SubDictDialog, self, 'mri'))
@@ -492,10 +498,14 @@ class MainWindow(QMainWindow):
                              partial(SubBadsDialog, self))
         input_menu.addAction('Assign Event-IDs --> MEEG', partial(EventIDGui, self))
         input_menu.addAction('Select ICA-Components', partial(ICASelect, self))
+
         input_menu.addSeparator()
+
         input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
         input_menu.addAction('Copy Transformation', partial(CopyTrans, self))
+
         input_menu.addSeparator()
+
         input_menu.addAction('File-Management', partial(FileManagment, self))
         input_menu.addAction('Raw-Info', partial(RawInfo, self))
 

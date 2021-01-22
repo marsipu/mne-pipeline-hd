@@ -42,7 +42,7 @@ class BaseListModel(QAbstractListModel):
         return self._data[index.row()]
 
     def data(self, index, role=None):
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
             if self.show_index:
                 return f'{index.row()}: {self.getData(index)}'
             else:
@@ -195,7 +195,7 @@ class CheckDictModel(BaseListModel):
         self.no_bt = no_bt or QStyle.SP_DialogCancelButton
 
     def data(self, index, role=None):
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
             if self.show_index:
                 return f'{index.row()}: {self.getData(index)}'
             else:
@@ -233,6 +233,8 @@ class CheckDictEditModel(CheckDictModel, EditListModel):
     def __init__(self, data, check_dict, show_index=False,
                  yes_bt=None, no_bt=None):
         super().__init__(data, check_dict, show_index, yes_bt, no_bt)
+        # EditListModel doesn't have to be initialized because in __init__ of EditListModel
+        # only BaseListModel is initialized which is already done in __init__ of CheckDictModel
 
 
 class BaseDictModel(QAbstractTableModel):
@@ -267,7 +269,7 @@ class BaseDictModel(QAbstractTableModel):
             return ''
 
     def data(self, index, role=None):
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
             return str(self.getData(index))
 
     def headerData(self, idx, orientation, role=None):
@@ -376,7 +378,7 @@ class BasePandasModel(QAbstractTableModel):
         return self._data.iloc[index.row(), index.column()]
 
     def data(self, index, role=None):
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole or role == Qt.EditRole:
             return str(self.getData(index))
 
     def headerData(self, idx, orientation, role=None):

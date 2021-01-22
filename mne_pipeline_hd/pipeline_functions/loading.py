@@ -494,20 +494,23 @@ class MEEG(BaseLoading):
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
-    def _pick_types_helper(self, data, exclude_bads=False):
-        # Include all selected Channel-Types if present in data
-        sel_ch_types = self.p['ch_types'].copy()
-        existing_ch_types = data.get_channel_types(unique=True)
-        # Remove channel-types, which are not present in data
-        for ch_type in [ct for ct in sel_ch_types if ct not in existing_ch_types]:
-            sel_ch_types.remove(ch_type)
-
-        if exclude_bads:
-            data.pick(sel_ch_types, exclude='bads')
-            print(f'Picked Types: {sel_ch_types} and excluded bad channels')
-        else:
-            data.pick(sel_ch_types)
-            print(f'Picked Types: {sel_ch_types}')
+    # def _pick_types_helper(self, data, pick_types=True, exclude_bads=False):
+    #     # Include all selected Channel-Types if present in data
+    #     sel_ch_types = self.p['ch_types'].copy()
+    #     existing_ch_types = data.get_channel_types(unique=True)
+    #     # Remove channel-types, which are not present in data
+    #     for ch_type in [ct for ct in sel_ch_types if ct not in existing_ch_types]:
+    #         sel_ch_types.remove(ch_type)
+    #
+    #     if exclude_bads and pick_types:
+    #         data.pick(sel_ch_types, exclude='bads')
+    #         print(f'Picked Types: {sel_ch_types} and excluded bad channels')
+    #     elif pick_types:
+    #         data.pick(sel_ch_types)
+    #         print(f'Picked Types: {sel_ch_types}')
+    #     elif exclude_bads:
+    #         data.pick(None, exclude='bads')
+    #         print(f'Excluded Bads')
 
     def _update_raw_info(self, raw):
         # Take bad_channels from file if there are none in self.bad_channels
@@ -528,12 +531,9 @@ class MEEG(BaseLoading):
         else:
             return self._info
 
-    def load_raw(self, pick_types=True, exclude_bads=False, copy=True):
+    def load_raw(self, copy=True):
         if self._raw is None:
             self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
-
-            if pick_types:
-                self._pick_types_helper(self._raw, exclude_bads=exclude_bads)
 
         self._update_raw_info(self._raw)
 
@@ -547,15 +547,15 @@ class MEEG(BaseLoading):
 
         self._update_raw_info(self._raw)
 
+        # Extract info again from raw, because this is the new raw
+        self.extract_info()
+
         raw.save(self.raw_path, overwrite=True)
         self.save_file_params(self.raw_path)
 
-    def load_filtered(self, pick_types=True, exclude_bads=False, copy=True):
+    def load_filtered(self, copy=True):
         if self._raw_filtered is None:
             self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
-
-            if pick_types:
-                self._pick_types_helper(self._raw_filtered, exclude_bads=exclude_bads)
 
         self._update_raw_info(self._raw_filtered)
 
@@ -573,24 +573,18 @@ class MEEG(BaseLoading):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)
             self.save_file_params(self.raw_filtered_path)
 
-    def load_erm(self, pick_types=True, exclude_bads=False, copy=True):
+    def load_erm(self, copy=True):
         if self._erm is None:
             self._erm = mne.io.read_raw_fif(self.erm_path, preload=True)
-
-            if pick_types:
-                self._pick_types_helper(self._erm, exclude_bads=exclude_bads)
 
         if copy:
             return self._raw.copy()
         else:
             return self._raw
 
-    def load_erm_filtered(self, pick_types=True, exclude_bads=False, copy=True):
+    def load_erm_filtered(self, copy=True):
         if self._erm_filtered is None:
             self._erm_filtered = mne.io.read_raw_fif(self.erm_filtered_path, preload=True)
-
-            if pick_types:
-                self._pick_types_helper(self._erm_filtered, exclude_bads=exclude_bads)
 
         if copy:
             return self._erm_filtered.copy()
@@ -617,11 +611,9 @@ class MEEG(BaseLoading):
         mne.event.write_events(self.events_path, events)
         self.save_file_params(self.events_path)
 
-    def load_epochs(self, pick_types=True, copy=True):
+    def load_epochs(self, copy=True):
         if self._epochs is None:
             self._epochs = mne.read_epochs(self.epochs_path)
-            if pick_types:
-                self._pick_types_helper(self._epochs)
 
         if copy:
             return self._epochs.copy()
@@ -651,7 +643,8 @@ class MEEG(BaseLoading):
             self._ica = mne.preprocessing.read_ica(self.ica_path)
 
         # Change ica.exclude to indices stored in ica_exclude.py for this MEEG-Object
-        self._ica.exclude = self.pr.ica_exclude[self.name]
+        if self.name in self.pr.ica_exclude:
+            self._ica.exclude = self.pr.ica_exclude[self.name]
 
         if copy:
             return self._ica.copy()
@@ -691,13 +684,9 @@ class MEEG(BaseLoading):
         ecg_epochs.save(self.ecg_epochs_path, overwrite=True)
         self.save_file_params(self.ecg_epochs_path)
 
-    def load_evokeds(self, pick_types=True, copy=True):
+    def load_evokeds(self, copy=True):
         if self._evokeds is None:
             self._evokeds = mne.read_evokeds(self.evokeds_path)
-
-            if pick_types:
-                for evoked in self._evokeds:
-                    self._pick_types_helper(evoked)
 
         if copy:
             return self._evokeds.copy()

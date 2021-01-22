@@ -61,9 +61,15 @@ def plot_filtered(meeg, show_plots):
              title=f'{meeg.name}_highpass={meeg.p["highpass"]}_lowpass={meeg.p["lowpass"]}', show=show_plots)
 
 
-def plot_sensors(meeg, plot_sensors_kind, show_plots):
+def plot_sensors(meeg, plot_sensors_kind, ch_types, show_plots):
     loaded_info = meeg.load_info()
-    mne.viz.plot_sensors(loaded_info, kind=plot_sensors_kind, ch_type='all', title=meeg.name, show_names=True,
+    if len(ch_types) > 1:
+        ch_types = 'all'
+    elif len(ch_types) == 1:
+        ch_types = ch_types[0]
+    else:
+        ch_types = None
+    mne.viz.plot_sensors(loaded_info, kind=plot_sensors_kind, ch_type=ch_types, title=meeg.name, show_names=True,
                          show=show_plots)
 
 

@@ -85,6 +85,7 @@ class DataTerminal(QDialog):
                              'events': 'load_events',
                              'epochs': 'load_epochs',
                              'evokeds': 'load_evokeds',
+                             'ica': 'load_ica',
                              'tfr_epochs': 'load_power_tfr_epochs',
                              'tfr_average': 'load_power_tfr_average',
                              'trans': 'load_transformation',

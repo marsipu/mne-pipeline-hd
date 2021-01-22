@@ -37,7 +37,7 @@ from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList,
                            SimplePandasTable)
 from .dialogs import ErrorDialog
-from .gui_utils import (Worker, center, set_ratio_geometry)
+from .gui_utils import (Worker, WorkerDialog, center, set_ratio_geometry)
 from .models import AddFilesModel
 from .parameter_widgets import ComboGui
 from .plot_widgets import PlotImageLoader
@@ -495,9 +495,48 @@ class AddFileSignals(QObject):
     which_sub = pyqtSignal(str)
 
 
+def load_raw_file(path, file_type=None, load_kwargs=None):
+    if load_kwargs is None:
+        load_kwargs = dict()
+
+    if file_type is None:
+        raw = mne.io.read_raw(path, preload=True, **load_kwargs)
+    elif file_type == '.bin':
+        raw = mne.io.read_raw_artemis123(path, preload=True, **load_kwargs)
+    elif file_type == '.cnt':
+        raw = mne.io.read_raw_cnt(path, preload=True, **load_kwargs)
+    elif file_type == '.ds':
+        raw = mne.io.read_raw_ctf(path, preload=True, **load_kwargs)
+    elif any(f == file_type for f in ['.dat', '.dap', '.rs3', '.cdt', '.cdt.dpa', '.cdt.cef', '.cef']):
+        raw = mne.io.read_raw_curry(path, preload=True, **load_kwargs)
+    elif file_type == '.edf':
+        raw = mne.io.read_raw_edf(path, preload=True, **load_kwargs)
+    elif file_type == '.bdf':
+        raw = mne.io.read_raw_bdf(path, preload=True, **load_kwargs)
+    elif file_type == '.fif':
+        raw = mne.io.read_raw_fif(path, preload=True, **load_kwargs)
+    elif file_type == '.gdf':
+        raw = mne.io.read_raw_gdf(path, preload=True, **load_kwargs)
+    elif file_type == '.sqd':
+        raw = mne.io.read_raw_kit(path, preload=True, **load_kwargs)
+    elif file_type == '.data':
+        raw = mne.io.read_raw_nicolet(path, preload=True, **load_kwargs)
+    elif file_type == '.set':
+        raw = mne.io.read_raw_eeglab(path, preload=True, **load_kwargs)
+    elif file_type == '.vhdr':
+        raw = mne.io.read_raw_brainvision(path, preload=True, **load_kwargs)
+    elif any(f == file_type for f in ['.egi', '.mff']):
+        raw = mne.io.read_raw_egi(path, preload=True, **load_kwargs)
+    elif file_type == '.mat':
+        raw = mne.io.read_raw_fieldtrip(path, info=None, **load_kwargs)
+    # elif file_type == '.lay':
+    #     raw = mne.io.read_raw_persyst(path, preload=True, **load_kwargs)
+    else:
+        raw = None
+    return raw
+
+
 # Todo: Enable Drag&Drop
-# Todo: Bug, -raw-adden scheint manchmal problematisch
-# Todo: Model/View, should solve many problems
 class AddFilesWidget(QWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -617,7 +656,7 @@ class AddFilesWidget(QWidget):
 
     def get_files_path(self):
         filter_list = [f'{self.supported_file_types[key]} (*{key})' for key in self.supported_file_types]
-        filter_list.append('All Files (*.*)')
+        filter_list.insert(0, 'All Files (*.*)')
         filter_qstring = ';;'.join(filter_list)
         files_list = QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import', filter=filter_qstring)[0]
         self.insert_files(files_list)
@@ -651,24 +690,10 @@ class AddFilesWidget(QWidget):
         self.model.layoutChanged.emit()
 
     def add_files_starter(self):
-        self.addf_dialog = QProgressDialog(self)
-        self.addf_dialog.setLabelText('Copying Files...')
-        self.addf_dialog.setMaximum(len(self.pd_files.index))
-        self.addf_dialog.open()
+        self.worker_dialog = WorkerDialog(self, self.add_files)
+        self.worker_dialog.thread_finished.connect(self.addf_finished)
 
-        new_worker_signals = AddFileSignals()
-        worker = Worker(self.add_files, new_worker_signals)
-        worker.signals = new_worker_signals
-        worker.signals.finished.connect(self.addf_finished)
-        worker.signals.error.connect(self.show_errors)
-        worker.signals.pgbar_n.connect(self.addf_dialog.setValue)
-        worker.signals.which_sub.connect(self.addf_dialog.setLabelText)
-        self.mw.threadpool.start(worker)
-
-    def show_errors(self, err):
-        ErrorDialog(err, self)
-
-    def add_files(self, signals):
+    def add_files(self, worker_signals):
 
         # Resolve identical file-names (but different types)
         duplicates = [item for item, i_cnt in Counter(list(self.pd_files['Name'])).items() if i_cnt > 1]
@@ -678,15 +703,17 @@ class AddFilesWidget(QWidget):
                 self.pd_files.loc[idx, 'Name'] = \
                     self.pd_files.loc[idx, 'Name'] + '-' + self.pd_files.loc[idx, 'File-Type'][1:]
 
-        count = 1
-        for idx in self.pd_files.index:
+        worker_signals.set_pgbar_max(len(self.pd_files.index))
+
+        for n, idx in enumerate(self.pd_files.index):
             file = self.pd_files.loc[idx, 'Name']
-            if not self.addf_dialog.wasCanceled():
-                signals.which_sub.emit(f'Copying {file}')
+            if not self.worker_dialog.wasCanceled:
+                worker_signals.pgbar_text.emit(f'Copying {file}')
+                path = self.pd_files.loc[idx, 'Path']
+                file_type = self.pd_files.loc[idx, 'File-Type']
+                raw = load_raw_file(path, file_type)
 
-                raw = self.load_file(idx)
-
-                if not self.addf_dialog.wasCanceled():
+                if not self.worker_dialog.wasCanceled:
                     # Copy Empty-Room-Files to their directory
                     if self.pd_files.loc[idx, 'Empty-Room?']:
                         # Organize ERMs
@@ -705,8 +732,7 @@ class AddFilesWidget(QWidget):
                     meeg = MEEG(file, self.mw)
                     meeg.save_raw(raw)
                     meeg.extract_info()
-                    signals.pgbar_n.emit(count)
-                    count += 1
+                    worker_signals.pgbar_n.emit(n)
                 else:
                     break
             else:
@@ -716,47 +742,8 @@ class AddFilesWidget(QWidget):
         self.pd_files = pd.DataFrame([], columns=['Name', 'File-Type', 'Empty-Room?', 'Path'])
         self.update_model()
 
-        self.addf_dialog.close()
-
         self.mw.pr.save_lists()
         self.mw.subject_dock.update_dock()
-
-    def load_file(self, idx):
-        path = self.pd_files.loc[idx, 'Path']
-        file_type = self.pd_files.loc[idx, 'File-Type']
-        if file_type == '.bin':
-            raw = mne.io.read_raw_artemis123(path, preload=True, **self.load_kwargs)
-        elif file_type == '.cnt':
-            raw = mne.io.read_raw_cnt(path, preload=True, **self.load_kwargs)
-        elif file_type == '.ds':
-            raw = mne.io.read_raw_ctf(path, preload=True, **self.load_kwargs)
-        elif any(f == file_type for f in ['.dat', '.dap', '.rs3', '.cdt', '.cdt.dpa', '.cdt.cef', '.cef']):
-            raw = mne.io.read_raw_curry(path, preload=True, **self.load_kwargs)
-        elif file_type == '.edf':
-            raw = mne.io.read_raw_edf(path, preload=True, **self.load_kwargs)
-        elif file_type == '.bdf':
-            raw = mne.io.read_raw_bdf(path, preload=True, **self.load_kwargs)
-        elif file_type == '.fif':
-            raw = mne.io.read_raw_fif(path, preload=True, **self.load_kwargs)
-        elif file_type == '.gdf':
-            raw = mne.io.read_raw_gdf(path, preload=True, **self.load_kwargs)
-        elif file_type == '.sqd':
-            raw = mne.io.read_raw_kit(path, preload=True, **self.load_kwargs)
-        elif file_type == '.data':
-            raw = mne.io.read_raw_nicolet(path, preload=True, **self.load_kwargs)
-        elif file_type == '.set':
-            raw = mne.io.read_raw_eeglab(path, preload=True, **self.load_kwargs)
-        elif file_type == '.vhdr':
-            raw = mne.io.read_raw_brainvision(path, preload=True, **self.load_kwargs)
-        elif any(f == file_type for f in ['.egi', '.mff']):
-            raw = mne.io.read_raw_egi(path, preload=True, **self.load_kwargs)
-        elif file_type == '.mat':
-            raw = mne.io.read_raw_fieldtrip(path, info=None, **self.load_kwargs)
-        # elif file_type == '.lay':
-        #     raw = mne.io.read_raw_persyst(path, preload=True, **self.load_kwargs)
-        else:
-            raw = None
-        return raw
 
 
 class ErmKwDialog(QDialog):
@@ -920,24 +907,14 @@ class AddMRIWidget(QWidget):
         self.populate_list_widget()
 
     def add_mri_subjects_starter(self):
-        self.add_mri_dialog = QProgressDialog(self)
-        self.add_mri_dialog.setLabelText('Copying Folders...')
-        self.add_mri_dialog.setMaximum(len(self.folders))
-        self.add_mri_dialog.open()
+        self.worker_dialog = WorkerDialog(self, self.add_mri_subjects)
+        self.worker_dialog.thread_finished.connect(self.add_mri_finished)
 
-        worker = Worker(self.add_mri_subjects)
-        worker.signals = AddFileSignals()
-        worker.signals.finished.connect(self.add_mri_finished)
-        worker.signals.error.connect(self.show_errors)
-        worker.signals.pgbar_n.connect(self.add_mri_dialog.setValue)
-        worker.signals.which_sub.connect(self.add_mri_dialog.setLabelText)
-        self.mw.threadpool.start(worker)
-
-    def add_mri_subjects(self, signals):
-        count = 1
-        for fsmri in self.folders:
-            if not self.add_mri_dialog.wasCanceled():
-                signals['which_sub'].emit(f'Copying {fsmri}')
+    def add_mri_subjects(self, worker_signals):
+        worker_signals.set_pgbar_max.emit(len(self.folders))
+        for n, fsmri in enumerate(self.folders):
+            if not self.worker_dialog.wasCanceled:
+                worker_signals.pgbar_text.emit(f'Copying {fsmri}')
                 src = self.paths[fsmri]
                 dst = join(self.mw.subjects_dir, fsmri)
                 self.mw.pr.all_fsmri.append(fsmri)
@@ -950,8 +927,7 @@ class AddMRIWidget(QWidget):
                     print(f'Finished Copying to {dst}')
                 else:
                     print(f'{dst} already exists')
-                signals['pgbar_n'].emit(count)
-                count += 1
+                worker_signals.pgbar_n.emit(n)
             else:
                 break
 
@@ -1148,7 +1124,7 @@ class SubDictWidget(QWidget):
     def add_template_brain(self, signals):
         if self.template_brain == 'fsaverage':
             mne.datasets.fetch_fsaverage(self.mw.subjects_dir)
-            signals['update_lists'].emit()
+            signals.update_lists.emit()
         else:
             pass
 
@@ -2338,3 +2314,40 @@ class ICASelect(QDialog):
                                 ica_properties_indices=self.mw.pr.ica_exclude[self.current_obj.name],
                                 show_plots=True)
             dialog.close()
+
+
+class ReloadRaw(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        self.raw_list = SimpleList(self.mw.pr.all_meeg, title='Select Raw to reload')
+        layout.addWidget(self.raw_list)
+
+        reload_bt = QPushButton('Reload')
+        reload_bt.clicked.connect(self.start_reload)
+        layout.addWidget(reload_bt)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def start_reload(self):
+        # Not with partial because otherwise the clicked-arg from clicked goes into *args
+        selected_raw = self.raw_list.get_current()
+        raw_path = QFileDialog.getOpenFileName(self, 'Select Raw for Reload')[0]
+        WorkerDialog(self, self.reload_raw, selected_raw, raw_path)
+
+    def reload_raw(self, selected_raw, raw_path):
+        meeg = MEEG(selected_raw, self.mw)
+        raw = load_raw_file(raw_path)
+        meeg.save_raw(raw)
+        print(f'Reloaded Raw for {selected_raw}')

@@ -13,9 +13,13 @@ import io
 import logging
 import sys
 import traceback
+from inspect import signature
 
-from PyQt5.QtCore import QObject, QRunnable, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QApplication, QDesktopWidget
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QTextCursor
+from PyQt5.QtWidgets import QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QProgressBar, QPushButton, \
+    QTextEdit, \
+    QVBoxLayout
 
 
 def center(widget):
@@ -45,50 +49,52 @@ def get_exception_tuple():
     return exctype, value, traceback_str
 
 
-class WorkerSignals(QObject):
-    """Class for standard Worker-Signals
-    """
-    finished = pyqtSignal(object)
-    error = pyqtSignal(tuple)
-
-
-class Worker(QRunnable):
-    """A class to execute a function in a seperate Thread
-
-    Parameters
-    ----------
-    function
-        A reference to the function which is to be executed in the thread
-    args
-        Any Arguments passed to the executed function
-    kwargs
-        Any Keyword-Arguments passed to the executed function
-
-    """
-
-    def __init__(self, function, *args, **kwargs):
+class ConsoleWidget(QTextEdit):
+    def __init__(self):
         super().__init__()
 
-        # Store constructor arguments (re-used for processing)
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-        self.signals = WorkerSignals()
+        self.setReadOnly(True)
+        self.is_prog_text = False
+        self.autoscroll = True
 
-    @pyqtSlot()
-    def run(self):
-        """
-        Initialise the runner function with passed args, kwargs.
-        """
+        # Connect custom stdout and stderr to display-function
+        sys.stdout.signal.text_written.connect(self.write_stdout)
+        sys.stderr.signal.text_written.connect(self.write_error)
+        # Handle tqdm-progress-bars
+        sys.stderr.signal.text_updated.connect(self.write_progress)
 
-        # Retrieve args/kwargs here; and fire processing using them
-        try:
-            return_value = self.function(*self.args, **self.kwargs)
-        except:
-            exc_tuple = get_exception_tuple()
-            self.signals.error.emit(exc_tuple)
+    def add_html(self, text):
+        self.insertHtml(text)
+        if self.autoscroll:
+            self.ensureCursorVisible()
+
+    def set_autoscroll(self, autoscroll):
+        self.autoscroll = autoscroll
+
+    def write_stdout(self, text):
+        self.is_prog_text = False
+        text = text.replace('\n', '<br>')
+        text = f'<font color="black">{text}</font>'
+        self.add_html(text)
+
+    def write_error(self, text):
+        self.is_prog_text = False
+        text = text.replace('\n', '<br>')
+        text = f'<font color="red">{text}</font>'
+        self.add_html(text)
+
+    def write_progress(self, text):
+        text = text.replace('\n', '<br>')
+        text = f'<font color="green">{text}</font>'
+        if self.is_prog_text:
+            # Delete last line
+            cursor = self.textCursor()
+            cursor.select(QTextCursor.LineUnderCursor)
+            cursor.removeSelectedText()
+            self.add_html(text)
         else:
-            self.signals.finished.emit(return_value)  # Done
+            self.is_prog_text = True
+            self.add_html(text)
 
 
 class StdoutSignal(QObject):
@@ -140,3 +146,141 @@ class StderrStream(io.TextIOBase):
                 self.signal.text_written.emit(text)
                 self.last_text = text
 
+
+class WorkerSignals(QObject):
+    """Class for standard Worker-Signals
+    """
+    # Emitted when the function finished and returns the return-value
+    finished = pyqtSignal(object)
+
+    # Emitted when the function throws an error and returns a tuple with information about the error
+    # (see get_exception_tuple)
+    error = pyqtSignal(tuple)
+
+    # Can be passed to function to be emitted when a part of the function progresses to update a Progress-Bar
+    pgbar_max = pyqtSignal(int)
+    pgbar_n = pyqtSignal(int)
+    pgbar_text = pyqtSignal(str)
+
+
+class Worker(QRunnable):
+    """A class to execute a function in a seperate Thread
+
+    Parameters
+    ----------
+    function
+        A reference to the function which is to be executed in the thread
+    include_signals
+        If to include the signals into the function-call
+    args
+        Any Arguments passed to the executed function
+    kwargs
+        Any Keyword-Arguments passed to the executed function
+
+    """
+
+    def __init__(self, function, *args, **kwargs):
+        super().__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+    @pyqtSlot()
+    def run(self):
+        """
+        Initialise the runner function with passed args, kwargs.
+        """
+        # Add signals to kwargs if in parameters of function
+        if 'worker_signals' in signature(self.function).parameters:
+            self.kwargs['worker_signals'] = self.signals
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try:
+            return_value = self.function(*self.args, **self.kwargs)
+        except:
+            exc_tuple = get_exception_tuple()
+            self.signals.error.emit(exc_tuple)
+        else:
+            self.signals.finished.emit(return_value)  # Done
+
+
+class WorkerDialog(QDialog):
+    """A Dialog for a Worker doing a function"""
+    thread_finished = pyqtSignal(object)
+
+    def __init__(self, parent, function, *args, **kwargs):
+        super().__init__(parent)
+
+        self.is_finished = False
+        self.return_value = None
+        self.was_canceled = False
+
+        # Initialize worker
+        worker = Worker(function, *args, **kwargs)
+        worker.signals.finished.connect(self.on_thread_finished)
+        worker.signals.error.connect(self.on_thread_finished)
+        worker.signals.pgbar_max.connect(self.set_pgbar_max)
+        worker.signals.pgbar_n.connect(self.pgbar_changed)
+        worker.signals.pgbar_text.connect(self.label_changed)
+        QThreadPool.globalInstance().start(worker)
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        self.progress_label = QLabel()
+        self.progress_label.hide()
+        layout.addWidget(self.progress_label, alignment=Qt.AlignHCenter)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.hide()
+        layout.addWidget(self.progress_bar)
+
+        self.console_output = ConsoleWidget()
+        layout.addWidget(self.console_output)
+
+        bt_layout = QHBoxLayout()
+
+        cancel_bt = QPushButton('Cancel')
+        cancel_bt.clicked.connect(self.cancel)
+        bt_layout.addWidget(cancel_bt)
+
+        self.close_bt = QPushButton('Close')
+        self.close_bt.clicked.connect(self.close)
+        self.close_bt.setEnabled(False)
+        bt_layout.addWidget(self.close_bt)
+
+        layout.addLayout(bt_layout)
+
+        self.setLayout(layout)
+
+    def on_thread_finished(self, return_value):
+        # Store return value to send it when user closes the dialog
+        self.return_value = return_value
+        self.is_finished = True
+        self.close_bt.setEnabled(True)
+
+    def set_pgbar_max(self, maximum):
+        self.progress_bar.show()
+        self.progress_bar.setMaximum(maximum)
+
+    def pgbar_changed(self, value):
+        self.progress_bar.setValue(value)
+
+    def label_changed(self, text):
+        self.progress_label.show()
+        self.progress_label.setText(text)
+
+    def cancel(self):
+        self.was_canceled = True
+
+    def closeEvent(self, event):
+        # Can't close Dialog before Thread has finished or threw error
+        if self.is_finished:
+            self.thread_finished.emit(self.return_value)
+            event.accept()
