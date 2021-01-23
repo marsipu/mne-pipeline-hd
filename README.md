@@ -9,14 +9,15 @@
 I would recommend to install in a separate conda environment with:
 `conda env create -n mne_p -f environment.yml`
 2. `conda activate mne_p`
-3. `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/master`
+3. `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/main`
 
-(or do `pip install -e --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/master`
- when you are in a directory where you want the mne_pipeline_hd-scripts installed)
+(or do `pip install -e --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/main`
+when you are in a directory where you want the mne_pipeline_hd-scripts installed)
 
 
 ## Update
-Just run `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/master` again
+
+Just run `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/main` again
 
 ## Start
 Run `mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_p`)

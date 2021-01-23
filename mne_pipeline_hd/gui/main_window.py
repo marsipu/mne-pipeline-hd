@@ -55,9 +55,9 @@ def get_upstream():
     :return: None
     """
     if iswin:
-        command = "git fetch upstream & git checkout master & git merge upstream/master"
+        command = "git fetch upstream & git checkout main & git merge upstream/main"
     else:
-        command = "git fetch upstream; git checkout master; git merge upstream/master"
+        command = "git fetch upstream; git checkout main; git merge upstream/main"
     result = run(command)
     print(result.stdout)
 
@@ -821,28 +821,28 @@ class MainWindow(QMainWindow):
         msg.exec_()
 
         command_upd = "curl --remote-name " \
-                      "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml; " \
+                      "https://raw.githubusercontent.com/mne-tools/mne-python/main/environment.yml; " \
                       "conda update conda; " \
                       "conda activate mne; " \
                       "conda env update --file environment.yml; pip install -r requirements.txt; " \
                       "conda install -c conda-forge pyqt=5.12"
 
         command_upd_win = "curl --remote-name " \
-                          "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml & " \
+                          "https://raw.githubusercontent.com/mne-tools/mne-python/main/environment.yml & " \
                           "conda update conda & " \
                           "conda activate mne & " \
                           "conda env update --file environment.yml & pip install -r requirements.txt & " \
                           "conda install -c conda-forge pyqt=5.12"
 
         command_new = "curl --remote-name " \
-                      "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml; " \
+                      "https://raw.githubusercontent.com/mne-tools/mne-python/main/environment.yml; " \
                       "conda update conda; " \
                       "conda env create --name mne --file environment.yml;" \
                       "conda activate mne; pip install -r requirements.txt; " \
                       "conda install -c conda-forge pyqt=5.12"
 
         command_new_win = "curl --remote-name " \
-                          "https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml & " \
+                          "https://raw.githubusercontent.com/mne-tools/mne-python/main/environment.yml & " \
                           "conda update conda & " \
                           "conda env create --name mne_test --file environment.yml & " \
                           "conda activate mne & pip install -r requirements.txt & " \
