@@ -36,11 +36,12 @@ from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
 
-def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
+def filter_raw(meeg, ch_types, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
     results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass'])
     if results['highpass'] != 'equal' or results['lowpass'] != 'equal':
         # Get raw from Subject-class, load as copy to avoid changing attribute value inplace
         raw = meeg.load_raw()
+        raw.pick(ch_types)
         if enable_cuda == 'true':  # use cuda for filtering
             n_jobs = 'cuda'
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
@@ -54,6 +55,7 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
         erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
         if erm_results['highpass'] != 'equal' or erm_results['lowpass'] != 'equal':
             erm_raw = meeg.load_erm()
+            # Not picking filter_ch_types here because they will be picked anyway later in noise-covariance
 
             # # Due to channel-deletion sometimes in HPI-Fitting-Process
             # ch_list = set(erm_raw.info['ch_names']) & set(raw.info['ch_names'])
@@ -79,7 +81,7 @@ def filter_raw(meeg, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
 
 
 def find_events(meeg, stim_channels, min_duration, shortest_event, adjust_timeline_by_msec):
-    raw = meeg.load_raw()
+    raw = meeg.load_raw(copy=False)  # No copy to consume less memory
 
     events = mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
                              stim_channel=stim_channels)
@@ -98,7 +100,7 @@ def find_events(meeg, stim_channels, min_duration, shortest_event, adjust_timeli
 
 
 def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_by_msec):
-    raw = meeg.load_raw()
+    raw = meeg.load_raw(copy=False)  # No copy to consume less memory
 
     # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg
     # prepare arrays
@@ -218,11 +220,15 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
         print('No events found')
 
 
-def epoch_raw(meeg, t_epoch, baseline, reject, flat, use_autoreject, consensus_percs,
+def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, use_autoreject, consensus_percs,
               n_interpolates, overwrite_ar, decim, n_jobs):
     raw = meeg.load_filtered()
     events = meeg.load_events()
 
+    # Pick channel_types if not filtered before
+    raw.pick(ch_types)
+
+    # Pick only data-channels and exclude bad-channels
     raw.pick('data', exclude='bads')
 
     epochs = mne.Epochs(raw, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
@@ -260,12 +266,14 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
             ch_types, reject_by_annotation, ica_eog, eog_channel, ica_ecg, ecg_channel, **kwargs):
     if ica_fitto == 'Raw (Unfiltered)':
         data = meeg.load_raw()
+        data.pick(ch_types)
 
     elif ica_fitto == 'Raw (Filtered)':
         data = meeg.load_filtered()
-
+        # Channel-Types already picked in Filter
     else:
         data = meeg.load_epochs()
+        # Channel-Types already picked in Filter
 
     # Filter if data is not highpass-filtered >= 1
     if data.info['highpass'] < 1:
@@ -305,7 +313,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
     fit_kwargs = check_kwargs(kwargs, ica.fit)
     ica.fit(filt_data, reject=reject, reject_by_annotation=reject_by_annotation, **fit_kwargs)
 
-    # Load Raw for EOG/ECG-Detection
+    # Load Raw for EOG/ECG-Detection without picks (e.g. still containing EEG for EOG or EOG channels)
     eog_ecg_raw = meeg.load_raw()
 
     if ica_eog:
