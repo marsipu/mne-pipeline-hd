@@ -105,7 +105,7 @@ class PlotViewSelection(QDialog):
         self.all_images = dict()
 
         self.init_ui()
-        self.open()
+        self.show()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -326,9 +326,6 @@ class PlotViewer(QMainWindow):
         self.zoom_factor = 80  # In percent
         self.column_count = 4
 
-        # Stores references to all tab-widgets to control them simultaneously
-        self.all_tab_widgets = list()
-
         set_ratio_geometry(0.8, self)
         self.init_ui()
         self.show()
@@ -372,7 +369,6 @@ class PlotViewer(QMainWindow):
                             scroll_layout.addWidget(view_widget, row, col)
 
                     if len(obj_items) > 1:
-                        self.all_tab_widgets.append(tab_widget)
                         frame_widget = QWidget()
                         frame_layout = QVBoxLayout()
                         frame_layout.addWidget(tab_widget)
@@ -427,8 +423,19 @@ class PlotViewer(QMainWindow):
         self.setCentralWidget(widget)
 
     def tab_selected(self, idx):
-        for tab_w in self.all_tab_widgets:
-            tab_w.setCurrentIndex(idx)
+        # A frankly very long call to get the tab_widgets
+        # (when setCentralWidget in QMainWindow, the previous reference to widgets inside are deleted,
+        # so I found no way to store the reference to the TabWidget beforehand
+        viewer_layout = self.centralWidget().layout().itemAt(0)
+        for n in range(viewer_layout.count()):  # Get GridLayouts in scroll_areas for Parameter-Presets
+            grid_layout = viewer_layout.itemAt(n).widget().widget().layout()
+            for c in range(grid_layout.count()):
+                row = c // self.column_count
+                col = c % self.column_count
+                item_widget = grid_layout.itemAtPosition(row, col).widget()
+                if not isinstance(item_widget, QLabel):
+                    tab_widget = item_widget.layout().itemAt(0).widget()
+                    tab_widget.setCurrentIndex(idx)
 
     def update_layout(self):
         old_layout = self.main_layout.itemAt(0)
@@ -473,11 +480,8 @@ class PlotViewer(QMainWindow):
 
     def show_single_items(self, p_preset, obj_name):
         # Create dictionary similar to what you get from loading to open a new viewer with just the selected items
-        if self.interactive:
-            items = self.all_figs[p_preset][obj_name]
-        else:
-            items = self.all_images[p_preset][obj_name]
-        item_dict = {'Default': {idx: value for idx, value in enumerate(items)}}
+        obj_items = [item.copy() for item in self.items[p_preset][obj_name]]
+        item_dict = {'Default': {idx: [value] for idx, value in enumerate(obj_items)}}
         PlotViewer(self, item_dict, self.interactive, False)
 
     def closeEvent(self, event):
