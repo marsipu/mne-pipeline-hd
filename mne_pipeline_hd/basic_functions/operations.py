@@ -315,6 +315,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
 
     # Load Raw for EOG/ECG-Detection without picks (e.g. still containing EEG for EOG or EOG channels)
     eog_ecg_raw = meeg.load_raw()
+    eog_ecg_raw.pick('all', exclude=['stim', 'bads'])
 
     if ica_eog:
 
@@ -324,10 +325,10 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
         # Using an EOG channel to select components if possible
         if 'eog' in eog_ecg_raw.get_channel_types():
             eog_epochs = mne.preprocessing.create_eog_epochs(eog_ecg_raw, **create_eog_kwargs)
-            eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, **find_eog_kwargs)
+            eog_indices, eog_scores = ica.find_bads_eog(eog_ecg_raw, **find_eog_kwargs)
         elif eog_channel and eog_channel in eog_ecg_raw.ch_names:
             eog_epochs = mne.preprocessing.create_eog_epochs(eog_ecg_raw, ch_name=eog_channel, **create_eog_kwargs)
-            eog_indices, eog_scores = ica.find_bads_eog(eog_epochs, ch_name=eog_channel, **find_eog_kwargs)
+            eog_indices, eog_scores = ica.find_bads_eog(eog_ecg_raw, ch_name=eog_channel, **find_eog_kwargs)
         else:
             eog_indices, eog_scores, eog_epochs = None, None, None
             print('No EOG-Channel found or set, thus EOG can\'t be used for automatic Component-Selection')
@@ -345,10 +346,11 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
         # Using an ECG channel to select components
         if ecg_channel and ecg_channel in eog_ecg_raw.ch_names:
             ecg_epochs = mne.preprocessing.create_ecg_epochs(eog_ecg_raw, ch_name=ecg_channel, **create_ecg_kwargs)
-            ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, ch_name=ecg_channel, **find_ecg_kwargs)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(eog_ecg_raw, ch_name=ecg_channel, **find_ecg_kwargs)
         elif any([ch_type in eog_ecg_raw.get_channel_types() for ch_type in ['mag', 'grad', 'meg']]):
+            print('ECG-Signal reconstructed from MEG')
             ecg_epochs = mne.preprocessing.create_ecg_epochs(eog_ecg_raw, **create_ecg_kwargs)
-            ecg_indices, ecg_scores = ica.find_bads_ecg(ecg_epochs, **find_ecg_kwargs)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(eog_ecg_raw, **find_ecg_kwargs)
         else:
             ecg_indices, ecg_scores, ecg_epochs = None, None, None
             print('No ECG-Channel found or set and no MEG-Channel for ECG-Detection present, '
