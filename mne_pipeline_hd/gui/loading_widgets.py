@@ -2128,6 +2128,8 @@ class FileManagment(QDialog):
                 obj_table = self.group_table
 
             obj_pd.loc[obj_name, path_type] = None
+            obj_pd_time.loc[obj_name, path_type] = None
+            obj_pd_size.loc[obj_name, path_type] = None
             obj_table.content_changed()
             # Drop from file-parameters
             path = Path(obj.paths_dict[path_type]).name
