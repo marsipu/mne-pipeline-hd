@@ -11,13 +11,13 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 from setuptools import find_packages, setup
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+# UnicodeDecodeError somehow
+# with open("README.md", "r") as fh:
+#     long_description = fh.read()
 
 setup(name='mne_pipeline_hd',
       version='0.2',
       description='A pipeline-GUI for brain-data analysis with MNE-Python',
-      long_description=long_description,
       long_description_content_type='text/markdown',
       url='https://github.com/marsipu/mne_pipeline_hd',
       author='Martin Schulz',
