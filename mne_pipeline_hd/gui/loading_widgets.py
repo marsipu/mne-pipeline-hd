@@ -2097,7 +2097,46 @@ class FileManagment(QDialog):
                 QMessageBox.information(self, 'All parameters equal!',
                                         'For the selected file all parameters are equal!')
 
-    # Todo: Put into Thread with ProgressBar
+    def _file_remover(self, kind, worker_signals):
+        if kind == 'MEEG':
+            selected_list = self.meeg_table.get_selected()
+        elif kind == 'FSMRI':
+            selected_list = self.fsmri_table.get_selected()
+        else:
+            selected_list = self.group_table.get_selected()
+
+        worker_signals.pgbar_max.emit(len(selected_list))
+
+        for idx, (_, obj_name, path_type) in enumerate(selected_list):
+            if kind == 'MEEG':
+                obj = MEEG(obj_name, self.mw)
+                obj_pd = self.pd_meeg
+                obj_pd_time = self.pd_meeg_time
+                obj_pd_size = self.pd_meeg_size
+                obj_table = self.meeg_table
+            elif kind == 'FSMRI':
+                obj = FSMRI(obj_name, self.mw)
+                obj_pd = self.pd_fsmri
+                obj_pd_time = self.pd_fsmri_time
+                obj_pd_size = self.pd_fsmri_size
+                obj_table = self.fsmri_table
+            else:
+                obj = Group(obj_name, self.mw)
+                obj_pd = self.pd_group
+                obj_pd_time = self.pd_group_time
+                obj_pd_size = self.pd_group_size
+                obj_table = self.group_table
+
+            obj_pd.loc[obj_name, path_type] = None
+            obj_table.content_changed()
+            # Drop from file-parameters
+            path = Path(obj.paths_dict[path_type]).name
+            self.mw.pr.file_parameters.pop(path, None)
+            # Remove File
+            worker_signals.pgbar_text.emit(f'Removing: {path}')
+            obj.remove_path(path_type)
+            worker_signals.pgbar_n.emit(idx + 1)
+
     def remove_file(self, kind):
         """ Remove the file at the path of the current cell
 
@@ -2107,37 +2146,11 @@ class FileManagment(QDialog):
             If it is MEEG, FSMRI or Group
 
         """
-        if kind == 'MEEG':
-            selected_list = self.meeg_table.get_selected()
-        elif kind == 'FSMRI':
-            selected_list = self.fsmri_table.get_selected()
-        else:
-            selected_list = self.group_table.get_selected()
 
         msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selcted Files?')
 
         if msgbx == QMessageBox.Yes:
-            for _, obj_name, path_type in selected_list:
-                if kind == 'MEEG':
-                    obj = MEEG(obj_name, self.mw)
-                    obj_pd = self.pd_meeg
-                    obj_table = self.meeg_table
-                elif kind == 'FSMRI':
-                    obj = FSMRI(obj_name, self.mw)
-                    obj_pd = self.pd_fsmri
-                    obj_table = self.fsmri_table
-                else:
-                    obj = Group(obj_name, self.mw)
-                    obj_pd = self.pd_group
-                    obj_table = self.group_table
-
-                obj_pd.loc[obj_name, path_type] = None
-                obj_table.content_changed()
-                # Drop from file-parameters
-                path = Path(obj.paths_dict[path_type]).name
-                self.mw.pr.file_parameters.pop(path, None)
-                # Remove File
-                obj.remove_path(path_type)
+            WorkerDialog(self, self._file_remover, kind)
 
 
 class ICASelect(QDialog):
