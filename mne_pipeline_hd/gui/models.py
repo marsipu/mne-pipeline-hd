@@ -27,12 +27,14 @@ class BaseListModel(QAbstractListModel):
         input existing list here, otherwise defaults to empty list
     show_index : bool
         Set True if you want to display the list-index in front of each value
-
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     """
 
-    def __init__(self, data=None, show_index=False, **kwargs):
+    def __init__(self, data=None, show_index=False, drag_drop=False, **kwargs):
         super().__init__(**kwargs)
         self.show_index = show_index
+        self.drag_drop = drag_drop
         if data is None:
             self._data = list()
         else:
@@ -50,35 +52,6 @@ class BaseListModel(QAbstractListModel):
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data)
-
-
-class EditListModel(BaseListModel):
-    """An editable List-Model
-
-    Parameters
-    ----------
-    data : list()
-        input existing list here, otherwise defaults to empty list
-    show_index: bool
-        Set True if you want to display the list-index in front of each value
-
-    """
-
-    def __init__(self, data, show_index=False, **kwargs):
-        super().__init__(data, show_index=show_index, **kwargs)
-
-    def flags(self, index=QModelIndex()):
-        return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-
-    def setData(self, index, value, role=None):
-        if role == Qt.EditRole:
-            try:
-                self._data[index.row()] = literal_eval(value)
-            except (ValueError, SyntaxError):
-                self._data[index.row()] = value
-            self.dataChanged.emit(index, index)
-            return True
-        return False
 
     def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
@@ -99,6 +72,56 @@ class EditListModel(BaseListModel):
         self.endRemoveRows()
         return True
 
+    def flags(self, index=QModelIndex()):
+        default_flags = QAbstractListModel.flags(self, index)
+        if self.drag_drop:
+            if index.isValid():
+                return default_flags | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+            else:
+                return default_flags | Qt.ItemIsDropEnabled
+        else:
+            return default_flags
+
+    def supportedDragActions(self):
+        if self.drag_drop:
+            return Qt.CopyAction | Qt.MoveAction
+        else:
+            return None
+
+
+class EditListModel(BaseListModel):
+    """An editable List-Model
+
+    Parameters
+    ----------
+    data : list()
+        input existing list here, otherwise defaults to empty list
+    show_index: bool
+        Set True if you want to display the list-index in front of each value
+    drag_drop: bool
+        Set True to enable Drag&Drop.
+    """
+
+    def __init__(self, data, show_index=False, drag_drop=False, **kwargs):
+        super().__init__(data, show_index, drag_drop, **kwargs)
+
+    def flags(self, index=QModelIndex()):
+        default_flags = BaseListModel.flags(self, index)
+        if index.isValid():
+            return default_flags | Qt.ItemIsEditable
+        else:
+            return default_flags
+
+    def setData(self, index, value, role=None):
+        if role == Qt.EditRole:
+            try:
+                self._data[index.row()] = literal_eval(value)
+            except (ValueError, SyntaxError):
+                self._data[index.row()] = value
+            self.dataChanged.emit(index, index)
+            return True
+        return False
+
 
 class CheckListModel(BaseListModel):
     """
@@ -112,11 +135,13 @@ class CheckListModel(BaseListModel):
         list which stores the checked items from data
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    drag_drop: bool
+        Set True to enable Drag&Drop.
 
     """
 
-    def __init__(self, data, checked, one_check=False, show_index=False, **kwargs):
-        super().__init__(data, show_index=show_index, **kwargs)
+    def __init__(self, data, checked, one_check=False, show_index=False, drag_drop=False, **kwargs):
+        super().__init__(data, show_index, drag_drop, **kwargs)
         self.one_check = one_check
 
         if data is None:
@@ -174,6 +199,8 @@ class CheckDictModel(BaseListModel):
         dictionary which may contain items from data as keys
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     yes_bt: int | None
         Supply a identifier for an icon to mark the items existing in check_dict
     no_bt: int | None
@@ -185,9 +212,9 @@ class CheckDictModel(BaseListModel):
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data, check_dict, show_index=False,
+    def __init__(self, data, check_dict, show_index=False, drag_drop=False,
                  yes_bt=None, no_bt=None, **kwargs):
-        super().__init__(data, show_index, **kwargs)
+        super().__init__(data, show_index, drag_drop, **kwargs)
         self._check_dict = check_dict
         self.app = QApplication.instance()
 
@@ -502,6 +529,12 @@ class EditPandasModel(BasePandasModel):
         self.endRemoveColumns()
 
         return True
+
+
+class BaseTreeModel(QAbstractItemModel):
+    def __init__(self, data, **kwargs):
+        super().__init__(**kwargs)
+        self._data = data
 
 
 class AddFilesModel(BasePandasModel):

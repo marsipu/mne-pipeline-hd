@@ -42,8 +42,6 @@ def get_arguments(func_name, module, obj, main_win):
 
     # Get the values for parameter-names
     for arg_name in arg_names:
-        # Remove trailing spaces
-        arg_name = arg_name.replace(' ', '')
         if arg_name == 'mw':
             keyword_arguments.update({'mw': main_win})
         elif arg_name == 'main_win':

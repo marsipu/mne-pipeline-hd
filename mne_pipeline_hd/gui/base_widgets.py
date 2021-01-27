@@ -38,14 +38,22 @@ class Base(QWidget):
     selectionChanged = pyqtSignal(object)
     dataChanged = pyqtSignal(object, object)
 
-    def __init__(self, model, view, parent, title, verbose=False):
-        super().__init__(parent)
+    def __init__(self, model, view, drag_drop, parent, title, verbose=False):
+        if parent:
+            super().__init__(parent)
+        else:
+            super().__init__()
         self.title = title
         self.verbose = verbose
 
         self.model = model
         self.view = view
         self.view.setModel(self.model)
+
+        if drag_drop:
+            self.view.setDragEnabled(True)
+            self.view.setAcceptDrops(True)
+            self.setDropIndicatorShown(True)
 
         # Connect to custom Selection-Signal
         self.view.selectionModel().currentChanged.connect(self._current_changed)
@@ -122,8 +130,8 @@ class Base(QWidget):
 
 
 class BaseList(Base):
-    def __init__(self, model, view, extended_selection, parent, title, verbose=False):
-        super().__init__(model, view, parent, title, verbose=verbose)
+    def __init__(self, model, view, extended_selection=False, drag_drop=False, parent=None, title=None, verbose=False):
+        super().__init__(model, view, drag_drop, parent, title, verbose=verbose)
 
         if extended_selection:
             self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -150,6 +158,8 @@ class SimpleList(BaseList):
         Set True, if you want to select more than one item in the list
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -163,9 +173,11 @@ class SimpleList(BaseList):
     If you change the reference to data, call the appropriate replace_data.
     """
 
-    def __init__(self, data=None, extended_selection=False, show_index=False, parent=None, title=None, verbose=False):
-        super().__init__(model=BaseListModel(data, show_index=show_index), view=QListView(),
-                         extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
+    def __init__(self, data=None, extended_selection=False, show_index=False, drag_drop=False,
+                 parent=None, title=None, verbose=False):
+        super().__init__(model=BaseListModel(data, show_index, drag_drop), view=QListView(),
+                         extended_selection=extended_selection, drag_drop=drag_drop,
+                         parent=parent, title=title, verbose=verbose)
 
 
 class EditList(BaseList):
@@ -181,10 +193,14 @@ class EditList(BaseList):
         The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
         An optional title
+    model : QAbstractItemModel
+        Provide an alternative to EditListModel
     verbose : bool
         Set True to see debugging for signals
 
@@ -195,16 +211,17 @@ class EditList(BaseList):
     """
 
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
-                 show_index=False, parent=None, title=None, verbose=False, model=None):
+                 show_index=False, drag_drop=False, parent=None, title=None, model=None, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
         if model is None:
-            model = EditListModel(data, show_index=show_index)
+            model = EditListModel(data, show_index=show_index, drag_drop=drag_drop)
 
         super().__init__(model=model, view=QListView(),
-                         extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
+                         extended_selection=extended_selection, drag_drop=drag_drop, parent=parent,
+                         title=title, verbose=verbose)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -278,6 +295,8 @@ class CheckList(BaseList):
         If only one Item in the CheckList can be checked at the same time
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -294,13 +313,14 @@ class CheckList(BaseList):
     checkedChanged = pyqtSignal(list)
 
     def __init__(self, data=None, checked=None, ui_buttons=True, ui_button_pos='right', one_check=False,
-                 show_index=False, parent=None, title=None, verbose=False):
+                 show_index=False, drag_drop=False, parent=None, title=None, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=CheckListModel(data, checked, one_check=one_check, show_index=show_index),
-                         view=QListView(), extended_selection=False, parent=parent, title=title, verbose=verbose)
+        super().__init__(model=CheckListModel(data, checked, one_check, show_index, drag_drop),
+                         view=QListView(), extended_selection=False, drag_drop=drag_drop,
+                         parent=parent, title=title, verbose=verbose)
 
         self.model.dataChanged.connect(self._checked_changed)
 
@@ -379,6 +399,8 @@ class CheckDictList(BaseList):
         A dictionary that may contain items from data as keys
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     yes_bt: int | None
         Supply a identifier for an icon to mark the items existing in check_dict, set None for standard icon
     no_bt: int | None
@@ -400,11 +422,11 @@ class CheckDictList(BaseList):
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False, yes_bt=None, no_bt=None,
-                 parent=None, title=None, verbose=False):
-        model = CheckDictModel(data, check_dict, show_index=show_index, yes_bt=yes_bt, no_bt=no_bt)
-        super().__init__(model=model, view=QListView(),
-                         extended_selection=extended_selection, parent=parent, title=title, verbose=verbose)
+    def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False, drag_drop=False,
+                 yes_bt=None, no_bt=None, parent=None, title=None, verbose=False):
+        super().__init__(model=CheckDictModel(data, check_dict, show_index, drag_drop, yes_bt, no_bt), view=QListView(),
+                         extended_selection=extended_selection, drag_drop=drag_drop,
+                         parent=parent, title=title, verbose=verbose)
 
     def replace_check_dict(self, new_check_dict=None):
         """Replaces model.check_dict with new check_dict
@@ -433,6 +455,8 @@ class CheckDictEditList(EditList):
         Supply a identifier for an icon to mark the items existing in check_dict, set None for standard icon
     no_bt: int | None
         Supply a identifier for an icon to mark the items not existing in check_dict, set None for standard icon
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -451,9 +475,11 @@ class CheckDictEditList(EditList):
     """
 
     def __init__(self, data=None, check_dict=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
-                 show_index=False, yes_bt=None, no_bt=None, parent=None, title=None, verbose=False):
+                 show_index=False, yes_bt=None, no_bt=None, drag_drop=False, parent=None, title=None, verbose=False):
         model = CheckDictEditModel(data, check_dict, show_index=show_index, yes_bt=yes_bt, no_bt=no_bt)
-        super().__init__(data, ui_buttons, ui_button_pos, extended_selection, show_index, parent, title, verbose, model)
+        super().__init__(data=data, ui_buttons=ui_buttons, ui_button_pos=ui_button_pos,
+                         extended_selection=extended_selection, show_index=show_index, drag_drop=drag_drop,
+                         parent=parent, title=title, verbose=verbose, model=model)
 
     def replace_check_dict(self, new_check_dict=None):
         """Replaces model.check_dict with new check_dict
@@ -465,8 +491,9 @@ class CheckDictEditList(EditList):
 
 class BaseDict(Base):
 
-    def __init__(self, model, view, parent, title, resize_rows=False, resize_columns=False, verbose=False):
-        super().__init__(model, view, parent, title, verbose=verbose)
+    def __init__(self, model, view, drag_drop=False, parent=None, title=None,
+                 resize_rows=False, resize_columns=False, verbose=False):
+        super().__init__(model, view, drag_drop, parent, title, verbose=verbose)
         self.verbose = verbose
 
         if resize_rows:
@@ -561,6 +588,8 @@ class SimpleDict(BaseDict):
     ----------
     data : dict | None
         Input a pandas DataFrame with contents to display
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -574,9 +603,10 @@ class SimpleDict(BaseDict):
 
     """
 
-    def __init__(self, data=None, parent=None, title=None, resize_rows=False, resize_columns=False, verbose=False):
-        super().__init__(model=BaseDictModel(data), view=QTableView(), parent=parent, title=title,
-                         resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
+    def __init__(self, data=None, drag_drop=False, parent=None, title=None, resize_rows=False,
+                 resize_columns=False, verbose=False):
+        super().__init__(model=BaseDictModel(data), view=QTableView(), drag_drop=drag_drop, parent=parent,
+                         title=title, resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
 
 class EditDict(BaseDict):
@@ -590,6 +620,8 @@ class EditDict(BaseDict):
         If to display Buttons or not
     ui_button_pos: str
         The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -603,13 +635,13 @@ class EditDict(BaseDict):
 
     """
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None,
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', drag_drop=False, parent=None, title=None,
                  resize_rows=False, resize_columns=False, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditDictModel(data), view=QTableView(), parent=parent, title=title,
+        super().__init__(model=EditDictModel(data), view=QTableView(), drag_drop=drag_drop, parent=parent, title=title,
                          resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
     def init_ui(self):
@@ -684,8 +716,9 @@ class BasePandasTable(Base):
         Set True to see debugging for signals
     """
 
-    def __init__(self, model, view, parent, title, resize_rows=False, resize_columns=False, verbose=False):
-        super().__init__(model, view, parent, title, verbose=verbose)
+    def __init__(self, model, view, drag_drop=False, parent=None, title=None,
+                 resize_rows=False, resize_columns=False, verbose=False):
+        super().__init__(model=model, view=view, drag_drop=drag_drop, parent=parent, title=title, verbose=verbose)
         self.verbose = verbose
 
         if resize_rows:
@@ -807,6 +840,8 @@ class SimplePandasTable(BasePandasTable):
     ----------
     data : pandas.DataFrame | None
         Input a pandas DataFrame with contents to display
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -824,8 +859,10 @@ class SimplePandasTable(BasePandasTable):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=None, parent=None, title=None, resize_rows=False, resize_columns=False, verbose=False):
-        super().__init__(model=BasePandasModel(data), view=QTableView(), parent=parent, title=title,
+    def __init__(self, data=None, drag_drop=False, parent=None, title=None,
+                 resize_rows=False, resize_columns=False, verbose=False):
+        super().__init__(model=BasePandasModel(data), view=QTableView(),
+                         drag_drop=drag_drop, parent=parent, title=title,
                          resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
 
@@ -840,6 +877,8 @@ class EditPandasTable(BasePandasTable):
         If to display Buttons or not
     ui_button_pos: str
         The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -857,14 +896,14 @@ class EditPandasTable(BasePandasTable):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', parent=None, title=None, resize_rows=False,
-                 resize_columns=False, verbose=False):
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', drag_drop=False,
+                 parent=None, title=None, resize_rows=False, resize_columns=False, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditPandasModel(data), view=QTableView(), parent=parent, title=title,
-                         resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
+        super().__init__(model=EditPandasModel(data), view=QTableView(), drag_drop=drag_drop, parent=parent,
+                         title=title, resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:

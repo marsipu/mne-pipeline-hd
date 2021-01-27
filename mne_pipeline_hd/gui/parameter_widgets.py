@@ -11,13 +11,13 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import sys
 from ast import literal_eval
-from decimal import Decimal
 from functools import partial
+from math import log10
 
 import numpy as np
 from PyQt5.QtCore import QSettings, QTimer, Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QGridLayout, QGroupBox,
-                             QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QScrollArea, QSizePolicy,
+                             QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QSizePolicy,
                              QSlider, QSpinBox, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList
@@ -277,7 +277,7 @@ class FloatGui(Param):
         self.param_widget.setMaximum(max_val)
         self.param_widget.setSingleStep(step)
         self.param_widget.setDecimals(decimals)
-        self.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}')
+        self.param_widget.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}')
         if param_unit:
             self.param_widget.setSuffix(f' {param_unit}')
         self.param_widget.valueChanged.connect(self.get_param)
@@ -536,7 +536,7 @@ class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
     def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
-                 description=None, param_unit=None, min_val=-1000., max_val=1000., step=.1, decimals=2):
+                 description=None, param_unit=None, min_val=-1000., max_val=1000., step=.1):
         """
         Parameters
         ----------
@@ -567,30 +567,37 @@ class TupleGui(Param):
             Set the maximum value, defaults to 100..
         step : int | float
             Set the amount, one step takes
-        decimals : int
-            Set the number of decimals of the value
         """
         if default is None:
             default = (0, 1)
 
         super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
 
-        self.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\nDecimals = {decimals}')
+        if step == 1:
+            self.param_widget1 = QSpinBox()
+            self.param_widget2 = QSpinBox()
+            min_val = int(min_val)
+            max_val = int(max_val)
+        else:
+            self.param_widget1 = QDoubleSpinBox()
+            self.param_widget2 = QDoubleSpinBox()
+            decimals = len(str(step)[str(step).find('.'):]) - 1
+            self.param_widget1.setDecimals(decimals)
+            self.param_widget2.setDecimals(decimals)
 
-        self.param_widget1 = QDoubleSpinBox()
+        self.param_widget1.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n')
+        self.param_widget2.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n')
+
         self.param_widget1.setMinimum(min_val)
         self.param_widget1.setMaximum(max_val)
         self.param_widget1.setSingleStep(step)
-        self.param_widget1.setDecimals(decimals)
         if param_unit:
             self.param_widget1.setSuffix(f' {param_unit}')
         self.param_widget1.valueChanged.connect(self.get_param)
 
-        self.param_widget2 = QDoubleSpinBox()
         self.param_widget2.setMinimum(min_val)
         self.param_widget2.setMaximum(max_val)
         self.param_widget2.setSingleStep(step)
-        self.param_widget2.setDecimals(decimals)
         if param_unit:
             self.param_widget2.setSuffix(f' {param_unit}')
         self.param_widget2.valueChanged.connect(self.get_param)
@@ -1071,7 +1078,7 @@ class SliderGui(Param):
         self.param_widget = QSlider()
         self.param_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.param_unit = param_unit
-        self.decimal_count = max([abs(Decimal(str(value)).as_tuple().exponent) for value in (min_val, max_val)])
+        self.decimal_count = max([len(str(value)[str(value).find('.'):]) - 1 for value in [min_val, max_val, step]])
         if self.decimal_count > 0:
             self.param_widget.setMinimum(int(self.min_val * 10 ** self.decimal_count))
             self.param_widget.setMaximum(int(self.max_val * 10 ** self.decimal_count))
@@ -1107,19 +1114,20 @@ class SliderGui(Param):
         try:
             new_value = literal_eval(self.display_widget.text())
         except (ValueError, SyntaxError):
-            new_value = ''
-        if isinstance(new_value, int):
-            self.param_value = new_value
-            self.decimal_count = 0
-            self.param_widget.setMinimum(self.min_val)
-            self.param_widget.setMaximum(self.max_val)
-            self.param_widget.setValue(self.param_value)
-        elif isinstance(new_value, float):
-            new_decimal_count = abs(Decimal(str(new_value)).as_tuple().exponent)
-            if new_decimal_count > 0 and new_decimal_count != self.decimal_count:
-                self.decimal_count = new_decimal_count
-                self.param_widget.setMinimum(self.min_val * 10 ** self.decimal_count)
-                self.param_widget.setMaximum(self.max_val * 10 ** self.decimal_count)
+            new_value = None
+        # if isinstance(new_value, int):
+        #     self.decimal_count = 0
+        #     self.param_widget.setMinimum(self.min_val)
+        #     self.param_widget.setMaximum(self.max_val)
+        #     self.param_value = new_value
+        #     self.param_widget.setValue(new_value)
+        # elif isinstance(new_value, float):
+        #     new_decimal_count = len(str(new_value)[str(new_value).find('.'):]) - 1
+        #     if new_decimal_count > 0 and new_decimal_count != self.decimal_count:
+        #         self.decimal_count = new_decimal_count
+        #         self.param_widget.setMinimum(self.min_val * 10 ** self.decimal_count)
+        #         self.param_widget.setMaximum(self.max_val * 10 ** self.decimal_count)
+        if new_value:
             self.param_value = new_value
             self.param_widget.setValue(int(new_value * 10 ** self.decimal_count))
 
@@ -1299,7 +1307,7 @@ if __name__ == '__main__':
                   'MultiTypeGui': 8,
                   'FuncGui': 5000,
                   'BoolGui': True,
-                  'TupleGui': (45, 6.5),
+                  'TupleGui': (45, 6),
                   'ComboGui': 'a',
                   'ListGui': [1, 454.33, 'post_central-lh', 'raga', 5],
                   'CheckListGui': ['bananaaa'],
@@ -1313,7 +1321,6 @@ if __name__ == '__main__':
         'FloatGui': {'min_val': -18,
                      'max_val': 64,
                      'step': 0.4,
-                     'decimals': 6,
                      'param_unit': 'flurbo'},
         'StringGui': {'input_mask': 'ppAAA.AA;_',
                       'param_unit': 'N'},
@@ -1321,9 +1328,8 @@ if __name__ == '__main__':
         'FuncGui': {'param_unit': 'u'},
         'BoolGui': {},
         'TupleGui': {'min_val': -10,
-                     'max_val': 20,
+                     'max_val': 100,
                      'step': 1,
-                     'decimals': 3,
                      'param_unit': 'Nm'},
         'ComboGui': {'options': ['a', 'b', 'c'],
                      'param_unit': 'g'},
@@ -1333,7 +1339,7 @@ if __name__ == '__main__':
         'DictGui': {'param_unit': '°C'},
         'SliderGui': {'min_val': -10,
                       'max_val': 10,
-                      'step': 1,
+                      'step': 0.01,
                       'param_unit': 'Hz'}
     }
 

@@ -210,6 +210,9 @@ class BaseLoading:
         return data
 
     def save_json(self, file_name, data):
+        # If file-ending is supplied, remove it to avoid doubling
+        if file_name[-5:] == '.json':
+            file_name = file_name[:-5]
         file_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{file_name}.json')
         try:
             with open(file_path, 'w') as file:

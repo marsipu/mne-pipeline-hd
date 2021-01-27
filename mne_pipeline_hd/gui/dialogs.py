@@ -198,7 +198,10 @@ class ParametersDock(QDockWidget):
         sel_pdfuncs = self.mw.pd_funcs.loc[self.mw.pd_funcs['module'].isin(self.mw.get_setting('selected_modules'))]
         # Remove rows with NaN in func_args
         sel_pdfuncs = sel_pdfuncs.loc[sel_pdfuncs['func_args'].notna()]
-        all_used_params = ','.join(sel_pdfuncs['func_args']).split(',')
+        all_used_params_str = ','.join(sel_pdfuncs['func_args'])
+        # Make sure there are no spaces left
+        all_used_params_str = all_used_params_str.replace(' ', '')
+        all_used_params = set(all_used_params_str.split(','))
         drop_idx_list = list()
         self.cleaned_pd_params = self.mw.pd_params.copy()
         for param in self.cleaned_pd_params.index:

@@ -22,7 +22,7 @@ if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
 
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
-from mne_pipeline_hd.gui.gui_utils import StderrStream, StdoutStream
+from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream
 from mne_pipeline_hd.pipeline_functions import ismac
 
 
@@ -52,9 +52,9 @@ def main():
     ww = WelcomeWindow()
 
     # Redirect stdout to capture it later in GUI
-    sys.stdout = StdoutStream()
-    # Redirect stderr to capture the output by tdqm
-    sys.stderr = StderrStream()
+    sys.stdout = StdoutStderrStream('stdout')
+    # Redirect stderr to capture it later in GUI
+    sys.stderr = StdoutStderrStream('stderr')
 
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()

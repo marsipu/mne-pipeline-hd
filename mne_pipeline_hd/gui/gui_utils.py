@@ -60,7 +60,8 @@ class ConsoleWidget(QTextEdit):
         # Connect custom stdout and stderr to display-function
         sys.stdout.signal.text_written.connect(self.write_stdout)
         sys.stderr.signal.text_written.connect(self.write_error)
-        # Handle tqdm-progress-bars
+        # Handle progress-bars
+        sys.stdout.signal.text_updated.connect(self.write_progress)
         sys.stderr.signal.text_updated.connect(self.write_progress)
 
     def add_html(self, text):
@@ -89,6 +90,7 @@ class ConsoleWidget(QTextEdit):
         if self.is_prog_text:
             # Delete last line
             cursor = self.textCursor()
+            cursor.movePosition(QTextCursor.End)
             cursor.select(QTextCursor.LineUnderCursor)
             cursor.removeSelectedText()
             self.add_html(text)
@@ -97,49 +99,41 @@ class ConsoleWidget(QTextEdit):
             self.add_html(text)
 
 
-class StdoutSignal(QObject):
-    text_written = pyqtSignal(str)
-
-
-class StdoutStream(io.TextIOBase):
-
-    def __init__(self):
-        super().__init__()
-        self.signal = StdoutSignal()
-
-    def write(self, text):
-        # Send still the output to the command line
-        sys.__stdout__.write(text)
-        # Emit additionally the written text in a pyqtSignal
-        self.signal.text_written.emit(text)
-
-
-class StderrSignal(QObject):
+class StdoutStderrSignal(QObject):
     text_written = pyqtSignal(str)
     text_updated = pyqtSignal(str)
 
 
-class StderrStream(io.TextIOBase):
+class StdoutStderrStream(io.TextIOBase):
 
-    def __init__(self):
+    def __init__(self, kind):
         super().__init__()
-        self.signal = StderrSignal()
+        self.signal = StdoutStderrSignal()
         self.last_text = ''
+        self.kind = kind
 
     def write(self, text):
-        # Send still the output to the command line
-        sys.__stderr__.write(text)
+        if text != '':
+            # Send still the output to the command line
+            if self.kind == 'stderr':
+                sys.__stderr__.write(text)
+            else:
+                sys.__stdout__.write(text)
 
-        if text[:1] == '\r':
-            # Emit additionally the written text in a pyqtSignal
-            text = text.replace('\r', '')
-            # Avoid doubling
-            if text != self.last_text:
-                self.signal.text_updated.emit(text)
-                self.last_text = text
-        else:
+            # Get progress-text with '\r' as prefix
+            if text[:1] == '\r':
+                # remove the \r as it is not recognized in html
+                text = text.replace('\r', '')
+                # Avoid doubling
+                if text != self.last_text:
+                    self.signal.text_updated.emit(text)
+                    self.last_text = text
+
+            elif self.kind == 'stdout':
+                self.signal.text_written.emit(text)
+
             # Eliminate weird symbols and avoid doubling
-            if '\x1b' not in text and text != self.last_text:
+            elif '\x1b' not in text and text != self.last_text:
                 # Avoid weird last line in tqdm-progress
                 if self.last_text[-1:] != '\n':
                     text = '\n' + text
