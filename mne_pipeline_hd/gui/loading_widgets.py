@@ -40,7 +40,7 @@ from .dialogs import ErrorDialog
 from .gui_utils import (Worker, WorkerDialog, center, get_exception_tuple, set_ratio_geometry)
 from .models import AddFilesModel
 from .parameter_widgets import ComboGui
-from .plot_widgets import PlotImageLoader
+from .tools import PlotImageLoader
 from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_properties, plot_ica_sources
 from ..pipeline_functions.pipeline_utils import compare_filep
 

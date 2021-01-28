@@ -38,8 +38,7 @@ from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGu
                               ReloadRaw, SubBadsDialog,
                               SubDictDialog, SubjectDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
-from .plot_widgets import PlotViewSelection
-from .tools import DataTerminal
+from .tools import DataTerminal, PlotViewSelection
 from .. import basic_functions
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
