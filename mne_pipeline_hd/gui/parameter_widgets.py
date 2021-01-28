@@ -309,7 +309,7 @@ class StringGui(Param):
     A GUI for String-Parameters
     """
 
-    def __init__(self, data, param_name, param_alias=None, default='Empty', groupbox_layout=True, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default='', groupbox_layout=True, none_select=False,
                  description=None, param_unit=None, input_mask=None):
         """
 
@@ -1155,7 +1155,7 @@ class MultiTypeGui(Param):
     """A GUI which accepts multiple types of values in a single LineEdit"""
 
     def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
-                 description=None, type_selection=False, types=None, type_kwargs=None):
+                 description=None, param_unit=None, type_selection=False, types=None, type_kwargs=None):
         """
         Parameters
         ----------
@@ -1178,6 +1178,8 @@ class MultiTypeGui(Param):
         description : str | None
             Supply an optional description for the parameter,
             which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
+        param_unit : str | None
+            Supply an optional suffix with the name of the unit.
         type_selection : bool
             If True, the use can choose in a QComboBox which type they want to enter and then use the appropriate GUI
         types : list of str
@@ -1200,6 +1202,7 @@ class MultiTypeGui(Param):
                           'dict': 'DictGui',
                           'tuple': 'TupleGui'}
         self.param_type = self.types[0]
+        self.param_unit = param_unit
 
         if self.type_selection:
             self.type_cmbx = QComboBox()
@@ -1233,6 +1236,7 @@ class MultiTypeGui(Param):
         kwargs['groupbox_layout'] = self.groupbox_layout
         kwargs['none_select'] = self.none_select
         kwargs['description'] = self.description
+        kwargs['param_unit'] = self.param_unit
 
         self.param_widget = globals()[gui_name](**kwargs)
         self.type_layout.addWidget(self.param_widget)

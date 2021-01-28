@@ -1,7 +1,17 @@
 ;alias;group;default;unit;description;gui_type;gui_args
 ch_types;Channel-Types;Preprocessing;['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg'];;Channel-Types used in data;CheckListGui;{'options': ['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg', 'emg', 'ref_meg', 'misc', 'resp', 'chpi', 'exci', 'ias', 'syst', 'seeg', 'dipole', 'gof', 'bio', 'ecog', 'fnirs', 'csd']}
-highpass;Highpass-Cutoff;Preprocessing;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
-lowpass;Lowpass-Cutoff;Preprocessing;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1}
+highpass;Highpass-Cutoff;Filtering;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 300, 'step': 1}
+lowpass;Lowpass-Cutoff;Filtering;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 300, 'step': 1}
+filter_length;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'int']}
+l_trans_bandwidth;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'float']}
+h_trans_bandwidth;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'float']}
+filter_method;;Filtering;fir;;;StringGui;
+iir_params;;Filtering;None;;;DictGui;{'none_select': True}
+fir_phase;;Filtering;zero;;;StringGui;
+fir_window;;Filtering;hamming;;;StringGui;
+fir_design;;Filtering;firwin;;;StringGui;
+skip_by_annotation;;Filtering;['edge', 'bad_acq_skip'];;;ListGui;
+fir_pad;;Filtering;reflect_limited;;;StringGui;
 erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
 stim_channels;Stimulation-Channels;Events;['STI 001'];;Stimulation Channel(s);ListGui;
 min_duration;Minimum Duration;Events;0.002;s;Minimum-Duration for Events;FloatGui;{'min_val': 0, 'step': 0.001}

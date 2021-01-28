@@ -165,15 +165,17 @@ class SettingsDlg(QDialog):
         #                           param_alias='Image-Format', description='Choose the image format for plots',
         #                           default='.png'))
         layout.addWidget(StringGui(self.mw.qsettings, 'fs_path', param_alias='FREESURFER_HOME-Path',
-                                   description='Set the Path to the "freesurfer"-directory of your Freesurfer-Installation '
+                                   description='Set the Path to the "freesurfer"-directory of your '
+                                               'Freesurfer-Installation '
                                                '(for Windows to the LINUX-Path of the Freesurfer-Installation '
                                                'in Windows-Subsystem for Linux(WSL))',
-                                   default=None))
+                                   default=None, none_select=True))
         if iswin:
             layout.addWidget(StringGui(self.mw.qsettings, 'mne_path', param_alias='MNE-Python-Path',
-                                       description='Set the LINUX-Path to the mne-environment (e.g ...anaconda3/envs/mne)'
+                                       description='Set the LINUX-Path to the mne-environment (e.g '
+                                                   '...anaconda3/envs/mne) '
                                                    'in Windows-Subsystem for Linux(WSL))',
-                                       default=None))
+                                       default=None, none_select=True))
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
@@ -210,20 +212,10 @@ class ParametersDock(QDockWidget):
                 group_name = self.cleaned_pd_params.loc[param, 'group']
                 if pd.isna(group_name):
                     self.cleaned_pd_params.loc[param, 'group'] = 'Various'
-
-                # Determine order of groups by main_window.group_order
-                if group_name in self.mw.group_order:
-                    self.cleaned_pd_params.loc[param, 'group_idx'] = self.mw.group_order[group_name]
-                else:
-                    self.cleaned_pd_params.loc[param, 'group_idx'] = 100
             else:
                 # Drop Parameters which aren't used by functions
                 drop_idx_list.append(param)
         self.cleaned_pd_params.drop(index=drop_idx_list, inplace=True)
-
-        # Sort values by group_idx for dramaturgically order
-        if 'group_idx' in self.cleaned_pd_params.columns:
-            self.cleaned_pd_params.sort_values(by='group_idx', inplace=True)
 
     def init_ui(self):
         self.general_layout = QVBoxLayout()

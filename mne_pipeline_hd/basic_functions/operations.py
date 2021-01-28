@@ -36,7 +36,9 @@ from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
 
-def filter_raw(meeg, ch_types, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
+def filter_raw(meeg, ch_types, highpass, lowpass, filter_length, l_trans_bandwidth,
+               h_trans_bandwidth, filter_method, iir_params, fir_phase, fir_window,
+               fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
     results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
     if any([results[key] != 'equal' for key in results]):
         raw = meeg.load_raw()
@@ -52,7 +54,10 @@ def filter_raw(meeg, ch_types, highpass, lowpass, n_jobs, enable_cuda, erm_t_lim
             n_jobs = 'cuda'
 
         # Filter Raw with
-        raw.filter(highpass, lowpass, n_jobs=n_jobs)
+        raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
+                   h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method, iir_params=iir_params,
+                   phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
+                   skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
         if bad_interpolation == 'Raw (Filtered)':
             raw = raw.interpolate_bads()

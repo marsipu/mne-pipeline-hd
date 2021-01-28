@@ -10,17 +10,15 @@ Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.201
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import json
-import logging
 import os
 import re
 import sys
 from functools import partial
-from importlib import reload, util, resources
+from importlib import reload, resources, util
 from os import listdir
 from os.path import isdir, join
 from subprocess import run
 
-import matplotlib
 import mne
 import pandas as pd
 import qdarkstyle
@@ -128,19 +126,6 @@ class MainWindow(QMainWindow):
         # Pandas-DataFrame for contextual data of paramaters for basic functions (included with program)
         with resources.path('mne_pipeline_hd.pipeline_resources', 'parameters.csv') as pd_params_path:
             self.pd_params = pd.read_csv(str(pd_params_path), sep=';', index_col=0)
-
-        # Set a dramaturgically order for the groups (which applies for func_groups and parameter_groups)
-        self.group_order = {'General': 0,
-                            'Raw': 1,
-                            'Preprocessing': 2,
-                            'ICA': 2,
-                            'Events': 3,
-                            'Epochs': 3,
-                            'Evoked': 3,
-                            'Time-Frequency': 4,
-                            'Forward': 5,
-                            'Inverse': 6,
-                            'Grand-Average': 7}
 
         # Import the basic- and custom-function-modules
         self.import_custom_modules()
@@ -633,15 +618,6 @@ class MainWindow(QMainWindow):
 
         # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
         if len(cleaned_pd_funcs) != 0:
-            for func_name in cleaned_pd_funcs.index:
-                group_name = cleaned_pd_funcs.loc[func_name, 'group']
-                if group_name in self.group_order:
-                    cleaned_pd_funcs.loc[func_name, 'group_idx'] = self.group_order[group_name]
-                else:
-                    cleaned_pd_funcs.loc[func_name, 'group_idx'] = 100
-
-            # Sort values by group_idx for dramaturgically order
-            cleaned_pd_funcs.sort_values(by='group_idx', inplace=True)
 
             # Remove functions from sel_functions, which are not present in cleaned_pd_funcs
             for f_rm in [f for f in self.pr.sel_functions if f not in cleaned_pd_funcs.index]:
