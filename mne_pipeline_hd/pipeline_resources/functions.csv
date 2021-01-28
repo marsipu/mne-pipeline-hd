@@ -1,12 +1,11 @@
 ;alias;target;tab;group;matplotlib;mayavi;dependencies;module;pkg_name;func_args
-filter_raw;Filter Raw;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,highpass,lowpass,n_jobs,enable_cuda,erm_t_limit
+filter_raw;Filter Raw;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ch_types,highpass,lowpass,n_jobs,enable_cuda,erm_t_limit,bad_interpolation
 find_events;Find Events;MEEG;Compute;Events;False;False;;operations;basic;meeg,stim_channels,min_duration,shortest_event,adjust_timeline_by_msec
 find_6ch_binary_events;Find Events HD;MEEG;Compute;Events;False;False;;operations;basic;meeg,min_duration,shortest_event,adjust_timeline_by_msec
-epoch_raw;Get Epochs;MEEG;Compute;Events;False;False;;operations;basic;meeg,t_epoch,baseline,reject,flat,use_autoreject,consensus_percs,n_interpolates,overwrite_ar,decim,n_jobs
+epoch_raw;Get Epochs;MEEG;Compute;Events;False;False;;operations;basic;meeg,ch_types,t_epoch,baseline,reject,flat,bad_interpolation,use_autoreject,consensus_percs,n_interpolates,overwrite_ar,decim,n_jobs
 run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_method,ica_fitto,n_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,ch_types,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
 apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,n_pca_components
-interpolate_bad_chs;Interpolate Bad-Channels;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,bad_interpolation
-get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;basic;meeg
+get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;basic;meeg,bad_interpolation
 tfr;Time-Frequency;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,tfr_freqs,tfr_n_cycles,tfr_average,tfr_use_fft,tfr_baseline,tfr_baseline_mode,tfr_method,multitaper_bandwidth,stockwell_width,n_jobs
 apply_watershed;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri
 prepare_bem;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri,bem_spacing

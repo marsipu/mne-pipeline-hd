@@ -54,15 +54,22 @@ class BaseLoading:
         self.img_format = self.mw.get_setting('img_format')
         self.dpi = self.mw.get_setting('dpi')
 
+        # Prepare info-dictionary for Loading-Object
         if self.name not in self.mw.pr.all_info:
             self.pr.all_info[self.name] = dict()
         self.info = self.mw.pr.all_info[self.name]
 
+        # Prepare plot-files-dictionary for Loading-Object
         if self.name not in self.mw.pr.plot_files:
             self.pr.plot_files[self.name] = dict()
         if self.p_preset not in self.mw.pr.plot_files[self.name]:
             self.pr.plot_files[self.name][self.p_preset] = dict()
         self.plot_files = self.pr.plot_files[self.name][self.p_preset]
+
+        # Prepare file-parameters-dictionary for Loading-Object
+        if self.name not in self.pr.file_parameters:
+            self.pr.file_parameters[self.name] = dict()
+        self.file_parameters = self.pr.file_parameters[self.name]
 
         self.save_dir = None
         self.paths_dict = dict()
@@ -72,28 +79,29 @@ class BaseLoading:
     def save_file_params(self, path):
         file_name = Path(path).name
 
-        if file_name not in self.pr.file_parameters:
-            self.pr.file_parameters[file_name] = dict()
+        if file_name not in self.file_parameters:
+            self.file_parameters[file_name] = dict()
         # Get the name of the calling function (assuming it is 2 Frames above)
-        if 'FUNCTION' in self.pr.file_parameters[file_name]:
-            self.pr.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
+        if 'FUNCTION' in self.file_parameters[file_name]:
+            self.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
         else:
-            self.pr.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
-        self.pr.file_parameters[file_name]['NAME'] = self.name
-        self.pr.file_parameters[file_name]['PATH'] = path
-        if 'TIME' in self.pr.file_parameters[file_name]:
-            self.pr.file_parameters[file_name]['TIME'].append(datetime.now())
+            self.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
+        self.file_parameters[file_name]['NAME'] = self.name
+        self.file_parameters[file_name]['PATH'] = path
+        if 'TIME' in self.file_parameters[file_name]:
+            self.file_parameters[file_name]['TIME'].append(datetime.now())
         else:
-            self.pr.file_parameters[file_name]['TIME'] = [datetime.now()]
-        self.pr.file_parameters[file_name]['SIZE'] = getsize(path)
-        self.pr.file_parameters[file_name]['P_PRESET'] = self.p_preset
+            self.file_parameters[file_name]['TIME'] = [datetime.now()]
+        self.file_parameters[file_name]['SIZE'] = getsize(path)
+        self.file_parameters[file_name]['P_PRESET'] = self.p_preset
         for p_name in self.p:
-            self.pr.file_parameters[file_name][p_name] = self.p[p_name]
-        # Clean unused parameters
-        unused_ps = [p for p in self.pr.file_parameters[file_name]
-                     if p not in self.p and p not in ['FUNCTION', 'NAME', 'PATH', 'TIME', 'SIZE', 'P_PRESET']]
-        for unused_p in unused_ps:
-            self.pr.file_parameters[file_name].pop(unused_p)
+            self.file_parameters[file_name][p_name] = self.p[p_name]
+
+        # # Clean unused parameters
+        # unused_ps = [p for p in self.file_parameters[file_name]
+        #              if p not in self.p and p not in ['FUNCTION', 'NAME', 'PATH', 'TIME', 'SIZE', 'P_PRESET']]
+        # for unused_p in unused_ps:
+        #     self.file_parameters[file_name].pop(unused_p)
 
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):
@@ -560,8 +568,6 @@ class MEEG(BaseLoading):
         if self._raw_filtered is None:
             self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
 
-        self._update_raw_info(self._raw_filtered)
-
         if copy:
             return self._raw_filtered.copy()
         else:
@@ -569,8 +575,6 @@ class MEEG(BaseLoading):
 
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
-
-        self._update_raw_info(self._raw_filtered)
 
         if not self.mw.get_setting('save_storage'):
             raw_filtered.save(self.raw_filtered_path, overwrite=True)

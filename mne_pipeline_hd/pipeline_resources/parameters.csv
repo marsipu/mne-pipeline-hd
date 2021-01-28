@@ -8,16 +8,16 @@ min_duration;Minimum Duration;Events;0.002;s;Minimum-Duration for Events;FloatGu
 shortest_event;Shortest Event;Events;2;sample;Shortest possible Event;IntGui;{'min_val': 0}
 adjust_timeline_by_msec;Adjust Time;Events;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;Epoch-Timeframe;Epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
-baseline;Baseline-Timeframe;Epochs;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val':0, 'none_select': True}
-bad_interpolation;Bad-Channel-Interpolation;Preprocessing;'Epochs';;Choose where to apply bad-channels-interpolation;ComboGui;{'options': ['Raw', 'Epochs', 'Evokeds']}
+baseline;Baseline-Timeframe;Epochs;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val': 0, 'none_select': True}
+bad_interpolation;Bad-Channel-Interpolation;Preprocessing;None;;Choose where to apply bad-channels-interpolation;ComboGui;{'none_select': True, 'options': ['Raw (Filtered)', 'Raw (Unfiltered)', 'Epochs', 'Evokeds']}
 reject_by_annotation;;Epochs;True;;If to reject by Annotations;BoolGui;
-use_autoreject;Autoreject;Epochs;Off;;If to use autoreject and if to use it for getting the reject-threshold or for interpolating the Epochs;ComboGui;{'options': ['Off', 'Threshold', 'Interpolation']}
+use_autoreject;Autoreject;Epochs;None;;If to use autoreject and if to use it for getting the reject-threshold or for interpolating the Epochs;ComboGui;{'none_select': True, 'options': ['Threshold', 'Interpolation']}
 n_interpolates;;Epochs;np.array([1, 4, 32]);;p-values for autoreject;FuncGui;
 consensus_percs;;Epochs;np.linspace(0, 1.0, 11);;k-values for autoreject;FuncGui;
 overwrite_ar;Overwrite Autoreject(Threshold);Epochs;False;;if to calculate new threshold or use the previously calculated;BoolGui;
-reject;;Epochs;{'mag':3000e-15, 'grad':3000e-13, 'eeg':100e-6, 'eog':200e-6};;default reject parameter if not reject with autoreject_threshold;DictGui;
-flat;;Epochs;{'mag': 1e-15, 'grad':1e-13, 'eeg': 1e-6};;default flat parameter;DictGui;
-decim;;Preprocessing;1;;down samplingfactor;IntGui;
+reject;;Epochs;{'mag':3000e-15, 'grad':3000e-13, 'eeg':100e-6, 'eog':200e-6};;Chose reject-thresholds if not reject with autoreject_threshold;DictGui;{'none_select': True}
+flat;;Epochs;{'mag': 1e-15, 'grad':1e-13, 'eeg': 1e-6};;Chose flat-thresholds;DictGui;{'none_select': True}
+decim;;Epochs;1;;Downsampling-Factor for Epochs;IntGui;
 ica_method;ICA-Method;ICA;fastica;;The method for calculating ICA;ComboGui;{'options': ['fastica', 'infomax', 'picard']}
 ica_fitto;Fit ICA to: ;ICA;'Raw (Filtered)';;The data to fit the ICA to;ComboGui;{'options': ['Raw (Unfiltered)', 'Raw (Filtered)', 'Epochs']}
 n_components;;ICA;25;;The number of components for ICA;IntGui;

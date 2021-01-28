@@ -36,15 +36,26 @@ from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
 
-def filter_raw(meeg, ch_types, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit):
-    results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass'])
-    if results['highpass'] != 'equal' or results['lowpass'] != 'equal':
-        # Get raw from Subject-class, load as copy to avoid changing attribute value inplace
+def filter_raw(meeg, ch_types, highpass, lowpass, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
+    results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
+    if any([results[key] != 'equal' for key in results]):
         raw = meeg.load_raw()
+
+        if bad_interpolation == 'Raw (Unfiltered)':
+            raw = raw.interpolate_bads()
+
+        # Pick selected channel-types
         raw.pick(ch_types)
-        if enable_cuda == 'true':  # use cuda for filtering
+
+        # use cuda for filtering if enabled
+        if enable_cuda == 'true':
             n_jobs = 'cuda'
+
+        # Filter Raw with
         raw.filter(highpass, lowpass, n_jobs=n_jobs)
+
+        if bad_interpolation == 'Raw (Filtered)':
+            raw = raw.interpolate_bads()
 
         meeg.save_filtered(raw)
     else:
@@ -55,12 +66,6 @@ def filter_raw(meeg, ch_types, highpass, lowpass, n_jobs, enable_cuda, erm_t_lim
         erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
         if erm_results['highpass'] != 'equal' or erm_results['lowpass'] != 'equal':
             erm_raw = meeg.load_erm()
-            # Not picking filter_ch_types here because they will be picked anyway later in noise-covariance
-
-            # # Due to channel-deletion sometimes in HPI-Fitting-Process
-            # ch_list = set(erm_raw.info['ch_names']) & set(raw.info['ch_names'])
-            # erm_raw.pick_channels(ch_list)
-            # erm_raw.pick_types(meg=True, exclude=meeg.bad_channels)
             erm_raw.filter(highpass, lowpass)
 
             erm_length = erm_raw.n_times / erm_raw.info['sfreq']  # in s
@@ -220,44 +225,65 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
         print('No events found')
 
 
-def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, use_autoreject, consensus_percs,
+def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, bad_interpolation, use_autoreject, consensus_percs,
               n_interpolates, overwrite_ar, decim, n_jobs):
     raw = meeg.load_filtered()
     events = meeg.load_events()
 
-    # Pick channel_types if not filtered before
+    # Pick selected channel_types if not done before
     raw.pick(ch_types)
 
-    # Pick only data-channels and exclude bad-channels
-    raw.pick('data', exclude='bads')
+    if bad_interpolation in [None, 'Raw (Unfiltered)', 'Raw (Filtered)']:
+        # Exclude bad-channels if no Bad-Channel-Interpolation is intended after making the Epochs or the Evokeds
+        raw.pick_types('all', exclude='bads')
 
     epochs = mne.Epochs(raw, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
-                        preload=True, proj=False, reject=None,
+                        preload=True, proj=False, reject=None, flat=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=True)
 
-    # Get reject-dictionaries and remove entries which are not present in channels
+    if bad_interpolation == 'Epochs':
+        epochs = epochs.interpolate_bads()
+
+    if any([i is not None for i in [use_autoreject, reject, flat]]) and bad_interpolation == 'Evokeds':
+        raise RuntimeWarning('With bad_interpolation="Evokeds", the bad channels are still included and '
+                             'may heavily influence the outcome of dropping epochs with reject,'
+                             ' flat or autoreject!'
+                             '\n(to solve this you could uncheck autoreject, reject and flat or set bad_interpolation'
+                             'to another value)')
+
     existing_ch_types = epochs.get_channel_types(unique=True, only_data_chs=True)
-    reject = reject.copy()
-    flat = flat.copy()
-    for key in [k for k in reject if k not in existing_ch_types]:
-        reject.pop(key)
-    for key in [k for k in flat if k not in existing_ch_types]:
-        flat.pop(key)
 
     if use_autoreject == 'Interpolation':
-        ar_object = ar.AutoReject(n_interpolates, consensus_percs, random_state=8,
-                                  n_jobs=n_jobs)
+        ar_object = ar.AutoReject(n_interpolates, consensus_percs, n_jobs=n_jobs)
         epochs, reject_log = ar_object.fit_transform(epochs, return_log=True)
         meeg.save_reject_log(reject_log)
 
-    elif use_autoreject == 'Threshold':
-        reject = ut.autoreject_handler(meeg.name, epochs, meeg.p["highpass"], meeg.p["lowpass"],
-                                       meeg.pr.pscripts_path, overwrite_ar=overwrite_ar)
-        print(f'Autoreject Rejection-Threshold: {reject}')
-        epochs.drop_bad(reject=reject, flat=flat)
     else:
-        print(f'Chosen Rejection-Threshold: {reject}')
-        epochs.drop_bad(reject=reject, flat=flat)
+        if use_autoreject == 'Threshold':
+            reject = meeg.load_json('autoreject_threshold')
+            if reject is None or overwrite_ar:
+                reject = ar.get_rejection_threshold(epochs)
+                meeg.save_json('autoreject_threshold', reject)
+            print(f'Dropping bad epochs with autoreject rejection-thresholds: {reject}')
+
+        else:
+            # Remove entries from reject if not present in channels
+
+            if reject is not None:
+                reject = reject.copy()
+                for key in [k for k in reject if k not in existing_ch_types]:
+                    reject.pop(key)
+            print(f'Dropping bad epochs with chosen rejection-thresholds: {reject}')
+
+        epochs.drop_bad(reject=reject)
+
+    if flat is not None:
+        # Remove entries from flat if not present in channels
+        flat = flat.copy()
+        for key in [k for k in flat if k not in existing_ch_types]:
+            flat.pop(key)
+        print(f'Dropping bad epochs with chosen flat-thresholds: {reject}')
+        epochs.drop_bad(flat=flat)
 
     meeg.save_epochs(epochs)
 
@@ -300,7 +326,8 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
     elif ica_autoreject and ica_fitto == 'Epochs':
         reject = meeg.load_json('autoreject_threshold')
         if not reject:
-            reject = ar.get_rejection_threshold(data, ch_types=ch_types)
+            reject = ar.get_rejection_threshold(data)
+            meeg.save_json('autoreject_threshold', reject)
     elif len(ica_reject) > 0:
         reject = ica_reject
     else:
@@ -512,29 +539,13 @@ def apply_ica(meeg, n_pca_components):
         meeg.save_epochs(ica_epochs)
 
 
-def interpolate_bad_chs(meeg, bad_interpolation):
-    if bad_interpolation == 'Raw':
-        raw = meeg.load_raw_filtered()
-        new_raw = raw.interpolate_bads(reset_bads=False)
-        meeg.save_filtered(new_raw)
-    elif bad_interpolation == 'Epochs':
-        epochs = meeg.load_epochs()
-        new_epochs = epochs.interpolate_bads(reset_bads=False)
-        meeg.save_epochs(new_epochs)
-    elif bad_interpolation == 'Evokeds':
-        evokeds = meeg.load_evokeds()
-        new_evokeds = []
-        for evoked in evokeds:
-            new_evokeds.append(evoked.interpolate_bdas(reset_bads=False))
-        meeg.save_evokeds(new_evokeds)
-
-
-def get_evokeds(meeg):
+def get_evokeds(meeg, bad_interpolation):
     epochs = meeg.load_epochs()
     evokeds = []
     for trial in meeg.sel_trials:
-        print(f'Evoked for {trial}')
         evoked = epochs[trial].average()
+        if bad_interpolation == 'Evokeds':
+            evoked = evoked.interpolate_bads()
         # Todo: optional if you want weights in your evoked.comment?!
         evoked.comment = trial
         evokeds.append(evoked)

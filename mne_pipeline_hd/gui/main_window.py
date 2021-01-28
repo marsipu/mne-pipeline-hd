@@ -571,6 +571,9 @@ class MainWindow(QMainWindow):
                                       description='Set to the amount of (virtual) cores of your machine '
                                                   'you want to use for multiprocessing', default=-1,
                                       groupbox_layout=False))
+        self.toolbar.addWidget(BoolGui(self.settings, 'overwrite', param_alias='Overwrite',
+                                       description='Check to overwrite files even if their parameters where unchanged',
+                                       default=False))
         self.toolbar.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
                                        description='Do you want to show plots?\n'
                                                    '(or just save them without showing, then just check "Save Plots")',

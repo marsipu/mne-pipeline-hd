@@ -168,8 +168,8 @@ class RemoveDialog(QDialog):
                 self.pr.all_info.pop(meeg, None)
                 self.pr.meeg_bad_channels.pop(meeg, None)
                 self.pr.meeg_event_id.pop(meeg, None)
-                for key in [k for k in self.pr.file_parameters.keys() if meeg in k]:
-                    self.pr.file_parameters.pop(key)
+                if meeg in self.pr.file_parameters:
+                    self.pr.file_parameters.pop(meeg)
                 if remove_files:
                     try:
                         remove_path = join(self.pr.data_path, meeg)
@@ -1892,9 +1892,9 @@ class FileManagment(QDialog):
                     try:
                         # Add Time
                         # Last entry in TIME should be the most recent one
-                        obj_pd_time.loc[obj_name, path_type] = self.mw.pr.file_parameters[Path(path).name]['TIME'][-1]
+                        obj_pd_time.loc[obj_name, path_type] = obj.file_parameters[Path(path).name]['TIME'][-1]
                         # Add Size (accumulate, if there are several files
-                        obj_pd_size.loc[obj_name, path_type] += self.mw.pr.file_parameters[Path(path).name]['SIZE']
+                        obj_pd_size.loc[obj_name, path_type] += obj.file_parameters[Path(path).name]['SIZE']
                     except KeyError:
                         pass
 
@@ -2133,7 +2133,7 @@ class FileManagment(QDialog):
             obj_table.content_changed()
             # Drop from file-parameters
             path = Path(obj.paths_dict[path_type]).name
-            self.mw.pr.file_parameters.pop(path, None)
+            obj.file_parameters.pop(path, None)
             # Remove File
             worker_signals.pgbar_text.emit(f'Removing: {path}')
             obj.remove_path(path_type)
