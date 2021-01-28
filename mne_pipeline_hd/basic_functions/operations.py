@@ -298,10 +298,10 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
 
     elif ica_fitto == 'Raw (Filtered)':
         data = meeg.load_filtered()
-        # Channel-Types already picked in Filter
+        data.pick(ch_types)
     else:
         data = meeg.load_epochs()
-        # Channel-Types already picked in Filter
+        data.pick(ch_types)
 
     # Filter if data is not highpass-filtered >= 1
     if data.info['highpass'] < 1:
