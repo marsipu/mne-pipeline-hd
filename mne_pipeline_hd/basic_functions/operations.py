@@ -36,7 +36,7 @@ from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
 
-def filter_raw(meeg, ch_types, highpass, lowpass, filter_length, l_trans_bandwidth,
+def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
                h_trans_bandwidth, filter_method, iir_params, fir_phase, fir_window,
                fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
     results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
@@ -45,9 +45,6 @@ def filter_raw(meeg, ch_types, highpass, lowpass, filter_length, l_trans_bandwid
 
         if bad_interpolation == 'Raw (Unfiltered)':
             raw = raw.interpolate_bads()
-
-        # Pick selected channel-types
-        raw.pick(ch_types)
 
         # use cuda for filtering if enabled
         if enable_cuda == 'true':
@@ -287,7 +284,7 @@ def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, bad_interpolation
         flat = flat.copy()
         for key in [k for k in flat if k not in existing_ch_types]:
             flat.pop(key)
-        print(f'Dropping bad epochs with chosen flat-thresholds: {reject}')
+        print(f'Dropping bad epochs with chosen flat-thresholds: {flat}')
         epochs.drop_bad(flat=flat)
 
     meeg.save_epochs(epochs)
@@ -346,8 +343,9 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
     ica.fit(filt_data, reject=reject, reject_by_annotation=reject_by_annotation, **fit_kwargs)
 
     # Load Raw for EOG/ECG-Detection without picks (e.g. still containing EEG for EOG or EOG channels)
-    eog_ecg_raw = meeg.load_raw()
-    eog_ecg_raw.pick('all', exclude=['stim', 'bads'])
+    eog_ecg_raw = meeg.load_filtered()
+    # Include EOG/ECG with all the data-channels
+    eog_ecg_raw.pick_types(meg=True, eeg=True, eog=True, ecg=True, seeg=True, ecog=True, fnirs=True, exclude='bads')
 
     if ica_eog:
 

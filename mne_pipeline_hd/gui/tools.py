@@ -102,6 +102,8 @@ class DataTerminal(QDialog):
 
         sys.stdout.signal.text_written.connect(self.update_label)
 
+        set_ratio_geometry(0.7, self)
+
         self.init_ui()
         self.open()
 

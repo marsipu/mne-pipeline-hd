@@ -494,6 +494,8 @@ class RawInfo(QDialog):
         self.mw = main_win
         self.info_string = None
 
+        set_ratio_geometry(0.6, self)
+
         self.init_ui()
         self.open()
 
