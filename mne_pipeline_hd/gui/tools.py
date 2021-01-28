@@ -322,7 +322,7 @@ class PlotViewSelection(QDialog):
         self.interactive = False
         self.objects = list()
         self.selected_objs = list()
-        self.selected_ppresets = list()
+        self.selected_ppresets = list('Default')
 
         # Stores the widgets for parameter-presets/objects
         self.all_figs = dict()
@@ -371,10 +371,13 @@ class PlotViewSelection(QDialog):
             # Load object-list according to target
             if self.target == 'MEEG':
                 self.objects = self.mw.pr.all_meeg
+                self.selected_objs = self.mw.pr.sel_meeg
             elif self.target == 'FSMRI':
                 self.objects = self.mw.pr.all_fsmri
+                self.selected_objs = self.mw.pr.sel_fsmri
             elif self.target == 'Group':
                 self.objects = list(self.mw.pr.all_groups.keys())
+                self.selected_objs = self.mw.pr.sel_groups
 
             # If non-interactive only list objects where a plot-image already was saved
             if not self.interactive:
