@@ -57,7 +57,7 @@ def numpy_json_hook(obj):
         return obj
 
 
-def compare_filep(obj, path, target_parameters=None):
+def compare_filep(obj, path, target_parameters=None, verbose=True):
     """Compare the parameters of the previous run to the current parameters for the given path
 
     Parameters
@@ -68,6 +68,8 @@ def compare_filep(obj, path, target_parameters=None):
         The path for the file to compare the parameters
     target_parameters : list | None
         The parameters to compare (set None for all)
+    verbose : bool
+        Set to True to print the outcome for each parameter to the console
 
     Returns
     -------
@@ -103,22 +105,27 @@ def compare_filep(obj, path, target_parameters=None):
 
             if equality:
                 result_dict[param] = 'equal'
-                print(f'{param} equal for {file_name}')
+                if verbose:
+                    print(f'{param} equal for {file_name}')
             else:
                 if param in critical_params:
                     result_dict[param] = (previous_value, current_value, True)
-                    print(f'{param} changed from {previous_value} to {current_value} for {file_name} '
-                          f'and is probably crucial for {function}')
+                    if verbose:
+                        print(f'{param} changed from {previous_value} to {current_value} for {file_name} '
+                              f'and is probably crucial for {function}')
                 else:
                     result_dict[param] = (previous_value, current_value, False)
-                    print(f'{param} changed from {previous_value} to {current_value} for {file_name}')
+                    if verbose:
+                        print(f'{param} changed from {previous_value} to {current_value} for {file_name}')
         except KeyError:
             result_dict[param] = 'missing'
-            print(f'{param} is missing in records for {file_name}')
+            if verbose:
+                print(f'{param} is missing in records for {file_name}')
 
     if obj.mw.settings['overwrite']:
         result_dict[param] = 'overwrite'
-        print(f'{file_name} will be overwritten anyway because Overwrite=True (Settings)')
+        if verbose:
+            print(f'{file_name} will be overwritten anyway because Overwrite=True (Settings)')
 
     return result_dict
 

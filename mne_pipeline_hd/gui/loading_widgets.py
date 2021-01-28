@@ -1890,7 +1890,7 @@ class FileManagment(QDialog):
                         pass
 
                     # Compare all parameters from last run to now
-                    result_dict = compare_filep(obj, path)
+                    result_dict = compare_filep(obj, path, verbose=False)
                     # Store parameter-conflicts for later retrieval
                     self.param_results[obj_name][path_type] = result_dict
 
