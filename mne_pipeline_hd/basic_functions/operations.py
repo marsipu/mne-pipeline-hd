@@ -294,14 +294,14 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
             ch_types, reject_by_annotation, ica_eog, eog_channel, ica_ecg, ecg_channel, **kwargs):
     if ica_fitto == 'Raw (Unfiltered)':
         data = meeg.load_raw()
-        data.pick(ch_types)
+        data.pick(ch_types, exclude='bads')
 
     elif ica_fitto == 'Raw (Filtered)':
         data = meeg.load_filtered()
-        data.pick(ch_types)
+        data.pick(ch_types, exclude='bads')
     else:
         data = meeg.load_epochs()
-        data.pick(ch_types)
+        # Bad-Channels and Channel-Types are already picked in epoch_raw
 
     # Filter if data is not highpass-filtered >= 1
     if data.info['highpass'] < 1:
