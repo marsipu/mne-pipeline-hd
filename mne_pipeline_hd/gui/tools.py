@@ -322,7 +322,7 @@ class PlotViewSelection(QDialog):
         self.interactive = False
         self.objects = list()
         self.selected_objs = list()
-        self.selected_ppresets = list('Default')
+        self.selected_ppresets = ['Default']
 
         # Stores the widgets for parameter-presets/objects
         self.all_figs = dict()
@@ -390,19 +390,9 @@ class PlotViewSelection(QDialog):
 
     def func_selected(self, func):
         """Get selected function and adjust contents of Object-Selection to target"""
-        old_target = self.target
         self.selected_func = func
         self.target = self.mw.pd_funcs.loc[func, 'target']
-        if old_target != self.target:
-            # Clear selected objects
-            self.selected_objs.clear()
-            self.obj_select.replace_checked(self.selected_objs)
-            if self.target == 'MEEG':
-                self.obj_select.replace_data(self.mw.pr.all_meeg)
-            elif self.target == 'FSMRI':
-                self.obj_select.replace_data(self.mw.pr.all_fsmri)
-            elif self.target == 'Group':
-                self.obj_select.replace_data(list(self.mw.pr.all_groups.keys()))
+        self.update_objects()
 
     def interactive_toggled(self, checked):
         self.interactive = checked
@@ -481,7 +471,6 @@ class PlotViewSelection(QDialog):
                                                             self.thread_finished(val, o_name, ppreset))
                             worker.signals.error.connect(lambda err_tuple, o_name=obj_name, ppreset=p_preset:
                                                          self.thread_error(err_tuple, o_name, ppreset, 'image'))
-                            print(f'Starting Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
                             self.mw.threadpool.start(worker)
 
     def load_images(self, image_paths, obj_name, p_preset):
@@ -501,7 +490,6 @@ class PlotViewSelection(QDialog):
     def thread_finished(self, _, obj_name, p_preset):
         self.prog_cnt += 1
         self.prog_dlg.setValue(self.prog_cnt)
-        print(f'Finished PlotLoading-Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
 
         if self.prog_cnt == self.total_loads:
             # Start PlotViewer

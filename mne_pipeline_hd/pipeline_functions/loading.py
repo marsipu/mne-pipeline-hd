@@ -103,6 +103,19 @@ class BaseLoading:
         # for unused_p in unused_ps:
         #     self.file_parameters[file_name].pop(unused_p)
 
+    def clear_plot_files(self):
+        """Clear all entries in plot-files, where the image has already been deleteds"""
+        drop_keys = list()
+        for func in self.plot_files:
+            for image_path in self.plot_files[func]:
+                if not isfile(image_path):
+                    self.plot_files[func].remove(image_path)
+            if len(self.plot_files[func]) == 0:
+                # Keys can't be dropped from dictionary during iteration
+                drop_keys.append(func)
+        for drop_key in drop_keys:
+            self.plot_files.pop(drop_key)
+
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):
         """
