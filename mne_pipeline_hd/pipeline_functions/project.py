@@ -49,12 +49,10 @@ class Project:
         self.figures_path = join(self.project_path, 'figures')
         # A dedicated folder to store grand-average data
         self.save_dir_averages = join(self.data_path, 'grand_averages')
-        # A dedicated folder to store empty-room measurements
-        self.erm_data_path = join(self.data_path, 'empty_room_data')
         # A folder to store all pipeline-scripts as .json-files
         self.pscripts_path = join(self.project_path, '_pipeline_scripts')
 
-        self.main_paths = [self.mw.subjects_dir, self.data_path, self.erm_data_path,
+        self.main_paths = [self.mw.subjects_dir, self.data_path, self.save_dir_averages,
                            self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
 
         # Create or check existence of main_paths
@@ -300,14 +298,10 @@ class Project:
     def check_data(self):
 
         missing_objects = [x for x in listdir(self.data_path) if
-                           x not in ['grand_averages', 'empty_room_data'] and x not in self.all_meeg]
+                           x != 'grand_averages' and x not in self.all_meeg and x not in self.all_erm]
 
         for obj in missing_objects:
             self.all_meeg.append(obj)
-
-        missing_erm = [x for x in listdir(self.erm_data_path) if x not in self.all_erm]
-        for erm in missing_erm:
-            self.all_erm.append(erm)
 
         # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
         read_dir = sorted([f for f in os.listdir(self.mw.subjects_dir) if not f.startswith('.')], key=str.lower)

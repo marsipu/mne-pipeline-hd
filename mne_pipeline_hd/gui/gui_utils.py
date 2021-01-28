@@ -155,6 +155,9 @@ class WorkerSignals(QObject):
     pgbar_n = pyqtSignal(int)
     pgbar_text = pyqtSignal(str)
 
+    # Only an attribute which is stored here to maintain reference when passing it to the function
+    was_canceled = False
+
 
 class Worker(QRunnable):
     """A class to execute a function in a seperate Thread
@@ -199,6 +202,9 @@ class Worker(QRunnable):
         else:
             self.signals.finished.emit(return_value)  # Done
 
+    def cancel(self):
+        self.signals.was_canceled = True
+
 
 class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
@@ -209,16 +215,15 @@ class WorkerDialog(QDialog):
 
         self.is_finished = False
         self.return_value = None
-        self.was_canceled = False
 
         # Initialize worker
-        worker = Worker(function, *args, **kwargs)
-        worker.signals.finished.connect(self.on_thread_finished)
-        worker.signals.error.connect(self.on_thread_finished)
-        worker.signals.pgbar_max.connect(self.set_pgbar_max)
-        worker.signals.pgbar_n.connect(self.pgbar_changed)
-        worker.signals.pgbar_text.connect(self.label_changed)
-        QThreadPool.globalInstance().start(worker)
+        self.worker = Worker(function, *args, **kwargs)
+        self.worker.signals.finished.connect(self.on_thread_finished)
+        self.worker.signals.error.connect(self.on_thread_finished)
+        self.worker.signals.pgbar_max.connect(self.set_pgbar_max)
+        self.worker.signals.pgbar_n.connect(self.pgbar_changed)
+        self.worker.signals.pgbar_text.connect(self.label_changed)
+        QThreadPool.globalInstance().start(self.worker)
 
         self.init_ui()
         self.open()
@@ -270,7 +275,7 @@ class WorkerDialog(QDialog):
         self.progress_label.setText(text)
 
     def cancel(self):
-        self.was_canceled = True
+        self.worker.cancel()
 
     def closeEvent(self, event):
         # Can't close Dialog before Thread has finished or threw error

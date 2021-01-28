@@ -63,7 +63,7 @@ def filter_raw(meeg, ch_types, highpass, lowpass, n_jobs, enable_cuda, erm_t_lim
 
     # Filter Empty-Room-Data too
     if meeg.erm != 'None':
-        erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass'])
+        erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
         if erm_results['highpass'] != 'equal' or erm_results['lowpass'] != 'equal':
             erm_raw = meeg.load_erm()
             erm_raw.filter(highpass, lowpass)
@@ -235,7 +235,7 @@ def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, bad_interpolation
 
     if bad_interpolation in [None, 'Raw (Unfiltered)', 'Raw (Filtered)']:
         # Exclude bad-channels if no Bad-Channel-Interpolation is intended after making the Epochs or the Evokeds
-        raw.pick_types('all', exclude='bads')
+        raw.pick('all', exclude='bads')
 
     epochs = mne.Epochs(raw, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, proj=False, reject=None, flat=None,

@@ -277,6 +277,8 @@ class MEEG(BaseLoading):
 
         # Additional Attributes
         self.save_dir = join(self.pr.data_path, name)
+        if not isdir(self.save_dir):
+            makedirs(self.save_dir)
 
         # Attributes, which are needed to run the subject
         try:
@@ -367,8 +369,8 @@ class MEEG(BaseLoading):
         self.raw_path = join(self.save_dir, f'{self.name}-raw.fif')
         self.raw_filtered_path = join(self.save_dir, f'{self.name}_{self.p_preset}-filtered-raw.fif')
 
-        self.erm_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}-raw.fif')
-        self.erm_filtered_path = join(self.pr.erm_data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
+        self.erm_path = join(self.pr.data_path, self.erm, f'{self.erm}-raw.fif')
+        self.erm_filtered_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
 
         self.events_path = join(self.save_dir, f'{self.name}_{self.p_preset}-eve.fif')
 
@@ -585,9 +587,9 @@ class MEEG(BaseLoading):
             self._erm = mne.io.read_raw_fif(self.erm_path, preload=True)
 
         if copy:
-            return self._raw.copy()
+            return self._erm.copy()
         else:
-            return self._raw
+            return self._erm
 
     def load_erm_filtered(self, copy=True):
         if self._erm_filtered is None:

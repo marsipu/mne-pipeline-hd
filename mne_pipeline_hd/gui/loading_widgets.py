@@ -703,39 +703,30 @@ class AddFilesWidget(QWidget):
                 self.pd_files.loc[idx, 'Name'] = \
                     self.pd_files.loc[idx, 'Name'] + '-' + self.pd_files.loc[idx, 'File-Type'][1:]
 
-        worker_signals.set_pgbar_max(len(self.pd_files.index))
+        worker_signals.pgbar_max.emit(len(self.pd_files.index))
 
         for n, idx in enumerate(self.pd_files.index):
             file = self.pd_files.loc[idx, 'Name']
-            if not self.worker_dialog.wasCanceled:
+            if not worker_signals.was_canceled:
                 worker_signals.pgbar_text.emit(f'Copying {file}')
                 path = self.pd_files.loc[idx, 'Path']
                 file_type = self.pd_files.loc[idx, 'File-Type']
                 raw = load_raw_file(path, file_type)
 
-                if not self.worker_dialog.wasCanceled:
-                    # Copy Empty-Room-Files to their directory
-                    if self.pd_files.loc[idx, 'Empty-Room?']:
-                        # Organize ERMs
-                        self.mw.pr.all_erm.append(file)
-                        save_path = join(self.mw.pr.data_path, 'empty_room_data',
-                                         file, file + '-raw.fif')
-                    else:
-                        # Organize sub_files
-                        self.mw.pr.all_meeg.append(file)
-                        save_path = join(self.mw.pr.data_path, file,
-                                         file + '-raw.fif')
-                    # Make sure, that all directories exist
-                    parent_dir = Path(save_path).parent
-                    os.makedirs(parent_dir, exist_ok=True)
-                    # Copy sub_files to destination (with MEEG-Class to also include raw into file_parameters)
-                    meeg = MEEG(file, self.mw)
-                    meeg.save_raw(raw)
-                    meeg.extract_info()
-                    worker_signals.pgbar_n.emit(n)
+                if self.pd_files.loc[idx, 'Empty-Room?']:
+                    # Organize Empty-Room-FIles
+                    self.mw.pr.all_erm.append(file)
                 else:
-                    break
+                    # Organize other files
+                    self.mw.pr.all_meeg.append(file)
+
+                # Copy sub_files to destination (with MEEG-Class to also include raw into file_parameters)
+                meeg = MEEG(file, self.mw)
+                meeg.save_raw(raw)
+                meeg.extract_info()
+                worker_signals.pgbar_n.emit(n + 1)
             else:
+                print('Canceled Loading')
                 break
 
     def addf_finished(self, _):

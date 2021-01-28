@@ -90,6 +90,7 @@ def compare_filep(obj, path, target_parameters=None):
         critical_params = critical_params_str.split(',')
     except KeyError:
         critical_params = list()
+        function = None
 
     if not target_parameters:
         target_parameters = obj.p.keys()
@@ -102,16 +103,22 @@ def compare_filep(obj, path, target_parameters=None):
 
             if equality:
                 result_dict[param] = 'equal'
+                print(f'{param} equal for {file_name}')
             else:
                 if param in critical_params:
                     result_dict[param] = (previous_value, current_value, True)
+                    print(f'{param} changed from {previous_value} to {current_value} for {file_name} '
+                          f'and is probably crucial for {function}')
                 else:
                     result_dict[param] = (previous_value, current_value, False)
+                    print(f'{param} changed from {previous_value} to {current_value} for {file_name}')
         except KeyError:
             result_dict[param] = 'missing'
+            print(f'{param} is missing in records for {file_name}')
 
-        if obj.mw.settings['overwrite']:
-            result_dict[param] = 'overwrite'
+    if obj.mw.settings['overwrite']:
+        result_dict[param] = 'overwrite'
+        print(f'{file_name} will be overwritten anyway because Overwrite=True (Settings)')
 
     return result_dict
 
