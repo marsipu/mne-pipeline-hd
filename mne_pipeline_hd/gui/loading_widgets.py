@@ -2422,7 +2422,8 @@ class ReloadRaw(QDialog):
         # Not with partial because otherwise the clicked-arg from clicked goes into *args
         selected_raw = self.raw_list.get_current()
         raw_path = QFileDialog.getOpenFileName(self, 'Select Raw for Reload')[0]
-        WorkerDialog(self, self.reload_raw, selected_raw, raw_path)
+        if raw_path:
+            WorkerDialog(self, self.reload_raw, selected_raw, raw_path)
 
     def reload_raw(self, selected_raw, raw_path):
         meeg = MEEG(selected_raw, self.mw)
