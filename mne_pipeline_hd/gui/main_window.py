@@ -301,10 +301,14 @@ class MainWindow(QMainWindow):
             with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'r') as file:
                 self.settings = json.load(file)
             # Account for settings, which were not saved but exist in default_settings
-            for setting in [s for s in self.default_settings if s not in self.settings]:
-                self.settings[setting] = self.default_settings[setting]
+            for setting in [s for s in self.default_settings['settings'] if s not in self.settings]:
+                self.settings[setting] = self.default_settings['settings'][setting]
         except FileNotFoundError:
-            self.settings = self.default_settings
+            self.settings = self.default_settings['settings']
+
+        # Check QSettings
+        for qsetting in [qs for qs in self.default_settings['qsettings'] if qs not in self.qsettings.childKeys()]:
+            self.qsettings.setValue(qsetting, self.default_settings['qsettings'][qsetting])
 
     def save_settings(self):
         with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
@@ -314,7 +318,7 @@ class MainWindow(QMainWindow):
         try:
             value = self.settings[setting]
         except KeyError:
-            value = self.default_settings[setting]
+            value = self.default_settings['settings'][setting]
 
         return value
 

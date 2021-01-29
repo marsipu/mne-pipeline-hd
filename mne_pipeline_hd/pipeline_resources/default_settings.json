@@ -1,20 +1,24 @@
 {
-    "current_project": null,
-    "selected_modules": [
-        "operations",
-        "plot"
-    ],
-    "parameter_preset": "Default",
-    "mne_backend": "mayavi",
-    "dark_mode": false,
-    "checked_funcs": [],
-    "show_plots": true,
-    "save_plots": true,
-    "save_storage": false,
-    "shutdown": false,
-    "img_format": ".png",
-    "dpi": 300,
-    "n_jobs": -1,
-    "n_threads": 1,
-    "overwrite": false
+    "settings": {
+        "current_project": null,
+        "selected_modules": [
+            "operations",
+            "plot"
+        ],
+        "parameter_preset": "Default",
+        "dark_mode": false,
+        "checked_funcs": [],
+        "show_plots": true,
+        "save_plots": true,
+        "save_storage": false,
+        "shutdown": false,
+        "img_format": ".png",
+        "dpi": 300,
+
+        "overwrite": false
+    },
+    "qsettings": {
+        "n_jobs": -1,
+        "n_threads": 1
+    }
 }
