@@ -17,7 +17,7 @@ when you are in a directory where you want the mne_pipeline_hd-scripts installed
 
 ## Update
 
-Just run `pip install --upgrade https://github.com/marsipu/mne_pipeline_hd/zipball/main` again
+Just run `pip install --upgrade --force-reinstall https://github.com/marsipu/mne_pipeline_hd/zipball/main` again
 
 ## Start
 Run `mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_p`)
