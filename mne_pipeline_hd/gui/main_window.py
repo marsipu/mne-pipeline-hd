@@ -104,6 +104,8 @@ class MainWindow(QMainWindow):
         self.first_init = True
         # True, if Pipeline is running (to avoid parallel starts of RunDialog)
         self.pipeline_running = False
+        # True when Project was saved before closing the MainWindow
+        self.project_saved = False
 
         # Load QSettings (which are stored in the OS)
         # qsettings=<everything, that's OS-dependent>
@@ -765,9 +767,9 @@ class MainWindow(QMainWindow):
             self.bt_dict[x].setChecked(False)
             self.pr.sel_functions[x] = 0
 
-    def _prepare_start(self):
+    def _prepare_start(self, worker_signals):
         # Save Main-Window-Settings and project before possible Errors happen
-        self.save_main()
+        self.save_main(worker_signals)
         # Reload modules to get latest changes
         self.reload_modules()
 
@@ -778,7 +780,8 @@ class MainWindow(QMainWindow):
         if self.pipeline_running:
             QMessageBox.warning(self, 'Already running!', 'The Pipeline is already running!')
         else:
-            worker_dialog = WorkerDialog(self, self._prepare_start)
+            worker_dialog = WorkerDialog(self, self._prepare_start, show_buttons=False, show_console=False,
+                                         title='Saving Project')
             worker_dialog.thread_finished.connect(self._begin_run)
 
     # Todo: Make Run-Function (windows&non-windows)
@@ -914,15 +917,20 @@ class MainWindow(QMainWindow):
             self.update_func_bts()
         event.accept()
 
-    def save_main(self):
+    def save_main(self, worker_signals=None):
+        if worker_signals is not None:
+            worker_signals.pgbar_text.emit('Saving Project...')
+
         # Save Project
         self.pr.save()
+
+        if worker_signals is not None:
+            worker_signals.pgbar_text.emit('Saving Settings...')
 
         self.settings['current_project'] = self.current_project
         self.save_settings()
 
-    def closeEvent(self, event):
-        self.save_main()
+    def _saving_finished(self):
         answer = QMessageBox.question(self, 'Closing MNE-Pipeline', 'Do you want to return to the Welcome-Window?',
                                       buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
                                       defaultButton=QMessageBox.Yes)
@@ -931,11 +939,19 @@ class MainWindow(QMainWindow):
             self.welcome_window.show()
             if self.edu_tour:
                 self.edu_tour.close()
-            event.accept()
+            self.project_saved = True
+            self.close()
         elif answer == QMessageBox.No:
             self.welcome_window.close()
             if self.edu_tour:
                 self.edu_tour.close()
+            self.project_saved = True
+            self.close()
+
+    def closeEvent(self, event):
+        if self.project_saved:
             event.accept()
         else:
             event.ignore()
+            worker_dialog = WorkerDialog(self, self.save_main, show_console=False)
+            worker_dialog.thread_finished.connect(self._saving_finished)

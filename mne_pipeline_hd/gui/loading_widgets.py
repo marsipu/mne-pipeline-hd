@@ -2143,7 +2143,7 @@ class FileManagment(QDialog):
         msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selcted Files?')
 
         if msgbx == QMessageBox.Yes:
-            WorkerDialog(self, self._file_remover, kind)
+            WorkerDialog(self, self._file_remover, kind=kind)
 
 
 class ICASelect(QDialog):
@@ -2430,3 +2430,9 @@ class ReloadRaw(QDialog):
         raw = load_raw_file(raw_path)
         meeg.save_raw(raw)
         print(f'Reloaded Raw for {selected_raw}')
+
+    def start_reload(self):
+        # Not with partial because otherwise the clicked-arg from clicked goes into *args
+        selected_raw = self.raw_list.get_current()
+        raw_path = QFileDialog.getOpenFileName(self, 'Select Raw for Reload')[0]
+        WorkerDialog(self, self.reload_raw, selected_raw=selected_raw, raw_path=raw_path)

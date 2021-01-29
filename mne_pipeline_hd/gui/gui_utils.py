@@ -17,9 +17,12 @@ from inspect import signature
 
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QTextCursor
-from PyQt5.QtWidgets import QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QProgressBar, QPushButton, \
+from PyQt5.QtWidgets import QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox, QProgressBar, \
+    QPushButton, \
     QTextEdit, \
     QVBoxLayout
+
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import check_kwargs
 
 
 def center(widget):
@@ -210,14 +213,19 @@ class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
     thread_finished = pyqtSignal(object)
 
-    def __init__(self, parent, function, *args, **kwargs):
+    def __init__(self, parent, function, show_buttons=True, show_console=True, close_directly=True,
+                 title=None, **kwargs):
         super().__init__(parent)
 
+        self.show_buttons = show_buttons
+        self.show_console = show_console
+        self.close_directly = close_directly
+        self.title = title
         self.is_finished = False
         self.return_value = None
 
         # Initialize worker
-        self.worker = Worker(function, *args, **kwargs)
+        self.worker = Worker(function, **kwargs)
         self.worker.signals.finished.connect(self.on_thread_finished)
         self.worker.signals.error.connect(self.on_thread_finished)
         self.worker.signals.pgbar_max.connect(self.set_pgbar_max)
@@ -231,6 +239,9 @@ class WorkerDialog(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
+        if self.title:
+            layout.addWidget(QLabel(self.title))
+
         self.progress_label = QLabel()
         self.progress_label.hide()
         layout.addWidget(self.progress_label, alignment=Qt.AlignHCenter)
@@ -239,21 +250,23 @@ class WorkerDialog(QDialog):
         self.progress_bar.hide()
         layout.addWidget(self.progress_bar)
 
-        self.console_output = ConsoleWidget()
-        layout.addWidget(self.console_output)
+        if self.show_console:
+            self.console_output = ConsoleWidget()
+            layout.addWidget(self.console_output)
 
-        bt_layout = QHBoxLayout()
+        if self.show_buttons:
+            bt_layout = QHBoxLayout()
 
-        cancel_bt = QPushButton('Cancel')
-        cancel_bt.clicked.connect(self.cancel)
-        bt_layout.addWidget(cancel_bt)
+            cancel_bt = QPushButton('Cancel')
+            cancel_bt.clicked.connect(self.cancel)
+            bt_layout.addWidget(cancel_bt)
 
-        self.close_bt = QPushButton('Close')
-        self.close_bt.clicked.connect(self.close)
-        self.close_bt.setEnabled(False)
-        bt_layout.addWidget(self.close_bt)
+            self.close_bt = QPushButton('Close')
+            self.close_bt.clicked.connect(self.close)
+            self.close_bt.setEnabled(False)
+            bt_layout.addWidget(self.close_bt)
 
-        layout.addLayout(bt_layout)
+            layout.addLayout(bt_layout)
 
         self.setLayout(layout)
 
@@ -261,7 +274,10 @@ class WorkerDialog(QDialog):
         # Store return value to send it when user closes the dialog
         self.return_value = return_value
         self.is_finished = True
-        self.close_bt.setEnabled(True)
+        if self.show_buttons:
+            self.close_bt.setEnabled(True)
+        if self.close_directly:
+            self.close()
 
     def set_pgbar_max(self, maximum):
         self.progress_bar.show()
@@ -282,3 +298,5 @@ class WorkerDialog(QDialog):
         if self.is_finished:
             self.thread_finished.emit(self.return_value)
             event.accept()
+        else:
+            QMessageBox.warning(self, 'You can\'t close this Dialog before the Thread inside finished!')
