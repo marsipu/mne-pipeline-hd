@@ -33,7 +33,7 @@ from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RawInfo, RemovePr
                       SettingsDlg, SysInfoMsg)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
-from .gui_utils import center, get_exception_tuple, set_ratio_geometry
+from .gui_utils import WorkerDialog, center, get_exception_tuple, set_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, ICASelect,
                               ReloadRaw, SubBadsDialog,
                               SubDictDialog, SubjectDock, SubjectWizard)
@@ -761,17 +761,21 @@ class MainWindow(QMainWindow):
             self.bt_dict[x].setChecked(False)
             self.pr.sel_functions[x] = 0
 
+    def _prepare_start(self):
+        # Save Main-Window-Settings and project before possible Errors happen
+        self.save_main()
+        # Reload modules to get latest changes
+        self.reload_modules()
+
+    def _begin_run(self):
+        self.run_dialog = RunDialog(self)
+
     def start(self):
         if self.pipeline_running:
             QMessageBox.warning(self, 'Already running!', 'The Pipeline is already running!')
         else:
-            # Save Main-Window-Settings and project before possible Errors happen
-            self.save_main()
-
-            # Reload modules to get latest changes
-            self.reload_modules()
-
-            self.run_dialog = RunDialog(self)
+            worker_dialog = WorkerDialog(self, self._prepare_start)
+            worker_dialog.thread_finished.connect(self._begin_run)
 
     # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):
