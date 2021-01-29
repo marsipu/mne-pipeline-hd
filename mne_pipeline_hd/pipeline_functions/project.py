@@ -37,7 +37,7 @@ class Project:
         self.init_pipeline_scripts()
         self.set_logging()
         self.load()
-        self.check_data()
+        # self.check_data()
 
     def init_main_paths(self):
 
