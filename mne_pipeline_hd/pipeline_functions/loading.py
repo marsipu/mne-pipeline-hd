@@ -11,6 +11,8 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 from __future__ import print_function
 
+import functools
+import gc
 import inspect
 import json
 import os
@@ -36,6 +38,21 @@ from PyQt5.QtWidgets import QMessageBox
 # LOADING FUNCTIONS
 # ==============================================================================
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, type_json_hook
+
+
+def load_decorator(load_func):
+    @functools.wraps(load_func)
+    def load_wrapper(*args, **kwargs):
+        value = load_func(*args, **kwargs)
+        if 'copy' in kwargs:
+            try:
+                return value.copy()
+            except AttributeError:
+                print(f'Value for {load_func.__name__} could not be copied')
+        else:
+            return value
+
+    return load_wrapper
 
 
 class BaseLoading:
@@ -288,44 +305,50 @@ class MEEG(BaseLoading):
         if not isdir(self.save_dir):
             makedirs(self.save_dir)
 
-        # Attributes, which are needed to run the subject
-        try:
-            self.erm = self.mw.pr.meeg_to_erm[name]
-        except KeyError:
-            self.erm = 'None'
+        # Attributes of the subject
+        # The assigned Empty-Room-Measurement if existing
+        if name not in self.mw.pr.meeg_to_erm:
+            self.mw.pr.meeg_to_erm[name] = None
             if not suppress_warnings:
                 print(f'No Empty-Room-Measurement assigned for {self.name}, defaulting to "None"')
-        try:
-            if fsmri and fsmri.name == self.mw.pr.meeg_to_fsmri[name]:
-                self.fsmri = fsmri
-            else:
-                self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[name], main_win)
-        except KeyError:
-            self.fsmri = FSMRI('None', main_win)
+        self.erm = self.mw.pr.meeg_to_erm[name]
+
+        # The assigned Freesurfer-MRI(already as FSMRI-Class)
+        if name not in self.mw.pr.meeg_to_fsmri:
+            self.mw.pr.meeg_to_fsmri[name] = None
             if not suppress_warnings:
-                print(f'No MRI-Subject assigned for {self.name}, defaulting to "None"')
-        try:
-            self.bad_channels = self.mw.pr.meeg_bad_channels[name]
-        except KeyError:
-            self.bad_channels = list()
+                print(f'No Freesurfer-MRI-Subject assigned for {self.name}, defaulting to "None"')
+        if fsmri and fsmri.name == self.mw.pr.meeg_to_fsmri[name]:
+            self.fsmri = fsmri
+        else:
+            self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[name], main_win)
+
+        # Transition from 'None' to None (placed 30.01.2021, can be removed soon)
+        if self.mw.pr.meeg_to_erm[name] == 'None':
+            self.mw.pr.meeg_to_erm[name] = None
+        if self.mw.pr.meeg_to_fsmri[name] == 'None':
+            self.mw.pr.meeg_to_fsmri[name] = None
+
+        # The assigned bad-channels
+        if name not in self.mw.pr.meeg_bad_channels:
+            self.mw.pr.meeg_bad_channels[name] = list()
             if not suppress_warnings:
                 print(f'No bad channels assigned for {self.name}, defaulting to empty list')
-        try:
-            self.event_id = self.mw.pr.meeg_event_id[name]
-            if len(self.event_id) == 0:
-                raise RuntimeError(name)
-        except (KeyError, RuntimeError):
-            self.event_id = dict()
+        self.bad_channels = self.mw.pr.meeg_bad_channels[name]
+
+        # The assigned event-id
+        if name not in self.mw.pr.meeg_event_id:
+            self.mw.pr.meeg_event_id[name] = dict()
             if not suppress_warnings:
                 print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
-        try:
-            self.sel_trials = self.mw.pr.sel_event_id[name]
-            if len(self.sel_trials) == 0:
-                raise RuntimeError(name)
-        except (KeyError, RuntimeError):
-            self.sel_trials = list()
+        self.event_id = self.mw.pr.meeg_event_id[name]
+
+        # The selected trials from the event-id
+        if name not in self.mw.pr.sel_event_id:
+            self.mw.pr.sel_event_id[name] = list()
             if not suppress_warnings:
                 print(f'No Trials selected for {self.name}, defaulting to empty list')
+        self.sel_trials = self.mw.pr.sel_event_id[name]
 
         self.load_attributes()
         self.load_paths()
@@ -334,11 +357,13 @@ class MEEG(BaseLoading):
         """Set all Data-Attributes to None"""
         # Data-Attributes (not to be called directly)
         # Make Data-Objects usable by consecutive functions without reloading
+        # Can be reloaded to clear memory
+
         self._info = None
         self._raw = None
         self._raw_filtered = None
         self._erm = None
-        self._erm_filtered = None
+        self._erm_processed = None
         self._events = None
         self._epochs = None
         self._reject_log = None
@@ -362,13 +387,16 @@ class MEEG(BaseLoading):
         self._mixn_dips = None
         self._ecd_dips = None
 
+        # Run garbage-collection to clear memory
+        gc.collect()
+
     def load_paths(self):
         """Load Paths as attributes (depending on which Parameter-Preset is selected)"""
         self.raw_path = join(self.save_dir, f'{self.name}-raw.fif')
         self.raw_filtered_path = join(self.save_dir, f'{self.name}_{self.p_preset}-filtered-raw.fif')
 
         self.erm_path = join(self.pr.data_path, self.erm, f'{self.erm}-raw.fif')
-        self.erm_filtered_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
+        self.erm_processed_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
 
         self.events_path = join(self.save_dir, f'{self.name}_{self.p_preset}-eve.fif')
 
@@ -413,7 +441,7 @@ class MEEG(BaseLoading):
         self.paths_dict = {'Raw': self.raw_path,
                            'Raw (Filtered)': self.raw_filtered_path,
                            'EmptyRoom': self.erm_path,
-                           'EmptyRoom (Filtered)': self.erm_filtered_path,
+                           'EmptyRoom (Filtered)': self.erm_processed_path,
                            'Events': self.events_path,
                            'Epochs': self.epochs_path,
                            'RejectLog': self.reject_log_path,
@@ -497,7 +525,7 @@ class MEEG(BaseLoading):
     def _update_raw_bads(self, raw):
         # Take bad_channels from file if there are none in self.bad_channels
         if len(raw.info['bads']) > 0 and len(self.bad_channels) == 0:
-            self.bad_channels = raw.info['bads']
+            self.bad_channels += raw.info['bads']
         else:
             # Make sure, that only bad_chanels present in ch_names are added
             bad_channels = [bad_ch for bad_ch in self.bad_channels if bad_ch in raw.ch_names]
@@ -543,9 +571,8 @@ class MEEG(BaseLoading):
     def save_filtered(self, raw_filtered):
         self._raw_filtered = raw_filtered
 
-        if not self.mw.get_setting('save_storage'):
-            raw_filtered.save(self.raw_filtered_path, overwrite=True)
-            self.save_file_params(self.raw_filtered_path)
+        raw_filtered.save(self.raw_filtered_path, overwrite=True)
+        self.save_file_params(self.raw_filtered_path)
 
     def load_erm(self, copy=True):
         if self._erm is None:
@@ -556,20 +583,19 @@ class MEEG(BaseLoading):
         else:
             return self._erm
 
-    def load_erm_filtered(self, copy=True):
-        if self._erm_filtered is None:
-            self._erm_filtered = mne.io.read_raw_fif(self.erm_filtered_path, preload=True)
+    def load_erm_processed(self, copy=True):
+        if self._erm_processed is None:
+            self._erm_processed = mne.io.read_raw_fif(self.erm_processed_path, preload=True)
 
         if copy:
-            return self._erm_filtered.copy()
+            return self._erm_processed.copy()
         else:
-            return self._erm_filtered
+            return self._erm_processed
 
-    def save_erm_filtered(self, erm_filtered):
-        self._erm_filtered = erm_filtered
-        if not self.mw.get_setting('save_storage'):
-            self._erm_filtered.save(self.erm_filtered_path, overwrite=True)
-            self.save_file_params(self.erm_filtered_path)
+    def save_erm_processed(self, erm_filtered):
+        self._erm_processed = erm_filtered
+        self._erm_processed.save(self.erm_processed_path, overwrite=True)
+        self.save_file_params(self.erm_processed_path)
 
     def load_events(self, copy=True):
         if self._events is None:

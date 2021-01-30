@@ -40,17 +40,16 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
                h_trans_bandwidth, filter_method, iir_params, fir_phase, fir_window,
                fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
     results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
+    # use cuda for filtering if enabled
+    if enable_cuda == 'true':
+        n_jobs = 'cuda'
     if any([results[key] != 'equal' for key in results]):
         raw = meeg.load_raw()
 
         if bad_interpolation == 'Raw (Unfiltered)':
             raw = raw.interpolate_bads()
 
-        # use cuda for filtering if enabled
-        if enable_cuda == 'true':
-            n_jobs = 'cuda'
-
-        # Filter Raw with
+        # Filter Raw
         raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
                    h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method, iir_params=iir_params,
                    phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
@@ -64,25 +63,29 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
         print(f'{meeg.name} already filtered with highpass={highpass} and lowpass={lowpass}')
 
     # Filter Empty-Room-Data too
-    if meeg.erm != 'None':
-        erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
+    if meeg.erm:
+        erm_results = compare_filep(meeg, meeg.erm_processed_path, ['highpass', 'lowpass', 'bad_interpolation'])
         if any([erm_results[key] != 'equal' for key in erm_results]):
             erm_raw = meeg.load_erm()
 
             if bad_interpolation == 'Raw (Unfiltered)':
                 erm_raw = erm_raw.interpolate_bads()
 
-            erm_raw.filter(highpass, lowpass)
+            erm_raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
+                           h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method,
+                           iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
+                           skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
-            erm_length = erm_raw.n_times / erm_raw.info['sfreq']  # in s
+            # Crop ERM-Measurement to limit if given
+            if erm_t_limit:
+                erm_length = erm_raw.n_times / erm_raw.info['sfreq']  # in s
+                if erm_length > erm_t_limit:
+                    diff = erm_length - erm_t_limit
+                    tmin = diff / 2
+                    tmax = erm_length - diff / 2
+                    erm_raw.crop(tmin=tmin, tmax=tmax)
 
-            if erm_length > erm_t_limit:
-                diff = erm_length - erm_t_limit
-                tmin = diff / 2
-                tmax = erm_length - diff / 2
-                erm_raw.crop(tmin=tmin, tmax=tmax)
-
-            meeg.save_erm_filtered(erm_raw)
+            meeg.save_erm_processed(erm_raw)
             print('ERM-Data filtered and saved')
         else:
             print(f'{meeg.erm} already filtered with highpass={highpass} and lowpass={lowpass}')
@@ -531,7 +534,6 @@ def plot_ica_scores(meeg, show_plots):
     return eog_score_fig, ecg_score_fig
 
 
-# ToDo: Apply on ERM too if present
 def apply_ica(meeg, n_pca_components):
     epochs = meeg.load_epochs()
     ica = meeg.load_ica()
@@ -544,6 +546,16 @@ def apply_ica(meeg, n_pca_components):
     else:
         ica_epochs = ica.apply(epochs, n_pca_components=n_pca_components)
         meeg.save_epochs(ica_epochs)
+
+    # Apply to Empty-Room-Data as well if present
+    if meeg.erm:
+        try:
+            erm_data = meeg.load_erm_processed()
+        except FileNotFoundError:
+            erm_data = meeg.load_erm()
+
+        ica.apply(erm_data, n_pca_components)
+        meeg.save_erm_processed(erm_data)
 
 
 def get_evokeds(meeg, bad_interpolation):
@@ -891,7 +903,7 @@ def estimate_noise_covariance(meeg, baseline, n_jobs, erm_noise_cov, calm_noise_
                                                       method='empirical')
         meeg.save_noise_covariance(noise_covariance, 'calm')
 
-    elif meeg.erm == 'None' or erm_noise_cov is False:
+    elif meeg.erm is None or erm_noise_cov is False:
         print('Noise Covariance on Epochs')
         epochs = meeg.load_epochs()
 
@@ -902,9 +914,9 @@ def estimate_noise_covariance(meeg, baseline, n_jobs, erm_noise_cov, calm_noise_
         meeg.save_noise_covariance(noise_covariance, 'epochs')
 
     else:
-        print('Noise Covariance on ERM')
+        print('Noise Covariance on Empty-Room-Data')
 
-        erm_filtered = meeg.load_erm_filtered()
+        erm_filtered = meeg.load_erm_processed()
         erm_filtered.pick_types(exclude=meeg.bad_channels)
 
         noise_covariance = mne.compute_raw_covariance(erm_filtered, n_jobs=n_jobs,

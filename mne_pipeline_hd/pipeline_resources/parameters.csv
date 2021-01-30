@@ -12,7 +12,7 @@ fir_window;;Filtering;hamming;;;StringGui;
 fir_design;;Filtering;firwin;;;StringGui;
 skip_by_annotation;;Filtering;['edge', 'bad_acq_skip'];;;ListGui;
 fir_pad;;Filtering;reflect_limited;;;StringGui;
-erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'min_val':0, 'max_val': 10000}
+erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'none_select': True, 'min_val':0, 'max_val': 10000}
 stim_channels;Stimulation-Channels;Events;['STI 001'];;Stimulation Channel(s);ListGui;
 min_duration;Minimum Duration;Events;0.002;s;Minimum-Duration for Events;FloatGui;{'min_val': 0, 'step': 0.001}
 shortest_event;Shortest Event;Events;2;sample;Shortest possible Event;IntGui;{'min_val': 0}

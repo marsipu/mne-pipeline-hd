@@ -10,7 +10,6 @@
         "checked_funcs": [],
         "show_plots": true,
         "save_plots": true,
-        "save_storage": false,
         "shutdown": false,
         "img_format": ".png",
         "dpi": 300,

@@ -32,7 +32,7 @@ from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
-from mne_pipeline_hd.gui.parameter_widgets import StringGui
+from mne_pipeline_hd.gui.parameter_widgets import BoolGui, StringGui
 from mne_pipeline_hd.pipeline_functions import iswin
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from mne_pipeline_hd.pipeline_functions.project import Project
@@ -164,6 +164,12 @@ class SettingsDlg(QDialog):
         # layout.addWidget(ComboGui(self.mw.settings, 'img_format', self.mw.available_image_formats,
         #                           param_alias='Image-Format', description='Choose the image format for plots',
         #                           default='.png'))
+
+        layout.addWidget(BoolGui(self.mw.qsettings, 'save_ram', param_alias='Save RAM',
+                                 description='Set to True on low RAM-Machines to avoid the process to be killed '
+                                             'by the OS due to low Memory (with leaving it off, the pipeline goes'
+                                             'a bit faster, because the data can be saved in memory)', default=True))
+
         layout.addWidget(StringGui(self.mw.qsettings, 'fs_path', param_alias='FREESURFER_HOME-Path',
                                    description='Set the Path to the "freesurfer"-directory of your '
                                                'Freesurfer-Installation '
@@ -520,17 +526,30 @@ class RawInfo(QDialog):
     def meeg_selected(self, meeg_name):
         # Get size in Mebibytes of all files associated to this
         meeg = MEEG(meeg_name, self.mw)
+        info = meeg.load_info()
         fp = meeg.file_parameters
         meeg.get_existing_paths()
+        other_infos = dict()
+
         sizes = list()
         for path_type in meeg.existing_paths:
             for path in meeg.existing_paths[path_type]:
                 file_name = Path(path).name
                 if file_name in fp and 'SIZE' in fp[file_name]:
                     sizes.append(fp[file_name]['SIZE'])
-        no_files = len(sizes)
+        other_infos['no_files'] = len(sizes)
 
-        key_list = [('proj_name', 'Project-Name'),
+        sizes_sum = sum(sizes)
+        if sizes_sum / 1024 < 1000:
+            other_infos['size_string'] = f'{int(sizes_sum / 1024)}'
+            other_infos['size_unit'] = 'KB'
+        else:
+            other_infos['size_string'] = f'{int(sizes_sum / 1024 ** 2)}'
+            other_infos['size_unit'] = 'MB'
+
+        key_list = [('no_files', 'Size of all associated files'),
+                    ('sizes', 'Size of all associated files', 'size_unit'),
+                    ('proj_name', 'Project-Name'),
                     ('experimenter', 'Experimenter'),
                     ('line_freq', 'Powerline-Frequency', 'Hz'),
                     ('sfreq', 'Samplerate', 'Hz'),
@@ -544,22 +563,18 @@ class RawInfo(QDialog):
 
         self.info_string = f'<h1>{meeg_name}</h1>'
 
-        self.info_string += f'<b>Number of associated files:</b> {no_files}<br>'
-
-        sizes_sum = sum(sizes)
-        if sizes_sum / 1024 < 1000:
-            size_string = f'{int(sizes_sum / 1024)} KB'
-        else:
-            size_string = f'{int(sizes_sum / 1024 ** 2)} MB'
-        self.info_string += f'<b>Size of all associated files:</b> {size_string}<br>'
-
         for key_tuple in key_list:
             key = key_tuple[0]
-            if key in meeg.info:
-                value = meeg.info[key]
-                if len(key_tuple) == 2:
-                    self.info_string += f'<b>{key_tuple[1]}:</b> {value}<br>'
-                else:
-                    self.info_string += f'<b>{key_tuple[1]}:</b> {value} <i>{key_tuple[2]}</i><br>'
+            if key in info:
+                value = info[key]
+            elif key in other_infos:
+                value = other_infos[key]
+            else:
+                value = None
+
+            if len(key_tuple) == 2:
+                self.info_string += f'<b>{key_tuple[1]}:</b> {value}<br>'
+            else:
+                self.info_string += f'<b>{key_tuple[1]}:</b> {value} <i>{key_tuple[2]}</i><br>'
 
         self.info_label.setHtml(self.info_string)

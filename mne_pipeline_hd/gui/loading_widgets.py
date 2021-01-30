@@ -1294,7 +1294,8 @@ class CopyBadsDialog(QDialog):
     def __init__(self, parent_w):
         super().__init__(parent_w)
 
-        self.all_files = parent_w.mw.pr.all_meeg
+        self.parent_w = parent_w
+        self.all_files = parent_w.mw.pr.all_meeg + parent_w.mw.pr.all_erm
         self.bad_channels_dict = parent_w.mw.pr.meeg_bad_channels
 
         self.init_ui()
@@ -1308,7 +1309,7 @@ class CopyBadsDialog(QDialog):
         to_l = QLabel('Copy to:')
         layout.addWidget(to_l, 0, 1)
 
-        self.copy_from = list()
+        self.copy_from = [self.parent_w.current_obj.name]  # Preselect the current selected MEEG
         self.copy_tos = list()
 
         self.listw1 = CheckList(self.all_files, self.copy_from, ui_buttons=False, one_check=True)
@@ -1330,9 +1331,9 @@ class CopyBadsDialog(QDialog):
     def copy_bads(self):
         # Check, that at least one item is selected in each list and that the copy_from-item is in meeg_bad_channels
         if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[0] in self.bad_channels_dict:
-            copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
             for copy_to in self.copy_tos:
-                copy_to_info = MEEG(copy_to, self.mw).load_info()
+                copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
+                copy_to_info = MEEG(copy_to, self.parent_w.mw).load_info()
                 # Make sure, that only channels which exist too in copy_to are copied
                 for rm_ch in [r for r in copy_bad_chs if r not in copy_to_info['ch_names']]:
                     copy_bad_chs.remove(rm_ch)
@@ -1390,7 +1391,8 @@ class SubBadsWidget(QWidget):
             row = 0
             column = 0
             h_size = 0
-            # Currently, you have to fine-tune the max_h_size, because it doesn't seem to reflect exactly the actual width
+            # Currently, you have to fine-tune the max_h_size,
+            # because it doesn't seem to reflect exactly the actual width
             max_h_size = int(self.bt_scroll.geometry().width() * 0.85)
 
             self.bad_chkbts = dict()
@@ -1443,7 +1445,9 @@ class SubBadsWidget(QWidget):
 
     def bad_ckbx_assigned(self):
         bad_channels = [ch for ch in self.bad_chkbts if self.bad_chkbts[ch].isChecked()]
-        self.current_obj.bad_channels = bad_channels
+        # In-Place-Operations to maintain reference from current_obj to meeg_bad_channels
+        self.current_obj.bad_channels.clear()
+        self.current_obj.bad_channels += bad_channels
         self.files_widget.content_changed()
 
     def set_chkbx_enable(self, enable):
@@ -1451,8 +1455,9 @@ class SubBadsWidget(QWidget):
             self.bad_chkbts[chkbx].setEnabled(enable)
 
     def get_selected_bads(self, _):
-        if self.current_obj._raw:
-            self.current_obj.bad_channels = self.current_obj._raw.info['bads']
+        # In-Place-Operations to maintain reference from current_obj to meeg_bad_channels
+        self.current_obj.bad_channels.clear()
+        self.current_obj.bad_channels += self.current_obj._raw.info['bads']
         self.set_chkbx_enable(True)
         # Clear all entries
         for bt in self.bad_chkbts:
@@ -1465,14 +1470,14 @@ class SubBadsWidget(QWidget):
         # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
         self.set_chkbx_enable(False)
 
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Opening...')
-        dialog.open()
-        raw = self.meeg.load_raw()
-        self.raw_fig = raw.plot(n_channels=30, bad_color='red', title=self.current_obj.name)
+        plot_dialog = QDialog(self)
+        plot_dialog.setWindowTitle('Opening Raw-Plot...')
+        plot_dialog.open()
+        self.current_obj.load_raw()
+        self.raw_fig = self.current_obj._raw.plot(n_channels=30, bad_color='red', title=self.current_obj.name)
         # Connect Closing of Matplotlib-Figure to assignment of bad-channels
         self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
-        dialog.close()
+        plot_dialog.close()
 
     def resizeEvent(self, event):
         if self.current_obj:
@@ -2355,8 +2360,8 @@ class ICASelect(QDialog):
             dialog.setWindowTitle('Opening...')
             dialog.open()
             try:
-                figs = plot_ica_overlay(meeg=self.current_obj, ica_overlay_data=self.parameters['ica_overlay_data'],
-                                        show_plots=True)
+                plot_ica_overlay(meeg=self.current_obj, ica_overlay_data=self.parameters['ica_overlay_data'],
+                                 show_plots=True)
             except:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
