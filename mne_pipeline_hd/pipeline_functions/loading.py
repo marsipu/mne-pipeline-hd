@@ -35,7 +35,7 @@ from PyQt5.QtWidgets import QMessageBox
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import NumpyJSONEncoder, numpy_json_hook
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, type_json_hook
 
 
 class BaseLoading:
@@ -220,7 +220,7 @@ class BaseLoading:
         file_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{file_name}.json')
         try:
             with open(file_path, 'r') as file:
-                data = json.load(file, object_hook=numpy_json_hook)
+                data = json.load(file, object_hook=type_json_hook)
         except json.JSONDecodeError:
             print(f'{file_path} could not be loaded')
             data = default
@@ -237,7 +237,7 @@ class BaseLoading:
         file_path = join(self.save_dir, f'{self.name}_{self.p_preset}_{file_name}.json')
         try:
             with open(file_path, 'w') as file:
-                json.dump(data, file, cls=NumpyJSONEncoder, indent=4)
+                json.dump(data, file, cls=TypedJSONEncoder, indent=4)
         except json.JSONDecodeError:
             print(f'{file_path} could not be saved')
 

@@ -22,7 +22,17 @@ from . import islin, ismac, iswin
 datetime_format = '%d.%m.%Y %H:%M:%S'
 
 
-class NumpyJSONEncoder(json.JSONEncoder):
+def encode_tuples(input_dict):
+    """Encode tuples in a dictionary, because JSON does not recognize them (CAVE: input_dict is changed in place)"""
+    for key, value in input_dict.items():
+        if isinstance(value, dict):
+            encode_tuples(value)
+        else:
+            if isinstance(value, tuple):
+                input_dict[key] = {'tuple_type': value}
+
+
+class TypedJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -32,15 +42,13 @@ class NumpyJSONEncoder(json.JSONEncoder):
             return {'numpy_array': obj.tolist()}
         elif isinstance(obj, datetime):
             return {'datetime': obj.strftime(datetime_format)}
-        elif isinstance(obj, tuple):
-            return {'tuple_type': obj}
         elif isinstance(obj, set):
             return {'set_type': list(obj)}
         else:
             return json.JSONEncoder.default(self, obj)
 
 
-def numpy_json_hook(obj):
+def type_json_hook(obj):
     if 'numpy_int' in obj.keys():
         return obj['numpy_int']
     elif 'numpy_float' in obj.keys():

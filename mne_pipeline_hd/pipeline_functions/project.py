@@ -20,7 +20,7 @@ from os.path import exists, isfile, join
 
 import numpy as np
 
-from .pipeline_utils import NumpyJSONEncoder, numpy_json_hook
+from .pipeline_utils import TypedJSONEncoder, encode_tuples, type_json_hook
 
 
 class Project:
@@ -105,8 +105,6 @@ class Project:
 
         # Attributes, which have their own special function for loading
         self.special_loads = ['parameters', 'p_preset']
-        # Attributes, which have their own special function for saving
-        self.special_saves = ['parameters']
 
     def init_pipeline_scripts(self):
         # Initiate Project-Lists and Dicts
@@ -197,30 +195,20 @@ class Project:
         for path in [p for p in self.path_to_attribute if self.path_to_attribute[p] not in self.special_loads]:
             try:
                 with open(path, 'r') as file:
-                    setattr(self, self.path_to_attribute[path], json.load(file, object_hook=numpy_json_hook))
+                    setattr(self, self.path_to_attribute[path], json.load(file, object_hook=type_json_hook))
             # Either empty file or no file, leaving default from __init__
             except (json.JSONDecodeError, FileNotFoundError):
                 # Old Paths to allow transition (22.11.2020)
                 try:
                     with open(self.old_paths[path], 'r') as file:
-                        setattr(self, self.path_to_attribute[path], json.load(file, object_hook=numpy_json_hook))
+                        setattr(self, self.path_to_attribute[path], json.load(file, object_hook=type_json_hook))
                 except (json.JSONDecodeError, FileNotFoundError, KeyError):
                     pass
-
-    def save_lists(self):
-        for path in [p for p in self.path_to_attribute if self.path_to_attribute[p] not in self.special_saves]:
-            attribute = getattr(self, self.path_to_attribute[path], None)
-            try:
-                with open(path, 'w') as file:
-                    json.dump(attribute, file, cls=NumpyJSONEncoder, indent=4)
-            except json.JSONDecodeError as err:
-                print(f'There is a problem with path:\n'
-                      f'{err}')
 
     def load_parameters(self):
         try:
             with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'r') as read_file:
-                loaded_parameters = json.load(read_file, object_hook=numpy_json_hook)
+                loaded_parameters = json.load(read_file, object_hook=type_json_hook)
 
                 for p_preset in loaded_parameters:
                     # Make sure, that only parameters, which exist in pd_params are loaded
@@ -264,18 +252,6 @@ class Project:
                 else:
                     self.parameters[self.p_preset][param] = string_params[param]
 
-    def save_parameters(self):
-        # Encoding Tuples
-        save_parameters = deepcopy(self.parameters)
-        for p_preset in self.parameters:
-            for key in self.parameters[p_preset]:
-                if isinstance(self.parameters[p_preset][key], tuple):
-                    save_parameters[p_preset][key] = {'tuple_type': self.parameters[p_preset][key]}
-
-        with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'w') as write_file:
-            # Use customized Encoder to deal with arrays
-            json.dump(save_parameters, write_file, cls=NumpyJSONEncoder, indent=4)
-
     def load_last_p_preset(self):
         try:
             with open(self.sel_p_preset_path, 'r') as read_file:
@@ -292,8 +268,21 @@ class Project:
         self.load_last_p_preset()
 
     def save(self):
-        self.save_lists()
-        self.save_parameters()
+        for path in self.path_to_attribute:
+            attribute = getattr(self, self.path_to_attribute[path], None)
+
+            # Make sure the tuples are encoded correctly
+            if isinstance(attribute, dict):
+                attribute = deepcopy(attribute)
+                encode_tuples(attribute)
+
+            try:
+                with open(path, 'w') as file:
+                    json.dump(attribute, file, cls=TypedJSONEncoder, indent=4)
+
+            except json.JSONDecodeError as err:
+                print(f'There is a problem with path:\n'
+                      f'{err}')
 
     def check_data(self):
 
@@ -307,4 +296,13 @@ class Project:
         read_dir = sorted([f for f in os.listdir(self.mw.subjects_dir) if not f.startswith('.')], key=str.lower)
         self.all_fsmri = [fsmri for fsmri in read_dir if exists(join(self.mw.subjects_dir, fsmri, 'surf'))]
 
-        self.save_lists()
+        self.save()
+
+    def clean_file_parameters(self):
+        remove_keys = list()
+        for key in [k for k in self.file_parameters
+                    if k not in self.all_meeg + self.all_erm + self.all_fsmri + list(self.all_groups.keys())]:
+            remove_keys.append(key)
+        for remove_key in remove_keys:
+            print(f'Removed {remove_key} from File-Parameters')
+            self.file_parameters.pop(remove_key)

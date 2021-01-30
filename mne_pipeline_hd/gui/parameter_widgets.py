@@ -568,8 +568,6 @@ class TupleGui(Param):
         step : int | float
             Set the amount, one step takes
         """
-        if default is None:
-            default = (0, 1)
 
         super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
 

@@ -733,7 +733,7 @@ class AddFilesWidget(QWidget):
         self.pd_files = pd.DataFrame([], columns=['Name', 'File-Type', 'Empty-Room?', 'Path'])
         self.update_model()
 
-        self.mw.pr.save_lists()
+        self.mw.pr.save()
         self.mw.subject_dock.update_dock()
 
 
@@ -930,7 +930,7 @@ class AddMRIWidget(QWidget):
         self.folders = list()
         self.paths = dict()
 
-        self.mw.pr.save_lists()
+        self.mw.pr.save()
         self.mw.subject_dock.update_dock()
 
 
@@ -1154,7 +1154,7 @@ class SubDictWidget(QWidget):
             self.mw.pr.meeg_to_fsmri = existing_dict
         else:
             self.mw.pr.meeg_to_erm = existing_dict
-        self.mw.pr.save_lists()
+        self.mw.pr.save()
 
     def sub_dict_assign_none(self):
         choices = self.list_widget1.selectedItems()
@@ -1178,7 +1178,7 @@ class SubDictWidget(QWidget):
             self.mw.pr.meeg_to_fsmri = existing_dict
         else:
             self.mw.pr.meeg_to_erm = existing_dict
-        self.mw.pr.save_lists()
+        self.mw.pr.save()
 
     def sub_dict_assign_to_all(self):
         try:
@@ -1196,7 +1196,7 @@ class SubDictWidget(QWidget):
                     self.mw.pr.meeg_to_fsmri = all_items
                 elif self.mode == 'erm':
                     self.mw.pr.meeg_to_erm = all_items
-            self.mw.pr.save_lists()
+            self.mw.pr.save()
         except AttributeError:
             # When no second item is selected
             pass
@@ -1218,7 +1218,7 @@ class SubDictWidget(QWidget):
                 self.mw.pr.meeg_to_fsmri = all_items
             elif self.mode == 'erm':
                 self.mw.pr.meeg_to_erm = all_items
-            self.mw.pr.save_lists()
+            self.mw.pr.save()
 
     def show_assignments(self):
         self.show_ass_dialog = QDialog(self)
@@ -1841,7 +1841,7 @@ class FileManagment(QDialog):
         self.init_ui()
 
         set_ratio_geometry(0.8, self)
-        self.open()
+        self.show()
 
         self.start_load_threads()
 

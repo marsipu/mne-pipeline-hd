@@ -780,8 +780,7 @@ class MainWindow(QMainWindow):
         if self.pipeline_running:
             QMessageBox.warning(self, 'Already running!', 'The Pipeline is already running!')
         else:
-            worker_dialog = WorkerDialog(self, self._prepare_start, show_buttons=False, show_console=False,
-                                         title='Saving Project')
+            worker_dialog = WorkerDialog(self, self._prepare_start, show_buttons=False, show_console=False)
             worker_dialog.thread_finished.connect(self._begin_run)
 
     # Todo: Make Run-Function (windows&non-windows)
@@ -953,5 +952,5 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
-            worker_dialog = WorkerDialog(self, self.save_main, show_console=False)
+            worker_dialog = WorkerDialog(self, self.save_main, show_buttons=False, show_console=False)
             worker_dialog.thread_finished.connect(self._saving_finished)
