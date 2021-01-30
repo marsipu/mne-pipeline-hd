@@ -36,8 +36,7 @@ And if you got ideas on how to improve the pipeline or some feature-requests,
 you are welcome to open an issue too or send an e-mail (dev@earthman-music.de)
 
 ## Contribute and build your own functions/fix bugs
-
-If you want to help me with the development and/or customize the pipeline to fit your needs, do it like this:
+I you want to help by contributing, I would be very happy:
 
 You need a [GitHub-Account](https://github.com/)
 and should have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed.
@@ -50,6 +49,9 @@ and should have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-
 6. Commit changes: `git commit --all `
 7. Push changes to your forked repository on GitHub: `git push`
 8. Make "New pull request" from your new feature branch
+
+You can always [write me](mailto:dev@earthman-music.de), if you have questions about the contribution-process 
+or about the program-structure.
 
 ## Acknowledgments
 This Pipeline is build on top of [MNE-Python](https://mne.tools/stable/index.html)
