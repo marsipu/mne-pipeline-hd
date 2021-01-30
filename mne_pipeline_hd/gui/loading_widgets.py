@@ -478,18 +478,6 @@ class GrandAvgFileAdd(QDialog):
             self.listw.item(idx).setCheckState(Qt.Checked)
 
 
-class AddFileSignals(QObject):
-    """
-    Defines the Signals for the Worker and add_files
-    """
-    # Worker Signals
-    finished = pyqtSignal(object)
-    error = pyqtSignal(tuple)
-    # Signals for call_functions
-    pgbar_n = pyqtSignal(int)
-    which_sub = pyqtSignal(str)
-
-
 def load_raw_file(path, file_type=None, load_kwargs=None):
     if load_kwargs is None:
         load_kwargs = dict()
@@ -717,6 +705,10 @@ class AddFilesWidget(QWidget):
 
                 # Copy sub_files to destination (with MEEG-Class to also include raw into file_parameters)
                 meeg = MEEG(file, self.mw)
+
+                # Get bad-channels from raw-file
+                self.mw.pr.meeg_bad_channels[file] = raw.info['bads']
+
                 meeg.save_raw(raw)
                 worker_signals.pgbar_n.emit(n + 1)
             else:
@@ -2121,7 +2113,7 @@ class FileManagment(QDialog):
             obj_pd_size.loc[obj_name, path_type] = None
             obj_table.content_changed()
             # Drop from file-parameters
-            path = Path(obj.paths_dict[path_type]).name
+            path = Path(obj.io_dict[path_type]['path']).name
             obj.file_parameters.pop(path, None)
             # Remove File
             worker_signals.pgbar_text.emit(f'Removing: {path}')

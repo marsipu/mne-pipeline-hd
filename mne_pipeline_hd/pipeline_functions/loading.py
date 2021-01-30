@@ -12,19 +12,20 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 from __future__ import print_function
 
 import functools
-import gc
 import inspect
+import itertools
 import json
-import os
 import pickle
+import shutil
 from datetime import datetime
-from os import listdir, makedirs, mkdir, remove
+from os import listdir, makedirs, remove, rename
 from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-
 # Make use of program also possible with sensor-space installation of mne
+from PyQt5.QtCore import QSettings
+
 try:
     from mayavi import mlab
 except ModuleNotFoundError:
@@ -32,7 +33,6 @@ except ModuleNotFoundError:
 
 import mne
 import numpy as np
-from PyQt5.QtWidgets import QMessageBox
 
 # ==============================================================================
 # LOADING FUNCTIONS
@@ -43,16 +43,56 @@ from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, 
 def load_decorator(load_func):
     @functools.wraps(load_func)
     def load_wrapper(*args, **kwargs):
-        value = load_func(*args, **kwargs)
-        if 'copy' in kwargs:
-            try:
-                return value.copy()
-            except AttributeError:
-                print(f'Value for {load_func.__name__} could not be copied')
+        # Get Loading-Class
+        obj_instance = args[0]
+
+        # Get matching data-type from IO-Dict
+        data_type = [k for k in obj_instance.io_dict if obj_instance.io_dict[k]['load'] == load_func.__name__][0]
+
+        print(f'Loading {data_type} for {obj_instance.name}')
+
+        if data_type in obj_instance.data_dict:
+            data = obj_instance.data_dict[data_type]
         else:
-            return value
+            data = load_func(*args, **kwargs)
+
+        # Save data in data-dict for machines with big RAM
+        if QSettings().value('save_ram') == 'false':
+            obj_instance.data_dict[data_type] = data
+
+        return data
 
     return load_wrapper
+
+
+def save_decorator(save_func):
+    @functools.wraps(save_func)
+    def save_wrapper(*args, **kwargs):
+        # Get Loading-Class
+        obj_instance = args[0]
+
+        # Get data-object
+        data = args[1]
+
+        # Get matching data-type from IO-Dict
+        data_type = [k for k in obj_instance.io_dict if obj_instance.io_dict[k]['save'] == save_func.__name__][0]
+
+        # Make sure, that parent-directory exists
+        paths = obj_instance._return_path_list(data_type)
+        for path in [p for p in paths if not isdir(Path(p).parent)]:
+            makedirs(Path(path).parent)
+
+        print(f'Saving {data_type} for {obj_instance.name}')
+        save_func(*args, **kwargs)
+
+        # Save data in data-dict for machines with big RAM
+        if QSettings().value('save_ram') == 'false':
+            obj_instance.data_dict[data_type] = data
+
+        # Save File-Parameters
+        obj_instance.save_file_params(data_type)
+
+    return save_wrapper
 
 
 class BaseLoading:
@@ -84,36 +124,51 @@ class BaseLoading:
         self.file_parameters = self.pr.file_parameters[self.name]
 
         self.save_dir = None
-        self.paths_dict = dict()
-        self.methods_dict = dict()
+        self.io_dict = dict()
+        self.data_dict = dict()
         self.existing_paths = dict()
 
-    def save_file_params(self, path):
-        file_name = Path(path).name
+    def _return_path_list(self, data_type):
+        paths = self.io_dict[data_type]['path']
+        # Convert paths to list
+        if not isinstance(paths, list):
+            # from string
+            if isinstance(paths, str):
+                paths = [paths]
+            elif isinstance(paths, dict):
+                # from string in dictionary
+                paths = list(paths.values())
+                # from nested list in dictionary
+                if isinstance(paths[0], list):
+                    paths = list(itertools.chain.from_iterable(paths))
+                # from nested dictionary in dictionary
+                elif isinstance(paths[0], dict):
+                    paths = list(itertools.chain.from_iterable([d.values() for d in paths]))
 
-        if file_name not in self.file_parameters:
-            self.file_parameters[file_name] = dict()
-        # Get the name of the calling function (assuming it is 2 Frames above)
-        if 'FUNCTION' in self.file_parameters[file_name]:
-            self.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
-        else:
-            self.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
-        self.file_parameters[file_name]['NAME'] = self.name
-        self.file_parameters[file_name]['PATH'] = path
-        if 'TIME' in self.file_parameters[file_name]:
-            self.file_parameters[file_name]['TIME'].append(datetime.now())
-        else:
-            self.file_parameters[file_name]['TIME'] = [datetime.now()]
-        self.file_parameters[file_name]['SIZE'] = getsize(path)
-        self.file_parameters[file_name]['P_PRESET'] = self.p_preset
-        for p_name in self.p:
-            self.file_parameters[file_name][p_name] = self.p[p_name]
+        return paths
 
-        # # Clean unused parameters
-        # unused_ps = [p for p in self.file_parameters[file_name]
-        #              if p not in self.p and p not in ['FUNCTION', 'NAME', 'PATH', 'TIME', 'SIZE', 'P_PRESET']]
-        # for unused_p in unused_ps:
-        #     self.file_parameters[file_name].pop(unused_p)
+    def save_file_params(self, data_type):
+        paths = self._return_path_list(data_type)
+        for path in paths:
+            file_name = Path(path).name
+
+            if file_name not in self.file_parameters:
+                self.file_parameters[file_name] = dict()
+            # Get the name of the calling function (assuming it is 2 Frames above)
+            if 'FUNCTION' in self.file_parameters[file_name]:
+                self.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
+            else:
+                self.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
+            self.file_parameters[file_name]['NAME'] = self.name
+            self.file_parameters[file_name]['PATH'] = path
+            if 'TIME' in self.file_parameters[file_name]:
+                self.file_parameters[file_name]['TIME'].append(datetime.now())
+            else:
+                self.file_parameters[file_name]['TIME'] = [datetime.now()]
+            self.file_parameters[file_name]['SIZE'] = getsize(path)
+            self.file_parameters[file_name]['P_PRESET'] = self.p_preset
+            for p_name in self.p:
+                self.file_parameters[file_name][p_name] = self.p[p_name]
 
     def clear_plot_files(self):
         """Clear all entries in plot-files, where the image has already been deleteds"""
@@ -258,38 +313,25 @@ class BaseLoading:
     def get_existing_paths(self):
         """Get existing paths and add the mapped File-Type to existing_paths (set)"""
         self.existing_paths.clear()
-        for path_type in self.paths_dict:
-            path = self.paths_dict[path_type]
-            if isinstance(path, str) and isfile(path):
-                self.existing_paths[path_type] = [path]
-            elif isinstance(path, list):
-                exst_paths = [p for p in path if isfile(p)]
-                if len(exst_paths) > 0:
-                    self.existing_paths[path_type] = exst_paths
-            elif isinstance(path, dict):
-                exst_paths = [p for p in path.values() if isfile(p)]
-                if len(exst_paths) > 0:
-                    self.existing_paths[path_type] = exst_paths
+        for data_type in self.io_dict:
+            paths = self._return_path_list(data_type)
+            self.existing_paths[data_type] = [p for p in paths if isfile(p) or isdir(p)
+                                              or isfile(p + '-lh.stc') or isfile(p + '-rh.stc')]
 
-    def remove_path(self, path_type):
+    def remove_path(self, data_type):
         # Remove path specified by path_type (which is the name mapped to the path in self.paths_dict)
         # Dependent on Paramter-Preset
-        path = self.paths_dict[path_type]
-        remove_list = list()
-        if isinstance(path, str) and isfile(path):
-            remove_list.append(path)
-        elif isinstance(path, list):
-            for path_item in [p for p in path if isfile(p)]:
-                remove_list.append(path_item)
-        elif isinstance(path, dict):
-            for path_value in [p for p in path.values() if isfile(p)]:
-                remove_list.append(path_value)
-
-        for p in remove_list:
+        paths = self._return_path_list(data_type)
+        for p in paths:
             try:
                 remove(p)
                 print(f'{p} was removed')
-            except (IsADirectoryError, OSError) as err:
+            except IsADirectoryError:
+                try:
+                    shutil.rmtree(p)
+                except OSError as err:
+                    print(f'{p} could not be removed due to {err}')
+            except OSError as err:
                 print(f'{p} could not be removed due to {err}')
 
 
@@ -297,597 +339,408 @@ class MEEG(BaseLoading):
     """ Class for File-Data in File-Loop"""
 
     def __init__(self, name, main_win, fsmri=None, suppress_warnings=True):
-
         super().__init__(name, main_win)
-
-        # Additional Attributes
-        self.save_dir = join(self.pr.data_path, name)
-        if not isdir(self.save_dir):
-            makedirs(self.save_dir)
-
-        # Attributes of the subject
-        # The assigned Empty-Room-Measurement if existing
-        if name not in self.mw.pr.meeg_to_erm:
-            self.mw.pr.meeg_to_erm[name] = None
-            if not suppress_warnings:
-                print(f'No Empty-Room-Measurement assigned for {self.name}, defaulting to "None"')
-        self.erm = self.mw.pr.meeg_to_erm[name]
-
-        # The assigned Freesurfer-MRI(already as FSMRI-Class)
-        if name not in self.mw.pr.meeg_to_fsmri:
-            self.mw.pr.meeg_to_fsmri[name] = None
-            if not suppress_warnings:
-                print(f'No Freesurfer-MRI-Subject assigned for {self.name}, defaulting to "None"')
-        if fsmri and fsmri.name == self.mw.pr.meeg_to_fsmri[name]:
-            self.fsmri = fsmri
-        else:
-            self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[name], main_win)
-
-        # Transition from 'None' to None (placed 30.01.2021, can be removed soon)
-        if self.mw.pr.meeg_to_erm[name] == 'None':
-            self.mw.pr.meeg_to_erm[name] = None
-        if self.mw.pr.meeg_to_fsmri[name] == 'None':
-            self.mw.pr.meeg_to_fsmri[name] = None
-
-        # The assigned bad-channels
-        if name not in self.mw.pr.meeg_bad_channels:
-            self.mw.pr.meeg_bad_channels[name] = list()
-            if not suppress_warnings:
-                print(f'No bad channels assigned for {self.name}, defaulting to empty list')
-        self.bad_channels = self.mw.pr.meeg_bad_channels[name]
-
-        # The assigned event-id
-        if name not in self.mw.pr.meeg_event_id:
-            self.mw.pr.meeg_event_id[name] = dict()
-            if not suppress_warnings:
-                print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
-        self.event_id = self.mw.pr.meeg_event_id[name]
-
-        # The selected trials from the event-id
-        if name not in self.mw.pr.sel_event_id:
-            self.mw.pr.sel_event_id[name] = list()
-            if not suppress_warnings:
-                print(f'No Trials selected for {self.name}, defaulting to empty list')
-        self.sel_trials = self.mw.pr.sel_event_id[name]
+        self.fsmri = fsmri
+        self.suppress_warnings = suppress_warnings
 
         self.load_attributes()
         self.load_paths()
 
     def load_attributes(self):
-        """Set all Data-Attributes to None"""
-        # Data-Attributes (not to be called directly)
-        # Make Data-Objects usable by consecutive functions without reloading
-        # Can be reloaded to clear memory
+        # Attributes of the subject
+        # The assigned Empty-Room-Measurement if existing
+        if self.name not in self.mw.pr.meeg_to_erm:
+            self.mw.pr.meeg_to_erm[self.name] = None
+            if not self.suppress_warnings:
+                print(f'No Empty-Room-Measurement assigned for {self.name}, defaulting to "None"')
+        self.erm = self.mw.pr.meeg_to_erm[self.name]
 
-        self._info = None
-        self._raw = None
-        self._raw_filtered = None
-        self._erm = None
-        self._erm_processed = None
-        self._events = None
-        self._epochs = None
-        self._reject_log = None
-        self._ica = None
-        self._eog_epochs = None
-        self._ecg_epochs = None
-        self._evokeds = None
-        self._power_tfr_epochs = None
-        self._power_tfr_average = None
-        self._itc_tfr_epochs = None
-        self._itc_tfr_average = None
+        # The assigned Freesurfer-MRI(already as FSMRI-Class)
+        if self.name not in self.mw.pr.meeg_to_fsmri:
+            self.mw.pr.meeg_to_fsmri[self.name] = None
+            if not self.suppress_warnings:
+                print(f'No Freesurfer-MRI-Subject assigned for {self.name}, defaulting to "None"')
+        if self.fsmri is None or self.fsmri.name != self.mw.pr.meeg_to_fsmri[self.name]:
+            self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[self.name], self.mw)
 
-        self._trans = None
-        self._forward = None
-        self._noise_cov = None
-        self._inverse = None
-        self._stcs = None
-        self._ltc = None
-        self._connectivity = None
-        self._mixn_stcs = None
-        self._mixn_dips = None
-        self._ecd_dips = None
+        # Transition from 'None' to None (placed 30.01.2021, can be removed soon)
+        if self.mw.pr.meeg_to_erm[self.name] == 'None':
+            self.mw.pr.meeg_to_erm[self.name] = None
+        if self.mw.pr.meeg_to_fsmri[self.name] == 'None':
+            self.mw.pr.meeg_to_fsmri[self.name] = None
 
-        # Run garbage-collection to clear memory
-        gc.collect()
+        # The assigned bad-channels
+        if self.name not in self.mw.pr.meeg_bad_channels:
+            self.mw.pr.meeg_bad_channels[self.name] = list()
+            if not self.suppress_warnings:
+                print(f'No bad channels assigned for {self.name}, defaulting to empty list')
+        self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
+
+        # The assigned event-id
+        if self.name not in self.mw.pr.meeg_event_id:
+            self.mw.pr.meeg_event_id[self.name] = dict()
+            if not self.suppress_warnings:
+                print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
+        self.event_id = self.mw.pr.meeg_event_id[self.name]
+
+        # The selected trials from the event-id
+        if self.name not in self.mw.pr.sel_event_id:
+            self.mw.pr.sel_event_id[self.name] = list()
+            if not self.suppress_warnings:
+                print(f'No Trials selected for {self.name}, defaulting to empty list')
+        self.sel_trials = self.mw.pr.sel_event_id[self.name]
 
     def load_paths(self):
         """Load Paths as attributes (depending on which Parameter-Preset is selected)"""
+
+        # Main save directory
+        self.save_dir = join(self.pr.data_path, self.name)
+
+        # Data-Paths
         self.raw_path = join(self.save_dir, f'{self.name}-raw.fif')
         self.raw_filtered_path = join(self.save_dir, f'{self.name}_{self.p_preset}-filtered-raw.fif')
-
         self.erm_path = join(self.pr.data_path, self.erm, f'{self.erm}-raw.fif')
         self.erm_processed_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
-
         self.events_path = join(self.save_dir, f'{self.name}_{self.p_preset}-eve.fif')
-
         self.epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-epo.fif')
-
         self.reject_log_path = join(self.save_dir, f'{self.name}_{self.p_preset}-arlog.py')
-
         self.ica_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ica.fif')
-
         self.eog_epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-eog-epo.fif')
-
         self.ecg_epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ecg-epo.fif')
-
         self.evokeds_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ave.fif')
-
         self.power_tfr_epochs_path = join(self.save_dir,
                                           f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-epo-pw-tfr.h5')
         self.itc_tfr_epochs_path = join(self.save_dir,
                                         f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-epo-itc-tfr.h5')
-
         self.power_tfr_average_path = join(self.save_dir,
                                            f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-ave-pw-tfr.h5')
         self.itc_tfr_average_path = join(self.save_dir,
                                          f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-ave-itc-tfr.h5')
-
         self.trans_path = join(self.save_dir, f'{self.fsmri.name}-trans.fif')
-
         self.forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
-
         self.calm_cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-calm-cov.fif')
         self.erm_cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-erm-cov.fif')
-        self.cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-cov.fif')
-
+        self.noise_covariance_path = join(self.save_dir, f'{self.name}_{self.p_preset}-cov.fif')
         self.inverse_path = join(self.save_dir, f'{self.name}_{self.p_preset}-inv.fif')
-
         self.stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}')
                           for trial in self.sel_trials}
-
         self.morphed_stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
                                   for trial in self.sel_trials}
+        self.ecd_paths = {trial: {dip: join(self.save_dir, 'ecd_dipoles',
+                                            f'{self.name}_{trial}_{self.p_preset}_{dip}-ecd-dip.dip')
+                                  for dip in self.p['ecd_times']}
+                          for trial in self.sel_trials}
+        self.ltc_paths = {trial: {label: join(self.save_dir, 'label_time_course',
+                                              f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                                  for label in self.p['target_labels']}
+                          for trial in self.sel_trials}
+        self.con_paths = {trial: {con_method: join(self.save_dir,
+                                                   f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
+                                  for con_method in self.p['con_methods']}
+                          for trial in self.sel_trials}
 
-        self.paths_dict = {'Raw': self.raw_path,
-                           'Raw (Filtered)': self.raw_filtered_path,
-                           'EmptyRoom': self.erm_path,
-                           'EmptyRoom (Filtered)': self.erm_processed_path,
-                           'Events': self.events_path,
-                           'Epochs': self.epochs_path,
-                           'RejectLog': self.reject_log_path,
-                           'ICA': self.ica_path,
-                           'Epochs (EOG)': self.eog_epochs_path,
-                           'Epochs (ECG)': self.ecg_epochs_path,
-                           'Evoked': self.evokeds_path,
-                           'TF Power Epochs': self.power_tfr_epochs_path,
-                           'TF ITC Epochs': self.itc_tfr_epochs_path,
-                           'TF Power Average': self.power_tfr_average_path,
-                           'TF ITC Average': self.itc_tfr_average_path,
-                           'Transformation': self.trans_path,
-                           'Forward Solution': self.forward_path,
-                           'Noise-Covariance (Calm)': self.calm_cov_path,
-                           'Noise-Covariance (ERM)': self.erm_cov_path,
-                           'Noise-Covariance': self.cov_path,
-                           'Inverse Operator': self.inverse_path,
-                           'Source Estimate': self.stc_paths,
-                           'Source Estimate (Morphed)': self.morphed_stc_paths}
+        # This dictionary contains entries for each data-type which is loaded to/saved from disk
+        self.io_dict = {'Raw': {'path': self.raw_path,
+                                'load': 'load_raw',
+                                'save': 'save_raw'},
+                        'Raw (Filtered)': {'path': self.raw_filtered_path,
+                                           'load': 'load_filtered',
+                                           'save': 'save_filtered'},
+                        'EmptyRoom': {'path': self.erm_path,
+                                      'load': 'load_erm',
+                                      'save': None},
+                        'EmptyRoom (Filtered)': {'path': self.erm_processed_path,
+                                                 'load': 'load_erm_processed',
+                                                 'save': 'save_erm_processed'},
+                        'Events': {'path': self.events_path,
+                                   'load': 'load_events',
+                                   'save': 'save_events'},
+                        'Epochs': {'path': self.epochs_path,
+                                   'load': 'load_epochs',
+                                   'save': 'save_epochs'},
+                        'RejectLog': {'path': self.reject_log_path,
+                                      'load': 'load_reject_log',
+                                      'save': 'save_reject_log'},
+                        'ICA': {'path': self.ica_path,
+                                'load': 'load_ica',
+                                'save': 'save_ica'},
+                        'Epochs (EOG)': {'path': self.eog_epochs_path,
+                                         'load': 'load_eog_epochs',
+                                         'save': 'save_eog_epochs'},
+                        'Epochs (ECG)': {'path': self.ecg_epochs_path,
+                                         'load': 'load_ecg_epochs',
+                                         'save': 'save_ecg_epochs'},
+                        'Evoked': {'path': self.evokeds_path,
+                                   'load': 'load_evokeds',
+                                   'save': 'save_evokeds'},
+                        'TF Power Epochs': {'path': self.power_tfr_average_path,
+                                            'load': 'load_power_tfr_epochs',
+                                            'save': 'save_power_tfr_epochs'},
+                        'TF ITC Epochs': {'path': self.itc_tfr_epochs_path,
+                                          'load': 'load_itc_tfr_epochs',
+                                          'save': 'save_itc_tfr_epochs'},
+                        'TF Power Average': {'path': self.power_tfr_average_path,
+                                             'load': 'load_power_tfr_average',
+                                             'save': 'save_power_tfr_average'},
+                        'TF ITC Average': {'path': self.itc_tfr_average_path,
+                                           'load': 'load_itc_tfr_average',
+                                           'save': 'save_itc_tfr_average'},
+                        'Transformation': {'path': self.trans_path,
+                                           'load': 'load_transformation',
+                                           'save': 'save_transformation'},
+                        'Forward Solution': {'path': self.forward_path,
+                                             'load': 'load_forward',
+                                             'save': 'save_forward'},
+                        'Noise Covariance': {'path': self.noise_covariance_path,
+                                             'load': 'load_noise_covariance',
+                                             'save': 'save_noise_covariance'},
+                        'Inverse Operator': {'path': self.inverse_path,
+                                             'load': 'load_inverse_operator',
+                                             'save': 'save_inverse_operator'},
+                        'Source Estimate': {'path': self.stc_paths,
+                                            'load': 'load_source_estimates',
+                                            'save': 'save_source_estimates'},
+                        'Source Estimate (Morphed)': {'path': self.morphed_stc_paths,
+                                                      'load': 'load_morphed_source_estimates',
+                                                      'save': 'save_morphed_source_estimates'},
+                        'ECD': {'path': self.ecd_paths,
+                                'load': 'load_ecd',
+                                'save': 'save_ecd'},
+                        'LTC': {'path': self.ltc_paths,
+                                'load': 'load_ltc',
+                                'save': 'save_ltc'}}
 
-        self.methods_dict = {'load_info': 'Raw',
-                             'load_raw': 'Raw',
-                             'load_filtered': 'Raw (Filtered)',
-                             'load_erm': 'EmptyRoom',
-                             'load_erm_filtered': 'EmptyRoom (Filtered)',
-                             'load_events': 'Events',
-                             'load_epochs': 'Epochs',
-                             'load_reject_log': 'RejectLog',
-                             'load_ica': 'ICA',
-                             'load_eog_epochs': 'Epochs (EOG)',
-                             'load_ecg_epochs': 'Epochs (ECG)',
-                             'load_evokeds': 'Evoked',
-                             'load_power_tfr_epochs': 'TF Power Epochs',
-                             'load_itc_tfr_epochs': 'TF ITC Epochs',
-                             'load_power_tfr_average': 'TF Power Average',
-                             'load_itc_tfr_average': 'TF ITC Average',
-                             'load_transformation': 'Transformation',
-                             'load_forward': 'Forward Solution',
-                             'load_noise_covariance': 'Noise Covariance',
-                             'load_inverse_operator': 'Inverse Operator',
-                             'load_source_estimates': 'Source Estimate',
-                             'load_morphed_source_estimates': 'Source Estimate (Morphed)'}
-
-    def update_file_data(self):
-        self.erm = self.mw.pr.meeg_to_erm[self.name]
-        self.fsmri = self.mw.pr.meeg_to_fsmri[self.name]
-        self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
-        self.events_id = self.mw.pr.meeg_event_id[self.name]
-        self.sel_trials = self.mw.pr.sel_event_id[self.name]
-
-    # Todo: Rename-Function
     def rename(self, new_name):
-        for data_type in self.paths_dict:
-            path = self.paths_dict[data_type]
+        # Stor old name
+        old_name = self.name
+        old_save_dir = self.save_dir
+        old_paths = dict()
+        for data_type in self.io_dict:
+            old_paths[data_type] = self._return_path_list(data_type)
 
-            Path(path).name
+        # Update paths
+        self.name = new_name
+        self.load_paths()
 
-            os.rename(path)
+        # Rename save_dir
+        rename(old_save_dir, self.save_dir)
+
+        # Update entries in dictionaries
+        self.mw.pr.meeg_to_erm[self.name] = self.mw.pr.meeg_to_erm[old_name].pop()
+        self.mw.pr.meeg_to_fsmri[self.name] = self.mw.pr.meeg_to_fsmri[old_name].pop()
+        self.mw.pr.meeg_bad_channels[self.name] = self.mw.pr.meeg_bad_channels[old_name].pop()
+        self.mw.pr.meeg_event_id[self.name] = self.mw.pr.meeg_event_id[old_name].pop()
+        self.mw.pr.sel_event_id[self.name] = self.mw.pr.sel_event_id[old_name].pop()
+        self.load_attributes()
+
+        # Rename old paths to new paths
+        for data_type in self.io_dict:
+            new_paths = self._return_path_list(data_type)
+            for new_path in new_paths:
+                old_path = old_paths[data_type]
+                rename(old_path, new_path)
 
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
-    # def _pick_types_helper(self, data, pick_types=True, exclude_bads=False):
-    #     # Include all selected Channel-Types if present in data
-    #     sel_ch_types = self.p['ch_types'].copy()
-    #     existing_ch_types = data.get_channel_types(unique=True)
-    #     # Remove channel-types, which are not present in data
-    #     for ch_type in [ct for ct in sel_ch_types if ct not in existing_ch_types]:
-    #         sel_ch_types.remove(ch_type)
-    #
-    #     if exclude_bads and pick_types:
-    #         data.pick(sel_ch_types, exclude='bads')
-    #         print(f'Picked Types: {sel_ch_types} and excluded bad channels')
-    #     elif pick_types:
-    #         data.pick(sel_ch_types)
-    #         print(f'Picked Types: {sel_ch_types}')
-    #     elif exclude_bads:
-    #         data.pick(None, exclude='bads')
-    #         print(f'Excluded Bads')
 
-    def _update_raw_bads(self, raw):
-        # Take bad_channels from file if there are none in self.bad_channels
-        if len(raw.info['bads']) > 0 and len(self.bad_channels) == 0:
-            self.bad_channels += raw.info['bads']
-        else:
-            # Make sure, that only bad_chanels present in ch_names are added
-            bad_channels = [bad_ch for bad_ch in self.bad_channels if bad_ch in raw.ch_names]
-            raw.info['bads'] = bad_channels
+    def load_info(self):
+        return mne.io.read_info(self.raw_path)
 
-    def load_info(self, copy=True):
-        if self._info is None:
-            self._info = mne.io.read_info(self.raw_path)
+    @load_decorator
+    def load_raw(self):
+        raw = mne.io.read_raw_fif(self.raw_path, preload=True)
+        raw.info['bads'] = self.bad_channels
+        return raw
 
-        if copy:
-            return self._info.copy()
-        else:
-            return self._info
-
-    def load_raw(self, copy=True):
-        if self._raw is None:
-            self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
-
-        self._update_raw_bads(self._raw)
-
-        if copy:
-            return self._raw.copy()
-        else:
-            return self._raw
-
+    @save_decorator
     def save_raw(self, raw):
-        self._raw = raw
-
-        self._update_raw_bads(self._raw)
-
         raw.save(self.raw_path, overwrite=True)
-        self.save_file_params(self.raw_path)
 
-    def load_filtered(self, copy=True):
-        if self._raw_filtered is None:
-            self._raw_filtered = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
+    @load_decorator
+    def load_filtered(self):
+        return mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
 
-        if copy:
-            return self._raw_filtered.copy()
-        else:
-            return self._raw_filtered
-
+    @save_decorator
     def save_filtered(self, raw_filtered):
-        self._raw_filtered = raw_filtered
-
         raw_filtered.save(self.raw_filtered_path, overwrite=True)
-        self.save_file_params(self.raw_filtered_path)
 
-    def load_erm(self, copy=True):
-        if self._erm is None:
-            self._erm = mne.io.read_raw_fif(self.erm_path, preload=True)
+    @load_decorator
+    def load_erm(self):
+        return mne.io.read_raw_fif(self.erm_path, preload=True)
 
-        if copy:
-            return self._erm.copy()
-        else:
-            return self._erm
+    @load_decorator
+    def load_erm_processed(self):
+        return mne.io.read_raw_fif(self.erm_processed_path, preload=True)
 
-    def load_erm_processed(self, copy=True):
-        if self._erm_processed is None:
-            self._erm_processed = mne.io.read_raw_fif(self.erm_processed_path, preload=True)
-
-        if copy:
-            return self._erm_processed.copy()
-        else:
-            return self._erm_processed
-
+    @save_decorator
     def save_erm_processed(self, erm_filtered):
-        self._erm_processed = erm_filtered
-        self._erm_processed.save(self.erm_processed_path, overwrite=True)
-        self.save_file_params(self.erm_processed_path)
+        erm_filtered.save(self.erm_processed_path, overwrite=True)
 
-    def load_events(self, copy=True):
-        if self._events is None:
-            self._events = mne.read_events(self.events_path)
+    @load_decorator
+    def load_events(self):
+        return mne.read_events(self.events_path)
 
-        if copy:
-            return self._events.copy()
-        else:
-            return self._events
-
+    @save_decorator
     def save_events(self, events):
-        self._events = events
         mne.event.write_events(self.events_path, events)
-        self.save_file_params(self.events_path)
 
-    def load_epochs(self, copy=True):
-        if self._epochs is None:
-            self._epochs = mne.read_epochs(self.epochs_path)
+    @load_decorator
+    def load_epochs(self):
+        return mne.read_epochs(self.epochs_path)
 
-        if copy:
-            return self._epochs.copy()
-        else:
-            return self._epochs
-
+    @save_decorator
     def save_epochs(self, epochs):
-        self._epochs = epochs
         epochs.save(self.epochs_path, overwrite=True)
-        self.save_file_params(self.epochs_path)
 
+    @load_decorator
     def load_reject_log(self):
-        if self._reject_log is None:
-            with open(self.reject_log_path, 'rb') as file:
-                self._reject_log = pickle.load(file)
+        with open(self.reject_log_path, 'rb') as file:
+            return pickle.load(file)
 
-        return self._reject_log
-
+    @save_decorator
     def save_reject_log(self, reject_log):
-        self._reject_log = reject_log
         with open(self.reject_log_path, 'wb') as file:
             pickle.dump(reject_log, file)
-        self.save_file_params(self.reject_log_path)
 
-    def load_ica(self, copy=True):
-        if self._ica is None:
-            self._ica = mne.preprocessing.read_ica(self.ica_path)
-
+    @load_decorator
+    def load_ica(self):
+        ica = mne.preprocessing.read_ica(self.ica_path)
         # Change ica.exclude to indices stored in ica_exclude.py for this MEEG-Object
         if self.name in self.pr.ica_exclude:
-            self._ica.exclude = self.pr.ica_exclude[self.name]
+            ica.exclude = self.pr.ica_exclude[self.name]
+        return ica
 
-        if copy:
-            return self._ica.copy()
-        else:
-            return self._ica
-
+    @save_decorator
     def save_ica(self, ica):
-        self._ica = ica
         ica.save(self.ica_path)
-        self.save_file_params(self.ica_path)
 
-    def load_eog_epochs(self, copy=True):
-        if self._eog_epochs is None:
-            self._eog_epochs = mne.read_epochs(self.eog_epochs_path)
+    @load_decorator
+    def load_eog_epochs(self):
+        return mne.read_epochs(self.eog_epochs_path)
 
-        if copy:
-            return self._eog_epochs.copy()
-        else:
-            return self._eog_epochs
-
+    @save_decorator
     def save_eog_epochs(self, eog_epochs):
-        self._eog_epochs = eog_epochs
         eog_epochs.save(self.eog_epochs_path, overwrite=True)
-        self.save_file_params(self.eog_epochs_path)
 
-    def load_ecg_epochs(self, copy=True):
-        if self._ecg_epochs is None:
-            self._ecg_epochs = mne.read_epochs(self.ecg_epochs_path)
+    @load_decorator
+    def load_ecg_epochs(self):
+        return mne.read_epochs(self.ecg_epochs_path)
 
-        if copy:
-            return self._ecg_epochs.copy()
-        else:
-            return self._ecg_epochs
-
+    @save_decorator
     def save_ecg_epochs(self, ecg_epochs):
-        self._ecg_epochs = ecg_epochs
         ecg_epochs.save(self.ecg_epochs_path, overwrite=True)
-        self.save_file_params(self.ecg_epochs_path)
 
-    def load_evokeds(self, copy=True):
-        if self._evokeds is None:
-            self._evokeds = mne.read_evokeds(self.evokeds_path)
+    @load_decorator
+    def load_evokeds(self):
+        return mne.read_evokeds(self.evokeds_path)
 
-        if copy:
-            return self._evokeds.copy()
-        else:
-            return self._evokeds
-
+    @save_decorator
     def save_evokeds(self, evokeds):
-        self._evokeds = evokeds
         mne.evoked.write_evokeds(self.evokeds_path, evokeds)
-        self.save_file_params(self.evokeds_path)
 
-    def load_power_tfr_epochs(self, copy=True):
-        if self._power_tfr_epochs is None:
-            self._power_tfr_epochs = mne.time_frequency.read_tfrs(self.power_tfr_epochs_path)
+    @load_decorator
+    def load_power_tfr_epochs(self):
+        return mne.time_frequency.read_tfrs(self.power_tfr_epochs_path)
 
-        if copy:
-            return self._power_tfr_epochs.copy()
-        else:
-            return self._power_tfr_epochs
-
+    @save_decorator
     def save_power_tfr_epochs(self, powers):
-        self._power_tfr_epochs = powers
         mne.time_frequency.write_tfrs(self.power_tfr_epochs_path, powers, overwrite=True)
-        self.save_file_params(self.power_tfr_epochs_path)
 
-    def load_itc_tfr_epochs(self, copy=True):
-        if self._itc_tfr_epochs is None:
-            self._itc_tfr_epochs = mne.time_frequency.read_tfrs(self.itc_tfr_epochs_path)
+    @load_decorator
+    def load_itc_tfr_epochs(self):
+        return mne.time_frequency.read_tfrs(self.itc_tfr_epochs_path)
 
-        if copy:
-            return self._itc_tfr_epochs.copy()
-        else:
-            return self._itc_tfr_epochs
-
+    @save_decorator
     def save_itc_tfr_epochs(self, itcs):
-        self._itc_tfr_epochs = itcs
         mne.time_frequency.write_tfrs(self.itc_tfr_epochs_path, itcs, overwrite=True)
-        self.save_file_params(self.itc_tfr_epochs_path)
 
-    def load_power_tfr_average(self, copy=True):
-        if self._power_tfr_average is None:
-            self._power_tfr_average = mne.time_frequency.read_tfrs(self.power_tfr_average_path)
+    @load_decorator
+    def load_power_tfr_average(self):
+        return mne.time_frequency.read_tfrs(self.power_tfr_average_path)
 
-        if copy:
-            return self._power_tfr_average.copy()
-        else:
-            return self._power_tfr_average
-
+    @save_decorator
     def save_power_tfr_average(self, powers):
-        self._power_tfr_average = powers
         mne.time_frequency.write_tfrs(self.power_tfr_average_path, powers, overwrite=True)
-        self.save_file_params(self.power_tfr_average_path)
 
-    def load_itc_tfr_average(self, copy=True):
-        if self._itc_tfr_average is None:
-            self._itc_tfr_average = mne.time_frequency.read_tfrs(self.itc_tfr_average_path)
+    @load_decorator
+    def load_itc_tfr_average(self):
+        return mne.time_frequency.read_tfrs(self.itc_tfr_average_path)
 
-        if copy:
-            return self._itc_tfr_average.copy()
-        else:
-            return self._itc_tfr_average
-
+    @save_decorator
     def save_itc_tfr_average(self, itcs):
-        self._itc_tfr_average = itcs
         mne.time_frequency.write_tfrs(self.itc_tfr_average_path, itcs, overwrite=True)
-        self.save_file_params(self.itc_tfr_average_path)
 
-    # Source-Space
-    def load_transformation(self, copy=True):
-        if self._trans is None:
-            self._trans = mne.read_trans(self.trans_path)
+    @load_decorator
+    def load_transformation(self):
+        return mne.read_trans(self.trans_path)
 
-        if copy:
-            return self._trans.copy()
-        else:
-            return self._trans
+    @load_decorator
+    def load_forward(self):
+        return mne.read_forward_solution(self.forward_path, verbose='WARNING')
 
-    def load_forward(self, copy=True):
-        if self._forward is None:
-            self._forward = mne.read_forward_solution(self.forward_path, verbose='WARNING')
-
-        if copy:
-            return self._forward.copy()
-        else:
-            return self._forward
-
+    @save_decorator
     def save_forward(self, forward):
-        self._forward = forward
         mne.write_forward_solution(self.forward_path, forward, overwrite=True)
-        self.save_file_params(self.forward_path)
 
-    def load_noise_covariance(self, copy=True):
-        if self._noise_cov is None:
-            if self.p['calm_noise_cov']:
-                self._noise_cov = mne.read_cov(self.calm_cov_path)
-                print('Reading Noise-Covariance from 1-min Calm in raw')
+    @load_decorator
+    def load_noise_covariance(self):
+        return mne.read_cov(self.noise_covariance_path)
 
-            elif self.erm == 'None' or self.p['erm_noise_cov'] is False:
-                self._noise_cov = mne.read_cov(self.cov_path)
-                print('Reading Noise-Covariance from Epochs')
-            else:
-                self._noise_cov = mne.read_cov(self.erm_cov_path)
-                print('Reading Noise-Covariance from Empty-Room-Data')
+    @save_decorator
+    def save_noise_covariance(self, noise_cov):
+        mne.cov.write_cov(self.noise_covariance_path, noise_cov)
 
-        if copy:
-            return self._noise_cov.copy()
-        else:
-            return self._noise_cov
+    @load_decorator
+    def load_inverse_operator(self):
+        return mne.minimum_norm.read_inverse_operator(self.inverse_path, verbose='WARNING')
 
-    def save_noise_covariance(self, noise_cov, cov_type):
-        self._noise_cov = noise_cov
-        if cov_type == 'calm':
-            mne.cov.write_cov(self.calm_cov_path, noise_cov)
-            self.save_file_params(self.calm_cov_path)
-        elif cov_type == 'epochs':
-            mne.cov.write_cov(self.cov_path, noise_cov)
-            self.save_file_params(self.cov_path)
-        elif cov_type == 'erm':
-            mne.cov.write_cov(self.erm_cov_path, noise_cov)
-            self.save_file_params(self.erm_cov_path)
-
-    def load_inverse_operator(self, copy=True):
-        if self._inverse is None:
-            self._inverse = mne.minimum_norm.read_inverse_operator(self.inverse_path, verbose='WARNING')
-
-        if copy:
-            return self._inverse.copy()
-        else:
-            return self._inverse
-
+    @save_decorator
     def save_inverse_operator(self, inverse):
-        self._inverse = inverse
         mne.minimum_norm.write_inverse_operator(self.inverse_path, inverse)
-        self.save_file_params(self.inverse_path)
 
-    def load_source_estimates(self, copy=True):
-        if self._stcs is None:
-            self._stcs = dict()
-            for trial in self.stc_paths:
-                stc = mne.source_estimate.read_source_estimate(self.stc_paths[trial])
-                self._stcs[trial] = stc
+    @load_decorator
+    def load_source_estimates(self):
+        stcs = dict()
+        for trial in self.stc_paths:
+            stcs[trial] = mne.source_estimate.read_source_estimate(self.stc_paths[trial])
 
-        if copy:
-            return self._stcs.copy()
-        else:
-            return self._stcs
+        return stcs
 
+    @save_decorator
     def save_source_estimates(self, stcs):
-        self._stcs = stcs
         for trial in stcs:
-            try:
-                stcs[trial].save(self.stc_paths[trial])
-                self.save_file_params(self.stc_paths[trial])
-            except KeyError:
-                raise RuntimeError(f'Selected Trials{list(self.stc_paths.keys())} don\'t seem to match {trial}'
-                                   f'in saved source-estimate')
+            stcs[trial].save(self.stc_paths[trial])
 
-    def load_morphed_source_estimates(self, copy=True):
-        if self._morphed_stcs is None:
-            self._morphed_stcs = dict()
-            for trial in self.morphed_stc_paths:
-                morphed_stc = mne.source_estimate.read_source_estimate(self.morphed_stc_paths[trial])
-                self._morphed_stcs[trial] = morphed_stc
+    @load_decorator
+    def load_morphed_source_estimates(self):
+        morphed_stcs = dict()
+        for trial in self.morphed_stc_paths:
+            morphed_stcs[trial] = mne.source_estimate.read_source_estimate(self.morphed_stc_paths[trial])
 
-        if copy:
-            self._morphed_stcs.copy()
-        else:
-            self._morphed_stcs
+        return morphed_stcs
 
+    @save_decorator
     def save_morphed_source_estimates(self, morphed_stcs):
-        self._morphed_stcs = morphed_stcs
         for trial in morphed_stcs:
-            try:
-                morphed_stcs[trial].save(self.morphed_stc_paths[trial])
-                self.save_file_params(self.morphed_stc_paths[trial])
-            except KeyError:
-                raise RuntimeError(f'Selected Trials{list(self.morphed_stc_paths.keys())} don\'t seem to match {trial}'
-                                   f'in saved morphed source-estimate')
+            morphed_stcs[trial].save(self.morphed_stc_paths[trial])
 
-    def load_mixn_dipoles(self, copy=True):
-        if self._mixn_dips is None:
-            self._mixn_dips = dict()
-            for trial in self.sel_trials:
-                idx = 0
-                dip_list = list()
-                for idx in range(len(listdir(join(self.save_dir, 'mixn_dipoles')))):
-                    mixn_dip_path = join(self.save_dir, 'mixn_dipoles',
-                                         f'{self.name}_{trial}_{self.p_preset}-mixn-dip{idx}.dip')
-                    dip_list.append(mne.read_dipole(mixn_dip_path))
-                    idx += 1
-                self._mixn_dips[trial] = dip_list
-                print(f'{idx + 1} dipoles read for {self.name}-{trial}')
+    def load_mixn_dipoles(self):
+        mixn_dips = dict()
+        for trial in self.sel_trials:
+            idx = 0
+            dip_list = list()
+            for idx in range(len(listdir(join(self.save_dir, 'mixn_dipoles')))):
+                mixn_dip_path = join(self.save_dir, 'mixn_dipoles',
+                                     f'{self.name}_{trial}_{self.p_preset}-mixn-dip{idx}.dip')
+                dip_list.append(mne.read_dipole(mixn_dip_path))
+                idx += 1
+            mixn_dips[trial] = dip_list
+            print(f'{idx + 1} dipoles read for {self.name}-{trial}')
 
-        if copy:
-            return self._mixn_dips.copy()
-        else:
-            return self._mixn_dips
+        return mixn_dips
 
     def save_mixn_dipoles(self, mixn_dips):
-        self._mixn_dips = mixn_dips
-
         # Remove old dipoles
         if not exists(join(self.save_dir, 'mixn_dipoles')):
             makedirs(join(self.save_dir, 'mixn_dipoles'))
@@ -900,134 +753,87 @@ class MEEG(BaseLoading):
                 mxn_dip_path = join(self.save_dir, 'mixn_dipoles',
                                     f'{self.name}_{trial}_{self.p_preset}-mixn-dip{idx}.dip')
                 dip.save(mxn_dip_path)
-                self.save_file_params(mxn_dip_path)
 
-    def load_mixn_source_estimates(self, copy=True):
-        if self._mixn_stcs is None:
-            self._mixn_stcs = dict()
-            for trial in self.sel_trials:
-                mx_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-mixn')
-                mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
-                self._mixn_stcs.update({trial: mx_stc})
+    def load_mixn_source_estimates(self):
+        mixn_stcs = dict()
+        for trial in self.sel_trials:
+            mx_stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-mixn')
+            mx_stc = mne.source_estimate.read_source_estimate(mx_stc_path)
+            mixn_stcs.update({trial: mx_stc})
 
-        if copy:
-            return self._mixn_stcs
-        else:
-            return self._mixn_stcs.copy()
+        return mixn_stcs
 
     def save_mixn_source_estimates(self, stcs):
-        self._mixn_stcs = stcs
         for trial in stcs:
             stc_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-mixn')
             stcs[trial].save(stc_path)
-            self.save_file_params(stc_path)
 
-    def load_ecd(self, copy=True):
-        if self._ecd_dips is None:
-            self._ecd_dips = {}
-            for trial in self.sel_trials:
-                self._ecd_dips[trial] = {}
-                for dip in self.p['ecd_times'][self.name]:
-                    ecd_dip_path = join(self.save_dir, 'ecd_dipoles',
-                                        f'{self.name}_{trial}_{self.p_preset}_{dip}-ecd-dip.dip')
-                    self._ecd_dips[trial][dip] = mne.read_dipole(ecd_dip_path)
+    @load_decorator
+    def load_ecd(self):
+        ecd_dipoles = dict()
+        for trial in self.ecd_paths:
+            ecd_dipoles[trial] = dict()
+            for dip in self.ecd_paths[trial]:
+                ecd_dipoles[trial][dip] = mne.read_dipole(self.ecd_paths[trial][dip])
 
-        if copy:
-            return self._ecd_dips.copy()
-        else:
-            return self._ecd_dips
+        return ecd_dipoles
 
+    @save_decorator
     def save_ecd(self, ecd_dips):
-        self._ecd_dips = ecd_dips
-        if not exists(join(self.save_dir, 'ecd_dipoles')):
-            makedirs(join(self.save_dir, 'ecd_dipoles'))
-
         for trial in ecd_dips:
             for dip in ecd_dips[trial]:
-                ecd_dip_path = join(self.save_dir, 'ecd_dipoles',
-                                    f'{self.name}_{trial}_{self.p_preset}_{dip}-ecd-dip.dip')
-                ecd_dips[trial][dip].save(ecd_dip_path, overwrite=True)
-                self.save_file_params(ecd_dip_path)
+                ecd_dips[trial][dip].save(self.ecd_paths[trial][dip], overwrite=True)
 
-    def load_ltc(self, copy=True):
-        if self._ltc is None:
-            self._ltc = {}
-            for trial in self.sel_trials:
-                self._ltc[trial] = {}
-                for label in self.p['target_labels']:
-                    ltc_path = join(self.save_dir, 'label_time_course',
-                                    f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
-                    self._ltc[trial][label] = np.load(ltc_path)
+    @load_decorator
+    def load_ltc(self):
+        ltcs = dict()
+        for trial in self.sel_trials:
+            ltcs[trial] = dict()
+            for label in self.ltc_paths[trial]:
+                ltcs[trial][label] = np.load(self.ltc_paths[trial][label])
 
-        if copy:
-            return self._ltc.copy()
-        else:
-            return self._ltc
+        return ltcs
 
-    def save_ltc(self, ltc):
-        self._ltc = ltc
-        if not exists(join(self.save_dir, 'label_time_course')):
-            makedirs(join(self.save_dir, 'label_time_course'))
+    @save_decorator
+    def save_ltc(self, ltcs):
+        for trial in ltcs:
+            for label in ltcs[trial]:
+                np.save(self.ltc_paths[trial][label], ltcs[trial][label])
 
-        for trial in ltc:
-            for label in ltc[trial]:
-                ltc_path = join(self.save_dir, 'label_time_course',
-                                f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
-                np.save(ltc_path, ltc[trial][label])
-                self.save_file_params(ltc_path)
+    @load_decorator
+    def load_connectivity(self):
+        con_dict = dict()
+        for trial in self.con_paths:
+            con_dict[trial] = dict()
+            for con_method in self.con_paths[trial]:
+                con_dict[trial][con_method] = np.load(self.con_paths[trial][con_method])
 
-    def load_connectivity(self, copy=True):
-        if self._connectivity is None:
-            self._connectivity = dict()
-            for trial in self.sel_trials:
-                self._connectivity[trial] = {}
-                for con_method in self.p['con_methods']:
-                    try:
-                        con_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
-                        self._connectivity[trial][con_method] = np.load(con_path)
-                    except FileNotFoundError:
-                        pass
+        return con_dict
 
-        if copy:
-            return self._connectivity.copy()
-        else:
-            return self._connectivity
-
+    @save_decorator
     def save_connectivity(self, con_dict):
-        self._connectivity = con_dict
         for trial in con_dict:
             for con_method in con_dict[trial]:
-                con_path = join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
-                np.save(con_path)
-                self.save_file_params(con_path)
+                np.save(self.con_paths[trial][con_method])
 
 
 class FSMRI(BaseLoading):
     # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?)
     def __init__(self, name, main_win):
-
         super().__init__(name, main_win)
-
-        # Additional Attributes
-        self.save_dir = join(self.mw.subjects_dir, self.name)
-        self.fs_path = self.mw.qsettings.value('fs_path')
-        self.mne_path = self.mw.qsettings.value('mne_path')
 
         self.load_attributes()
         self.load_paths()
 
     def load_attributes(self):
-        """Set all Data-Attributes to None"""
-        # Data-Attributes (not to be called directly)
-        # Make Data-Objects usable by consecutive functions without reloading
-        self._source_space = None
-        self._bem_model = None
-        self._bem_solution = None
-        self._vol_source_space = None
-        self._source_morph = None
-        self._labels = None
+        self.fs_path = QSettings().value('fs_path')
+        self.mne_path = QSettings().value('mne_path')
 
     def load_paths(self):
+        # Main Path
+        self.save_dir = join(self.mw.subjects_dir, self.name)
+
+        # Data-Paths
         self.source_space_path = join(self.save_dir, 'bem', f'{self.name}_{self.p["source_space_spacing"]}-src.fif')
         self.bem_model_path = join(self.save_dir, 'bem', f'{self.name}-bem.fif')
         self.bem_solution_path = join(self.save_dir, 'bem', f'{self.name}-bem-sol.fif')
@@ -1035,245 +841,197 @@ class FSMRI(BaseLoading):
         self.source_morph_path = join(self.save_dir,
                                       f'{self.name}--to--{self.p["morph_to"]}_'
                                       f'{self.p["source_space_spacing"]}-morph.h5')
-        self.old_source_morph_path = join(self.save_dir,
-                                          f'{self.name}--to--{self.p["morph_to"]}-'
-                                          f'{self.p["source_space_spacing"]}-morph.h5')
 
-        self.paths_dict = {'Source-Space': self.source_space_path,
-                           'BEM-Model': self.bem_model_path,
-                           'BEM-Solution': self.bem_solution_path,
-                           'Volume-Source-Space': self.vol_source_space_path,
-                           'Source-Morph': self.source_morph_path}
-
-        self.methods_dict = {'load_source_space': 'Source-Space',
-                             'load_bem_model': 'BEM-Model',
-                             'load_bem_solution': 'BEM-Solution',
-                             'load_vol_source_space': 'Volume-Source-Space',
-                             'load_source_morph': 'Source-Morph'}
+        # This dictionary contains entries for each data-type which is loaded to/saved from disk
+        self.io_dict = {'Source-Space': {'path': self.source_space_path,
+                                         'load': 'load_source_space',
+                                         'save': 'save_source_space'},
+                        'BEM-Model': {'path': self.bem_model_path,
+                                      'load': 'load_bem_model',
+                                      'save': 'save_bem_model'},
+                        'BEM-Solution': {'path': self.bem_solution_path,
+                                         'load': 'load_bem_solution',
+                                         'save': 'save_bem_solution'},
+                        'Volume-Source-Space': {'path': self.vol_source_space_path,
+                                                'load': 'load_vol_source_space',
+                                                'save': 'save_vol_source_psace'},
+                        'Source-Morph': {'path': self.source_morph_path,
+                                         'load': 'load_source_morph',
+                                         'save': 'save_source_morph'}}
 
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
+    @load_decorator
     def load_source_space(self):
-        if self._source_space is None:
-            self._source_space = mne.source_space.read_source_spaces(self.source_space_path)
+        return mne.source_space.read_source_spaces(self.source_space_path)
 
-        return self._source_space
-
+    @save_decorator
     def save_source_space(self, src):
-        self._source_space = src
         src.save(self.source_space_path, overwrite=True)
-        self.save_file_params(self.source_space_path)
 
+    @load_decorator
     def load_bem_model(self):
-        if self._bem_model is None:
-            self._bem_model = mne.read_bem_surfaces(self.bem_model_path)
+        return mne.read_bem_surfaces(self.bem_model_path)
 
-        return self._bem_model
-
+    @save_decorator
     def save_bem_model(self, bem_model):
-        self._bem_model = bem_model
         mne.write_bem_surfaces(self.bem_model_path, bem_model, overwrite=True)
-        self.save_file_params(self.bem_model_path)
 
+    @load_decorator
     def load_bem_solution(self):
-        if self._bem_solution is None:
-            self._bem_solution = mne.read_bem_solution(self.bem_solution_path)
+        return mne.read_bem_solution(self.bem_solution_path)
 
-        return self._bem_solution
-
+    @save_decorator
     def save_bem_solution(self, bem_solution):
-        self._bem_solution = bem_solution
         mne.write_bem_solution(self.bem_solution_path, bem_solution, overwrite=True)
-        self.save_file_params(self.bem_solution_path)
 
+    @load_decorator
     def load_vol_source_space(self):
-        if self._vol_source_space is None:
-            self._vol_source_space = mne.source_space.read_source_spaces(self.vol_source_space_path)
+        return mne.source_space.read_source_spaces(self.vol_source_space_path)
 
-        return self._vol_source_space
-
+    @save_decorator
     def save_vol_source_space(self, vol_source_space):
-        self._vol_source_space = vol_source_space
         vol_source_space.save(self.vol_source_space_path, overwrite=True)
-        self.save_file_params(self.vol_source_space_path)
 
+    @load_decorator
     def load_source_morph(self):
-        if self._source_morph is None:
-            try:
-                self._source_morph = mne.read_source_morph(self.source_morph_path)
-            except OSError:
-                self._source_morph = mne.read_source_morph(self.old_source_morph_path)
+        return mne.read_source_morph(self.source_morph_path)
 
-        return self._source_morph
-
+    @save_decorator
     def save_source_morph(self, source_morph):
-        self._source_morph = source_morph
         source_morph.save(self.source_morph_path, overwrite=True)
-        self.save_file_params(self.source_morph_path)
-
-    def load_parc_labels(self):
-        if self._labels is None:
-            self._labels = mne.read_labels_from_annot(self.name, parc=self.p['parcellation'],
-                                                      subjects_dir=self.subjects_dir)
-        return self._labels
 
 
 class Group(BaseLoading):
     def __init__(self, name, main_win, suppress_warnings=True):
-
         super().__init__(name, main_win)
-
-        # Additional Attributes
-        self.save_dir = self.pr.save_dir_averages
-        self.group_list = self.pr.all_groups[name]
-
-        try:
-            self.event_id = self.mw.pr.meeg_event_id[self.group_list[0]]
-            if len(self.event_id) == 0:
-                raise RuntimeError(name)
-        except (KeyError, RuntimeError):
-            self.event_id = dict()
-            if not suppress_warnings:
-                QMessageBox.warning(self.mw, 'No Event-ID',
-                                    f'No EventID assigned for {self.name}, defaulting to empty dictionary')
-        try:
-            self.sel_trials = self.mw.pr.sel_event_id[self.group_list[0]]
-            if len(self.sel_trials) == 0:
-                raise RuntimeError(name)
-        except (KeyError, RuntimeError):
-            self.sel_trials = list()
-            if not suppress_warnings:
-                QMessageBox.warning(self.mw, 'No Trials',
-                                    f'No Trials selected for {self.name}, defaulting to empty list')
+        self.suppress_warnings = suppress_warnings
 
         self.load_attributes()
         self.load_paths()
 
     def load_attributes(self):
-        """Set all Data-Attributes to None"""
-        # Data-Attributes (not to be called directly)
-        # Make Data-Objects usable by consecutive functions without reloading
-        self._ga_evokeds = None
-        self._ga_tfr = None
-        self._ga_stcs = None
-        self._ga_ltc = None
-        self._ga_connect = None
+        # Additional Attributes
+        self.group_list = self.pr.all_groups[self.name]
+
+        # The assigned event-id
+        if self.group_list[0] not in self.mw.pr.meeg_event_id:
+            self.mw.pr.meeg_event_id[self.group_list[0]] = dict()
+            if not self.suppress_warnings:
+                print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
+        self.event_id = self.mw.pr.meeg_event_id[self.group_list[0]]
+
+        # The selected trials from the event-id
+        if self.group_list[0] not in self.mw.pr.sel_event_id:
+            self.mw.pr.sel_event_id[self.group_list[0]] = list()
+            if not self.suppress_warnings:
+                print(f'No Trials selected for {self.name}, defaulting to empty list')
+        self.sel_trials = self.mw.pr.sel_event_id[self.group_list[0]]
 
     def load_paths(self):
-        self.ga_evokeds_folder = join(self.save_dir, 'evokeds')
-        self.ga_evokeds_path = join(self.ga_evokeds_folder, f'{self.name}_{self.p_preset}-ave.fif')
+        # Main Path
+        self.save_dir = self.pr.save_dir_averages
 
-        self.ga_tfr_folder = join(self.save_dir, 'time-frequency')
+        # Data Paths
+        self.ga_evokeds_path = join(self.save_dir, 'evokeds', f'{self.name}_{self.p_preset}-ave.fif')
+        self.ga_tfr_paths = {trial: join(self.save_dir, 'time-frequency',
+                                         f'{self.name}_{trial}_{self.p_preset}-tfr.h5')
+                             for trial in self.sel_trials}
+        self.ga_stc_paths = {trial: join(self.save_dir, 'source-estimates',
+                                         f'{self.name}_{trial}_{self.p_preset}')
+                             for trial in self.sel_trials}
+        self.ga_ltc_paths = {trial: {label: join(self.save_dir, 'label-time-courses',
+                                                 f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                                     for label in self.p['target_labels']}
+                             for trial in self.sel_trials}
+        self.ga_con_paths = {trial: {con_method: join(self.save_dir, 'connectivity',
+                                                      f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
+                                     for con_method in self.p['con_methods']}
+                             for trial in self.sel_trials}
 
-        self.ga_stc_folder = join(self.save_dir, 'source-estimate')
-
-        self.ga_ltc_folder = join(self.save_dir, 'label-time-course')
-
-        self.ga_con_folder = join(self.save_dir, 'connectivity')
-
-        group_folders = [self.ga_evokeds_folder, self.ga_tfr_folder, self.ga_stc_folder, self.ga_ltc_folder,
-                         self.ga_con_folder]
-        for folder in [f for f in group_folders if not isdir(f)]:
-            mkdir(folder)
-
-        self.paths_dict = {'Grand-Average Evokeds': self.ga_evokeds_path}
-
-        self.methods_dict = {'load_ga_evokeds': 'Grand-Average Evokeds'}
+        # This dictionary contains entries for each data-type which is loaded to/saved from disk
+        self.io_dict = {'Grand-Average Evokeds': {'path': self.ga_evokeds_path,
+                                                  'load': 'load_ga_evokeds',
+                                                  'save': 'save_ga_evokeds'},
+                        'Grand-Average TFR': {'path': self.ga_tfr_paths,
+                                              'load': 'load_ga_tfr',
+                                              'save': 'save_ga_tfr'},
+                        'Grand-Average STC': {'path': self.ga_stc_paths,
+                                              'load': 'load_ga_stc',
+                                              'save': 'save_ga_stc'},
+                        'Grand-Average LTC': {'path': self.ga_ltc_paths,
+                                              'load': 'load_ga_ltc',
+                                              'save': 'save_ga_ltc'},
+                        'Grand-Average Connectiviy': {'path': self.ga_con_paths,
+                                                      'load': 'load_ga_con',
+                                                      'save': 'save_ga_con'}}
 
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
+    @load_decorator
     def load_ga_evokeds(self):
-        if self._ga_evokeds is None:
-            self._ga_evokeds = mne.read_evokeds(self.ga_evokeds_path)
+        return mne.read_evokeds(self.ga_evokeds_path)
 
-        return self._ga_evokeds
-
+    @save_decorator
     def save_ga_evokeds(self, ga_evokeds):
-        self._ga_evokeds = ga_evokeds
         mne.evoked.write_evokeds(self.ga_evokeds_path, ga_evokeds)
-        self.save_file_params(self.ga_evokeds_path)
 
+    @load_decorator
     def load_ga_tfr(self):
-        if self._ga_tfr is None:
-            self._ga_tfr = {}
-            for trial in self.sel_trials:
-                ga_path = join(self.ga_tfr_folder,
-                               f'{self.name}_{trial}_{self.p_preset}_{self.p["tfr_method"]}-tfr.h5')
-                power = mne.time_frequency.read_tfrs(ga_path)[0]
-                self._ga_tfr[trial] = power
+        ga_tfr = dict()
+        for trial in self.sel_trials:
+            ga_tfr[trial] = mne.time_frequency.read_tfrs(self.ga_tfr_paths[trial])[0]
 
-        return self._ga_tfr
+        return ga_tfr
 
-    def save_ga_tfr(self, ga_tfr, trial):
-        ga_path = join(self.ga_tfr_folder,
-                       f'{self.name}_{trial}_{self.p_preset}_{self.p["tfr_method"]}-tfr.h5')
-        ga_tfr.save(ga_path)
-        self.save_file_params(ga_path)
+    @save_decorator
+    def save_ga_tfr(self, ga_tfr):
+        for trial in ga_tfr:
+            ga_tfr[trial].save(self.ga_tfr_paths[trial])
 
-    def load_ga_source_estimate(self):
-        if self._ga_stcs is None:
-            self._ga_stcs = {}
-            for trial in self.sel_trials:
-                ga_stc_path = join(self.ga_stc_folder,
-                                   f'{self.name}_{trial}_{self.p_preset}')
-                self._ga_stcs[trial] = mne.read_source_estimate(ga_stc_path)
+    @load_decorator
+    def load_ga_stc(self):
+        ga_stcs = dict()
+        for trial in self.sel_trials:
+            ga_stcs[trial] = mne.read_source_estimate(self.ga_stc_paths[trial])
 
-        return self._ga_stcs
+        return ga_stcs
 
-    def save_ga_source_estimate(self, ga_stcs):
-        self._ga_stcs = ga_stcs
+    @save_decorator
+    def save_ga_stc(self, ga_stcs):
         for trial in ga_stcs:
-            ga_stc_path = join(self.ga_stc_folder,
-                               f'{self.name}_{trial}_{self.p_preset}')
-            ga_stcs[trial].save(ga_stc_path)
-            self.save_file_params(ga_stc_path)
+            ga_stcs[trial].save(self.ga_stc_paths[trial])
 
+    @load_decorator
     def load_ga_ltc(self):
-        if self._ga_ltc is None:
-            self._ga_ltc = {}
-            for trial in self.sel_trials:
-                self._ga_ltc[trial] = {}
-                for label in self.p['target_labels']:
-                    ga_ltc_path = join(self.ga_ltc_folder,
-                                       f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
-                    try:
-                        self._ga_ltc[trial][label] = np.load(ga_ltc_path)
-                    except FileNotFoundError:
-                        print(f'{ga_ltc_path} not found')
+        ga_ltc = dict()
+        for trial in self.ga_ltc_paths:
+            ga_ltc[trial] = dict()
+            for label in self.ga_ltc_paths[trial]:
+                ga_ltc[trial][label] = np.load(self.ga_ltc_paths[trial][label])
 
-        return self._ga_ltc
+        return ga_ltc
 
+    @save_decorator
     def save_ga_ltc(self, ga_ltc):
-        self._ga_ltc = ga_ltc
         for trial in ga_ltc:
             for label in ga_ltc[trial]:
-                ga_ltc_path = join(self.ga_ltc_folder,
-                                   f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
-                np.save(ga_ltc_path, ga_ltc[trial][label])
-                self.save_file_params(ga_ltc_path)
+                np.save(self.ga_ltc_paths[trial][label], ga_ltc[trial][label])
 
-    def load_ga_connect(self):
-        if self._ga_connect is None:
-            self._ga_connect = {}
-            for trial in self.sel_trials:
-                self._ga_connect[trial] = {}
-                for con_method in self.p['con_methods']:
-                    con_path = join(self.ga_con_folder,
-                                    f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
-                    try:
-                        self._ga_connect[trial][con_method] = np.load(con_path)
-                    except FileNotFoundError:
-                        print(f'{con_path} not found')
+    @load_decorator
+    def load_ga_con(self):
+        ga_connect = dict()
+        for trial in self.ga_con_paths:
+            ga_connect[trial] = {}
+            for con_method in self.ga_con_paths[trial]:
+                ga_connect[trial][con_method] = np.load(self.ga_con_paths[trial][con_method])
 
-        return self._ga_connect
+        return ga_connect
 
-    def save_ga_connect(self, ga_con):
-        self._ga_connect = ga_con
+    @save_decorator
+    def save_ga_con(self, ga_con):
         for trial in ga_con:
             for con_method in ga_con[trial]:
-                con_path = join(self.ga_con_folder,
-                                f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
-                np.save(con_path, ga_con[trial][con_method])
-                self.save_file_params(con_path)
+                np.save(self.ga_con_paths[trial][con_method], ga_con[trial][con_method])

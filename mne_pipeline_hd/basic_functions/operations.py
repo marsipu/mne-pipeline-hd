@@ -95,7 +95,7 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
 
 
 def find_events(meeg, stim_channels, min_duration, shortest_event, adjust_timeline_by_msec):
-    raw = meeg.load_raw(copy=False)  # No copy to consume less memory
+    raw = meeg.load_raw()  # No copy to consume less memory
 
     events = mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
                              stim_channel=stim_channels)
@@ -114,7 +114,7 @@ def find_events(meeg, stim_channels, min_duration, shortest_event, adjust_timeli
 
 
 def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_by_msec):
-    raw = meeg.load_raw(copy=False)  # No copy to consume less memory
+    raw = meeg.load_raw()  # No copy to consume less memory
 
     # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg
     # prepare arrays
@@ -677,7 +677,7 @@ def tfr(meeg, tfr_freqs, tfr_n_cycles, tfr_average, tfr_use_fft, tfr_baseline, t
 
 
 def grand_avg_tfr(group):
-    trial_dict = {}
+    trial_dict = dict()
     for name in group.group_list:
         meeg = MEEG(name, group.mw)
         print(f'Add {name} to grand_average')
@@ -691,6 +691,7 @@ def grand_avg_tfr(group):
             else:
                 print(f'{pw.comment} for {name} got nave=0')
 
+    ga_dict = dict()
     for trial in trial_dict:
         if len(trial_dict[trial]) != 0:
 
@@ -709,8 +710,9 @@ def grand_avg_tfr(group):
                                    interpolate_bads=True,
                                    drop_bads=True)
             ga.comment = trial
+            ga_dict[trial] = ga
 
-            group.save_ga_tfr(ga, trial)
+    group.save_ga_tfr(ga_dict)
 
 
 # ==============================================================================
@@ -1160,7 +1162,7 @@ def grand_avg_morphed(group):
 
             ga_stcs[trial] = trial_average
 
-    group.save_ga_source_estimate(ga_stcs)
+    group.save_ga_stc(ga_stcs)
 
 
 def grand_avg_ltc(group):
@@ -1233,4 +1235,4 @@ def grand_avg_connect(group):
 
                 ga_con[trial][con_method] = average
 
-    group.save_ga_connect(ga_con)
+    group.save_ga_con(ga_con)

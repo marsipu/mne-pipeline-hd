@@ -9,6 +9,7 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
+import gc
 import inspect
 import logging
 import re
@@ -363,6 +364,9 @@ class RunDialog(QDialog):
         # Close all plots if not wanted
         if not self.mw.get_setting('show_plots'):
             close_all()
+
+        # Collect Garbage to free memory
+        gc.collect()
 
         if not self.paused:
             self.start_thread()

@@ -496,9 +496,9 @@ def plot_label_time_course(meeg, show_plots):
             meeg.plot_save('label-time-course', subfolder=label, trial=trial)
 
 
-def plot_source_space_connectivity(meeg, target_labels, con_fmin, con_fmax, show_plots):
+def plot_source_space_connectivity(meeg, target_labels, parcellation, con_fmin, con_fmax, show_plots):
     con_dict = meeg.load_connectivity()
-    labels = meeg.fsmri.load_parc_labels()
+    labels = mne.read_labels_from_annot(meeg.name, parc=parcellation, subjects_dir=meeg.subjects_dir)
 
     actual_labels = [lb for lb in labels if lb.name in target_labels]
 
@@ -576,12 +576,12 @@ def plot_grand_avg_tfr(group, show_plots):
 
 
 def plot_grand_avg_stc(group, morph_to, mne_evoked_time):
-    ga_dict = group.load_ga_source_estimate()
+    ga_dict = group.load_ga_stc()
     brain_plot(group, ga_dict, 'ga_source-estimate', morph_to, mne_evoked_time)
 
 
 def plot_grand_avg_stc_anim(group, stc_animation, stc_animation_dilat, morph_to):
-    ga_dict = group.load_ga_source_estimate()
+    ga_dict = group.load_ga_stc()
 
     for trial in ga_dict:
         brain = ga_dict[trial].plot(subject=morph_to,
@@ -615,7 +615,7 @@ def plot_grand_avg_ltc(group, show_plots):
 
 
 def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation, target_labels, morph_to, show_plots):
-    ga_dict = group.load_ga_connect()
+    ga_dict = group.load_ga_con()
 
     # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
     labels_parc = mne.read_labels_from_annot(morph_to, parc=parcellation,
