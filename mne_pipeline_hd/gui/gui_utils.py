@@ -213,7 +213,7 @@ class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
     thread_finished = pyqtSignal(object)
 
-    def __init__(self, parent, function, show_buttons=True, show_console=True, close_directly=True,
+    def __init__(self, parent, function, show_buttons=False, show_console=False, close_directly=True,
                  title=None, **kwargs):
         super().__init__(parent)
 

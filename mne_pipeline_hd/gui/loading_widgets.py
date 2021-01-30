@@ -18,7 +18,6 @@ from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
-import matplotlib
 import mne
 import numpy as np
 import pandas as pd
@@ -26,12 +25,10 @@ from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QPixmap
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDockWidget, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
-                             QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QProgressDialog, QPushButton,
+                             QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QPushButton,
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTextEdit, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
-from matplotlib.backends.backend_qt5agg import FigureCanvasQT, FigureCanvasQTAgg
 
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList,
@@ -40,7 +37,6 @@ from .dialogs import ErrorDialog
 from .gui_utils import (Worker, WorkerDialog, center, get_exception_tuple, set_ratio_geometry)
 from .models import AddFilesModel
 from .parameter_widgets import ComboGui
-from .tools import PlotImageLoader
 from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_properties, plot_ica_sources
 from ..pipeline_functions.pipeline_utils import compare_filep
 
@@ -165,7 +161,6 @@ class RemoveDialog(QDialog):
                 self.pr.all_meeg.remove(meeg)
                 self.pr.meeg_to_erm.pop(meeg, None)
                 self.pr.meeg_to_fsmri.pop(meeg, None)
-                self.pr.all_info.pop(meeg, None)
                 self.pr.meeg_bad_channels.pop(meeg, None)
                 self.pr.meeg_event_id.pop(meeg, None)
                 if meeg in self.pr.file_parameters:
@@ -690,8 +685,8 @@ class AddFilesWidget(QWidget):
         self.model.layoutChanged.emit()
 
     def add_files_starter(self):
-        self.worker_dialog = WorkerDialog(self, self.add_files)
-        self.worker_dialog.thread_finished.connect(self.addf_finished)
+        worker_dialog = WorkerDialog(self, self.add_files, show_buttons=True, show_console=True)
+        worker_dialog.thread_finished.connect(self.addf_finished)
 
     def add_files(self, worker_signals):
 
@@ -723,7 +718,6 @@ class AddFilesWidget(QWidget):
                 # Copy sub_files to destination (with MEEG-Class to also include raw into file_parameters)
                 meeg = MEEG(file, self.mw)
                 meeg.save_raw(raw)
-                meeg.extract_info()
                 worker_signals.pgbar_n.emit(n + 1)
             else:
                 print('Canceled Loading')
@@ -898,13 +892,13 @@ class AddMRIWidget(QWidget):
         self.populate_list_widget()
 
     def add_mri_subjects_starter(self):
-        self.worker_dialog = WorkerDialog(self, self.add_mri_subjects)
-        self.worker_dialog.thread_finished.connect(self.add_mri_finished)
+        worker_dialog = WorkerDialog(self, self.add_mri_subjects)
+        worker_dialog.thread_finished.connect(self.add_mri_finished)
 
     def add_mri_subjects(self, worker_signals):
         worker_signals.set_pgbar_max.emit(len(self.folders))
         for n, fsmri in enumerate(self.folders):
-            if not self.worker_dialog.wasCanceled:
+            if not worker_signals.was_canceled:
                 worker_signals.pgbar_text.emit(f'Copying {fsmri}')
                 src = self.paths[fsmri]
                 dst = join(self.mw.subjects_dir, fsmri)
@@ -1302,7 +1296,6 @@ class CopyBadsDialog(QDialog):
 
         self.all_files = parent_w.mw.pr.all_meeg
         self.bad_channels_dict = parent_w.mw.pr.meeg_bad_channels
-        self.info_dict = parent_w.mw.pr.all_info
 
         self.init_ui()
         self.open()
@@ -1339,8 +1332,9 @@ class CopyBadsDialog(QDialog):
         if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[0] in self.bad_channels_dict:
             copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
             for copy_to in self.copy_tos:
+                copy_to_info = MEEG(copy_to, self.mw).load_info()
                 # Make sure, that only channels which exist too in copy_to are copied
-                for rm_ch in [r for r in copy_bad_chs if r not in self.info_dict[copy_to]['ch_names']]:
+                for rm_ch in [r for r in copy_bad_chs if r not in copy_to_info['ch_names']]:
                     copy_bad_chs.remove(rm_ch)
                 self.bad_channels_dict[copy_to] = copy_bad_chs
 
@@ -1356,9 +1350,7 @@ class SubBadsWidget(QWidget):
         self.mw = main_win
         self.setWindowTitle('Assign bad_channels for your files')
         self.bad_chkbts = {}
-        self.name = None
-        self.obj = None
-        self.raw = None
+        self.current_obj = None
         self.raw_fig = None
 
         self.init_ui()
@@ -1366,7 +1358,8 @@ class SubBadsWidget(QWidget):
     def init_ui(self):
         self.layout = QGridLayout()
 
-        self.files_widget = CheckDictList(self.mw.pr.all_meeg, self.mw.pr.meeg_bad_channels, title='Files')
+        file_list = self.mw.pr.all_meeg + self.mw.pr.all_erm
+        self.files_widget = CheckDictList(file_list, self.mw.pr.meeg_bad_channels, title='Files')
         self.files_widget.currentChanged.connect(self.bad_dict_selected)
         self.files_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.layout.addWidget(self.files_widget, 0, 0)
@@ -1390,51 +1383,47 @@ class SubBadsWidget(QWidget):
         self.setLayout(self.layout)
 
     def make_bad_chbxs(self):
-        chbx_w = QWidget()
-        chbx_w.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        self.chbx_layout = QGridLayout()
-        row = 0
-        column = 0
-        h_size = 0
-        # Currently, you have to fine-tune the max_h_size, because it doesn't seem to reflect exactly the actual width
-        max_h_size = int(self.bt_scroll.geometry().width() * 0.85)
+        if self.current_obj:
+            chbx_w = QWidget()
+            chbx_w.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+            self.chbx_layout = QGridLayout()
+            row = 0
+            column = 0
+            h_size = 0
+            # Currently, you have to fine-tune the max_h_size, because it doesn't seem to reflect exactly the actual width
+            max_h_size = int(self.bt_scroll.geometry().width() * 0.85)
 
-        self.bad_chkbts = dict()
+            self.bad_chkbts = dict()
 
-        # Make Checkboxes for channels from all_info
-        for x, ch_name in enumerate(self.mw.pr.all_info[self.name]['ch_names']):
-            chkbt = QCheckBox(ch_name)
-            chkbt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-            chkbt.clicked.connect(self.bad_ckbx_assigned)
-            self.bad_chkbts.update({ch_name: chkbt})
-            h_size += chkbt.sizeHint().width()
-            if h_size > max_h_size:
-                column = 0
-                row += 1
-                h_size = chkbt.sizeHint().width()
-            self.chbx_layout.addWidget(chkbt, row, column)
-            column += 1
+            # Make Checkboxes for channels in info
+            info = self.current_obj.load_info()
+            for x, ch_name in enumerate(info['ch_names']):
+                chkbt = QCheckBox(ch_name)
+                chkbt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+                chkbt.clicked.connect(self.bad_ckbx_assigned)
+                self.bad_chkbts.update({ch_name: chkbt})
+                h_size += chkbt.sizeHint().width()
+                if h_size > max_h_size:
+                    column = 0
+                    row += 1
+                    h_size = chkbt.sizeHint().width()
+                self.chbx_layout.addWidget(chkbt, row, column)
+                column += 1
 
-        chbx_w.setLayout(self.chbx_layout)
+            chbx_w.setLayout(self.chbx_layout)
 
-        if self.bt_scroll.widget():
-            self.bt_scroll.takeWidget()
-        self.bt_scroll.setWidget(chbx_w)
+            if self.bt_scroll.widget():
+                self.bt_scroll.takeWidget()
+            self.bt_scroll.setWidget(chbx_w)
 
     def bad_dict_selected(self, current, _):
-        old_name = self.name
-        self.name = current
+        self.current_obj = MEEG(current, self.mw)
 
         # Close current Plot-Window
         if self.raw_fig:
             plt.close(self.raw_fig)
 
-        # Reload Bad-Chkbts if other than before
-        if self.name in self.mw.pr.all_info and old_name:
-            if self.mw.pr.all_info[self.name]['ch_names'] != self.mw.pr.all_info[old_name]['ch_names']:
-                self.make_bad_chbxs()
-        else:
-            self.make_bad_chbxs()
+        self.make_bad_chbxs()
 
         # Clear entries
         for bt in self.bad_chkbts:
@@ -1443,19 +1432,18 @@ class SubBadsWidget(QWidget):
         # Catch Channels, which are present in meeg_bad_channels, but not in bad_chkbts
         error_list = list()
         # Then load existing bads for choice
-        if self.name in self.mw.pr.meeg_bad_channels:
-            for bad in self.mw.pr.meeg_bad_channels[self.name]:
-                try:
-                    self.bad_chkbts[bad].setChecked(True)
-                except KeyError:
-                    error_list.append(bad)
+        for bad in self.current_obj.bad_channels:
+            try:
+                self.bad_chkbts[bad].setChecked(True)
+            except KeyError:
+                error_list.append(bad)
 
         for error_ch in error_list:
-            self.mw.pr.meeg_bad_channels[self.name].remove(error_ch)
+            self.current_obj.bad_channels.remove(error_ch)
 
     def bad_ckbx_assigned(self):
         bad_channels = [ch for ch in self.bad_chkbts if self.bad_chkbts[ch].isChecked()]
-        self.mw.pr.meeg_bad_channels[self.name] = bad_channels
+        self.current_obj.bad_channels = bad_channels
         self.files_widget.content_changed()
 
     def set_chkbx_enable(self, enable):
@@ -1463,12 +1451,13 @@ class SubBadsWidget(QWidget):
             self.bad_chkbts[chkbx].setEnabled(enable)
 
     def get_selected_bads(self, _):
-        self.mw.pr.meeg_bad_channels[self.name] = self.raw.info['bads']
+        if self.current_obj._raw:
+            self.current_obj.bad_channels = self.current_obj._raw.info['bads']
         self.set_chkbx_enable(True)
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
-        for ch in self.mw.pr.meeg_bad_channels[self.name]:
+        for ch in self.current_obj.bad_channels:
             self.bad_chkbts[ch].setChecked(True)
         self.files_widget.content_changed()
 
@@ -1476,18 +1465,17 @@ class SubBadsWidget(QWidget):
         # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
         self.set_chkbx_enable(False)
 
-        self.meeg = MEEG(self.name, self.mw)
         dialog = QDialog(self)
         dialog.setWindowTitle('Opening...')
         dialog.open()
-        self.raw = self.meeg.load_raw()
-        self.raw_fig = self.raw.plot(n_channels=30, bad_color='red', title=self.name)
+        raw = self.meeg.load_raw()
+        self.raw_fig = raw.plot(n_channels=30, bad_color='red', title=self.current_obj.name)
         # Connect Closing of Matplotlib-Figure to assignment of bad-channels
         self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
         dialog.close()
 
     def resizeEvent(self, event):
-        if self.name:
+        if self.current_obj:
             self.make_bad_chbxs()
         event.accept()
 
@@ -1637,7 +1625,7 @@ class EventIDGui(QDialog):
 
         try:
             # Load Events from File
-            meeg = MEEG(self.name, self.mw, suppress_msgbx=True)
+            meeg = MEEG(self.name, self.mw, suppress_warnings=True)
             events = meeg.load_events()
         except FileNotFoundError:
             self.event_id_label.setText(f'No events found for {self.name}')
@@ -1778,24 +1766,29 @@ class CopyTrans(QDialog):
 
         self.setLayout(layout)
 
-    def from_selected(self, current_meeg):
-        self.current_meeg = current_meeg
+    def _compare_digs(self, worker_signals):
         self.copy_tos.clear()
-        if current_meeg in self.mw.pr.all_info:
-            # Get Digitization points, which were stored at import into all_info
-            current_dig = self.mw.pr.all_info[current_meeg]['dig']
+        # Get Digitization points
+        current_dig = self.current_meeg.load_info()['dig']
 
-            # Add all meeg, which have the exact same digitization points
-            # (assuming, that they can use the same trans-file)
-            for k in self.to_meegs:
-                if k not in self.copy_tos and self.mw.pr.all_info[k]['dig'] == current_dig:
-                    self.copy_tos.append(k)
+        # Add all meeg, which have the exact same digitization points
+        # (assuming, that they can use the same trans-file)
+        worker_signals.pgbar_max.emit(len(self.to_meegs))
+        for n, to_meeg in enumerate(self.to_meegs):
+            worker_signals.pgbar_text.emit(f'Comparing: {to_meeg}')
+            if MEEG(to_meeg, self.mw).load_info()['dig'] == current_dig:
+                self.copy_tos.append(to_meeg)
+            worker_signals.pgbar_n.emit(n + 1)
+
         self.to_list.content_changed()
+
+    def from_selected(self, current_meeg):
+        self.current_meeg = MEEG(current_meeg, self.mw)
+        WorkerDialog(self, self._compare_digs, show_buttons=False, show_console=False)
 
     def copy_trans(self):
         if self.current_meeg:
-            meeg = MEEG(self.current_meeg, self.mw)
-            from_path = meeg.trans_path
+            from_path = self.current_meeg.trans_path
 
             for copy_to in self.copy_tos:
                 to_meeg = MEEG(copy_to, self.mw)
@@ -2143,7 +2136,7 @@ class FileManagment(QDialog):
         msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selcted Files?')
 
         if msgbx == QMessageBox.Yes:
-            WorkerDialog(self, self._file_remover, kind=kind)
+            WorkerDialog(self, self._file_remover, kind=kind, show_console=True, )
 
 
 class ICASelect(QDialog):
@@ -2418,13 +2411,6 @@ class ReloadRaw(QDialog):
 
         self.setLayout(layout)
 
-    def start_reload(self):
-        # Not with partial because otherwise the clicked-arg from clicked goes into *args
-        selected_raw = self.raw_list.get_current()
-        raw_path = QFileDialog.getOpenFileName(self, 'Select Raw for Reload')[0]
-        if raw_path:
-            WorkerDialog(self, self.reload_raw, selected_raw, raw_path)
-
     def reload_raw(self, selected_raw, raw_path):
         meeg = MEEG(selected_raw, self.mw)
         raw = load_raw_file(raw_path)
@@ -2435,4 +2421,6 @@ class ReloadRaw(QDialog):
         # Not with partial because otherwise the clicked-arg from clicked goes into *args
         selected_raw = self.raw_list.get_current()
         raw_path = QFileDialog.getOpenFileName(self, 'Select Raw for Reload')[0]
-        WorkerDialog(self, self.reload_raw, selected_raw=selected_raw, raw_path=raw_path)
+        if raw_path:
+            WorkerDialog(self, self.reload_raw, selected_raw=selected_raw, raw_path=raw_path,
+                         show_console=True, title=f'Reloading Raw for {selected_raw}')

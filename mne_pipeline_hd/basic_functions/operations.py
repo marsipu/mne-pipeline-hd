@@ -66,8 +66,12 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
     # Filter Empty-Room-Data too
     if meeg.erm != 'None':
         erm_results = compare_filep(meeg, meeg.erm_filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
-        if erm_results['highpass'] != 'equal' or erm_results['lowpass'] != 'equal':
+        if any([erm_results[key] != 'equal' for key in erm_results]):
             erm_raw = meeg.load_erm()
+
+            if bad_interpolation == 'Raw (Unfiltered)':
+                erm_raw = erm_raw.interpolate_bads()
+
             erm_raw.filter(highpass, lowpass)
 
             erm_length = erm_raw.n_times / erm_raw.info['sfreq']  # in s

@@ -54,11 +54,6 @@ class BaseLoading:
         self.img_format = self.mw.get_setting('img_format')
         self.dpi = self.mw.get_setting('dpi')
 
-        # Prepare info-dictionary for Loading-Object
-        if self.name not in self.mw.pr.all_info:
-            self.pr.all_info[self.name] = dict()
-        self.info = self.mw.pr.all_info[self.name]
-
         # Prepare plot-files-dictionary for Loading-Object
         if self.name not in self.mw.pr.plot_files:
             self.pr.plot_files[self.name] = dict()
@@ -284,7 +279,7 @@ class BaseLoading:
 class MEEG(BaseLoading):
     """ Class for File-Data in File-Loop"""
 
-    def __init__(self, name, main_win, fsmri=None, suppress_msgbx=True):
+    def __init__(self, name, main_win, fsmri=None, suppress_warnings=True):
 
         super().__init__(name, main_win)
 
@@ -298,10 +293,8 @@ class MEEG(BaseLoading):
             self.erm = self.mw.pr.meeg_to_erm[name]
         except KeyError:
             self.erm = 'None'
-            warning = f'No Empty-Room-Measurement assigned for {self.name}, defaulting to "None"'
-            print(warning)
-            if not suppress_msgbx:
-                QMessageBox.warning(self.mw, 'No ERM', warning)
+            if not suppress_warnings:
+                print(f'No Empty-Room-Measurement assigned for {self.name}, defaulting to "None"')
         try:
             if fsmri and fsmri.name == self.mw.pr.meeg_to_fsmri[name]:
                 self.fsmri = fsmri
@@ -309,38 +302,30 @@ class MEEG(BaseLoading):
                 self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[name], main_win)
         except KeyError:
             self.fsmri = FSMRI('None', main_win)
-            warning = f'No MRI-Subject assigned for {self.name}, defaulting to "None"'
-            print(warning)
-            if not suppress_msgbx:
-                QMessageBox.warning(self.mw, 'No MRI', warning)
+            if not suppress_warnings:
+                print(f'No MRI-Subject assigned for {self.name}, defaulting to "None"')
         try:
             self.bad_channels = self.mw.pr.meeg_bad_channels[name]
         except KeyError:
             self.bad_channels = list()
-            warning = f'No bad channels assigned for {self.name}, defaulting to empty list'
-            print(warning)
-            if not suppress_msgbx:
-                QMessageBox.warning(self.mw, 'No Bad Channels', warning)
+            if not suppress_warnings:
+                print(f'No bad channels assigned for {self.name}, defaulting to empty list')
         try:
             self.event_id = self.mw.pr.meeg_event_id[name]
             if len(self.event_id) == 0:
                 raise RuntimeError(name)
         except (KeyError, RuntimeError):
             self.event_id = dict()
-            warning = f'No EventID assigned for {self.name}, defaulting to empty dictionary'
-            print(warning)
-            if not suppress_msgbx:
-                QMessageBox.warning(self.mw, 'No Event-ID', warning)
+            if not suppress_warnings:
+                print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
         try:
             self.sel_trials = self.mw.pr.sel_event_id[name]
             if len(self.sel_trials) == 0:
                 raise RuntimeError(name)
         except (KeyError, RuntimeError):
             self.sel_trials = list()
-            warning = f'No Trials selected for {self.name}, defaulting to empty list'
-            print(warning)
-            if not suppress_msgbx:
-                QMessageBox.warning(self.mw, 'No Trials', warning)
+            if not suppress_warnings:
+                print(f'No Trials selected for {self.name}, defaulting to empty list')
 
         self.load_attributes()
         self.load_paths()
@@ -479,35 +464,6 @@ class MEEG(BaseLoading):
         self.events_id = self.mw.pr.meeg_event_id[self.name]
         self.sel_trials = self.mw.pr.sel_event_id[self.name]
 
-    def extract_info(self):
-        raw = self.load_raw()
-        self.pr.all_info[self.name] = {}
-        info_keys = ['ch_names', 'experimenter', 'highpass', 'line_freq', 'gantry_angle', 'lowpass',
-                     'utc_offset', 'nchan', 'proj_name', 'sfreq', 'subject_info', 'device_info',
-                     'helium_info']
-        try:
-            for key in info_keys:
-                self.pr.all_info[self.name][key] = raw.info[key]
-            # Add arrays of digitization-points and save it to json to make the trans-file-management possible
-            # (same digitization = same trans-file)
-            if raw.info['dig'] is not None:
-                dig_dict = {}
-                for dig_point in raw.info['dig']:
-                    dig_dict[dig_point['ident']] = {}
-                    dig_dict[dig_point['ident']]['kind'] = dig_point['kind']
-                    dig_dict[dig_point['ident']]['pos'] = [float(cd) for cd in dig_point['r']]
-                self.pr.all_info[self.name]['dig'] = dig_dict
-            self.pr.all_info[self.name]['meas_date'] = str(raw.info['meas_date'])
-            # Some raw-files don't have get_channel_types?
-            try:
-                self.pr.all_info[self.name]['ch_types'] = raw.get_channel_types(unique=True)
-            except AttributeError:
-                self.pr.all_info[self.name]['ch_types'] = list()
-            self.pr.all_info[self.name]['proj_id'] = int(raw.info['proj_id'])
-            self.pr.all_info[self.name]['n_times'] = raw.n_times
-        except (KeyError, TypeError):
-            pass
-
     # Todo: Rename-Function
     def rename(self, new_name):
         for data_type in self.paths_dict:
@@ -538,7 +494,7 @@ class MEEG(BaseLoading):
     #         data.pick(None, exclude='bads')
     #         print(f'Excluded Bads')
 
-    def _update_raw_info(self, raw):
+    def _update_raw_bads(self, raw):
         # Take bad_channels from file if there are none in self.bad_channels
         if len(raw.info['bads']) > 0 and len(self.bad_channels) == 0:
             self.bad_channels = raw.info['bads']
@@ -548,7 +504,6 @@ class MEEG(BaseLoading):
             raw.info['bads'] = bad_channels
 
     def load_info(self, copy=True):
-        """Get raw-info, either from all_info in project or from raw-file if not in all_info"""
         if self._info is None:
             self._info = mne.io.read_info(self.raw_path)
 
@@ -561,7 +516,7 @@ class MEEG(BaseLoading):
         if self._raw is None:
             self._raw = mne.io.read_raw_fif(self.raw_path, preload=True)
 
-        self._update_raw_info(self._raw)
+        self._update_raw_bads(self._raw)
 
         if copy:
             return self._raw.copy()
@@ -571,10 +526,7 @@ class MEEG(BaseLoading):
     def save_raw(self, raw):
         self._raw = raw
 
-        self._update_raw_info(self._raw)
-
-        # Extract info again from raw, because this is the new raw
-        self.extract_info()
+        self._update_raw_bads(self._raw)
 
         raw.save(self.raw_path, overwrite=True)
         self.save_file_params(self.raw_path)

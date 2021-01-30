@@ -88,8 +88,6 @@ class Project:
         self.all_groups = dict()
         # Stores selected Grand-Average-Groups
         self.sel_groups = list()
-        # Stores selected Info-Attributes for each file
-        self.all_info = dict()
         # Stores paths of saved plots
         self.plot_files = dict()
         # Stores functions and if they are selected
@@ -124,7 +122,6 @@ class Project:
         self.ica_exclude_path = join(self.pscripts_path, f'ica_exclude_{self.name}.json')
         self.all_groups_path = join(self.pscripts_path, f'all_groups_{self.name}.json')
         self.sel_groups_path = join(self.pscripts_path, f'selected_groups_{self.name}.json')
-        self.all_info_path = join(self.pscripts_path, f'all_info_{self.name}.json')
         self.plot_files_path = join(self.pscripts_path, f'plot_files_{self.name}.json')
         self.sel_functions_path = join(self.pscripts_path, f'selected_functions_{self.name}.json')
         self.add_kwargs_path = join(self.pscripts_path, f'additional_kwargs_{self.name}.json')
@@ -146,7 +143,6 @@ class Project:
                                   self.ica_exclude_path: 'ica_exclude',
                                   self.all_groups_path: 'all_groups',
                                   self.sel_groups_path: 'sel_groups',
-                                  self.all_info_path: 'all_info',
                                   self.plot_files_path: 'plot_files',
                                   self.sel_functions_path: 'sel_functions',
                                   self.add_kwargs_path: 'add_kwargs',
@@ -173,7 +169,6 @@ class Project:
         self.old_meeg_to_fsmri_path = join(self.pscripts_path, 'sub_dict.json')
         self.old_all_groups_path = join(self.pscripts_path, 'grand_avg_dict.json')
         self.old_sel_groups_path = join(self.pscripts_path, 'selected_grand_average_groups.json')
-        self.old_all_info_path = join(self.pscripts_path, 'info_dict.json')
         self.old_sel_funcs_path = join(self.pscripts_path, 'selected_funcs.json')
 
         # Old Paths to allow transition (22.11.2020)
@@ -189,7 +184,6 @@ class Project:
                           self.meeg_to_fsmri_path: self.old_meeg_to_fsmri_path,
                           self.all_groups_path: self.old_all_groups_path,
                           self.sel_groups_path: self.old_sel_groups_path,
-                          self.all_info_path: self.old_all_info_path,
                           self.sel_functions_path: self.old_sel_funcs_path}
 
         for path in [p for p in self.path_to_attribute if self.path_to_attribute[p] not in self.special_loads]:
