@@ -400,8 +400,9 @@ class MEEG(BaseLoading):
         # Data-Paths
         self.raw_path = join(self.save_dir, f'{self.name}-raw.fif')
         self.raw_filtered_path = join(self.save_dir, f'{self.name}_{self.p_preset}-filtered-raw.fif')
-        self.erm_path = join(self.pr.data_path, self.erm, f'{self.erm}-raw.fif')
-        self.erm_processed_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
+        if self.erm:
+            self.erm_path = join(self.pr.data_path, self.erm, f'{self.erm}-raw.fif')
+            self.erm_processed_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
         self.events_path = join(self.save_dir, f'{self.name}_{self.p_preset}-eve.fif')
         self.epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-epo.fif')
         self.reject_log_path = join(self.save_dir, f'{self.name}_{self.p_preset}-arlog.py')
