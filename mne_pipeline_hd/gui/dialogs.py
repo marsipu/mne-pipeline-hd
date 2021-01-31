@@ -20,6 +20,7 @@ from functools import partial
 from os.path import join
 from pathlib import Path
 
+import mne
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
@@ -547,7 +548,7 @@ class RawInfo(QDialog):
             other_infos['size'] = f'{int(sizes_sum / 1024 ** 2)}'
             size_unit = 'MB'
 
-        # other_infos['ch_types']
+        other_infos['ch_types'] = {mne.io.pick.channel_type(info, idx) for idx in range(len(info['chs']))}
 
         key_list = [('no_files', 'Size of all associated files'),
                     ('size', 'Size of all associated files', size_unit),

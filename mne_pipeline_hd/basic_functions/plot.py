@@ -136,7 +136,7 @@ def plot_tfr(meeg, show_plots):
 
     try:
         itcs = meeg.load_itc_tfr_average()
-    except FileNotFoundError:
+    except (FileNotFoundError, UnboundLocalError):
         print(f'{meeg.itc_tfr_average_path} not found!')
     else:
         for itc in itcs:

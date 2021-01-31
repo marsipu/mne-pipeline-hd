@@ -528,7 +528,7 @@ def plot_ica_scores(meeg, show_plots):
     else:
         eog_score_fig = None
 
-    ecg_scores = meeg.load_json('ecg_scores')
+    ecg_scores = meeg.load_json('ecg_scores', default=list())
     if len(ecg_scores) > 1:
         ica = meeg.load_ica()
         ecg_score_fig = ica.plot_scores(ecg_scores, title=f'{meeg.name}: ECG', show=show_plots)
