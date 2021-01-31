@@ -481,7 +481,7 @@ class MEEG(BaseLoading):
                         'Evoked': {'path': self.evokeds_path,
                                    'load': 'load_evokeds',
                                    'save': 'save_evokeds'},
-                        'TF Power Epochs': {'path': self.power_tfr_average_path,
+                        'TF Power Epochs': {'path': self.power_tfr_epochs_path,
                                             'load': 'load_power_tfr_epochs',
                                             'save': 'save_power_tfr_epochs'},
                         'TF ITC Epochs': {'path': self.itc_tfr_epochs_path,
