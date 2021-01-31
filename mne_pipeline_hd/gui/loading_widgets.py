@@ -1344,6 +1344,7 @@ class SubBadsWidget(QWidget):
         self.setWindowTitle('Assign bad_channels for your files')
         self.bad_chkbts = {}
         self.current_obj = None
+        self.raw = None
         self.raw_fig = None
 
         self.init_ui()
@@ -1449,7 +1450,7 @@ class SubBadsWidget(QWidget):
     def get_selected_bads(self, _):
         # In-Place-Operations to maintain reference from current_obj to meeg_bad_channels
         self.current_obj.bad_channels.clear()
-        self.current_obj.bad_channels += self.current_obj._raw.info['bads']
+        self.current_obj.bad_channels += self.raw.info['bads']
         self.set_chkbx_enable(True)
         # Clear all entries
         for bt in self.bad_chkbts:
@@ -1465,8 +1466,8 @@ class SubBadsWidget(QWidget):
         plot_dialog = QDialog(self)
         plot_dialog.setWindowTitle('Opening Raw-Plot...')
         plot_dialog.open()
-        self.current_obj.load_raw()
-        self.raw_fig = self.current_obj._raw.plot(n_channels=30, bad_color='red', title=self.current_obj.name)
+        self.raw = self.current_obj.load_raw()
+        self.raw_fig = self.raw.plot(n_channels=30, bad_color='red', title=self.current_obj.name)
         # Connect Closing of Matplotlib-Figure to assignment of bad-channels
         self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
         plot_dialog.close()
