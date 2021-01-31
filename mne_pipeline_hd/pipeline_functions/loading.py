@@ -57,7 +57,7 @@ def load_decorator(load_func):
             data = load_func(*args, **kwargs)
 
         # Save data in data-dict for machines with big RAM
-        if QSettings().value('save_ram') == 'false':
+        if QSettings().value('save_ram') == 'false' or QSettings().value('save_ram') is False:
             obj_instance.data_dict[data_type] = data
 
         return data
@@ -86,7 +86,7 @@ def save_decorator(save_func):
         save_func(*args, **kwargs)
 
         # Save data in data-dict for machines with big RAM
-        if QSettings().value('save_ram') == 'false':
+        if QSettings().value('save_ram') == 'false' or QSettings().value('save_ram') is False:
             obj_instance.data_dict[data_type] = data
 
         # Save File-Parameters
@@ -147,6 +147,7 @@ class BaseLoading:
 
         return paths
 
+    # Todo: Only save relevant parameters (with dependencies)
     def save_file_params(self, data_type):
         paths = self._return_path_list(data_type)
         for path in paths:
