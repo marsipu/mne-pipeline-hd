@@ -90,7 +90,9 @@ def save_decorator(save_func):
             obj_instance.data_dict[data_type] = data
 
         # Save File-Parameters
-        obj_instance.save_file_params(data_type)
+        paths = obj_instance._return_path_list(data_type)
+        for path in paths:
+            obj_instance.save_file_params(path)
 
     return save_wrapper
 
@@ -148,28 +150,26 @@ class BaseLoading:
         return paths
 
     # Todo: Only save relevant parameters (with dependencies)
-    def save_file_params(self, data_type):
-        paths = self._return_path_list(data_type)
-        for path in paths:
-            file_name = Path(path).name
+    def save_file_params(self, path):
+        file_name = Path(path).name
 
-            if file_name not in self.file_parameters:
-                self.file_parameters[file_name] = dict()
-            # Get the name of the calling function (assuming it is 2 Frames above)
-            if 'FUNCTION' in self.file_parameters[file_name]:
-                self.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
-            else:
-                self.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
-            self.file_parameters[file_name]['NAME'] = self.name
-            self.file_parameters[file_name]['PATH'] = path
-            if 'TIME' in self.file_parameters[file_name]:
-                self.file_parameters[file_name]['TIME'].append(datetime.now())
-            else:
-                self.file_parameters[file_name]['TIME'] = [datetime.now()]
-            self.file_parameters[file_name]['SIZE'] = getsize(path)
-            self.file_parameters[file_name]['P_PRESET'] = self.p_preset
-            for p_name in self.p:
-                self.file_parameters[file_name][p_name] = self.p[p_name]
+        if file_name not in self.file_parameters:
+            self.file_parameters[file_name] = dict()
+        # Get the name of the calling function (assuming it is 2 Frames above)
+        if 'FUNCTION' in self.file_parameters[file_name]:
+            self.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
+        else:
+            self.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
+        self.file_parameters[file_name]['NAME'] = self.name
+        self.file_parameters[file_name]['PATH'] = path
+        if 'TIME' in self.file_parameters[file_name]:
+            self.file_parameters[file_name]['TIME'].append(datetime.now())
+        else:
+            self.file_parameters[file_name]['TIME'] = [datetime.now()]
+        self.file_parameters[file_name]['SIZE'] = getsize(path)
+        self.file_parameters[file_name]['P_PRESET'] = self.p_preset
+        for p_name in self.p:
+            self.file_parameters[file_name][p_name] = self.p[p_name]
 
     def clear_plot_files(self):
         """Clear all entries in plot-files, where the image has already been deleteds"""
@@ -403,6 +403,9 @@ class MEEG(BaseLoading):
         if self.erm:
             self.erm_path = join(self.pr.data_path, self.erm, f'{self.erm}-raw.fif')
             self.erm_processed_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
+        else:
+            self.erm_path = None
+            self.erm_processed_path = None
         self.events_path = join(self.save_dir, f'{self.name}_{self.p_preset}-eve.fif')
         self.epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-epo.fif')
         self.reject_log_path = join(self.save_dir, f'{self.name}_{self.p_preset}-arlog.py')

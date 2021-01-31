@@ -11,6 +11,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 from __future__ import print_function
 
+import gc
 import os
 import shutil
 import subprocess
@@ -62,19 +63,15 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
     else:
         print(f'{meeg.name} already filtered with highpass={highpass} and lowpass={lowpass}')
 
+    # Remove raw to avoid memory overload
+    del raw
+    gc.collect()
+
     # Filter Empty-Room-Data too
     if meeg.erm:
         erm_results = compare_filep(meeg, meeg.erm_processed_path, ['highpass', 'lowpass', 'bad_interpolation'])
         if any([erm_results[key] != 'equal' for key in erm_results]):
             erm_raw = meeg.load_erm()
-
-            if bad_interpolation == 'Raw (Unfiltered)':
-                erm_raw = erm_raw.interpolate_bads()
-
-            erm_raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
-                           h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method,
-                           iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
-                           skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
             # Crop ERM-Measurement to limit if given
             if erm_t_limit:
@@ -84,6 +81,14 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
                     tmin = diff / 2
                     tmax = erm_length - diff / 2
                     erm_raw.crop(tmin=tmin, tmax=tmax)
+
+            if bad_interpolation == 'Raw (Unfiltered)':
+                erm_raw = erm_raw.interpolate_bads()
+
+            erm_raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
+                           h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method,
+                           iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
+                           skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
             meeg.save_erm_processed(erm_raw)
             print('ERM-Data filtered and saved')
