@@ -316,8 +316,11 @@ class BaseLoading:
         self.existing_paths.clear()
         for data_type in self.io_dict:
             paths = self._return_path_list(data_type)
-            self.existing_paths[data_type] = [p for p in paths if isfile(p) or isdir(p)
-                                              or isfile(p + '-lh.stc') or isfile(p + '-rh.stc')]
+            if paths:
+                self.existing_paths[data_type] = [p for p in paths if isfile(p) or isdir(p)
+                                                  or isfile(p + '-lh.stc') or isfile(p + '-rh.stc')]
+            else:
+                self.existing_paths[data_type] = list()
 
     def remove_path(self, data_type):
         # Remove path specified by path_type (which is the name mapped to the path in self.paths_dict)

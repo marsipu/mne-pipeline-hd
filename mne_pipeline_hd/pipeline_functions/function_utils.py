@@ -353,7 +353,7 @@ class RunDialog(QDialog):
             self.close_bt.setEnabled(True)
 
             if self.mw.get_setting('shutdown'):
-                self.save_main()
+                self.mw.save_main()
                 shutdown()
 
     def thread_finished(self, _):

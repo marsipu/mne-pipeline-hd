@@ -541,14 +541,16 @@ class RawInfo(QDialog):
 
         sizes_sum = sum(sizes)
         if sizes_sum / 1024 < 1000:
-            other_infos['size_string'] = f'{int(sizes_sum / 1024)}'
-            other_infos['size_unit'] = 'KB'
+            other_infos['size'] = f'{int(sizes_sum / 1024)}'
+            size_unit = 'KB'
         else:
-            other_infos['size_string'] = f'{int(sizes_sum / 1024 ** 2)}'
-            other_infos['size_unit'] = 'MB'
+            other_infos['size'] = f'{int(sizes_sum / 1024 ** 2)}'
+            size_unit = 'MB'
+
+        # other_infos['ch_types']
 
         key_list = [('no_files', 'Size of all associated files'),
-                    ('sizes', 'Size of all associated files', 'size_unit'),
+                    ('size', 'Size of all associated files', size_unit),
                     ('proj_name', 'Project-Name'),
                     ('experimenter', 'Experimenter'),
                     ('line_freq', 'Powerline-Frequency', 'Hz'),
