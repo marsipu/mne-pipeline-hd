@@ -475,7 +475,7 @@ def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
     return overlay_figs
 
 
-def plot_ica_properties(meeg, ica_properties_indices, show_plots):
+def plot_ica_properties(meeg, show_plots):
     ica = meeg.load_ica()
     epochs = meeg.load_epochs()
 
@@ -487,36 +487,18 @@ def plot_ica_properties(meeg, ica_properties_indices, show_plots):
         eog_epochs = meeg.load_eog_epochs()
         eog_prop_figs = ica.plot_properties(eog_epochs, eog_indices, psd_args=psd_args,
                                             show=show_plots)
-        # Remove EOG-Index from ica_properties_indices to avoid plotting the same index twice
-        for idx in [idx for idx in eog_indices if idx in ica_properties_indices]:
-            ica_properties_indices.remove(idx)
-
         meeg.plot_save('ICA', subfolder='properties', trial='eog', matplotlib_figure=eog_prop_figs)
-    else:
-        eog_prop_figs = list()
 
     if len(ecg_indices) > 0:
         ecg_epochs = meeg.load_ecg_epochs()
         ecg_prop_figs = ica.plot_properties(ecg_epochs, ecg_indices, psd_args=psd_args,
                                             show=show_plots)
-        # Remove EOG-Index from ica_properties_indices to avoid plotting the same index twice
-        for idx in [idx for idx in ecg_indices if idx in ica_properties_indices]:
-            ica_properties_indices.remove(idx)
+        meeg.plot_save('ICA', subfolder='properties', trial='ecg', matplotlib_figure=ecg_prop_figs)
 
-        meeg.plot_save('ICA', subfolder='properties', trial='eog', matplotlib_figure=ecg_prop_figs)
-    else:
-        ecg_prop_figs = list()
-
-    # Plot selected properties other than EOG/ECG-Indices
-    if len(ica_properties_indices) > 1:
-        prop_figs = ica.plot_properties(epochs, ica_properties_indices, psd_args=psd_args,
-                                        show=show_plots)
-
-        meeg.plot_save('ICA', subfolder='properties', trial='standard', matplotlib_figure=prop_figs)
-    else:
-        prop_figs = None
-
-    return prop_figs, eog_prop_figs, ecg_prop_figs
+    remaining_indices = [ix for ix in ica.exclude if ix not in eog_indices + ecg_indices]
+    if len(remaining_indices) > 0:
+        prop_figs = ica.plot_properties(epochs, remaining_indices, psd_args=psd_args, show=show_plots)
+        meeg.plot_save('ICA', subfolder='properties', trial='manually', matplotlib_figure=prop_figs)
 
 
 def plot_ica_scores(meeg, show_plots):

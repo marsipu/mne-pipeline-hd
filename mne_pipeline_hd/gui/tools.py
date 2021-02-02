@@ -12,6 +12,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import sys
 import time
 from functools import partial
+from os.path import isfile
 from random import random
 from time import sleep
 
@@ -463,33 +464,21 @@ class PlotViewSelection(QDialog):
                             image_paths = obj.plot_files[self.selected_func]
                         except KeyError as ke:
                             self.all_images[p_preset][obj_name] = f'{ke} not found for {obj_name}'
-                            self.thread_finished(None, obj_name, p_preset)
+                            self.thread_finished(None)
                         else:
-                            keyword_arguments = {'image_paths': image_paths,
-                                                 'obj_name': obj_name,
-                                                 'p_preset': p_preset}
-                            worker = Worker(self.load_images, **keyword_arguments)
-                            worker.signals.finished.connect(lambda val, o_name=obj_name, ppreset=p_preset:
-                                                            self.thread_finished(val, o_name, ppreset))
-                            worker.signals.error.connect(lambda err_tuple, o_name=obj_name, ppreset=p_preset:
-                                                         self.thread_error(err_tuple, o_name, ppreset, 'image'))
-                            self.mw.threadpool.start(worker)
+                            # Load pixmaps from Image-Paths
+                            pixmaps = list()
 
-    def load_images(self, image_paths, obj_name, p_preset):
+                            for image_path in image_paths:
+                                if isfile(image_path):
+                                    pixmap = QPixmap(image_path)
+                                    pixmaps.append(pixmap)
 
-        # Load pixmaps from Image-Paths
-        pixmaps = list()
+                            self.all_images[p_preset][obj_name] = pixmaps
 
-        for image_path in image_paths:
-            pixmap = QPixmap(image_path)
-            pixmaps.append(pixmap)
+                            self.thread_finished(None)
 
-        self.all_images[p_preset][obj_name] = pixmaps
-
-        # Random sleep
-        time.sleep(random())
-
-    def thread_finished(self, _, obj_name, p_preset):
+    def thread_finished(self, _, ):
         self.prog_cnt += 1
         self.prog_dlg.setValue(self.prog_cnt)
 
@@ -517,7 +506,7 @@ class PlotViewSelection(QDialog):
 
         self.all_figs[p_preset][obj_name] = fig_list
 
-        self.thread_finished(None, obj_name, p_preset)
+        self.thread_finished(None)
 
     def thread_error(self, error_tuple, obj_name, p_preset, kind):
         if kind == 'image':
@@ -525,7 +514,7 @@ class PlotViewSelection(QDialog):
         else:
             self.all_figs[p_preset][obj_name] = f'{error_tuple[0]}: {error_tuple[1]}'
 
-        self.thread_finished(None, obj_name, p_preset)
+        self.thread_finished(None)
 
     def closeEvent(self, event):
         for p_preset in self.all_figs:
@@ -562,13 +551,20 @@ class PlotViewer(QMainWindow):
                 row = obj_idx // self.column_count
                 col = obj_idx % self.column_count
 
+                # Add name-label
+                name_label = QLabel(obj_name)
+                name_label.setFont(QFont('AnyType', 14, QFont.Bold))
+
                 if isinstance(obj_items, str):
                     # This displays errors
-                    scroll_layout.addWidget(QLabel(obj_items), row, col)
+                    error_layout = QVBoxLayout()
+                    error_layout.addWidget(name_label, alignment=Qt.AlignHCenter)
+                    error_layout.addWidget(QLabel(obj_items))
+                    scroll_layout.addLayout(error_layout, row, col)
 
                 elif isinstance(obj_items, list):
                     tab_widget = QTabWidget()
-
+                    obj_layout = QVBoxLayout()
                     for item_idx, item in enumerate(obj_items):
                         if self.interactive:
                             fig, default_size = item
@@ -584,11 +580,15 @@ class PlotViewer(QMainWindow):
                         if len(obj_items) > 1:
                             tab_widget.addTab(view_widget, str(item_idx))
                         else:
-                            scroll_layout.addWidget(view_widget, row, col)
+                            obj_layout.addWidget(name_label, alignment=Qt.AlignHCenter)
+                            # Add view-widget if not enough items for Tab-Widget
+                            obj_layout.addWidget(view_widget)
+                            scroll_layout.addLayout(obj_layout, row, col)
 
                     if len(obj_items) > 1:
                         frame_widget = QWidget()
                         frame_layout = QVBoxLayout()
+                        frame_layout.addWidget(name_label, alignment=Qt.AlignHCenter)
                         frame_layout.addWidget(tab_widget)
                         show_bt = QPushButton('Show')
                         show_bt.clicked.connect(partial(self.show_single_items, p_preset, obj_name))
@@ -652,7 +652,7 @@ class PlotViewer(QMainWindow):
                 col = c % self.column_count
                 item_widget = grid_layout.itemAtPosition(row, col).widget()
                 if not isinstance(item_widget, QLabel):
-                    tab_widget = item_widget.layout().itemAt(0).widget()
+                    tab_widget = item_widget.layout().itemAt(1).widget()
                     tab_widget.setCurrentIndex(idx)
 
     def update_layout(self):

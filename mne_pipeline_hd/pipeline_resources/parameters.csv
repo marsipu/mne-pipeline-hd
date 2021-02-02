@@ -75,5 +75,4 @@ ecd_orientations;;Inverse;{};;;DictGui;
 morph_to;;Grand-Average;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
 ica_source_data;;ICA;Raw (Filtered)';;Which data to plot in sources-plot from ICA;ComboGui;{'options':['Raw (Unfiltered)', 'Raw (Filtered)', 'Epochs', 'Epochs (EOG)', 'Epochs (ECG)',  'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
 ica_overlay_data;;ICA;Evokeds';;Which data to plot in overlay-plot from ICA;ComboGui;{'options':['Raw (Unfiltered)', 'Raw (Filtered)', 'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
-ica_properties_indices;;ICA;[0];;Select from which ICA-components you want to plot the properties;ListGui;
 plot_sensors_kind;;Plot;'topomap';;The kind of plot for plot_sensors;ComboGui;{'options':['topomap', '3d', 'select']}
