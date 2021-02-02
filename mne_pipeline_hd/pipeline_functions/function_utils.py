@@ -272,8 +272,6 @@ class RunDialog(QDialog):
                 list(self.all_objects[self.current_object.name]['functions'].keys()).index(self.current_func), 0))
 
     def start_thread(self):
-        # Save all Main-Scripts in case of error
-        self.mw.save_main()
         # Set paused to false
         self.paused = False
         # Enable/Disable Buttons

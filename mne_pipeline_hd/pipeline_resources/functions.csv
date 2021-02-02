@@ -15,7 +15,7 @@ setup_vol_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsm
 morph_fsmri;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri,morph_to
 morph_labels_from_fsaverage;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri
 create_forward_solution;;MEEG;Compute;Forward;False;False;;operations;basic;meeg,n_jobs,eeg_fwd
-estimate_noise_covariance;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,baseline,n_jobs,erm_noise_cov,calm_noise_cov
+estimate_noise_covariance;;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,baseline,n_jobs,noise_cov_mode,noise_cov_method
 create_inverse_operator;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg
 source_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,inverse_method,pick_ori,lambda2
 mixed_norm_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,pick_ori,inverse_method
@@ -60,7 +60,7 @@ plot_animated_stc;Plot Source-Estimate Video;MEEG;Plot;Inverse;True;True;;plot;b
 plot_snr;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
 plot_label_time_course;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
 plot_ecd;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg
-plot_source_space_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,target_labels,con_fmin,con_fmax,show_plots
+plot_source_space_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,target_labels,parcellation,con_fmin,con_fmax,show_plots
 plot_grand_avg_evokeds;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_tfr;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,morph_to,mne_evoked_time
@@ -70,5 +70,5 @@ plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,co
 plot_ica_components;Plot ICA-Components;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
 plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_source_data,show_plots
 plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_overlay_data,show_plots
-plot_ica_properties;Plot ICA-Properties;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_properties_indices,show_plots
+plot_ica_properties;Plot ICA-Properties;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
 plot_ica_scores;Plot ICA-Scores;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots

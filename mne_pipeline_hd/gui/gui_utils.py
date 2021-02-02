@@ -87,6 +87,7 @@ class ConsoleWidget(QTextEdit):
         self.add_html(text)
 
     def write_progress(self, text):
+        text = text.replace('\r', '')
         text = text.replace('\n', '<br>')
         text = f'<font color="green">{text}</font>'
         if self.is_prog_text:
@@ -101,46 +102,30 @@ class ConsoleWidget(QTextEdit):
             self.add_html(text)
 
 
-class StdoutStderrSignal(QObject):
-    text_written = pyqtSignal(str)
+class StreamSignals(QObject):
     text_updated = pyqtSignal(str)
+    text_written = pyqtSignal(str)
 
 
 class StdoutStderrStream(io.TextIOBase):
 
     def __init__(self, kind):
         super().__init__()
-        self.signal = StdoutStderrSignal()
-        self.last_text = ''
-        self.kind = kind
+        self.signal = StreamSignals()
+        if kind == 'stdout':
+            self.original_stream = sys.__stdout__
+        else:
+            self.original_stream = sys.__stderr__
 
     def write(self, text):
-        if text != '':
-            # Send still the output to the command line
-            if self.kind == 'stderr':
-                sys.__stderr__.write(text)
-            else:
-                sys.__stdout__.write(text)
+        # Still send output to the command-line
+        self.original_stream.write(text)
 
-            # Get progress-text with '\r' as prefix
-            if text[:1] == '\r':
-                # remove the \r as it is not recognized in html
-                text = text.replace('\r', '')
-                # Avoid doubling
-                if text != self.last_text:
-                    self.signal.text_updated.emit(text)
-                    self.last_text = text
-
-            elif self.kind == 'stdout':
-                self.signal.text_written.emit(text)
-
-            # Eliminate weird symbols and avoid doubling
-            elif '\x1b' not in text and text != self.last_text:
-                # Avoid weird last line in tqdm-progress
-                if self.last_text[-1:] != '\n':
-                    text = '\n' + text
-                self.signal.text_written.emit(text)
-                self.last_text = text
+        # Get progress-text with '\r' as prefix
+        if text[:1] == '\r':
+            self.signal.text_updated.emit(text)
+        else:
+            self.signal.text_written.emit(text)
 
 
 class WorkerSignals(QObject):

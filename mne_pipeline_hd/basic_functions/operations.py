@@ -20,6 +20,7 @@ from functools import reduce
 from itertools import combinations
 from os import environ
 from os.path import isdir, isfile, join
+from pathlib import Path
 
 import autoreject as ar
 import mne
@@ -60,12 +61,13 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
             raw = raw.interpolate_bads()
 
         meeg.save_filtered(raw)
+
+        # Remove raw to avoid memory overload
+        del raw
+        gc.collect()
+
     else:
         print(f'{meeg.name} already filtered with highpass={highpass} and lowpass={lowpass}')
-
-    # Remove raw to avoid memory overload
-    del raw
-    gc.collect()
 
     # Filter Empty-Room-Data too
     if meeg.erm:
@@ -522,27 +524,32 @@ def plot_ica_scores(meeg, show_plots):
 
 
 def apply_ica(meeg, n_pca_components):
-    epochs = meeg.load_epochs()
-    ica = meeg.load_ica()
-
-    # Load the ica-components to exclude
-    ica.exclude = meeg.pr.ica_exclude[meeg.name]
-
-    if len(ica.exclude) == 0:
-        print(f'No components excluded for {meeg.name}')
+    # Check file-parameters to make sure, that ICA is not applied twice in a row
+    epochs_file = Path(meeg.epochs_path).name
+    if epochs_file in meeg.file_parameters and meeg.file_parameters[epochs_file]['FUNCTION'][-1] == 'apply_ica':
+        print(f'Not applying ICA because it was already applied to this file '
+              f'on {meeg.file_parameters[epochs_file]["TIME"][-1]}. If you '
+              f'want to apply ICA again, delete the Epochs-File in FileManagement '
+              f'and redo the Epochs.')
     else:
-        ica_epochs = ica.apply(epochs, n_pca_components=n_pca_components)
-        meeg.save_epochs(ica_epochs)
+        epochs = meeg.load_epochs()
+        ica = meeg.load_ica()
 
-    # Apply to Empty-Room-Data as well if present
-    if meeg.erm:
-        try:
-            erm_data = meeg.load_erm_processed()
-        except FileNotFoundError:
-            erm_data = meeg.load_erm()
+        if len(ica.exclude) == 0:
+            print(f'No components excluded for {meeg.name}')
+        else:
+            ica_epochs = ica.apply(epochs, n_pca_components=n_pca_components)
+            meeg.save_epochs(ica_epochs)
 
-        ica.apply(erm_data, n_pca_components)
-        meeg.save_erm_processed(erm_data)
+        # Apply to Empty-Room-Data as well if present
+        if meeg.erm:
+            try:
+                erm_data = meeg.load_erm_processed()
+            except FileNotFoundError:
+                erm_data = meeg.load_erm()
+
+            ica.apply(erm_data, n_pca_components)
+            meeg.save_erm_processed(erm_data)
 
 
 def get_evokeds(meeg, bad_interpolation):
@@ -880,37 +887,25 @@ def create_forward_solution(meeg, n_jobs, eeg_fwd):
     meeg.save_forward(forward)
 
 
-def estimate_noise_covariance(meeg, baseline, n_jobs, erm_noise_cov, calm_noise_cov):
-    if calm_noise_cov:
-        print('Noise Covariance on 1-Minute-Calm')
-
-        raw = meeg.read_filtered()
-        raw.crop(tmin=5, tmax=50)
-        raw.pick_types(exclude=meeg.bad_channels)
-
-        noise_covariance = mne.compute_raw_covariance(raw, n_jobs=n_jobs,
-                                                      method='empirical')
-        meeg.save_noise_covariance(noise_covariance, 'calm')
-
-    elif meeg.erm is None or erm_noise_cov is False:
+def estimate_noise_covariance(meeg, baseline, n_jobs, noise_cov_mode, noise_cov_method, **kwargs):
+    if noise_cov_mode == 'Epochs' or meeg.erm is None:
         print('Noise Covariance on Epochs')
         epochs = meeg.load_epochs()
 
         tmin, tmax = baseline
+        kwargs = check_kwargs(kwargs, mne.compute_covariance)
         noise_covariance = mne.compute_covariance(epochs, tmin=tmin, tmax=tmax,
-                                                  method='empirical', n_jobs=n_jobs)
-
-        meeg.save_noise_covariance(noise_covariance, 'epochs')
+                                                  method=noise_cov_method, n_jobs=n_jobs, **kwargs)
+        meeg.save_noise_covariance(noise_covariance)
 
     else:
         print('Noise Covariance on Empty-Room-Data')
-
         erm_filtered = meeg.load_erm_processed()
-        erm_filtered.pick_types(exclude=meeg.bad_channels)
 
+        kwargs = check_kwargs(kwargs, mne.compute_raw_covariance)
         noise_covariance = mne.compute_raw_covariance(erm_filtered, n_jobs=n_jobs,
-                                                      method='empirical')
-        meeg.save_noise_covariance(noise_covariance, 'erm')
+                                                      method=noise_cov_method, **kwargs)
+        meeg.save_noise_covariance(noise_covariance)
 
 
 def create_inverse_operator(meeg):

@@ -15,6 +15,7 @@ import functools
 import inspect
 import itertools
 import json
+import os
 import pickle
 import shutil
 from datetime import datetime
@@ -405,7 +406,9 @@ class MEEG(BaseLoading):
         self.raw_filtered_path = join(self.save_dir, f'{self.name}_{self.p_preset}-filtered-raw.fif')
         if self.erm:
             self.erm_path = join(self.pr.data_path, self.erm, f'{self.erm}-raw.fif')
-            self.erm_processed_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
+            self.old_erm_processed_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
+            self.erm_processed_path = join(self.pr.data_path, self.erm,
+                                           f'{self.erm}-{self.name}_{self.p_preset}-processed-raw.fif')
         else:
             self.erm_path = None
             self.erm_processed_path = None
@@ -579,6 +582,8 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_erm_processed(self):
+        if isfile(self.old_erm_processed_path):
+            os.remove(self.old_erm_processed_path)
         return mne.io.read_raw_fif(self.erm_processed_path, preload=True)
 
     @save_decorator
