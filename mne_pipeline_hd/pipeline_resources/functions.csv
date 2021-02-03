@@ -3,6 +3,7 @@ filter_raw;Filter Raw;MEEG;Compute;Preprocessing;False;False;;operations;basic;m
 find_events;Find Events;MEEG;Compute;Events;False;False;;operations;basic;meeg,stim_channels,min_duration,shortest_event,adjust_timeline_by_msec
 find_6ch_binary_events;Find Events HD;MEEG;Compute;Events;False;False;;operations;basic;meeg,min_duration,shortest_event,adjust_timeline_by_msec
 epoch_raw;Get Epochs;MEEG;Compute;Events;False;False;;operations;basic;meeg,ch_types,t_epoch,baseline,reject,flat,bad_interpolation,use_autoreject,consensus_percs,n_interpolates,overwrite_ar,decim,n_jobs
+estimate_noise_covariance;Noise-Covariance;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,baseline,n_jobs,noise_cov_mode,noise_cov_method
 run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_method,ica_fitto,n_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,ch_types,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
 apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,n_pca_components
 get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;basic;meeg,bad_interpolation
@@ -15,7 +16,6 @@ setup_vol_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsm
 morph_fsmri;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri,morph_to
 morph_labels_from_fsaverage;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri
 create_forward_solution;;MEEG;Compute;Forward;False;False;;operations;basic;meeg,n_jobs,eeg_fwd
-estimate_noise_covariance;;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,baseline,n_jobs,noise_cov_mode,noise_cov_method
 create_inverse_operator;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg
 source_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,inverse_method,pick_ori,lambda2
 mixed_norm_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,pick_ori,inverse_method

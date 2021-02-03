@@ -51,6 +51,15 @@ def get_exception_tuple():
     return exctype, value, traceback_str
 
 
+def _html_compatible(text):
+    text = text.replace('<', '&lt;')
+    text = text.replace('>', '&gt;')
+    text = text.replace('\n', '<br>')
+    text = text.replace('\x1b', '')
+
+    return text
+
+
 class ConsoleWidget(QTextEdit):
     def __init__(self):
         super().__init__()
@@ -76,19 +85,19 @@ class ConsoleWidget(QTextEdit):
 
     def write_stdout(self, text):
         self.is_prog_text = False
-        text = text.replace('\n', '<br>')
+        text = _html_compatible(text)
         text = f'<font color="black">{text}</font>'
         self.add_html(text)
 
     def write_error(self, text):
         self.is_prog_text = False
-        text = text.replace('\n', '<br>')
+        text = _html_compatible(text)
         text = f'<font color="red">{text}</font>'
         self.add_html(text)
 
     def write_progress(self, text):
         text = text.replace('\r', '')
-        text = text.replace('\n', '<br>')
+        text = _html_compatible(text)
         text = f'<font color="green">{text}</font>'
         if self.is_prog_text:
             # Delete last line

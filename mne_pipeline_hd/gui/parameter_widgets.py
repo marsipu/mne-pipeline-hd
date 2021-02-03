@@ -868,7 +868,7 @@ class CheckListGui(Param):
 
         if not isinstance(options, list) or len(options) == 0:
             options = ['Empty']
-            default = 'Empty'
+            default = ['Empty']
 
         super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.options = options

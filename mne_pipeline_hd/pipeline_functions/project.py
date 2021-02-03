@@ -230,21 +230,24 @@ class Project:
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.load_default_parameters()
 
+    def load_default_param(self, param_name):
+        string_param = self.mw.pd_params.loc[param_name, 'default']
+        try:
+            self.parameters[self.p_preset][param_name] = literal_eval(string_param)
+        except (ValueError, SyntaxError):
+            # Allow parameters to be defined by functions e.g. by numpy, etc.
+            if self.mw.pd_params.loc[param_name, 'gui_type'] == 'FuncGui':
+                self.parameters[self.p_preset][param_name] = eval(string_param, {'np': np})
+                exp_name = param_name + '_exp'
+                self.parameters[self.p_preset][exp_name] = string_param
+            else:
+                self.parameters[self.p_preset][param_name] = string_param
+
     def load_default_parameters(self):
-        string_params = dict(self.mw.pd_params['default'])
         # Empty the dict for current Parameter-Preset
         self.parameters[self.p_preset] = dict()
-        for param in string_params:
-            try:
-                self.parameters[self.p_preset][param] = literal_eval(string_params[param])
-            except (ValueError, SyntaxError):
-                # Allow parameters to be defined by functions e.g. by numpy, etc.
-                if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
-                    self.parameters[self.p_preset][param] = eval(string_params[param], {'np': np})
-                    exp_name = param + '_exp'
-                    self.parameters[self.p_preset][exp_name] = string_params[param]
-                else:
-                    self.parameters[self.p_preset][param] = string_params[param]
+        for param_name in self.mw.pd_params.index:
+            self.load_default_param(param_name)
 
     def load_last_p_preset(self):
         try:
@@ -261,8 +264,16 @@ class Project:
         self.load_parameters()
         self.load_last_p_preset()
 
-    def save(self):
-        for path in self.path_to_attribute:
+    def save(self, worker_signals=None):
+
+        if worker_signals:
+            worker_signals.pgbar_max.emit(len(self.path_to_attribute))
+
+        for idx, path in enumerate(self.path_to_attribute):
+            if worker_signals:
+                worker_signals.pgbar_n.emit(idx)
+                worker_signals.pgbar_text.emit(f'Saving {self.path_to_attribute[path]}')
+
             attribute = getattr(self, self.path_to_attribute[path], None)
 
             # Make sure the tuples are encoded correctly

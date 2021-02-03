@@ -2270,6 +2270,7 @@ class ICASelect(QDialog):
                 continue
             else:
                 for plot_path in plot_paths:
+                    plot_path = join(self.mw.pr.figures_path, plot_path)
                     pixmap = QPixmap(plot_path)
                     label = QLabel()
                     label.setScaledContents(True)

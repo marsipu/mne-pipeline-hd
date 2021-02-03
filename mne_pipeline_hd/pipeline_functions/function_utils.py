@@ -15,6 +15,7 @@ import logging
 import re
 from collections import OrderedDict
 
+from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QDialog, QGridLayout, QHBoxLayout, QLabel, QListView, QProgressBar,
                              QPushButton, QSizePolicy, QStyle, QVBoxLayout)
@@ -64,7 +65,7 @@ def get_arguments(func_name, module, obj, main_win):
         elif arg_name in main_win.settings:
             keyword_arguments.update({arg_name: main_win.settings[arg_name]})
         elif arg_name in main_win.qsettings.childKeys():
-            keyword_arguments.update({arg_name: main_win.qsettings.value(arg_name)})
+            keyword_arguments.update({arg_name: QSettings().value(arg_name)})
         else:
             raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
 

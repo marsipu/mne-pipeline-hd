@@ -131,6 +131,9 @@ class BaseLoading:
         self.data_dict = dict()
         self.existing_paths = dict()
 
+        # May be removed in future to improve performance (03.02.2021)
+        self.clear_plot_files()
+
     def _return_path_list(self, data_type):
         paths = self.io_dict[data_type]['path']
         # Convert paths to list
@@ -176,9 +179,10 @@ class BaseLoading:
         """Clear all entries in plot-files, where the image has already been deleteds"""
         drop_keys = list()
         for func in self.plot_files:
-            for image_path in self.plot_files[func]:
-                if not isfile(image_path):
-                    self.plot_files[func].remove(image_path)
+            for rel_image_path in self.plot_files[func]:
+                image_path = join(self.figures_path, rel_image_path)
+                if not isfile(image_path) or self.figures_path in rel_image_path:
+                    self.plot_files[func].remove(rel_image_path)
             if len(self.plot_files[func]) == 0:
                 # Keys can't be dropped from dictionary during iteration
                 drop_keys.append(func)
@@ -262,9 +266,11 @@ class BaseLoading:
                         idx_file_path = join(dir_path, idx_file_name)
                         figure.savefig(idx_file_path)
                         print(f'figure: {idx_file_path} has been saved')
+                        # Only store relative path to be compatible across OS
+                        plot_files_save_path = os.path.relpath(idx_file_path, self.figures_path)
                         # Add Plot-Save-Path to plot_files if not already contained
-                        if idx_file_path not in self.plot_files[calling_func]:
-                            self.plot_files[calling_func].append(idx_file_path)
+                        if plot_files_save_path not in self.plot_files[calling_func]:
+                            self.plot_files[calling_func].append(plot_files_save_path)
                 else:
                     matplotlib_figure.savefig(save_path, dpi=dpi)
             elif mayavi_figure:
@@ -275,13 +281,14 @@ class BaseLoading:
                 mlab.savefig(save_path, figure=mlab.gcf())
             else:
                 plt.savefig(save_path, dpi=dpi)
+            print(f'figure: {save_path} has been saved')
 
             if not isinstance(matplotlib_figure, list):
-                print(f'figure: {save_path} has been saved')
-
+                # Only store relative path to be compatible across OS
+                plot_files_save_path = os.path.relpath(save_path, self.figures_path)
                 # Add Plot-Save-Path to plot_files if not already contained
-                if save_path not in self.plot_files[calling_func]:
-                    self.plot_files[calling_func].append(save_path)
+                if plot_files_save_path not in self.plot_files[calling_func]:
+                    self.plot_files[calling_func].append(plot_files_save_path)
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
@@ -581,7 +588,10 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_erm(self):
-        return mne.io.read_raw_fif(self.erm_path, preload=True)
+        erm_raw = mne.io.read_raw_fif(self.erm_path, preload=True)
+        if self.erm in self.pr.meeg_bad_channels:
+            erm_raw.info['bads'] = self.pr.meeg_bad_channels[self.erm]
+        return erm_raw
 
     @load_decorator
     def load_erm_processed(self):

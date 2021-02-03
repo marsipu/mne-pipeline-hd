@@ -23,15 +23,15 @@ from pathlib import Path
 import mne
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
                              QInputDialog,
                              QLabel, QLineEdit, QListView, QMessageBox, QPushButton,
                              QScrollArea, QSizePolicy, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
+from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
+from mne_pipeline_hd.gui.gui_utils import WorkerDialog, set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
 from mne_pipeline_hd.gui.parameter_widgets import BoolGui, StringGui
 from mne_pipeline_hd.pipeline_functions import iswin
@@ -155,7 +155,7 @@ class SettingsDlg(QDialog):
         #                          default=True))
         # layout.addWidget(BoolGui(self.mw.settings, 'save_plots', param_alias='Save Plots',
         #                          description='Do you want to save the plots made to a file?', default=True))
-        # layout.addWidget(BoolGui(self.mw.qsettings, 'enable_cuda', param_alias='Enable CUDA',
+        # layout.addWidget(BoolGui(QSettings(), 'enable_cuda', param_alias='Enable CUDA',
         #                          description='Do you want to enable CUDA? (system has to be setup for cuda)',
         #                          default=False))
         # layout.addWidget(BoolGui(self.mw.settings, 'shutdown', param_alias='Shutdown',
@@ -189,6 +189,41 @@ class SettingsDlg(QDialog):
         layout.addWidget(close_bt)
 
         self.setLayout(layout)
+
+
+class ResetDialog(QDialog):
+    def __init__(self, parent_w):
+        super().__init__(parent_w)
+        self.pw = parent_w
+        self.selected_params = list()
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.addWidget(CheckList(list(self.pw.mw.pr.parameters[self.pw.mw.pr.p_preset].keys()), self.selected_params,
+                                   title='Select the Parameters to reset'))
+        reset_bt = QPushButton('Reset')
+        reset_bt.clicked.connect(self.reset_params)
+        layout.addWidget(reset_bt)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def _reset_finished(self, _):
+        self.pw.update_all_param_guis()
+        self.close()
+
+    def reset_params(self):
+        for param_name in self.selected_params:
+            self.pw.mw.pr.load_default_param(param_name)
+            print(f'Reset {param_name}')
+        wd = WorkerDialog(self, self.pw.mw.pr.save, title='Saving project...')
+        wd.thread_finished.connect(self._reset_finished)
 
 
 class ParametersDock(QDockWidget):
@@ -248,8 +283,12 @@ class ParametersDock(QDockWidget):
         title_layout.addStretch(stretch=2)
 
         reset_bt = QPushButton('Reset')
-        reset_bt.clicked.connect(self.reset_parameters)
+        reset_bt.clicked.connect(partial(ResetDialog, self))
         title_layout.addWidget(reset_bt)
+
+        reset_all_bt = QPushButton('Reset All')
+        reset_all_bt.clicked.connect(self.reset_all_parameters)
+        title_layout.addWidget(reset_all_bt)
 
         self.general_layout.addLayout(title_layout)
 
@@ -349,7 +388,7 @@ class ParametersDock(QDockWidget):
             param_gui.read_param()
             param_gui.set_param()
 
-    def reset_parameters(self):
+    def reset_all_parameters(self):
         msgbox = QMessageBox.question(self, 'Reset all Parameters?',
                                       'Do you really want to reset all parameters to their default?',
                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)

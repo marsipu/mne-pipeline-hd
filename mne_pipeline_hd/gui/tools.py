@@ -12,7 +12,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import sys
 import time
 from functools import partial
-from os.path import isfile
+from os.path import isfile, join
 from random import random
 from time import sleep
 
@@ -272,7 +272,7 @@ class PlotImageLoader(QObject):
 
     def load_plot_image(self):
         try:
-            image_paths = self.obj.plot_files[self.function]
+            image_paths = [join(self.obj.figures_path, p) for p in self.obj.plot_files[self.function]]
             pixmaps = [QPixmap(image_path) for image_path in image_paths]
             self.finished_loading.emit(pixmaps)
 
@@ -460,8 +460,10 @@ class PlotViewSelection(QDialog):
 
                     # Load Plot-Images
                     else:
+                        # Clean Plot-Files
+                        obj.clear_plot_files()
                         try:
-                            image_paths = obj.plot_files[self.selected_func]
+                            image_paths = [join(obj.figures_path, p) for p in obj.plot_files[self.selected_func]]
                         except KeyError as ke:
                             self.all_images[p_preset][obj_name] = f'{ke} not found for {obj_name}'
                             self.thread_finished(None)
@@ -552,7 +554,7 @@ class PlotViewer(QMainWindow):
                 col = obj_idx % self.column_count
 
                 # Add name-label
-                name_label = QLabel(obj_name)
+                name_label = QLabel(str(obj_name))
                 name_label.setFont(QFont('AnyType', 14, QFont.Bold))
 
                 if isinstance(obj_items, str):
@@ -651,7 +653,7 @@ class PlotViewer(QMainWindow):
                 row = c // self.column_count
                 col = c % self.column_count
                 item_widget = grid_layout.itemAtPosition(row, col).widget()
-                if not isinstance(item_widget, QLabel):
+                if not isinstance(item_widget, QLabel) and item_widget is not None:
                     tab_widget = item_widget.layout().itemAt(1).widget()
                     tab_widget.setCurrentIndex(idx)
 

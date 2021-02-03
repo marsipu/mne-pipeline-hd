@@ -85,6 +85,8 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
                     erm_raw.crop(tmin=tmin, tmax=tmax)
 
             if bad_interpolation == 'Raw (Unfiltered)':
+                info = meeg.load_info()
+                erm_raw.info['dig'] = info['dig']
                 erm_raw = erm_raw.interpolate_bads()
 
             erm_raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
@@ -93,6 +95,8 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
                            skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
             if bad_interpolation == 'Raw (Filtered)':
+                info = meeg.load_info()
+                erm_raw.info['dig'] = info['dig']
                 erm_raw = erm_raw.interpolate_bads()
 
             meeg.save_erm_processed(erm_raw)
@@ -273,7 +277,7 @@ def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, bad_interpolation
     existing_ch_types = epochs.get_channel_types(unique=True, only_data_chs=True)
 
     if use_autoreject == 'Interpolation':
-        ar_object = ar.AutoReject(n_interpolates, consensus_percs, n_jobs=n_jobs)
+        ar_object = ar.AutoReject(n_interpolate=n_interpolates, consensus=consensus_percs, n_jobs=n_jobs)
         epochs, reject_log = ar_object.fit_transform(epochs, return_log=True)
         meeg.save_reject_log(reject_log)
 

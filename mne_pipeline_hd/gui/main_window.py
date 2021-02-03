@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
 
         # Load QSettings (which are stored in the OS)
         # qsettings=<everything, that's OS-dependent>
-        self.qsettings = QSettings()
+        self.qsettings = dict()
 
         # Load settings (which are stored as .json-file in home_path)
         # settings=<everything, that's OS-independent>
@@ -218,7 +218,7 @@ class MainWindow(QMainWindow):
                                                          'Change your Home-Path (top-level folder of Pipeline-Data)')
         if new_home_path != '':
             self.home_path = new_home_path
-            self.qsettings.setValue('home_path', self.home_path)
+            self.qsettings['home_path'] = self.home_path
             self.load_settings()
             self.make_base_paths()
             self.get_projects()
@@ -308,13 +308,22 @@ class MainWindow(QMainWindow):
         except FileNotFoundError:
             self.settings = self.default_settings['settings']
 
-        # Check QSettings
-        for qsetting in [qs for qs in self.default_settings['qsettings'] if qs not in self.qsettings.childKeys()]:
-            self.qsettings.setValue(qsetting, self.default_settings['qsettings'][qsetting])
+        # Load QSettings
+        self.qsettings.clear()
+        for qsetting in self.default_settings['qsettings']:
+            if qsetting in QSettings().childKeys():
+                self.qsettings[qsetting] = QSettings().value(qsetting)
+            else:
+                default_qsetting = self.default_settings['qsettings'][qsetting]
+                self.qsettings[qsetting] = default_qsetting
+                QSettings().setValue(qsetting, default_qsetting)
 
     def save_settings(self):
         with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
             json.dump(self.settings, file, indent=4)
+
+        for qsetting in self.qsettings:
+            QSettings().setValue(qsetting, self.qsettings[qsetting])
 
     def get_setting(self, setting):
         try:
@@ -921,7 +930,7 @@ class MainWindow(QMainWindow):
             worker_signals.pgbar_text.emit('Saving Project...')
 
         # Save Project
-        self.pr.save()
+        self.pr.save(worker_signals)
 
         if worker_signals is not None:
             worker_signals.pgbar_text.emit('Saving Settings...')

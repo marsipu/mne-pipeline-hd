@@ -1,7 +1,7 @@
 ;alias;group;default;unit;description;gui_type;gui_args
 ch_types;Channel-Types;Preprocessing;['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg'];;Channel-Types used in data;CheckListGui;{'options': ['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg', 'emg', 'ref_meg', 'misc', 'resp', 'chpi', 'exci', 'ias', 'syst', 'seeg', 'dipole', 'gof', 'bio', 'ecog', 'fnirs', 'csd']}
-highpass;Highpass-Cutoff;Filtering;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 300, 'step': 1}
-lowpass;Lowpass-Cutoff;Filtering;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 300, 'step': 1}
+highpass;Highpass-Cutoff;Filtering;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1, 'none_select': True}
+lowpass;Lowpass-Cutoff;Filtering;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1, 'none_select': True}
 filter_length;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'int']}
 l_trans_bandwidth;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'float']}
 h_trans_bandwidth;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'float']}
@@ -66,7 +66,7 @@ stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
 parcellation;;Inverse;aparc;;;StringGui;
 target_labels;;Inverse;[];;;ListGui;
 extract_mode;Label-Extraction-Mode;Inverse;mean_flip;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['max', 'mean', 'mean_flip', 'pca_flip']}
-con_methods;;Connectivity;{'coh': 0, 'cohy': 0, 'imcoh': 0, 'plv': 0, 'ciplv': 0, 'ppc': 0, 'pli': 0, 'pli2_unbiased': 0, 'wpli': 0, 'wpli2_debiased': 0};;methods for connectivity plots;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}
+con_methods;;Connectivity;['coh'];;methods for connectivity plots;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}
 con_fmin;;Connectivity;30;;fmin for connectivity plot;IntGui;
 con_fmax;;Connectivity;80;;fmax for connectivity plot;IntGui;
 ecd_times;;Inverse;{};;;DictGui;
