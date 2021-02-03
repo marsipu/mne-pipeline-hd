@@ -366,7 +366,10 @@ class MEEG(BaseLoading):
             if not self.suppress_warnings:
                 print(f'No Freesurfer-MRI-Subject assigned for {self.name}, defaulting to "None"')
         if self.fsmri is None or self.fsmri.name != self.mw.pr.meeg_to_fsmri[self.name]:
-            self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[self.name], self.mw)
+            if self.mw.pr.meeg_to_fsmri[self.name] is None:
+                self.fsmri = FSMRI('None', self.mw)
+            else:
+                self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[self.name], self.mw)
 
         # Transition from 'None' to None (placed 30.01.2021, can be removed soon)
         if self.mw.pr.meeg_to_erm[self.name] == 'None':

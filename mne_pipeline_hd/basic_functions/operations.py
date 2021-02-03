@@ -92,6 +92,9 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
                            iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
                            skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
+            if bad_interpolation == 'Raw (Filtered)':
+                erm_raw = erm_raw.interpolate_bads()
+
             meeg.save_erm_processed(erm_raw)
             print('ERM-Data filtered and saved')
         else:

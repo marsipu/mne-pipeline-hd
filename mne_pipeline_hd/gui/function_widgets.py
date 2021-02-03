@@ -21,7 +21,7 @@ from pathlib import Path
 from types import FunctionType
 
 import pandas as pd
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QSettings, QSize, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout, QGroupBox,
                              QHBoxLayout,
@@ -155,9 +155,10 @@ class CustomFunctionImport(QDialog):
         self.oblig_params = ['default', 'gui_type']
 
         self.exst_functions = list(self.mw.pd_funcs.index)
-        self.exst_parameters = ['mw', 'pr', 'meeg', 'fsmri', 'group', 'name', 'save_dir', 'erm', 'bad_channels']
-        self.exst_parameters.append(vars(self.mw.pr))
-        self.exst_parameters.append(list(self.mw.pr.parameters[self.mw.pr.p_preset].keys()))
+        self.exst_parameters = ['mw', 'pr', 'meeg', 'fsmri', 'group']
+        self.exst_parameters += list(self.mw.settings.keys())
+        self.exst_parameters += list(QSettings().childKeys())
+        self.exst_parameters += list(self.mw.pr.parameters[self.mw.pr.p_preset].keys())
         self.param_exst_dict = dict()
 
         self.code_view = None
@@ -1110,6 +1111,7 @@ class SavePkgDialog(QDialog):
             del final_add_pd_params['ready']
             del final_add_pd_params['functions']
 
+            # Todo: Make this more failproof (loading and saving already existing packages)
             # This is only not None, when the function was imported by edit-functions
             if self.cf.pkg_name:
                 # Update and overwrite existing settings for funcs and params
@@ -1146,17 +1148,20 @@ class SavePkgDialog(QDialog):
                 self.pkg_path = join(self.cf.mw.custom_pkg_path, self.my_pkg_name)
                 if not isdir(self.pkg_path):
                     mkdir(self.pkg_path)
-                pd_funcs_path = join(self.pkg_path, f'{self.my_pkg_name}_functions.csv')
-                pd_params_path = join(self.pkg_path, f'{self.my_pkg_name}_parameters.csv')
                 # Create __init__.py to make it a package
                 with open(join(self.pkg_path, '__init__.py'), 'w') as f:
                     f.write('')
                 # Copy Origin-Script to Destination
+                pd_funcs_path = join(self.pkg_path, f'{self.my_pkg_name}_functions.csv')
+                pd_params_path = join(self.pkg_path, f'{self.my_pkg_name}_parameters.csv')
                 dest_path = join(self.pkg_path, self.cf.file_path.name)
                 shutil.copy2(self.cf.file_path, dest_path)
 
-            # Add pkg_name as column
-            final_add_pd_funcs.insert(len(final_add_pd_funcs) - 1, 'pkg_name', self.my_pkg_name)
+            # Add pkg_name as column if not already existing
+            if 'pkg_name' in final_add_pd_funcs:
+                final_add_pd_funcs['pkg_name'] = self.my_pkg_name
+            else:
+                final_add_pd_funcs.insert(len(final_add_pd_funcs.columns) - 1, 'pkg_name', self.my_pkg_name)
 
             final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
             final_add_pd_params.to_csv(pd_params_path, sep=';')

@@ -1502,7 +1502,7 @@ class SubBadsDialog(QDialog):
 
         set_ratio_geometry(0.8, self)
 
-        self.open()
+        self.show()
 
 
 class SubBadsWizPage(QWizardPage):

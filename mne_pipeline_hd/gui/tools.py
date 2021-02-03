@@ -374,13 +374,13 @@ class PlotViewSelection(QDialog):
             # Load object-list according to target
             if self.target == 'MEEG':
                 self.objects = self.mw.pr.all_meeg
-                self.selected_objs = self.mw.pr.sel_meeg
+                self.selected_objs = self.mw.pr.sel_meeg.copy()
             elif self.target == 'FSMRI':
                 self.objects = self.mw.pr.all_fsmri
-                self.selected_objs = self.mw.pr.sel_fsmri
+                self.selected_objs = self.mw.pr.sel_fsmri.copy()
             elif self.target == 'Group':
                 self.objects = list(self.mw.pr.all_groups.keys())
-                self.selected_objs = self.mw.pr.sel_groups
+                self.selected_objs = self.mw.pr.sel_groups.copy()
 
             # If non-interactive only list objects where a plot-image already was saved
             if not self.interactive:
