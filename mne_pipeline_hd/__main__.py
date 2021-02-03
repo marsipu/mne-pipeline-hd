@@ -7,6 +7,7 @@ License: BSD (3-clause)
 Copyright © 2011-2019, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
+import os
 import sys
 from inspect import getsourcefile
 from os.path import abspath
@@ -47,6 +48,8 @@ def main():
         app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
         # Workaround for MAC menu-bar-focusing issue
         app.setAttribute(Qt.AA_DontUseNativeMenuBar, True)
+        # Workaround for not showing with PyQt < 5.15.2
+        os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
     # Initiate WelcomeWindow
     ww = WelcomeWindow()

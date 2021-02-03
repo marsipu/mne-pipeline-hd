@@ -64,8 +64,8 @@ def get_arguments(func_name, module, obj, main_win):
             keyword_arguments.update({arg_name: main_win.pr.parameters[main_win.pr.p_preset][arg_name]})
         elif arg_name in main_win.settings:
             keyword_arguments.update({arg_name: main_win.settings[arg_name]})
-        elif arg_name in main_win.qsettings.childKeys():
-            keyword_arguments.update({arg_name: QSettings().value(arg_name)})
+        elif arg_name in main_win.qsettings:
+            keyword_arguments.update({arg_name: main_win.qsettings[arg_name]})Fi
         else:
             raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
 

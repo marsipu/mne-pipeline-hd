@@ -120,6 +120,7 @@ class Param(QWidget):
             else:
                 self.group_box.setChecked(True)
 
+    # Todo: Reduce to dictionary
     def read_param(self):
         # Make also usable by Main-Window-Settings
         if isinstance(self.data, dict):
