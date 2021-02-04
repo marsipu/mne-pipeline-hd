@@ -12,7 +12,6 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import sys
 from ast import literal_eval
 from functools import partial
-from math import log10
 
 import numpy as np
 from PyQt5.QtCore import QSettings, QTimer, Qt
@@ -865,7 +864,7 @@ class CheckListGui(Param):
             Set to True, if only one item should be selectable (or use ComboGUI)
         """
 
-        default = default or dict()
+        default = default or list()
 
         if not isinstance(options, list) or len(options) == 0:
             options = ['Empty']

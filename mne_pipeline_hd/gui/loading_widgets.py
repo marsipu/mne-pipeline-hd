@@ -888,7 +888,7 @@ class AddMRIWidget(QWidget):
         worker_dialog.thread_finished.connect(self.add_mri_finished)
 
     def add_mri_subjects(self, worker_signals):
-        worker_signals.set_pgbar_max.emit(len(self.folders))
+        worker_signals.pgbar_max.emit(len(self.folders))
         for n, fsmri in enumerate(self.folders):
             if not worker_signals.was_canceled:
                 worker_signals.pgbar_text.emit(f'Copying {fsmri}')
@@ -2295,9 +2295,9 @@ class ICASelect(QDialog):
         for chkbx in self.chkbxs:
             self.chkbxs[chkbx].setEnabled(enable)
 
-    def get_selected_components(self, _):
+    def get_selected_components(self, ica, _):
         self.set_chkbx_enable(True)
-        self.mw.pr.ica_exclude[self.current_obj.name] = self.current_obj._ica.exclude
+        self.mw.pr.ica_exclude[self.current_obj.name] = ica.exclude
         self.update_chkbxs()
         self.file_list.content_changed()
 
@@ -2309,11 +2309,11 @@ class ICASelect(QDialog):
             dialog.setWindowTitle('Opening...')
             dialog.open()
             try:
-                figs = plot_ica_components(meeg=self.current_obj, show_plots=True)
+                figs, ica = plot_ica_components(meeg=self.current_obj, show_plots=True)
                 if not isinstance(figs, list):
                     figs = [figs]
                 for fig in figs:
-                    fig.canvas.mpl_connect('close_event', self.get_selected_components)
+                    fig.canvas.mpl_connect('close_event', partial(self.get_selected_components, ica))
             except:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
@@ -2331,12 +2331,12 @@ class ICASelect(QDialog):
             dialog.setWindowTitle('Opening...')
             dialog.open()
             try:
-                figs = plot_ica_sources(meeg=self.current_obj,
-                                        ica_source_data=self.parameters['ica_source_data'], show_plots=True)
+                figs, ica = plot_ica_sources(meeg=self.current_obj,
+                                             ica_source_data=self.parameters['ica_source_data'], show_plots=True)
                 if not isinstance(figs, list):
                     figs = [figs]
                 for fig in figs:
-                    fig.canvas.mpl_connect('close_event', self.get_selected_components)
+                    fig.canvas.mpl_connect('close_event', partial(self.get_selected_components, ica))
             except:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
@@ -2374,7 +2374,6 @@ class ICASelect(QDialog):
             dialog.open()
             try:
                 plot_ica_properties(meeg=self.current_obj,
-                                    ica_properties_indices=self.mw.pr.ica_exclude[self.current_obj.name],
                                     show_plots=True)
             except:
                 err_tuple = get_exception_tuple()

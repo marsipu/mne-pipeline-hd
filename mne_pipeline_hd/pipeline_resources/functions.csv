@@ -30,6 +30,7 @@ grand_avg_ltc;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 grand_avg_connect;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 plot_source_space;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;basic;fsmri
 plot_bem;;FSMRI;Plot;MRI-Preprocessing;True;False;;plot;basic;fsmri,show_plots
+plot_labels;;FSMRI;Plot;MRI-Preprocessing;True;False;;plot;basic;fsmri,parcellation,show_plots
 plot_noise_covariance;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
 plot_transformation;;MEEG;Plot;Forward;True;True;;plot;basic;meeg
 plot_sensitivity_maps;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,ch_types

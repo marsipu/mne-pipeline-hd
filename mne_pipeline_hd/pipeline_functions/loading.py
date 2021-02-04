@@ -58,7 +58,7 @@ def load_decorator(load_func):
             data = load_func(*args, **kwargs)
 
         # Save data in data-dict for machines with big RAM
-        if QSettings().value('save_ram') == 'false' or QSettings().value('save_ram') is False:
+        if obj_instance.mw.qsettings['save_ram'] == 'false' or obj_instance.mw.qsettings['save_ram'] is False:
             obj_instance.data_dict[data_type] = data
 
         return data

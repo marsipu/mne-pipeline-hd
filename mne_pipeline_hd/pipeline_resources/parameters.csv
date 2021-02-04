@@ -51,6 +51,7 @@ tfr_baseline_mode;;Time-Frequency;mean;;Select the mode for baseline-application
 multitaper_bandwidth;;Time-Frequency;4.0;;;FloatGui;
 stockwell_width;;Time-Frequency;1.0;;;FloatGui;
 bem_spacing;;Forward;4;;See the MNE-Documentation for further details;IntGui;
+bem_conductivity;BEM Conductivity;Forward;[0.3, 0.006, 0.3];;The conductivities for each shell of the bem-model, contain only one element for a one-layer model and three elements for a three-layer model;ListGui;
 source_space_spacing;;Forward;ico5;;See the MNE-Documentation for further details;StringGui;
 vol_source_space_spacing;;Forward;5.0;;Spacing between sources in 3D-Grid;FloatGui;
 surface;;Forward;white;;Surface for computing the Source-Space;ComboGui;{'options': ['white', 'pial']}

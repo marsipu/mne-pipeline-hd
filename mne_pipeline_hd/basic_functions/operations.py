@@ -456,7 +456,7 @@ def plot_ica_components(meeg, show_plots):
     components_fig = ica.plot_components(title=meeg.name, show=show_plots)
     meeg.plot_save('ICA', subfolder='components', matplotlib_figure=components_fig)
 
-    return components_fig
+    return components_fig, ica
 
 
 def plot_ica_sources(meeg, ica_source_data, show_plots):
@@ -464,7 +464,7 @@ def plot_ica_sources(meeg, ica_source_data, show_plots):
     sources_fig = ica.plot_sources(data, stop=ica.n_components, title=meeg.name, show=show_plots)
     meeg.plot_save('ICA', subfolder='sources', matplotlib_figure=sources_fig)
 
-    return sources_fig
+    return sources_fig, ica
 
 
 def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
@@ -839,9 +839,9 @@ def compute_src_distances(fsmri, n_jobs):
     fsmri.save_source_space(src_computed)
 
 
-def prepare_bem(fsmri, bem_spacing):
+def prepare_bem(fsmri, bem_spacing, bem_conductivity):
     bem_model = mne.make_bem_model(fsmri.name, subjects_dir=fsmri.subjects_dir,
-                                   ico=bem_spacing)
+                                   ico=bem_spacing, conductivity=bem_conductivity)
     fsmri.save_bem_model(bem_model)
 
     bem_solution = mne.make_bem_solution(bem_model)
@@ -882,21 +882,26 @@ def morph_labels_from_fsaverage(fsmri):
         print(f'{parcellations} already exist')
 
 
-def create_forward_solution(meeg, n_jobs, eeg_fwd):
+def create_forward_solution(meeg, n_jobs, ch_types):
     info = meeg.load_info()
     trans = meeg.load_transformation()
     bem = meeg.fsmri.load_bem_solution()
     source_space = meeg.fsmri.load_source_space()
 
-    forward = mne.make_forward_solution(info, trans, source_space, bem,
-                                        n_jobs=n_jobs, eeg=eeg_fwd)
+    if 'eeg' in ch_types:
+        eeg = True
+    else:
+        eeg = False
+
+    forward = mne.make_forward_solution(info, trans, source_space, bem, eeg=eeg,
+                                        n_jobs=n_jobs)
 
     meeg.save_forward(forward)
 
 
 def estimate_noise_covariance(meeg, baseline, n_jobs, noise_cov_mode, noise_cov_method, **kwargs):
     if noise_cov_mode == 'Epochs' or meeg.erm is None:
-        print('Noise Covariance on Epochs')
+        print('Noise Covariance on Epochs-Baseline')
         epochs = meeg.load_epochs()
 
         tmin, tmax = baseline

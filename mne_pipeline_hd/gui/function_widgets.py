@@ -836,6 +836,9 @@ class CustomFunctionImport(QDialog):
             event.ignore()
 
 
+# ToDo:
+#   Bug1: After saving a new function, the parameters stay in the table-view,
+#   Bug2: When editing existing functions, the proprietary parameters can not be edited (they land in exising_params)
 class ImportFuncs(QDialog):
     def __init__(self, cf_dialog, edit_existing=False):
         super().__init__(cf_dialog)
