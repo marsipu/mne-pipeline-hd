@@ -335,6 +335,8 @@ class BaseLoading:
         # Dependent on Paramter-Preset
         paths = self._return_path_list(data_type)
         for p in paths:
+            # Remove from file-parameters
+            self.file_parameters.pop(Path(p).name)
             try:
                 remove(p)
                 print(f'{p} was removed')

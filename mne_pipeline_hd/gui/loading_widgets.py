@@ -2090,6 +2090,9 @@ class FileManagment(QDialog):
         worker_signals.pgbar_max.emit(len(selected_list))
 
         for idx, (_, obj_name, path_type) in enumerate(selected_list):
+            if worker_signals.was_canceled:
+                worker_signals.pgbar_text.emit(f'Removing canceled')
+                break
             if kind == 'MEEG':
                 obj = MEEG(obj_name, self.mw)
                 obj_pd = self.pd_meeg
@@ -2113,11 +2116,9 @@ class FileManagment(QDialog):
             obj_pd_time.loc[obj_name, path_type] = None
             obj_pd_size.loc[obj_name, path_type] = None
             obj_table.content_changed()
-            # Drop from file-parameters
-            path = Path(obj.io_dict[path_type]['path']).name
-            obj.file_parameters.pop(path, None)
+
             # Remove File
-            worker_signals.pgbar_text.emit(f'Removing: {path}')
+            worker_signals.pgbar_text.emit(f'Removing: {path_type}')
             obj.remove_path(path_type)
             worker_signals.pgbar_n.emit(idx + 1)
 
@@ -2134,7 +2135,8 @@ class FileManagment(QDialog):
         msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selcted Files?')
 
         if msgbx == QMessageBox.Yes:
-            WorkerDialog(self, self._file_remover, kind=kind, show_console=True, )
+            WorkerDialog(self, self._file_remover, kind=kind, show_buttons=True, show_console=True,
+                         title='Removing Files')
 
 
 class ICASelect(QDialog):
