@@ -809,8 +809,9 @@ def make_dense_scalp_surfaces(fsmri):
           'Bash output follows below.\n\n')
 
     command = ['mne', 'make_scalp_surfaces',
+               '--overwrite',
                '--subject', fsmri.name,
-               '--overwrite']
+               '--force']
 
     run_freesurfer_subprocess(command, fsmri.subjects_dir, fsmri.fs_path, fsmri.mne_path)
 
