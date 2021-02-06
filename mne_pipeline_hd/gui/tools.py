@@ -255,63 +255,6 @@ class DataTerminal(QDialog):
             self.inputw.clear()
 
 
-class PlotImageLoader(QObject):
-    """This class loads a QPixmap of a plot-function,
-    if it wasn't plotted yet an image-file for the plot is created which is loaded"""
-    finished_loading = pyqtSignal(list)
-
-    def __init__(self, obj, function, parent_w):
-        super().__init__(parent_w)
-        self.obj = obj
-        self.function = function
-        self.parent_w = parent_w
-        # Make sure that the plot-function only runs once
-        self.already_ran_plot = False
-
-        self.load_plot_image()
-
-    def load_plot_image(self):
-        try:
-            image_paths = [join(self.obj.figures_path, p) for p in self.obj.plot_files[self.function]]
-            pixmaps = [QPixmap(image_path) for image_path in image_paths]
-            self.finished_loading.emit(pixmaps)
-
-        except KeyError:
-            if not self.already_ran_plot:
-                self.plot_notifier = SimpleDialog(QLabel(f'Plotting {self.function} for {self.obj.name}'),
-                                                  parent=self.parent_w, show_close_bt=False)
-                # Get module of plot_function
-                pkg_name = self.obj.mw.pd_funcs.loc[self.function, 'pkg_name']
-                module_name = self.obj.mw.pd_funcs.loc[self.function, 'module']
-                module = self.obj.mw.all_modules[pkg_name][module_name][0]
-
-                # Get Arguments for Plot-Function
-                keyword_arguments = get_arguments(self.function, module, self.obj, self.obj.mw)
-                # Make sure that "show_plots" is False
-                keyword_arguments['show_plots'] = False
-                plot_func = getattr(module, self.function)
-
-                # Create Thread for Plot-Function
-                worker = Worker(plot_func, **keyword_arguments)
-                # Pass Object-Name into the plot_finished-Slot
-                # (needs to be set as default in lambda-function to survive loop)
-                worker.signals.finished.connect(self.plot_finished)
-                worker.signals.error.connect(self.plot_error)
-                self.obj.mw.threadpool.start(worker)
-            else:
-                self.finished_loading.emit(list())
-
-    def plot_finished(self):
-        self.plot_notifier.close()
-        self.already_ran_plot = True
-        self.load_plot_image()
-
-    def plot_error(self):
-        self.plot_notifier.close()
-        self.already_ran_plot = True
-        self.load_plot_image()
-
-
 class PlotViewSelection(QDialog):
     """The user selects the plot-function and the objects to show for this plot_function
     """
@@ -339,7 +282,8 @@ class PlotViewSelection(QDialog):
         layout = QVBoxLayout()
         list_layout = QHBoxLayout()
 
-        func_list = self.mw.pd_funcs.loc[self.mw.pd_funcs.loc[:, 'tab'] == 'Plot'].index
+        func_list = self.mw.pd_funcs[(self.mw.pd_funcs['matplotlib'] == True) |
+                                     (self.mw.pd_funcs['mayavi'] == True)].index
         func_select = SimpleList(func_list, title='Select Plot-Function')
         func_select.currentChanged.connect(self.func_selected)
         list_layout.addWidget(func_select)

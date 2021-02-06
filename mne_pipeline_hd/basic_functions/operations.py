@@ -38,6 +38,7 @@ from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
 
+
 def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
                h_trans_bandwidth, filter_method, iir_params, fir_phase, fir_window,
                fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
@@ -106,6 +107,41 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
 
     else:
         print('no erm_file assigned')
+
+
+def add_erm_ssp(meeg, erm_ssp_duration, erm_n_grad, erm_n_mag, erm_n_eeg, n_jobs, show_plots):
+    raw_filtered = meeg.load_filtered()
+    erm_filtered = meeg.load_erm_processed()
+
+    # Only include channels from Empty-Room-Data, which are present in filtered-data
+    erm_filtered = erm_filtered.copy().pick_channels(
+            [ch for ch in erm_filtered.ch_names if ch in raw_filtered.ch_names])
+
+    erm_projs = mne.compute_proj_raw(erm_filtered, duration=erm_ssp_duration,
+                                     n_grad=erm_n_grad, n_mag=erm_n_mag, n_eeg=erm_n_eeg, n_jobs=n_jobs)
+
+    raw_filtered.add_proj(erm_projs, remove_existing=True)
+    meeg.save_filtered(raw_filtered)
+
+    fig = mne.viz.plot_projs_topomap(erm_projs, erm_filtered.info, colorbar=True, show=show_plots)
+    meeg.plot_save('ssp_erm', matplotlib_figure=fig)
+
+
+def eeg_reference_raw(meeg, ref_channels):
+    raw_filtered = meeg.load_filtered()
+
+    if ref_channels == 'REST':
+        forward = meeg.load_forward()
+    else:
+        forward = None
+
+    if ref_channels == 'average':
+        projection = True
+    else:
+        projection = False
+
+    raw_filtered.set_eeg_reference(ref_channels=ref_channels, projection=projection, forward=forward)
+    meeg.save_filtered(raw_filtered)
 
 
 def find_events(meeg, stim_channels, min_duration, shortest_event, adjust_timeline_by_msec):
@@ -248,20 +284,20 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
         print('No events found')
 
 
-def epoch_raw(meeg, ch_types, t_epoch, baseline, reject, flat, bad_interpolation, use_autoreject, consensus_percs,
-              n_interpolates, overwrite_ar, decim, n_jobs):
-    raw = meeg.load_filtered()
+def epoch_raw(meeg, ch_types, t_epoch, baseline, apply_proj, reject, flat, bad_interpolation,
+              use_autoreject, consensus_percs, n_interpolates, overwrite_ar, decim, n_jobs):
+    raw_filtered = meeg.load_filtered()
     events = meeg.load_events()
 
     # Pick selected channel_types if not done before
-    raw.pick(ch_types)
+    raw_filtered.pick(ch_types)
 
-    if bad_interpolation in [None, 'Raw (Unfiltered)', 'Raw (Filtered)']:
+    if bad_interpolation is None:
         # Exclude bad-channels if no Bad-Channel-Interpolation is intended after making the Epochs or the Evokeds
-        raw.pick('all', exclude='bads')
+        raw_filtered.pick('all', exclude='bads')
 
-    epochs = mne.Epochs(raw, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
-                        preload=True, proj=False, reject=None, flat=None,
+    epochs = mne.Epochs(raw_filtered, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
+                        preload=True, proj=apply_proj, reject=None, flat=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=True)
 
     if bad_interpolation == 'Epochs':
@@ -343,7 +379,8 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
         # Estimate Reject-Thresholds on simulated epochs
         # Creating simulated epochs with len 1s
         simulated_events = mne.make_fixed_length_events(data, duration=1)
-        simulated_epochs = mne.Epochs(data, simulated_events, baseline=None, tmin=0, tmax=1)
+        simulated_epochs = mne.Epochs(data, simulated_events, baseline=None, tmin=0, tmax=1,
+                                      proj=False)
         reject = ar.get_rejection_threshold(simulated_epochs)
         print(f'Autoreject Rejection-Threshold: {reject}')
     elif ica_autoreject and ica_fitto == 'Epochs':
@@ -554,9 +591,13 @@ def apply_ica(meeg, n_pca_components):
                 erm_data = meeg.load_erm_processed()
             except FileNotFoundError:
                 erm_data = meeg.load_erm()
-
-            ica.apply(erm_data, n_pca_components)
-            meeg.save_erm_processed(erm_data)
+            try:
+                ica.apply(erm_data, n_pca_components)
+            # Todo: Unmeddling ERM-SSP and ICA stuff
+            except ValueError:
+                print('There is an unresolved issue with combining SSP from ERM and applying ICA on this ERM')
+            else:
+                meeg.save_erm_processed(erm_data)
 
 
 def get_evokeds(meeg, bad_interpolation):

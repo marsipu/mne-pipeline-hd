@@ -14,6 +14,7 @@ import smtplib
 import ssl
 import sys
 from ast import literal_eval
+from collections import Counter
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import partial
@@ -587,7 +588,8 @@ class RawInfo(QDialog):
             other_infos['size'] = f'{int(sizes_sum / 1024 ** 2)}'
             size_unit = 'MB'
 
-        other_infos['ch_types'] = {mne.io.pick.channel_type(info, idx) for idx in range(len(info['chs']))}
+        ch_type_counter = Counter([mne.io.pick.channel_type(info, idx) for idx in range(len(info['chs']))])
+        other_infos['ch_types'] = ', '.join([f'{key}: {value}' for key, value in ch_type_counter.items()])
 
         key_list = [('no_files', 'Size of all associated files'),
                     ('size', 'Size of all associated files', size_unit),

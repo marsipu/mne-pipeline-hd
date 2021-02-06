@@ -1,5 +1,6 @@
 ;alias;group;default;unit;description;gui_type;gui_args
 ch_types;Channel-Types;Preprocessing;['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg'];;Channel-Types used in data;CheckListGui;{'options': ['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg', 'emg', 'ref_meg', 'misc', 'resp', 'chpi', 'exci', 'ias', 'syst', 'seeg', 'dipole', 'gof', 'bio', 'ecog', 'fnirs', 'csd']}
+ref_channels;;Preprocessing;'average';;Set the kind of eeg-reference, look at documentation of mne.set_eeg_reference();MultiTypeGui;{'type_selection': True, 'types': ['str', 'list']}
 highpass;Highpass-Cutoff;Filtering;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1, 'none_select': True}
 lowpass;Lowpass-Cutoff;Filtering;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1, 'none_select': True}
 filter_length;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'int']}
@@ -19,6 +20,7 @@ shortest_event;Shortest Event;Events;2;sample;Shortest possible Event;IntGui;{'m
 adjust_timeline_by_msec;Adjust Time;Events;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;Epoch-Timeframe;Epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
 baseline;Baseline-Timeframe;Epochs;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val': 0, 'none_select': True}
+apply_proj;Apply Projections;Epochs;True;;If to apply the projections (if present);BoolGui;
 bad_interpolation;Bad-Channel-Interpolation;Preprocessing;None;;Choose where to apply bad-channels-interpolation;ComboGui;{'none_select': True, 'options': ['Raw (Filtered)', 'Raw (Unfiltered)', 'Epochs', 'Evokeds']}
 reject_by_annotation;;Epochs;True;;If to reject by Annotations;BoolGui;
 use_autoreject;Autoreject;Epochs;None;;If to use autoreject and if to use it for getting the reject-threshold or for interpolating the Epochs;ComboGui;{'none_select': True, 'options': ['Threshold', 'Interpolation']}
@@ -73,6 +75,10 @@ ecd_times;;Inverse;{};;;DictGui;
 ecd_positions;;Inverse;{};;;DictGui;
 ecd_orientations;;Inverse;{};;;DictGui;
 morph_to;;Grand-Average;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
-ica_source_data;;ICA;Raw (Filtered)';;Which data to plot in sources-plot from ICA;ComboGui;{'options':['Raw (Unfiltered)', 'Raw (Filtered)', 'Epochs', 'Epochs (EOG)', 'Epochs (ECG)',  'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
-ica_overlay_data;;ICA;Evokeds';;Which data to plot in overlay-plot from ICA;ComboGui;{'options':['Raw (Unfiltered)', 'Raw (Filtered)', 'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
+ica_source_data;;ICA;Raw (Filtered);;Which data to plot in sources-plot from ICA;ComboGui;{'options':['Raw (Unfiltered)', 'Raw (Filtered)', 'Epochs', 'Epochs (EOG)', 'Epochs (ECG)',  'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
+ica_overlay_data;;ICA;Evokeds;;Which data to plot in overlay-plot from ICA;ComboGui;{'options':['Raw (Unfiltered)', 'Raw (Filtered)', 'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
 plot_sensors_kind;;Plot;'topomap';;The kind of plot for plot_sensors;ComboGui;{'options':['topomap', '3d', 'select']}
+erm_ssp_duration;;Preprocessing;1;s;The time-chunk to use for ssp;IntGui;
+erm_n_grad;;Preprocessing;2;;The number of projections for Gradiometer;IntGui;
+erm_n_mag;;Preprocessing;2;;The number of projections for Magnetometer;IntGui;
+erm_n_eeg;;Preprocessing;0;;The number of projections for EEG;IntGui;

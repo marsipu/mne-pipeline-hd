@@ -81,7 +81,7 @@ def save_decorator(save_func):
         # Make sure, that parent-directory exists
         paths = obj_instance._return_path_list(data_type)
         for path in [p for p in paths if not isdir(Path(p).parent)]:
-            makedirs(Path(path).parent)
+            makedirs(Path(path).parent, exist_ok=True)
 
         print(f'Saving {data_type} for {obj_instance.name}')
         save_func(*args, **kwargs)
@@ -155,25 +155,36 @@ class BaseLoading:
 
     # Todo: Only save relevant parameters (with dependencies)
     def save_file_params(self, path):
-        file_name = Path(path).name
 
-        if file_name not in self.file_parameters:
-            self.file_parameters[file_name] = dict()
-        # Get the name of the calling function (assuming it is 2 Frames above)
-        if 'FUNCTION' in self.file_parameters[file_name]:
-            self.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
+        # Check existence of path and append appendices for hemispheres
+        if not isfile(path):
+            if isfile(path + '-lh.stc'):
+                paths = [path + '-lh.stc', path + '-rh.stc']
+            else:
+                paths = list()
         else:
-            self.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
-        self.file_parameters[file_name]['NAME'] = self.name
-        self.file_parameters[file_name]['PATH'] = path
-        if 'TIME' in self.file_parameters[file_name]:
-            self.file_parameters[file_name]['TIME'].append(datetime.now())
-        else:
-            self.file_parameters[file_name]['TIME'] = [datetime.now()]
-        self.file_parameters[file_name]['SIZE'] = getsize(path)
-        self.file_parameters[file_name]['P_PRESET'] = self.p_preset
-        for p_name in self.p:
-            self.file_parameters[file_name][p_name] = self.p[p_name]
+            paths = [path]
+
+        for path in paths:
+            file_name = Path(path).name
+
+            if file_name not in self.file_parameters:
+                self.file_parameters[file_name] = dict()
+            # Get the name of the calling function (assuming it is 2 Frames above)
+            if 'FUNCTION' in self.file_parameters[file_name]:
+                self.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
+            else:
+                self.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
+            self.file_parameters[file_name]['NAME'] = self.name
+            self.file_parameters[file_name]['PATH'] = path
+            if 'TIME' in self.file_parameters[file_name]:
+                self.file_parameters[file_name]['TIME'].append(datetime.now())
+            else:
+                self.file_parameters[file_name]['TIME'] = [datetime.now()]
+            self.file_parameters[file_name]['SIZE'] = getsize(path)
+            self.file_parameters[file_name]['P_PRESET'] = self.p_preset
+            for p_name in self.p:
+                self.file_parameters[file_name][p_name] = self.p[p_name]
 
     def clear_plot_files(self):
         """Clear all entries in plot-files, where the image has already been deleteds"""
@@ -445,7 +456,7 @@ class MEEG(BaseLoading):
         self.erm_cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-erm-cov.fif')
         self.noise_covariance_path = join(self.save_dir, f'{self.name}_{self.p_preset}-cov.fif')
         self.inverse_path = join(self.save_dir, f'{self.name}_{self.p_preset}-inv.fif')
-        self.stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}')
+        self.stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-stc')
                           for trial in self.sel_trials}
         self.morphed_stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
                                   for trial in self.sel_trials}
@@ -454,11 +465,11 @@ class MEEG(BaseLoading):
                                   for dip in self.p['ecd_times']}
                           for trial in self.sel_trials}
         self.ltc_paths = {trial: {label: join(self.save_dir, 'label_time_course',
-                                              f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
+                                              f'{self.name}_{trial}_{self.p_preset}_{label}-ltc.npy')
                                   for label in self.p['target_labels']}
                           for trial in self.sel_trials}
         self.con_paths = {trial: {con_method: join(self.save_dir,
-                                                   f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
+                                                   f'{self.name}_{trial}_{self.p_preset}_{con_method}-con.npy')
                                   for con_method in self.p['con_methods']}
                           for trial in self.sel_trials}
 
@@ -615,7 +626,7 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_epochs(self):
-        return mne.read_epochs(self.epochs_path)
+        return mne.read_epochs(self.epochs_path, proj=self.p['apply_proj'], preload=True)
 
     @save_decorator
     def save_epochs(self, epochs):
@@ -661,7 +672,7 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_evokeds(self):
-        return mne.read_evokeds(self.evokeds_path)
+        return mne.read_evokeds(self.evokeds_path, proj=self.p['apply_proj'])
 
     @save_decorator
     def save_evokeds(self, evokeds):

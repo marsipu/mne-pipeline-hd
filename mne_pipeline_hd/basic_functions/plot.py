@@ -221,7 +221,8 @@ def plot_evoked_butterfly(meeg, show_plots):
     titles_dict = {'eeg': f'{meeg.name} - EEG'}
     evoked_figs = list()
     for evoked in evokeds:
-        fig = evoked.plot(spatial_colors=True, titles=titles_dict,
+
+        fig = evoked.plot(spatial_colors=True, proj=False, titles=titles_dict,
                           window_title=meeg.name + ' - ' + evoked.comment,
                           selectable=True, gfp=True, zorder='std', show=show_plots)
 
