@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubl
                              QSlider, QSpinBox, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList
+from mne_pipeline_hd.pipeline_functions.project import Project
 
 
 class Param(QWidget):
@@ -129,13 +130,25 @@ class Param(QWidget):
                 self.save_param()
 
     def read_param(self):
-        if self.param_name in self.data:
-            self.param_value = self.data[self.param_name]
-        else:
-            self.param_value = self.default
+        # get data from dictionary
+        if isinstance(self.data, dict):
+            if self.param_name in self.data:
+                self.param_value = self.data[self.param_name]
+            else:
+                self.param_value = self.default
+
+        # get data from Parameters in Project (depending on selected parameter-preset)
+        elif isinstance(self.data, Project):
+            if self.param_name in self.data.parameters[self.data.p_preset]:
+                self.param_value = self.data.parameters[self.data.p_preset][self.param_name]
+            else:
+                self.param_value = self.default
 
     def save_param(self):
-        self.data[self.param_name] = self.param_value
+        if isinstance(self.data, dict):
+            self.data[self.param_name] = self.param_value
+        elif isinstance(self.data, Project):
+            self.data.parameters[self.data.p_preset][self.param_name] = self.param_value
 
 
 class IntGui(Param):
