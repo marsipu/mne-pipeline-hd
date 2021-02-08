@@ -100,7 +100,9 @@ class Param(QWidget):
             main_layout.addWidget(self.group_box)
 
         else:
-            main_layout.addWidget(QLabel(self.param_alias))
+            # Add this to get no label in MultiTypeGui
+            if self.param_alias != '':
+                main_layout.addWidget(QLabel(self.param_alias))
             main_layout.addLayout(layout)
 
         self.setLayout(main_layout)
@@ -118,53 +120,22 @@ class Param(QWidget):
             if self.param_value is None:
                 self.group_box.setChecked(False)
             else:
-                # Save param_value, because when Widget inside GroupBox changes EnabledState to Enabled,
+                # Save param_value separatetly, because when Widget inside GroupBox changes Enabled-State to Enabled,
                 # the get_param-method may be invoked leading to rewriting param_value with the displayed value
-                # and not with the value from read_param
+                # and not with the original value
                 saved_value = self.param_value
                 self.group_box.setChecked(True)
                 self.param_value = saved_value
+                self.save_param()
 
-    # Todo: Reduce to dictionary
     def read_param(self):
-        # Make also usable by Main-Window-Settings
-        if isinstance(self.data, dict):
-            if self.param_name in self.data:
-                value = self.data[self.param_name]
-            else:
-                value = self.default
-
-        # Make also usable by QSettings
-        elif isinstance(self.data, QSettings):
-            if self.param_name in self.data.childKeys():
-                value = self.data.value(self.param_name, defaultValue=self.default)
-                # Convert booleans, which turn into strings with QSettings
-                if value == "true":
-                    value = True
-                elif value == "false":
-                    value = False
-            else:
-                value = self.default
-
-        # Main usage to get data from Parameters in Project stored in MainWindow
-        elif isinstance(self.data, QMainWindow):
-            if self.param_name in self.data.pr.parameters[self.data.pr.p_preset]:
-                value = self.data.pr.parameters[self.data.pr.p_preset][self.param_name]
-            else:
-                value = self.default
-
+        if self.param_name in self.data:
+            self.param_value = self.data[self.param_name]
         else:
-            value = self.default
-
-        self.param_value = value
+            self.param_value = self.default
 
     def save_param(self):
-        if isinstance(self.data, dict):
-            self.data[self.param_name] = self.param_value
-        elif isinstance(self.data, QSettings):
-            self.data.setValue(self.param_name, self.param_value)
-        elif isinstance(self.data, QMainWindow):
-            self.data.pr.parameters[self.data.pr.p_preset][self.param_name] = self.param_value
+        self.data[self.param_name] = self.param_value
 
 
 class IntGui(Param):
@@ -890,15 +861,16 @@ class CheckListGui(Param):
         self.save_param()
 
     def init_layout(self):
-        check_list_layout = QVBoxLayout()
+        check_list_layout = QHBoxLayout()
+
+        self.value_label = QLabel()
+        check_list_layout.addWidget(self.value_label)
 
         self.param_widget = QPushButton('Edit')
         self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(CheckListDialog, self))
         check_list_layout.addWidget(self.param_widget)
 
-        self.value_label = QLabel()
-        check_list_layout.addWidget(self.value_label)
         self.init_ui(check_list_layout)
 
     def set_param(self):
@@ -1001,13 +973,13 @@ class DictGui(Param):
     def init_layout(self):
         dict_layout = QHBoxLayout()
 
+        self.value_label = QLabel()
+        dict_layout.addWidget(self.value_label)
+
         self.param_widget = QPushButton('Edit')
         self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(DictDialog, self))
         dict_layout.addWidget(self.param_widget)
-
-        self.value_label = QLabel()
-        dict_layout.addWidget(self.value_label)
 
         self.init_ui(dict_layout)
 
@@ -1235,10 +1207,10 @@ class MultiTypeGui(Param):
         # Set standard parameter-keyword-arguments as given to MultiTypeGui
         kwargs['data'] = self.data
         kwargs['param_name'] = self.param_name
-        kwargs['param_alias'] = self.param_alias
+        kwargs['param_alias'] = ''
         kwargs['default'] = self.default
-        kwargs['groupbox_layout'] = self.groupbox_layout
-        kwargs['none_select'] = self.none_select
+        kwargs['groupbox_layout'] = False
+        kwargs['none_select'] = False
         kwargs['description'] = self.description
         kwargs['param_unit'] = self.param_unit
 
@@ -1261,7 +1233,7 @@ class MultiTypeGui(Param):
 
     def init_layout(self):
         if self.type_selection:
-            self.type_layout = QVBoxLayout()
+            self.type_layout = QHBoxLayout()
             self.type_layout.addWidget(self.type_cmbx)
             self.add_type_gui()
             self.init_ui(self.type_layout)
@@ -1272,17 +1244,18 @@ class MultiTypeGui(Param):
             self.init_ui(type_layout)
 
     def set_param(self):
+        self.check_groupbox_state()
         if self.type_selection:
+            self.param_widget.param_value = self.param_value
             self.param_widget.set_param()
-        else:
-            self.check_groupbox_state()
-            if self.param_value is not None:
-                self.param_widget.setText(str(self.param_value))
-                self.type_display.setText(f'Type: {type(self.param_value).__name__}')
+        elif self.param_value is not None:
+            self.param_widget.setText(str(self.param_value))
+            self.type_display.setText(f'Type: {type(self.param_value).__name__}')
 
     def get_param(self):
         if self.type_selection:
             self.param_widget.get_param()
+            self.param_value = self.param_widget.param_value
         else:
             text = self.param_widget.text()
             try:
@@ -1297,7 +1270,7 @@ class MultiTypeGui(Param):
             self.type_display.setText(f'Type: {self.param_type}')
             self.save_param()
 
-            return self.param_value
+        return self.param_value
 
 
 # Testing
@@ -1308,7 +1281,7 @@ if __name__ == '__main__':
     grid_layout = QGridLayout()
     max_cols = 4
     set_none_select = True
-    set_groupbox_layout = False
+    set_groupbox_layout = True
     set_param_alias = False
 
     parameters = {'IntGui': None,
@@ -1334,7 +1307,7 @@ if __name__ == '__main__':
                      'param_unit': 'flurbo'},
         'StringGui': {'input_mask': 'ppAAA.AA;_',
                       'param_unit': 'N'},
-        'MultiTypeGui': {'type_selection': True},
+        'MultiTypeGui': {'type_selection': False},
         'FuncGui': {'param_unit': 'u'},
         'BoolGui': {},
         'TupleGui': {'min_val': -10,

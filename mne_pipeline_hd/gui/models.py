@@ -246,6 +246,8 @@ class CheckDictEditModel(CheckDictModel, EditListModel):
         dictionary which may contain items from data as keys
     show_index: bool
         Set True if you want to display the list-index in front of each value
+    drag_drop: bool
+        Set True to enable Drag&Drop.
     yes_bt: int | None
         Supply a identifier for an icon to mark the items existing in check_dict
     no_bt: int | None
@@ -257,9 +259,9 @@ class CheckDictEditModel(CheckDictModel, EditListModel):
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data, check_dict, show_index=False,
+    def __init__(self, data, check_dict, show_index=False, drag_drop=False,
                  yes_bt=None, no_bt=None):
-        super().__init__(data, check_dict, show_index, yes_bt, no_bt)
+        super().__init__(data, check_dict, show_index, drag_drop, yes_bt, no_bt)
         # EditListModel doesn't have to be initialized because in __init__ of EditListModel
         # only BaseListModel is initialized which is already done in __init__ of CheckDictModel
 

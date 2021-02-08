@@ -340,8 +340,8 @@ class ParametersDock(QDockWidget):
                     gui_args = {}
 
                 gui_handle = getattr(parameter_widgets, gui_name)
-                self.param_guis[idx] = gui_handle(self.mw, param_name=idx, param_alias=param_alias, default=default,
-                                                  description=description, param_unit=unit, **gui_args)
+                self.param_guis[idx] = gui_handle(self.mw.pr.parameters, param_name=idx, param_alias=param_alias,
+                                                  default=default, description=description, param_unit=unit, **gui_args)
 
                 layout.addWidget(self.param_guis[idx])
 
