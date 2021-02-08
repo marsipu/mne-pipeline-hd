@@ -10,6 +10,7 @@ Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.201
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import sys
+import traceback
 from ast import literal_eval
 from functools import partial
 
@@ -117,7 +118,12 @@ class Param(QWidget):
             if self.param_value is None:
                 self.group_box.setChecked(False)
             else:
+                # Save param_value, because when Widget inside GroupBox changes EnabledState to Enabled,
+                # the get_param-method may be invoked leading to rewriting param_value with the displayed value
+                # and not with the value from read_param
+                saved_value = self.param_value
                 self.group_box.setChecked(True)
+                self.param_value = saved_value
 
     # Todo: Reduce to dictionary
     def read_param(self):
@@ -1294,10 +1300,12 @@ class MultiTypeGui(Param):
             return self.param_value
 
 
+# Testing
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     widget = QWidget()
-    test_layout = QGridLayout()
+    test_layout = QVBoxLayout()
+    grid_layout = QGridLayout()
     max_cols = 4
     set_none_select = True
     set_groupbox_layout = False
@@ -1345,6 +1353,8 @@ if __name__ == '__main__':
                       'param_unit': 'Hz'}
     }
 
+    gui_dict = dict()
+
     for idx, gui_nm in enumerate(keyword_args):
         kw_args = keyword_args[gui_nm]
         kw_args['none_select'] = set_none_select
@@ -1353,7 +1363,40 @@ if __name__ == '__main__':
             kw_args['param_alias'] = gui_nm + '-alias'
         kw_args['description'] = gui_nm + '-description'
         gui = globals()[gui_nm](parameters, gui_nm, **kw_args)
-        test_layout.addWidget(gui, idx // max_cols, idx % max_cols)
+        grid_layout.addWidget(gui, idx // max_cols, idx % max_cols)
+        gui_dict[gui_nm] = gui
+
+    test_layout.addLayout(grid_layout)
+
+    set_layout = QHBoxLayout()
+    gui_cmbx = QComboBox()
+    gui_cmbx.addItems(gui_dict.keys())
+    set_layout.addWidget(gui_cmbx)
+
+    set_le = QLineEdit()
+    set_layout.addWidget(set_le)
+
+
+    def set_param():
+        try:
+            current_gui = gui_cmbx.currentText()
+            try:
+                value = literal_eval(set_le.text())
+            except (SyntaxError, ValueError):
+                value = set_le.text()
+            parameters[current_gui] = value
+            p_gui = gui_dict[current_gui]
+            p_gui.read_param()
+            p_gui.set_param()
+        except:
+            print(traceback.format_exc())
+
+
+    set_bt = QPushButton('Set')
+    set_bt.clicked.connect(set_param)
+    set_layout.addWidget(set_bt)
+
+    test_layout.addLayout(set_layout)
 
     widget.setLayout(test_layout)
     widget.show()

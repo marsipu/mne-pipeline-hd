@@ -897,7 +897,7 @@ class FSMRI(BaseLoading):
                                          'save': 'save_bem_solution'},
                         'Volume-Source-Space': {'path': self.vol_source_space_path,
                                                 'load': 'load_vol_source_space',
-                                                'save': 'save_vol_source_psace'},
+                                                'save': 'save_vol_source_space'},
                         'Source-Morph': {'path': self.source_morph_path,
                                          'load': 'load_source_morph',
                                          'save': 'save_source_morph'}}
