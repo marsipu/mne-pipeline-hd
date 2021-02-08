@@ -375,48 +375,49 @@ class MEEG(BaseLoading):
         # Attributes of the subject
         # The assigned Empty-Room-Measurement if existing
         if self.name not in self.mw.pr.meeg_to_erm:
-            self.mw.pr.meeg_to_erm[self.name] = None
+            self.erm = None
             if not self.suppress_warnings:
                 print(f'No Empty-Room-Measurement assigned for {self.name}, defaulting to "None"')
-        self.erm = self.mw.pr.meeg_to_erm[self.name]
+        else:
+            # Transition from 'None' to None (placed 30.01.2021, can be removed soon)
+            if self.mw.pr.meeg_to_erm[self.name] == 'None':
+                self.mw.pr.meeg_to_erm[self.name] = None
+            self.erm = self.mw.pr.meeg_to_erm[self.name]
 
         # The assigned Freesurfer-MRI(already as FSMRI-Class)
-        if self.name not in self.mw.pr.meeg_to_fsmri:
-            self.mw.pr.meeg_to_fsmri[self.name] = None
-            if not self.suppress_warnings:
-                print(f'No Freesurfer-MRI-Subject assigned for {self.name}, defaulting to "None"')
-        if self.fsmri is None or self.fsmri.name != self.mw.pr.meeg_to_fsmri[self.name]:
-            if self.mw.pr.meeg_to_fsmri[self.name] is None:
-                self.fsmri = FSMRI('None', self.mw)
+        if self.name in self.mw.pr.meeg_to_fsmri:
+            if self.fsmri and self.fsmri.name == self.mw.pr.meeg_to_fsmri[self.name]:
+                pass
             else:
                 self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[self.name], self.mw)
-
-        # Transition from 'None' to None (placed 30.01.2021, can be removed soon)
-        if self.mw.pr.meeg_to_erm[self.name] == 'None':
-            self.mw.pr.meeg_to_erm[self.name] = None
-        if self.mw.pr.meeg_to_fsmri[self.name] == 'None':
-            self.mw.pr.meeg_to_fsmri[self.name] = None
+        else:
+            self.fsmri = FSMRI('None', self.mw)
+            if not self.suppress_warnings:
+                print(f'No Freesurfer-MRI-Subject assigned for {self.name}, defaulting to "None"')
 
         # The assigned bad-channels
         if self.name not in self.mw.pr.meeg_bad_channels:
-            self.mw.pr.meeg_bad_channels[self.name] = list()
+            self.erm = list()
             if not self.suppress_warnings:
                 print(f'No bad channels assigned for {self.name}, defaulting to empty list')
-        self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
+        else:
+            self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
 
         # The assigned event-id
         if self.name not in self.mw.pr.meeg_event_id:
-            self.mw.pr.meeg_event_id[self.name] = dict()
+            self.event_id = dict()
             if not self.suppress_warnings:
                 print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
-        self.event_id = self.mw.pr.meeg_event_id[self.name]
+        else:
+            self.event_id = self.mw.pr.meeg_event_id[self.name]
 
         # The selected trials from the event-id
         if self.name not in self.mw.pr.sel_event_id:
-            self.mw.pr.sel_event_id[self.name] = list()
+            self.sel_trials = list()
             if not self.suppress_warnings:
                 print(f'No Trials selected for {self.name}, defaulting to empty list')
-        self.sel_trials = self.mw.pr.sel_event_id[self.name]
+        else:
+            self.sel_trials = self.mw.pr.sel_event_id[self.name]
 
     def load_paths(self):
         """Load Paths as attributes (depending on which Parameter-Preset is selected)"""
@@ -859,6 +860,9 @@ class MEEG(BaseLoading):
 class FSMRI(BaseLoading):
     # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?)
     def __init__(self, name, main_win):
+        if name is None:
+            name = 'None'
+
         super().__init__(name, main_win)
 
         self.load_attributes()
