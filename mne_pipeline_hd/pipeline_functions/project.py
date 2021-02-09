@@ -16,7 +16,7 @@ import sys
 from ast import literal_eval
 from copy import deepcopy
 from os import listdir, makedirs
-from os.path import exists, isfile, join
+from os.path import exists, getsize, isfile, join
 
 import numpy as np
 
@@ -311,3 +311,56 @@ class Project:
         for remove_key in remove_keys:
             print(f'Removed {remove_key} from File-Parameters')
             self.file_parameters.pop(remove_key)
+
+    def clean_plot_files(self):
+        all_image_paths = list()
+        # Remove object-keys which no longer exist
+        remove_obj = list()
+        for obj_key in self.plot_files:
+            if obj_key not in self.all_meeg + self.all_erm + self.all_fsmri + list(self.all_groups.keys()):
+                remove_obj.append(obj_key)
+            else:
+                # Remove Parameter-Presets which no longer exist
+                remove_p_preset = list()
+                for p_preset in self.plot_files[obj_key]:
+                    if p_preset not in self.parameters.keys():
+                        remove_p_preset.append(p_preset)
+                    else:
+                        # Remove funcs which no longer exist or got no paths left
+                        remove_funcs = list()
+                        for func in self.plot_files[obj_key][p_preset]:
+                            if func not in self.mw.pd_funcs.index:
+                                remove_funcs.append(func)
+                            else:
+                                # Remove image-paths which no longer exist
+                                for rel_image_path in self.plot_files[obj_key][p_preset][func]:
+                                    image_path = join(self.figures_path, rel_image_path)
+                                    if not isfile(image_path) or self.figures_path in rel_image_path:
+                                        self.plot_files[obj_key][p_preset][func].remove(rel_image_path)
+                                    else:
+                                        all_image_paths.append(image_path)
+                                if len(self.plot_files[obj_key][p_preset][func]) == 0:
+                                    # Keys can't be dropped from dictionary during iteration
+                                    remove_funcs.append(func)
+
+                        for remove_func_key in remove_funcs:
+                            self.plot_files[obj_key][p_preset].pop(remove_func_key)
+                            print(f'Removed {remove_func_key} in {p_preset} {obj_key} from Plot-Files')
+
+                for remove_preset_key in remove_p_preset:
+                    self.plot_files[obj_key].pop(remove_preset_key)
+                    print(f'Removed {remove_preset_key} in {obj_key} from Plot-Files')
+
+        for remove_key in remove_obj:
+            self.plot_files.pop(remove_key)
+            print(f'Removed {remove_key} from Plot-Files')
+
+        # Remove image-files, which aren't listed in plot_files.
+        free_space = 0
+        for _, _, files in os.walk(self.figures_path):
+            for file_path in [fp for fp in files if fp not in all_image_paths]:
+                free_space += getsize(file_path)
+                os.remove(file_path)
+                print(f'Removed Image: {file_path}')
+
+        print(f'{round(free_space / (1024 ** 2), 2)} MB of space was freed!')

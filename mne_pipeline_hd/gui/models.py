@@ -610,7 +610,7 @@ class FileManagementModel(BasePandasModel):
                 elif value / 1024 < 1000:
                     return f'{int(value / 1024)} KB'
                 else:
-                    return f'{int(value / 1024 ** 2)} MB'
+                    return f'{int(value / (1024 ** 2))} MB'
 
         if role == Qt.DecorationRole:
             if pd.isna(value) or value == 0:

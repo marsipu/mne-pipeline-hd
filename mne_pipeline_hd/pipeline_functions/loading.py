@@ -131,9 +131,6 @@ class BaseLoading:
         self.data_dict = dict()
         self.existing_paths = dict()
 
-        # May be removed in future to improve performance (03.02.2021)
-        self.clear_plot_files()
-
     def _return_path_list(self, data_type):
         paths = self.io_dict[data_type]['path']
         # Convert paths to list
@@ -185,20 +182,6 @@ class BaseLoading:
             self.file_parameters[file_name]['P_PRESET'] = self.p_preset
             for p_name in self.p:
                 self.file_parameters[file_name][p_name] = self.p[p_name]
-
-    def clear_plot_files(self):
-        """Clear all entries in plot-files, where the image has already been deleteds"""
-        drop_keys = list()
-        for func in self.plot_files:
-            for rel_image_path in self.plot_files[func]:
-                image_path = join(self.figures_path, rel_image_path)
-                if not isfile(image_path) or self.figures_path in rel_image_path:
-                    self.plot_files[func].remove(rel_image_path)
-            if len(self.plot_files[func]) == 0:
-                # Keys can't be dropped from dictionary during iteration
-                drop_keys.append(func)
-        for drop_key in drop_keys:
-            self.plot_files.pop(drop_key)
 
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):

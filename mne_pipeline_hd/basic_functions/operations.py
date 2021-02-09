@@ -32,7 +32,7 @@ from ..pipeline_functions import ismac, iswin
 from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
 
-# Todo: Change normal comments to docstrings
+# Todo: Create docstrings for each function
 
 # ==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR

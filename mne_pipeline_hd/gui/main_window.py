@@ -508,6 +508,11 @@ class MainWindow(QMainWindow):
         input_menu.addAction('File-Management', partial(FileManagment, self))
         input_menu.addAction('Raw-Info', partial(RawInfo, self))
 
+        # Project
+        project_menu = self.menuBar().addMenu('&Project')
+        project_menu.addAction('&Clean File-Parameters', self.pr.clean_file_parameters)
+        project_menu.addAction('&Clean Plot-Files', self.pr.clean_plot_files)
+
         # Custom-Functions
         func_menu = self.menuBar().addMenu('&Functions')
         func_menu.addAction('&Import Custom', partial(CustomFunctionImport, self))
