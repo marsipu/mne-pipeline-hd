@@ -947,6 +947,7 @@ class MainWindow(QMainWindow):
         answer = QMessageBox.question(self, 'Closing MNE-Pipeline', 'Do you want to return to the Welcome-Window?',
                                       buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
                                       defaultButton=QMessageBox.Yes)
+        self.closing_dlg.close()
         if answer == QMessageBox.Yes:
             self.welcome_window.check_home_path()
             self.welcome_window.show()
@@ -966,5 +967,5 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
-            worker_dialog = WorkerDialog(self, self.save_main, show_buttons=False, show_console=False)
-            worker_dialog.thread_finished.connect(self._saving_finished)
+            self.closing_dlg = WorkerDialog(self, self.save_main, show_buttons=False, show_console=False)
+            self.closing_dlg.thread_finished.connect(self._saving_finished)
