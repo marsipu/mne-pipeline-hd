@@ -299,8 +299,8 @@ class PlotViewSelection(QDialog):
 
         bt_layout = QHBoxLayout()
         # Interactive not useful at the moment because the plots loose interactivity when coming from the thread
-        # self.interactive_chkbx = QCheckBox('Interactive Plots?')
-        # self.interactive_chkbx.toggled.connect(self.interactive_toggled)
+        self.interactive_chkbx = QCheckBox('Interactive Plots?')
+        self.interactive_chkbx.toggled.connect(self.interactive_toggled)
         # bt_layout.addWidget(self.interactive_chkbx)
 
         start_bt = QPushButton('Start')

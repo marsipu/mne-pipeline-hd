@@ -308,9 +308,12 @@ class Project:
         for key in [k for k in self.file_parameters
                     if k not in self.all_meeg + self.all_erm + self.all_fsmri + list(self.all_groups.keys())]:
             remove_keys.append(key)
-        for remove_key in remove_keys:
-            print(f'Removed {remove_key} from File-Parameters')
-            self.file_parameters.pop(remove_key)
+        if len(remove_keys) > 0:
+            for remove_key in remove_keys:
+                print(f'Removed {remove_key} from File-Parameters')
+                self.file_parameters.pop(remove_key)
+            else:
+                print('Nothing removed from File-Parameters')
 
     def clean_plot_files(self):
         all_image_paths = list()
@@ -357,10 +360,22 @@ class Project:
 
         # Remove image-files, which aren't listed in plot_files.
         free_space = 0
-        for _, _, files in os.walk(self.figures_path):
+        for root, _, files in os.walk(self.figures_path):
+            files = [join(root, f) for f in files]
             for file_path in [fp for fp in files if fp not in all_image_paths]:
                 free_space += getsize(file_path)
                 os.remove(file_path)
                 print(f'Removed Image: {file_path}')
+
+        # Remove empty folders (loop until all empty folders are removed)
+        folder_rm_count = 1
+        while folder_rm_count != 0:
+            folder_rm_count = 0
+            for root, folders, _ in os.walk(self.figures_path):
+                folders = [join(root, fd) for fd in folders]
+                for folder in [fdp for fdp in folders if len(listdir(fdp)) == 0]:
+                    os.rmdir(folder)
+                    folder_rm_count += 1
+                    print(f'Removed Folder: {folder}')
 
         print(f'{round(free_space / (1024 ** 2), 2)} MB of space was freed!')

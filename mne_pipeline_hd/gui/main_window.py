@@ -18,6 +18,7 @@ from importlib import reload, resources, util
 from os import listdir
 from os.path import isdir, join
 from subprocess import run
+from time import sleep
 
 import mne
 import pandas as pd
@@ -284,6 +285,12 @@ class MainWindow(QMainWindow):
         self.pr = Project(self, self.current_project)
         self.project_updated()
 
+    def pr_clean_fp(self):
+        self.pr.clean_file_parameters()
+
+    def pr_clean_pf(self):
+        self.pr.clean_plot_files()
+
     def update_project_box(self):
         self.project_box.clear()
         for project in self.projects:
@@ -510,8 +517,8 @@ class MainWindow(QMainWindow):
 
         # Project
         project_menu = self.menuBar().addMenu('&Project')
-        project_menu.addAction('&Clean File-Parameters', self.pr.clean_file_parameters)
-        project_menu.addAction('&Clean Plot-Files', self.pr.clean_plot_files)
+        project_menu.addAction('&Clean File-Parameters', self.pr_clean_fp)
+        project_menu.addAction('&Clean Plot-Files', self.pr_clean_pf)
 
         # Custom-Functions
         func_menu = self.menuBar().addMenu('&Functions')
@@ -944,10 +951,13 @@ class MainWindow(QMainWindow):
         self.save_settings()
 
     def _saving_finished(self):
+        # This is necessary to avoid closing_dlg to persist on UNIX
+        self.closing_dlg.deleteLater()
+        self.closing_dlg.close()
+
         answer = QMessageBox.question(self, 'Closing MNE-Pipeline', 'Do you want to return to the Welcome-Window?',
                                       buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
                                       defaultButton=QMessageBox.Yes)
-        self.closing_dlg.close()
         if answer == QMessageBox.Yes:
             self.welcome_window.check_home_path()
             self.welcome_window.show()
@@ -955,6 +965,7 @@ class MainWindow(QMainWindow):
                 self.edu_tour.close()
             self.project_saved = True
             self.close()
+
         elif answer == QMessageBox.No:
             self.welcome_window.close()
             if self.edu_tour:
