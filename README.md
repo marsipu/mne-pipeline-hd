@@ -27,8 +27,8 @@ Run `mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_p`)
 
 run \_\_main\_\_.py from the terminal or an IDE like PyCharm, VSCode, Atom, etc.
 
-***When using the pipeline and its functions bear in mind that the pipeline is stil in development 
-and the functions are partly still adjusted to my analysis!***
+***When using the pipeline and its functions bear in mind that the pipeline is still in development and the functions
+are partly still adjusted to my analysis!***
 
 ## Bug-Report/Feature-Request
 Please report bugs on GitHub as an issue or to me (dev@earthman-music.de) directly.

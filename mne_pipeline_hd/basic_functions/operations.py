@@ -28,7 +28,7 @@ import numpy as np
 from mne.preprocessing import ICA
 
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
-from ..pipeline_functions import ismac, iswin, pipeline_utils as ut
+from ..pipeline_functions import ismac, iswin
 from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
 
@@ -284,13 +284,16 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
         print('No events found')
 
 
-def epoch_raw(meeg, ch_types, t_epoch, baseline, apply_proj, reject, flat, bad_interpolation,
+def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, flat, bad_interpolation,
               use_autoreject, consensus_percs, n_interpolates, overwrite_ar, decim, n_jobs):
     raw_filtered = meeg.load_filtered()
     events = meeg.load_events()
 
     # Pick selected channel_types if not done before
     raw_filtered.pick(ch_types)
+
+    if len(ch_names) > 0 and ch_names != 'all':
+        raw_filtered.pick_channels(ch_names)
 
     if bad_interpolation is None:
         # Exclude bad-channels if no Bad-Channel-Interpolation is intended after making the Epochs or the Evokeds
@@ -348,17 +351,20 @@ def epoch_raw(meeg, ch_types, t_epoch, baseline, apply_proj, reject, flat, bad_i
 
 
 def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove_proj, ica_reject, ica_autoreject,
-            ch_types, reject_by_annotation, ica_eog, eog_channel, ica_ecg, ecg_channel, **kwargs):
-    if ica_fitto == 'Raw (Unfiltered)':
-        data = meeg.load_raw()
-        data.pick(ch_types, exclude='bads')
-
-    elif ica_fitto == 'Raw (Filtered)':
-        data = meeg.load_filtered()
-        data.pick(ch_types, exclude='bads')
-    else:
+            ch_types, ch_names, reject_by_annotation, ica_eog, eog_channel, ica_ecg, ecg_channel, **kwargs):
+    if ica_fitto == 'Epochs':
         data = meeg.load_epochs()
         # Bad-Channels and Channel-Types are already picked in epoch_raw
+    else:
+        if ica_fitto == 'Raw (Unfiltered)':
+            data = meeg.load_raw()
+
+        else:
+            data = meeg.load_filtered()
+
+        data.pick(ch_types, exclude='bads')
+        if len(ch_names) > 0 and ch_names != 'all':
+            data.pick_channels(ch_names)
 
     # Filter if data is not highpass-filtered >= 1
     if data.info['highpass'] < 1:

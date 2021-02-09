@@ -1,5 +1,6 @@
 ;alias;group;default;unit;description;gui_type;gui_args
-ch_types;Channel-Types;Preprocessing;['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg'];;Channel-Types used in data;CheckListGui;{'options': ['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg', 'emg', 'ref_meg', 'misc', 'resp', 'chpi', 'exci', 'ias', 'syst', 'seeg', 'dipole', 'gof', 'bio', 'ecog', 'fnirs', 'csd']}
+ch_types;Channel-Types;Preprocessing;['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg'];;Specify Channel-Types used in data;CheckListGui;{'options': ['mag', 'grad', 'eeg', 'stim', 'eog', 'ecg', 'emg', 'ref_meg', 'misc', 'resp', 'chpi', 'exci', 'ias', 'syst', 'seeg', 'dipole', 'gof', 'bio', 'ecog', 'fnirs', 'csd']}
+ch_names;Channel-Names;Preprocessing;'all';;Specify Channel-Names to use in data (set all for all depending on what you have selected as channel-types);MultiTypeGui;{'type_selection': True, 'types': ['str', 'list']}
 ref_channels;;Preprocessing;'average';;Set the kind of eeg-reference, look at documentation of mne.set_eeg_reference();MultiTypeGui;{'type_selection': True, 'types': ['str', 'list']}
 highpass;Highpass-Cutoff;Filtering;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1, 'none_select': True}
 lowpass;Lowpass-Cutoff;Filtering;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1, 'none_select': True}

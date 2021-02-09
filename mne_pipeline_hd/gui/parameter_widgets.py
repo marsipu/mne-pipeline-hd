@@ -780,8 +780,8 @@ class ListGui(Param):
             self.value_label.setText('None')
 
     def get_param(self):
-        if self.group_box.isChecked() and self.param_value is None:
-            if self.cached_value:
+        if self.param_value is None:
+            if self.cached_value is not None:
                 self.param_value = self.cached_value
             else:
                 self.param_value = list()
@@ -903,7 +903,7 @@ class CheckListGui(Param):
             self.value_label.setText('None')
 
     def get_param(self):
-        if self.group_box.isChecked() and self.param_value is None:
+        if self.param_value is None:
             if self.cached_value:
                 self.param_value = self.cached_value
             else:
@@ -1014,7 +1014,7 @@ class DictGui(Param):
             self.value_label.setText('None')
 
     def get_param(self):
-        if self.group_box.isChecked() and self.param_value is None:
+        if self.param_value is None:
             if self.cached_value:
                 self.param_value = self.cached_value
             else:
@@ -1228,6 +1228,9 @@ class MultiTypeGui(Param):
         kwargs['param_unit'] = self.param_unit
 
         self.param_widget = globals()[gui_name](**kwargs)
+        self.param_widget.param_value = self.param_value
+        self.param_widget.get_param()
+        self.param_widget.set_param()
         self.type_layout.addWidget(self.param_widget)
 
     def change_type(self, type_str):
@@ -1300,12 +1303,13 @@ if __name__ == '__main__':
     parameters = {'IntGui': None,
                   'FloatGui': 5.3,
                   'StringGui': 'Havona',
-                  'MultiTypeGui': 8,
+                  'MultiTypeGui': 42,
                   'FuncGui': 5000,
                   'BoolGui': True,
                   'TupleGui': (45, 6),
                   'ComboGui': 'a',
-                  'ListGui': [1, 454.33, 'post_central-lh', 'raga', 5],
+                  # 'ListGui': [1, 454.33, 'post_central-lh', 'raga', 5],
+                  'ListGui': None,
                   'CheckListGui': ['bananaaa'],
                   'DictGui': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
                   'SliderGui': 5}
@@ -1320,7 +1324,7 @@ if __name__ == '__main__':
                      'param_unit': 'flurbo'},
         'StringGui': {'input_mask': 'ppAAA.AA;_',
                       'param_unit': 'N'},
-        'MultiTypeGui': {'type_selection': False},
+        'MultiTypeGui': {'type_selection': True},
         'FuncGui': {'param_unit': 'u'},
         'BoolGui': {},
         'TupleGui': {'min_val': -10,
