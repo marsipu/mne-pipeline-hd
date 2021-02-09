@@ -255,7 +255,7 @@ class BaseLoading:
             if subfolder:
                 base_name_sequence.append(subfolder)
             if idx:
-                base_name_sequence.append(subfolder)
+                base_name_sequence.append(idx)
 
             # Join name-parts together with "--" and append the image-format
             file_name = '--'.join(base_name_sequence)
