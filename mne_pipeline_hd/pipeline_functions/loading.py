@@ -73,7 +73,12 @@ def save_decorator(save_func):
         obj_instance = args[0]
 
         # Get data-object
-        data = args[1]
+        if len(args) > 1:
+            data = args[1]
+        elif len(kwargs) > 0:
+            data = kwargs[list(kwargs.keys())[0]]
+        else:
+            data = None
 
         # Get matching data-type from IO-Dict
         data_type = [k for k in obj_instance.io_dict if obj_instance.io_dict[k]['save'] == save_func.__name__][0]

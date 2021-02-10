@@ -1374,6 +1374,9 @@ class SubBadsWidget(QWidget):
         copy_bt.clicked.connect(partial(CopyBadsDialog, self))
         self.bt_layout.addWidget(copy_bt)
 
+        self.save_raw_annot = QCheckBox('Save Annotations')
+        self.bt_layout.addWidget(self.save_raw_annot)
+
         self.layout.addLayout(self.bt_layout, 1, 0, 1, 2)
         self.setLayout(self.layout)
 
@@ -1460,12 +1463,17 @@ class SubBadsWidget(QWidget):
         self.current_obj.bad_channels.clear()
         self.current_obj.bad_channels += self.raw.info['bads']
         self.set_chkbx_enable(True)
+
         # Clear all entries
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
         for ch in self.current_obj.bad_channels:
             self.bad_chkbts[ch].setChecked(True)
         self.files_widget.content_changed()
+
+        if self.save_raw_annot.isChecked():
+            WorkerDialog(self, self.current_obj.save_raw, raw=self.raw, show_console=True,
+                         title='Saving Raw with Annotations')
 
     def plot_raw_bad(self):
         # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
