@@ -52,7 +52,7 @@ plot_epochs_drop_log;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
 plot_autoreject_log;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
 plot_evoked_topo;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_evoked_topomap;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
-plot_evoked_butterfly;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_butterfly;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,apply_proj,show_plots
 plot_evoked_joint;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots

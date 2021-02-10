@@ -12,7 +12,7 @@
         "save_plots": true,
         "shutdown": false,
         "img_format": ".png",
-        "dpi": 300,
+        "dpi": 150,
 
         "overwrite": false
     },

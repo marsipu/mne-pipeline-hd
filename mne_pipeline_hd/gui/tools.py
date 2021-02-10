@@ -405,8 +405,6 @@ class PlotViewSelection(QDialog):
 
                     # Load Plot-Images
                     else:
-                        # Clean Plot-Files
-                        obj.clear_plot_files()
                         try:
                             image_paths = [join(obj.figures_path, p) for p in obj.plot_files[self.selected_func]]
                         except KeyError as ke:
