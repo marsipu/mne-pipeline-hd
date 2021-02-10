@@ -137,18 +137,19 @@ class Param(QWidget):
             else:
                 self.param_value = self.default
 
-        # get data from Parameters in Project (depending on selected parameter-preset)
-        elif isinstance(self.data, Project):
-            if self.param_name in self.data.parameters[self.data.p_preset]:
-                self.param_value = self.data.parameters[self.data.p_preset][self.param_name]
+        # get data from Parameters in Project in MainWindow
+        # (depending on selected parameter-preset and selected Project)
+        elif isinstance(self.data, QMainWindow):
+            if self.param_name in self.data.pr.parameters[self.data.pr.p_preset]:
+                self.param_value = self.data.pr.parameters[self.data.pr.p_preset][self.param_name]
             else:
                 self.param_value = self.default
 
     def save_param(self):
         if isinstance(self.data, dict):
             self.data[self.param_name] = self.param_value
-        elif isinstance(self.data, Project):
-            self.data.parameters[self.data.p_preset][self.param_name] = self.param_value
+        elif isinstance(self.data, QMainWindow):
+            self.data.pr.parameters[self.data.pr.p_preset][self.param_name] = self.param_value
 
 
 class IntGui(Param):
