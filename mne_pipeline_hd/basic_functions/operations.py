@@ -39,32 +39,42 @@ from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 # ==============================================================================
 
 
-def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
-               h_trans_bandwidth, filter_method, iir_params, fir_phase, fir_window,
-               fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
-    results = compare_filep(meeg, meeg.raw_filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
-    # use cuda for filtering if enabled
-    if enable_cuda == 'true':
-        n_jobs = 'cuda'
+def filter_data(meeg, filter_target, highpass, lowpass, filter_length, l_trans_bandwidth,
+                h_trans_bandwidth, filter_method, iir_params, fir_phase, fir_window,
+                fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
+    # Compare Parameters from last run
+    filtered_path = meeg.io_dict[filter_target]['path']
+    results = compare_filep(meeg, filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
+
     if any([results[key] != 'equal' for key in results]):
-        raw = meeg.load_raw()
+        # Load Data
+        data = meeg.io_dict[filter_target]['load']()
 
-        if bad_interpolation == 'Raw (Unfiltered)':
-            raw = raw.interpolate_bads()
+        # use cuda for filtering if enabled
+        if enable_cuda == 'true':
+            n_jobs = 'cuda'
 
-        # Filter Raw
-        raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
-                   h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method, iir_params=iir_params,
-                   phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
-                   skip_by_annotation=skip_by_annotation, pad=fir_pad)
+        # Filter Data
+        if filter_target == 'Evoked':
+            for evoked in data:
+                evoked.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
+                              h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method,
+                              iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
+                              skip_by_annotation=skip_by_annotation, pad=fir_pad)
+        else:
+            data.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
+                        h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method, iir_params=iir_params,
+                        phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
+                        skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
-        if bad_interpolation == 'Raw (Filtered)':
-            raw = raw.interpolate_bads()
-
-        meeg.save_filtered(raw)
+        # Save Data
+        if filter_target == 'Raw':
+            meeg.io_dict['Raw (Filtered)']['save'](data)
+        else:
+            meeg.io_dict[filter_target]['save'](data)
 
         # Remove raw to avoid memory overload
-        del raw
+        del data
         gc.collect()
 
     else:
@@ -107,6 +117,18 @@ def filter_raw(meeg, highpass, lowpass, filter_length, l_trans_bandwidth,
 
     else:
         print('no erm_file assigned')
+
+
+def interpolate_bads(meeg, bad_interpolation):
+    data = meeg.io_dict[bad_interpolation]['load']()
+
+    if bad_interpolation == 'Evoked':
+        for evoked in data:
+            evoked.interpolate_bads()
+    else:
+        data.interpolate_bads()
+
+    meeg.io_dict[bad_interpolation]['save']()
 
 
 def add_erm_ssp(meeg, erm_ssp_duration, erm_n_grad, erm_n_mag, erm_n_eeg, n_jobs, show_plots):
@@ -302,9 +324,6 @@ def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, f
     epochs = mne.Epochs(raw_filtered, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, proj=apply_proj, reject=None, flat=None,
                         decim=decim, on_missing='ignore', reject_by_annotation=reject_by_annotation)
-
-    if bad_interpolation == 'Epochs':
-        epochs = epochs.interpolate_bads()
 
     if any([i is not None for i in [use_autoreject, reject, flat]]) and bad_interpolation == 'Evokeds':
         raise RuntimeWarning('With bad_interpolation="Evokeds", the bad channels are still included and '
@@ -606,13 +625,11 @@ def apply_ica(meeg, n_pca_components):
                 meeg.save_erm_processed(erm_data)
 
 
-def get_evokeds(meeg, bad_interpolation):
+def get_evokeds(meeg):
     epochs = meeg.load_epochs()
     evokeds = []
     for trial in meeg.sel_trials:
         evoked = epochs[trial].average()
-        if bad_interpolation == 'Evokeds':
-            evoked = evoked.interpolate_bads()
         # Todo: optional if you want weights in your evoked.comment?!
         evoked.comment = trial
         evokeds.append(evoked)

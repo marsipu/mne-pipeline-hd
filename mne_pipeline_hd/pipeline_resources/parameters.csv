@@ -4,6 +4,7 @@ ch_names;Channel-Names;Preprocessing;'all';;Specify Channel-Names to use in data
 ref_channels;;Preprocessing;'average';;Set the kind of eeg-reference, look at documentation of mne.set_eeg_reference();MultiTypeGui;{'type_selection': True, 'types': ['str', 'list']}
 highpass;Highpass-Cutoff;Filtering;1;Hz;Highpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1, 'none_select': True}
 lowpass;Lowpass-Cutoff;Filtering;100;Hz;Lowpass-Filter;SliderGui;{'min_val': 0, 'max_val': 100, 'step': 1, 'none_select': True}
+filter_target;;Filtering;'Raw';;The target for Filtering (experimental when other than Raw);ComboGui;{'options': ['Raw', 'Raw', 'Epochs', 'Evoked']}
 filter_length;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'int']}
 l_trans_bandwidth;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'float']}
 h_trans_bandwidth;;Filtering;auto;;;MultiTypeGui;{'type_selection': True, 'types': ['str', 'float']}
@@ -22,7 +23,7 @@ adjust_timeline_by_msec;Adjust Time;Events;0;ms;custom delay to stimulus in ms;I
 t_epoch;Epoch-Timeframe;Epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
 baseline;Baseline-Timeframe;Epochs;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val': 0, 'none_select': True}
 apply_proj;Apply Projections;Epochs;True;;If to apply the projections (if present);BoolGui;
-bad_interpolation;Bad-Channel-Interpolation;Preprocessing;None;;Choose where to apply bad-channels-interpolation;ComboGui;{'none_select': True, 'options': ['Raw (Filtered)', 'Raw (Unfiltered)', 'Epochs', 'Evokeds']}
+bad_interpolation;Bad-Channel-Interpolation;Preprocessing;None;;Choose where to apply bad-channels-interpolation;ComboGui;{'none_select': True, 'options': ['Raw', 'Epochs', 'Evoked']}
 reject_by_annotation;;Epochs;True;;If to reject by Annotations;BoolGui;
 use_autoreject;Autoreject;Epochs;None;;If to use autoreject and if to use it for getting the reject-threshold or for interpolating the Epochs;ComboGui;{'none_select': True, 'options': ['Threshold', 'Interpolation']}
 n_interpolates;;Epochs;np.array([1, 4, 32]);;p-values for autoreject;FuncGui;

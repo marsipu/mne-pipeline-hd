@@ -48,7 +48,9 @@ def load_decorator(load_func):
         obj_instance = args[0]
 
         # Get matching data-type from IO-Dict
-        data_type = [k for k in obj_instance.io_dict if obj_instance.io_dict[k]['load'] == load_func.__name__][0]
+        data_type = [k for k in obj_instance.io_dict
+                     if obj_instance.io_dict[k]['load'] is not None
+                     and obj_instance.io_dict[k]['load'].__name__ == load_func.__name__][0]
 
         print(f'Loading {data_type} for {obj_instance.name}')
 
@@ -62,10 +64,15 @@ def load_decorator(load_func):
                 if obj_instance.p_preset != 'Default':
                     print(f'No File for {data_type} from {obj_instance.name}'
                           f' with Parameter-Preset={obj_instance.p_preset} found, trying Default')
+
+                    actual_p_preset = obj_instance.p_preset
                     obj_instance.p_preset = 'Default'
                     obj_instance.load_paths()
 
                     data = load_func(*args, **kwargs)
+
+                    obj_instance.p_preset = actual_p_preset
+                    obj_instance.load_paths()
                 else:
                     raise fnf_err
 
@@ -93,7 +100,9 @@ def save_decorator(save_func):
             data = None
 
         # Get matching data-type from IO-Dict
-        data_type = [k for k in obj_instance.io_dict if obj_instance.io_dict[k]['save'] == save_func.__name__][0]
+        data_type = [k for k in obj_instance.io_dict
+                     if obj_instance.io_dict[k]['save'] is not None
+                     and obj_instance.io_dict[k]['save'].__name__ == save_func.__name__][0]
 
         # Make sure, that parent-directory exists
         paths = obj_instance._return_path_list(data_type)
@@ -476,74 +485,74 @@ class MEEG(BaseLoading):
 
         # This dictionary contains entries for each data-type which is loaded to/saved from disk
         self.io_dict = {'Raw': {'path': self.raw_path,
-                                'load': 'load_raw',
-                                'save': 'save_raw'},
+                                'load': self.load_raw,
+                                'save': self.save_raw},
                         'Raw (Filtered)': {'path': self.raw_filtered_path,
-                                           'load': 'load_filtered',
-                                           'save': 'save_filtered'},
+                                           'load': self.load_filtered,
+                                           'save': self.save_filtered},
                         'EmptyRoom': {'path': self.erm_path,
-                                      'load': 'load_erm',
+                                      'load': self.load_erm,
                                       'save': None},
                         'EmptyRoom (Filtered)': {'path': self.erm_processed_path,
-                                                 'load': 'load_erm_processed',
-                                                 'save': 'save_erm_processed'},
+                                                 'load': self.load_erm_processed,
+                                                 'save': self.save_erm_processed},
                         'Events': {'path': self.events_path,
-                                   'load': 'load_events',
-                                   'save': 'save_events'},
+                                   'load': self.load_events,
+                                   'save': self.save_events},
                         'Epochs': {'path': self.epochs_path,
-                                   'load': 'load_epochs',
-                                   'save': 'save_epochs'},
+                                   'load': self.load_epochs,
+                                   'save': self.save_epochs},
                         'RejectLog': {'path': self.reject_log_path,
-                                      'load': 'load_reject_log',
-                                      'save': 'save_reject_log'},
+                                      'load': self.load_reject_log,
+                                      'save': self.save_reject_log},
                         'ICA': {'path': self.ica_path,
-                                'load': 'load_ica',
-                                'save': 'save_ica'},
+                                'load': self.load_ica,
+                                'save': self.save_ica},
                         'Epochs (EOG)': {'path': self.eog_epochs_path,
-                                         'load': 'load_eog_epochs',
-                                         'save': 'save_eog_epochs'},
+                                         'load': self.load_eog_epochs,
+                                         'save': self.save_eog_epochs},
                         'Epochs (ECG)': {'path': self.ecg_epochs_path,
-                                         'load': 'load_ecg_epochs',
-                                         'save': 'save_ecg_epochs'},
+                                         'load': self.load_ecg_epochs,
+                                         'save': self.save_ecg_epochs},
                         'Evoked': {'path': self.evokeds_path,
-                                   'load': 'load_evokeds',
-                                   'save': 'save_evokeds'},
+                                   'load': self.load_evokeds,
+                                   'save': self.save_evokeds},
                         'TF Power Epochs': {'path': self.power_tfr_epochs_path,
-                                            'load': 'load_power_tfr_epochs',
-                                            'save': 'save_power_tfr_epochs'},
+                                            'load': self.load_power_tfr_epochs,
+                                            'save': self.save_power_tfr_epochs},
                         'TF ITC Epochs': {'path': self.itc_tfr_epochs_path,
-                                          'load': 'load_itc_tfr_epochs',
-                                          'save': 'save_itc_tfr_epochs'},
+                                          'load': self.load_itc_tfr_epochs,
+                                          'save': self.save_itc_tfr_epochs},
                         'TF Power Average': {'path': self.power_tfr_average_path,
-                                             'load': 'load_power_tfr_average',
-                                             'save': 'save_power_tfr_average'},
+                                             'load': self.load_power_tfr_average,
+                                             'save': self.save_power_tfr_average},
                         'TF ITC Average': {'path': self.itc_tfr_average_path,
-                                           'load': 'load_itc_tfr_average',
-                                           'save': 'save_itc_tfr_average'},
+                                           'load': self.load_itc_tfr_average,
+                                           'save': self.save_itc_tfr_average},
                         'Transformation': {'path': self.trans_path,
-                                           'load': 'load_transformation',
-                                           'save': 'save_transformation'},
+                                           'load': self.load_transformation,
+                                           'save': None},
                         'Forward Solution': {'path': self.forward_path,
-                                             'load': 'load_forward',
-                                             'save': 'save_forward'},
+                                             'load': self.load_forward,
+                                             'save': self.save_forward},
                         'Noise Covariance': {'path': self.noise_covariance_path,
-                                             'load': 'load_noise_covariance',
-                                             'save': 'save_noise_covariance'},
+                                             'load': self.load_noise_covariance,
+                                             'save': self.save_noise_covariance},
                         'Inverse Operator': {'path': self.inverse_path,
-                                             'load': 'load_inverse_operator',
-                                             'save': 'save_inverse_operator'},
+                                             'load': self.load_inverse_operator,
+                                             'save': self.save_inverse_operator},
                         'Source Estimate': {'path': self.stc_paths,
-                                            'load': 'load_source_estimates',
-                                            'save': 'save_source_estimates'},
+                                            'load': self.load_source_estimates,
+                                            'save': self.save_source_estimates},
                         'Source Estimate (Morphed)': {'path': self.morphed_stc_paths,
-                                                      'load': 'load_morphed_source_estimates',
-                                                      'save': 'save_morphed_source_estimates'},
+                                                      'load': self.load_morphed_source_estimates,
+                                                      'save': self.save_morphed_source_estimates},
                         'ECD': {'path': self.ecd_paths,
-                                'load': 'load_ecd',
-                                'save': 'save_ecd'},
+                                'load': self.load_ecd,
+                                'save': self.save_ecd},
                         'LTC': {'path': self.ltc_paths,
-                                'load': 'load_ltc',
-                                'save': 'save_ltc'}}
+                                'load': self.load_ltc,
+                                'save': self.save_ltc}}
 
     def rename(self, new_name):
         # Stor old name
