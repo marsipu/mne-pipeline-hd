@@ -381,7 +381,7 @@ class MEEG(BaseLoading):
 
         # The assigned bad-channels
         if self.name not in self.mw.pr.meeg_bad_channels:
-            self.mw.pr.meeg_bad_channels[self.name] = None
+            self.mw.pr.meeg_bad_channels[self.name] = list()
             if not self.suppress_warnings:
                 print(f'No bad channels assigned for {self.name}, defaulting to empty list')
         self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
