@@ -293,4 +293,5 @@ class WorkerDialog(QDialog):
             self.thread_finished.emit(self.return_value)
             event.accept()
         else:
-            QMessageBox.warning(self, 'You can\'t close this Dialog before the Thread inside finished!')
+            QMessageBox.warning(self, 'Closing not possible!',
+                                'You can\'t close this Dialog before this Thread finished!')

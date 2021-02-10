@@ -55,7 +55,19 @@ def load_decorator(load_func):
         if data_type in obj_instance.data_dict:
             data = obj_instance.data_dict[data_type]
         else:
-            data = load_func(*args, **kwargs)
+            # Todo: Dependencies!
+            try:
+                data = load_func(*args, **kwargs)
+            except FileNotFoundError as fnf_err:
+                if obj_instance.p_preset != 'Default':
+                    print(f'No File for {data_type} from {obj_instance.name}'
+                          f' with Parameter-Preset={obj_instance.p_preset} found, trying Default')
+                    obj_instance.p_preset = 'Default'
+                    obj_instance.load_paths()
+
+                    data = load_func(*args, **kwargs)
+                else:
+                    raise fnf_err
 
         # Save data in data-dict for machines with big RAM
         if obj_instance.mw.qsettings['save_ram'] == 'false' or obj_instance.mw.qsettings['save_ram'] is False:

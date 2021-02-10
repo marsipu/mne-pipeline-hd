@@ -1343,7 +1343,8 @@ class SubBadsWidget(QWidget):
         super().__init__(main_win)
         self.mw = main_win
         self.setWindowTitle('Assign bad_channels for your files')
-        self.bad_chkbts = {}
+        self.bad_chkbts = dict()
+        self.info_dict = dict()
         self.current_obj = None
         self.raw = None
         self.raw_fig = None
@@ -1380,47 +1381,50 @@ class SubBadsWidget(QWidget):
         self.layout.addLayout(self.bt_layout, 1, 0, 1, 2)
         self.setLayout(self.layout)
 
+    def _make_bad_chbxs(self, info):
+        # Store info in dictionary
+        self.info_dict[self.current_obj.name] = info
+
+        chbx_w = QWidget()
+        chbx_w.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.chbx_layout = QGridLayout()
+        row = 0
+        column = 0
+        h_size = 0
+        # Currently, you have to fine-tune the max_h_size,
+        # because it doesn't seem to reflect exactly the actual width
+        max_h_size = int(self.bt_scroll.geometry().width() * 0.85)
+
+        self.bad_chkbts = dict()
+
+        # Make Checkboxes for channels in info
+        for x, ch_name in enumerate(info['ch_names']):
+            chkbt = QCheckBox(ch_name)
+            chkbt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+            chkbt.clicked.connect(self.bad_ckbx_assigned)
+            self.bad_chkbts.update({ch_name: chkbt})
+            h_size += chkbt.sizeHint().width()
+            if h_size > max_h_size:
+                column = 0
+                row += 1
+                h_size = chkbt.sizeHint().width()
+            self.chbx_layout.addWidget(chkbt, row, column)
+            column += 1
+
+        chbx_w.setLayout(self.chbx_layout)
+
+        if self.bt_scroll.widget():
+            self.bt_scroll.takeWidget()
+        self.bt_scroll.setWidget(chbx_w)
+
     def make_bad_chbxs(self):
         if self.current_obj:
-
-            wait_dlg = QDialog(self)
-            wait_dlg.setWindowTitle('Loading Channels...')
-            wait_dlg.show()
-
-            chbx_w = QWidget()
-            chbx_w.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-            self.chbx_layout = QGridLayout()
-            row = 0
-            column = 0
-            h_size = 0
-            # Currently, you have to fine-tune the max_h_size,
-            # because it doesn't seem to reflect exactly the actual width
-            max_h_size = int(self.bt_scroll.geometry().width() * 0.85)
-
-            self.bad_chkbts = dict()
-
-            # Make Checkboxes for channels in info
-            info = self.current_obj.load_info()
-            for x, ch_name in enumerate(info['ch_names']):
-                chkbt = QCheckBox(ch_name)
-                chkbt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-                chkbt.clicked.connect(self.bad_ckbx_assigned)
-                self.bad_chkbts.update({ch_name: chkbt})
-                h_size += chkbt.sizeHint().width()
-                if h_size > max_h_size:
-                    column = 0
-                    row += 1
-                    h_size = chkbt.sizeHint().width()
-                self.chbx_layout.addWidget(chkbt, row, column)
-                column += 1
-
-            chbx_w.setLayout(self.chbx_layout)
-
-            if self.bt_scroll.widget():
-                self.bt_scroll.takeWidget()
-            self.bt_scroll.setWidget(chbx_w)
-
-            wait_dlg.close()
+            # Don't load info twice from file
+            if self.current_obj.name in self.info_dict:
+                self._make_bad_chbxs(self.info_dict[self.current_obj.name])
+            else:
+                worker_dlg = WorkerDialog(self, self.current_obj.load_info, title='Loading Channels...')
+                worker_dlg.thread_finished.connect(self._make_bad_chbxs)
 
     def bad_dict_selected(self, current, _):
         self.current_obj = MEEG(current, self.mw)
@@ -1883,31 +1887,32 @@ class FileManagment(QDialog):
             self.param_results[obj_name] = dict()
 
             for path_type in obj.existing_paths:
-                obj_pd.loc[obj_name, path_type] = 'exists'
-                obj_pd_size.loc[obj_name, path_type] = 0
+                if len(obj.existing_paths[path_type]) > 0:
+                    obj_pd.loc[obj_name, path_type] = 'exists'
+                    obj_pd_size.loc[obj_name, path_type] = 0
 
-                for path in obj.existing_paths[path_type]:
-                    try:
-                        # Add Time
-                        # Last entry in TIME should be the most recent one
-                        obj_pd_time.loc[obj_name, path_type] = obj.file_parameters[Path(path).name]['TIME'][-1]
-                        # Add Size (accumulate, if there are several files
-                        obj_pd_size.loc[obj_name, path_type] += obj.file_parameters[Path(path).name]['SIZE']
-                    except KeyError:
-                        pass
+                    for path in obj.existing_paths[path_type]:
+                        try:
+                            # Add Time
+                            # Last entry in TIME should be the most recent one
+                            obj_pd_time.loc[obj_name, path_type] = obj.file_parameters[Path(path).name]['TIME'][-1]
+                            # Add Size (accumulate, if there are several files)
+                            obj_pd_size.loc[obj_name, path_type] += obj.file_parameters[Path(path).name]['SIZE']
+                        except KeyError:
+                            pass
 
-                    # Compare all parameters from last run to now
-                    result_dict = compare_filep(obj, path, verbose=False)
-                    # Store parameter-conflicts for later retrieval
-                    self.param_results[obj_name][path_type] = result_dict
+                        # Compare all parameters from last run to now
+                        result_dict = compare_filep(obj, path, verbose=False)
+                        # Store parameter-conflicts for later retrieval
+                        self.param_results[obj_name][path_type] = result_dict
 
-                    # Change status of path_type from object if there are conflicts
-                    for parameter in result_dict:
-                        if isinstance(result_dict[parameter], tuple):
-                            if result_dict[parameter][2]:
-                                obj_pd.loc[obj_name, path_type] = 'critical_conflict'
-                            else:
-                                obj_pd.loc[obj_name, path_type] = 'possible_conflict'
+                        # Change status of path_type from object if there are conflicts
+                        for parameter in result_dict:
+                            if isinstance(result_dict[parameter], tuple):
+                                if result_dict[parameter][2]:
+                                    obj_pd.loc[obj_name, path_type] = 'critical_conflict'
+                                else:
+                                    obj_pd.loc[obj_name, path_type] = 'possible_conflict'
 
     def open_prog_dlg(self):
         # Create Progress-Dialog
