@@ -141,12 +141,13 @@ class BaseLoading:
             elif isinstance(paths, dict):
                 # from string in dictionary
                 paths = list(paths.values())
-                # from nested list in dictionary
-                if isinstance(paths[0], list):
-                    paths = list(itertools.chain.from_iterable(paths))
-                # from nested dictionary in dictionary
-                elif isinstance(paths[0], dict):
-                    paths = list(itertools.chain.from_iterable([d.values() for d in paths]))
+                if len(paths) > 0:
+                    # from nested list in dictionary
+                    if isinstance(paths[0], list):
+                        paths = list(itertools.chain.from_iterable(paths))
+                    # from nested dictionary in dictionary
+                    elif isinstance(paths[0], dict):
+                        paths = list(itertools.chain.from_iterable([d.values() for d in paths]))
 
         return paths
 
@@ -380,7 +381,7 @@ class MEEG(BaseLoading):
 
         # The assigned bad-channels
         if self.name not in self.mw.pr.meeg_bad_channels:
-            self.erm = list()
+            self.bad_channels = list()
             if not self.suppress_warnings:
                 print(f'No bad channels assigned for {self.name}, defaulting to empty list')
         else:

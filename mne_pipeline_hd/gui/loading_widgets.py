@@ -17,6 +17,7 @@ from collections import Counter
 from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
+from time import sleep
 
 import mne
 import numpy as np
@@ -1378,6 +1379,11 @@ class SubBadsWidget(QWidget):
 
     def make_bad_chbxs(self):
         if self.current_obj:
+
+            wait_dlg = QDialog(self)
+            wait_dlg.setWindowTitle('Loading Channels...')
+            wait_dlg.show()
+
             chbx_w = QWidget()
             chbx_w.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             self.chbx_layout = QGridLayout()
@@ -1410,6 +1416,8 @@ class SubBadsWidget(QWidget):
             if self.bt_scroll.widget():
                 self.bt_scroll.takeWidget()
             self.bt_scroll.setWidget(chbx_w)
+
+            wait_dlg.close()
 
     def bad_dict_selected(self, current, _):
         self.current_obj = MEEG(current, self.mw)
