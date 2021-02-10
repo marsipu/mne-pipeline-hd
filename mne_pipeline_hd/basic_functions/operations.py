@@ -284,8 +284,8 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
         print('No events found')
 
 
-def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, flat, bad_interpolation,
-              use_autoreject, consensus_percs, n_interpolates, overwrite_ar, decim, n_jobs):
+def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, flat, reject_by_annotation,
+              bad_interpolation, use_autoreject, consensus_percs, n_interpolates, overwrite_ar, decim, n_jobs):
     raw_filtered = meeg.load_filtered()
     events = meeg.load_events()
 
@@ -301,7 +301,7 @@ def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, f
 
     epochs = mne.Epochs(raw_filtered, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
                         preload=True, proj=apply_proj, reject=None, flat=None,
-                        decim=decim, on_missing='ignore', reject_by_annotation=True)
+                        decim=decim, on_missing='ignore', reject_by_annotation=reject_by_annotation)
 
     if bad_interpolation == 'Epochs':
         epochs = epochs.interpolate_bads()
