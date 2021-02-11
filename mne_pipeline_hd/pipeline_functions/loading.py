@@ -896,20 +896,20 @@ class FSMRI(BaseLoading):
 
         # This dictionary contains entries for each data-type which is loaded to/saved from disk
         self.io_dict = {'Source-Space': {'path': self.source_space_path,
-                                         'load': 'load_source_space',
-                                         'save': 'save_source_space'},
+                                         'load': self.load_source_space,
+                                         'save': self.save_source_space},
                         'BEM-Model': {'path': self.bem_model_path,
-                                      'load': 'load_bem_model',
-                                      'save': 'save_bem_model'},
+                                      'load': self.load_bem_model,
+                                      'save': self.save_bem_model},
                         'BEM-Solution': {'path': self.bem_solution_path,
-                                         'load': 'load_bem_solution',
-                                         'save': 'save_bem_solution'},
+                                         'load': self.load_bem_solution,
+                                         'save': self.save_bem_solution},
                         'Volume-Source-Space': {'path': self.vol_source_space_path,
-                                                'load': 'load_vol_source_space',
-                                                'save': 'save_vol_source_space'},
+                                                'load': self.load_vol_source_space,
+                                                'save': self.save_vol_source_space},
                         'Source-Morph': {'path': self.source_morph_path,
-                                         'load': 'load_source_morph',
-                                         'save': 'save_source_morph'}}
+                                         'load': self.load_source_morph,
+                                         'save': self.save_source_morph}}
 
     ####################################################################################################################
     # Load- & Save-Methods
@@ -1004,20 +1004,20 @@ class Group(BaseLoading):
 
         # This dictionary contains entries for each data-type which is loaded to/saved from disk
         self.io_dict = {'Grand-Average Evokeds': {'path': self.ga_evokeds_path,
-                                                  'load': 'load_ga_evokeds',
-                                                  'save': 'save_ga_evokeds'},
+                                                  'load': self.load_ga_evokeds,
+                                                  'save': self.save_ga_evokeds},
                         'Grand-Average TFR': {'path': self.ga_tfr_paths,
-                                              'load': 'load_ga_tfr',
-                                              'save': 'save_ga_tfr'},
+                                              'load': self.load_ga_tfr,
+                                              'save': self.save_ga_tfr},
                         'Grand-Average STC': {'path': self.ga_stc_paths,
-                                              'load': 'load_ga_stc',
-                                              'save': 'save_ga_stc'},
+                                              'load': self.load_ga_stc,
+                                              'save': self.save_ga_stc},
                         'Grand-Average LTC': {'path': self.ga_ltc_paths,
-                                              'load': 'load_ga_ltc',
-                                              'save': 'save_ga_ltc'},
+                                              'load': self.load_ga_ltc,
+                                              'save': self.save_ga_ltc},
                         'Grand-Average Connectiviy': {'path': self.ga_con_paths,
-                                                      'load': 'load_ga_con',
-                                                      'save': 'save_ga_con'}}
+                                                      'load': self.load_ga_con,
+                                                      'save': self.save_ga_con}}
 
     ####################################################################################################################
     # Load- & Save-Methods
