@@ -93,8 +93,8 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
     # Try to get the parameters relevant for the last function, which altered the data at path
     try:
         # The last entry in FUNCTION should be the most recent
-        function = obj.file_parameters[file_name]['FUNCTION'][-1]
-        critical_params_str = obj.mw.pd_funcs[function]['func_args']
+        function = obj.file_parameters[file_name]['FUNCTION']
+        critical_params_str = obj.mw.pd_funcs.loc[function, 'func_args']
         # Make sure there are no spaces left
         critical_params_str = critical_params_str.replace(' ', '')
         critical_params = critical_params_str.split(',')
@@ -147,6 +147,23 @@ def check_kwargs(kwargs, function):
         kwargs.pop(kwarg)
 
     return kwargs
+
+
+def count_dict_keys(d, max_level=None):
+    """Count the number of keys of a nested dictionary"""
+    keys = 0
+    for key, value in d.items():
+        if isinstance(value, dict):
+            if max_level is None:
+                keys += count_dict_keys(value)
+            elif max_level > 1:
+                keys += count_dict_keys(value, max_level - 1)
+            else:
+                keys += 1
+        else:
+            keys += 1
+
+    return keys
 
 
 def shutdown():

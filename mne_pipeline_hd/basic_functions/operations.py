@@ -595,9 +595,9 @@ def plot_ica_scores(meeg, show_plots):
 def apply_ica(meeg, n_pca_components):
     # Check file-parameters to make sure, that ICA is not applied twice in a row
     epochs_file = Path(meeg.epochs_path).name
-    if epochs_file in meeg.file_parameters and meeg.file_parameters[epochs_file]['FUNCTION'][-1] == 'apply_ica':
+    if epochs_file in meeg.file_parameters and meeg.file_parameters[epochs_file]['FUNCTION'] == 'apply_ica':
         print(f'Not applying ICA because it was already applied to this file '
-              f'on {meeg.file_parameters[epochs_file]["TIME"][-1]}. If you '
+              f'on {meeg.file_parameters[epochs_file]["TIME"]}. If you '
               f'want to apply ICA again, delete the Epochs-File in FileManagement '
               f'and redo the Epochs.')
     else:
@@ -638,10 +638,14 @@ def get_evokeds(meeg):
 
 
 def calculate_gfp(evoked):
-    d = evoked.data
-    gfp = np.sqrt((d * d).mean(axis=0))
+    ch_types = evoked.get_channel_types(unique=True, only_data_chs=True)
+    gfp_dict = dict()
+    for ch_type in ch_types:
+        d = evoked.copy().pick(ch_type).data
+        gfp = np.sqrt((d * d).mean(axis=0))
+        gfp_dict[ch_type] = gfp
 
-    return gfp
+    return gfp_dict
 
 
 def grand_avg_evokeds(group):

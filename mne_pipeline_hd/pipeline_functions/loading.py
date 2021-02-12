@@ -67,12 +67,12 @@ def load_decorator(load_func):
 
                     actual_p_preset = obj_instance.p_preset
                     obj_instance.p_preset = 'Default'
-                    obj_instance.load_paths()
+                    obj_instance.init_paths()
 
                     data = load_func(*args, **kwargs)
 
                     obj_instance.p_preset = actual_p_preset
-                    obj_instance.load_paths()
+                    obj_instance.init_paths()
                 else:
                     raise fnf_err
 
@@ -133,12 +133,26 @@ class BaseLoading:
         self.mw = main_win
         self.pr = main_win.pr
         self.p_preset = self.pr.p_preset
-        self.p = main_win.pr.parameters[self.p_preset]
         self.subjects_dir = self.mw.subjects_dir
         self.save_plots = self.mw.get_setting('save_plots')
         self.figures_path = self.pr.figures_path
         self.img_format = self.mw.get_setting('img_format')
         self.dpi = self.mw.get_setting('dpi')
+
+        # Prepare file-parameters-dictionary for Loading-Object
+        if self.name not in self.pr.file_parameters:
+            self.pr.file_parameters[self.name] = dict()
+        self.file_parameters = self.pr.file_parameters[self.name]
+
+        self.data_dict = dict()
+        self.existing_paths = dict()
+
+        self.init_p_preset_deps()
+        self.init_attributes()
+        self.init_paths()
+
+    def init_p_preset_deps(self):
+        self.p = self.pr.parameters[self.p_preset]
 
         # Prepare plot-files-dictionary for Loading-Object
         if self.name not in self.mw.pr.plot_files:
@@ -147,15 +161,14 @@ class BaseLoading:
             self.pr.plot_files[self.name][self.p_preset] = dict()
         self.plot_files = self.pr.plot_files[self.name][self.p_preset]
 
-        # Prepare file-parameters-dictionary for Loading-Object
-        if self.name not in self.pr.file_parameters:
-            self.pr.file_parameters[self.name] = dict()
-        self.file_parameters = self.pr.file_parameters[self.name]
+    def init_attributes(self):
+        """Initialization of additional attributes, should be overridden in inherited classes"""
+        pass
 
+    def init_paths(self):
+        """Initialization of all paths and the io_dict, should be overridden in inherited classes"""
         self.save_dir = None
         self.io_dict = dict()
-        self.data_dict = dict()
-        self.existing_paths = dict()
 
     def _return_path_list(self, data_type):
         paths = self.io_dict[data_type]['path']
@@ -195,20 +208,28 @@ class BaseLoading:
             if file_name not in self.file_parameters:
                 self.file_parameters[file_name] = dict()
             # Get the name of the calling function (assuming it is 2 Frames above)
-            if 'FUNCTION' in self.file_parameters[file_name]:
-                self.file_parameters[file_name]['FUNCTION'].append(inspect.stack()[2][3])
-            else:
-                self.file_parameters[file_name]['FUNCTION'] = [inspect.stack()[2][3]]
-            self.file_parameters[file_name]['NAME'] = self.name
-            self.file_parameters[file_name]['PATH'] = path
-            if 'TIME' in self.file_parameters[file_name]:
-                self.file_parameters[file_name]['TIME'].append(datetime.now())
-            else:
-                self.file_parameters[file_name]['TIME'] = [datetime.now()]
-            self.file_parameters[file_name]['SIZE'] = getsize(path)
-            self.file_parameters[file_name]['P_PRESET'] = self.p_preset
-            for p_name in self.p:
+            function = inspect.stack()[2][3]
+            self.file_parameters[file_name]['FUNCTION'] = function
+
+            critical_params_str = self.mw.pd_funcs.loc[function, 'func_args']
+            # Make sure there are no spaces left
+            critical_params_str = critical_params_str.replace(' ', '')
+            critical_params = critical_params_str.split(',')
+
+            # Add critical parameters
+            for p_name in [p for p in self.p if p in critical_params]:
                 self.file_parameters[file_name][p_name] = self.p[p_name]
+
+            self.file_parameters[file_name]['NAME'] = self.name
+
+            # Save Path relative to Home-Path (to avoid conflicts between OS)
+            self.file_parameters[file_name]['PATH'] = os.path.relpath(path, self.pr.data_path)
+
+            self.file_parameters[file_name]['TIME'] = datetime.now()
+
+            self.file_parameters[file_name]['SIZE'] = getsize(path)
+
+            self.file_parameters[file_name]['P_PRESET'] = self.p_preset
 
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):
@@ -374,15 +395,12 @@ class MEEG(BaseLoading):
     """ Class for File-Data in File-Loop"""
 
     def __init__(self, name, main_win, fsmri=None, suppress_warnings=True):
-        super().__init__(name, main_win)
         self.fsmri = fsmri
         self.suppress_warnings = suppress_warnings
+        super().__init__(name, main_win)
 
-        self.load_attributes()
-        self.load_paths()
-
-    def load_attributes(self):
-        # Attributes of the subject
+    def init_attributes(self):
+        """Initialize additional attributes for MEEG"""
         # The assigned Empty-Room-Measurement if existing
         if self.name not in self.mw.pr.meeg_to_erm:
             self.erm = None
@@ -428,7 +446,7 @@ class MEEG(BaseLoading):
         else:
             self.sel_trials = self.mw.pr.sel_event_id[self.name]
 
-    def load_paths(self):
+    def init_paths(self):
         """Load Paths as attributes (depending on which Parameter-Preset is selected)"""
 
         # Main save directory
@@ -564,7 +582,7 @@ class MEEG(BaseLoading):
 
         # Update paths
         self.name = new_name
-        self.load_paths()
+        self.init_paths()
 
         # Rename save_dir
         rename(old_save_dir, self.save_dir)
@@ -575,7 +593,7 @@ class MEEG(BaseLoading):
         self.mw.pr.meeg_bad_channels[self.name] = self.mw.pr.meeg_bad_channels[old_name].pop()
         self.mw.pr.meeg_event_id[self.name] = self.mw.pr.meeg_event_id[old_name].pop()
         self.mw.pr.sel_event_id[self.name] = self.mw.pr.sel_event_id[old_name].pop()
-        self.load_attributes()
+        self.init_attributes()
 
         # Rename old paths to new paths
         for data_type in self.io_dict:
@@ -874,14 +892,12 @@ class FSMRI(BaseLoading):
 
         super().__init__(name, main_win)
 
-        self.load_attributes()
-        self.load_paths()
-
-    def load_attributes(self):
+    def init_attributes(self):
+        """Initialize additional attributes for FSMRI"""
         self.fs_path = QSettings().value('fs_path')
         self.mne_path = QSettings().value('mne_path')
 
-    def load_paths(self):
+    def init_paths(self):
         # Main Path
         self.save_dir = join(self.mw.subjects_dir, self.name)
 
@@ -957,14 +973,11 @@ class FSMRI(BaseLoading):
 
 class Group(BaseLoading):
     def __init__(self, name, main_win, suppress_warnings=True):
-        super().__init__(name, main_win)
         self.suppress_warnings = suppress_warnings
+        super().__init__(name, main_win)
 
-        self.load_attributes()
-        self.load_paths()
-
-    def load_attributes(self):
-        # Additional Attributes
+    def init_attributes(self):
+        """Initialize additional attributes for Group"""
         self.group_list = self.pr.all_groups[self.name]
 
         # The assigned event-id
@@ -981,7 +994,7 @@ class Group(BaseLoading):
                 print(f'No Trials selected for {self.name}, defaulting to empty list')
         self.sel_trials = self.mw.pr.sel_event_id[self.group_list[0]]
 
-    def load_paths(self):
+    def init_paths(self):
         # Main Path
         self.save_dir = self.pr.save_dir_averages
 

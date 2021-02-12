@@ -227,6 +227,9 @@ class WorkerDialog(QDialog):
         self.worker.signals.pgbar_text.connect(self.label_changed)
         QThreadPool.globalInstance().start(self.worker)
 
+        if self.show_console:
+            set_ratio_geometry(0.5, self)
+
         self.init_ui()
         self.open()
 
@@ -291,6 +294,7 @@ class WorkerDialog(QDialog):
         # Can't close Dialog before Thread has finished or threw error
         if self.is_finished:
             self.thread_finished.emit(self.return_value)
+            self.deleteLater()
             event.accept()
         else:
             QMessageBox.warning(self, 'Closing not possible!',

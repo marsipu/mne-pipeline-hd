@@ -85,7 +85,11 @@ def plot_events(meeg, show_plots):
 def plot_power_spectra(meeg, show_plots, n_jobs):
     raw = meeg.load_filtered()
 
-    fig = raw.plot_psd(show=show_plots, n_jobs=n_jobs)
+    # Does not accept -1 for n_jobs
+    if n_jobs == -1:
+        n_jobs = meeg.mw.threadpool.maxThreadCount()
+
+    fig = raw.plot_psd(fmax=raw.info['lowpass'], show=show_plots, n_jobs=n_jobs)
     fig.suptitle(meeg.name)
 
     meeg.plot_save('power_spectra', subfolder='raw', matplotlib_figure=fig)
@@ -94,6 +98,10 @@ def plot_power_spectra(meeg, show_plots, n_jobs):
 def plot_power_spectra_topo(meeg, show_plots, n_jobs):
     raw = meeg.load_filtered()
 
+    # Does not accept -1 for n_jobs
+    if n_jobs == -1:
+        n_jobs = meeg.mw.threadpool.maxThreadCount()
+
     fig = raw.plot_psd_topo(show=show_plots, n_jobs=n_jobs)
 
     meeg.plot_save('power_spectra', subfolder='raw_topo', matplotlib_figure=fig)
@@ -101,6 +109,10 @@ def plot_power_spectra_topo(meeg, show_plots, n_jobs):
 
 def plot_power_spectra_epochs(meeg, show_plots, n_jobs):
     epochs = meeg.load_epochs()
+
+    # Does not accept -1 for n_jobs
+    if n_jobs == -1:
+        n_jobs = meeg.mw.threadpool.maxThreadCount()
 
     for trial in meeg.sel_trials:
         fig = epochs[trial].plot_psd(show=show_plots, n_jobs=n_jobs)
@@ -261,16 +273,20 @@ def plot_evoked_image(meeg, show_plots):
 def plot_gfp(meeg, show_plots):
     evokeds = meeg.load_evokeds()
     for evoked in evokeds:
-        gfp = op.calculate_gfp(evoked)
+        gfp_dict = op.calculate_gfp(evoked)
         t = evoked.times
         trial = evoked.comment
-        plt.figure()
-        plt.plot(t, gfp)
-        plt.title(f'GFP of {meeg.name}-{trial}')
-        if show_plots:
-            plt.show()
 
-        meeg.plot_save('evokeds', subfolder='gfp', trial=trial)
+        fig, ax = plt.subplots(len(gfp_dict), 1)
+        for idx, ch_type in enumerate(gfp_dict):
+            gfp = gfp_dict[ch_type]
+            ax[idx].plot(t, gfp)
+            ax[idx].set_title(f'GFP of {meeg.name}-{trial}-{ch_type}')
+
+        if show_plots:
+            fig.show()
+
+        meeg.plot_save('evokeds', subfolder='gfp', trial=trial, matplotlib_figure=fig)
 
 
 def plot_transformation(meeg):

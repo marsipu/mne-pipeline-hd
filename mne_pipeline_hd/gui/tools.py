@@ -331,7 +331,8 @@ class PlotViewSelection(QDialog):
             if not self.interactive:
                 self.objects = [ob for ob in self.objects if ob in self.mw.pr.plot_files
                                 and self.mw.pr.p_preset in self.mw.pr.plot_files[ob]
-                                and self.selected_func in self.mw.pr.plot_files[ob][self.mw.pr.p_preset]]
+                                and any([self.selected_func in self.mw.pr.plot_files[ob][pp] for
+                                         pp in self.selected_ppresets])]
 
             self.obj_select.replace_data(self.objects)
             self.obj_select.replace_checked(self.selected_objs)
@@ -377,7 +378,8 @@ class PlotViewSelection(QDialog):
                     # Replace Parameter-Preset for the loaded object and reload load/save-paths
                     if p_preset != obj.p_preset:
                         obj.p_preset = p_preset
-                        obj.load_paths()
+                        obj.init_p_preset_deps()
+                        obj.init_paths()
 
                     # Load Matplotlib-Plots
                     if self.interactive_chkbx.isChecked():
@@ -487,6 +489,11 @@ class PlotViewer(QMainWindow):
 
         # Get the figures/images
         for p_preset in self.items:
+            p_preset_layout = QVBoxLayout()
+            p_preset_label = QLabel(p_preset)
+            p_preset_label.setFont(QFont('AnyStlye', 16, QFont.Bold))
+            p_preset_layout.addWidget(p_preset_label, alignment=Qt.AlignHCenter)
+
             scroll_area = QScrollArea()
             scroll_widget = QWidget()
             scroll_layout = QGridLayout()
@@ -498,7 +505,7 @@ class PlotViewer(QMainWindow):
 
                 # Add name-label
                 name_label = QLabel(str(obj_name))
-                name_label.setFont(QFont('AnyType', 14, QFont.Bold))
+                name_label.setFont(QFont('AnyType', 14))
 
                 if isinstance(obj_items, str):
                     # This displays errors
@@ -543,7 +550,9 @@ class PlotViewer(QMainWindow):
 
             scroll_widget.setLayout(scroll_layout)
             scroll_area.setWidget(scroll_widget)
-            viewer_layout.addWidget(scroll_area)
+            p_preset_layout.addWidget(scroll_area)
+
+            viewer_layout.addLayout(p_preset_layout)
 
         self.main_layout.addLayout(viewer_layout)
 
@@ -588,10 +597,11 @@ class PlotViewer(QMainWindow):
     def tab_selected(self, idx):
         # A frankly very long call to get the tab_widgets
         # (when setCentralWidget in QMainWindow, the previous reference to widgets inside are deleted,
-        # so I found no way to store the reference to the TabWidget beforehand
+        # so I found no way to store the reference to the TabWidget beforehand)
         viewer_layout = self.centralWidget().layout().itemAt(0)
         for n in range(viewer_layout.count()):  # Get GridLayouts in scroll_areas for Parameter-Presets
-            grid_layout = viewer_layout.itemAt(n).widget().widget().layout()
+            scroll_area = viewer_layout.itemAt(n).itemAt(1).widget()
+            grid_layout = scroll_area.widget().layout()
             for c in range(grid_layout.count()):
                 row = c // self.column_count
                 col = c % self.column_count
@@ -603,8 +613,9 @@ class PlotViewer(QMainWindow):
     def update_layout(self):
         old_layout = self.main_layout.itemAt(0)
         self.main_layout.removeItem(old_layout)
-        for scroll_area in [old_layout.itemAt(idx).widget() for idx in range(old_layout.count())]:
-            scroll_area.deleteLater()
+        for p_preset_layout in [old_layout.itemAt(idx).layout() for idx in range(old_layout.count())]:
+            for scroll_area in [p_preset_layout.itemAt(idx).layout() for idx in range(p_preset_layout.count())]:
+                scroll_area.deleteLater()
         del old_layout
 
         self._setup_views()
