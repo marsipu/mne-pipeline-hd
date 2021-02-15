@@ -17,7 +17,7 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QApplication
 
 # Enable start also when not installed via pip (e.g. for development)
-# Get the package_path and add it, should work across platforms and in spyder
+# Get the package_path and add it at first position to PATH, should work across platforms and in spyder
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent)
 if package_parent not in sys.path:
     sys.path.insert(0, package_parent)

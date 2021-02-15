@@ -592,9 +592,12 @@ def plot_grand_avg_tfr(group, show_plots):
         group.plot_save('ga_tfr', subfolder='topomap', trial=power.comment, matplotlib_figure=fig4)
 
 
-def plot_grand_avg_stc(group, morph_to, mne_evoked_time):
-    ga_dict = group.load_ga_stc()
-    brain_plot(group, ga_dict, 'ga_source-estimate', morph_to, mne_evoked_time)
+def plot_grand_avg_stc(group, morph_to):
+    ga_stcs = group.load_ga_stc()
+    for trial in ga_stcs:
+        ga_stc = ga_stcs[trial]
+        brain = ga_stc.plot(subject=morph_to)
+        brain.add_text(0.4, 0.9, f'{group.name}-{trial}')
 
 
 def plot_grand_avg_stc_anim(group, stc_animation, stc_animation_dilat, morph_to):

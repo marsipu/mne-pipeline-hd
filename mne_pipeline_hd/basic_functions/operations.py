@@ -1174,7 +1174,7 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
     meeg.save_connectivity(con_dict)
 
 
-def grand_avg_morphed(group):
+def grand_avg_morphed(group, morph_to):
     # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
     n_chunks = 8
     # divide in chunks to save memory
@@ -1186,7 +1186,11 @@ def grand_avg_morphed(group):
         for name in ga_chunk:
             meeg = MEEG(name, group.mw)
             print(f'Add {name} to grand_average')
-            stcs = meeg.load_morphed_source_estimates()
+            if morph_to == meeg.fsmri.name:
+                stcs = meeg.load_source_estimates()
+            else:
+                stcs = meeg.load_morphed_source_estimates()
+
             for trial in stcs:
                 if trial in sub_trial_dict:
                     sub_trial_dict[trial].append(stcs[trial])

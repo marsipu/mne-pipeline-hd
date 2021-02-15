@@ -348,6 +348,9 @@ class PlotViewSelection(QDialog):
         self.update_objects()
 
     def load_plots(self):
+        # Clear previous dictionaries
+        self.all_images.clear()
+        self.all_figs.clear()
 
         # Show ProgressBar
         self.total_loads = len(self.selected_objs) * len(self.selected_ppresets)
@@ -614,8 +617,10 @@ class PlotViewer(QMainWindow):
         old_layout = self.main_layout.itemAt(0)
         self.main_layout.removeItem(old_layout)
         for p_preset_layout in [old_layout.itemAt(idx).layout() for idx in range(old_layout.count())]:
-            for scroll_area in [p_preset_layout.itemAt(idx).layout() for idx in range(p_preset_layout.count())]:
-                scroll_area.deleteLater()
+            title_label = p_preset_layout.itemAt(0).widget()
+            title_label.deleteLater()
+            scroll_area = p_preset_layout.itemAt(1).widget()
+            scroll_area.deleteLater()
         del old_layout
 
         self._setup_views()

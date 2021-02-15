@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from collections import Counter
 from functools import partial
 from os.path import exists, isdir, isfile, join
@@ -1381,7 +1382,22 @@ class SubBadsWidget(QWidget):
         self.layout.addLayout(self.bt_layout, 1, 0, 1, 2)
         self.setLayout(self.layout)
 
+    def update_selection(self):
+        # Clear entries
+        for bt in self.bad_chkbts:
+            self.bad_chkbts[bt].setChecked(False)
+
+        # Catch Channels, which are present in meeg_bad_channels, but not in bad_chkbts
+        # Then load existing bads for choice
+        for bad in self.current_obj.bad_channels:
+            if bad in self.bad_chkbts:
+                self.bad_chkbts[bad].setChecked(True)
+            else:
+                # Remove bad channel from bad_channels if not existing in bad_chkbts (and thus not in ch_names)
+                self.current_obj.bad_channels.remove(bad)
+
     def _make_bad_chbxs(self, info):
+        time.sleep(1)
         # Store info in dictionary
         self.info_dict[self.current_obj.name] = info
 
@@ -1402,7 +1418,7 @@ class SubBadsWidget(QWidget):
             chkbt = QCheckBox(ch_name)
             chkbt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             chkbt.clicked.connect(self.bad_ckbx_assigned)
-            self.bad_chkbts.update({ch_name: chkbt})
+            self.bad_chkbts[ch_name] = chkbt
             h_size += chkbt.sizeHint().width()
             if h_size > max_h_size:
                 column = 0
@@ -1413,9 +1429,12 @@ class SubBadsWidget(QWidget):
 
         chbx_w.setLayout(self.chbx_layout)
 
+        # Remove previous buttons if existing
         if self.bt_scroll.widget():
             self.bt_scroll.takeWidget()
+
         self.bt_scroll.setWidget(chbx_w)
+        self.update_selection()
 
     def make_bad_chbxs(self):
         if self.current_obj:
@@ -1435,28 +1454,16 @@ class SubBadsWidget(QWidget):
 
         self.make_bad_chbxs()
 
-        # Clear entries
-        for bt in self.bad_chkbts:
-            self.bad_chkbts[bt].setChecked(False)
-
-        # Catch Channels, which are present in meeg_bad_channels, but not in bad_chkbts
-        error_list = list()
-        # Then load existing bads for choice
-        for bad in self.current_obj.bad_channels:
-            try:
-                self.bad_chkbts[bad].setChecked(True)
-            except KeyError:
-                error_list.append(bad)
-
-        for error_ch in error_list:
-            self.current_obj.bad_channels.remove(error_ch)
+    def _assign_bad_channels(self, bad_channels):
+        # Directly replace value in bad_channels_dict (needed for first-time assignment)
+        self.current_obj.pr.meeg_bad_channels[self.current_obj.name] = bad_channels
+        # Restore/Establish reference to direct object-attribute
+        self.current_obj.bad_channels = bad_channels
+        self.files_widget.content_changed()
 
     def bad_ckbx_assigned(self):
         bad_channels = [ch for ch in self.bad_chkbts if self.bad_chkbts[ch].isChecked()]
-        # In-Place-Operations to maintain reference from current_obj to meeg_bad_channels
-        self.current_obj.bad_channels.clear()
-        self.current_obj.bad_channels += bad_channels
-        self.files_widget.content_changed()
+        self._assign_bad_channels(bad_channels)
 
     def set_chkbx_enable(self, enable):
         for chkbx in self.bad_chkbts:
@@ -1464,16 +1471,10 @@ class SubBadsWidget(QWidget):
 
     def get_selected_bads(self, _):
         # In-Place-Operations to maintain reference from current_obj to meeg_bad_channels
-        self.current_obj.bad_channels.clear()
-        self.current_obj.bad_channels += self.raw.info['bads']
+        bad_channels = self.raw.info['bads']
+        self._assign_bad_channels(bad_channels)
+        self.update_selection()
         self.set_chkbx_enable(True)
-
-        # Clear all entries
-        for bt in self.bad_chkbts:
-            self.bad_chkbts[bt].setChecked(False)
-        for ch in self.current_obj.bad_channels:
-            self.bad_chkbts[ch].setChecked(True)
-        self.files_widget.content_changed()
 
         if self.save_raw_annot.isChecked():
             WorkerDialog(self, self.current_obj.save_raw, raw=self.raw, show_console=True,
@@ -1495,6 +1496,7 @@ class SubBadsWidget(QWidget):
     def resizeEvent(self, event):
         if self.current_obj:
             self.make_bad_chbxs()
+            self.update_selection()
         event.accept()
 
     def closeEvent(self, event):
