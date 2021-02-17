@@ -18,7 +18,6 @@ from collections import Counter
 from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
-from time import sleep
 
 import mne
 import numpy as np
@@ -31,8 +30,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTextEdit, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
-
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
+
 from .base_widgets import (CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList,
                            SimplePandasTable)
 from .dialogs import ErrorDialog
@@ -1488,7 +1487,11 @@ class SubBadsWidget(QWidget):
         plot_dialog.setWindowTitle('Opening Raw-Plot...')
         plot_dialog.open()
         self.raw = self.current_obj.load_raw()
-        self.raw_fig = self.raw.plot(n_channels=30, bad_color='red', title=self.current_obj.name)
+        try:
+            events = self.current_obj.load_events()
+        except FileNotFoundError:
+            events = None
+        self.raw_fig = self.raw.plot(events=events, n_channels=30, bad_color='red', title=self.current_obj.name)
         # Connect Closing of Matplotlib-Figure to assignment of bad-channels
         self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
         plot_dialog.close()

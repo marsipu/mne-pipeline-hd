@@ -30,12 +30,11 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QPushButton,
                              QSizePolicy, QStyle,
                              QTabWidget, QTextEdit, QVBoxLayout)
-
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleList
 from mne_pipeline_hd.gui.dialogs import ErrorDialog
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
-from mne_pipeline_hd.gui.models import CheckListModel, CustomFunctionModel
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, set_ratio_geometry
+from mne_pipeline_hd.gui.models import CustomFunctionModel
 
 
 # ToDo: Syntax-Highlighting
@@ -45,6 +44,7 @@ class CodeView(QDialog):
         self.cf = cf_dialog
 
         self.init_ui()
+        set_ratio_geometry(0.5, self)
         self.show()
 
     def update_code(self):
@@ -780,7 +780,7 @@ class CustomFunctionImport(QDialog):
         else:
             param_alias = self.current_parameter
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'description']):
-            description = self.cf.add_pd_params.loc[self.cf.current_parameter, 'description']
+            description = self.add_pd_params.loc[self.current_parameter, 'description']
         else:
             description = None
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'unit']):

@@ -18,7 +18,6 @@ from importlib import reload, resources, util
 from os import listdir
 from os.path import isdir, join
 from subprocess import run
-from time import sleep
 
 import mne
 import pandas as pd
@@ -438,8 +437,13 @@ class MainWindow(QMainWindow):
                 except ModuleNotFoundError:
                     spec = self.all_modules[pkg_name][module_name][1]
                     if spec:
-                        spec.loader.exec_module(module)
-                        sys.modules[module_name] = module
+                        try:
+                            spec.loader.exec_module(module)
+                            sys.modules[module_name] = module
+                        except:
+                            exc_tuple = get_exception_tuple()
+                            self.module_err_dlg = ErrorDialog(exc_tuple, self,
+                                                              title=f'Error in import of custom-module: {module_name}')
                     else:
                         raise RuntimeError(f'{module_name} from {pkg_name} could not be reloaded')
 

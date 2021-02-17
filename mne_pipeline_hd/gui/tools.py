@@ -62,6 +62,7 @@ class HistoryDlg(QDialog):
             self.dt.inputw.ensureCursorVisible()
 
 
+# ToDo: Update with ConsoleWidget
 # Todo: Syntax Formatting
 # Todo: Add Looping over defined Subject-Selection
 class DataTerminal(QDialog):
@@ -268,7 +269,7 @@ class PlotViewSelection(QDialog):
         self.interactive = False
         self.objects = list()
         self.selected_objs = list()
-        self.selected_ppresets = ['Default']
+        self.selected_ppresets = list()
 
         # Stores the widgets for parameter-presets/objects
         self.all_figs = dict()
@@ -293,6 +294,7 @@ class PlotViewSelection(QDialog):
 
         self.p_preset_select = CheckList(list(self.mw.pr.parameters.keys()), self.selected_ppresets,
                                          title='Select Parameter-Preset')
+        self.p_preset_select.checkedChanged.connect(self.update_objects)
         list_layout.addWidget(self.p_preset_select)
 
         layout.addLayout(list_layout)
@@ -329,10 +331,13 @@ class PlotViewSelection(QDialog):
 
             # If non-interactive only list objects where a plot-image already was saved
             if not self.interactive:
-                self.objects = [ob for ob in self.objects if ob in self.mw.pr.plot_files
-                                and self.mw.pr.p_preset in self.mw.pr.plot_files[ob]
-                                and any([self.selected_func in self.mw.pr.plot_files[ob][pp] for
-                                         pp in self.selected_ppresets])]
+                try:
+                    self.objects = [ob for ob in self.objects if ob in self.mw.pr.plot_files
+                                    and self.mw.pr.p_preset in self.mw.pr.plot_files[ob]
+                                    and any([self.selected_func in self.mw.pr.plot_files[ob][pp] for
+                                             pp in self.selected_ppresets])]
+                except KeyError:
+                    self.objects = list()
 
             self.obj_select.replace_data(self.objects)
             self.obj_select.replace_checked(self.selected_objs)

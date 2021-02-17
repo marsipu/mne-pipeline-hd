@@ -22,8 +22,6 @@ from PyQt5.QtWidgets import QApplication, QDesktopWidget, QDialog, QHBoxLayout, 
     QTextEdit, \
     QVBoxLayout
 
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import check_kwargs
-
 
 def center(widget):
     qr = widget.frameGeometry()
@@ -76,6 +74,12 @@ class ConsoleWidget(QTextEdit):
         sys.stderr.signal.text_updated.connect(self.write_progress)
 
     def add_html(self, text):
+        # Make sure the cursor is at the end of the console
+        cursor = self.textCursor()
+        if not cursor.atEnd():
+            cursor.movePosition(QTextCursor.End)
+            self.setTextCursor(cursor)
+
         self.insertHtml(text)
         if self.autoscroll:
             self.ensureCursorVisible()
@@ -86,7 +90,6 @@ class ConsoleWidget(QTextEdit):
     def write_stdout(self, text):
         self.is_prog_text = False
         text = _html_compatible(text)
-        text = f'<font color="black">{text}</font>'
         self.add_html(text)
 
     def write_error(self, text):
@@ -228,7 +231,7 @@ class WorkerDialog(QDialog):
         QThreadPool.globalInstance().start(self.worker)
 
         if self.show_console:
-            set_ratio_geometry(0.5, self)
+            set_ratio_geometry(0.3, self)
 
         self.init_ui()
         self.open()

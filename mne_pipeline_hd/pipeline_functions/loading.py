@@ -207,18 +207,19 @@ class BaseLoading:
 
             if file_name not in self.file_parameters:
                 self.file_parameters[file_name] = dict()
-            # Get the name of the calling function (assuming it is 2 Frames above)
+            # Get the name of the calling function (assuming it is 2 Frames above when running in pipeline)
             function = inspect.stack()[2][3]
             self.file_parameters[file_name]['FUNCTION'] = function
 
-            critical_params_str = self.mw.pd_funcs.loc[function, 'func_args']
-            # Make sure there are no spaces left
-            critical_params_str = critical_params_str.replace(' ', '')
-            critical_params = critical_params_str.split(',')
+            if function in self.mw.pd_funcs.index:
+                critical_params_str = self.mw.pd_funcs.loc[function, 'func_args']
+                # Make sure there are no spaces left
+                critical_params_str = critical_params_str.replace(' ', '')
+                critical_params = critical_params_str.split(',')
 
-            # Add critical parameters
-            for p_name in [p for p in self.p if p in critical_params]:
-                self.file_parameters[file_name][p_name] = self.p[p_name]
+                # Add critical parameters
+                for p_name in [p for p in self.p if p in critical_params]:
+                    self.file_parameters[file_name][p_name] = self.p[p_name]
 
             self.file_parameters[file_name]['NAME'] = self.name
 
@@ -285,8 +286,8 @@ class BaseLoading:
                 base_name_sequence.insert(1, trial)
             if subfolder:
                 base_name_sequence.append(subfolder)
-            if idx:
-                base_name_sequence.append(idx)
+            if idx is not None:
+                base_name_sequence.append(str(idx))
 
             # Join name-parts together with "--" and append the image-format
             file_name = '--'.join(base_name_sequence)

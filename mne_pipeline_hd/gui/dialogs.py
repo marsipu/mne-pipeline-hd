@@ -24,12 +24,11 @@ from pathlib import Path
 import mne
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
                              QInputDialog,
                              QLabel, QLineEdit, QListView, QMessageBox, QPushButton,
                              QScrollArea, QSizePolicy, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
-
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
 from mne_pipeline_hd.gui.gui_utils import WorkerDialog, set_ratio_geometry
@@ -193,9 +192,9 @@ class SettingsDlg(QDialog):
 
 
 class ResetDialog(QDialog):
-    def __init__(self, parent_w):
-        super().__init__(parent_w)
-        self.pw = parent_w
+    def __init__(self, p_dock):
+        super().__init__(p_dock)
+        self.pd = p_dock
         self.selected_params = list()
 
         self.init_ui()
@@ -203,7 +202,8 @@ class ResetDialog(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout()
-        layout.addWidget(CheckList(list(self.pw.mw.pr.parameters[self.pw.mw.pr.p_preset].keys()), self.selected_params,
+        layout.addWidget(CheckList(list(self.pd.mw.pr.parameters[self.pd.mw.pr.p_preset].keys()),
+                                   self.selected_params,
                                    title='Select the Parameters to reset'))
         reset_bt = QPushButton('Reset')
         reset_bt.clicked.connect(self.reset_params)
@@ -216,15 +216,76 @@ class ResetDialog(QDialog):
         self.setLayout(layout)
 
     def _reset_finished(self, _):
-        self.pw.update_all_param_guis()
+        self.pd.update_all_param_guis()
         self.close()
 
     def reset_params(self):
         for param_name in self.selected_params:
-            self.pw.mw.pr.load_default_param(param_name)
+            self.pd.mw.pr.load_default_param(param_name)
             print(f'Reset {param_name}')
-        wd = WorkerDialog(self, self.pw.mw.pr.save, title='Saving project...')
+        wd = WorkerDialog(self, self.pd.mw.pr.save, title='Saving project...')
         wd.thread_finished.connect(self._reset_finished)
+
+
+class CopyPDialog(QDialog):
+    def __init__(self, p_dock):
+        super().__init__(p_dock)
+        self.pd = p_dock
+        self.p = p_dock.mw.pr.parameters
+        self.selected_from = None
+        self.selected_to = list()
+        self.selected_ps = list()
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        list_layout = QHBoxLayout()
+        copy_from = SimpleList(list(self.p.keys()))
+        copy_from.currentChanged.connect(self.from_selected)
+        list_layout.addWidget(copy_from)
+
+        self.copy_to = CheckList(checked=self.selected_to)
+        list_layout.addWidget(self.copy_to)
+
+        self.copy_ps = CheckList(checked=self.selected_ps)
+        list_layout.addWidget(self.copy_ps)
+
+        layout.addLayout(list_layout)
+
+        bt_layout = QHBoxLayout()
+
+        copy_bt = QPushButton('Copy')
+        copy_bt.clicked.connect(self.copy_parameters)
+        bt_layout.addWidget(copy_bt)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        bt_layout.addWidget(close_bt)
+
+        layout.addLayout(bt_layout)
+
+        self.setLayout(layout)
+
+    def from_selected(self, current):
+        self.selected_from = current
+        self.copy_to.replace_data([pp for pp in self.p.keys() if pp != current])
+        self.copy_ps.replace_data([p for p in self.p[current]])
+
+    def _copy_finished(self):
+        self.pd.update_all_param_guis()
+        self.close()
+
+    def copy_parameters(self):
+        if len(self.selected_to) > 0:
+            for p_preset in self.selected_to:
+                for parameter in self.selected_ps:
+                    self.p[p_preset][parameter] = self.p[self.selected_from][parameter]
+
+            wd = WorkerDialog(self, self.pd.mw.pr.save, title='Saving project...')
+            wd.thread_finished.connect(self._copy_finished)
 
 
 class ParametersDock(QDockWidget):
@@ -264,34 +325,41 @@ class ParametersDock(QDockWidget):
         self.general_layout = QVBoxLayout()
 
         # Add Parameter-Preset-ComboBox
-        title_layout = QHBoxLayout()
+        title_layouts = QVBoxLayout()
+        title_layout1 = QHBoxLayout()
         p_preset_l = QLabel('Parameter-Presets: ')
-        title_layout.addWidget(p_preset_l)
+        title_layout1.addWidget(p_preset_l)
         self.p_preset_cmbx = QComboBox()
         self.p_preset_cmbx.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.p_preset_cmbx.activated.connect(self.p_preset_changed)
         self.update_ppreset_cmbx()
-        title_layout.addWidget(self.p_preset_cmbx)
+        title_layout1.addWidget(self.p_preset_cmbx)
 
         add_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
         add_bt.clicked.connect(self.add_p_preset)
-        title_layout.addWidget(add_bt)
+        title_layout1.addWidget(add_bt)
 
         rm_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
         rm_bt.clicked.connect(partial(RemovePPresetDlg, self))
-        title_layout.addWidget(rm_bt)
+        title_layout1.addWidget(rm_bt)
 
-        title_layout.addStretch(stretch=2)
+        title_layouts.addLayout(title_layout1)
+
+        title_layout2 = QHBoxLayout()
+        copy_bt = QPushButton('Copy')
+        copy_bt.clicked.connect(partial(CopyPDialog, self))
+        title_layout2.addWidget(copy_bt)
 
         reset_bt = QPushButton('Reset')
         reset_bt.clicked.connect(partial(ResetDialog, self))
-        title_layout.addWidget(reset_bt)
+        title_layout2.addWidget(reset_bt)
 
         reset_all_bt = QPushButton('Reset All')
         reset_all_bt.clicked.connect(self.reset_all_parameters)
-        title_layout.addWidget(reset_all_bt)
+        title_layout2.addWidget(reset_all_bt)
 
-        self.general_layout.addLayout(title_layout)
+        title_layouts.addLayout(title_layout2)
+        self.general_layout.addLayout(title_layouts)
 
         self.add_param_guis()
 

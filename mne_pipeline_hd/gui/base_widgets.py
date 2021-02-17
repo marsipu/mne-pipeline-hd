@@ -102,11 +102,12 @@ class Base(QWidget):
         return selected
 
     def _selection_changed(self):
-        # Somehow, the indexes got from selectionChanged don't appear to be right
-        # (maybe some issue with QItemSelection?)
+        # Although the SelectionChanged-Signal sends selected/deselected indexes,
+        # I don't use them here, because they don't seem represent the selection
         selected = self.get_selected()
 
         self.selectionChanged.emit(selected)
+
         if self.verbose:
             print(f'Selection changed to {selected}')
 
@@ -503,67 +504,55 @@ class BaseDict(Base):
             model.layoutChanged.connect(self.view.resizeColumnsToContents)
             model.layoutChanged.emit()
 
-    def get_keyvalue_by_index(self, index, data_dict):
+    def get_keyvalue_by_index(self, index):
         """For the given index, make an entry in item_dict with the data at index as key and a dict as value defining
         if data is key or value and refering to the corresponding key/value of data depending on its type
 
         Parameters
         ----------
         index: Index in Model
-        data_dict: Dictionary to store information about the data at index
         """
-        data = self.model.getData(index)
-        item_type = None
-        counterpart = None
-        if index.column() == 0:
-            item_type = 'key'
-            counterpart_idx = index.sibling(index.row(), 1)
-            counterpart = self.model.getData(counterpart_idx)
-        elif index.column() == 1:
-            item_type = 'value'
-            counterpart_idx = index.sibling(index.row(), 0)
-            counterpart = self.model.getData(counterpart_idx)
-        if data and item_type and counterpart:
-            if data in data_dict:
-                data_dict['counterpart'].append(counterpart)
-            else:
-                data_dict[data] = {'type': item_type, 'counterpart': [counterpart]}
 
-        return data_dict
+        if index.column() == 0:
+            counterpart_idx = index.sibling(index.row(), 1)
+            key = self.model.getData(index)
+            value = self.model.getData(counterpart_idx)
+        else:
+            counterpart_idx = index.sibling(index.row(), 0)
+            key = self.model.getData(counterpart_idx)
+            value = self.model.getData(index)
+
+        return key, value
 
     def get_current(self):
-        current_dict = dict()
-        self.get_keyvalue_by_index(self.view.currentIndex(), current_dict)
-
-        return current_dict
+        return self.get_keyvalue_by_index(self.view.currentIndex())
 
     def _current_changed(self, current_idx, previous_idx):
-        current_dict = dict()
-        previous_dict = dict()
 
-        self.get_keyvalue_by_index(current_idx, current_dict)
-        self.get_keyvalue_by_index(previous_idx, previous_dict)
+        current_data = self.get_keyvalue_by_index(current_idx)
+        previous_data = self.get_keyvalue_by_index(previous_idx)
 
-        self.currentChanged.emit(current_dict, previous_dict)
+        self.currentChanged.emit(current_data, previous_data)
 
         if self.verbose:
-            print(f'Current changed from {previous_dict} to {current_dict}')
+            print(f'Current changed from {current_data} to {previous_data}')
+
+    def _selected_keyvalue(self, indexes):
+        try:
+            return set([self.get_keyvalue_by_index(idx) for idx in indexes])
+        except TypeError:
+            return [self.get_keyvalue_by_index(idx) for idx in indexes]
 
     def get_selected(self):
-        selection_dict = dict()
-
-        for idx in self.view.selectedIndexes():
-            self.get_keyvalue_by_index(idx, selection_dict)
-
-        return selection_dict
+        return self._selected_keyvalue(self.view.selectedIndexes())
 
     def _selection_changed(self):
-        # Somehow, the indexes got from selectionChanged don't appear to be right
-        # (maybe some issue with QItemSelection?)
-        selection_dict = self.selectionChanged.emit(self.get_selected())
+        selected_data = self.get_selected()
+
+        self.selectionChanged.emit(selected_data)
 
         if self.verbose:
-            print(f'Selection changed to {selection_dict}')
+            print(f'Selection to {selected_data}')
 
     def select(self, keys, values, clear_selection=True):
         key_indices = [i for i, x in enumerate(self.model._data.keys()) if x in keys]
@@ -1173,9 +1162,9 @@ class AllBaseWidgets(QWidget):
                               'Zeus': 'bossy',
                               'Poseidon': 'fishy'}
         self.exdict = {'Athena': 231,
-                       'Hephaistos': 44,
+                       'Hephaistos': ['44', '333', 34],
                        'Zeus': 'Boss',
-                       'Ares': 'War'}
+                       'Ares': self.exassignments}
         self.exchecked = ['Athena']
         self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
         self.extree = {'A': {'Aa': 1,

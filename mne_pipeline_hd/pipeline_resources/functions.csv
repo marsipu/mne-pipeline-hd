@@ -8,7 +8,8 @@ epoch_raw;Get Epochs;MEEG;Compute;Events;False;False;;operations;basic;meeg,ch_t
 estimate_noise_covariance;Noise-Covariance;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,baseline,n_jobs,noise_cov_mode,noise_cov_method
 run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_method,ica_fitto,n_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,ch_types,ch_names,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
 apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,n_pca_components
-get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;basic;meeg,bad_interpolation
+get_evokeds;Get Evokeds;MEEG;Compute;Events;False;False;;operations;basic;meeg
+interpolate_bads;Interpolate Bads;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,bad_interpolation
 tfr;Time-Frequency;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,tfr_freqs,tfr_n_cycles,tfr_average,tfr_use_fft,tfr_baseline,tfr_baseline_mode,tfr_method,multitaper_bandwidth,stockwell_width,n_jobs
 apply_watershed;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri
 prepare_bem;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri,bem_spacing,bem_conductivity
@@ -28,7 +29,7 @@ ecd_fit;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,ecd_times,ecd_p
 source_space_connectivity;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,parcellation,target_labels,inverse_method,lambda2,con_methods,con_fmin,con_fmax,n_jobs
 grand_avg_evokeds;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 grand_avg_tfr;;Group;Compute;Grand-Average;False;False;;operations;basic;group
-grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;basic;group
+grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;basic;group,morph_to
 grand_avg_ltc;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 grand_avg_connect;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 plot_source_space;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;basic;fsmri
@@ -66,7 +67,7 @@ plot_ecd;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg
 plot_source_space_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,target_labels,parcellation,con_fmin,con_fmax,show_plots
 plot_grand_avg_evokeds;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_tfr;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
-plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,morph_to,mne_evoked_time
+plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,morph_to
 plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;basic;group,stc_animation,stc_animation_dilat,morph_to
 plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,con_fmin,con_fmax,parcellation,target_labels,morph_to,show_plots

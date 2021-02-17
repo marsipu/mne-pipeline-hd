@@ -26,8 +26,8 @@ import autoreject as ar
 import mne
 import numpy as np
 from mne.preprocessing import ICA
-
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
+
 from ..pipeline_functions import ismac, iswin
 from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
@@ -95,17 +95,12 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length, l_trans_b
                     tmax = erm_length - diff / 2
                     erm_raw.crop(tmin=tmin, tmax=tmax)
 
-            if bad_interpolation == 'Raw (Unfiltered)':
-                info = meeg.load_info()
-                erm_raw.info['dig'] = info['dig']
-                erm_raw = erm_raw.interpolate_bads()
-
             erm_raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
                            h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method,
                            iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
                            skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
-            if bad_interpolation == 'Raw (Filtered)':
+            if bad_interpolation == 'Raw':
                 info = meeg.load_info()
                 erm_raw.info['dig'] = info['dig']
                 erm_raw = erm_raw.interpolate_bads()
@@ -128,7 +123,7 @@ def interpolate_bads(meeg, bad_interpolation):
     else:
         data.interpolate_bads()
 
-    meeg.io_dict[bad_interpolation]['save']()
+    meeg.io_dict[bad_interpolation]['save'](data)
 
 
 def add_erm_ssp(meeg, erm_ssp_duration, erm_n_grad, erm_n_mag, erm_n_eeg, n_jobs, show_plots):
