@@ -23,7 +23,7 @@ create_forward_solution;;MEEG;Compute;Forward;False;False;;operations;basic;meeg
 create_inverse_operator;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg
 source_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,inverse_method,pick_ori,lambda2
 mixed_norm_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,pick_ori,inverse_method
-apply_morph;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg
+apply_morph;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,morph_to
 label_time_course;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,target_labels,parcellation,extract_mode
 ecd_fit;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,ecd_times,ecd_positions,ecd_orientations,t_epoch
 source_space_connectivity;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,parcellation,target_labels,inverse_method,lambda2,con_methods,con_fmin,con_fmax,n_jobs
@@ -57,6 +57,7 @@ plot_evoked_butterfly;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,apply_proj,s
 plot_evoked_joint;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_compare_evokeds;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_gfp;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,mne_evoked_time
 plot_mixn;Plot Mixed-Norm-Solution;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,mne_evoked_time,parcellation

@@ -408,10 +408,8 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
         if not reject:
             reject = ar.get_rejection_threshold(data)
             meeg.save_json('autoreject_threshold', reject)
-    elif len(ica_reject) > 0:
-        reject = ica_reject
     else:
-        reject = None
+        reject = ica_reject
 
     # Remove projections
     if ica_remove_proj:
@@ -1116,14 +1114,17 @@ def ecd_fit(meeg, ecd_times, ecd_positions, ecd_orientations, t_epoch):
     meeg.save_ecd(ecd_dips)
 
 
-def apply_morph(meeg):
-    stcs = meeg.load_source_estimates()
-    morph = meeg.fsmri.load_source_morph()
+def apply_morph(meeg, morph_to):
+    if meeg.fsmri.name != morph_to:
+        stcs = meeg.load_source_estimates()
+        morph = meeg.fsmri.load_source_morph()
 
-    morphed_stcs = {}
-    for trial in stcs:
-        morphed_stcs[trial] = morph.apply(stcs[trial])
-    meeg.save_morphed_source_estimates(morphed_stcs)
+        morphed_stcs = {}
+        for trial in stcs:
+            morphed_stcs[trial] = morph.apply(stcs[trial])
+        meeg.save_morphed_source_estimates(morphed_stcs)
+    else:
+        print(f'{meeg.name} is already in source-space of {morph_to} and won\'t be morphed')
 
 
 def source_space_connectivity(meeg, parcellation, target_labels, inverse_method, lambda2, con_methods,

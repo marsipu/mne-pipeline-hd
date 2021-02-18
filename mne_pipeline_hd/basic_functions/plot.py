@@ -237,7 +237,7 @@ def plot_evoked_butterfly(meeg, apply_proj, show_plots):
         fig = evoked.plot(spatial_colors=True, proj=apply_proj, titles=titles_dict,
                           window_title=meeg.name + ' - ' + evoked.comment,
                           selectable=True, gfp=True, zorder='std', show=show_plots)
-
+        fig.suptitle(meeg.name + ' - ' + evoked.comment)
         meeg.plot_save('evokeds', subfolder='butterfly', trial=evoked.comment, matplotlib_figure=fig)
         evoked_figs.append(fig)
 
@@ -268,6 +268,16 @@ def plot_evoked_image(meeg, show_plots):
         fig.suptitle(meeg.name + ' - ' + evoked.comment, horizontalalignment='center')
 
         meeg.plot_save('evokeds', subfolder='image', trial=evoked.comment, matplotlib_figure=fig)
+
+
+def plot_compare_evokeds(meeg, show_plots):
+    evokeds = meeg.load_evokeds()
+
+    evokeds = {evoked.comment: evoked for evoked in evokeds}
+
+    fig = mne.viz.plot_compare_evokeds(evokeds, show=show_plots)
+
+    meeg.plot_save('evokeds', subfolder='compare', matplotlib_figure=fig)
 
 
 def plot_gfp(meeg, show_plots):

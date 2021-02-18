@@ -191,6 +191,7 @@ class SettingsDlg(QDialog):
         self.setLayout(layout)
 
 
+# Todo: Ordering Parameters in Tabs and add Find-Command
 class ResetDialog(QDialog):
     def __init__(self, p_dock):
         super().__init__(p_dock)
@@ -347,14 +348,17 @@ class ParametersDock(QDockWidget):
 
         title_layout2 = QHBoxLayout()
         copy_bt = QPushButton('Copy')
+        copy_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         copy_bt.clicked.connect(partial(CopyPDialog, self))
         title_layout2.addWidget(copy_bt)
 
         reset_bt = QPushButton('Reset')
+        reset_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         reset_bt.clicked.connect(partial(ResetDialog, self))
         title_layout2.addWidget(reset_bt)
 
         reset_all_bt = QPushButton('Reset All')
+        reset_all_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         reset_all_bt.clicked.connect(self.reset_all_parameters)
         title_layout2.addWidget(reset_all_bt)
 

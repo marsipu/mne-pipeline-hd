@@ -119,6 +119,8 @@ class StreamSignals(QObject):
     text_written = pyqtSignal(str)
 
 
+# ToDo: Buffering and halting signal-emission (not write to original stream)
+#  when no accepted/printed-signal is coming back from receiving Widget
 class StdoutStderrStream(io.TextIOBase):
 
     def __init__(self, kind):

@@ -289,13 +289,14 @@ class PlotViewSelection(QDialog):
         func_select.currentChanged.connect(self.func_selected)
         list_layout.addWidget(func_select)
 
-        self.obj_select = CheckList(title='Select Objects')
-        list_layout.addWidget(self.obj_select)
-
         self.p_preset_select = CheckList(list(self.mw.pr.parameters.keys()), self.selected_ppresets,
                                          title='Select Parameter-Preset')
         self.p_preset_select.checkedChanged.connect(self.update_objects)
         list_layout.addWidget(self.p_preset_select)
+
+        self.obj_select = CheckList(data=self.objects, checked=self.selected_objs,
+                                    title='Select Objects')
+        list_layout.addWidget(self.obj_select)
 
         layout.addLayout(list_layout)
 
@@ -317,30 +318,31 @@ class PlotViewSelection(QDialog):
         self.setLayout(layout)
 
     def update_objects(self):
+        self.objects.clear()
         if self.selected_func is not None and self.target is not None:
             # Load object-list according to target
             if self.target == 'MEEG':
-                self.objects = self.mw.pr.all_meeg
-                self.selected_objs = self.mw.pr.sel_meeg.copy()
+                target_objects = self.mw.pr.all_meeg
             elif self.target == 'FSMRI':
-                self.objects = self.mw.pr.all_fsmri
-                self.selected_objs = self.mw.pr.sel_fsmri.copy()
+                target_objects = self.mw.pr.all_fsmri
             elif self.target == 'Group':
-                self.objects = list(self.mw.pr.all_groups.keys())
-                self.selected_objs = self.mw.pr.sel_groups.copy()
+                target_objects = list(self.mw.pr.all_groups.keys())
+            else:
+                target_objects = list()
 
             # If non-interactive only list objects where a plot-image already was saved
             if not self.interactive:
-                try:
-                    self.objects = [ob for ob in self.objects if ob in self.mw.pr.plot_files
-                                    and self.mw.pr.p_preset in self.mw.pr.plot_files[ob]
-                                    and any([self.selected_func in self.mw.pr.plot_files[ob][pp] for
-                                             pp in self.selected_ppresets])]
-                except KeyError:
-                    self.objects = list()
+                for ob in target_objects:
+                    if ob in self.mw.pr.plot_files:
+                        for p_preset in self.selected_ppresets:
+                            if p_preset in self.mw.pr.plot_files[ob]:
+                                if self.selected_func in self.mw.pr.plot_files[ob][p_preset]:
+                                    if ob not in self.objects:
+                                        self.objects.append(ob)
+            else:
+                self.objects = target_objects
 
-            self.obj_select.replace_data(self.objects)
-            self.obj_select.replace_checked(self.selected_objs)
+        self.obj_select.replace_data(self.objects)
 
     def func_selected(self, func):
         """Get selected function and adjust contents of Object-Selection to target"""

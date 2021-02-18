@@ -378,11 +378,30 @@ class BaseLoading:
         # Dependent on Paramter-Preset
         paths = self._return_path_list(data_type)
         for p in paths:
+            p_name = Path(p).name
             # Remove from file-parameters
-            self.file_parameters.pop(Path(p).name)
+            try:
+                self.file_parameters.pop(p_name)
+            except KeyError:
+                # Accounting for Source-Estimate naming-conventions
+                try:
+                    p_name_lh = p_name + '-lh.stc'
+                    p_name_rh = p_name + '-rh.stc'
+                    for pn in [p_name_lh, p_name_rh]:
+                        self.file_parameters.pop(pn)
+                except KeyError:
+                    print(f'{Path(p).name} not in file-parameters')
             try:
                 remove(p)
-                print(f'{p} was removed')
+            except FileNotFoundError:
+                # Accounting for Source-Estimate naming-conventions
+                try:
+                    p_lh = p + '-lh.stc'
+                    p_rh = p + '-rh.stc'
+                    for ps in [p_lh, p_rh]:
+                        os.remove(ps)
+                except FileNotFoundError:
+                    print(f'{p} was not found')
             except IsADirectoryError:
                 try:
                     shutil.rmtree(p)
@@ -432,14 +451,6 @@ class MEEG(BaseLoading):
         else:
             self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
 
-        # The assigned event-id
-        if self.name not in self.mw.pr.meeg_event_id:
-            self.event_id = dict()
-            if not self.suppress_warnings:
-                print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
-        else:
-            self.event_id = self.mw.pr.meeg_event_id[self.name]
-
         # The selected trials from the event-id
         if self.name not in self.mw.pr.sel_event_id:
             self.sel_trials = list()
@@ -447,6 +458,16 @@ class MEEG(BaseLoading):
                 print(f'No Trials selected for {self.name}, defaulting to empty list')
         else:
             self.sel_trials = self.mw.pr.sel_event_id[self.name]
+
+        # The assigned event-id
+        if self.name not in self.mw.pr.meeg_event_id:
+            self.event_id = dict()
+            if not self.suppress_warnings:
+                print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
+        else:
+            all_event_id = self.mw.pr.meeg_event_id[self.name]
+            self.event_id = {key: value for key, value in all_event_id.items() if key in self.sel_trials}
+
 
     def init_paths(self):
         """Load Paths as attributes (depending on which Parameter-Preset is selected)"""

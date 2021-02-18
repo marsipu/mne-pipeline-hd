@@ -39,7 +39,7 @@ max_pca_components;;ICA;None;;;IntGui;{'none_select': True}
 n_pca_components;;ICA;None;;;IntGui;{'none_select': True}
 ica_noise_cov;Use Noise-Covariance;ICA;False;;If to use a noise-covariance for pre-whitening;BoolGui;
 ica_remove_proj;Remove projections;ICA;False;;If to remove projections from the data before fitting;BoolGui;
-ica_reject;Reject-Parameters;ICA;{'mag':3000e-15, 'grad':3000e-13, 'eeg':100e-6, 'eog':200e-6};;Reject-Parameters for ICA;DictGui;
+ica_reject;Reject-Parameters;ICA;{'mag':3000e-15, 'grad':3000e-13, 'eeg':100e-6, 'eog':200e-6};;Reject-Parameters for ICA;DictGui;{'none_select': True}
 ica_autoreject;Autoreject;ICA;False;;If to use Autoreject for ICA;BoolGui;
 ica_eog;Use EOG;ICA;False;;If to use EOG-Channels for automatic selection of components;BoolGui;
 eog_channel;;ICA;None;;Set Vertical EOG-Channel;StringGui;
