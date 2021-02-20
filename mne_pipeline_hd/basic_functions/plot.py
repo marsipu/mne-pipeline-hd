@@ -196,7 +196,7 @@ def plot_autoreject_log(meeg, show_plots):
     fig1 = reject_log.plot(show=show_plots)
     meeg.plot_save('epochs', subfolder='autoreject_log', idx='reject', matplotlib_figure=fig1)
     try:
-        fig2 = reject_log.plot_epochs(epochs, show=show_plots)
+        fig2 = reject_log.plot_epochs(epochs)
         meeg.plot_save('epochs', subfolder='autoreject_log', idx='epochs', matplotlib_figure=fig2)
     except ValueError:
         print(f'{meeg.name}: No epochs-plot for autoreject-log')
