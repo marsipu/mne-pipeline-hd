@@ -23,7 +23,7 @@ adjust_timeline_by_msec;Adjust Time;Events;0;ms;custom delay to stimulus in ms;I
 t_epoch;Epoch-Timeframe;Epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
 baseline;Baseline-Timeframe;Epochs;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val': 0, 'none_select': True}
 apply_proj;Apply Projections;Epochs;True;;If to apply the projections (if present);BoolGui;
-bad_interpolation;Bad-Channel-Interpolation;Preprocessing;None;;Choose where to apply bad-channels-interpolation;ComboGui;{'none_select': True, 'options': ['Raw', 'Epochs', 'Evoked']}
+bad_interpolation;Bad-Channel-Interpolation;Preprocessing;None;;Choose where to apply bad-channels-interpolation;ComboGui;{'none_select': True, 'options': ['Raw (Filtered)', 'Epochs', 'Evoked']}
 reject_by_annotation;;Epochs;True;;If to reject by Annotations;BoolGui;
 use_autoreject;Autoreject;Epochs;None;;If to use autoreject and if to use it for getting the reject-threshold or for interpolating the Epochs;ComboGui;{'none_select': True, 'options': ['Threshold', 'Interpolation']}
 n_interpolates;;Epochs;np.array([1, 4, 32]);;p-values for autoreject;FuncGui;

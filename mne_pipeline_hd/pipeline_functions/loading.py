@@ -926,6 +926,7 @@ class FSMRI(BaseLoading):
 
         # Data-Paths
         self.source_space_path = join(self.save_dir, 'bem', f'{self.name}_{self.p["source_space_spacing"]}-src.fif')
+        # Todo: Bem-Paths with number of vertices in layers
         self.bem_model_path = join(self.save_dir, 'bem', f'{self.name}-bem.fif')
         self.bem_solution_path = join(self.save_dir, 'bem', f'{self.name}-bem-sol.fif')
         self.vol_source_space_path = join(self.save_dir, 'bem', f'{self.name}-vol-src.fif')
