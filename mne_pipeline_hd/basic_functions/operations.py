@@ -641,7 +641,7 @@ def calculate_gfp(evoked):
     return gfp_dict
 
 
-def grand_avg_evokeds(group):
+def grand_avg_evokeds(group, ga_interpolate_bads, ga_drop_bads):
     trial_dict = {}
     for name in group.group_list:
         meeg = MEEG(name, group.mw)
@@ -660,8 +660,8 @@ def grand_avg_evokeds(group):
     for trial in trial_dict:
         if len(trial_dict[trial]) != 0:
             ga = mne.grand_average(trial_dict[trial],
-                                   interpolate_bads=True,
-                                   drop_bads=True)
+                                   interpolate_bads=ga_interpolate_bads,
+                                   drop_bads=ga_drop_bads)
             ga.comment = trial
             ga_evokeds.append(ga)
 

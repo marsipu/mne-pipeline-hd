@@ -84,3 +84,5 @@ erm_ssp_duration;;Preprocessing;1;s;The time-chunk to use for ssp;IntGui;
 erm_n_grad;;Preprocessing;2;;The number of projections for Gradiometer;IntGui;
 erm_n_mag;;Preprocessing;2;;The number of projections for Magnetometer;IntGui;
 erm_n_eeg;;Preprocessing;0;;The number of projections for EEG;IntGui;
+ga_interpolate_bads;;Grand-Average;True;;If to interpolate bad channels for the Grand-Average;BoolGui;
+ga_drop_bads;;Grand-Average;True;;If to drop bad channels for the Grand-Average;BoolGui;
