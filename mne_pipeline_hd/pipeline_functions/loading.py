@@ -1083,7 +1083,7 @@ class Group(BaseLoading):
     @save_decorator
     def save_ga_tfr(self, ga_tfr):
         for trial in ga_tfr:
-            ga_tfr[trial].save(self.ga_tfr_paths[trial])
+            ga_tfr[trial].save(self.ga_tfr_paths[trial], overwrite=True)
 
     @load_decorator
     def load_ga_stc(self):

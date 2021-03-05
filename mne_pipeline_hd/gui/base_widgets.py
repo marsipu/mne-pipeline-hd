@@ -23,12 +23,13 @@ from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QGridLayo
                              QListView,
                              QPushButton, QScrollArea, QSizePolicy,
                              QSpinBox,
-                             QTabWidget, QTableView, QVBoxLayout, QWidget)
+                             QTabWidget, QTableView, QTreeView, QVBoxLayout, QWidget)
 
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
 
-from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel, CheckDictEditModel,
+from mne_pipeline_hd.gui.models import (BaseDictModel, BaseDictTreeModel, BaseListModel, BasePandasModel,
+                                        CheckDictEditModel,
                                         CheckDictModel, CheckListModel,
                                         EditDictModel, EditListModel, EditPandasModel, FileManagementModel)
 
@@ -1052,6 +1053,12 @@ class FilePandasTable(BasePandasTable):
                          resize_rows=True, resize_columns=True, verbose=verbose)
 
 
+class BaseDictTree(Base):
+    def __init__(self, data, drag_drop=False, parent=None, title=None, verbose=False):
+        super().__init__(model=BaseDictTreeModel(data), view=QTreeView(), drag_drop=drag_drop, parent=parent,
+                         title=title, verbose=verbose)
+
+
 class SimpleDialog(QDialog):
     def __init__(self, widget, parent=None, modal=True, scroll=False, title=None, show_close_bt=True):
         super().__init__(parent)
@@ -1167,7 +1174,7 @@ class AllBaseWidgets(QWidget):
                        'Ares': self.exassignments}
         self.exchecked = ['Athena']
         self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
-        self.extree = {'A': {'Aa': 1,
+        self.extree = {'A': {'Aa': 2,
                              'Ab': {'Ab1': 'Hermes',
                                     'Ab2': 'Hades'},
                              'Ac': [1, 2, 3, 4]},
@@ -1190,7 +1197,8 @@ class AllBaseWidgets(QWidget):
                             'EditDict': [self.exdict],
                             'SimplePandasTable': [self.expd],
                             'EditPandasTable': [self.expd],
-                            'AssignWidget': [self.exlist, self.exattributes, self.exassignments]}
+                            'AssignWidget': [self.exlist, self.exattributes, self.exassignments],
+                            'BaseDictTree': [self.extree]}
 
         self.widget_kwargs = {'SimpleList': {'extended_selection': True, 'title': 'BaseList', 'verbose': True},
                               'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList',
@@ -1202,7 +1210,8 @@ class AllBaseWidgets(QWidget):
                               'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict', 'verbose': True},
                               'SimplePandasTable': {'title': 'BasePandasTable', 'verbose': True},
                               'EditPandasTable': {'title': 'EditPandasTable', 'verbose': True},
-                              'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget', 'verbose': True}}
+                              'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget', 'verbose': True},
+                              'BaseDictTree': {'title': 'BaseDictTree', 'verbose': True}}
 
         self.tab_widget = QTabWidget()
 

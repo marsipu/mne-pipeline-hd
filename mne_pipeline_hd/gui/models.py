@@ -40,7 +40,7 @@ class BaseListModel(QAbstractListModel):
         else:
             self._data = data
 
-    def getData(self, index=QModelIndex()):
+    def getData(self, index):
         return self._data[index.row()]
 
     def data(self, index, role=None):
@@ -72,7 +72,7 @@ class BaseListModel(QAbstractListModel):
         self.endRemoveRows()
         return True
 
-    def flags(self, index=QModelIndex()):
+    def flags(self, index):
         default_flags = QAbstractListModel.flags(self, index)
         if self.drag_drop:
             if index.isValid():
@@ -533,11 +533,117 @@ class EditPandasModel(BasePandasModel):
         return True
 
 
-class BaseTreeModel(QAbstractItemModel):
-    def __init__(self, data, **kwargs):
-        super().__init__(**kwargs)
-        self._data = data
+class TreeItem:
+    """TreeItem as in https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
 
+    def __init__(self, data, parent=None):
+        self._data = data
+        self._parent = parent
+        self._children = list()
+
+    def child(self, number):
+        if 0 <= number < len(self._children):
+            return self._children[number]
+        return None
+
+    def childCount(self):
+        return len(self._children)
+
+    def row(self):
+        if self._parent:
+            return self._parent._children.index(self)
+        return 0
+
+    def columnCount(self):
+        return len(self._data)
+
+    def data(self, column):
+        if 0 <= column < len(self._data):
+            return self._data[column]
+        return None
+
+    def setData(self, column, value):
+        if 0 <= column < len(self._data):
+            self._data[column] = value
+            return True
+        return False
+
+    def insertChild(self, position):
+        if 0 <= position < len(self._children):
+            self._children.insert(position, TreeItem([f'__new__{len(self._children)}'], self))
+            return True
+        return False
+
+    def removeChild(self, position):
+        if 0 <= position < len(self._children):
+            self._children.remove(self._children[position])
+            return True
+        return False
+
+    def insertColumn(self, position):
+        if 0 <= position < len(self._data):
+            self._data.insert(position, f'__new__{len(self._data)}')
+            for child in self._children:
+                child.insertColumns(position)
+            return True
+        return False
+
+    def removeColumn(self, position):
+        if 0 <= position < len(self._data):
+            self._data.remove(self._data[position])
+            for child in self._children:
+                child.removeColumns(position)
+            return True
+        return False
+
+
+class TreeModel(QAbstractItemModel):
+    """Tree-Model as in https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
+
+    def __init__(self, data, headers=None, parent=None):
+        super().__init__(parent)
+        self._data = data
+        self._headers = headers
+        self._parent = parent
+
+        self.root_item = self.dict_to_items(self._data)
+
+    def dict_to_items(self, datadict, parent=None):
+        if parent is None:
+            parent = TreeItem([])
+
+        for key, value in datadict.items():
+            if isinstance(value, dict):
+                tree_item = self.dict_to_items(value, parent)
+            else:
+                tree_item = TreeItem(value, parent)
+            parent._children.append(tree_item)
+
+        return parent
+
+    def index(self, row, column, parent=QModelIndex()):
+        if self.hasIndex(row, column, parent):
+            if parent.isValid():
+                parentItem = parent.internalPointer()
+            else:
+                parentItem = self.root_item
+
+            childItem = parentItem.child(row)
+            if childItem is not None:
+                return self.createIndex(row, column, childItem)
+        return QModelIndex()
+
+    def parent(self, index):
+        if index.isValid():
+            childItem = index.internalPointer()
+            parentItem = childItem._parent
+
+            if parentItem != self.root_item:
+                return self.createIndex(parentItem.row(), 0, parentItem)
+        return QModelIndex()
+
+    def rowCount(self):
+        pass
 
 class AddFilesModel(BasePandasModel):
     def __init__(self, data, **kwargs):
