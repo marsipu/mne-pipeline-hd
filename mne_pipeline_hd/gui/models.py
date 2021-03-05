@@ -610,7 +610,7 @@ class TreeModel(QAbstractItemModel):
 
     def dict_to_items(self, datadict, parent=None):
         if parent is None:
-            parent = TreeItem([])
+            parent = TreeItem([self._headers])
 
         for key, value in datadict.items():
             if isinstance(value, dict):
@@ -621,7 +621,7 @@ class TreeModel(QAbstractItemModel):
 
         return parent
 
-    def index(self, row, column, parent=QModelIndex()):
+    def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex:
         if self.hasIndex(row, column, parent):
             if parent.isValid():
                 parentItem = parent.internalPointer()
@@ -633,17 +633,47 @@ class TreeModel(QAbstractItemModel):
                 return self.createIndex(row, column, childItem)
         return QModelIndex()
 
-    def parent(self, index):
-        if index.isValid():
-            childItem = index.internalPointer()
+    def parent(self, child: QModelIndex) -> QModelIndex:
+        if child.isValid():
+            childItem = child.internalPointer()
             parentItem = childItem._parent
 
             if parentItem != self.root_item:
                 return self.createIndex(parentItem.row(), 0, parentItem)
         return QModelIndex()
 
-    def rowCount(self):
-        pass
+    def rowCount(self, parent: QModelIndex = ...) -> int:
+        if parent.column() > 0:
+            return 0
+
+        if parent.isValid():
+            parentItem = parent.internalPointer()
+        else:
+            parentItem = self.root_item
+
+        return parentItem.childCount()
+
+    def columnCount(self, parent: QModelIndex = ...) -> int:
+        if parent.isValid():
+            return parent.internalPointer().columnCount()
+        return self.root_item.columnCount()
+
+    def data(self, index: QModelIndex, role: int = ...) -> object:
+        if index.isValid():
+            if role == Qt.DisplayRole:
+                item = index.internalPointer()
+                return item.data(index.column())
+        return None
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if index.isValid():
+            return QAbstractItemModel.flags(self, index)
+        return Qt.NoItemFlags
+
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...) -> object:
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            self.root_item.data(section)
+
 
 class AddFilesModel(BasePandasModel):
     def __init__(self, data, **kwargs):

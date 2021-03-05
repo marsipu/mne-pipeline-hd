@@ -32,7 +32,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
 from matplotlib import pyplot as plt
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 
-from .base_widgets import (CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog, SimpleList,
+from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
+                           SimpleList,
                            SimplePandasTable)
 from .dialogs import ErrorDialog
 from .gui_utils import (Worker, WorkerDialog, center, get_exception_tuple, set_ratio_geometry)
@@ -189,8 +190,8 @@ class RemoveDialog(QDialog):
         self.close()
 
 
-# Todo: Subject-Selection according to having or not specified Files (Combobox)
-class SubjectDock(QDockWidget):
+# Todo: File-Selection depending on existence of data-objects
+class FileDock(QDockWidget):
     def __init__(self, main_win, meeg_view=True, fsmri_view=True):
         super().__init__('Object-Selection', main_win)
         self.mw = main_win
@@ -528,7 +529,8 @@ class AddFilesWidget(QWidget):
         self.layout = QVBoxLayout()
 
         self.erm_keywords = ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room', 'raum', 'Raum']
-        self.supported_file_types = {'.bin': 'Artemis123',
+        self.supported_file_types = {'.*': 'All Files',
+                                     '.bin': 'Artemis123',
                                      '.cnt': 'Neuroscan',
                                      '.ds': 'CTF',
                                      '.dat': 'Curry',
@@ -935,352 +937,62 @@ class AddMRIDialog(AddMRIWidget):
         self.dialog.open()
 
 
-class TmpBrainSignals(QObject):
-    """
-    Defines the Signals for the Worker and add_files
-    """
-    # Worker Signals
-    finished = pyqtSignal(object)
-    error = pyqtSignal(tuple)
-    update_lists = pyqtSignal()
-
-
-class TmpBrainDialog(QDialog):
-    def __init__(self, parent_w):
-        super().__init__(parent_w)
-
-        self.setWindowTitle('Loading Template-Brain...')
-        layout = QVBoxLayout()
-        self.text_edit = QTextEdit()
-        self.text_edit.setReadOnly(True)
-        layout.addWidget(self.text_edit)
-
-        self.setLayout(layout)
-        self.open()
-
-    def update_text_edit(self, text):
-        self.text_edit.insertPlainText(text)
-        self.text_edit.ensureCursorVisible()
-
-
-class SubDictWidget(QWidget):
-    """ A widget to assign MRI-Subjects oder Empty-Room-Files to subject(s), depending on mode """
-
+class FileDictWidget(QWidget):
     def __init__(self, main_win, mode):
-        """
-        :param main_win: The parent-window for the dialog
-        :param mode: 'erm' or 'mri'
-        """
+        """ A widget to assign MRI-Subjects or Empty-Room-Files to file(s)"""
+
         super().__init__(main_win)
         self.mw = main_win
-        self.layout = QGridLayout()
         self.mode = mode
         if mode == 'mri':
-            self.setWindowTitle('Assign files to their MRI-Subject')
-            self.label2 = 'Choose a mri-subject'
+            self.title = 'Assign MEEG-Files to a FreeSurfer-Subject'
+            self.subtitles = ('Choose a MEEG-File', 'Choose a FreeSurfer-Subject')
         else:
-            self.setWindowTitle('Assign files to their ERM-File')
-            self.label2 = 'Choose a erm-file'
+            self.title = 'Assign MEEG-File to a Empty-Room-File'
+            self.subtitles = ('Choose a MEEG-File', 'Choose an Empty-Room-File')
 
         self.init_ui()
-        self.populate_lists()
-        self.get_status()
 
     def init_ui(self):
-        file_label = QLabel('Choose a file', self)
-        second_label = QLabel(self.label2, self)
-
-        self.layout.addWidget(file_label, 0, 0)
-        self.layout.addWidget(second_label, 0, 1)
-        # ListWidgets
-        self.list_widget1 = QListWidget(self)
-        self.list_widget1.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.list_widget2 = QListWidget(self)
-
-        # Response to Clicking
-        self.list_widget1.itemClicked.connect(self.sub_dict_selected)
-
-        self.layout.addWidget(self.list_widget1, 1, 0)
-        self.layout.addWidget(self.list_widget2, 1, 1)
-        # Add buttons
-        self.bt_layout = QVBoxLayout()
-        assign_bt = QPushButton('Assign', self)
-        assign_bt.clicked.connect(self.sub_dict_assign)
-        self.bt_layout.addWidget(assign_bt)
-
-        none_bt = QPushButton('Assign None', self)
-        none_bt.clicked.connect(self.sub_dict_assign_none)
-        self.bt_layout.addWidget(none_bt)
-
-        all_none_bt = QPushButton('Assign None to all')
-        all_none_bt.clicked.connect(self.sub_dict_assign_all_none)
-        self.bt_layout.addWidget(all_none_bt)
-
-        all_bt = QPushButton(f'Assign 1 {self.mode} to all')
-        all_bt.clicked.connect(self.sub_dict_assign_to_all)
-        self.bt_layout.addWidget(all_bt)
-
-        read_bt = QPushButton('Show Assignments', self)
-        read_bt.clicked.connect(self.show_assignments)
-        self.bt_layout.addWidget(read_bt)
-
+        layout = QVBoxLayout()
         if self.mode == 'mri':
-            group_box = QGroupBox('Template-Brains', self)
-
-            tb_layout = QVBoxLayout()
-            self.template_box = QComboBox(self)
-            template_brains = ['fsaverage']
-            self.template_box.addItems(template_brains)
-            self.template_box.setCurrentIndex(0)
-            tb_layout.addWidget(self.template_box)
-
-            test_bt = QPushButton('Add Template-Brain')
-            test_bt.clicked.connect(self.add_template_brain_starter)
-            tb_layout.addWidget(test_bt)
-
-            group_box.setLayout(tb_layout)
-            self.bt_layout.addWidget(group_box)
-
-        self.layout.addLayout(self.bt_layout, 0, 2, 2, 1)
-        self.setLayout(self.layout)
-
-    def populate_lists(self):
-        # Check, that item is not already present (for Wizard-Page)
-        for file in [f for f in self.mw.pr.all_meeg if len(self.list_widget1.findItems(f, Qt.MatchExactly)) == 0]:
-            self.list_widget1.addItem(file)
-        if len(self.list_widget2.findItems('None', Qt.MatchExactly)) == 0:
-            self.list_widget2.addItem('None')
-        if self.mode == 'mri':
-            for file in [f for f in self.mw.pr.all_fsmri
-                         if len(self.list_widget2.findItems(f, Qt.MatchExactly)) == 0]:
-                self.list_widget2.addItem(file)
+            assign_widget = AssignWidget(self.mw.pr.all_meeg, self.mw.pr.all_fsmri, self.mw.pr.meeg_to_fsmri,
+                                         title=self.title, subtitles=self.subtitles)
         else:
-            for file in [f for f in self.mw.pr.all_erm
-                         if len(self.list_widget2.findItems(f, Qt.MatchExactly)) == 0]:
-                self.list_widget2.addItem(file)
+            assign_widget = AssignWidget(self.mw.pr.all_meeg, self.mw.pr.all_erm, self.mw.pr.meeg_to_erm,
+                                         title=self.title, subtitles=self.subtitles)
+        layout.addWidget(assign_widget)
 
-    def get_status(self):
-        for idx in range(self.list_widget1.count()):
-            item_name = self.list_widget1.item(idx).text()
-            if self.mode == 'mri':
-                if item_name in self.mw.pr.meeg_to_fsmri:
-                    self.list_widget1.item(idx).setBackground(QColor('green'))
-                    self.list_widget1.item(idx).setForeground(QColor('white'))
-                else:
-                    self.list_widget1.item(idx).setBackground(QColor('red'))
-                    self.list_widget1.item(idx).setForeground(QColor('white'))
-            else:
-                if item_name in self.mw.pr.meeg_to_erm:
-                    self.list_widget1.item(idx).setBackground(QColor('green'))
-                    self.list_widget1.item(idx).setForeground(QColor('white'))
-                else:
-                    self.list_widget1.item(idx).setBackground(QColor('red'))
-                    self.list_widget1.item(idx).setForeground(QColor('white'))
-
-    def add_template_brain_starter(self):
-        self.template_brain = self.template_box.currentText()
-        self.tmpb_dlg = TmpBrainDialog(self)
-        # Redirect stdout to capture it
-        sys.stdout.signal.text_written.connect(self.tmpb_dlg.update_text_edit)
-
-        worker = Worker(self.add_template_brain)
-        # Overwrite signals with custom-signals
-        worker.signals = TmpBrainSignals()
-        worker.signals.finished.connect(self.tmpb_dlg.close)
-        worker.signals.error.connect(self.show_errors)
-        worker.signals.update_lists.connect(self.update_lists)
-        self.mw.threadpool.start(worker)
-
-    def show_errors(self, err):
-        ErrorDialog(err, self)
-
-    def update_lists(self):
-        if self.template_brain not in self.mw.pr.all_fsmri:
-            self.mw.subject_dock.update_dock()
-            self.list_widget2.addItem(self.template_brain)
-
-    def add_template_brain(self, signals):
-        if self.template_brain == 'fsaverage':
-            mne.datasets.fetch_fsaverage(self.mw.subjects_dir)
-            signals.update_lists.emit()
-        else:
-            pass
-
-    def sub_dict_selected(self):
-        choice = self.list_widget1.currentItem().text()
-        if self.mode == 'mri':
-            existing_dict = self.mw.pr.meeg_to_fsmri
-        else:
-            existing_dict = self.mw.pr.meeg_to_erm
-        if choice in existing_dict:
-            try:
-                it2 = self.list_widget2.findItems(existing_dict[choice], Qt.MatchExactly)[0]
-                self.list_widget2.setCurrentItem(it2)
-            except IndexError:
-                pass
-        else:
-            if self.list_widget2.currentItem():
-                self.list_widget2.currentItem().setSelected(False)
-
-    def sub_dict_assign(self):
-        choices1 = self.list_widget1.selectedItems()
-        choice2 = self.list_widget2.currentItem().text()
-        if self.mode == 'mri':
-            existing_dict = self.mw.pr.meeg_to_fsmri
-        else:
-            existing_dict = self.mw.pr.meeg_to_erm
-        for item in choices1:
-            item.setBackground(QColor('green'))
-            item.setForeground(QColor('white'))
-            choice1 = item.text()
-            if choice1 in existing_dict:
-                existing_dict[choice1] = choice2
-            else:
-                existing_dict.update({choice1: choice2})
-        if self.mode == 'mri':
-            self.mw.pr.meeg_to_fsmri = existing_dict
-        else:
-            self.mw.pr.meeg_to_erm = existing_dict
-        self.mw.pr.save()
-
-    def sub_dict_assign_none(self):
-        choices = self.list_widget1.selectedItems()
-        if self.mode == 'mri':
-            existing_dict = self.mw.pr.meeg_to_fsmri
-        else:
-            existing_dict = self.mw.pr.meeg_to_erm
-        for item in choices:
-            item.setBackground(QColor('green'))
-            item.setForeground(QColor('white'))
-            choice = item.text()
-            if choice in existing_dict:
-                existing_dict[choice] = 'None'
-            else:
-                existing_dict.update({choice: 'None'})
-
-            none_item = self.list_widget2.findItems('None', Qt.MatchExactly)[0]
-            self.list_widget2.setCurrentItem(none_item)
-
-        if self.mode == 'mri':
-            self.mw.pr.meeg_to_fsmri = existing_dict
-        else:
-            self.mw.pr.meeg_to_erm = existing_dict
-        self.mw.pr.save()
-
-    def sub_dict_assign_to_all(self):
-        try:
-            selected = self.list_widget2.currentItem().text()
-            reply = QMessageBox.question(self, f'Assign {selected} to All?',
-                                         f'Do you really want to assign {selected} to all?',
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                all_items = dict()
-                for i in range(self.list_widget1.count()):
-                    self.list_widget1.item(i).setBackground(QColor('green'))
-                    self.list_widget1.item(i).setForeground(QColor('white'))
-                    all_items.update({self.list_widget1.item(i).text(): selected})
-                if self.mode == 'mri':
-                    self.mw.pr.meeg_to_fsmri = all_items
-                elif self.mode == 'erm':
-                    self.mw.pr.meeg_to_erm = all_items
-            self.mw.pr.save()
-        except AttributeError:
-            # When no second item is selected
-            pass
-
-    def sub_dict_assign_all_none(self):
-        reply = QMessageBox.question(self, 'Assign None to All?', 'Do you really want to assign none to all?',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            all_items = dict()
-            for i in range(self.list_widget1.count()):
-                self.list_widget1.item(i).setBackground(QColor('green'))
-                self.list_widget1.item(i).setForeground(QColor('white'))
-                all_items.update({self.list_widget1.item(i).text(): 'None'})
-
-            none_item = self.list_widget2.findItems('None', Qt.MatchExactly)[0]
-            self.list_widget2.setCurrentItem(none_item)
-
-            if self.mode == 'mri':
-                self.mw.pr.meeg_to_fsmri = all_items
-            elif self.mode == 'erm':
-                self.mw.pr.meeg_to_erm = all_items
-            self.mw.pr.save()
-
-    def show_assignments(self):
-        self.show_ass_dialog = QDialog(self)
-        self.show_ass_dialog.setWindowTitle('Assignments')
-        layout = QGridLayout()
-        list_widget = QListWidget()
-        list_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        if self.mode == 'mri':
-            the_dict = self.mw.pr.meeg_to_fsmri
-        else:
-            the_dict = self.mw.pr.meeg_to_erm
-        item_list = []
-        for key, value in the_dict.items():
-            item_list.append(f'{key}: {value}')
-        list_widget.addItems(item_list)
-        layout.addWidget(list_widget, 0, 0, 1, 2)
-
-        delete_bt = QPushButton('Delete')
-        delete_bt.clicked.connect(partial(self.delete_assignment, list_widget))
-        layout.addWidget(delete_bt, 1, 0)
-
-        quit_bt = QPushButton('Quit')
-        quit_bt.clicked.connect(self.show_assignments_close)
-        layout.addWidget(quit_bt, 1, 1)
-
-        self.show_ass_dialog.setLayout(layout)
-        self.show_ass_dialog.open()
-
-    def delete_assignment(self, list_widget):
-        choices = list_widget.selectedItems()
-        for item in choices:
-            list_widget.takeItem(list_widget.row(item))
-            item_text = item.text()
-            key_text = item_text[:item_text.find(':')]
-            if self.mode == 'mri':
-                self.mw.pr.meeg_to_fsmri.pop(key_text, None)
-            else:
-                self.mw.pr.meeg_to_erm.pop(key_text, None)
-
-    def show_assignments_close(self):
-        self.show_ass_dialog.close()
-        self.get_status()
+        self.setLayout(layout)
 
 
-class SubDictDialog(SubDictWidget):
+class FileDictDialog(FileDictWidget):
     def __init__(self, main_win, mode):
         super().__init__(main_win, mode)
 
-        self.dialog = QDialog(main_win)
+        dialog = QDialog(main_win)
 
         close_bt = QPushButton('Close', self)
-        close_bt.clicked.connect(self.dialog.close)
-        self.bt_layout.addWidget(close_bt)
+        close_bt.clicked.connect(dialog.close)
+        self.layout().addWidget(close_bt)
 
-        self.dialog.setLayout(self.layout)
+        dialog.setLayout(self.layout())
 
-        set_ratio_geometry(0.8, self)
+        set_ratio_geometry(0.6, self)
 
-        self.dialog.open()
+        dialog.open()
 
 
-class SubDictWizPage(QWizardPage):
+class FileDictWizardPage(QWizardPage):
     def __init__(self, main_win, mode, title):
         super().__init__()
 
         self.setTitle(title)
 
         layout = QVBoxLayout()
-        self.sub_dict_w = SubDictWidget(main_win, mode)
+        self.sub_dict_w = FileDictWidget(main_win, mode)
         layout.addWidget(self.sub_dict_w)
         self.setLayout(layout)
-
-    def initializePage(self):
-        self.sub_dict_w.populate_lists()
-        self.sub_dict_w.get_status()
 
 
 class CopyBadsDialog(QDialog):
@@ -1569,8 +1281,8 @@ class SubjectWizard(QWizard):
         layout.addWidget(AddMRIWidget(self.mw))
         self.add_mri_page.setLayout(layout)
 
-        self.assign_mri_page = SubDictWizPage(self.mw, 'mri', 'Assign File --> MRI')
-        self.assign_erm_page = SubDictWizPage(self.mw, 'erm', 'Assign File --> ERM')
+        self.assign_mri_page = FileDictWizardPage(self.mw, 'mri', 'Assign File --> MRI')
+        self.assign_erm_page = FileDictWizardPage(self.mw, 'erm', 'Assign File --> ERM')
         self.assign_bad_channels_page = SubBadsWizPage(self.mw, 'Assign Bad-Channels')
 
         self.addPage(self.add_files_page)

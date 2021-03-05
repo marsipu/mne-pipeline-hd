@@ -28,10 +28,9 @@ from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QGridLayo
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
 
-from mne_pipeline_hd.gui.models import (BaseDictModel, BaseDictTreeModel, BaseListModel, BasePandasModel,
-                                        CheckDictEditModel,
-                                        CheckDictModel, CheckListModel,
-                                        EditDictModel, EditListModel, EditPandasModel, FileManagementModel)
+from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel,
+                                        CheckDictEditModel, CheckDictModel, CheckListModel,
+                                        EditDictModel, EditListModel, EditPandasModel, FileManagementModel, TreeModel)
 
 
 class Base(QWidget):
@@ -1055,7 +1054,7 @@ class FilePandasTable(BasePandasTable):
 
 class BaseDictTree(Base):
     def __init__(self, data, drag_drop=False, parent=None, title=None, verbose=False):
-        super().__init__(model=BaseDictTreeModel(data), view=QTreeView(), drag_drop=drag_drop, parent=parent,
+        super().__init__(model=TreeModel(data), view=QTreeView(), drag_drop=drag_drop, parent=parent,
                          title=title, verbose=verbose)
 
 
@@ -1094,9 +1093,10 @@ class AssignWidget(QWidget):
     """
 
     def __init__(self, items, properties, assignments, properties_editable=False,
-                 parent=None, title=None, verbose=False):
+                 parent=None, title=None, subtitles=None, verbose=False):
         super().__init__(parent)
         self.title = title
+        self.subtitles = subtitles
         self.verbose = verbose
 
         self.items = items
@@ -1107,33 +1107,45 @@ class AssignWidget(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        layout = QGridLayout()
+        layout = QVBoxLayout()
 
-        self.items_w = CheckDictList(self.items, self.assignments, extended_selection=True, verbose=self.verbose)
+        list_layout = QHBoxLayout()
+        if self.subtitles is not None and len(self.subtitles) == 2:
+            subtitle1, subtitle2 = self.subtitles
+        else:
+            subtitle1, subtitle2 = None, None
+
+        self.items_w = CheckDictList(self.items, self.assignments, extended_selection=True, title=subtitle1,
+                                     verbose=self.verbose)
         self.items_w.selectionChanged.connect(self.items_selected)
-        layout.addWidget(self.items_w, 0, 0)
+        list_layout.addWidget(self.items_w)
 
         if self.props_editable:
-            self.props_w = EditList(self.props, extended_selection=False, verbose=self.verbose)
+            self.props_w = EditList(self.props, extended_selection=False, title=subtitle2, verbose=self.verbose)
         else:
-            self.props_w = SimpleList(self.props, extended_selection=False, verbose=self.verbose)
-        layout.addWidget(self.props_w, 0, 1)
+            self.props_w = SimpleList(self.props, extended_selection=False, title=subtitle2, verbose=self.verbose)
+        list_layout.addWidget(self.props_w)
+        layout.addLayout(list_layout)
 
+        bt_layout = QHBoxLayout()
         assign_bt = QPushButton('Assign')
+        assign_bt.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         assign_bt.setFont(QFont('AnyStyle', 13))
         assign_bt.clicked.connect(self.assign)
-        layout.addWidget(assign_bt, 1, 0, 1, 2)
+        bt_layout.addWidget(assign_bt)
 
         show_assign_bt = QPushButton('Show Assignments')
+        show_assign_bt.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         show_assign_bt.setFont(QFont('AnyStyle', 13))
         show_assign_bt.clicked.connect(self.show_assignments)
-        layout.addWidget(show_assign_bt, 2, 0, 1, 2)
+        bt_layout.addWidget(show_assign_bt)
+        layout.addLayout(bt_layout)
 
         if self.title:
             super_layout = QVBoxLayout()
             title_label = QLabel(self.title)
             title_label.setFont(QFont('AnyStyle', 14))
-            super_layout.addWidget(title_label)
+            super_layout.addWidget(title_label, alignment=Qt.AlignHCenter)
             super_layout.addLayout(layout)
             self.setLayout(super_layout)
         else:
@@ -1155,7 +1167,7 @@ class AssignWidget(QWidget):
         self.items_w.content_changed()
 
     def show_assignments(self):
-        SimpleDialog(SimpleDict(self.assignments), parent=self, modal=False, scroll=True)
+        SimpleDialog(EditDict(self.assignments), parent=self, modal=False)
 
 
 class AllBaseWidgets(QWidget):
@@ -1197,8 +1209,8 @@ class AllBaseWidgets(QWidget):
                             'EditDict': [self.exdict],
                             'SimplePandasTable': [self.expd],
                             'EditPandasTable': [self.expd],
-                            'AssignWidget': [self.exlist, self.exattributes, self.exassignments],
-                            'BaseDictTree': [self.extree]}
+                            # 'BaseDictTree': [self.extree],
+                            'AssignWidget': [self.exlist, self.exattributes, self.exassignments]}
 
         self.widget_kwargs = {'SimpleList': {'extended_selection': True, 'title': 'BaseList', 'verbose': True},
                               'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList',
@@ -1210,8 +1222,8 @@ class AllBaseWidgets(QWidget):
                               'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict', 'verbose': True},
                               'SimplePandasTable': {'title': 'BasePandasTable', 'verbose': True},
                               'EditPandasTable': {'title': 'EditPandasTable', 'verbose': True},
-                              'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget', 'verbose': True},
-                              'BaseDictTree': {'title': 'BaseDictTree', 'verbose': True}}
+                              # 'BaseDictTree': {'title': 'BaseDictTree', 'verbose': True},
+                              'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget', 'verbose': True}}
 
         self.tab_widget = QTabWidget()
 

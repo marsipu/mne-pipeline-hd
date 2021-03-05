@@ -36,7 +36,7 @@ from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImpo
 from .gui_utils import WorkerDialog, center, get_exception_tuple, set_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, ICASelect,
                               ReloadRaw, SubBadsDialog,
-                              SubDictDialog, SubjectDock, SubjectWizard)
+                              FileDictDialog, FileDock, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal, PlotViewSelection
 from .. import basic_functions
@@ -501,9 +501,9 @@ class MainWindow(QMainWindow):
         input_menu.addSeparator()
 
         input_menu.addAction('Assign MEEG --> Freesurfer-MRI',
-                             partial(SubDictDialog, self, 'mri'))
+                             partial(FileDictDialog, self, 'mri'))
         input_menu.addAction('Assign MEEG --> Empty-Room',
-                             partial(SubDictDialog, self, 'erm'))
+                             partial(FileDictDialog, self, 'erm'))
         input_menu.addAction('Assign Bad-Channels --> MEEG',
                              partial(SubBadsDialog, self))
         input_menu.addAction('Assign Event-IDs --> MEEG', partial(EventIDGui, self))
@@ -742,7 +742,7 @@ class MainWindow(QMainWindow):
             dock_kwargs = self.edu_program['dock_kwargs']
         else:
             dock_kwargs = dict()
-        self.subject_dock = SubjectDock(self, **dock_kwargs)
+        self.subject_dock = FileDock(self, **dock_kwargs)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
         self.view_menu.addAction(self.subject_dock.toggleViewAction())
 
