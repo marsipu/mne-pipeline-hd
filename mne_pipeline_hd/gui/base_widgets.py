@@ -19,11 +19,9 @@ import numpy as np
 import pandas
 from PyQt5.QtCore import QItemSelectionModel, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QGridLayout, QHBoxLayout, QInputDialog, QLabel,
-                             QListView,
-                             QPushButton, QScrollArea, QSizePolicy,
-                             QSpinBox,
-                             QTabWidget, QTableView, QTreeView, QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QHBoxLayout, QInputDialog, QLabel,
+                             QListView, QPushButton, QScrollArea, QSizePolicy,
+                             QSpinBox, QTabWidget, QTableView, QTreeView, QVBoxLayout, QWidget)
 
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
@@ -361,6 +359,13 @@ class CheckList(BaseList):
             self.setLayout(super_layout)
         else:
             self.setLayout(layout)
+
+    def content_changed(self):
+        """Check every time if _checked contains items not in _data"""
+        remove_items = [item for item in self.model._checked if item not in self.model._data]
+        for rmi in remove_items:
+            self.model._checked.remove(rmi)
+        self.model.layoutChanged.emit()
 
     def _checked_changed(self):
         self.checkedChanged.emit(self.model._checked)
@@ -1052,7 +1057,7 @@ class FilePandasTable(BasePandasTable):
                          resize_rows=True, resize_columns=True, verbose=verbose)
 
 
-class BaseDictTree(Base):
+class DictTree(Base):
     def __init__(self, data, drag_drop=False, parent=None, title=None, verbose=False):
         super().__init__(model=TreeModel(data), view=QTreeView(), drag_drop=drag_drop, parent=parent,
                          title=title, verbose=verbose)
@@ -1209,7 +1214,7 @@ class AllBaseWidgets(QWidget):
                             'EditDict': [self.exdict],
                             'SimplePandasTable': [self.expd],
                             'EditPandasTable': [self.expd],
-                            # 'BaseDictTree': [self.extree],
+                            'DictTree': [self.extree],
                             'AssignWidget': [self.exlist, self.exattributes, self.exassignments]}
 
         self.widget_kwargs = {'SimpleList': {'extended_selection': True, 'title': 'BaseList', 'verbose': True},
@@ -1222,7 +1227,7 @@ class AllBaseWidgets(QWidget):
                               'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict', 'verbose': True},
                               'SimplePandasTable': {'title': 'BasePandasTable', 'verbose': True},
                               'EditPandasTable': {'title': 'EditPandasTable', 'verbose': True},
-                              # 'BaseDictTree': {'title': 'BaseDictTree', 'verbose': True},
+                              'DictTree': {'title': 'BaseDictTree', 'verbose': True},
                               'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget', 'verbose': True}}
 
         self.tab_widget = QTabWidget()

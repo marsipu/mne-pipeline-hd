@@ -12,7 +12,6 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import os
 import re
 import shutil
-import sys
 import time
 from collections import Counter
 from functools import partial
@@ -22,16 +21,16 @@ from pathlib import Path
 import mne
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import QObject, Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDockWidget, QFileDialog,
-                             QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
+                             QGridLayout, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
                              QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QPushButton,
-                             QScrollArea, QSizePolicy, QTabWidget, QTableView, QTextEdit, QTreeWidget,
+                             QScrollArea, QSizePolicy, QTabWidget, QTableView, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
-from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 
+from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
                            SimpleList,
                            SimplePandasTable)

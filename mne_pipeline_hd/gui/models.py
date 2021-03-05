@@ -85,8 +85,6 @@ class BaseListModel(QAbstractListModel):
     def supportedDragActions(self):
         if self.drag_drop:
             return Qt.CopyAction | Qt.MoveAction
-        else:
-            return None
 
 
 class EditListModel(BaseListModel):
@@ -544,7 +542,6 @@ class TreeItem:
     def child(self, number):
         if 0 <= number < len(self._children):
             return self._children[number]
-        return None
 
     def childCount(self):
         return len(self._children)
@@ -560,7 +557,6 @@ class TreeItem:
     def data(self, column):
         if 0 <= column < len(self._data):
             return self._data[column]
-        return None
 
     def setData(self, column, value):
         if 0 <= column < len(self._data):
@@ -600,9 +596,16 @@ class TreeItem:
 class TreeModel(QAbstractItemModel):
     """Tree-Model as in https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
 
-    def __init__(self, data, headers=None, parent=None):
+    def __init__(self, data, n_columns=1, headers=None, parent=None):
         super().__init__(parent)
         self._data = data
+        self._n_columns = n_columns
+        if headers is None:
+            headers = ['' for i in range(n_columns)]
+        elif len(headers) < n_columns:
+            headers += ['' for i in range(n_columns - headers)]
+        elif len(headers) > n_columns:
+            headers = headers[:n_columns]
         self._headers = headers
         self._parent = parent
 
@@ -610,16 +613,27 @@ class TreeModel(QAbstractItemModel):
 
     def dict_to_items(self, datadict, parent=None):
         if parent is None:
-            parent = TreeItem([self._headers])
+            parent = TreeItem(self._headers)
 
         for key, value in datadict.items():
+            data = [key] + ['' for i in range(self._n_columns - 1)]
+            tree_item = TreeItem(data, parent)
             if isinstance(value, dict):
-                tree_item = self.dict_to_items(value, parent)
-            else:
-                tree_item = TreeItem(value, parent)
+                child_item = self.dict_to_items(value, tree_item)
+                tree_item._children.append(child_item)
             parent._children.append(tree_item)
 
         return parent
+
+    # noinspection PyMethodMayBeStatic
+    def getData(self, index):
+        if index.isValid():
+            item = index.internalPointer()
+            return item.data(index.column())
+
+    def data(self, index: QModelIndex, role: int = ...) -> object:
+        if role == Qt.DisplayRole:
+            return self.getData(index)
 
     def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex:
         if self.hasIndex(row, column, parent):
@@ -657,13 +671,6 @@ class TreeModel(QAbstractItemModel):
         if parent.isValid():
             return parent.internalPointer().columnCount()
         return self.root_item.columnCount()
-
-    def data(self, index: QModelIndex, role: int = ...) -> object:
-        if index.isValid():
-            if role == Qt.DisplayRole:
-                item = index.internalPointer()
-                return item.data(index.column())
-        return None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         if index.isValid():
