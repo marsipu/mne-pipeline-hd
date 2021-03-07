@@ -29,11 +29,11 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
                              QVBoxLayout, QWidget)
 
-from .dialogs import (ErrorDialog, ParametersDock, QuickGuide, RawInfo, RemoveProjectsDlg,
+from .dialogs import (ParametersDock, QuickGuide, RawInfo, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
-from .gui_utils import WorkerDialog, center, get_exception_tuple, set_ratio_geometry
+from .gui_utils import ErrorDialog, WorkerDialog, center, get_exception_tuple, set_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, ICASelect,
                               ReloadRaw, SubBadsDialog,
                               FileDictDialog, FileDock, SubjectWizard)

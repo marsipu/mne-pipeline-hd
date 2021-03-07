@@ -11,16 +11,18 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import io
 import logging
+import smtplib
+import ssl
 import sys
 import traceback
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from inspect import signature
 
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QTextCursor
-from PyQt5.QtWidgets import QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox, QProgressBar, \
-    QPushButton, \
-    QTextEdit, \
-    QVBoxLayout
+from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
+                             QProgressBar, QPushButton, QScrollArea, QTextEdit, QVBoxLayout)
 
 
 def center(widget):
@@ -43,10 +45,145 @@ def set_ratio_geometry(size_ratio, widget=None):
 def get_exception_tuple():
     exctype, value = sys.exc_info()[:2]
     traceback_str = traceback.format_exc(limit=-10)
-    logging.error(f'{exctype}: {value}\n'
-                  f'{traceback_str}')
+    logging.getLogger().critical(f'{exctype}: {value}\n'
+                                 f'{traceback_str}')
 
     return exctype, value, traceback_str
+
+
+# Todo: Rework how to send Issues (E-Mail, GitHub?)
+class ErrorDialog(QDialog):
+    def __init__(self, exception_tuple, parent=None, title=None):
+        if parent:
+            super().__init__(parent)
+        else:
+            super().__init__()
+        self.err = exception_tuple
+        self.title = title
+        if self.title:
+            self.setWindowTitle(self.title)
+        else:
+            self.setWindowTitle('An Error ocurred!')
+
+        set_ratio_geometry(0.6, self)
+
+        self.init_ui()
+
+        if parent:
+            self.open()
+        else:
+            self.exec()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        scroll_area = QScrollArea()
+
+        self.label = QLabel()
+        self.formated_tb_text = self.err[2].replace('\n', '<br>')
+        if self.title:
+            self.html_text = f'<h1>{self.title}</h1>' \
+                             f'<h2>{self.err[1]}</h2>' \
+                             f'{self.formated_tb_text}'
+        else:
+            self.html_text = f'<h1>{self.err[1]}</h1>' \
+                             f'{self.formated_tb_text}'
+        self.label.setText(self.html_text)
+
+        scroll_area.setWidget(self.label)
+
+        # layout.addWidget(scroll_area, 0, 0, 1, 2)
+        layout.addWidget(scroll_area)
+
+        # self.name_le = QLineEdit()
+        # self.name_le.setPlaceholderText('Enter your Name (optional)')
+        # layout.addWidget(self.name_le, 1, 0)
+        #
+        # self.email_le = QLineEdit()
+        # self.email_le.setPlaceholderText('Enter your E-Mail-Adress (optional)')
+        # layout.addWidget(self.email_le, 1, 1)
+        #
+        # self.send_bt = QPushButton('Send Error-Report')
+        # self.send_bt.clicked.connect(self.send_report)
+        # layout.addWidget(self.send_bt, 2, 0)
+
+        self.close_bt = QPushButton('Close')
+        self.close_bt.clicked.connect(self.close)
+        layout.addWidget(self.close_bt)
+
+        self.setLayout(layout)
+
+    # Todo: Rework without having to show the password
+    def send_report(self):
+        msg_box = QMessageBox.question(self, 'Send an E-Mail-Bug-Report?',
+                                       'Do you really want to send an E-Mail-Report?',
+                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if msg_box == QMessageBox.Yes:
+            port = 465
+            adress = 'mne.pipeline@gmail.com'
+            password = '24DecodetheBrain7!'
+
+            context = ssl.create_default_context()
+
+            message = MIMEMultipart("alternative")
+            message['Subject'] = str(self.err[1])
+            message['From'] = adress
+            message["To"] = adress
+
+            message_body = MIMEText(f'<b><big>{self.name_le.text()}</b></big><br>'
+                                    f'<i>{self.email_le.text()}</i><br><br>'
+                                    f'<b>{sys.platform}</b><br>{self.formated_tb_text}', 'html')
+            message.attach(message_body)
+            try:
+                with smtplib.SMTP_SSL('smtp.gmail.com', port, context=context) as server:
+                    server.login('mne.pipeline@gmail.com', password)
+                    server.sendmail(adress, adress, message.as_string())
+                QMessageBox.information(self, 'E-Mail sent', 'An E-Mail was sent to mne.pipeline@gmail.com\n'
+                                                             'Thank you for the Report!')
+            except OSError:
+                QMessageBox.information(self, 'E-Mail not sent', 'Sending an E-Mail is not possible on your OS')
+
+
+def show_error_dialog(exc_str):
+    """Checks if a QApplication instance is available and shows the Error-Dialog.
+    If unavailable (non-console application), log an additional notice.
+    """
+    if QApplication.instance() is not None:
+        ErrorDialog(exc_str, title='A unexpected error occurred')
+    else:
+        logging.getLogger().debug("No QApplication instance available.")
+
+
+class UncaughtHook(QObject):
+    """This class is a modified version of https://timlehr.com/python-exception-hooks-with-qt-message-box/"""
+    _exception_caught = pyqtSignal(object)
+
+    def __init__(self, *args, **kwargs):
+        super(UncaughtHook, self).__init__(*args, **kwargs)
+
+        # this registers the exception_hook() function as hook with the Python interpreter
+        sys.excepthook = self.exception_hook
+
+        # connect signal to execute the message box function always on main thread
+        self._exception_caught.connect(show_error_dialog)
+
+    def exception_hook(self, exc_type, exc_value, exc_traceback):
+        """Function handling uncaught exceptions.
+        It is triggered each time an uncaught exception occurs.
+        """
+        if issubclass(exc_type, KeyboardInterrupt):
+            # ignore keyboard interrupt to support console applications
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        else:
+            exc_info = (exc_type, exc_value, exc_traceback)
+            exc_str = (exc_type.__name__, exc_value, ''.join(traceback.format_tb(exc_traceback)))
+            logging.getLogger().critical(f'Uncaught exception:\n'
+                                         f'{exc_str[0]}: {exc_str[1]}\n'
+                                         f'{exc_str[2]}',
+                                         exc_info=exc_info)
+
+            # trigger showing of error-dialog
+            self._exception_caught.emit(exc_str)
 
 
 def _html_compatible(text):
@@ -119,7 +256,7 @@ class StreamSignals(QObject):
     text_written = pyqtSignal(str)
 
 
-# ToDo: Buffering and halting signal-emission (not write to original stream)
+# ToDo: Buffering and halting signal-emission (continue writing to sys.__stdout__/__stderr__)
 #  when no accepted/printed-signal is coming back from receiving Widget
 class StdoutStderrStream(io.TextIOBase):
 

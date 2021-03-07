@@ -7,13 +7,14 @@ License: BSD (3-clause)
 Copyright © 2011-2019, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
+import logging
 import os
 import sys
 from inspect import getsourcefile
 from os.path import abspath
 from pathlib import Path
 
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtCore import QSettings, QTimer, Qt
 from PyQt5.QtWidgets import QApplication
 
 # Enable start also when not installed via pip (e.g. for development)
@@ -23,7 +24,7 @@ if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
 
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
-from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream
+from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.pipeline_functions import ismac
 
 
@@ -50,6 +51,27 @@ def main():
         app.setAttribute(Qt.AA_DontUseNativeMenuBar, True)
         # Workaround for not showing with PyQt < 5.15.2
         os.environ['QT_MAC_WANTS_LAYER'] = '1'
+
+    # Redirect stdout to capture it later in GUI
+    sys.stdout = StdoutStderrStream('stdout')
+    # Redirect stderr to capture it later in GUI
+    sys.stderr = StdoutStderrStream('stderr')
+
+    # Initialize Logger
+    logger = logging.getLogger(__name__)
+    settings_log_level = QSettings().value('log_level', defaultValue=None)
+    if settings_log_level is not None:
+        logger.setLevel(settings_log_level)
+    else:
+        logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.info('Starting MNE-Pipeline HD')
+
+    # Initialize Exception-Hook
+    qt_exception_hook = UncaughtHook()
 
     # Initiate WelcomeWindow
     ww = WelcomeWindow()

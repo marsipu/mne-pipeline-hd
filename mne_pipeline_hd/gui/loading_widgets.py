@@ -34,8 +34,7 @@ from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
                            SimpleList,
                            SimplePandasTable)
-from .dialogs import ErrorDialog
-from .gui_utils import (Worker, WorkerDialog, center, get_exception_tuple, set_ratio_geometry)
+from .gui_utils import (ErrorDialog, Worker, WorkerDialog, center, get_exception_tuple, set_ratio_geometry)
 from .models import AddFilesModel
 from .parameter_widgets import ComboGui
 from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_properties, plot_ica_sources

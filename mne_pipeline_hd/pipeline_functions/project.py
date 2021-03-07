@@ -12,7 +12,6 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import json
 import logging
 import os
-import sys
 from ast import literal_eval
 from copy import deepcopy
 from os import listdir, makedirs
@@ -153,9 +152,10 @@ class Project:
                                   self.file_parameters_path: 'file_parameters'}
 
     def set_logging(self):
-        # Set logging
-        logging.basicConfig(filename=self.log_path, filemode='w')
-        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+        # Add File to logging
+        logger = logging.getLogger()
+        file_handler = logging.FileHandler(self.log_path, 'w')
+        logger.addHandler(file_handler)
 
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)

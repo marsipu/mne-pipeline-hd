@@ -32,8 +32,7 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QTabWidget, QTextEdit, QVBoxLayout)
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleList
-from mne_pipeline_hd.gui.dialogs import ErrorDialog
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, set_ratio_geometry
+from mne_pipeline_hd.gui.gui_utils import ErrorDialog, get_exception_tuple, set_ratio_geometry
 from mne_pipeline_hd.gui.models import CustomFunctionModel
 
 

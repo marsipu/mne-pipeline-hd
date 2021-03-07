@@ -75,6 +75,11 @@ class WelcomeWindow(QWidget):
         self.start_bt.clicked.connect(self.init_main_window)
         bt_layout.addWidget(self.start_bt)
 
+        error_bt = QPushButton('Error')
+        error_bt.clicked.connect(self.raise_error)
+        bt_layout.addWidget(error_bt)
+        self.raise_error()
+
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
         close_bt.setFont(QFont('AnyStyle', 20))
@@ -82,6 +87,9 @@ class WelcomeWindow(QWidget):
 
         layout.addLayout(bt_layout)
         self.setLayout(layout)
+
+    def raise_error(self):
+        raise RuntimeError('This is a test-error')
 
     def check_home_path(self):
         self.start_bt.setEnabled(False)
