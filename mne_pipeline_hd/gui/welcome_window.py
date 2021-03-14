@@ -16,7 +16,8 @@ from os.path import isdir, join
 
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QGroupBox, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QFileDialog, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMessageBox, QPushButton, \
+    QVBoxLayout, QWidget
 
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import center
@@ -35,6 +36,7 @@ class WelcomeWindow(QWidget):
 
         self.init_ui()
         self.check_home_path()
+        self.get_projects()
 
         self.show()
         center(self)
@@ -119,6 +121,39 @@ class WelcomeWindow(QWidget):
             self.home_path = str(loaded_home_path)
 
         self.check_home_path()
+
+    def get_projects(self):
+        # Get current_project
+        self.current_project = self.get_setting('current_project')
+        # Get Project-Folders (recognized by distinct folders)
+        self.projects = [p for p in listdir(self.projects_path)
+                         if all([isdir(join(self.projects_path, p, d))
+                                 for d in ['_pipeline_scripts', 'data', 'figures']])]
+        if len(self.projects) == 0:
+            if self.gui:
+                checking_projects = True
+                while checking_projects:
+                    self.current_project, ok = QInputDialog.getText(self, 'Project-Selection',
+                                                                    f'No projects in {self.home_path} found\n'
+                                                                    'Enter a project-name for your first project')
+                    if ok and self.current_project:
+                        self.projects.append(self.current_project)
+                        self.settings['current_project'] = self.current_project
+                        checking_projects = False
+                    else:
+                        msg_box = QMessageBox.question(self, 'Cancel Start?',
+                                                       'You can\'t start without this step, '
+                                                       'do you want to cancel the start?')
+                        answer = msg_box.exec()
+                        if answer == QMessageBox.Yes:
+                            raise RuntimeError('User canceled start')
+
+        elif self.current_project is None or self.current_project not in self.projects:
+            self.current_project = self.projects[0]
+            self.settings['current_project'] = self.current_project
+
+        print(f'Projects-found: {self.projects}')
+        print(f'Selected-Project: {self.current_project}')
 
     def init_main_window(self):
         sel_edu_program = self.edu_selection.get_current()

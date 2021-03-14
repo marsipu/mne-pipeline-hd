@@ -102,10 +102,11 @@ class RemovePPresetDlg(CheckListDlg):
 
 
 class RemoveProjectsDlg(CheckListDlg):
-    def __init__(self, main_win):
+    def __init__(self, main_win, controller):
         self.mw = main_win
+        self.ct = controller
         self.rm_list = []
-        super().__init__(main_win, self.mw.projects, self.rm_list)
+        super().__init__(main_win, self.ct.projects, self.rm_list)
 
         self.do_bt.setText('Remove Projects')
         self.do_bt.clicked.connect(self.remove_selected)
@@ -114,20 +115,23 @@ class RemoveProjectsDlg(CheckListDlg):
 
     def remove_selected(self):
         for project in self.rm_list:
-            self.mw.projects.remove(project)
+            self.ct.projects.remove(project)
             self.lm.layoutChanged.emit()
 
             # Remove Project-Folder
             try:
-                shutil.rmtree(join(self.mw.projects_path, project))
+                shutil.rmtree(join(self.ct.projects_path, project))
             except OSError:
                 QMessageBox.critical(self, 'Deletion impossible',
                                      f'The folder of {project} can\'t be deleted and has to be deleted manually')
 
         # If current project was deleted, load remaining or create New
-        if self.mw.current_project not in self.mw.projects:
-            self.mw.get_projects()
-            self.mw.pr = Project(self.mw, self.mw.current_project)
+        if self.ct.current_project not in self.ct.projects:
+            if len(self.ct.projects) != 0:
+                self.ct.current_project = self.ct.projects[0]
+            else:
+                self.ct.current_project = 'Dummy'
+            self.ct.pr = Project(self.ct, self.ct.current_project)
             self.mw.project_updated()
         else:
             self.mw.update_project_box()
@@ -216,16 +220,13 @@ class ResetDialog(QDialog):
 
         self.setLayout(layout)
 
-    def _reset_finished(self, _):
-        self.pd.update_all_param_guis()
-        self.close()
-
     def reset_params(self):
         for param_name in self.selected_params:
             self.pd.mw.pr.load_default_param(param_name)
             print(f'Reset {param_name}')
-        wd = WorkerDialog(self, self.pd.mw.pr.save, title='Saving project...')
-        wd.thread_finished.connect(self._reset_finished)
+        WorkerDialog(self, self.pd.mw.pr.save, title='Saving project...', blocking=True)
+        self.pd.update_all_param_guis()
+        self.close()
 
 
 class CopyPDialog(QDialog):
@@ -275,18 +276,15 @@ class CopyPDialog(QDialog):
         self.copy_to.replace_data([pp for pp in self.p.keys() if pp != current])
         self.copy_ps.replace_data([p for p in self.p[current]])
 
-    def _copy_finished(self, _):
-        self.pd.update_all_param_guis()
-        self.close()
-
     def copy_parameters(self):
         if len(self.selected_to) > 0:
             for p_preset in self.selected_to:
                 for parameter in self.selected_ps:
                     self.p[p_preset][parameter] = self.p[self.selected_from][parameter]
 
-            wd = WorkerDialog(self, self.pd.mw.pr.save, title='Saving project...')
-            wd.thread_finished.connect(self._copy_finished)
+            WorkerDialog(self, self.pd.mw.pr.save, title='Saving project...', blocking=True)
+            self.pd.update_all_param_guis()
+            self.close()
 
 
 class ParametersDock(QDockWidget):
@@ -430,17 +428,6 @@ class ParametersDock(QDockWidget):
         # Set Layout of QWidget (the class itself)
         self.general_layout.addWidget(self.tab_param_widget)
 
-    def update_parameters_widget(self):
-        self.general_layout.removeWidget(self.tab_param_widget)
-        self.tab_param_widget.close()
-        del self.tab_param_widget
-        self.dropgroup_params()
-        self.add_param_guis()
-
-    def p_preset_changed(self, idx):
-        self.mw.pr.p_preset = self.p_preset_cmbx.itemText(idx)
-        self.update_all_param_guis()
-
     def update_ppreset_cmbx(self):
         self.p_preset_cmbx.clear()
         for p_preset in self.mw.pr.parameters.keys():
@@ -449,6 +436,10 @@ class ParametersDock(QDockWidget):
             self.p_preset_cmbx.setCurrentText(self.mw.pr.p_preset)
         else:
             self.p_preset_cmbx.setCurrentText(list(self.mw.pr.parameters.keys())[0])
+
+    def p_preset_changed(self, idx):
+        self.mw.pr.p_preset = self.p_preset_cmbx.itemText(idx)
+        self.update_all_param_guis()
 
     def add_p_preset(self):
         preset_name, ok = QInputDialog.getText(self, 'New Parameter-Preset',
@@ -460,6 +451,14 @@ class ParametersDock(QDockWidget):
             self.p_preset_cmbx.setCurrentText(preset_name)
         else:
             pass
+
+    def redraw_param_widgets(self):
+        self.general_layout.removeWidget(self.tab_param_widget)
+        self.tab_param_widget.close()
+        del self.tab_param_widget
+        self.dropgroup_params()
+        self.add_param_guis()
+        self.update_ppreset_cmbx()
 
     def update_all_param_guis(self):
         for gui_name in self.param_guis:

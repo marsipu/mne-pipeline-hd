@@ -145,11 +145,20 @@ class Param(QWidget):
             else:
                 self.param_value = self.default
 
+        # get data from QSettings
+        elif isinstance(self.data, QSettings):
+            if self.param_name in self.data.childKeys():
+                self.param_value = self.data.value(self.param_name)
+            else:
+                self.param_value = self.default
+
     def save_param(self):
         if isinstance(self.data, dict):
             self.data[self.param_name] = self.param_value
         elif isinstance(self.data, QMainWindow):
             self.data.pr.parameters[self.data.pr.p_preset][self.param_name] = self.param_value
+        elif isinstance(self.data, QSettings):
+            self.data.setValue(self.param_name, self.param_value)
 
 
 class IntGui(Param):

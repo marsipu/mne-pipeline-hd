@@ -42,6 +42,7 @@ from .tools import DataTerminal, PlotViewSelection
 from .. import basic_functions
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
+from ..pipeline_functions.controller import Controller, check_home_project
 from ..pipeline_functions.function_utils import (RunDialog)
 from ..pipeline_functions.project import Project
 
@@ -66,7 +67,7 @@ class MainWindow(QMainWindow):
     cancel_functions = pyqtSignal(bool)
     plot_running = pyqtSignal(bool)
 
-    def __init__(self, home_path, welcome_window, edu_program_name=None):
+    def __init__(self, controller, welcome_window, edu_program_name=None):
         super().__init__()
         self.app = QApplication.instance()
 
@@ -86,7 +87,7 @@ class MainWindow(QMainWindow):
         print(f'Multithreading with maximum {self.threadpool.maxThreadCount()} threads')
 
         # Initiate attributes for Main-Window
-        self.home_path = home_path
+        self.ct = controller
         self.welcome_window = welcome_window
         self.edu_program_name = edu_program_name
         self.edu_program = None
@@ -106,27 +107,6 @@ class MainWindow(QMainWindow):
         self.pipeline_running = False
         # True when Project was saved before closing the MainWindow
         self.project_saved = False
-
-        # Load QSettings (which are stored in the OS)
-        # qsettings=<everything, that's OS-dependent>
-        self.qsettings = dict()
-
-        # Load settings (which are stored as .json-file in home_path)
-        # settings=<everything, that's OS-independent>
-        self.settings = dict()
-        self.load_settings()
-
-        # Make base-paths (if not already existing)
-        self.make_base_paths()
-        # Get projects and current_project (need settings for this, thus after self.load_settings()
-        self.get_projects()
-
-        # Pandas-DataFrame for contextual data of basic functions (included with program)
-        with resources.path('mne_pipeline_hd.pipeline_resources', 'functions.csv') as pd_funcs_path:
-            self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';', index_col=0)
-        # Pandas-DataFrame for contextual data of paramaters for basic functions (included with program)
-        with resources.path('mne_pipeline_hd.pipeline_resources', 'parameters.csv') as pd_params_path:
-            self.pd_params = pd.read_csv(str(pd_params_path), sep=';', index_col=0)
 
         # Import the basic- and custom-function-modules
         self.import_custom_modules()
@@ -154,97 +134,55 @@ class MainWindow(QMainWindow):
         # Start Education-Tour
         self.start_edu()
 
-    def make_base_paths(self):
-        self.projects_path = join(self.home_path, 'projects')
-        self.subjects_dir = join(self.home_path, 'freesurfer')
-        mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
-        self.custom_pkg_path = join(self.home_path, 'custom_packages')
-        for path in [self.projects_path, self.subjects_dir, self.custom_pkg_path]:
-            if not isdir(path):
-                os.mkdir(path)
-
-    def get_projects(self):
-        # Get current_project
-        self.current_project = self.get_setting('current_project')
-        self.projects = [p for p in listdir(self.projects_path) if isdir(join(self.projects_path, p, 'data'))]
-        if len(self.projects) == 0:
-            checking_projects = True
-            while checking_projects:
-                self.current_project, ok = QInputDialog.getText(self, 'Project-Selection',
-                                                                f'No projects in {self.home_path} found\n'
-                                                                'Enter a project-name for your first project')
-                if ok and self.current_project:
-                    self.projects.append(self.current_project)
-                    self.settings['current_project'] = self.current_project
-                    checking_projects = False
-                else:
-                    msg_box = QMessageBox.question(self, 'Cancel Start?',
-                                                   'You can\'t start without this step, '
-                                                   'do you want to cancel the start?')
-                    answer = msg_box.exec()
-                    if answer == QMessageBox.Yes:
-                        raise RuntimeError('User canceled start')
-
-        elif self.current_project is None or self.current_project not in self.projects:
-            self.current_project = self.projects[0]
-            self.settings['current_project'] = self.current_project
-
-        print(f'Projects-found: {self.projects}')
-        print(f'Selected-Project: {self.current_project}')
-
     def project_updated(self):
 
+        # Redraw function-buttons and parameter-widgets
+        self.redraw_func_and_param()
         # Update Subject-Lists
         self.subject_dock.update_dock()
-
-        # Update Parameters
-        self.parameters_dock.update_all_param_guis()
-        self.parameters_dock.update_ppreset_cmbx()
-
-        # Update Funciton-Selection
-        self.update_selected_funcs()
         # Update Project-Box
         self.update_project_box()
         # Update Statusbar
         self.statusBar().showMessage(f'Home-Path: {self.home_path}, '
-                                     f'Project: {self.current_project}, '
-                                     f'Parameter-Preset: {self.pr.p_preset}')
+                                     f'Project: {self.current_project}')
 
     def change_home_path(self):
         # First save the former projects-data
-        self.save_main()
+        WorkerDialog(self, self.ct.save, blocking=True)
 
         new_home_path = QFileDialog.getExistingDirectory(self,
                                                          'Change your Home-Path (top-level folder of Pipeline-Data)')
         if new_home_path != '':
-            self.home_path = new_home_path
-            self.qsettings['home_path'] = self.home_path
-            self.load_settings()
-            self.make_base_paths()
-            self.get_projects()
-            self.import_custom_modules()
-            self.update_func_and_param()
-            self.statusBar().showMessage(f'Home-Path: {self.home_path}, '
-                                         f'Project: {self.current_project}, '
-                                         f'Parameter-Preset: {self.pr.p_preset}')
+            home_path, current_project = check_home_project(new_home_path)
+            if home_path[:6] != 'Error:':
+                if current_project is None:
+                    current_project = QInputDialog.getText(self, 'No Project!',
+                                                           'There is no project in this Home-Path, '
+                                                           'please enter a name for a new project:',
+                                                           text='<Project-Name>')
+                    if current_project == '':
+                        current_project = 'Dummy'
 
-            # Create new Project or load existing one
-            self.pr = Project(self, self.current_project)
-            self.project_updated()
+                self.ct = Controller(home_path, current_project)
+                QSettings().setValue('home_path', home_path)
+                self.ct.settings['current_project'] = current_project
+                self.statusBar().showMessage(f'Home-Path: {home_path}, '
+                                             f'Project: {self.ct.current_project}')
+
+                self.project_updated()
+            else:
+                QMessageBox.critical(self, 'Changing Home-Path not possible!', home_path)
 
     def add_project(self):
         # First save the former projects-data
-        self.save_main()
+        WorkerDialog(self, self.ct.save, blocking=True)
 
-        project, ok = QInputDialog.getText(self, 'New Project',
-                                           'Enter a name for a new project')
+        new_project, ok = QInputDialog.getText(self, 'New Project',
+                                               'Enter a name for a new project')
         if ok:
-            self.current_project = project
-            self.settings['current_project'] = self.current_project
-            self.projects.append(project)
-
-            self.project_box.addItem(project)
-            self.project_box.setCurrentText(project)
+            self.ct.add_project(new_project)
+            self.project_box.addItem(new_project)
+            self.project_box.setCurrentText(new_project)
 
             # Create new Project
             self.pr = Project(self, self.current_project)
@@ -252,8 +190,8 @@ class MainWindow(QMainWindow):
 
     def remove_project(self):
         # First save the former projects-data
-        self.save_main()
-        RemoveProjectsDlg(self)
+        self.ct.save()
+        RemoveProjectsDlg(self, self.ct)
 
     def project_tools(self):
         self.project_box = QComboBox()
@@ -298,52 +236,6 @@ class MainWindow(QMainWindow):
             self.project_box.setCurrentText(self.current_project)
         else:
             self.project_box.setCurrentText(self.projects[0])
-
-    def load_default_settings(self):
-        with resources.open_text('mne_pipeline_hd.pipeline_resources', 'default_settings.json') as file:
-            self.default_settings = json.load(file)
-
-    def load_settings(self):
-        self.load_default_settings()
-        try:
-            with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'r') as file:
-                self.settings = json.load(file)
-            # Account for settings, which were not saved but exist in default_settings
-            for setting in [s for s in self.default_settings['settings'] if s not in self.settings]:
-                self.settings[setting] = self.default_settings['settings'][setting]
-        except FileNotFoundError:
-            self.settings = self.default_settings['settings']
-
-        # Load QSettings
-        self.qsettings.clear()
-        for qsetting in self.default_settings['qsettings']:
-            if qsetting in QSettings().childKeys():
-                # Parse QSettings-Values
-                loaded_value = QSettings().value(qsetting)
-                if loaded_value == 'true':
-                    loaded_value = True
-                elif loaded_value == 'false':
-                    loaded_value = False
-                self.qsettings[qsetting] = loaded_value
-            else:
-                default_qsetting = self.default_settings['qsettings'][qsetting]
-                self.qsettings[qsetting] = default_qsetting
-                QSettings().setValue(qsetting, default_qsetting)
-
-    def save_settings(self):
-        with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
-            json.dump(self.settings, file, indent=4)
-
-        for qsetting in self.qsettings:
-            QSettings().setValue(qsetting, self.qsettings[qsetting])
-
-    def get_setting(self, setting):
-        try:
-            value = self.settings[setting]
-        except KeyError:
-            value = self.default_settings['settings'][setting]
-
-        return value
 
     def get_func_groups(self):
         self.fsmri_funcs = self.pd_funcs[self.pd_funcs['target'] == 'FSMRI']
@@ -713,9 +605,9 @@ class MainWindow(QMainWindow):
 
         self.add_func_bts()
 
-    def update_func_and_param(self):
+    def redraw_func_and_param(self):
         self.update_func_bts()
-        self.parameters_dock.update_parameters_widget()
+        self.parameters_dock.redraw_param_widgets()
 
     def _update_selected_functions(self, function, checked):
         if checked:
@@ -805,15 +697,13 @@ class MainWindow(QMainWindow):
         # Reload modules to get latest changes
         self.reload_modules()
 
-    def _begin_run(self):
-        self.run_dialog = RunDialog(self)
-
     def start(self):
         if self.pipeline_running:
             QMessageBox.warning(self, 'Already running!', 'The Pipeline is already running!')
         else:
-            worker_dialog = WorkerDialog(self, self._prepare_start, show_buttons=False, show_console=False)
-            worker_dialog.thread_finished.connect(self._begin_run)
+            WorkerDialog(self, self._prepare_start, show_buttons=False, show_console=False,
+                         blocking=True)
+            self.run_dialog = RunDialog(self)
 
     # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):
@@ -961,33 +851,31 @@ class MainWindow(QMainWindow):
         self.settings['current_project'] = self.current_project
         self.save_settings()
 
-    def _saving_finished(self):
-        # This is necessary to avoid closing_dlg to persist on UNIX
-        self.closing_dlg.deleteLater()
-        self.closing_dlg.close()
-
-        answer = QMessageBox.question(self, 'Closing MNE-Pipeline', 'Do you want to return to the Welcome-Window?',
-                                      buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                                      defaultButton=QMessageBox.Yes)
-        if answer == QMessageBox.Yes:
-            self.welcome_window.check_home_path()
-            self.welcome_window.show()
-            if self.edu_tour:
-                self.edu_tour.close()
-            self.project_saved = True
-            self.close()
-
-        elif answer == QMessageBox.No:
-            self.welcome_window.close()
-            if self.edu_tour:
-                self.edu_tour.close()
-            self.project_saved = True
-            self.close()
-
     def closeEvent(self, event):
         if self.project_saved:
             event.accept()
         else:
             event.ignore()
-            self.closing_dlg = WorkerDialog(self, self.save_main, show_buttons=False, show_console=False)
-            self.closing_dlg.thread_finished.connect(self._saving_finished)
+            wd = WorkerDialog(self, self.ct.save, show_buttons=False, show_console=False, blocking=True)
+
+            # This is necessary to avoid closing_dlg to persist on UNIX
+            wd.deleteLater()
+            wd.close()
+
+            answer = QMessageBox.question(self, 'Closing MNE-Pipeline', 'Do you want to return to the Welcome-Window?',
+                                          buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                          defaultButton=QMessageBox.Yes)
+            if answer == QMessageBox.Yes:
+                self.welcome_window.check_home_path()
+                self.welcome_window.show()
+                if self.edu_tour:
+                    self.edu_tour.close()
+                self.project_saved = True
+                self.close()
+
+            elif answer == QMessageBox.No:
+                self.welcome_window.close()
+                if self.edu_tour:
+                    self.edu_tour.close()
+                self.project_saved = True
+                self.close()

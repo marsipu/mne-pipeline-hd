@@ -403,7 +403,7 @@ class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
     thread_finished = pyqtSignal(object)
 
-    def __init__(self, parent, function, show_buttons=False, show_console=False, close_directly=True,
+    def __init__(self, parent, function, show_buttons=False, show_console=False, close_directly=True, blocking=False,
                  title=None, **kwargs):
         super().__init__(parent)
 
@@ -427,7 +427,10 @@ class WorkerDialog(QDialog):
             set_ratio_geometry(0.3, self)
 
         self.init_ui()
-        self.open()
+        if blocking:
+            self.exec()
+        else:
+            self.open()
 
     def init_ui(self):
         layout = QVBoxLayout()
