@@ -43,10 +43,10 @@ def set_ratio_geometry(size_ratio, widget=None):
 
 
 def get_exception_tuple():
+    traceback.print_exc()
     exctype, value = sys.exc_info()[:2]
     traceback_str = traceback.format_exc(limit=-10)
-    logging.getLogger().critical(f'{exctype}: {value}\n'
-                                 f'{traceback_str}')
+    logging.getLogger().error(f'{exctype}: {value}')
 
     return exctype, value, traceback_str
 
