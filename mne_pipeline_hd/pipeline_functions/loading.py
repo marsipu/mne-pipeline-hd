@@ -640,7 +640,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_raw(self, raw):
-        raw.save(self.raw_path, overwrite=True)
+        raw.save(self.raw_path, fmt=raw.orig_format, overwrite=True)
 
     @load_decorator
     def load_filtered(self):
@@ -648,7 +648,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_filtered(self, raw_filtered):
-        raw_filtered.save(self.raw_filtered_path, overwrite=True)
+        raw_filtered.save(self.raw_filtered_path, fmt=raw_filtered.orig_format, overwrite=True)
 
     @load_decorator
     def load_erm(self):
@@ -665,7 +665,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_erm_processed(self, erm_filtered):
-        erm_filtered.save(self.erm_processed_path, overwrite=True)
+        erm_filtered.save(self.erm_processed_path, fmt=erm_filtered.orig_format, overwrite=True)
 
     @load_decorator
     def load_events(self):
