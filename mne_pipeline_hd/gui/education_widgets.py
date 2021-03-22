@@ -16,10 +16,12 @@ from shutil import copytree
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QAction, QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-                             QMainWindow, QSizePolicy, QTextEdit, QVBoxLayout, QWidget, QWizard, QWizardPage)
+from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+                             QMainWindow, QSizePolicy, QTextBrowser, QVBoxLayout, QWidget, QWizard,
+                             QWizardPage)
+
 from mne_pipeline_hd.gui.base_widgets import CheckDictEditList, CheckList
-from mne_pipeline_hd.gui.gui_utils import center, set_ratio_geometry
+from mne_pipeline_hd.gui.gui_utils import CodeEditor, center, set_ratio_geometry
 
 
 class EducationTour(QWizard):
@@ -44,8 +46,9 @@ class EducationTour(QWizard):
             page.setTitle(page_name)
 
             layout = QVBoxLayout()
-            page_view = QTextEdit()
+            page_view = QTextBrowser()
             page_view.setReadOnly(True)
+            page_view.setOpenExternalLinks(True)
             text = self.edu['tour'][page_name]
             if self.edu['format'] == 'PlainText':
                 page_view.setPlainText(text)
@@ -132,13 +135,14 @@ class EducationEditor(QMainWindow):
         edit_layout = QGridLayout()
         edit_label = QLabel('Edit')
         edit_layout.addWidget(edit_label, 0, 0, alignment=Qt.AlignHCenter)
-        self.page_edit = QTextEdit()
+        self.page_edit = CodeEditor()
         self.page_edit.textChanged.connect(self.page_text_changed)
         edit_layout.addWidget(self.page_edit, 1, 0)
 
         preview_label = QLabel('Preview')
         edit_layout.addWidget(preview_label, 0, 1, alignment=Qt.AlignHCenter)
-        self.page_display = QTextEdit()
+        self.page_display = QTextBrowser()
+        self.page_display.setOpenExternalLinks(True)
         self.page_display.setReadOnly(True)
         edit_layout.addWidget(self.page_display, 1, 1)
 
