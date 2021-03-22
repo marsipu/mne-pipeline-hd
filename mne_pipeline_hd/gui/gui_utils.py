@@ -82,9 +82,9 @@ class ErrorDialog(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        scroll_area = QScrollArea()
-
-        self.label = QLabel()
+        self.display = QTextEdit()
+        self.display.setLineWrapMode(QTextEdit.WidgetWidth)
+        self.display.setReadOnly(True)
         self.formated_tb_text = self.err[2].replace('\n', '<br>')
         if self.title:
             self.html_text = f'<h1>{self.title}</h1>' \
@@ -93,12 +93,10 @@ class ErrorDialog(QDialog):
         else:
             self.html_text = f'<h1>{self.err[1]}</h1>' \
                              f'{self.formated_tb_text}'
-        self.label.setText(self.html_text)
-
-        scroll_area.setWidget(self.label)
+        self.display.setHtml(self.html_text)
 
         # layout.addWidget(scroll_area, 0, 0, 1, 2)
-        layout.addWidget(scroll_area)
+        layout.addWidget(self.display)
 
         # self.name_le = QLineEdit()
         # self.name_le.setPlaceholderText('Enter your Name (optional)')
@@ -180,6 +178,8 @@ class UncaughtHook(QObject):
             # ignore keyboard interrupt to support console applications
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
         else:
+            # Print Error to Console
+            traceback.print_exception(exc_type, exc_value, exc_traceback)
             exc_info = (exc_type, exc_value, exc_traceback)
             exc_str = (exc_type.__name__, exc_value, ''.join(traceback.format_tb(exc_traceback)))
             logging.getLogger().critical(f'Uncaught exception:\n'

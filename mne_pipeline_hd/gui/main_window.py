@@ -143,7 +143,7 @@ class MainWindow(QMainWindow):
         # Call window-methods
         self.init_menu()
         self.init_toolbar()
-        self.add_dock_windows()
+        self.init_docks()
         self.init_main_widget()
 
         center(self)
@@ -536,7 +536,9 @@ class MainWindow(QMainWindow):
 
         # Education
         education_menu = self.menuBar().addMenu('&Education')
-        education_menu.addAction('&Education-Editor', partial(EducationEditor, self))
+        education_menu.addAction('&Start Education-Tour', self.start_edu)
+        if self.edu_program is None:
+            education_menu.addAction('&Education-Editor', partial(EducationEditor, self))
 
         # Tools
         tool_menu = self.menuBar().addMenu('&Tools')
@@ -737,7 +739,7 @@ class MainWindow(QMainWindow):
                 if self.pr.sel_functions[function]:
                     self.bt_dict[function].setChecked(True)
 
-    def add_dock_windows(self):
+    def init_docks(self):
         if self.edu_program:
             dock_kwargs = self.edu_program['dock_kwargs']
         else:

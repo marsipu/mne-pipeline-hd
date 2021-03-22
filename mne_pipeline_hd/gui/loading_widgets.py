@@ -190,11 +190,12 @@ class RemoveDialog(QDialog):
 
 # Todo: File-Selection depending on existence of data-objects
 class FileDock(QDockWidget):
-    def __init__(self, main_win, meeg_view=True, fsmri_view=True):
+    def __init__(self, main_win, meeg_view=True, fsmri_view=True, group_view=True):
         super().__init__('Object-Selection', main_win)
         self.mw = main_win
         self.meeg_view = meeg_view
         self.fsmri_view = fsmri_view
+        self.group_view = group_view
         self.setAllowedAreas(Qt.LeftDockWidgetArea)
 
         self.init_ui()
@@ -269,12 +270,13 @@ class FileDock(QDockWidget):
 
             tab_widget.addTab(fsmri_widget, 'FS-MRI')
 
+        if self.group_view:
             self.ga_widget = GrandAvgWidget(self.mw)
             tab_widget.addTab(self.ga_widget, 'Groups')
 
-            layout.addWidget(tab_widget)
-            self.central_widget.setLayout(layout)
-            self.setWidget(self.central_widget)
+        layout.addWidget(tab_widget)
+        self.central_widget.setLayout(layout)
+        self.setWidget(self.central_widget)
 
     def update_dock(self):
         # Update lists when rereferenced elsewhere

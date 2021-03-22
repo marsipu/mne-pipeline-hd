@@ -107,7 +107,7 @@ class DataTerminal(QDialog):
         set_ratio_geometry(0.7, self)
 
         self.init_ui()
-        self.open()
+        self.show()
 
     def init_ui(self):
         self.layout = QVBoxLayout()

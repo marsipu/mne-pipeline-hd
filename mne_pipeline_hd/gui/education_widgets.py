@@ -16,12 +16,8 @@ from shutil import copytree
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, \
-    QTextEdit, \
-    QVBoxLayout, \
-    QWizard, \
-    QWizardPage
-
+from PyQt5.QtWidgets import (QAction, QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+                             QMainWindow, QSizePolicy, QTextEdit, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from mne_pipeline_hd.gui.base_widgets import CheckDictEditList, CheckList
 from mne_pipeline_hd.gui.gui_utils import center, set_ratio_geometry
 
@@ -63,7 +59,7 @@ class EducationTour(QWizard):
             self.addPage(page)
 
 
-class EducationEditor(QDialog):
+class EducationEditor(QMainWindow):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
@@ -71,50 +67,65 @@ class EducationEditor(QDialog):
         self.edu['name'] = 'Education'
         self.edu['meeg'] = self.mw.pr.sel_meeg.copy()
         self.edu['fsmri'] = self.mw.pr.sel_fsmri.copy()
+        self.edu['groups'] = self.mw.pr.sel_groups.copy()
         self.edu['functions'] = [f for f in self.mw.pr.sel_functions if self.mw.pr.sel_functions[f]]
-        self.edu['dock_kwargs'] = {'meeg_view': False, 'fsmri_view': False}
+        self.edu['dock_kwargs'] = {'meeg_view': False, 'fsmri_view': False, 'group_view': False}
         self.edu['format'] = 'PlainText'
         self.edu['tour_list'] = list()
         self.edu['tour'] = dict()
 
+        self.edu_folder = join(self.mw.home_path, 'edu_programs')
         set_ratio_geometry(0.8, self)
 
+        self.init_menu()
         self.init_ui()
-        self.open()
+        self.show()
+
+    def init_menu(self):
+        file_menu = self.menuBar().addMenu('File')
+        file_menu.addAction('&Load', self.load_edu_file)
+        file_menu.addAction('&Save', self.save_edu_file)
+        file_menu.addSeparator()
+        file_menu.addAction('&Close', self.close)
 
     def init_ui(self):
         layout = QVBoxLayout()
+        self.setCentralWidget(QWidget())
 
         name_label = QLabel('Name:')
         name_label.setFont(QFont('AnyStyle', 14))
         layout.addWidget(name_label)
-        name_ledit = QLineEdit()
-        name_ledit.textChanged.connect(self.name_changed)
-        layout.addWidget(name_ledit)
+        self.name_ledit = QLineEdit()
+        self.name_ledit.textEdited.connect(self.name_changed)
+        layout.addWidget(self.name_ledit)
 
         select_layout = QHBoxLayout()
-        meeg_check_list = CheckList(self.mw.pr.all_meeg, self.edu['meeg'], title='Select MEEG')
-        select_layout.addWidget(meeg_check_list)
+        self.meeg_check_list = CheckList(self.mw.pr.all_meeg, self.edu['meeg'], title='Select MEEG')
+        select_layout.addWidget(self.meeg_check_list)
 
-        fsmri_check_list = CheckList(self.mw.pr.all_fsmri, self.edu['fsmri'], title='Select FSMRI')
-        select_layout.addWidget(fsmri_check_list)
+        self.fsmri_check_list = CheckList(self.mw.pr.all_fsmri, self.edu['fsmri'], title='Select FSMRI')
+        select_layout.addWidget(self.fsmri_check_list)
 
-        func_check_list = CheckList(self.mw.pd_funcs.index, self.edu['functions'], title='Select Functions')
-        select_layout.addWidget(func_check_list)
+        self.group_check_list = CheckList(self.mw.pr.all_groups, self.edu['groups'], title='Select Groups')
+        select_layout.addWidget(self.group_check_list)
+
+        self.func_check_list = CheckList(self.mw.pd_funcs.index, self.edu['functions'], title='Select Functions')
+        select_layout.addWidget(self.func_check_list)
 
         layout.addLayout(select_layout)
 
         page_label = QLabel('Make a Tour:')
         page_label.setFont(QFont('AnyStyle', 14))
-        format_cmbx = QComboBox()
-        format_cmbx.addItems(['PlainText', 'HTML', 'Markdown'])
-        format_cmbx.currentTextChanged.connect(self.format_changed)
-        format_cmbx.setCurrentText('PlainText')
-        layout.addWidget(format_cmbx)
+        self.format_cmbx = QComboBox()
+        self.format_cmbx.addItems(['PlainText', 'HTML', 'Markdown'])
+        self.format_cmbx.currentTextChanged.connect(self.format_changed)
+        self.format_cmbx.setCurrentText('PlainText')
+        layout.addWidget(self.format_cmbx)
 
         self.page_list = CheckDictEditList(self.edu['tour_list'], self.edu['tour'], show_index=True)
         self.page_list.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.page_list.currentChanged.connect(self.page_changed)
+        self.page_list.dataChanged.connect(self.page_edited)
         layout.addWidget(self.page_list)
 
         edit_layout = QGridLayout()
@@ -131,18 +142,19 @@ class EducationEditor(QDialog):
         edit_layout.addWidget(self.page_display, 1, 1)
 
         layout.addLayout(edit_layout)
+        self.centralWidget().setLayout(layout)
 
-        bt_layout = QHBoxLayout()
-        save_bt = QPushButton('Save')
-        save_bt.clicked.connect(self.save_edu)
-        bt_layout.addWidget(save_bt)
-
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(self.close)
-        bt_layout.addWidget(close_bt)
-        layout.addLayout(bt_layout)
-
-        self.setLayout(layout)
+    def update_ui(self):
+        self.name_ledit.setText(self.edu['name'])
+        self.meeg_check_list.replace_checked(self.edu['meeg'])
+        self.fsmri_check_list.replace_checked(self.edu['fsmri'])
+        self.group_check_list.replace_checked(self.edu['groups'])
+        self.func_check_list.replace_checked(self.edu['functions'])
+        self.format_cmbx.setCurrentText(self.edu['format'])
+        self.page_list.replace_data(self.edu['tour_list'])
+        self.page_list.replace_check_dict(self.edu['tour'])
+        self.page_edit.clear()
+        self.page_display.clear()
 
     def name_changed(self, text):
         if text != '':
@@ -172,6 +184,13 @@ class EducationEditor(QDialog):
             self.page_edit.clear()
             self.page_display.clear()
 
+    def page_edited(self, new_page_name, index):
+        # Rename key in dictionary
+        old_page_name = list(self.edu['tour'].keys())[index.row()]
+        self.edu['tour'] = {new_page_name if k == old_page_name else k: v for k, v in self.edu['tour'].items()}
+        # Reference to dictionary gets lost above
+        self.page_list.replace_check_dict(self.edu['tour'])
+
     def page_text_changed(self):
         current_page = self.page_list.get_current()
         text = self.page_edit.toPlainText()
@@ -179,17 +198,26 @@ class EducationEditor(QDialog):
         if text != '':
             self.edu['tour'][current_page] = text
 
-    def save_edu(self):
+    def load_edu_file(self):
+        file_path = QFileDialog().getOpenFileName(self, directory=self.edu_folder)[0]
+        if file_path != '':
+            with open(file_path, 'r') as file:
+                self.edu = json.load(file)
+
+        self.update_ui()
+
+    def save_edu_file(self):
         if len(self.edu['meeg']) > 0:
             self.edu['dock_kwargs']['meeg_view'] = True
         if len(self.edu['fsmri']) > 0:
             self.edu['dock_kwargs']['fsmri_view'] = True
+        if len(self.edu['groups']) > 0:
+            self.edu['dock_kwargs']['group_view'] = True
 
-        edu_folder = join(self.mw.home_path, 'edu_programs')
-        if not isdir(edu_folder):
-            makedirs(edu_folder)
+        if not isdir(self.edu_folder):
+            makedirs(self.edu_folder)
 
-        edu_path = join(edu_folder, f'{self.edu["name"]}-edu.json')
+        edu_path = join(self.edu_folder, f'{self.edu["name"]}-edu.json')
         with open(edu_path, 'w') as file:
             json.dump(self.edu, file, indent=4)
 

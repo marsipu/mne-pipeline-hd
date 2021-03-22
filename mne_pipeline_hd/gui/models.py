@@ -44,11 +44,13 @@ class BaseListModel(QAbstractListModel):
         return self._data[index.row()]
 
     def data(self, index, role=None):
-        if role == Qt.DisplayRole or role == Qt.EditRole:
+        if role == Qt.DisplayRole:
             if self.show_index:
                 return f'{index.row()}: {self.getData(index)}'
             else:
                 return str(self.getData(index))
+        elif role == Qt.EditRole:
+            return str(self.getData(index))
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data)
@@ -220,11 +222,13 @@ class CheckDictModel(BaseListModel):
         self.no_bt = no_bt or QStyle.SP_DialogCancelButton
 
     def data(self, index, role=None):
-        if role == Qt.DisplayRole or role == Qt.EditRole:
+        if role == Qt.DisplayRole:
             if self.show_index:
                 return f'{index.row()}: {self.getData(index)}'
             else:
                 return str(self.getData(index))
+        elif role == Qt.EditRole:
+            return str(self.getData(index))
 
         elif role == Qt.DecorationRole:
             if self.getData(index) in self._check_dict:
