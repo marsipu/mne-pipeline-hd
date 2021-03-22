@@ -6,7 +6,8 @@ pandas
 https://api.github.com/repos/autoreject/autoreject/zipball/master
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 qdarkstyle
-pygments
+pyqode.core
+pyqode.python
 
 # Requirement for deployment (only source-space)
 PyQtWebEngine

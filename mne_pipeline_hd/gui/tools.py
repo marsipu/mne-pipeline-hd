@@ -25,7 +25,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleDialog, SimpleList
-from mne_pipeline_hd.gui.gui_utils import Worker, set_ratio_geometry, get_exception_tuple
+from mne_pipeline_hd.gui.gui_utils import CodeEditor, Worker, set_ratio_geometry, get_exception_tuple
 from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 
@@ -138,7 +138,7 @@ class DataTerminal(QDialog):
         self.layout.addWidget(self.displayw)
 
         self.sub_layout = QGridLayout()
-        self.inputw = QTextEdit()
+        self.inputw = CodeEditor()
         self.inputw.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum))
         self.sub_layout.addWidget(self.inputw, 0, 0, 3, 1)
 

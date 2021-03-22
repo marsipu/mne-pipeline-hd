@@ -31,42 +31,9 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QSizePolicy, QStyle,
                              QTabWidget, QTextEdit, QVBoxLayout)
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleList
-from mne_pipeline_hd.gui.gui_utils import ErrorDialog, get_exception_tuple, set_ratio_geometry
+from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleDialog, SimpleList
+from mne_pipeline_hd.gui.gui_utils import CodeEditor, ErrorDialog, center, get_exception_tuple, set_ratio_geometry
 from mne_pipeline_hd.gui.models import CustomFunctionModel
-
-
-# ToDo: Syntax-Highlighting
-class CodeView(QDialog):
-    def __init__(self, cf_dialog):
-        super().__init__(cf_dialog)
-        self.cf = cf_dialog
-
-        self.init_ui()
-        set_ratio_geometry(0.5, self)
-        self.show()
-
-    def update_code(self):
-        self.code_display.clear()
-        self.code_display.insertPlainText(self.cf.code_dict[self.cf.current_function])
-
-    def init_ui(self):
-        layout = QVBoxLayout()
-
-        self.code_display = QTextEdit()
-        self.code_display.setReadOnly(True)
-        self.update_code()
-        layout.addWidget(self.code_display)
-
-        close_bt = QPushButton('Close')
-        close_bt.clicked.connect(self.close)
-        layout.addWidget(close_bt)
-
-        self.setLayout(layout)
-
-    def closeEvent(self, event):
-        self.cf.code_view = None
-        event.accept()
 
 
 class EditGuiArgsDlg(QDialog):
@@ -160,7 +127,7 @@ class CustomFunctionImport(QDialog):
         self.exst_parameters += list(self.mw.pr.parameters[self.mw.pr.p_preset].keys())
         self.param_exst_dict = dict()
 
-        self.code_view = None
+        self.code_editor = None
         self.code_dict = dict()
 
         # Get available parameter-guis
@@ -448,8 +415,7 @@ class CustomFunctionImport(QDialog):
     def func_item_selected(self, text):
         if text:
             self.current_function = text
-            if self.code_view:
-                self.code_view.update_code()
+            self.update_code_editor()
             self.update_func_setup()
 
             if any([self.current_function in str(x) for x in self.add_pd_params['functions']]):
@@ -468,8 +434,7 @@ class CustomFunctionImport(QDialog):
     def param_item_selected(self, current):
         self.current_parameter = self.param_model.getData(current)
         self.update_param_setup()
-        if self.code_view:
-            self.code_view.update_code()
+        self.update_code_editor()
 
     def update_func_setup(self):
         if pd.notna(self.add_pd_funcs.loc[self.current_function, 'alias']):
@@ -812,8 +777,18 @@ class CustomFunctionImport(QDialog):
         if self.current_parameter and pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_type']):
             TestParamGui(self)
 
+    def update_code_editor(self):
+        if self.code_editor:
+            self.code_editor.clear()
+            self.code_editor.insertPlainText(self.code_dict[self.current_function])
+
     def show_code(self):
-        self.code_view = CodeView(self)
+        self.code_editor = CodeEditor(self)
+        self.code_editor.setReadOnly(True)
+        self.update_code_editor()
+        code_dialog = SimpleDialog(self.code_editor, parent=self, modal=False, window_title='Source-Code')
+        set_ratio_geometry(0.5, code_dialog)
+        center(code_dialog)
 
     def save_pkg(self):
         if any(self.add_pd_funcs['ready'] == 1):
@@ -972,8 +947,8 @@ class ImportFuncs(QDialog):
         self.load_selected_functions()
         self.cf.update_func_cmbx()
         self.cf.update_exst_param_label()
-        if self.cf.code_view:
-            self.cf.code_view.update_code()
+        if self.cf.code_editor:
+            self.cf.code_editor.update_code()
         event.accept()
 
 

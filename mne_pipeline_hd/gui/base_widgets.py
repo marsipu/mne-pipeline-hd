@@ -1064,13 +1064,17 @@ class DictTree(Base):
 
 
 class SimpleDialog(QDialog):
-    def __init__(self, widget, parent=None, modal=True, scroll=False, title=None, show_close_bt=True):
+    def __init__(self, widget, parent=None, modal=True, scroll=False, title=None, window_title=None,
+                 show_close_bt=True):
         super().__init__(parent)
 
         layout = QVBoxLayout()
 
         if title:
             layout.addWidget(QLabel(title))
+
+        if window_title:
+            self.setWindowTitle(window_title)
 
         if scroll:
             scroll_area = QScrollArea()
