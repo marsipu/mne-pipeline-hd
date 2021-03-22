@@ -51,8 +51,9 @@ class EducationTour(QWizard):
                 page_view.setPlainText(text)
             elif self.edu['format'] == 'HTML':
                 page_view.setHtml(text)
-            elif self.edu['format'] == 'Markdown':
-                page_view.setMarkdown(text)
+            # Not supported until PyQt>=5.14
+            # elif self.edu['format'] == 'Markdown':
+            #     page_view.setMarkdown(text)
             layout.addWidget(page_view)
             page.setLayout(layout)
 
@@ -117,7 +118,7 @@ class EducationEditor(QMainWindow):
         page_label = QLabel('Make a Tour:')
         page_label.setFont(QFont('AnyStyle', 14))
         self.format_cmbx = QComboBox()
-        self.format_cmbx.addItems(['PlainText', 'HTML', 'Markdown'])
+        self.format_cmbx.addItems(['PlainText', 'HTML'])
         self.format_cmbx.currentTextChanged.connect(self.format_changed)
         self.format_cmbx.setCurrentText('PlainText')
         layout.addWidget(self.format_cmbx)
@@ -171,8 +172,9 @@ class EducationEditor(QMainWindow):
             self.page_display.setPlainText(text)
         elif self.edu['format'] == 'HTML':
             self.page_display.setHtml(text)
-        elif self.edu['format'] == 'Markdown':
-            self.page_display.setMarkdown(text)
+        # Not supported until PyQt>=5.14
+        # elif self.edu['format'] == 'Markdown':
+        #     self.page_display.setMarkdown(text)
 
     def page_changed(self, page_name):
         if page_name in self.edu['tour']:
