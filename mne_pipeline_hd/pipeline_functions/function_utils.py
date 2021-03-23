@@ -142,15 +142,11 @@ class RunDialog(QDialog):
         self.paused = False
 
     def init_lists(self):
-        # Make sure, every function is in sel_functions
-        for func in [f for f in self.mw.pd_funcs.index if f not in self.mw.pr.sel_functions]:
-            self.mw.pr.sel_functions[func] = 0
-
         # Lists of selected functions divided into object-types (MEEG, FSMRI, ...)
-        self.sel_fsmri_funcs = [mf for mf in self.mw.fsmri_funcs.index if self.mw.pr.sel_functions[mf]]
-        self.sel_meeg_funcs = [ff for ff in self.mw.meeg_funcs.index if self.mw.pr.sel_functions[ff]]
-        self.sel_group_funcs = [gf for gf in self.mw.group_funcs.index if self.mw.pr.sel_functions[gf]]
-        self.sel_other_funcs = [of for of in self.mw.other_funcs.index if self.mw.pr.sel_functions[of]]
+        self.sel_fsmri_funcs = [mf for mf in self.mw.fsmri_funcs.index if mf in self.mw.pr.sel_functions]
+        self.sel_meeg_funcs = [ff for ff in self.mw.meeg_funcs.index if ff in self.mw.pr.sel_functions]
+        self.sel_group_funcs = [gf for gf in self.mw.group_funcs.index if gf in self.mw.pr.sel_functions]
+        self.sel_other_funcs = [of for of in self.mw.other_funcs.index if of in self.mw.pr.sel_functions]
 
         # Get a dict with all objects paired with their functions and their type-definition
         # Give all objects and functions in all_objects the status 1 (which means pending)

@@ -650,15 +650,6 @@ class MainWindow(QMainWindow):
 
         # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
         if len(cleaned_pd_funcs) != 0:
-
-            # Remove functions from sel_functions, which are not present in cleaned_pd_funcs
-            for f_rm in [f for f in self.pr.sel_functions if f not in cleaned_pd_funcs.index]:
-                self.pr.sel_functions.pop(f_rm)
-
-            # Add functions from cleaned_pd_funcs, which are not present in sel_functions
-            for f_add in [f for f in cleaned_pd_funcs.index if f not in self.pr.sel_functions]:
-                self.pr.sel_functions[f_add] = 0
-
             tabs_grouped = cleaned_pd_funcs.groupby('tab')
             # Add tabs
             for tab_name, group in tabs_grouped:
@@ -685,7 +676,7 @@ class MainWindow(QMainWindow):
                         pb = QPushButton(alias_name)
                         pb.setCheckable(True)
                         self.bt_dict[function] = pb
-                        if self.pr.sel_functions[function]:
+                        if function in self.pr.sel_functions:
                             pb.setChecked(True)
                         pb.clicked.connect(partial(self.func_selected, function))
                         group_box_layout.addWidget(pb)
@@ -719,25 +710,27 @@ class MainWindow(QMainWindow):
         self.update_func_bts()
         self.parameters_dock.update_parameters_widget()
 
+    def _update_selected_functions(self, function, checked):
+        if checked:
+            if function not in self.pr.sel_functions:
+                self.pr.sel_functions.append(function)
+        elif function in self.pr.sel_functions:
+            self.pr.sel_functions.remove(function)
+
     def func_selected(self, function):
-        if self.bt_dict[function].isChecked():
-            self.pr.sel_functions[function] = 1
-        else:
-            self.pr.sel_functions[function] = 0
+        self._update_selected_functions(function, self.bt_dict[function].isChecked())
 
     def func_group_toggled(self):
         for function in self.bt_dict:
-            if self.bt_dict[function].isChecked() and self.bt_dict[function].isEnabled():
-                self.pr.sel_functions[function] = 1
-            else:
-                self.pr.sel_functions[function] = 0
+            self._update_selected_functions(function,
+                                            self.bt_dict[function].isChecked() and
+                                            self.bt_dict[function].isEnabled())
 
     def update_selected_funcs(self):
         for function in self.bt_dict:
             self.bt_dict[function].setChecked(False)
             if function in self.pr.sel_functions:
-                if self.pr.sel_functions[function]:
-                    self.bt_dict[function].setChecked(True)
+                self.bt_dict[function].setChecked(True)
 
     def init_docks(self):
         if self.edu_program:
@@ -792,7 +785,7 @@ class MainWindow(QMainWindow):
     def clear(self):
         for x in self.bt_dict:
             self.bt_dict[x].setChecked(False)
-            self.pr.sel_functions[x] = 0
+        self.pr.sel_functions.clear()
 
     def _prepare_start(self, worker_signals):
         # Save Main-Window-Settings and project before possible Errors happen

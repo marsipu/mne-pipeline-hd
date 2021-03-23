@@ -92,7 +92,7 @@ class Project:
         # Stores paths of saved plots
         self.plot_files = dict()
         # Stores functions and if they are selected
-        self.sel_functions = dict()
+        self.sel_functions = list()
         # Stores additional keyword-arguments for functions by function-name
         self.add_kwargs = dict()
         # Stores parameters for each Parameter-Preset
@@ -189,15 +189,19 @@ class Project:
                           self.sel_functions_path: self.old_sel_funcs_path}
 
         for path in [p for p in self.path_to_attribute if self.path_to_attribute[p] not in self.special_loads]:
+            attribute_name = self.path_to_attribute[path]
             try:
                 with open(path, 'r') as file:
-                    setattr(self, self.path_to_attribute[path], json.load(file, object_hook=type_json_hook))
+                    loaded_attribute = json.load(file, object_hook=type_json_hook)
+                    # Make sure, that loaded object has same type as default from __init__
+                    if isinstance(loaded_attribute, type(getattr(self, attribute_name))):
+                        setattr(self, attribute_name, loaded_attribute)
             # Either empty file or no file, leaving default from __init__
             except (json.JSONDecodeError, FileNotFoundError):
                 # Old Paths to allow transition (22.11.2020)
                 try:
                     with open(self.old_paths[path], 'r') as file:
-                        setattr(self, self.path_to_attribute[path], json.load(file, object_hook=type_json_hook))
+                        setattr(self, attribute_name, json.load(file, object_hook=type_json_hook))
                 except (json.JSONDecodeError, FileNotFoundError, KeyError):
                     pass
 
