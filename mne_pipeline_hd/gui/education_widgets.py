@@ -72,7 +72,7 @@ class EducationEditor(QMainWindow):
         self.edu['meeg'] = self.mw.pr.sel_meeg.copy()
         self.edu['fsmri'] = self.mw.pr.sel_fsmri.copy()
         self.edu['groups'] = self.mw.pr.sel_groups.copy()
-        self.edu['functions'] = [f for f in self.mw.pr.sel_functions if self.mw.pr.sel_functions[f]]
+        self.edu['functions'] = [f for f in self.mw.pr.sel_functions if f in self.mw.pr.sel_functions]
         self.edu['dock_kwargs'] = {'meeg_view': False, 'fsmri_view': False, 'group_view': False}
         self.edu['format'] = 'PlainText'
         self.edu['tour_list'] = list()
