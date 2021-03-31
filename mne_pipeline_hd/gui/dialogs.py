@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (QComboBox, QDialog, QDockWidget, QGridLayout, QHBox
                              QScrollArea, QSizePolicy, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
-from mne_pipeline_hd.gui.gui_utils import WorkerDialog, set_ratio_geometry
+from mne_pipeline_hd.gui.gui_utils import WorkerDialog, get_exception_tuple, set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
 from mne_pipeline_hd.gui.parameter_widgets import BoolGui, StringGui
 from mne_pipeline_hd.pipeline_functions import iswin
@@ -412,8 +412,14 @@ class ParametersDock(QDockWidget):
                     gui_args = {}
 
                 gui_handle = getattr(parameter_widgets, gui_name)
-                self.param_guis[idx] = gui_handle(self.mw, param_name=idx, param_alias=param_alias,
-                                                  default=default, description=description, param_unit=unit, **gui_args)
+                try:
+                    self.param_guis[idx] = gui_handle(self.mw, param_name=idx, param_alias=param_alias,
+                                                      default=default, description=description, param_unit=unit,
+                                                      **gui_args)
+                except:
+                    err_tuple = get_exception_tuple()
+                    raise RuntimeError(f'Initiliazation of Parameter-Widget "{idx}" failed:\n'
+                                       f'{err_tuple[1]}')
 
                 layout.addWidget(self.param_guis[idx])
 
