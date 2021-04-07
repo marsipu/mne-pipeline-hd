@@ -581,9 +581,9 @@ class MainWindow(QMainWindow):
         self.project_tools()
         self.toolbar.addSeparator()
 
-        self.toolbar.addWidget(IntGui(self.qsettings, 'n_threads', min_val=1,
-                                      description='Set to the amount of threads you want to run simultaneously '
-                                                  'in the pipeline', default=1, groupbox_layout=False))
+        # self.toolbar.addWidget(IntGui(self.qsettings, 'n_threads', min_val=1,
+        #                               description='Set to the amount of threads you want to run simultaneously '
+        #                                           'in the pipeline', default=1, groupbox_layout=False))
         self.toolbar.addWidget(IntGui(self.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
                                       description='Set to the amount of (virtual) cores of your machine '
                                                   'you want to use for multiprocessing', default=-1,
