@@ -466,8 +466,17 @@ class MEEG(BaseLoading):
                 print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
         else:
             all_event_id = self.mw.pr.meeg_event_id[self.name]
-            self.event_id = {key: value for key, value in all_event_id.items() if key in self.sel_trials}
+            event_id = dict()
+            for key, value in all_event_id.items():
+                if '/' in key:
+                    key_list = key.split('/')
+                else:
+                    key_list = [key]
 
+                new_id = '/'.join([k for k in key_list if k in self.sel_trials])
+                event_id[new_id] = value
+
+            self.event_id = event_id
 
     def init_paths(self):
         """Load Paths as attributes (depending on which Parameter-Preset is selected)"""
