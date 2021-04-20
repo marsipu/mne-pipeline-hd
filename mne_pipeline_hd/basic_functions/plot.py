@@ -233,7 +233,6 @@ def plot_evoked_butterfly(meeg, apply_proj, show_plots):
     titles_dict = {'eeg': f'{meeg.name} - EEG'}
     evoked_figs = list()
     for evoked in evokeds:
-
         fig = evoked.plot(spatial_colors=True, proj=apply_proj, titles=titles_dict,
                           window_title=meeg.name + ' - ' + evoked.comment,
                           selectable=True, gfp=True, zorder='std', show=show_plots)
@@ -357,31 +356,35 @@ def plot_noise_covariance(meeg, show_plots):
     meeg.plot_save('noise-covariance', subfolder='svd-spectra', matplotlib_figure=fig2)
 
 
-def brain_plot(meeg, stcs, folder_name, subject, mne_evoked_time):
-    backend = mne.viz.get_3d_backend()
+def brain_plot(meeg, stcs, folder_name, subject, mne_evoked_time=None):
+    # backend = mne.viz.get_3d_backend()
+    # mne_evoked_time = mne_evoked_time or list()
+    mne.viz.use_3d_backend('pyvista')
     for trial in stcs:
         stc = stcs[trial]
-        file_patternlh = join(meeg.figures_path, meeg.p_preset, folder_name, trial,
-                              f'{meeg.name}-{trial}_{meeg.p_preset}_lh-%s{meeg.img_format}')
-        file_patternrh = join(meeg.figures_path, meeg.p_preset, folder_name, trial,
-                              f'{meeg.name}-{trial}_{meeg.p_preset}_rh-%s{meeg.img_format}')
-        # Check, if folder exists
-        parent_path = Path(file_patternlh).parent
-        if not isdir(parent_path):
-            makedirs(parent_path)
-
-        if backend == 'mayavi':
-            brain = stc.plot(subject=subject, surface='inflated', subjects_dir=meeg.subjects_dir,
-                             hemi='lh', title=f'{meeg.name}-{trial}-lh')
-            brain.save_image_sequence(mne_evoked_time, fname_pattern=file_patternlh)
-            brain = stc.plot(subject=subject, surface='inflated', subjects_dir=meeg.subjects_dir,
-                             hemi='rh', title=f'{meeg.name}-{trial}-lh')
-            brain.save_image_sequence(mne_evoked_time, fname_pattern=file_patternrh)
-
-        else:
-            stc.plot(subject=meeg.fsmri.name, surface='inflated', subjects_dir=meeg.subjects_dir,
-                     hemi='split', title=f'{meeg.name}-{trial}', size=(1200, 600),
-                     initial_time=0)
+        # file_patternlh = join(meeg.figures_path, meeg.p_preset, folder_name, trial,
+        #                       f'{meeg.name}-{trial}_{meeg.p_preset}_lh-%s{meeg.img_format}')
+        # file_patternrh = join(meeg.figures_path, meeg.p_preset, folder_name, trial,
+        #                       f'{meeg.name}-{trial}_{meeg.p_preset}_rh-%s{meeg.img_format}')
+        # # Check, if folder exists
+        # parent_path = Path(file_patternlh).parent
+        # if not isdir(parent_path):
+        #     makedirs(parent_path)
+        #
+        # if backend == 'mayavi':
+        #     brain = stc.plot(subject=subject, surface='inflated', subjects_dir=meeg.subjects_dir,
+        #                      hemi='lh', title=f'{meeg.name}-{trial}-lh')
+        #     brain.save_image_sequence(mne_evoked_time, fname_pattern=file_patternlh)
+        #     brain = stc.plot(subject=subject, surface='inflated', subjects_dir=meeg.subjects_dir,
+        #                      hemi='rh', title=f'{meeg.name}-{trial}-lh')
+        #     brain.save_image_sequence(mne_evoked_time, fname_pattern=file_patternrh)
+        #
+        # else:
+        brain = stc.plot(subject=subject, surface='inflated', subjects_dir=meeg.subjects_dir,
+                         hemi='split', title=f'{meeg.name}-{trial}', size=(1200, 600),
+                         initial_time=0)
+        brain.save_image(join(meeg.figures_path, meeg.p_preset, folder_name, trial,
+                              f'{meeg.name}-{trial}_{meeg.p_preset}{meeg.img_format}'))
 
 
 def plot_stc(meeg, mne_evoked_time):
@@ -604,10 +607,7 @@ def plot_grand_avg_tfr(group, show_plots):
 
 def plot_grand_avg_stc(group, morph_to):
     ga_stcs = group.load_ga_stc()
-    for trial in ga_stcs:
-        ga_stc = ga_stcs[trial]
-        brain = ga_stc.plot(subject=morph_to)
-        brain.add_text(0.4, 0.9, f'{group.name}-{trial}')
+    brain_plot(group, ga_stcs, 'ga_source_estimate', morph_to, )
 
 
 def plot_grand_avg_stc_anim(group, stc_animation, stc_animation_dilat, morph_to):
