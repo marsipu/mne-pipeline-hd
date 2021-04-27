@@ -51,7 +51,8 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length, l_trans_b
         data = meeg.io_dict[filter_target]['load']()
 
         # use cuda for filtering if enabled
-        if enable_cuda == 'true':
+        if enable_cuda:
+            mne.cuda.init_cuda(ignore_config=True)
             n_jobs = 'cuda'
 
         # Filter Data
