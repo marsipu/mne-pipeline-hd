@@ -138,7 +138,9 @@ class DataTerminal(QDialog):
         self.layout.addWidget(self.displayw)
 
         self.sub_layout = QGridLayout()
-        self.inputw = CodeEditor()
+        # Todo: Fix error causing crash
+        # self.inputw = CodeEditor()
+        self.inputw = QTextEdit()
         self.inputw.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum))
         self.sub_layout.addWidget(self.inputw, 0, 0, 3, 1)
 
