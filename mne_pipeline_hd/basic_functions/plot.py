@@ -383,8 +383,7 @@ def brain_plot(meeg, stcs, folder_name, subject, mne_evoked_time=None):
         brain = stc.plot(subject=subject, surface='inflated', subjects_dir=meeg.subjects_dir,
                          hemi='split', title=f'{meeg.name}-{trial}', size=(1200, 600),
                          initial_time=0)
-        brain.save_image(join(meeg.figures_path, meeg.p_preset, folder_name, trial,
-                              f'{meeg.name}-{trial}_{meeg.p_preset}{meeg.img_format}'))
+        meeg.plot_save(folder_name, trial=trial, brain=brain)
 
 
 def plot_stc(meeg, mne_evoked_time):
