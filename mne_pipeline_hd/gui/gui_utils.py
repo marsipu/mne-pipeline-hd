@@ -20,7 +20,7 @@ from email.mime.text import MIMEText
 from inspect import signature
 
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
                              QProgressBar, QPushButton, QScrollArea, QTextEdit, QVBoxLayout)
 from pyqode.core.api import ColorScheme
@@ -433,7 +433,9 @@ class WorkerDialog(QDialog):
         layout = QVBoxLayout()
 
         if self.title:
-            layout.addWidget(QLabel(self.title))
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyType', 18, QFont.Bold))
+            layout.addWidget(title_label)
 
         self.progress_label = QLabel()
         self.progress_label.hide()

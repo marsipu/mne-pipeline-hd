@@ -25,7 +25,8 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleDialog, SimpleList
-from mne_pipeline_hd.gui.gui_utils import CodeEditor, Worker, set_ratio_geometry, get_exception_tuple
+from mne_pipeline_hd.gui.gui_utils import CodeEditor, ConsoleWidget, Worker, WorkerDialog, set_ratio_geometry, \
+    get_exception_tuple
 from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 
@@ -102,7 +103,7 @@ class DataTerminal(QDialog):
                              'inv_op': 'load_inverse_operator',
                              'stc': 'load_source_estimates'}
 
-        sys.stdout.signal.text_written.connect(self.update_label)
+        # sys.stdout.signal.text_written.connect(self.update_label)
 
         set_ratio_geometry(0.7, self)
 
@@ -133,14 +134,11 @@ class DataTerminal(QDialog):
 
         self.layout.addLayout(bt_layout)
 
-        self.displayw = QTextEdit()
-        self.displayw.setReadOnly(True)
+        self.displayw = ConsoleWidget()
         self.layout.addWidget(self.displayw)
 
         self.sub_layout = QGridLayout()
-        # Todo: Fix error causing crash
-        # self.inputw = CodeEditor()
-        self.inputw = QTextEdit()
+        self.inputw = CodeEditor()
         self.inputw.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum))
         self.sub_layout.addWidget(self.inputw, 0, 0, 3, 1)
 
@@ -176,7 +174,7 @@ class DataTerminal(QDialog):
         try:
             self.obj = MEEG(name, self.mw)
         except:
-            self.print_exception()
+            get_exception_tuple()
             # Return ComboBox to previous state
             if self.obj is None:
                 self.sub_cmbx.setCurrentIndex(-1)
@@ -187,59 +185,33 @@ class DataTerminal(QDialog):
             for key in [k for k in self.t_globals.keys() if k not in self.default_t_globals]:
                 self.t_globals.pop(key)
             self.t_globals['obj'] = self.obj
-            self.displayw.clear()
             self.displayw.insertHtml(f'<b>Subject: {self.obj.name} loaded</b><br>')
             self.displayw.ensureCursorVisible()
 
     def load_bt_pressed(self, bt_name):
+        worker_dialog = WorkerDialog(self, self.start_load,
+                                     title=f'Loading {bt_name}...', bt_name=bt_name)
+        worker_dialog.thread_finished.connect(self.finished_handling)
 
-        self.load_dlg = QDialog(self)
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel(f'<h1>Loading {bt_name}...</h1>'))
-        self.load_dlg.setLayout(layout)
-        self.load_dlg.open()
-        worker = Worker(self.start_load, bt_name)
-        worker.signals.finished.connect(self.finished_handling)
-        worker.signals.error.connect(self.error_handling)
-        self.mw.threadpool.start(worker)
-
-    def error_handling(self, _):
-        self.load_dlg.close()
-        self.print_exception()
-
-    def finished_handling(self, _):
-        self.load_dlg.close()
+    def finished_handling(self, result_msg):
+        self.displayw.insertHtml(result_msg)
+        self.displayw.ensureCursorVisible()
 
     def start_load(self, bt_name):
         try:
             load_fn = getattr(self.obj, self.load_mapping[bt_name])
             self.t_globals[bt_name] = load_fn()
         except (FileNotFoundError, OSError):
-            self.displayw.insertHtml(f'<b><center>No file found for {bt_name}</center></b><br>')
-            self.displayw.ensureCursorVisible()
+            result_msg = f'<b><center>No file found for {bt_name}</center></b><br>'
         else:
-            # To avoid (visual) print-conflicts
-            sleep(0.01)
-            self.displayw.insertHtml(f'<b><big><center>{bt_name} loaded (namespace = {bt_name})</center></big></b><br>')
-            self.displayw.ensureCursorVisible()
+            result_msg = f'<b><big><center>{bt_name} loaded (namespace = {bt_name})</center></big></b><br>'
 
-    def update_label(self, text):
-        self.displayw.insertPlainText(text)
-        self.displayw.ensureCursorVisible()
-
-    def print_exception(self, exc_tuple=None):
-        exc_tuple = exc_tuple or get_exception_tuple()
-        formated_tb_text = exc_tuple[2].replace('\n', '<br>')
-        html_text = f'<b>{exc_tuple[0]}</b><br>' \
-                    f'<b>{exc_tuple[1]}</b><br>' \
-                    f'{formated_tb_text}'
-        self.displayw.insertHtml(html_text)
-        self.displayw.ensureCursorVisible()
+        return result_msg
 
     def start_execution(self):
         command = self.inputw.toPlainText()
         command_html = command.replace('\n', '<br>')
-        self.displayw.insertHtml(f'<b><i>{command_html}</i></b><br>')
+        self.displayw.insertHtml(f'<font color="blue"><b><i>{command_html}</i></b></font><br>')
         self.displayw.ensureCursorVisible()
         self.history.insert(0, command)
 
@@ -249,11 +221,11 @@ class DataTerminal(QDialog):
             try:
                 exec(command, self.t_globals)
             except:
-                self.print_exception()
+                get_exception_tuple()
             else:
                 self.inputw.clear()
         except:
-            self.print_exception()
+            get_exception_tuple()
         else:
             self.inputw.clear()
 

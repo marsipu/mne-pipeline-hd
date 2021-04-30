@@ -19,6 +19,7 @@
     "qsettings": {
         "n_jobs": -1,
         "n_threads": 1,
-        "save_ram": true
+        "save_ram": true,
+        "enable_cuda": false
     }
 }
