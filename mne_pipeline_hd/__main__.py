@@ -10,11 +10,13 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import logging
 import os
 import sys
+from importlib import resources
 from inspect import getsourcefile
 from os.path import abspath
 from pathlib import Path
 
 from PyQt5.QtCore import QSettings, QTimer, Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
 
 # Enable start also when not installed via pip (e.g. for development)
@@ -39,6 +41,15 @@ def main():
     app.setApplicationName(app_name)
     app.setOrganizationName(organization_name)
     app.setOrganizationDomain(domain_name)
+
+    # Set Window-Icon
+    if QSettings().value('dark_mode') == 'true':
+        icon_name = 'mne_pipeline_icon_dark.png'
+    else:
+        icon_name = 'mne_pipeline_icon_light.png'
+    with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
+        app_icon = QIcon(str(icon_path))
+    app.setWindowIcon(app_icon)
 
     try:
         app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)

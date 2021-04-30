@@ -23,7 +23,7 @@ import mne
 import pandas as pd
 import qdarkstyle
 from PyQt5.QtCore import QSettings, QThreadPool, Qt, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
@@ -318,7 +318,13 @@ class MainWindow(QMainWindow):
         self.qsettings.clear()
         for qsetting in self.default_settings['qsettings']:
             if qsetting in QSettings().childKeys():
-                self.qsettings[qsetting] = QSettings().value(qsetting)
+                # Parse QSettings-Values
+                loaded_value = QSettings().value(qsetting)
+                if loaded_value == 'true':
+                    loaded_value = True
+                elif loaded_value == 'false':
+                    loaded_value = False
+                self.qsettings[qsetting] = loaded_value
             else:
                 default_qsetting = self.default_settings['qsettings'][qsetting]
                 self.qsettings[qsetting] = default_qsetting
@@ -550,7 +556,7 @@ class MainWindow(QMainWindow):
 
         self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
         self.adark_mode.setCheckable(True)
-        if self.get_setting('dark_mode'):
+        if self.qsettings['dark_mode']:
             self.adark_mode.setChecked(True)
             self.dark_mode()
         else:
@@ -748,10 +754,15 @@ class MainWindow(QMainWindow):
     def dark_mode(self):
         if self.adark_mode.isChecked():
             self.app.setStyleSheet(self.dark_sheet)
-            self.settings['dark_mode'] = True
+            self.qsettings['dark_mode'] = True
+            icon_name = 'mne_pipeline_icon_dark.png'
         else:
             self.app.setStyleSheet('')
-            self.settings['dark_mode'] = False
+            self.qsettings['dark_mode'] = False
+            icon_name = 'mne_pipeline_icon_light.png'
+        with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
+            app_icon = QIcon(str(icon_path))
+        self.app.setWindowIcon(app_icon)
 
     def full_screen(self):
         if self.isFullScreen():

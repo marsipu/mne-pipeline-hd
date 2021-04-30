@@ -9,24 +9,20 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
-import sys
-import time
 from functools import partial
 from os.path import isfile, join
-from random import random
-from time import sleep
 
-from PyQt5.QtCore import QObject, Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import (QCheckBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
-                             QProgressDialog, QPushButton, QScrollArea, QSpinBox, QTabWidget, QToolBar,
-                             QVBoxLayout, QWidget, QComboBox, QSizePolicy, QTextEdit)
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
+                             QProgressDialog, QPushButton, QScrollArea, QSizePolicy, QSpinBox, QTabWidget, QToolBar,
+                             QVBoxLayout, QWidget)
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
-from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleDialog, SimpleList
-from mne_pipeline_hd.gui.gui_utils import CodeEditor, ConsoleWidget, Worker, WorkerDialog, set_ratio_geometry, \
-    get_exception_tuple
+from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
+from mne_pipeline_hd.gui.gui_utils import CodeEditor, ConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
+    set_ratio_geometry
 from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 
