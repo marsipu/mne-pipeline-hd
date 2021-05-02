@@ -542,9 +542,10 @@ class MainWindow(QMainWindow):
 
         # Education
         education_menu = self.menuBar().addMenu('&Education')
-        education_menu.addAction('&Start Education-Tour', self.start_edu)
         if self.edu_program is None:
             education_menu.addAction('&Education-Editor', partial(EducationEditor, self))
+        else:
+            education_menu.addAction('&Start Education-Tour', self.start_edu)
 
         # Tools
         tool_menu = self.menuBar().addMenu('&Tools')

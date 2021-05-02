@@ -17,7 +17,7 @@ from shutil import copytree
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-                             QMainWindow, QSizePolicy, QTextBrowser, QVBoxLayout, QWidget, QWizard,
+                             QMainWindow, QSizePolicy, QTextBrowser, QTextEdit, QVBoxLayout, QWidget, QWizard,
                              QWizardPage)
 
 from mne_pipeline_hd.gui.base_widgets import CheckDictEditList, CheckList
@@ -110,7 +110,7 @@ class EducationEditor(QMainWindow):
         self.fsmri_check_list = CheckList(self.mw.pr.all_fsmri, self.edu['fsmri'], title='Select FSMRI')
         select_layout.addWidget(self.fsmri_check_list)
 
-        self.group_check_list = CheckList(self.mw.pr.all_groups, self.edu['groups'], title='Select Groups')
+        self.group_check_list = CheckList(list(self.mw.pr.all_groups.keys()), self.edu['groups'], title='Select Groups')
         select_layout.addWidget(self.group_check_list)
 
         self.func_check_list = CheckList(self.mw.pd_funcs.index, self.edu['functions'], title='Select Functions')
@@ -135,7 +135,7 @@ class EducationEditor(QMainWindow):
         edit_layout = QGridLayout()
         edit_label = QLabel('Edit')
         edit_layout.addWidget(edit_label, 0, 0, alignment=Qt.AlignHCenter)
-        self.page_edit = CodeEditor()
+        self.page_edit = QTextEdit()
         self.page_edit.textChanged.connect(self.page_text_changed)
         edit_layout.addWidget(self.page_edit, 1, 0)
 
@@ -192,10 +192,14 @@ class EducationEditor(QMainWindow):
 
     def page_edited(self, new_page_name, index):
         # Rename key in dictionary
-        old_page_name = list(self.edu['tour'].keys())[index.row()]
-        self.edu['tour'] = {new_page_name if k == old_page_name else k: v for k, v in self.edu['tour'].items()}
-        # Reference to dictionary gets lost above
-        self.page_list.replace_check_dict(self.edu['tour'])
+        try:
+            old_page_name = list(self.edu['tour'].keys())[index.row()]
+        except IndexError:
+            old_page_name = new_page_name
+        if old_page_name in self.edu['tour']:
+            self.edu['tour'][new_page_name] = self.edu['tour'].pop(old_page_name)
+        else:
+            self.edu['tour'][new_page_name] = ''
 
     def page_text_changed(self):
         current_page = self.page_list.get_current()
