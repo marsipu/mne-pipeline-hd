@@ -889,7 +889,12 @@ class MEEG(BaseLoading):
         for trial in self.sel_trials:
             ltcs[trial] = dict()
             for label in self.ltc_paths[trial]:
-                ltcs[trial][label] = np.load(self.ltc_paths[trial][label])
+                ltc_path = self.ltc_paths[trial][label]
+                if isfile(ltc_path):
+                    ltcs[trial][label] = np.load(ltc_path)
+                else:
+                    raise FileNotFoundError(f'No Label-Time-Course found '
+                                            f'for trial {trial} in label {label}')
 
         return ltcs
 

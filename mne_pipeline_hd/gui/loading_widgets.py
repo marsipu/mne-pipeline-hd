@@ -1870,7 +1870,7 @@ class FileManagment(QDialog):
 
         """
 
-        msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selcted Files?')
+        msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selected Files?')
 
         if msgbx == QMessageBox.Yes:
             WorkerDialog(self, self._file_remover, kind=kind, show_buttons=True, show_console=True,
