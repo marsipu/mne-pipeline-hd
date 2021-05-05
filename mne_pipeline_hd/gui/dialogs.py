@@ -275,7 +275,7 @@ class CopyPDialog(QDialog):
         self.copy_to.replace_data([pp for pp in self.p.keys() if pp != current])
         self.copy_ps.replace_data([p for p in self.p[current]])
 
-    def _copy_finished(self):
+    def _copy_finished(self, _):
         self.pd.update_all_param_guis()
         self.close()
 

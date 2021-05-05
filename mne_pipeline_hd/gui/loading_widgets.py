@@ -1817,17 +1817,9 @@ class FileManagment(QDialog):
                 QMessageBox.information(self, 'All parameters equal!',
                                         'For the selected file all parameters are equal!')
 
-    def _file_remover(self, kind, worker_signals):
-        if kind == 'MEEG':
-            selected_list = self.meeg_table.get_selected()
-        elif kind == 'FSMRI':
-            selected_list = self.fsmri_table.get_selected()
-        else:
-            selected_list = self.group_table.get_selected()
-
-        worker_signals.pgbar_max.emit(len(selected_list))
-
-        for idx, (_, obj_name, path_type) in enumerate(selected_list):
+    def _file_remover(self, selected_files, kind, worker_signals):
+        worker_signals.pgbar_max.emit(len(selected_files))
+        for idx, (_, obj_name, path_type) in enumerate(selected_files):
             if worker_signals.was_canceled:
                 worker_signals.pgbar_text.emit(f'Removing canceled')
                 break
@@ -1836,29 +1828,35 @@ class FileManagment(QDialog):
                 obj_pd = self.pd_meeg
                 obj_pd_time = self.pd_meeg_time
                 obj_pd_size = self.pd_meeg_size
-                obj_table = self.meeg_table
             elif kind == 'FSMRI':
                 obj = FSMRI(obj_name, self.mw)
                 obj_pd = self.pd_fsmri
                 obj_pd_time = self.pd_fsmri_time
                 obj_pd_size = self.pd_fsmri_size
-                obj_table = self.fsmri_table
             else:
                 obj = Group(obj_name, self.mw)
                 obj_pd = self.pd_group
                 obj_pd_time = self.pd_group_time
                 obj_pd_size = self.pd_group_size
-                obj_table = self.group_table
 
             obj_pd.loc[obj_name, path_type] = None
             obj_pd_time.loc[obj_name, path_type] = None
             obj_pd_size.loc[obj_name, path_type] = None
-            obj_table.content_changed()
 
             # Remove File
             worker_signals.pgbar_text.emit(f'Removing: {path_type}')
             obj.remove_path(path_type)
             worker_signals.pgbar_n.emit(idx + 1)
+
+    def _remove_finished(self, kind):
+        # Update Table-Widget
+        if kind == 'MEEG':
+            obj_table = self.meeg_table
+        elif kind == 'FSMRI':
+            obj_table = self.fsmri_table
+        else:
+            obj_table = self.group_table
+        obj_table.content_changed()
 
     def remove_file(self, kind):
         """ Remove the file at the path of the current cell
@@ -1873,8 +1871,15 @@ class FileManagment(QDialog):
         msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selected Files?')
 
         if msgbx == QMessageBox.Yes:
-            WorkerDialog(self, self._file_remover, kind=kind, show_buttons=True, show_console=True,
-                         title='Removing Files')
+            if kind == 'MEEG':
+                selected_files = self.meeg_table.get_selected()
+            elif kind == 'FSMRI':
+                selected_files = self.fsmri_table.get_selected()
+            else:
+                selected_files = self.group_table.get_selected()
+            wd = WorkerDialog(self, self._file_remover, selected_files=selected_files,
+                              kind=kind, show_buttons=True, show_console=True, title='Removing Files')
+            wd.thread_finished.connect(partial(self._remove_finished, kind))
 
 
 class ICASelect(QDialog):
