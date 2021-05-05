@@ -710,7 +710,9 @@ class AddFilesWidget(QWidget):
                 meeg = MEEG(file, self.mw)
 
                 # Get bad-channels from raw-file
-                self.mw.pr.meeg_bad_channels[file] = raw.info['bads']
+                loaded_bads = raw.info['bads']
+                if len(loaded_bads) > 0:
+                    self.mw.pr.meeg_bad_channels[file] = raw.info['bads']
 
                 meeg.save_raw(raw)
                 worker_signals.pgbar_n.emit(n + 1)
