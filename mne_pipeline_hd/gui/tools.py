@@ -190,8 +190,9 @@ class DataTerminal(QDialog):
         worker_dialog.thread_finished.connect(self.finished_handling)
 
     def finished_handling(self, result_msg):
-        self.displayw.insertHtml(result_msg)
-        self.displayw.ensureCursorVisible()
+        if isinstance(result_msg, str):
+            self.displayw.insertHtml(result_msg)
+            self.displayw.ensureCursorVisible()
 
     def start_load(self, bt_name):
         try:
