@@ -180,7 +180,7 @@ class MainWindow(QMainWindow):
         new_project, ok = QInputDialog.getText(self, 'New Project',
                                                'Enter a name for a new project')
         if ok:
-            self.ct.add_project(new_project)
+            self.ct.change_project(new_project)
             self.project_box.addItem(new_project)
             self.project_box.setCurrentText(new_project)
 
@@ -866,7 +866,7 @@ class MainWindow(QMainWindow):
                                           buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
                                           defaultButton=QMessageBox.Yes)
             if answer == QMessageBox.Yes:
-                self.welcome_window.check_home_path()
+                self.welcome_window.check_controller()
                 self.welcome_window.show()
                 if self.edu_tour:
                     self.edu_tour.close()

@@ -14,28 +14,29 @@ from importlib import resources
 from os import listdir
 from os.path import isdir, join
 
-from PyQt5.QtCore import QSettings
+from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMessageBox, QPushButton, \
+from PyQt5.QtWidgets import QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMessageBox, \
+    QPushButton, \
     QVBoxLayout, QWidget
 
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import center
 from mne_pipeline_hd.gui.main_window import MainWindow
+from mne_pipeline_hd.pipeline_functions.controller import Controller
 
 
 class WelcomeWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.qsettings = QSettings()
-        self.mw = None
-        self.home_path = self.qsettings.value('home_path', defaultValue=None)
+        self.controller = Controller()
+        self.main_window = None
         self.education_programs = list()
-        self.education_on = self.qsettings.value('education')
+        self.education_on = QSettings().value('education', defaultValue=False)
 
         self.init_ui()
-        self.check_home_path()
+        self.check_controller()
         self.get_projects()
 
         self.show()
@@ -48,15 +49,29 @@ class WelcomeWindow(QWidget):
         layout.addWidget(title_label)
 
         image_label = QLabel()
-        with resources.path('mne_pipeline_hd.pipeline_resources', 'mne_pipeline_logo_evee_smaller.jpg') as img_path:
+        with resources.path('mne_pipeline_hd.pipeline_resources',
+                            'mne_pipeline_logo_evee_smaller.jpg') as img_path:
             image_label.setPixmap(QPixmap(str(img_path)))
         layout.addWidget(image_label)
 
+        home_layout = QHBoxLayout()
         self.home_path_label = QLabel()
-        layout.addWidget(self.home_path_label)
+        home_layout.addWidget(self.home_path_label, stretch=4)
         home_path_bt = QPushButton('Set Home-Folder')
         home_path_bt.clicked.connect(self.set_home_path)
-        layout.addWidget(home_path_bt)
+        home_layout.addWidget(home_path_bt, alignment=Qt.AlignRight)
+        layout.addLayout(home_layout)
+
+        project_layout = QHBoxLayout()
+        self.project_label = QLabel()
+        project_layout.addWidget(self.project_label)
+        self.project_cmbx = QComboBox()
+        self.project_cmbx.currentTextChanged.connect(self.controller.change_project)
+        project_layout.addWidget(self.project_cmbx)
+        self.project_bt = QPushButton('Add Project')
+        self.project_bt.clicked.connect(self.add_project)
+        project_layout.addWidget(self.project_bt, alignment=Qt.AlignRight)
+        layout.addLayout(project_layout)
 
         self.edu_groupbox = QGroupBox('Education')
         self.edu_groupbox.setCheckable(True)
@@ -85,27 +100,30 @@ class WelcomeWindow(QWidget):
         layout.addLayout(bt_layout)
         self.setLayout(layout)
 
-    def check_home_path(self):
+    def check_controller(self):
         self.start_bt.setEnabled(False)
-        if self.home_path is None or self.home_path == '':
-            self.home_path_label.setText('There was no home_path found!\n'
-                                         'Select a folder as Home-Path')
-        elif not isdir(self.home_path):
-            self.home_path_label.setText(f'{self.home_path} not found!\n'
-                                         f'Select a folder as Home-Path')
+        self.project_cmbx.setEnabled(False)
+        self.project_bt.setEnabled(False)
 
-        # Check, if path is writable
-        elif not os.access(self.home_path, os.W_OK):
-            self.home_path_label.setText(f'{self.home_path} not writable!\n'
-                                         f'Select a folder as Home-Path')
+        if 'home_path' in self.controller.errors:
+            ht = f'{self.controller.errors["home_path"]}\n' \
+                 f'Select a folder as Home-Path!'
+            self.home_path_label.setText(ht)
+
+        elif 'project' in self.controller.errors:
+            self.project_cmbx.setEnabled(True)
+            self.project_bt.setEnabled(True)
+            pt = f'{self.controller.errors["project"]}\n' \
+                 f'Select or add a project!'
+            self.project_label.setText(pt)
 
         else:
-            self.home_path_label.setText(f'{self.home_path} was chosen')
-            self.qsettings.setValue('home_path', self.home_path)
-            print(f'Home-Path: {self.home_path}')
             self.start_bt.setEnabled(True)
+            self.home_path_label.setText(f'{self.home_path} selected')
+            self.project_label.setText(f'{self.current_project} selected')
+            print(f'Home-Path: {self.home_path}')
 
-        if self.home_path is not None:
+            # Add education-programs if there are any
             self.education_programs.clear()
             edu_path = join(self.home_path, 'edu_programs')
             if isdir(edu_path):
@@ -118,42 +136,22 @@ class WelcomeWindow(QWidget):
         loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.home_path} not writable!'
                                                                   f'Select a folder as Home-Path')
         if loaded_home_path != '':
-            self.home_path = str(loaded_home_path)
-
-        self.check_home_path()
-
-    def get_projects(self):
-        # Get current_project
-        self.current_project = self.get_setting('current_project')
-        # Get Project-Folders (recognized by distinct folders)
-        self.projects = [p for p in listdir(self.projects_path)
-                         if all([isdir(join(self.projects_path, p, d))
-                                 for d in ['_pipeline_scripts', 'data', 'figures']])]
-        if len(self.projects) == 0:
-            if self.gui:
-                checking_projects = True
-                while checking_projects:
-                    self.current_project, ok = QInputDialog.getText(self, 'Project-Selection',
-                                                                    f'No projects in {self.home_path} found\n'
-                                                                    'Enter a project-name for your first project')
-                    if ok and self.current_project:
-                        self.projects.append(self.current_project)
-                        self.settings['current_project'] = self.current_project
-                        checking_projects = False
-                    else:
-                        msg_box = QMessageBox.question(self, 'Cancel Start?',
-                                                       'You can\'t start without this step, '
-                                                       'do you want to cancel the start?')
-                        answer = msg_box.exec()
-                        if answer == QMessageBox.Yes:
-                            raise RuntimeError('User canceled start')
-
-        elif self.current_project is None or self.current_project not in self.projects:
-            self.current_project = self.projects[0]
-            self.settings['current_project'] = self.current_project
-
+            self.controller = Controller(str(loaded_home_path))
+            self.check_controller()
         print(f'Projects-found: {self.projects}')
         print(f'Selected-Project: {self.current_project}')
+
+    def update_project_cmbx(self):
+        if hasattr(self.controller, 'projects'):
+            self.project_cmbx.clear()
+            self.project_cmbx.addItems(self.controller.projects)
+
+    def add_project(self):
+        new_project, ok = QInputDialog.getText(self, 'Add Project',
+                                               'Please enter the name of a project!')
+        if ok and new_project != '':
+            self.controller.change_project(new_project)
+            self.update_project_cmbx()
 
     def init_main_window(self):
         sel_edu_program = self.edu_selection.get_current()
@@ -166,9 +164,9 @@ class WelcomeWindow(QWidget):
                                                                 ' please install it before using MNE-Pipeline!')
         else:
             if self.edu_groupbox.isChecked():
-                self.mw = MainWindow(self.home_path, self, sel_edu_program)
+                self.main_window = MainWindow(self.home_path, self, sel_edu_program)
             else:
-                self.mw = MainWindow(self.home_path, self)
+                self.main_window = MainWindow(self.home_path, self)
             self.hide()
 
     def closeEvent(self, event):
