@@ -11,11 +11,14 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import inspect
 import json
+import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
+import psutil
 
 from . import islin, ismac, iswin
 
@@ -173,3 +176,20 @@ def shutdown():
         os.system('sudo shutdown now')
     if ismac:
         os.system('sudo shutdown -h now')
+
+
+def restart_program():
+    """Restarts the current program, with file objects and descriptors
+       cleanup
+       From: https://stackoverflow.com/questions/11329917/restart-python-script-from-within-itself
+    """
+
+    try:
+        p = psutil.Process(os.getpid())
+        for handler in p.open_files() + p.connections():
+            os.close(handler.fd)
+    except Exception as e:
+        logging.getLogger().error(e)
+
+    python = sys.executable
+    os.execl(python, python, *sys.argv)

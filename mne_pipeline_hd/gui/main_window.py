@@ -32,12 +32,13 @@ from .dialogs import (ParametersDock, QuickGuide, RawInfo, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
-from .gui_utils import ErrorDialog, WorkerDialog, center, get_exception_tuple, set_ratio_geometry
+from .gui_utils import ErrorDialog, QProcessDialog, WorkerDialog, center, get_exception_tuple, set_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal, PlotViewSelection
 from .. import basic_functions
+from ..pipeline_functions.pipeline_utils import restart_program
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
 from ..pipeline_functions.controller import Controller
@@ -95,6 +96,8 @@ class MainWindow(QMainWindow):
         self.pipeline_running = False
         # True when Project was saved before closing the MainWindow
         self.project_saved = False
+        # For the closeEvent to avoid showing the MessageBox when restarting
+        self.restarting = False
 
         # Load Education-Program if given
         self.load_edu()
@@ -548,20 +551,20 @@ class MainWindow(QMainWindow):
                          blocking=True)
             self.run_dialog = RunDialog(self)
 
-    # Todo: Make Run-Function (windows&non-windows)
     def update_pipeline(self):
-        command = f"pip install --upgrade git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd"
-        run(command, shell=True)
+        command = f"pip install --upgrade --force-reinstall --no-deps" \
+                  f"git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd"
 
-        msg = QMessageBox(self)
-        msg.setText('Please restart the Pipeline-Program/Close the Console')
-        msg.setInformativeText('Do you want to restart?')
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg.setDefaultButton(QMessageBox.Yes)
-        msg.exec_()
+        QProcessDialog(self, command)
 
-        if msg.Yes:
-            sys.exit()
+        answer = QMessageBox.question(self, 'Do you want to restart?',
+                                      'Please restart the Pipeline-Program'
+                                      'to apply the changes from the Update!')
+
+        if answer == QMessageBox.Yes:
+            self.restarting = True
+            self.close()
+            restart_program()
         else:
             pass
 
@@ -705,9 +708,14 @@ class MainWindow(QMainWindow):
             wd.deleteLater()
             wd.close()
 
-            answer = QMessageBox.question(self, 'Closing MNE-Pipeline', 'Do you want to return to the Welcome-Window?',
-                                          buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                                          defaultButton=QMessageBox.Yes)
+            if self.restarting:
+                answer = QMessageBox.question(self, 'Closing MNE-Pipeline',
+                                              'Do you want to return to the Welcome-Window?',
+                                              buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                              defaultButton=QMessageBox.Yes)
+            else:
+                answer = QMessageBox.No
+
             if answer == QMessageBox.Yes:
                 self.welcome_window.check_controller()
                 self.welcome_window.show()

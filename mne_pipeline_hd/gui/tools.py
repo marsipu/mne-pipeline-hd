@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
-from mne_pipeline_hd.gui.gui_utils import CodeEditor, ConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
+from mne_pipeline_hd.gui.gui_utils import CodeEditor, MainConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
     set_ratio_geometry
 from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
@@ -59,7 +59,6 @@ class HistoryDlg(QDialog):
             self.dt.inputw.ensureCursorVisible()
 
 
-# ToDo: Update with ConsoleWidget
 # Todo: Syntax Formatting
 # Todo: Add Looping over defined Subject-Selection
 class DataTerminal(QDialog):
@@ -130,7 +129,7 @@ class DataTerminal(QDialog):
 
         self.layout.addLayout(bt_layout)
 
-        self.displayw = ConsoleWidget()
+        self.displayw = MainConsoleWidget()
         self.layout.addWidget(self.displayw)
 
         self.sub_layout = QGridLayout()

@@ -19,7 +19,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from inspect import signature
 
-from PyQt5.QtCore import QObject, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
                              QProgressBar, QPushButton, QScrollArea, QTextEdit, QVBoxLayout)
@@ -250,19 +250,13 @@ def _html_compatible(text):
 
 
 class ConsoleWidget(QTextEdit):
+    """A Widget displaying formatted stdout/stderr-output"""
     def __init__(self):
         super().__init__()
 
         self.setReadOnly(True)
         self.is_prog_text = False
         self.autoscroll = True
-
-        # Connect custom stdout and stderr to display-function
-        sys.stdout.signal.text_written.connect(self.write_stdout)
-        sys.stderr.signal.text_written.connect(self.write_error)
-        # Handle progress-bars
-        sys.stdout.signal.text_updated.connect(self.write_progress)
-        sys.stderr.signal.text_updated.connect(self.write_progress)
 
     def add_html(self, text):
         # Make sure the cursor is at the end of the console
@@ -283,7 +277,7 @@ class ConsoleWidget(QTextEdit):
         text = _html_compatible(text)
         self.add_html(text)
 
-    def write_error(self, text):
+    def write_stderr(self, text):
         self.is_prog_text = False
         text = _html_compatible(text)
         text = f'<font color="red">{text}</font>'
@@ -303,6 +297,19 @@ class ConsoleWidget(QTextEdit):
         else:
             self.is_prog_text = True
             self.add_html(text)
+
+
+class MainConsoleWidget(ConsoleWidget):
+    """A subclass of ConsoleWidget which is linked to stdout/stderr of the main process"""
+    def __init__(self):
+        super().__init__()
+
+        # Connect custom stdout and stderr to display-function
+        sys.stdout.signal.text_written.connect(self.write_stdout)
+        sys.stderr.signal.text_written.connect(self.write_stderr)
+        # Handle progress-bars
+        sys.stdout.signal.text_updated.connect(self.write_progress)
+        sys.stderr.signal.text_updated.connect(self.write_progress)
 
 
 class StreamSignals(QObject):
@@ -449,7 +456,7 @@ class WorkerDialog(QDialog):
         layout.addWidget(self.progress_bar)
 
         if self.show_console:
-            self.console_output = ConsoleWidget()
+            self.console_output = MainConsoleWidget()
             layout.addWidget(self.console_output)
 
         if self.show_buttons:
@@ -500,3 +507,88 @@ class WorkerDialog(QDialog):
         else:
             QMessageBox.warning(self, 'Closing not possible!',
                                 'You can\'t close this Dialog before this Thread finished!')
+
+
+class QProcessDialog(QDialog):
+    def __init__(self, parent, command, arguments=None, show_buttons=True,
+                 show_console=True, close_directly=False, blocking=True):
+        super().__init__(parent)
+        self.command = command
+        self.arguments = arguments or list()
+        self.show_buttons = show_buttons
+        self.show_console = show_console
+        self.close_directly = close_directly
+        self.is_finished = False
+
+        self.init_ui()
+
+        if blocking:
+            self.exec()
+        else:
+            self.open()
+
+        self.start_process()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        if self.title:
+            title_label = QLabel(self.title)
+            title_label.setFont(QFont('AnyType', 18, QFont.Bold))
+            layout.addWidget(title_label)
+
+        if self.show_console:
+            self.console_output = ConsoleWidget()
+            layout.addWidget(self.console_output)
+
+        if self.show_buttons:
+            bt_layout = QHBoxLayout()
+
+            cancel_bt = QPushButton('Cancel')
+            cancel_bt.clicked.connect(self.cancel)
+            bt_layout.addWidget(cancel_bt)
+
+            self.close_bt = QPushButton('Close')
+            self.close_bt.clicked.connect(self.close)
+            self.close_bt.setEnabled(False)
+            bt_layout.addWidget(self.close_bt)
+
+            layout.addLayout(bt_layout)
+
+        self.setLayout(layout)
+
+    def handle_stdout(self):
+        result = bytes(self.process.readAllStandardOutput()).decode('utf8')
+        self.console_output.write_stdout(result)
+
+    def handle_stderr(self):
+        result = bytes(self.process.readAllStandardOutput()).decode('utf8')
+        self.console_output.write_stderr(result)
+
+    def process_finished(self):
+        self.is_finished = True
+        if self.show_buttons:
+            self.close_bt.setEnabled(True)
+        if self.close_directly:
+            self.close()
+
+    def cancel(self):
+        if self.process is not None:
+            self.process.kill()
+
+    def start_process(self):
+        self.process = QProcess()
+        self.process.readyReadStandardOutput.connect(self.handle_stdout)
+        self.process.readyReadStandardError.connect(self.handle_stderr)
+        self.process.finished.connect(self.process_finished)
+        self.process.start(self.command, arguments=self.arguments)
+
+    def closeEvent(self, event):
+        if self.is_finished:
+            self.thread_finished.emit(self.return_value)
+            self.deleteLater()
+            event.accept()
+        else:
+            event.ignore()
+            QMessageBox.warning(self, 'Closing not possible!',
+                                'You can\'t close the Dialog before this Process finished!')

@@ -15,7 +15,6 @@ import logging
 import re
 from collections import OrderedDict
 
-from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QDialog, QGridLayout, QHBoxLayout, QLabel, QListView, QProgressBar,
                              QPushButton, QSizePolicy, QStyle, QVBoxLayout)
@@ -24,7 +23,7 @@ from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, Group
 from .pipeline_utils import shutdown
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
-from ..gui.gui_utils import ConsoleWidget, Worker, get_exception_tuple, set_ratio_geometry
+from ..gui.gui_utils import MainConsoleWidget, Worker, get_exception_tuple, set_ratio_geometry
 from ..gui.models import RunModel
 
 
@@ -209,7 +208,7 @@ class RunDialog(QDialog):
 
         layout.addLayout(view_layout)
 
-        self.console_widget = ConsoleWidget()
+        self.console_widget = MainConsoleWidget()
         layout.addWidget(self.console_widget)
 
         self.pgbar = QProgressBar()
