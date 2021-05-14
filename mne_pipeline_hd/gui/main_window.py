@@ -9,20 +9,19 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
-import json
 import os
 import re
 import sys
 from functools import partial
 from importlib import reload, resources, util
 from os import listdir
-from os.path import isdir, join
+from os.path import join
 from subprocess import run
 
 import mne
 import pandas as pd
 import qdarkstyle
-from PyQt5.QtCore import QSettings, QThreadPool, Qt, pyqtSignal
+from PyQt5.QtCore import QThreadPool, Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
@@ -34,16 +33,15 @@ from .dialogs import (ParametersDock, QuickGuide, RawInfo, RemoveProjectsDlg,
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
 from .gui_utils import ErrorDialog, WorkerDialog, center, get_exception_tuple, set_ratio_geometry
-from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileManagment, ICASelect,
-                              ReloadRaw, SubBadsDialog,
-                              FileDictDialog, FileDock, SubjectWizard)
+from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
+                              FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal, PlotViewSelection
 from .. import basic_functions
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
-from ..pipeline_functions.controller import Controller, check_home_project
-from ..pipeline_functions.function_utils import (RunDialog)
+from ..pipeline_functions.controller import Controller
+from ..pipeline_functions.function_utils import RunDialog
 from ..pipeline_functions.project import Project
 
 
@@ -67,7 +65,7 @@ class MainWindow(QMainWindow):
     cancel_functions = pyqtSignal(bool)
     plot_running = pyqtSignal(bool)
 
-    def __init__(self, controller, welcome_window, edu_program_name=None):
+    def __init__(self, controller, welcome_window):
         super().__init__()
         self.app = QApplication.instance()
 
@@ -89,30 +87,14 @@ class MainWindow(QMainWindow):
         # Initiate attributes for Main-Window
         self.ct = controller
         self.welcome_window = welcome_window
-        self.edu_program_name = edu_program_name
-        self.edu_program = None
         self.edu_tour = None
-        self.all_pd_funcs = None
-        self.projects_path = ''
-        self.current_project = ''
-        self.subjects_dir = ''
-        self.custom_pkg_path = ''
-        self.module_err_dlg = None
         self.bt_dict = dict()
-        self.all_modules = dict()
-        self.available_image_formats = {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'}
         # For functions, which should or should not be called durin initialization
         self.first_init = True
         # True, if Pipeline is running (to avoid parallel starts of RunDialog)
         self.pipeline_running = False
         # True when Project was saved before closing the MainWindow
         self.project_saved = False
-
-        # Import the basic- and custom-function-modules
-        self.import_custom_modules()
-
-        # Call project-class
-        self.pr = Project(self, self.current_project)
 
         # Load Education-Program if given
         self.load_edu()
@@ -127,12 +109,9 @@ class MainWindow(QMainWindow):
         self.init_main_widget()
 
         center(self)
-        # self.raise_win()
+        self.raise_win()
 
         self.first_init = False
-
-        # Start Education-Tour
-        self.start_edu()
 
     def project_updated(self):
 
@@ -143,8 +122,8 @@ class MainWindow(QMainWindow):
         # Update Project-Box
         self.update_project_box()
         # Update Statusbar
-        self.statusBar().showMessage(f'Home-Path: {self.home_path}, '
-                                     f'Project: {self.current_project}')
+        self.statusBar().showMessage(f'Home-Path: {self.ct.home_path}, '
+                                     f'Project: {self.ct.current_project}')
 
     def change_home_path(self):
         # First save the former projects-data
@@ -153,25 +132,32 @@ class MainWindow(QMainWindow):
         new_home_path = QFileDialog.getExistingDirectory(self,
                                                          'Change your Home-Path (top-level folder of Pipeline-Data)')
         if new_home_path != '':
-            home_path, current_project = check_home_project(new_home_path)
-            if home_path[:6] != 'Error:':
-                if current_project is None:
-                    current_project = QInputDialog.getText(self, 'No Project!',
+            new_controller = Controller(new_home_path)
+
+            if 'home_path' in new_controller.errors:
+                QMessageBox.critical(self, 'Error with selected Home-Path',
+                                     new_controller.errors['home-path'])
+            else:
+                if 'project' in new_controller.errors:
+                    if new_controller.errors['project'] == 'No projects':
+                        new_project = QInputDialog.getText(self, 'No Project!',
                                                            'There is no project in this Home-Path, '
                                                            'please enter a name for a new project:',
                                                            text='<Project-Name>')
-                    if current_project == '':
-                        current_project = 'Dummy'
+                        if new_project == '':
+                            new_project = 'Dummy'
 
-                self.ct = Controller(home_path, current_project)
-                QSettings().setValue('home_path', home_path)
-                self.ct.settings['current_project'] = current_project
-                self.statusBar().showMessage(f'Home-Path: {home_path}, '
+                        new_controller.change_project(new_project)
+
+                    else:
+                        new_controller.change_project(new_controller.projects[0])
+
+                self.ct = new_controller
+                self.welcome_window.controller = new_controller
+                self.statusBar().showMessage(f'Home-Path: {self.ct.home_path}, '
                                              f'Project: {self.ct.current_project}')
 
                 self.project_updated()
-            else:
-                QMessageBox.critical(self, 'Changing Home-Path not possible!', home_path)
 
     def add_project(self):
         # First save the former projects-data
@@ -181,11 +167,6 @@ class MainWindow(QMainWindow):
                                                'Enter a name for a new project')
         if ok:
             self.ct.change_project(new_project)
-            self.project_box.addItem(new_project)
-            self.project_box.setCurrentText(new_project)
-
-            # Create new Project
-            self.pr = Project(self, self.current_project)
             self.project_updated()
 
     def remove_project(self):
@@ -196,9 +177,9 @@ class MainWindow(QMainWindow):
     def project_tools(self):
         self.project_box = QComboBox()
         self.project_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        for project in self.projects:
+        for project in self.ct.projects:
             self.project_box.addItem(project)
-        self.project_box.setCurrentText(self.current_project)
+        self.project_box.setCurrentText(self.ct.current_project)
         self.project_box.activated.connect(self.project_changed)
         proj_box_label = QLabel('<b>Project: <b>')
         self.toolbar.addWidget(proj_box_label)
@@ -216,162 +197,31 @@ class MainWindow(QMainWindow):
         # First save the former projects-data
         self.save_main()
 
-        self.current_project = self.project_box.itemText(idx)
+        self.ct.current_project = self.project_box.itemText(idx)
 
         # Change project
-        self.pr = Project(self, self.current_project)
+        self.pr = Project(self, self.ct.current_project)
         self.project_updated()
 
     def pr_clean_fp(self):
-        self.pr.clean_file_parameters()
+        WorkerDialog(self, self.ct.pr.clean_file_parameters, show_buttons=True, show_console=True,
+                     close_directly=False, title='Cleaning File-Parameters')
 
     def pr_clean_pf(self):
-        self.pr.clean_plot_files()
+        WorkerDialog(self, self.ct.pr.clean_plot_files, show_buttons=True,
+                     show_console=True, close_directly=False, title='Cleaning Plot-Files')
 
     def update_project_box(self):
         self.project_box.clear()
-        for project in self.projects:
-            self.project_box.addItem(project)
-        if self.current_project in self.projects:
-            self.project_box.setCurrentText(self.current_project)
+        self.project_box.addItems(self.ct.projects)
+        if self.ct.current_project in self.ct.projects:
+            self.project_box.setCurrentText(self.ct.current_project)
         else:
-            self.project_box.setCurrentText(self.projects[0])
-
-    def get_func_groups(self):
-        self.fsmri_funcs = self.pd_funcs[self.pd_funcs['target'] == 'FSMRI']
-        self.meeg_funcs = self.pd_funcs[self.pd_funcs['target'] == 'MEEG']
-        self.group_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Group']
-        self.other_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Other']
-
-    def import_custom_modules(self):
-        """
-        Load all modules in basic_functions and custom_functions
-        """
-
-        # Load basic-modules
-        basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
-        self.all_modules['basic'] = dict()
-        for module_name in basic_functions_list:
-            self.all_modules['basic'][module_name] = (getattr(basic_functions, module_name), None)
-
-        # Load custom_modules
-        pd_functions_pattern = r'.*_functions\.csv'
-        pd_parameters_pattern = r'.*_parameters\.csv'
-        custom_module_pattern = r'(.+)(\.py)$'
-        for directory in [d for d in os.scandir(self.custom_pkg_path) if not d.name.startswith('.')]:
-            pkg_name = directory.name
-            pkg_path = directory.path
-            file_dict = {'functions': None, 'parameters': None, 'modules': list()}
-            for file_name in [f for f in listdir(pkg_path) if not f.startswith(('.', '_'))]:
-                functions_match = re.match(pd_functions_pattern, file_name)
-                parameters_match = re.match(pd_parameters_pattern, file_name)
-                custom_module_match = re.match(custom_module_pattern, file_name)
-                if functions_match:
-                    file_dict['functions'] = join(pkg_path, file_name)
-                elif parameters_match:
-                    file_dict['parameters'] = join(pkg_path, file_name)
-                elif custom_module_match and custom_module_match.group(1) != '__init__':
-                    file_dict['modules'].append(custom_module_match)
-
-            # Check, that there is a whole set for a custom-module (module-file, functions, parameters)
-            if all([value is not None or value != [] for value in file_dict.values()]):
-                self.all_modules[pkg_name] = dict()
-                functions_path = file_dict['functions']
-                parameters_path = file_dict['parameters']
-                correct_count = 0
-                for module_match in file_dict['modules']:
-                    module_name = module_match.group(1)
-                    module_file_name = module_match.group()
-
-                    spec = util.spec_from_file_location(module_name, join(pkg_path, module_file_name))
-                    module = util.module_from_spec(spec)
-                    try:
-                        spec.loader.exec_module(module)
-                    except:
-                        exc_tuple = get_exception_tuple()
-                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                          title=f'Error in import of custom-module: {module_name}')
-                    else:
-                        correct_count += 1
-                        # Add module to sys.modules
-                        sys.modules[module_name] = module
-                        # Add Module to dictionary
-                        self.all_modules[pkg_name][module_name] = (module, spec)
-
-                # Make sure, that every module in modules is imported without error
-                # (otherwise don't append to pd_funcs and pd_params)
-                if len(file_dict['modules']) == correct_count:
-                    try:
-                        read_pd_funcs = pd.read_csv(functions_path, sep=';', index_col=0)
-                        read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
-                    except:
-                        exc_tuple = get_exception_tuple()
-                        self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                          title=f'Error in import of custom-package: {pkg_name}')
-                    else:
-                        # Add pkg_name here (would be redundant in read_pd_funcs of each custom-package)
-                        read_pd_funcs['pkg_name'] = pkg_name
-
-                        # Check, that there are no duplicates
-                        pd_funcs_to_append = read_pd_funcs.loc[~read_pd_funcs.index.isin(self.pd_funcs.index)]
-                        self.pd_funcs = self.pd_funcs.append(pd_funcs_to_append)
-                        pd_params_to_append = read_pd_params.loc[~read_pd_params.index.isin(self.pd_params.index)]
-                        self.pd_params = self.pd_params.append(pd_params_to_append)
-
-            else:
-                text = f'Files for import of {pkg_name} are missing: ' \
-                       f'{[key for key in file_dict if file_dict[key] is None]}'
-                QMessageBox.warning(self, 'Import-Problem', text)
-
-        self.get_func_groups()
-
-    def reload_modules(self):
-        for pkg_name in self.all_modules:
-            for module_name in self.all_modules[pkg_name]:
-                module = self.all_modules[pkg_name][module_name][0]
-                try:
-                    reload(module)
-                # Custom-Modules somehow can't be reloaded because spec is not found
-                except ModuleNotFoundError:
-                    spec = self.all_modules[pkg_name][module_name][1]
-                    if spec:
-                        try:
-                            spec.loader.exec_module(module)
-                            sys.modules[module_name] = module
-                        except:
-                            exc_tuple = get_exception_tuple()
-                            self.module_err_dlg = ErrorDialog(exc_tuple, self,
-                                                              title=f'Error in import of custom-module: {module_name}')
-                    else:
-                        raise RuntimeError(f'{module_name} from {pkg_name} could not be reloaded')
-
-    def load_edu(self):
-        if self.edu_program_name:
-            edu_path = join(self.home_path, 'edu_programs', self.edu_program_name)
-            with open(edu_path, 'r') as file:
-                self.edu_program = json.load(file)
-
-            self.all_pd_funcs = self.pd_funcs.copy()
-            # Exclude functions which are not selected
-            self.pd_funcs = self.pd_funcs.loc[self.pd_funcs.index.isin(self.edu_program['functions'])]
-
-            # Change the Project-Scripts-Path to a new folder to store the Education-Project-Scripts separately
-            self.pr.pscripts_path = join(self.pr.project_path, f'_pipeline_scripts{self.edu_program["name"]}')
-            if not isdir(self.pr.pscripts_path):
-                os.mkdir(self.pr.pscripts_path)
-            self.pr.init_pipeline_scripts()
-
-            # Exclude MEEG
-            self.pr._all_meeg = self.pr.all_meeg.copy()
-            self.pr.all_meeg = [meeg for meeg in self.pr.all_meeg if meeg in self.edu_program['meeg']]
-
-            # Exclude FSMRI
-            self.pr._all_fsmri = self.pr.all_fsmri.copy()
-            self.pr.all_fsmri = [meeg for meeg in self.pr.all_meeg if meeg in self.edu_program['meeg']]
+            self.project_box.setCurrentText(self.ct.projects[0])
 
     def start_edu(self):
-        if self.edu_program and len(self.edu_program['tour_list']) > 0:
-            self.edu_tour = EducationTour(self, self.edu_program)
+        if self.ct.edu_program and len(self.ct.edu_program['tour_list']) > 0:
+            self.edu_tour = EducationTour(self, self.ct.edu_program)
 
     def init_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
@@ -504,7 +354,7 @@ class MainWindow(QMainWindow):
                                                    ' after execution of all subjects?'))
         self.toolbar.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
                                       description='Set dpi for saved plots', default=300, groupbox_layout=False))
-        self.toolbar.addWidget(ComboGui(self.settings, 'img_format', self.available_image_formats,
+        self.toolbar.addWidget(ComboGui(self.settings, 'img_format', {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'},
                                         param_alias='Image-Format', description='Choose the image format for plots',
                                         default='.png', groupbox_layout=False))
         close_all_bt = QPushButton('Close All Plots')
@@ -669,17 +519,10 @@ class MainWindow(QMainWindow):
             self.showMinimized()
             self.setWindowState(Qt.WindowActive)
             self.showNormal()
-            if self.module_err_dlg:
-                self.module_err_dlg.showMinimized()
-                self.module_err_dlg.setWindowState(Qt.WindowActive)
-                self.module_err_dlg.showNormal()
         else:
             # on osx we can raise the window. on unity the icon in the tray will just flash.
             self.activateWindow()
             self.raise_()
-            if self.module_err_dlg:
-                self.module_err_dlg.activateWindow()
-                self.module_err_dlg.raise_()
 
     def change_style(self, style_name):
         self.app.setStyle(QStyleFactory.create(style_name))
@@ -848,7 +691,7 @@ class MainWindow(QMainWindow):
         if worker_signals is not None:
             worker_signals.pgbar_text.emit('Saving Settings...')
 
-        self.settings['current_project'] = self.current_project
+        self.settings['current_project'] = self.ct.current_project
         self.save_settings()
 
     def closeEvent(self, event):

@@ -29,8 +29,8 @@ class Project:
     A class with attributes for all the paths, file-lists/dicts and parameters of the selected project
     """
 
-    def __init__(self, main_win, name):
-        self.mw = main_win
+    def __init__(self, controller, name):
+        self.ct = controller
         self.name = name
 
         self.init_main_paths()
@@ -43,7 +43,7 @@ class Project:
     def init_main_paths(self):
 
         # Main folder of project
-        self.project_path = join(self.mw.projects_path, self.name)
+        self.project_path = join(self.ct.projects_path, self.name)
         # Folder to store the data
         self.data_path = join(self.project_path, 'data')
         # Folder to store the figures (with an additional subfolder for each parameter-preset)
@@ -53,8 +53,8 @@ class Project:
         # A folder to store all pipeline-scripts as .json-files
         self.pscripts_path = join(self.project_path, '_pipeline_scripts')
 
-        self.main_paths = [self.mw.subjects_dir, self.data_path, self.save_dir_averages,
-                           self.pscripts_path, self.mw.custom_pkg_path, self.figures_path]
+        self.main_paths = [self.ct.subjects_dir, self.data_path, self.save_dir_averages,
+                           self.pscripts_path, self.ct.custom_pkg_path, self.figures_path]
 
         # Create or check existence of main_paths
         for path in self.main_paths:
@@ -212,24 +212,24 @@ class Project:
 
                 for p_preset in loaded_parameters:
                     # Make sure, that only parameters, which exist in pd_params are loaded
-                    for param in [p for p in loaded_parameters[p_preset] if p not in self.mw.pd_params.index]:
+                    for param in [p for p in loaded_parameters[p_preset] if p not in self.ct.pd_params.index]:
                         if '_exp' not in param:
                             loaded_parameters[p_preset].pop(param)
 
                     # Add parameters, which exist in pipeline_resources/parameters.csv,
                     # but not in loaded-parameters (e.g. added with custom-module)
-                    for param in [p for p in self.mw.pd_params.index if p not in loaded_parameters[p_preset]]:
+                    for param in [p for p in self.ct.pd_params.index if p not in loaded_parameters[p_preset]]:
                         try:
-                            eval_param = literal_eval(self.mw.pd_params.loc[param, 'default'])
+                            eval_param = literal_eval(self.ct.pd_params.loc[param, 'default'])
                         except (ValueError, SyntaxError, NameError):
                             # Allow parameters to be defined by functions e.g. by numpy, etc.
-                            if self.mw.pd_params.loc[param, 'gui_type'] == 'FuncGui':
-                                default_string = self.mw.pd_params.loc[param, 'default']
+                            if self.ct.pd_params.loc[param, 'gui_type'] == 'FuncGui':
+                                default_string = self.ct.pd_params.loc[param, 'default']
                                 eval_param = eval(default_string, {'np': np})
                                 exp_name = param + '_exp'
                                 loaded_parameters[p_preset].update({exp_name: default_string})
                             else:
-                                eval_param = self.mw.pd_params.loc[param, 'default']
+                                eval_param = self.ct.pd_params.loc[param, 'default']
                         loaded_parameters[p_preset].update({param: eval_param})
 
                 self.parameters = loaded_parameters
@@ -237,12 +237,12 @@ class Project:
             self.load_default_parameters()
 
     def load_default_param(self, param_name):
-        string_param = self.mw.pd_params.loc[param_name, 'default']
+        string_param = self.ct.pd_params.loc[param_name, 'default']
         try:
             self.parameters[self.p_preset][param_name] = literal_eval(string_param)
         except (ValueError, SyntaxError):
             # Allow parameters to be defined by functions e.g. by numpy, etc.
-            if self.mw.pd_params.loc[param_name, 'gui_type'] == 'FuncGui':
+            if self.ct.pd_params.loc[param_name, 'gui_type'] == 'FuncGui':
                 self.parameters[self.p_preset][param_name] = eval(string_param, {'np': np})
                 exp_name = param_name + '_exp'
                 self.parameters[self.p_preset][exp_name] = string_param
@@ -252,7 +252,7 @@ class Project:
     def load_default_parameters(self):
         # Empty the dict for current Parameter-Preset
         self.parameters[self.p_preset] = dict()
-        for param_name in self.mw.pd_params.index:
+        for param_name in self.ct.pd_params.index:
             self.load_default_param(param_name)
 
     def load_last_p_preset(self):
@@ -304,21 +304,23 @@ class Project:
             self.all_meeg.append(obj)
 
         # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
-        read_dir = sorted([f for f in os.listdir(self.mw.subjects_dir) if not f.startswith('.')], key=str.lower)
-        self.all_fsmri = [fsmri for fsmri in read_dir if exists(join(self.mw.subjects_dir, fsmri, 'surf'))]
+        read_dir = sorted([f for f in os.listdir(self.ct.subjects_dir) if not f.startswith('.')], key=str.lower)
+        self.all_fsmri = [fsmri for fsmri in read_dir if exists(join(self.ct.subjects_dir, fsmri, 'surf'))]
 
         self.save()
 
-    def _clean_file_parameters(self, worker_signals):
+    def clean_file_parameters(self, worker_signals=None):
 
         # Set maximum for progress-bar
-        worker_signals.pgbar_max.emit(count_dict_keys(self.file_parameters, max_level=3))
+        if worker_signals is not None:
+            worker_signals.pgbar_max.emit(count_dict_keys(self.file_parameters, max_level=3))
 
         remove_obj_keys = list()
         key_count = 0
         for obj_key in self.file_parameters:
             key_count += 1
-            worker_signals.pgbar_n.emit(key_count)
+            if worker_signals is not None:
+                worker_signals.pgbar_n.emit(key_count)
 
             if obj_key not in self.all_meeg + self.all_erm + self.all_fsmri + list(self.all_groups.keys()):
                 remove_obj_keys.append(obj_key)
@@ -327,7 +329,8 @@ class Project:
             n_remove_params = 0
             for file_name in self.file_parameters[obj_key]:
                 key_count += 1
-                worker_signals.pgbar_n.emit(key_count)
+                if worker_signals is not None:
+                    worker_signals.pgbar_n.emit(key_count)
 
                 path = self.file_parameters[obj_key][file_name]['PATH']
                 # Can be changed to only relative path (12.02.2021)
@@ -345,14 +348,15 @@ class Project:
 
                 function = self.file_parameters[obj_key][file_name]['FUNCTION']
                 # ToDo: Why is there sometimes <module> as FUNCTION?
-                if function == '<module>' or function not in self.mw.pd_funcs.index:
+                if function == '<module>' or function not in self.ct.pd_funcs.index:
                     key_count += len(self.file_parameters[obj_key][file_name])
-                    worker_signals.pgbar_n.emit(key_count)
+                    if worker_signals is not None:
+                        worker_signals.pgbar_n.emit(key_count)
                 else:
                     remove_params = list()
                     # ToDo: Critical param-removal can/should be removed,
                     #  when file-parameters upgraded with dependencies
-                    critical_params_str = self.mw.pd_funcs.loc[function, 'func_args']
+                    critical_params_str = self.ct.pd_funcs.loc[function, 'func_args']
                     # Make sure there are no spaces left
                     critical_params_str = critical_params_str.replace(' ', '')
                     critical_params = critical_params_str.split(',')
@@ -360,10 +364,11 @@ class Project:
 
                     for param in self.file_parameters[obj_key][file_name]:
                         key_count += 1
-                        worker_signals.pgbar_n.emit(key_count)
+                        if worker_signals is not None:
+                            worker_signals.pgbar_n.emit(key_count)
 
                         # Cancel if canceled
-                        if worker_signals.was_canceled:
+                        if worker_signals is not None and worker_signals.was_canceled:
                             print('Cleaning was canceled by user')
                             return
 
@@ -383,23 +388,21 @@ class Project:
             self.file_parameters.pop(remove_key)
         print(f'Removed {len(remove_obj_keys)} Objects from File-Parameters')
 
-    def clean_file_parameters(self):
-        WorkerDialog(self.mw, self._clean_file_parameters, show_buttons=True, show_console=True,
-                     close_directly=False, title='Cleaning File-Parameters')
-
-    def _clean_plot_files(self, worker_signals):
+    def clean_plot_files(self, worker_signals=None):
         all_image_paths = list()
         # Remove object-keys which no longer exist
         remove_obj = list()
         n_remove_ppreset = 0
         n_remove_funcs = 0
 
-        worker_signals.pgbar_max.emit(count_dict_keys(self.plot_files, max_level=3))
+        if worker_signals is not None:
+            worker_signals.pgbar_max.emit(count_dict_keys(self.plot_files, max_level=3))
         key_count = 0
 
         for obj_key in self.plot_files:
             key_count += 1
-            worker_signals.pgbar_n.emit(key_count)
+            if worker_signals is not None:
+                worker_signals.pgbar_n.emit(key_count)
 
             if obj_key not in self.all_meeg + self.all_erm + self.all_fsmri + list(self.all_groups.keys()):
                 remove_obj.append(obj_key)
@@ -408,11 +411,13 @@ class Project:
                 remove_p_preset = list()
                 for p_preset in self.plot_files[obj_key]:
                     key_count += 1
-                    worker_signals.pgbar_n.emit(key_count)
+                    if worker_signals is not None:
+                        worker_signals.pgbar_n.emit(key_count)
 
                     if p_preset not in self.parameters.keys():
                         key_count += len(self.plot_files[obj_key][p_preset])
-                        worker_signals.pgbar_n.emit(key_count)
+                        if worker_signals is not None:
+                            worker_signals.pgbar_n.emit(key_count)
 
                         remove_p_preset.append(p_preset)
                     else:
@@ -420,14 +425,15 @@ class Project:
                         remove_funcs = list()
                         for func in self.plot_files[obj_key][p_preset]:
                             key_count += 1
-                            worker_signals.pgbar_n.emit(key_count)
+                            if worker_signals is not None:
+                                worker_signals.pgbar_n.emit(key_count)
 
                             # Cancel if canceled
-                            if worker_signals.was_canceled:
+                            if worker_signals is not None and worker_signals.was_canceled:
                                 print('Cleaning was canceled by user')
                                 return
 
-                            if func not in self.mw.pd_funcs.index:
+                            if func not in self.ct.pd_funcs.index:
                                 remove_funcs.append(func)
                             else:
                                 # Remove image-paths which no longer exist
@@ -483,7 +489,3 @@ class Project:
         print(f'Removed {n_removed_folders} folders')
 
         print(f'{round(free_space / (1024 ** 2), 2)} MB of space was freed!')
-
-    def clean_plot_files(self):
-        WorkerDialog(self.mw, self._clean_plot_files, show_buttons=True, show_console=True,
-                     close_directly=False, title='Cleaning Plot-Files')

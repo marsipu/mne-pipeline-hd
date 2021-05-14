@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInp
     QVBoxLayout, QWidget
 
 from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import center
+from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center
 from mne_pipeline_hd.gui.main_window import MainWindow
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 
@@ -106,7 +106,7 @@ class WelcomeWindow(QWidget):
         self.project_bt.setEnabled(False)
 
         if 'home_path' in self.controller.errors:
-            ht = f'{self.controller.errors["home_path"]}\n' \
+            ht = f'{self.controller.errors["home-path"]}\n' \
                  f'Select a folder as Home-Path!'
             self.home_path_label.setText(ht)
 
@@ -132,6 +132,14 @@ class WelcomeWindow(QWidget):
 
             self.edu_selection.content_changed()
 
+        if 'custom-modules' in self.controller.errors:
+            for name in self.controller.errors['custom_module']:
+                error_msg = self.controller.errors['custom_module'][name]
+                if isinstance(error_msg, tuple):
+                    ErrorDialog(error_msg, self, title=f'Error in import of custom-module: {name}')
+                elif isinstance(error_msg, str):
+                    QMessageBox.warning(self, 'Import-Problem', error_msg)
+
     def set_home_path(self):
         loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.home_path} not writable!'
                                                                   f'Select a folder as Home-Path')
@@ -154,7 +162,8 @@ class WelcomeWindow(QWidget):
             self.update_project_cmbx()
 
     def init_main_window(self):
-        sel_edu_program = self.edu_selection.get_current()
+        self.controller.edu_program_name = self.edu_selection.get_current()
+        self.controller.load_edu()
 
         # Check if MNE-Python is installed
         try:
@@ -163,10 +172,9 @@ class WelcomeWindow(QWidget):
             QMessageBox.critical(self, 'MNE-Python not found!', 'MNE-Python was not found,'
                                                                 ' please install it before using MNE-Pipeline!')
         else:
+            self.main_window = MainWindow(self.controller, self)
             if self.edu_groupbox.isChecked():
-                self.main_window = MainWindow(self.home_path, self, sel_edu_program)
-            else:
-                self.main_window = MainWindow(self.home_path, self)
+                self.main_window.start_edu()
             self.hide()
 
     def closeEvent(self, event):
