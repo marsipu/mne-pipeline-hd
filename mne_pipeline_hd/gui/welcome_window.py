@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInp
     QVBoxLayout, QWidget
 
 from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center
+from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center, WorkerDialog
 from mne_pipeline_hd.gui.main_window import MainWindow
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 
@@ -33,11 +33,10 @@ class WelcomeWindow(QWidget):
         self.controller = Controller()
         self.main_window = None
         self.education_programs = list()
-        self.education_on = QSettings().value('education', defaultValue=False)
+        self.education_on = QSettings().value('education', defaultValue=0)
 
         self.init_ui()
         self.check_controller()
-        self.get_projects()
 
         self.show()
         center(self)
@@ -66,7 +65,7 @@ class WelcomeWindow(QWidget):
         self.project_label = QLabel()
         project_layout.addWidget(self.project_label)
         self.project_cmbx = QComboBox()
-        self.project_cmbx.currentTextChanged.connect(self.controller.change_project)
+        self.project_cmbx.currentTextChanged.connect(self.project_changed)
         project_layout.addWidget(self.project_cmbx)
         self.project_bt = QPushButton('Add Project')
         self.project_bt.clicked.connect(self.add_project)
@@ -106,7 +105,7 @@ class WelcomeWindow(QWidget):
         self.project_bt.setEnabled(False)
 
         if 'home_path' in self.controller.errors:
-            ht = f'{self.controller.errors["home-path"]}\n' \
+            ht = f'{self.controller.errors["home_path"]}\n' \
                  f'Select a folder as Home-Path!'
             self.home_path_label.setText(ht)
 
@@ -119,35 +118,42 @@ class WelcomeWindow(QWidget):
 
         else:
             self.start_bt.setEnabled(True)
-            self.home_path_label.setText(f'{self.home_path} selected')
-            self.project_label.setText(f'{self.current_project} selected')
-            print(f'Home-Path: {self.home_path}')
+            self.project_cmbx.setEnabled(True)
+            self.project_bt.setEnabled(True)
+            self.home_path_label.setText(f'{self.controller.home_path} selected.')
+            self.project_label.setText(f'{self.controller.current_project} selected.')
+            self.update_project_cmbx()
+            print(f'Home-Path: {self.controller.home_path}')
 
             # Add education-programs if there are any
             self.education_programs.clear()
-            edu_path = join(self.home_path, 'edu_programs')
+            edu_path = join(self.controller.home_path, 'edu_programs')
             if isdir(edu_path):
                 for file in [f for f in listdir(edu_path) if f[-9:] == '-edu.json']:
                     self.education_programs.append(file)
 
             self.edu_selection.content_changed()
 
-        if 'custom-modules' in self.controller.errors:
-            for name in self.controller.errors['custom_module']:
-                error_msg = self.controller.errors['custom_module'][name]
+        if 'custom_modules' in self.controller.errors:
+            for name in self.controller.errors['custom_modules']:
+                error_msg = self.controller.errors['custom_modules'][name]
                 if isinstance(error_msg, tuple):
                     ErrorDialog(error_msg, self, title=f'Error in import of custom-module: {name}')
                 elif isinstance(error_msg, str):
                     QMessageBox.warning(self, 'Import-Problem', error_msg)
 
     def set_home_path(self):
-        loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.home_path} not writable!'
+        loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.controller.home_path} not writable!'
                                                                   f'Select a folder as Home-Path')
         if loaded_home_path != '':
             self.controller = Controller(str(loaded_home_path))
             self.check_controller()
-        print(f'Projects-found: {self.projects}')
-        print(f'Selected-Project: {self.current_project}')
+        print(f'Projects-found: {self.controller.projects}')
+        print(f'Selected-Project: {self.controller.current_project}')
+
+    def project_changed(self, project):
+        self.controller.change_project(project)
+        self.check_controller()
 
     def update_project_cmbx(self):
         if hasattr(self.controller, 'projects'):
@@ -178,9 +184,10 @@ class WelcomeWindow(QWidget):
             self.hide()
 
     def closeEvent(self, event):
+        WorkerDialog(self, self.controller.save, blocking=True, title='Saving Project!')
         if self.edu_groupbox.isChecked():
-            self.qsettings.setValue('education', 'true')
+            QSettings().setValue('education', 1)
         else:
-            self.qsettings.setValue('education', 'false')
+            QSettings().setValue('education', 0)
 
         event.accept()

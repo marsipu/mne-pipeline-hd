@@ -16,10 +16,11 @@
         "overwrite": false
     },
     "qsettings": {
+        "home_path": null,
         "n_jobs": -1,
         "n_threads": 1,
-        "save_ram": true,
-        "enable_cuda": false,
-        "dark_mode": false
+        "save_ram": 1,
+        "enable_cuda": 0,
+        "dark_mode": 0
     }
 }

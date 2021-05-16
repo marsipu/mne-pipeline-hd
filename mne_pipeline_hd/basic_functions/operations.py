@@ -29,6 +29,7 @@ from mne.preprocessing import ICA
 
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from ..pipeline_functions import ismac, iswin
+from ..pipeline_functions.loading import MEEG
 from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
 

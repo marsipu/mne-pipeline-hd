@@ -9,19 +9,15 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
-import os
-import re
 import sys
 from functools import partial
-from importlib import reload, resources, util
-from os import listdir
-from os.path import join
+from importlib import resources
 from subprocess import run
 
 import mne
 import pandas as pd
 import qdarkstyle
-from PyQt5.QtCore import QThreadPool, Qt, pyqtSignal
+from PyQt5.QtCore import QThreadPool, Qt, pyqtSignal, QSettings
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
@@ -32,18 +28,16 @@ from .dialogs import (ParametersDock, QuickGuide, RawInfo, RemoveProjectsDlg,
                       SettingsDlg, SysInfoMsg)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
-from .gui_utils import ErrorDialog, QProcessDialog, WorkerDialog, center, get_exception_tuple, set_ratio_geometry
+from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal, PlotViewSelection
-from .. import basic_functions
-from ..pipeline_functions.pipeline_utils import restart_program
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
 from ..pipeline_functions.controller import Controller
 from ..pipeline_functions.function_utils import RunDialog
-from ..pipeline_functions.project import Project
+from ..pipeline_functions.pipeline_utils import restart_program
 
 
 def get_upstream():
@@ -99,9 +93,6 @@ class MainWindow(QMainWindow):
         # For the closeEvent to avoid showing the MessageBox when restarting
         self.restarting = False
 
-        # Load Education-Program if given
-        self.load_edu()
-
         # Set geometry to ratio of screen-geometry (before adding func-buttons to allow adjustment to size)
         set_ratio_geometry(0.9, self)
 
@@ -139,7 +130,7 @@ class MainWindow(QMainWindow):
 
             if 'home_path' in new_controller.errors:
                 QMessageBox.critical(self, 'Error with selected Home-Path',
-                                     new_controller.errors['home-path'])
+                                     new_controller.errors['home_path'])
             else:
                 if 'project' in new_controller.errors:
                     if new_controller.errors['project'] == 'No projects':
@@ -198,12 +189,14 @@ class MainWindow(QMainWindow):
 
     def project_changed(self, idx):
         # First save the former projects-data
-        self.save_main()
+        self.ct.save()
 
-        self.ct.current_project = self.project_box.itemText(idx)
+        # Get selected Project
+        project = self.project_box.itemText(idx)
 
         # Change project
-        self.pr = Project(self, self.ct.current_project)
+        self.ct.change_project(project)
+
         self.project_updated()
 
     def pr_clean_fp(self):
@@ -281,13 +274,13 @@ class MainWindow(QMainWindow):
 
         func_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
 
-        func_menu.addAction('&Reload Modules', self.reload_modules)
+        func_menu.addAction('&Reload Modules', self.ct.reload_modules)
         func_menu.addSeparator()
         func_menu.addAction('Additional Keyword-Arguments', partial(AddKwargs, self))
 
         # Education
         education_menu = self.menuBar().addMenu('&Education')
-        if self.edu_program is None:
+        if self.ct.edu_program is None:
             education_menu.addAction('&Education-Editor', partial(EducationEditor, self))
         else:
             education_menu.addAction('&Start Education-Tour', self.start_edu)
@@ -302,7 +295,7 @@ class MainWindow(QMainWindow):
 
         self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
         self.adark_mode.setCheckable(True)
-        if self.qsettings['dark_mode']:
+        if QSettings().value('dark_mode'):
             self.adark_mode.setChecked(True)
             self.dark_mode()
         else:
@@ -333,10 +326,10 @@ class MainWindow(QMainWindow):
         self.project_tools()
         self.toolbar.addSeparator()
 
-        # self.toolbar.addWidget(IntGui(self.qsettings, 'n_threads', min_val=1,
+        # self.toolbar.addWidget(IntGui(QSettings(), 'n_threads', min_val=1,
         #                               description='Set to the amount of threads you want to run simultaneously '
         #                                           'in the pipeline', default=1, groupbox_layout=False))
-        self.toolbar.addWidget(IntGui(self.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
+        self.toolbar.addWidget(IntGui(QSettings(), 'n_jobs', min_val=-1, special_value_text='Auto',
                                       description='Set to the amount of (virtual) cores of your machine '
                                                   'you want to use for multiprocessing', default=-1,
                                       groupbox_layout=False))
@@ -349,7 +342,7 @@ class MainWindow(QMainWindow):
                                        default=True))
         self.toolbar.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
                                        description='Do you want to save the plots made to a file?', default=True))
-        self.toolbar.addWidget(BoolGui(self.qsettings, 'enable_cuda', param_alias='Enable CUDA',
+        self.toolbar.addWidget(BoolGui(QSettings(), 'enable_cuda', param_alias='Enable CUDA',
                                        description='Do you want to enable CUDA? (system has to be setup for cuda)',
                                        default=False))
         self.toolbar.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
@@ -396,7 +389,8 @@ class MainWindow(QMainWindow):
     #   make button-dependencies
     def add_func_bts(self):
         # Drop custom-modules, which aren't selected
-        cleaned_pd_funcs = self.pd_funcs.loc[self.pd_funcs['module'].isin(self.get_setting('selected_modules'))].copy()
+        cleaned_pd_funcs = self.ct.pd_funcs.loc[self.ct.pd_funcs['module'].isin(
+            self.get_setting('selected_modules'))].copy()
         # Horizontal Border for Function-Groups
         max_h_size = self.tab_func_widget.geometry().width()
 
@@ -464,10 +458,10 @@ class MainWindow(QMainWindow):
 
     def _update_selected_functions(self, function, checked):
         if checked:
-            if function not in self.pr.sel_functions:
-                self.pr.sel_functions.append(function)
-        elif function in self.pr.sel_functions:
-            self.pr.sel_functions.remove(function)
+            if function not in self.ct.pr.sel_functions:
+                self.ct.pr.sel_functions.append(function)
+        elif function in self.ct.pr.sel_functions:
+            self.ct.pr.sel_functions.remove(function)
 
     def func_selected(self, function):
         self._update_selected_functions(function, self.bt_dict[function].isChecked())
@@ -481,12 +475,12 @@ class MainWindow(QMainWindow):
     def update_selected_funcs(self):
         for function in self.bt_dict:
             self.bt_dict[function].setChecked(False)
-            if function in self.pr.sel_functions:
+            if function in self.ct.pr.sel_functions:
                 self.bt_dict[function].setChecked(True)
 
     def init_docks(self):
-        if self.edu_program:
-            dock_kwargs = self.edu_program['dock_kwargs']
+        if self.ct.edu_program:
+            dock_kwargs = self.ct.edu_program['dock_kwargs']
         else:
             dock_kwargs = dict()
         self.subject_dock = FileDock(self, **dock_kwargs)
@@ -500,11 +494,11 @@ class MainWindow(QMainWindow):
     def dark_mode(self):
         if self.adark_mode.isChecked():
             self.app.setStyleSheet(self.dark_sheet)
-            self.qsettings['dark_mode'] = True
+            QSettings().setValue('dark_mode', 1)
             icon_name = 'mne_pipeline_icon_dark.png'
         else:
             self.app.setStyleSheet('')
-            self.qsettings['dark_mode'] = False
+            QSettings().setValue('dark_mode', 0)
             icon_name = 'mne_pipeline_icon_light.png'
         with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
             app_icon = QIcon(str(icon_path))
@@ -535,13 +529,13 @@ class MainWindow(QMainWindow):
     def clear(self):
         for x in self.bt_dict:
             self.bt_dict[x].setChecked(False)
-        self.pr.sel_functions.clear()
+        self.ct.pr.sel_functions.clear()
 
     def _prepare_start(self, worker_signals):
         # Save Main-Window-Settings and project before possible Errors happen
-        self.save_main(worker_signals)
+        self.ct.save(worker_signals)
         # Reload modules to get latest changes
-        self.reload_modules()
+        self.ct.reload_modules()
 
     def start(self):
         if self.pipeline_running:
@@ -683,19 +677,6 @@ class MainWindow(QMainWindow):
         if not self.first_init:
             self.update_func_bts()
         event.accept()
-
-    def save_main(self, worker_signals=None):
-        if worker_signals is not None:
-            worker_signals.pgbar_text.emit('Saving Project...')
-
-        # Save Project
-        self.pr.save(worker_signals)
-
-        if worker_signals is not None:
-            worker_signals.pgbar_text.emit('Saving Settings...')
-
-        self.settings['current_project'] = self.ct.current_project
-        self.save_settings()
 
     def closeEvent(self, event):
         if self.project_saved:

@@ -91,8 +91,7 @@ def main():
 
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()
-    mw = ww.mw
-    timer.timeout.connect(lambda: mw)
+    timer.timeout.connect(lambda: None)
     timer.start(500)
 
     # For Spyder to make console accessible again

@@ -2,18 +2,16 @@ import json
 import os
 import re
 import sys
+from importlib import reload, resources, util
 from os import listdir
 from os.path import isdir, isfile, join
 
 import mne
 import pandas as pd
-from importlib import reload, resources, util
-
 from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QInputDialog, QMessageBox
 
 from mne_pipeline_hd import basic_functions
-from mne_pipeline_hd.gui.gui_utils import ErrorDialog, get_exception_tuple
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.pipeline_functions.project import Project
 
 home_dirs = ['custom_packages', 'freesurfer', 'projects']
@@ -25,30 +23,27 @@ class Controller:
     def __init__(self, home_path=None, current_project=None, edu_program_name=None):
         # Check Home-Path
         self.errors = dict()
-
-        # Try to load home-path from QSettings
-        if home_path is None:
-            home_path = QSettings().value('home_path', defaultValue=None)
-            if home_path is None:
-                self.errors['home-path'] = f'No Home-Path found!'
+        # Try to load home_path from QSettings
+        self.home_path = home_path or QSettings().value('home_path', defaultValue=None)
+        if self.home_path is None:
+            self.errors['home_path'] = f'No Home-Path found!'
 
         # Check if path exists
-        if not isdir(home_path):
-            self.errors['home-path'] = f'{home_path} not found!'
+        elif not isdir(self.home_path):
+            self.errors['home_path'] = f'{self.home_path} not found!'
 
         # Check, if path is writable
-        elif not os.access(home_path, os.W_OK):
-            self.errors['home-path'] = f'{home_path} not writable!'
+        elif not os.access(self.home_path, os.W_OK):
+            self.errors['home_path'] = f'{self.home_path} not writable!'
 
         else:
-            self.home_path = home_path
-            QSettings().setValue('home_path', home_path)
+            QSettings().setValue('home_path', self.home_path)
             # Create subdirectories if not existing for a valid home_path
-            for subdir in [d for d in home_dirs if not isdir(join(home_path, d))]:
-                os.mkdir(join(home_path, subdir))
+            for subdir in [d for d in home_dirs if not isdir(join(self.home_path, d))]:
+                os.mkdir(join(self.home_path, subdir))
 
             # Get Project-Folders (recognized by distinct sub-folders)
-            self.projects_path = join(home_path, 'projects')
+            self.projects_path = join(self.home_path, 'projects')
             self.projects = [p for p in listdir(self.projects_path)
                              if all([isdir(join(self.projects_path, p, d))
                                      for d in project_dirs])]
@@ -93,13 +88,8 @@ class Controller:
 
             # Check Project
             if current_project is None:
-                # Load settings to get current_project
-                settings_path = join(home_path, 'mne_pipeline_hd-settings.json')
-                if isfile(settings_path):
-                    with open(settings_path, 'r') as file:
-                        settings = json.load(file)
-                        if 'current_project' in settings:
-                            current_project = settings['current_project']
+                if 'current_project' in self.settings:
+                    self.current_project = self.settings['current_project']
 
             if len(self.projects) == 0:
                 self.errors['project'] = 'No projects!'
@@ -108,10 +98,9 @@ class Controller:
                 self.errors['project'] = f'{current_project} not in projects!'
 
             else:
+                # Initialize Project
                 self.current_project = current_project
-
-            # Initialize Project
-            self.pr = Project(self, self.current_project)
+                self.pr = Project(self, self.current_project)
 
     def load_settings(self):
         try:
@@ -158,7 +147,7 @@ class Controller:
         if new_project not in self.projects:
             self.projects.append(new_project)
 
-    def save(self, worker_signals):
+    def save(self, worker_signals=None):
         if worker_signals is not None:
             worker_signals.pgbar_text.emit('Saving Project...')
 
@@ -200,7 +189,7 @@ class Controller:
         Load all modules in basic_functions and custom_functions
         """
 
-        self.errors['custom-modules'] = dict()
+        self.errors['custom_modules'] = dict()
 
         # Load basic-modules
         basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
@@ -243,7 +232,7 @@ class Controller:
                         spec.loader.exec_module(module)
                     except:
                         exc_tuple = get_exception_tuple()
-                        self.errors['custom-modules'][module_name] = exc_tuple
+                        self.errors['custom_modules'][module_name] = exc_tuple
                     else:
                         correct_count += 1
                         # Add module to sys.modules
@@ -259,7 +248,7 @@ class Controller:
                         read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
                     except:
                         exc_tuple = get_exception_tuple()
-                        self.errors['custom-modules'][pkg_name] = exc_tuple
+                        self.errors['custom_modules'][pkg_name] = exc_tuple
                     else:
                         # Add pkg_name here (would be redundant in read_pd_funcs of each custom-package)
                         read_pd_funcs['pkg_name'] = pkg_name
@@ -273,7 +262,7 @@ class Controller:
             else:
                 error_text = f'Files for import of {pkg_name} are missing: ' \
                              f'{[key for key in file_dict if file_dict[key] is None]}'
-                self.errors['custom-modules'][pkg_name] = error_text
+                self.errors['custom_modules'][pkg_name] = error_text
 
         self.fsmri_funcs = self.pd_funcs[self.pd_funcs['target'] == 'FSMRI']
         self.meeg_funcs = self.pd_funcs[self.pd_funcs['target'] == 'MEEG']
