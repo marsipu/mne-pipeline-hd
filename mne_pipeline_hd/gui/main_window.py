@@ -333,24 +333,24 @@ class MainWindow(QMainWindow):
                                       description='Set to the amount of (virtual) cores of your machine '
                                                   'you want to use for multiprocessing', default=-1,
                                       groupbox_layout=False))
-        self.toolbar.addWidget(BoolGui(self.settings, 'overwrite', param_alias='Overwrite',
+        self.toolbar.addWidget(BoolGui(self.ct.settings, 'overwrite', param_alias='Overwrite',
                                        description='Check to overwrite files even if their parameters where unchanged',
                                        default=False))
-        self.toolbar.addWidget(BoolGui(self.settings, 'show_plots', param_alias='Show Plots',
+        self.toolbar.addWidget(BoolGui(self.ct.settings, 'show_plots', param_alias='Show Plots',
                                        description='Do you want to show plots?\n'
                                                    '(or just save them without showing, then just check "Save Plots")',
                                        default=True))
-        self.toolbar.addWidget(BoolGui(self.settings, 'save_plots', param_alias='Save Plots',
+        self.toolbar.addWidget(BoolGui(self.ct.settings, 'save_plots', param_alias='Save Plots',
                                        description='Do you want to save the plots made to a file?', default=True))
         self.toolbar.addWidget(BoolGui(QSettings(), 'enable_cuda', param_alias='Enable CUDA',
                                        description='Do you want to enable CUDA? (system has to be setup for cuda)',
                                        default=False))
-        self.toolbar.addWidget(BoolGui(self.settings, 'shutdown', param_alias='Shutdown',
+        self.toolbar.addWidget(BoolGui(self.ct.settings, 'shutdown', param_alias='Shutdown',
                                        description='Do you want to shut your system down'
                                                    ' after execution of all subjects?'))
-        self.toolbar.addWidget(IntGui(self.settings, 'dpi', min_val=0, max_val=10000,
+        self.toolbar.addWidget(IntGui(self.ct.settings, 'dpi', min_val=0, max_val=10000,
                                       description='Set dpi for saved plots', default=300, groupbox_layout=False))
-        self.toolbar.addWidget(ComboGui(self.settings, 'img_format', {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'},
+        self.toolbar.addWidget(ComboGui(self.ct.settings, 'img_format', {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'},
                                         param_alias='Image-Format', description='Choose the image format for plots',
                                         default='.png', groupbox_layout=False))
         close_all_bt = QPushButton('Close All Plots')

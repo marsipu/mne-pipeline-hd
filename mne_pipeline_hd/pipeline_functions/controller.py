@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 import sys
@@ -16,6 +17,8 @@ from mne_pipeline_hd.pipeline_functions.project import Project
 
 home_dirs = ['custom_packages', 'freesurfer', 'projects']
 project_dirs = ['_pipeline_scripts', 'data', 'figures']
+
+logger = logging.getLogger()
 
 
 class Controller:
@@ -37,6 +40,7 @@ class Controller:
             self.errors['home_path'] = f'{self.home_path} not writable!'
 
         else:
+            logger.info(f'Home-Path: {self.home_path}')
             QSettings().setValue('home_path', self.home_path)
             # Create subdirectories if not existing for a valid home_path
             for subdir in [d for d in home_dirs if not isdir(join(self.home_path, d))]:
@@ -87,9 +91,11 @@ class Controller:
             self.import_custom_modules()
 
             # Check Project
+            self.pr = None
+            self.current_project = None
             if current_project is None:
                 if 'current_project' in self.settings:
-                    self.current_project = self.settings['current_project']
+                    current_project = self.settings['current_project']
 
             if len(self.projects) == 0:
                 self.errors['project'] = 'No projects!'
@@ -98,6 +104,7 @@ class Controller:
                 self.errors['project'] = f'{current_project} not in projects!'
 
             else:
+                logger.info(f'Selected-Project: {self.current_project}')
                 # Initialize Project
                 self.current_project = current_project
                 self.pr = Project(self, self.current_project)
@@ -148,11 +155,12 @@ class Controller:
             self.projects.append(new_project)
 
     def save(self, worker_signals=None):
-        if worker_signals is not None:
-            worker_signals.pgbar_text.emit('Saving Project...')
+        if self.pr is not None:
+            if worker_signals is not None:
+                worker_signals.pgbar_text.emit('Saving Project...')
 
-        # Save Project
-        self.pr.save(worker_signals)
+            # Save Project
+            self.pr.save(worker_signals)
 
         if worker_signals is not None:
             worker_signals.pgbar_text.emit('Saving Settings...')

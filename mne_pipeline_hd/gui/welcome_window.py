@@ -65,11 +65,11 @@ class WelcomeWindow(QWidget):
         self.project_label = QLabel()
         project_layout.addWidget(self.project_label)
         self.project_cmbx = QComboBox()
-        self.project_cmbx.currentTextChanged.connect(self.project_changed)
+        self.project_cmbx.activated.connect(self.project_changed)
         project_layout.addWidget(self.project_cmbx)
-        self.project_bt = QPushButton('Add Project')
-        self.project_bt.clicked.connect(self.add_project)
-        project_layout.addWidget(self.project_bt, alignment=Qt.AlignRight)
+        self.add_pr_bt = QPushButton('Add Project')
+        self.add_pr_bt.clicked.connect(self.add_project)
+        project_layout.addWidget(self.add_pr_bt, alignment=Qt.AlignRight)
         layout.addLayout(project_layout)
 
         self.edu_groupbox = QGroupBox('Education')
@@ -102,28 +102,18 @@ class WelcomeWindow(QWidget):
     def check_controller(self):
         self.start_bt.setEnabled(False)
         self.project_cmbx.setEnabled(False)
-        self.project_bt.setEnabled(False)
+        self.add_pr_bt.setEnabled(False)
 
+        # Check for Home-Path-Problems
         if 'home_path' in self.controller.errors:
             ht = f'{self.controller.errors["home_path"]}\n' \
                  f'Select a folder as Home-Path!'
             self.home_path_label.setText(ht)
-
-        elif 'project' in self.controller.errors:
-            self.project_cmbx.setEnabled(True)
-            self.project_bt.setEnabled(True)
-            pt = f'{self.controller.errors["project"]}\n' \
-                 f'Select or add a project!'
-            self.project_label.setText(pt)
-
         else:
-            self.start_bt.setEnabled(True)
-            self.project_cmbx.setEnabled(True)
-            self.project_bt.setEnabled(True)
             self.home_path_label.setText(f'{self.controller.home_path} selected.')
-            self.project_label.setText(f'{self.controller.current_project} selected.')
+            self.project_cmbx.setEnabled(True)
             self.update_project_cmbx()
-            print(f'Home-Path: {self.controller.home_path}')
+            self.add_pr_bt.setEnabled(True)
 
             # Add education-programs if there are any
             self.education_programs.clear()
@@ -134,13 +124,24 @@ class WelcomeWindow(QWidget):
 
             self.edu_selection.content_changed()
 
-        if 'custom_modules' in self.controller.errors:
-            for name in self.controller.errors['custom_modules']:
-                error_msg = self.controller.errors['custom_modules'][name]
-                if isinstance(error_msg, tuple):
-                    ErrorDialog(error_msg, self, title=f'Error in import of custom-module: {name}')
-                elif isinstance(error_msg, str):
-                    QMessageBox.warning(self, 'Import-Problem', error_msg)
+            # Check for Project-Problems
+            if 'project' in self.controller.errors:
+                pt = f'{self.controller.errors["project"]}\n' \
+                     f'Select or add a project!'
+                self.project_label.setText(pt)
+            else:
+                self.project_label.setText(f'{self.controller.current_project} selected.')
+                self.start_bt.setEnabled(True)
+
+                # Check for Problems with Custom-Modules
+                if 'custom_modules' in self.controller.errors:
+                    for name in self.controller.errors['custom_modules']:
+                        error_msg = self.controller.errors['custom_modules'][name]
+                        if isinstance(error_msg, tuple):
+                            ErrorDialog(error_msg, self,
+                                        title=f'Error in import of custom-module: {name}')
+                        elif isinstance(error_msg, str):
+                            QMessageBox.warning(self, 'Import-Problem', error_msg)
 
     def set_home_path(self):
         loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.controller.home_path} not writable!'
@@ -148,17 +149,19 @@ class WelcomeWindow(QWidget):
         if loaded_home_path != '':
             self.controller = Controller(str(loaded_home_path))
             self.check_controller()
-        print(f'Projects-found: {self.controller.projects}')
-        print(f'Selected-Project: {self.controller.current_project}')
 
-    def project_changed(self, project):
+    def project_changed(self, project_idx):
+        project = self.project_cmbx.itemText(project_idx)
         self.controller.change_project(project)
-        self.check_controller()
+        self.update_project_cmbx()
 
     def update_project_cmbx(self):
         if hasattr(self.controller, 'projects'):
             self.project_cmbx.clear()
             self.project_cmbx.addItems(self.controller.projects)
+        if self.controller.current_project is not None:
+            self.project_label.setText(f'{self.controller.current_project} selected.')
+            self.project_cmbx.setCurrentText(self.controller.current_project)
 
     def add_project(self):
         new_project, ok = QInputDialog.getText(self, 'Add Project',
