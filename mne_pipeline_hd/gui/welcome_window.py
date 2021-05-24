@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInp
     QPushButton, \
     QVBoxLayout, QWidget
 
+from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center, WorkerDialog
 from mne_pipeline_hd.gui.main_window import MainWindow
@@ -33,7 +34,7 @@ class WelcomeWindow(QWidget):
         self.controller = Controller()
         self.main_window = None
         self.education_programs = list()
-        self.education_on = QSettings().value('education', defaultValue=0)
+        self.education_on = QS().value('education', defaultValue=0)
 
         self.init_ui()
         self.check_controller()
@@ -189,8 +190,8 @@ class WelcomeWindow(QWidget):
     def closeEvent(self, event):
         WorkerDialog(self, self.controller.save, blocking=True, title='Saving Project!')
         if self.edu_groupbox.isChecked():
-            QSettings().setValue('education', 1)
+            QS().setValue('education', 1)
         else:
-            QSettings().setValue('education', 0)
+            QS().setValue('education', 0)
 
         event.accept()

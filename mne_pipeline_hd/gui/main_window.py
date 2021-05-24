@@ -33,6 +33,7 @@ from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGu
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal, PlotViewSelection
+from .. import QS
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
 from ..pipeline_functions.controller import Controller
@@ -295,7 +296,7 @@ class MainWindow(QMainWindow):
 
         self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
         self.adark_mode.setCheckable(True)
-        if QSettings().value('dark_mode'):
+        if QS().value('dark_mode'):
             self.adark_mode.setChecked(True)
             self.dark_mode()
         else:
@@ -326,10 +327,10 @@ class MainWindow(QMainWindow):
         self.project_tools()
         self.toolbar.addSeparator()
 
-        # self.toolbar.addWidget(IntGui(QSettings(), 'n_threads', min_val=1,
+        # self.toolbar.addWidget(IntGui(QS(), 'n_threads', min_val=1,
         #                               description='Set to the amount of threads you want to run simultaneously '
         #                                           'in the pipeline', default=1, groupbox_layout=False))
-        self.toolbar.addWidget(IntGui(QSettings(), 'n_jobs', min_val=-1, special_value_text='Auto',
+        self.toolbar.addWidget(IntGui(QS(), 'n_jobs', min_val=-1, special_value_text='Auto',
                                       description='Set to the amount of (virtual) cores of your machine '
                                                   'you want to use for multiprocessing', default=-1,
                                       groupbox_layout=False))
@@ -342,7 +343,7 @@ class MainWindow(QMainWindow):
                                        default=True))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'save_plots', param_alias='Save Plots',
                                        description='Do you want to save the plots made to a file?', default=True))
-        self.toolbar.addWidget(BoolGui(QSettings(), 'enable_cuda', param_alias='Enable CUDA',
+        self.toolbar.addWidget(BoolGui(QS(), 'enable_cuda', param_alias='Enable CUDA',
                                        description='Do you want to enable CUDA? (system has to be setup for cuda)',
                                        default=False))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'shutdown', param_alias='Shutdown',
@@ -494,11 +495,11 @@ class MainWindow(QMainWindow):
     def dark_mode(self):
         if self.adark_mode.isChecked():
             self.app.setStyleSheet(self.dark_sheet)
-            QSettings().setValue('dark_mode', 1)
+            QS().setValue('dark_mode', 1)
             icon_name = 'mne_pipeline_icon_dark.png'
         else:
             self.app.setStyleSheet('')
-            QSettings().setValue('dark_mode', 0)
+            QS().setValue('dark_mode', 0)
             icon_name = 'mne_pipeline_icon_light.png'
         with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
             app_icon = QIcon(str(icon_path))

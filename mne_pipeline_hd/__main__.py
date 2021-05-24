@@ -25,6 +25,7 @@ package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent)
 if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
 
+from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.pipeline_functions import ismac
@@ -43,7 +44,7 @@ def main():
     app.setOrganizationDomain(domain_name)
 
     # Set Window-Icon
-    if QSettings().value('dark_mode') == 'true':
+    if QS().value('dark_mode') == 'true':
         icon_name = 'mne_pipeline_icon_dark.png'
     else:
         icon_name = 'mne_pipeline_icon_light.png'
@@ -67,7 +68,7 @@ def main():
 
     # Initialize Logger
     logger = logging.getLogger(__name__)
-    settings_log_level = QSettings().value('log_level', defaultValue=None)
+    settings_log_level = QS().value('log_level', defaultValue=None)
     if settings_log_level is not None:
         logger.setLevel(settings_log_level)
     else:

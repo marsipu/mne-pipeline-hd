@@ -159,7 +159,7 @@ class SettingsDlg(QDialog):
         #                          default=True))
         # layout.addWidget(BoolGui(self.mw.settings, 'save_plots', param_alias='Save Plots',
         #                          description='Do you want to save the plots made to a file?', default=True))
-        # layout.addWidget(BoolGui(QSettings(), 'enable_cuda', param_alias='Enable CUDA',
+        # layout.addWidget(BoolGui(QS(), 'enable_cuda', param_alias='Enable CUDA',
         #                          description='Do you want to enable CUDA? (system has to be setup for cuda)',
         #                          default=False))
         # layout.addWidget(BoolGui(self.mw.settings, 'shutdown', param_alias='Shutdown',

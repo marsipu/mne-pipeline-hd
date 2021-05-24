@@ -24,8 +24,10 @@ from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-# Make use of program also possible with sensor-space installation of mne
 from PyQt5.QtCore import QSettings
+
+# Make use of program also possible with sensor-space installation of mne
+from mne_pipeline_hd import QS
 
 try:
     from mayavi import mlab
@@ -80,7 +82,7 @@ def load_decorator(load_func):
                     raise err
 
         # Save data in data-dict for machines with big RAM
-        if obj_instance.mw.qsettings['save_ram'] == 'false' or obj_instance.mw.qsettings['save_ram'] is False:
+        if not QS().value('save_ram'):
             obj_instance.data_dict[data_type] = data
 
         return data
@@ -116,7 +118,7 @@ def save_decorator(save_func):
         save_func(*args, **kwargs)
 
         # Save data in data-dict for machines with big RAM
-        if QSettings().value('save_ram') == 'false' or QSettings().value('save_ram') is False:
+        if not QS().value('save_ram'):
             obj_instance.data_dict[data_type] = data
 
         # Save File-Parameters
@@ -130,17 +132,17 @@ def save_decorator(save_func):
 class BaseLoading:
     """ Base-Class for Sub (The current File/MRI-File/Grand-Average-Group, which is executed)"""
 
-    def __init__(self, name, main_win):
+    def __init__(self, name, controller):
         # Basic Attributes (partly taking parameters or main-win-attributes for easier access)
         self.name = name
-        self.mw = main_win
-        self.pr = main_win.pr
+        self.ct = controller
+        self.pr = controller.pr
         self.p_preset = self.pr.p_preset
-        self.subjects_dir = self.mw.subjects_dir
-        self.save_plots = self.mw.get_setting('save_plots')
+        self.subjects_dir = self.ct.subjects_dir
+        self.save_plots = self.ct.get_setting('save_plots')
         self.figures_path = self.pr.figures_path
-        self.img_format = self.mw.get_setting('img_format')
-        self.dpi = self.mw.get_setting('dpi')
+        self.img_format = self.ct.get_setting('img_format')
+        self.dpi = self.ct.get_setting('dpi')
 
         # Prepare file-parameters-dictionary for Loading-Object
         if self.name not in self.pr.file_parameters:
@@ -158,9 +160,9 @@ class BaseLoading:
         self.p = self.pr.parameters[self.p_preset]
 
         # Prepare plot-files-dictionary for Loading-Object
-        if self.name not in self.mw.pr.plot_files:
+        if self.name not in self.pr.plot_files:
             self.pr.plot_files[self.name] = dict()
-        if self.p_preset not in self.mw.pr.plot_files[self.name]:
+        if self.p_preset not in self.pr.plot_files[self.name]:
             self.pr.plot_files[self.name][self.p_preset] = dict()
         self.plot_files = self.pr.plot_files[self.name][self.p_preset]
 
@@ -215,8 +217,8 @@ class BaseLoading:
             function = inspect.stack()[2][3]
             self.file_parameters[file_name]['FUNCTION'] = function
 
-            if function in self.mw.pd_funcs.index:
-                critical_params_str = self.mw.pd_funcs.loc[function, 'func_args']
+            if function in self.ct.pd_funcs.index:
+                critical_params_str = self.ct.pd_funcs.loc[function, 'func_args']
                 # Make sure there are no spaces left
                 critical_params_str = critical_params_str.replace(' ', '')
                 critical_params = critical_params_str.split(',')
@@ -418,58 +420,58 @@ class BaseLoading:
 class MEEG(BaseLoading):
     """ Class for File-Data in File-Loop"""
 
-    def __init__(self, name, main_win, fsmri=None, suppress_warnings=True):
+    def __init__(self, name, controller, fsmri=None, suppress_warnings=True):
         self.fsmri = fsmri
         self.suppress_warnings = suppress_warnings
-        super().__init__(name, main_win)
+        super().__init__(name, controller)
 
     def init_attributes(self):
         """Initialize additional attributes for MEEG"""
         # The assigned Empty-Room-Measurement if existing
-        if self.name not in self.mw.pr.meeg_to_erm:
+        if self.name not in self.pr.meeg_to_erm:
             self.erm = None
             if not self.suppress_warnings:
                 print(f'No Empty-Room-Measurement assigned for {self.name}, defaulting to "None"')
         else:
             # Transition from 'None' to None (placed 30.01.2021, can be removed soon)
-            if self.mw.pr.meeg_to_erm[self.name] == 'None':
-                self.mw.pr.meeg_to_erm[self.name] = None
-            self.erm = self.mw.pr.meeg_to_erm[self.name]
+            if self.pr.meeg_to_erm[self.name] == 'None':
+                self.pr.meeg_to_erm[self.name] = None
+            self.erm = self.pr.meeg_to_erm[self.name]
 
         # The assigned Freesurfer-MRI(already as FSMRI-Class)
-        if self.name in self.mw.pr.meeg_to_fsmri:
-            if self.fsmri and self.fsmri.name == self.mw.pr.meeg_to_fsmri[self.name]:
+        if self.name in self.pr.meeg_to_fsmri:
+            if self.fsmri and self.fsmri.name == self.pr.meeg_to_fsmri[self.name]:
                 pass
             else:
-                self.fsmri = FSMRI(self.mw.pr.meeg_to_fsmri[self.name], self.mw)
+                self.fsmri = FSMRI(self.pr.meeg_to_fsmri[self.name], self.ct)
         else:
-            self.fsmri = FSMRI('None', self.mw)
+            self.fsmri = FSMRI('None', self.ct)
             if not self.suppress_warnings:
                 print(f'No Freesurfer-MRI-Subject assigned for {self.name}, defaulting to "None"')
 
         # The assigned bad-channels
-        if self.name not in self.mw.pr.meeg_bad_channels:
+        if self.name not in self.pr.meeg_bad_channels:
             self.bad_channels = list()
             if not self.suppress_warnings:
                 print(f'No bad channels assigned for {self.name}, defaulting to empty list')
         else:
-            self.bad_channels = self.mw.pr.meeg_bad_channels[self.name]
+            self.bad_channels = self.pr.meeg_bad_channels[self.name]
 
         # The selected trials from the event-id
-        if self.name not in self.mw.pr.sel_event_id:
+        if self.name not in self.pr.sel_event_id:
             self.sel_trials = list()
             if not self.suppress_warnings:
                 print(f'No Trials selected for {self.name}, defaulting to empty list')
         else:
-            self.sel_trials = self.mw.pr.sel_event_id[self.name]
+            self.sel_trials = self.pr.sel_event_id[self.name]
 
         # The assigned event-id
-        if self.name not in self.mw.pr.meeg_event_id:
+        if self.name not in self.pr.meeg_event_id:
             self.event_id = dict()
             if not self.suppress_warnings:
                 print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
         else:
-            all_event_id = self.mw.pr.meeg_event_id[self.name]
+            all_event_id = self.pr.meeg_event_id[self.name]
             event_id = dict()
             for key, value in all_event_id.items():
                 if '/' in key:
@@ -628,11 +630,11 @@ class MEEG(BaseLoading):
         rename(old_save_dir, self.save_dir)
 
         # Update entries in dictionaries
-        self.mw.pr.meeg_to_erm[self.name] = self.mw.pr.meeg_to_erm[old_name].pop()
-        self.mw.pr.meeg_to_fsmri[self.name] = self.mw.pr.meeg_to_fsmri[old_name].pop()
-        self.mw.pr.meeg_bad_channels[self.name] = self.mw.pr.meeg_bad_channels[old_name].pop()
-        self.mw.pr.meeg_event_id[self.name] = self.mw.pr.meeg_event_id[old_name].pop()
-        self.mw.pr.sel_event_id[self.name] = self.mw.pr.sel_event_id[old_name].pop()
+        self.pr.meeg_to_erm[self.name] = self.pr.meeg_to_erm[old_name].pop()
+        self.pr.meeg_to_fsmri[self.name] = self.pr.meeg_to_fsmri[old_name].pop()
+        self.pr.meeg_bad_channels[self.name] = self.pr.meeg_bad_channels[old_name].pop()
+        self.pr.meeg_event_id[self.name] = self.pr.meeg_event_id[old_name].pop()
+        self.pr.sel_event_id[self.name] = self.pr.sel_event_id[old_name].pop()
         self.init_attributes()
 
         # Rename old paths to new paths
@@ -933,20 +935,20 @@ class MEEG(BaseLoading):
 
 class FSMRI(BaseLoading):
     # Todo: Store available parcellations, surfaces, etc. (maybe already loaded with import?)
-    def __init__(self, name, main_win):
+    def __init__(self, name, controller):
         if name is None:
             name = 'None'
 
-        super().__init__(name, main_win)
+        super().__init__(name, controller)
 
     def init_attributes(self):
         """Initialize additional attributes for FSMRI"""
-        self.fs_path = QSettings().value('fs_path')
-        self.mne_path = QSettings().value('mne_path')
+        self.fs_path = QS().value('fs_path')
+        self.mne_path = QS().value('mne_path')
 
     def init_paths(self):
         # Main Path
-        self.save_dir = join(self.mw.subjects_dir, self.name)
+        self.save_dir = join(self.subjects_dir, self.name)
 
         # Data-Paths
         self.source_space_path = join(self.save_dir, 'bem', f'{self.name}_{self.p["source_space_spacing"]}-src.fif')
@@ -1037,13 +1039,13 @@ class Group(BaseLoading):
 
         # The assigned event-id
         self.event_id = dict()
-        for group_item in [gi for gi in self.group_list if gi in self.mw.pr.meeg_event_id]:
-            self.event_id = {**self.event_id, **self.mw.pr.meeg_event_id[group_item]}
+        for group_item in [gi for gi in self.group_list if gi in self.ct.pr.meeg_event_id]:
+            self.event_id = {**self.event_id, **self.ct.pr.meeg_event_id[group_item]}
 
         # The selected trials from the event-id
         self.sel_trials = set()
-        for group_item in [gi for gi in self.group_list if gi in self.mw.pr.sel_event_id]:
-            self.sel_trials = self.sel_trials | set(self.mw.pr.sel_event_id[group_item])
+        for group_item in [gi for gi in self.group_list if gi in self.ct.pr.sel_event_id]:
+            self.sel_trials = self.sel_trials | set(self.ct.pr.sel_event_id[group_item])
 
     def init_paths(self):
         # Main Path

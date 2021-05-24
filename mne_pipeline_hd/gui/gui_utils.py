@@ -402,6 +402,9 @@ class Worker(QRunnable):
         else:
             self.signals.finished.emit(return_value)  # Done
 
+    def start(self):
+        QThreadPool.globalInstance().start(self)
+
     def cancel(self):
         self.signals.was_canceled = True
 
@@ -428,7 +431,7 @@ class WorkerDialog(QDialog):
         self.worker.signals.pgbar_max.connect(self.set_pgbar_max)
         self.worker.signals.pgbar_n.connect(self.pgbar_changed)
         self.worker.signals.pgbar_text.connect(self.label_changed)
-        QThreadPool.globalInstance().start(self.worker)
+        self.worker.start()
 
         if self.show_console:
             set_ratio_geometry(0.3, self)

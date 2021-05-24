@@ -193,6 +193,8 @@ class FileDock(QDockWidget):
     def __init__(self, main_win, meeg_view=True, fsmri_view=True, group_view=True):
         super().__init__('Object-Selection', main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
         self.meeg_view = meeg_view
         self.fsmri_view = fsmri_view
         self.group_view = group_view
@@ -218,7 +220,7 @@ class FileDock(QDockWidget):
             # MEEG-List + Index-Line-Edit
             meeg_widget = QWidget()
             meeg_layout = QVBoxLayout()
-            self.meeg_list = CheckList(self.mw.pr.all_meeg, self.mw.pr.sel_meeg, ui_button_pos='top', show_index=True,
+            self.meeg_list = CheckList(self.pr.all_meeg, self.pr.sel_meeg, ui_button_pos='top', show_index=True,
                                        title='Select MEG/EEG')
             meeg_layout.addWidget(self.meeg_list)
 
@@ -246,7 +248,7 @@ class FileDock(QDockWidget):
             # MRI-Subjects-List + Index-Line-Edit
             fsmri_widget = QWidget()
             fsmri_layout = QVBoxLayout()
-            self.fsmri_list = CheckList(self.mw.pr.all_fsmri, self.mw.pr.sel_fsmri, ui_button_pos='top',
+            self.fsmri_list = CheckList(self.pr.all_fsmri, self.pr.sel_fsmri, ui_button_pos='top',
                                         show_index=True, title='Select Freesurfer-MRI')
             fsmri_layout.addWidget(self.fsmri_list)
 
@@ -280,11 +282,11 @@ class FileDock(QDockWidget):
 
     def update_dock(self):
         # Update lists when rereferenced elsewhere
-        self.meeg_list.replace_data(self.mw.pr.all_meeg)
-        self.meeg_list.replace_checked(self.mw.pr.sel_meeg)
+        self.meeg_list.replace_data(self.pr.all_meeg)
+        self.meeg_list.replace_checked(self.pr.sel_meeg)
 
-        self.fsmri_list.replace_data(self.mw.pr.all_fsmri)
-        self.fsmri_list.replace_checked(self.mw.pr.sel_fsmri)
+        self.fsmri_list.replace_data(self.pr.all_fsmri)
+        self.fsmri_list.replace_checked(self.pr.sel_fsmri)
 
         self.ga_widget.update_treew()
 
@@ -294,29 +296,31 @@ class FileDock(QDockWidget):
 
     def select_meeg(self):
         index = self.meeg_ledit.text()
-        self.mw.pr.sel_meeg, idxs = index_parser(index, self.mw.pr.all_meeg)
+        self.pr.sel_meeg, idxs = index_parser(index, self.pr.all_meeg)
         # Replace _checked in CheckListModel because of rereferencing above
-        self.meeg_list.replace_checked(self.mw.pr.sel_meeg)
+        self.meeg_list.replace_checked(self.pr.sel_meeg)
 
     def select_fsmri(self):
         index = self.fsmri_ledit.text()
-        self.mw.pr.sel_fsmri, idxs = index_parser(index, self.mw.pr.all_fsmri)
+        self.pr.sel_fsmri, idxs = index_parser(index, self.pr.all_fsmri)
         # Replace _checked in CheckListModel because of rereferencing above
-        self.fsmri_list.replace_checked(self.mw.pr.sel_fsmri)
+        self.fsmri_list.replace_checked(self.pr.sel_fsmri)
 
     def remove_meeg(self):
-        if len(self.mw.pr.sel_meeg) > 0:
+        if len(self.pr.sel_meeg) > 0:
             RemoveDialog(self, 'MEEG')
 
     def remove_fsmri(self):
-        if len(self.mw.pr.sel_fsmri) > 0:
+        if len(self.pr.sel_fsmri) > 0:
             RemoveDialog(self, 'FSMRI')
 
 
 class GrandAvgWidget(QWidget):
-    def __init__(self, mw):
+    def __init__(self, main_win):
         super().__init__()
-        self.mw = mw
+        self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
 
         self.init_layout()
         self.update_treew()
@@ -348,15 +352,15 @@ class GrandAvgWidget(QWidget):
     def update_treew(self):
         self.treew.clear()
         top_items = []
-        for group in self.mw.pr.all_groups:
+        for group in self.pr.all_groups:
             top_item = QTreeWidgetItem()
             top_item.setText(0, group)
             top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEditable)
-            if group in self.mw.pr.sel_groups:
+            if group in self.pr.sel_groups:
                 top_item.setCheckState(0, Qt.Checked)
             else:
                 top_item.setCheckState(0, Qt.Unchecked)
-            for file in self.mw.pr.all_groups[group]:
+            for file in self.pr.all_groups[group]:
                 sub_item = QTreeWidgetItem(top_item)
                 sub_item.setText(0, file)
             top_items.append(top_item)
@@ -364,7 +368,7 @@ class GrandAvgWidget(QWidget):
 
     def get_treew(self):
         new_dict = {}
-        self.mw.pr.sel_groups = []
+        self.pr.sel_groups = []
         for top_idx in range(self.treew.topLevelItemCount()):
             top_item = self.treew.topLevelItem(top_idx)
             top_text = top_item.text(0)
@@ -373,8 +377,8 @@ class GrandAvgWidget(QWidget):
                 child_item = top_item.child(child_idx)
                 new_dict[top_text].append(child_item.text(0))
             if top_item.checkState(0) == Qt.Checked:
-                self.mw.pr.sel_groups.append(top_text)
-        self.mw.pr.all_groups = new_dict
+                self.pr.sel_groups.append(top_text)
+        self.pr.all_groups = new_dict
 
     def add_group(self):
         text, ok = QInputDialog.getText(self, 'New Group', 'Enter the name for a new group:')
@@ -413,9 +417,11 @@ class GrandAvgWidget(QWidget):
 
 
 class GrandAvgFileAdd(QDialog):
-    def __init__(self, mw, group, ga_widget):
+    def __init__(self, main_win, group, ga_widget):
         super().__init__(ga_widget)
-        self.mw = mw
+        self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
         self.group = group
         self.ga_widget = ga_widget
         self.setWindowTitle('Select Files to add')
@@ -464,8 +470,8 @@ class GrandAvgFileAdd(QDialog):
         self.load_list()
 
     def load_list(self):
-        for item_name in self.mw.pr.all_meeg:
-            if item_name not in self.mw.pr.all_groups[self.group.text(0)]:
+        for item_name in self.pr.all_meeg:
+            if item_name not in self.pr.all_groups[self.group.text(0)]:
                 item = QListWidgetItem(item_name)
                 item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
                 item.setCheckState(Qt.Unchecked)
@@ -526,6 +532,8 @@ class AddFilesWidget(QWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
         self.layout = QVBoxLayout()
 
         self.erm_keywords = ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room', 'raum', 'Raum']
@@ -617,8 +625,8 @@ class AddFilesWidget(QWidget):
                 file_name = p.stem
                 # Get already existing files and skip them
                 if file_path in list(self.pd_files['Path']) \
-                        or file_name in self.mw.pr.all_meeg \
-                        or file_name in self.mw.pr.all_erm:
+                        or file_name in self.pr.all_meeg \
+                        or file_name in self.pr.all_erm:
                     existing_files.append(file_name)
                     continue
 
@@ -697,18 +705,18 @@ class AddFilesWidget(QWidget):
 
                 if self.pd_files.loc[idx, 'Empty-Room?']:
                     # Organize Empty-Room-FIles
-                    self.mw.pr.all_erm.append(file)
+                    self.pr.all_erm.append(file)
                 else:
                     # Organize other files
-                    self.mw.pr.all_meeg.append(file)
+                    self.pr.all_meeg.append(file)
 
                 # Copy sub_files to destination (with MEEG-Class to also include raw into file_parameters)
-                meeg = MEEG(file, self.mw)
+                meeg = MEEG(file, self.ct)
 
                 # Get bad-channels from raw-file
                 loaded_bads = raw.info['bads']
                 if len(loaded_bads) > 0:
-                    self.mw.pr.meeg_bad_channels[file] = raw.info['bads']
+                    self.pr.meeg_bad_channels[file] = raw.info['bads']
 
                 meeg.save_raw(raw)
                 worker_signals.pgbar_n.emit(n + 1)
@@ -722,7 +730,7 @@ class AddFilesWidget(QWidget):
         self.pd_files = pd.DataFrame([], columns=['Name', 'File-Type', 'Empty-Room?', 'Path'])
         self.update_model()
 
-        self.mw.pr.save()
+        self.pr.save()
         self.mw.subject_dock.update_dock()
 
 
@@ -791,6 +799,8 @@ class AddMRIWidget(QWidget):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
         self.layout = QVBoxLayout()
 
         self.folders = list()
@@ -860,12 +870,12 @@ class AddMRIWidget(QWidget):
         if folder_path != '':
             if exists(join(folder_path, 'surf')):
                 fsmri = Path(folder_path).name
-                if fsmri not in self.mw.pr.all_fsmri and fsmri not in self.folders:
+                if fsmri not in self.pr.all_fsmri and fsmri not in self.folders:
                     self.folders.append(fsmri)
                     self.paths.update({fsmri: folder_path})
                     self.populate_list_widget()
                 else:
-                    print(f'{fsmri} already existing in {self.mw.subjects_dir}')
+                    print(f'{fsmri} already existing in {self.ct.subjects_dir}')
             else:
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
 
@@ -877,11 +887,11 @@ class AddMRIWidget(QWidget):
         for fsmri in folder_list:
             folder_path = join(parent_folder, fsmri)
             if exists(join(folder_path, 'surf')):
-                if fsmri not in self.mw.pr.all_fsmri and fsmri not in self.folders:
+                if fsmri not in self.pr.all_fsmri and fsmri not in self.folders:
                     self.folders.append(fsmri)
                     self.paths.update({fsmri: folder_path})
                 else:
-                    print(f'{fsmri} already existing in {self.mw.subjects_dir}')
+                    print(f'{fsmri} already existing in {self.ct.subjects_dir}')
             else:
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
         self.populate_list_widget()
@@ -892,8 +902,8 @@ class AddMRIWidget(QWidget):
             if not worker_signals.was_canceled:
                 worker_signals.pgbar_text.emit(f'Copying {fsmri}')
                 src = self.paths[fsmri]
-                dst = join(self.mw.subjects_dir, fsmri)
-                self.mw.pr.all_fsmri.append(fsmri)
+                dst = join(self.ct.subjects_dir, fsmri)
+                self.pr.all_fsmri.append(fsmri)
                 if not isdir(dst):
                     print(f'Copying Folder from {src}...')
                     try:
@@ -917,7 +927,7 @@ class AddMRIWidget(QWidget):
         self.folders = list()
         self.paths = dict()
 
-        self.mw.pr.save()
+        self.pr.save()
         self.mw.subject_dock.update_dock()
 
 
@@ -941,6 +951,8 @@ class FileDictWidget(QWidget):
 
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
         self.mode = mode
         if mode == 'mri':
             self.title = 'Assign MEEG-Files to a FreeSurfer-Subject'
@@ -954,10 +966,10 @@ class FileDictWidget(QWidget):
     def init_ui(self):
         layout = QVBoxLayout()
         if self.mode == 'mri':
-            assign_widget = AssignWidget(self.mw.pr.all_meeg, self.mw.pr.all_fsmri, self.mw.pr.meeg_to_fsmri,
+            assign_widget = AssignWidget(self.pr.all_meeg, self.pr.all_fsmri, self.pr.meeg_to_fsmri,
                                          title=self.title, subtitles=self.subtitles)
         else:
-            assign_widget = AssignWidget(self.mw.pr.all_meeg, self.mw.pr.all_erm, self.mw.pr.meeg_to_erm,
+            assign_widget = AssignWidget(self.pr.all_meeg, self.pr.all_erm, self.pr.meeg_to_erm,
                                          title=self.title, subtitles=self.subtitles)
         layout.addWidget(assign_widget)
 
@@ -998,8 +1010,8 @@ class CopyBadsDialog(QDialog):
         super().__init__(parent_w)
 
         self.parent_w = parent_w
-        self.all_files = parent_w.mw.pr.all_meeg + parent_w.mw.pr.all_erm
-        self.bad_channels_dict = parent_w.mw.pr.meeg_bad_channels
+        self.all_files = parent_w.pr.all_meeg + parent_w.pr.all_erm
+        self.bad_channels_dict = parent_w.pr.meeg_bad_channels
 
         self.init_ui()
         self.open()
@@ -1052,6 +1064,8 @@ class SubBadsWidget(QWidget):
         """
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
         self.setWindowTitle('Assign bad_channels for your files')
         self.bad_chkbts = dict()
         self.info_dict = dict()
@@ -1064,8 +1078,8 @@ class SubBadsWidget(QWidget):
     def init_ui(self):
         self.layout = QGridLayout()
 
-        file_list = self.mw.pr.all_meeg + self.mw.pr.all_erm
-        self.files_widget = CheckDictList(file_list, self.mw.pr.meeg_bad_channels, title='Files')
+        file_list = self.pr.all_meeg + self.pr.all_erm
+        self.files_widget = CheckDictList(file_list, self.pr.meeg_bad_channels, title='Files')
         self.files_widget.currentChanged.connect(self.bad_dict_selected)
         self.files_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.layout.addWidget(self.files_widget, 0, 0)
@@ -1155,7 +1169,7 @@ class SubBadsWidget(QWidget):
                 worker_dlg.thread_finished.connect(self._make_bad_chbxs)
 
     def bad_dict_selected(self, current, _):
-        self.current_obj = MEEG(current, self.mw)
+        self.current_obj = MEEG(current, self.ct)
 
         # Close current Plot-Window
         if self.raw_fig:
@@ -1294,6 +1308,8 @@ class EventIDGui(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
 
         self.name = None
         self.event_id = dict()
@@ -1308,7 +1324,7 @@ class EventIDGui(QDialog):
     def init_ui(self):
         list_layout = QHBoxLayout()
 
-        self.files = CheckDictList(self.mw.pr.all_meeg, self.mw.pr.meeg_event_id, title='Files')
+        self.files = CheckDictList(self.pr.all_meeg, self.pr.meeg_event_id, title='Files')
         self.files.currentChanged.connect(self.file_selected)
 
         list_layout.addWidget(self.files)
@@ -1350,15 +1366,15 @@ class EventIDGui(QDialog):
 
     def get_event_id(self):
         """Get unique event-ids from events"""
-        if self.name in self.mw.pr.meeg_event_id:
-            self.event_id = self.mw.pr.meeg_event_id[self.name]
+        if self.name in self.pr.meeg_event_id:
+            self.event_id = self.pr.meeg_event_id[self.name]
         else:
             self.event_id = dict()
         self.event_id_widget.replace_data(self.event_id)
 
         try:
             # Load Events from File
-            meeg = MEEG(self.name, self.mw, suppress_warnings=True)
+            meeg = MEEG(self.name, self.ct, suppress_warnings=True)
             events = meeg.load_events()
         except FileNotFoundError:
             self.event_id_label.setText(f'No events found for {self.name}')
@@ -1370,10 +1386,10 @@ class EventIDGui(QDialog):
         if self.name:
             if len(self.event_id) > 0:
                 # Write Event-ID to Project
-                self.mw.pr.meeg_event_id[self.name] = self.event_id
+                self.pr.meeg_event_id[self.name] = self.event_id
 
                 # Get selected Trials and write them to meeg.pr
-                self.mw.pr.sel_event_id[self.name] = self.checked_labels
+                self.pr.sel_event_id[self.name] = self.checked_labels
 
     def file_selected(self, current, _):
         """Called when File from file_widget is selected"""
@@ -1385,8 +1401,8 @@ class EventIDGui(QDialog):
         self.get_event_id()
 
         # Load checked trials
-        if self.name in self.mw.pr.sel_event_id:
-            self.checked_labels = self.mw.pr.sel_event_id[self.name]
+        if self.name in self.pr.sel_event_id:
+            self.checked_labels = self.pr.sel_event_id[self.name]
         else:
             self.checked_labels = list()
         self.update_check_list()
@@ -1435,7 +1451,7 @@ class EvIDApply(QDialog):
         label = QLabel(f'Apply {self.p.name} to:')
         self.layout.addWidget(label)
 
-        self.check_listw = CheckList(self.p.mw.pr.all_meeg, self.apply_to)
+        self.check_listw = CheckList(self.p.pr.all_meeg, self.apply_to)
         self.layout.addWidget(self.check_listw)
 
         bt_layout = QHBoxLayout()
@@ -1454,24 +1470,26 @@ class EvIDApply(QDialog):
     def apply_evid(self):
         for file in self.apply_to:
             # Avoid with copy that CheckList-Model changes selected for all afterwards (same reference)
-            self.p.mw.pr.meeg_event_id[file] = self.p.event_id.copy()
-            self.p.mw.pr.sel_event_id[file] = self.p.checked_labels.copy()
+            self.p.pr.meeg_event_id[file] = self.p.event_id.copy()
+            self.p.pr.sel_event_id[file] = self.p.checked_labels.copy()
 
 
 class CopyTrans(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
 
         # Get MEEGs, where a trans-file is already existing
         self.from_meegs = list()
-        for meeg_name in self.mw.pr.all_meeg:
-            meeg = MEEG(meeg_name, self.mw)
+        for meeg_name in self.pr.all_meeg:
+            meeg = MEEG(meeg_name, self.ct)
             if isfile(meeg.trans_path):
                 self.from_meegs.append(meeg_name)
 
         # Get the other MEEGs (wihtout trans-file)
-        self.to_meegs = [meeg for meeg in self.mw.pr.all_meeg if meeg not in self.from_meegs]
+        self.to_meegs = [meeg for meeg in self.pr.all_meeg if meeg not in self.from_meegs]
 
         self.current_meeg = None
         self.copy_tos = list()
@@ -1509,14 +1527,14 @@ class CopyTrans(QDialog):
         worker_signals.pgbar_max.emit(len(self.to_meegs))
         for n, to_meeg in enumerate(self.to_meegs):
             worker_signals.pgbar_text.emit(f'Comparing: {to_meeg}')
-            if MEEG(to_meeg, self.mw).load_info()['dig'] == current_dig:
+            if MEEG(to_meeg, self.ct).load_info()['dig'] == current_dig:
                 self.copy_tos.append(to_meeg)
             worker_signals.pgbar_n.emit(n + 1)
 
         self.to_list.content_changed()
 
     def from_selected(self, current_meeg):
-        self.current_meeg = MEEG(current_meeg, self.mw)
+        self.current_meeg = MEEG(current_meeg, self.ct)
         WorkerDialog(self, self._compare_digs, show_buttons=False, show_console=False)
 
     def copy_trans(self):
@@ -1524,7 +1542,7 @@ class CopyTrans(QDialog):
             from_path = self.current_meeg.trans_path
 
             for copy_to in self.copy_tos:
-                to_meeg = MEEG(copy_to, self.mw)
+                to_meeg = MEEG(copy_to, self.ct)
                 to_path = to_meeg.trans_path
 
                 shutil.copy2(from_path, to_path)
@@ -1547,20 +1565,22 @@ class FileManagment(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
 
         self.load_prog = 0
 
-        self.pd_meeg = pd.DataFrame(index=self.mw.pr.all_meeg)
-        self.pd_meeg_time = pd.DataFrame(index=self.mw.pr.all_meeg)
-        self.pd_meeg_size = pd.DataFrame(index=self.mw.pr.all_meeg)
+        self.pd_meeg = pd.DataFrame(index=self.pr.all_meeg)
+        self.pd_meeg_time = pd.DataFrame(index=self.pr.all_meeg)
+        self.pd_meeg_size = pd.DataFrame(index=self.pr.all_meeg)
 
-        self.pd_fsmri = pd.DataFrame(index=self.mw.pr.all_fsmri)
-        self.pd_fsmri_time = pd.DataFrame(index=self.mw.pr.all_fsmri)
-        self.pd_fsmri_size = pd.DataFrame(index=self.mw.pr.all_fsmri)
+        self.pd_fsmri = pd.DataFrame(index=self.pr.all_fsmri)
+        self.pd_fsmri_time = pd.DataFrame(index=self.pr.all_fsmri)
+        self.pd_fsmri_size = pd.DataFrame(index=self.pr.all_fsmri)
 
-        self.pd_group = pd.DataFrame(index=self.mw.pr.all_groups)
-        self.pd_group_time = pd.DataFrame(index=self.mw.pr.all_groups)
-        self.pd_group_size = pd.DataFrame(index=self.mw.pr.all_groups)
+        self.pd_group = pd.DataFrame(index=self.pr.all_groups)
+        self.pd_group_time = pd.DataFrame(index=self.pr.all_groups)
+        self.pd_group_size = pd.DataFrame(index=self.pr.all_groups)
 
         self.param_results = dict()
 
@@ -1574,17 +1594,17 @@ class FileManagment(QDialog):
     def get_file_tables(self, kind):
 
         if kind == 'MEEG':
-            obj_list = self.mw.pr.all_meeg
+            obj_list = self.pr.all_meeg
             obj_pd = self.pd_meeg
             obj_pd_time = self.pd_meeg_time
             obj_pd_size = self.pd_meeg_size
         elif kind == 'FSMRI':
-            obj_list = self.mw.pr.all_fsmri
+            obj_list = self.pr.all_fsmri
             obj_pd = self.pd_fsmri
             obj_pd_time = self.pd_fsmri_time
             obj_pd_size = self.pd_fsmri_size
         else:
-            obj_list = self.mw.pr.all_groups
+            obj_list = self.pr.all_groups
             obj_pd = self.pd_group
             obj_pd_time = self.pd_group_time
             obj_pd_size = self.pd_group_size
@@ -1592,11 +1612,11 @@ class FileManagment(QDialog):
 
         for obj_name in obj_list:
             if kind == 'MEEG':
-                obj = MEEG(obj_name, self.mw)
+                obj = MEEG(obj_name, self.ct)
             elif kind == 'FSMRI':
-                obj = FSMRI(obj_name, self.mw)
+                obj = FSMRI(obj_name, self.ct)
             else:
-                obj = Group(obj_name, self.mw)
+                obj = Group(obj_name, self.ct)
 
             obj.get_existing_paths()
             self.param_results[obj_name] = dict()
@@ -1656,18 +1676,17 @@ class FileManagment(QDialog):
         meeg_worker = Worker(function=self.get_file_tables, kind='MEEG')
         meeg_worker.signals.error.connect(self.thread_error)
         meeg_worker.signals.finished.connect(self.thread_finished)
+        meeg_worker.start()
 
         fsmri_worker = Worker(function=self.get_file_tables, kind='FSMRI')
         fsmri_worker.signals.error.connect(self.thread_error)
         fsmri_worker.signals.finished.connect(self.thread_finished)
+        fsmri_worker.start()
 
         group_worker = Worker(function=self.get_file_tables, kind='Group')
         group_worker.signals.error.connect(self.thread_error)
         group_worker.signals.finished.connect(self.thread_finished)
-
-        self.mw.threadpool.start(meeg_worker)
-        self.mw.threadpool.start(fsmri_worker)
-        self.mw.threadpool.start(group_worker)
+        group_worker.start()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -1822,17 +1841,17 @@ class FileManagment(QDialog):
                 worker_signals.pgbar_text.emit(f'Removing canceled')
                 break
             if kind == 'MEEG':
-                obj = MEEG(obj_name, self.mw)
+                obj = MEEG(obj_name, self.ct)
                 obj_pd = self.pd_meeg
                 obj_pd_time = self.pd_meeg_time
                 obj_pd_size = self.pd_meeg_size
             elif kind == 'FSMRI':
-                obj = FSMRI(obj_name, self.mw)
+                obj = FSMRI(obj_name, self.ct)
                 obj_pd = self.pd_fsmri
                 obj_pd_time = self.pd_fsmri_time
                 obj_pd_size = self.pd_fsmri_size
             else:
-                obj = Group(obj_name, self.mw)
+                obj = Group(obj_name, self.ct)
                 obj_pd = self.pd_group
                 obj_pd_time = self.pd_group_time
                 obj_pd_size = self.pd_group_size
@@ -1884,6 +1903,8 @@ class ICASelect(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
         self.current_obj = None
         self.parameters = dict()
         self.chkbxs = dict()
@@ -1903,7 +1924,7 @@ class ICASelect(QDialog):
         self.main_layout = QVBoxLayout()
         list_layout = QHBoxLayout()
 
-        self.file_list = CheckDictList(self.mw.pr.all_meeg, self.mw.pr.ica_exclude)
+        self.file_list = CheckDictList(self.pr.all_meeg, self.pr.ica_exclude)
         self.file_list.currentChanged.connect(self.obj_selected)
         list_layout.addWidget(self.file_list)
 
@@ -1912,7 +1933,7 @@ class ICASelect(QDialog):
         comp_widget = QWidget()
         self.comp_chkbx_layout = QGridLayout()
 
-        n_components = self.mw.pr.parameters[self.mw.pr.p_preset]['n_components']
+        n_components = self.pr.parameters[self.pr.p_preset]['n_components']
         for idx in range(n_components):
             chkbx = QCheckBox(str(idx))
             chkbx.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
@@ -1976,8 +1997,8 @@ class ICASelect(QDialog):
 
     def update_chkbxs(self):
         # Check, if object is already in ica_exclude
-        if self.current_obj.name in self.mw.pr.ica_exclude:
-            selected_components = self.mw.pr.ica_exclude[self.current_obj.name]
+        if self.current_obj.name in self.pr.ica_exclude:
+            selected_components = self.pr.ica_exclude[self.current_obj.name]
         else:
             selected_components = list()
 
@@ -1991,7 +2012,7 @@ class ICASelect(QDialog):
                 self.chkbxs[idx].setChecked(True)
             else:
                 # Remove idx if not in range(n_components)
-                self.mw.pr.ica_exclude[self.current_obj.name].remove(idx)
+                self.pr.ica_exclude[self.current_obj.name].remove(idx)
 
     def update_plots(self):
         # Remove old layout with plots
@@ -2013,7 +2034,7 @@ class ICASelect(QDialog):
                 continue
             else:
                 for plot_path in plot_paths:
-                    plot_path = join(self.mw.pr.figures_path, plot_path)
+                    plot_path = join(self.pr.figures_path, plot_path)
                     pixmap = QPixmap(plot_path)
                     label = QLabel()
                     label.setScaledContents(True)
@@ -2025,13 +2046,13 @@ class ICASelect(QDialog):
         self.main_layout.addLayout(plot_layout)
 
     def obj_selected(self, current_name):
-        self.current_obj = MEEG(current_name, self.mw)
+        self.current_obj = MEEG(current_name, self.ct)
         self.update_chkbxs()
         self.update_plots()
 
     def component_selected(self):
         if self.current_obj:
-            self.mw.pr.ica_exclude[self.current_obj.name] = [idx for idx in self.chkbxs if self.chkbxs[idx].isChecked()]
+            self.pr.ica_exclude[self.current_obj.name] = [idx for idx in self.chkbxs if self.chkbxs[idx].isChecked()]
         self.file_list.content_changed()
 
     def set_chkbx_enable(self, enable):
@@ -2040,7 +2061,7 @@ class ICASelect(QDialog):
 
     def get_selected_components(self, ica, _):
         self.set_chkbx_enable(True)
-        self.mw.pr.ica_exclude[self.current_obj.name] = ica.exclude
+        self.pr.ica_exclude[self.current_obj.name] = ica.exclude
         self.update_chkbxs()
         self.file_list.content_changed()
 
@@ -2132,6 +2153,8 @@ class ReloadRaw(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
 
         self.init_ui()
         self.open()
@@ -2139,7 +2162,7 @@ class ReloadRaw(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        self.raw_list = SimpleList(self.mw.pr.all_meeg, title='Select Raw to reload')
+        self.raw_list = SimpleList(self.pr.all_meeg, title='Select Raw to reload')
         layout.addWidget(self.raw_list)
 
         reload_bt = QPushButton('Reload')
@@ -2153,7 +2176,7 @@ class ReloadRaw(QDialog):
         self.setLayout(layout)
 
     def reload_raw(self, selected_raw, raw_path):
-        meeg = MEEG(selected_raw, self.mw)
+        meeg = MEEG(selected_raw, self.ct)
         raw = load_raw_file(raw_path)
         meeg.save_raw(raw)
         print(f'Reloaded Raw for {selected_raw}')

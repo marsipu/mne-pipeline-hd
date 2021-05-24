@@ -11,7 +11,7 @@ import mne
 import pandas as pd
 from PyQt5.QtCore import QSettings
 
-from mne_pipeline_hd import basic_functions
+from mne_pipeline_hd import basic_functions, QS
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.pipeline_functions.project import Project
 
@@ -27,7 +27,7 @@ class Controller:
         # Check Home-Path
         self.errors = dict()
         # Try to load home_path from QSettings
-        self.home_path = home_path or QSettings().value('home_path', defaultValue=None)
+        self.home_path = home_path or QS().value('home_path', defaultValue=None)
         if self.home_path is None:
             self.errors['home_path'] = f'No Home-Path found!'
 
@@ -41,7 +41,7 @@ class Controller:
 
         else:
             logger.info(f'Home-Path: {self.home_path}')
-            QSettings().setValue('home_path', self.home_path)
+            QS().setValue('home_path', self.home_path)
             # Create subdirectories if not existing for a valid home_path
             for subdir in [d for d in home_dirs if not isdir(join(self.home_path, d))]:
                 os.mkdir(join(self.home_path, subdir))
@@ -122,22 +122,22 @@ class Controller:
             self.settings = self.default_settings['settings']
 
         # Check integrity of QSettings-Keys
-        QSettings().sync()
-        qs = set(QSettings().childKeys())
+        QS().sync()
+        qs = set(QS().childKeys())
         ds = set(self.default_settings['qsettings'])
         # Remove additional (old) QSettings not appearing in default-settings
         for qsetting in qs - ds:
-            QSettings().remove(qsetting)
+            QS().remove(qsetting)
         # Add new settings from default-settings which are not present in QSettings
         for qsetting in ds - qs:
-            QSettings().setValue(qsetting, self.default_settings['qsettings'][qsetting])
+            QS().setValue(qsetting, self.default_settings['qsettings'][qsetting])
 
     def save_settings(self):
         with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
             json.dump(self.settings, file, indent=4)
 
         # Sync QSettings with other instances
-        QSettings().sync()
+        QS().sync()
 
     def get_setting(self, setting):
         try:

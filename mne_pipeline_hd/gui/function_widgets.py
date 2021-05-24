@@ -30,6 +30,8 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QListView, QListWidget, QListWidgetItem, QMessageBox, QPushButton,
                              QSizePolicy, QStyle,
                              QTabWidget, QTextEdit, QVBoxLayout)
+
+from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleDialog, SimpleList
 from mne_pipeline_hd.gui.gui_utils import CodeEditor, ErrorDialog, center, get_exception_tuple, set_ratio_geometry
@@ -123,7 +125,7 @@ class CustomFunctionImport(QDialog):
         self.exst_functions = list(self.mw.pd_funcs.index)
         self.exst_parameters = ['mw', 'pr', 'meeg', 'fsmri', 'group']
         self.exst_parameters += list(self.mw.settings.keys())
-        self.exst_parameters += list(QSettings().childKeys())
+        self.exst_parameters += list(QS().childKeys())
         self.exst_parameters += list(self.mw.pr.parameters[self.mw.pr.p_preset].keys())
         self.param_exst_dict = dict()
 
