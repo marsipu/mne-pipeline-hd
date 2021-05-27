@@ -172,6 +172,7 @@ class BaseLoading:
         """Initialization of all paths and the io_dict, should be overridden in inherited classes"""
         self.save_dir = None
         self.io_dict = dict()
+        self.deprecated_paths = dict()
 
     def _return_path_list(self, data_type):
         paths = self.io_dict[data_type]['path']
@@ -972,6 +973,8 @@ class FSMRI(BaseLoading):
                                          'load': self.load_source_morph,
                                          'save': self.save_source_morph}}
 
+        self.deprecated_paths = {}
+
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
@@ -1081,6 +1084,8 @@ class Group(BaseLoading):
                         'Grand-Average Connectiviy': {'path': self.ga_con_paths,
                                                       'load': self.load_ga_con,
                                                       'save': self.save_ga_con}}
+
+        self.deprecated_paths = {}
 
     ####################################################################################################################
     # Load- & Save-Methods
