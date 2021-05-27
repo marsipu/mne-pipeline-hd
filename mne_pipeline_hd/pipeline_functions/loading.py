@@ -60,7 +60,7 @@ def load_decorator(load_func):
             # Todo: Dependencies!
             try:
                 data = load_func(*args, **kwargs)
-            except FileNotFoundError as fnf_err:
+            except (FileNotFoundError, OSError) as err:
                 if obj_instance.p_preset != 'Default':
                     print(f'No File for {data_type} from {obj_instance.name}'
                           f' with Parameter-Preset={obj_instance.p_preset} found, trying Default')
@@ -73,8 +73,11 @@ def load_decorator(load_func):
 
                     obj_instance.p_preset = actual_p_preset
                     obj_instance.init_paths()
+                elif data_type in obj_instance.deprecated_paths:
+                    obj_instance.io_dict[data_type]['path'] = obj_instance.deprecated_paths[data_type]
+                    data = load_func(*args, **kwargs)
                 else:
-                    raise fnf_err
+                    raise err
 
         # Save data in data-dict for machines with big RAM
         if obj_instance.mw.qsettings['save_ram'] == 'false' or obj_instance.mw.qsettings['save_ram'] is False:
@@ -603,6 +606,10 @@ class MEEG(BaseLoading):
                         'LTC': {'path': self.ltc_paths,
                                 'load': self.load_ltc,
                                 'save': self.save_ltc}}
+
+        self.deprecated_paths = {'Source Estimate': {trial: join(self.save_dir,
+                                                                 f'{self.name}_{trial}_{self.p_preset}')
+                                                     for trial in self.sel_trials}}
 
     def rename(self, new_name):
         # Stor old name
