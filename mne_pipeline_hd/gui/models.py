@@ -15,7 +15,8 @@ from datetime import datetime
 import pandas as pd
 from PyQt5.QtCore import QAbstractItemModel, QAbstractListModel, QAbstractTableModel, QModelIndex, Qt
 from PyQt5.QtGui import QBrush, QFont
-from PyQt5.QtWidgets import QApplication, QStyle
+from PyQt5.QtWidgets import QStyle
+from mne_pipeline_hd.gui.gui_utils import get_std_icon
 
 
 class BaseListModel(QAbstractListModel):
@@ -216,7 +217,6 @@ class CheckDictModel(BaseListModel):
                  yes_bt=None, no_bt=None, **kwargs):
         super().__init__(data, show_index, drag_drop, **kwargs)
         self._check_dict = check_dict
-        self.app = QApplication.instance()
 
         self.yes_bt = yes_bt or QStyle.SP_DialogApplyButton
         self.no_bt = no_bt or QStyle.SP_DialogCancelButton
@@ -232,9 +232,9 @@ class CheckDictModel(BaseListModel):
 
         elif role == Qt.DecorationRole:
             if self.getData(index) in self._check_dict:
-                return self.app.style().standardIcon(self.yes_bt)
+                return get_std_icon(self.yes_bt)
             else:
-                return self.app.style().standardIcon(self.no_bt)
+                return get_std_icon(self.no_bt)
 
 
 class CheckDictEditModel(CheckDictModel, EditListModel):
@@ -742,7 +742,6 @@ class FileManagementModel(BasePandasModel):
 
     def __init__(self, data, **kwargs):
         super().__init__(data, **kwargs)
-        self.app = QApplication.instance()
 
     def data(self, index, role=None):
         value = self.getData(index)
@@ -761,13 +760,13 @@ class FileManagementModel(BasePandasModel):
 
         if role == Qt.DecorationRole:
             if pd.isna(value) or value == 0:
-                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
+                return get_std_icon('SP_DialogCancelButton')
             elif value == 'exists':
-                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+                return get_std_icon('SP_DialogApplyButton')
             elif value == 'possible_conflict':
-                return self.app.style().standardIcon(QStyle.SP_MessageBoxQuestion)
+                return get_std_icon('SP_MessageBoxQuestion')
             elif value == 'critical_conflict':
-                return self.app.style().standardIcon(QStyle.SP_MessageBoxWarning)
+                return get_std_icon('SP_MessageBoxWarning')
 
         elif role == Qt.BackgroundRole:
             if pd.isna(value) or value == 0:
@@ -793,7 +792,6 @@ class CustomFunctionModel(QAbstractListModel):
     def __init__(self, data, **kwargs):
         super().__init__(**kwargs)
         self._data = data
-        self.app = QApplication.instance()
 
     def getData(self, index=QModelIndex()):
         return self._data.index[index.row()]
@@ -808,9 +806,9 @@ class CustomFunctionModel(QAbstractListModel):
 
         elif role == Qt.DecorationRole:
             if self._data.loc[self.getData(index), 'ready']:
-                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+                return get_std_icon('SP_DialogApplyButton')
             else:
-                return self.app.style().standardIcon(QStyle.SP_DialogCancelButton)
+                return get_std_icon('SP_DialogCancelButton')
 
     def rowCount(self, index=QModelIndex()):
         return len(self._data.index)
@@ -822,7 +820,6 @@ class RunModel(QAbstractListModel):
 
     def __init__(self, data, mode):
         super().__init__()
-        self.app = QApplication.instance()
         self._data = data
         self.mode = mode
 
@@ -863,9 +860,9 @@ class RunModel(QAbstractListModel):
         # Mark objects/functions if they are already done, mark objects according to their type (color-code)
         elif role == Qt.DecorationRole:
             if self.getValue(index) == 0:
-                return self.app.style().standardIcon(QStyle.SP_DialogApplyButton)
+                return get_std_icon('SP_DialogApplyButton')
             elif self.getValue(index) == 2:
-                return self.app.style().standardIcon(QStyle.SP_ArrowRight)
+                return get_std_icon('SP_ArrowRight')
 
         elif role == Qt.FontRole:
             if self.getValue(index) == 2:

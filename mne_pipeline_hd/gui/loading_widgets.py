@@ -29,8 +29,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
-
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
+
 from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
                            SimpleList,
                            SimplePandasTable)
@@ -127,7 +127,7 @@ class RemoveDialog(QDialog):
     def __init__(self, parentw, mode):
         super().__init__(parentw)
         self.pw = parentw
-        self.pr = parentw.mw.pr
+        self.pr = parentw.ct.pr
         self.mode = mode
 
         self.init_ui()
@@ -180,9 +180,9 @@ class RemoveDialog(QDialog):
                 self.pr.all_fsmri.remove(fsmri)
                 if remove_files:
                     try:
-                        shutil.rmtree(join(self.pw.mw.subjects_dir, fsmri))
+                        shutil.rmtree(join(self.pw.ct.subjects_dir, fsmri))
                     except FileNotFoundError:
-                        print(join(self.pw.mw.subjects_dir, fsmri) + ' not found!')
+                        print(join(self.pw.ct.subjects_dir, fsmri) + ' not found!')
             self.pr.sel_fsmri.clear()
             self.pw.fsmri_list.content_changed()
         self.close()

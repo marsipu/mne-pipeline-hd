@@ -11,29 +11,26 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import sys
 from functools import partial
-from importlib import resources
 from subprocess import run
 
 import mne
 import pandas as pd
-import qdarkstyle
-from PyQt5.QtCore import QThreadPool, Qt, pyqtSignal, QSettings
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtCore import QThreadPool, Qt, pyqtSignal
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
-                             QPushButton, QScrollArea, QSizePolicy, QStyle, QStyleFactory, QTabWidget, QToolTip,
-                             QVBoxLayout, QWidget)
+                             QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
+from mne_pipeline_hd import QS
 
 from .dialogs import (ParametersDock, QuickGuide, RawInfo, RemoveProjectsDlg,
-                      SettingsDlg, SysInfoMsg)
+                      SettingsDlg, SysInfoMsg, AboutDialog)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
-from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry
+from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui
 from .tools import DataTerminal, PlotViewSelection
-from .. import QS
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
 from ..pipeline_functions.controller import Controller
@@ -41,21 +38,6 @@ from ..pipeline_functions.function_utils import RunDialog
 from ..pipeline_functions.pipeline_utils import restart_program
 
 
-def get_upstream():
-    """
-    Get and merge the upstream branch from a repository (e.g. developement-branch of mne-pyhon)
-    :return: None
-    """
-    if iswin:
-        command = "git fetch upstream & git checkout main & git merge upstream/main"
-    else:
-        command = "git fetch upstream; git checkout main; git merge upstream/main"
-    result = run(command)
-    print(result.stdout)
-
-
-# Todo: Controller-Class to make MainWindow-Class more light and prepare for features as Pipeline-Freezig
-#  (you need an PyQt-independent system for that)
 class MainWindow(QMainWindow):
     # Define Main-Window-Signals to send into QThread to control function execution
     cancel_functions = pyqtSignal(bool)
@@ -63,13 +45,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, controller, welcome_window):
         super().__init__()
-        self.app = QApplication.instance()
 
-        # Initiate General-Layout
-        self.app.setFont(QFont('Calibri', 10))
-        QToolTip.setFont(QFont('SansSerif', 10))
-        self.change_style('Fusion')
-        self.dark_sheet = qdarkstyle.load_stylesheet_pyqt5()
         self.setWindowTitle('MNE-Pipeline HD')
 
         self.setCentralWidget(QWidget(self))
@@ -77,8 +53,7 @@ class MainWindow(QMainWindow):
         self.centralWidget().setLayout(self.general_layout)
 
         # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
-        self.threadpool = QThreadPool()
-        print(f'Multithreading with maximum {self.threadpool.maxThreadCount()} threads')
+        print(f'max. {QThreadPool.globalInstance().maxThreadCount()} PyQT-Threads')
 
         # Initiate attributes for Main-Window
         self.ct = controller
@@ -108,7 +83,7 @@ class MainWindow(QMainWindow):
 
         self.first_init = False
 
-    def project_updated(self):
+    def update_project_ui(self):
 
         # Redraw function-buttons and parameter-widgets
         self.redraw_func_and_param()
@@ -118,7 +93,7 @@ class MainWindow(QMainWindow):
         self.update_project_box()
         # Update Statusbar
         self.statusBar().showMessage(f'Home-Path: {self.ct.home_path}, '
-                                     f'Project: {self.ct.current_project}')
+                                     f'Project: {self.ct.pr.name}')
 
     def change_home_path(self):
         # First save the former projects-data
@@ -148,49 +123,31 @@ class MainWindow(QMainWindow):
                         new_controller.change_project(new_controller.projects[0])
 
                 self.ct = new_controller
-                self.welcome_window.controller = new_controller
+                self.welcome_window.ct = new_controller
                 self.statusBar().showMessage(f'Home-Path: {self.ct.home_path}, '
-                                             f'Project: {self.ct.current_project}')
+                                             f'Project: {self.ct.pr.name}')
 
-                self.project_updated()
+                self.update_project_ui()
 
     def add_project(self):
         # First save the former projects-data
-        WorkerDialog(self, self.ct.save, blocking=True)
+        WorkerDialog(self, self.ct.save.pr, blocking=True)
 
         new_project, ok = QInputDialog.getText(self, 'New Project',
                                                'Enter a name for a new project')
         if ok:
             self.ct.change_project(new_project)
-            self.project_updated()
+            self.update_project_ui()
 
     def remove_project(self):
         # First save the former projects-data
-        self.ct.save()
+        WorkerDialog(self, self.ct.save.pr, blocking=True)
+
         RemoveProjectsDlg(self, self.ct)
-
-    def project_tools(self):
-        self.project_box = QComboBox()
-        self.project_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        for project in self.ct.projects:
-            self.project_box.addItem(project)
-        self.project_box.setCurrentText(self.ct.current_project)
-        self.project_box.activated.connect(self.project_changed)
-        proj_box_label = QLabel('<b>Project: <b>')
-        self.toolbar.addWidget(proj_box_label)
-        self.toolbar.addWidget(self.project_box)
-
-        aadd = QAction(parent=self, icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
-        aadd.triggered.connect(self.add_project)
-        self.toolbar.addAction(aadd)
-
-        arm = QAction(parent=self, icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
-        arm.triggered.connect(self.remove_project)
-        self.toolbar.addAction(arm)
 
     def project_changed(self, idx):
         # First save the former projects-data
-        self.ct.save()
+        WorkerDialog(self, self.ct.save.pr, blocking=True)
 
         # Get selected Project
         project = self.project_box.itemText(idx)
@@ -198,7 +155,7 @@ class MainWindow(QMainWindow):
         # Change project
         self.ct.change_project(project)
 
-        self.project_updated()
+        self.update_project_ui()
 
     def pr_clean_fp(self):
         WorkerDialog(self, self.ct.pr.clean_file_parameters, show_buttons=True, show_console=True,
@@ -211,10 +168,8 @@ class MainWindow(QMainWindow):
     def update_project_box(self):
         self.project_box.clear()
         self.project_box.addItems(self.ct.projects)
-        if self.ct.current_project in self.ct.projects:
-            self.project_box.setCurrentText(self.ct.current_project)
-        else:
-            self.project_box.setCurrentText(self.ct.projects[0])
+        if self.ct.pr is not None:
+            self.project_box.setCurrentText(self.ct.pr.name)
 
     def start_edu(self):
         if self.ct.edu_program and len(self.ct.edu_program['tour_list']) > 0:
@@ -293,16 +248,6 @@ class MainWindow(QMainWindow):
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
-
-        self.adark_mode = self.view_menu.addAction('&Dark-Mode', self.dark_mode)
-        self.adark_mode.setCheckable(True)
-        if QS().value('dark_mode'):
-            self.adark_mode.setChecked(True)
-            self.dark_mode()
-        else:
-            self.adark_mode.setChecked(False)
-            self.dark_mode()
-
         self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
 
         # Settings
@@ -317,14 +262,28 @@ class MainWindow(QMainWindow):
         # about_menu.addAction('Update MNE-Python', self.update_mne)
         about_menu.addAction('Quick-Guide', partial(QuickGuide, self))
         about_menu.addAction('MNE System-Info', self.show_sys_info)
-        about_menu.addAction('About', self.about)
-        about_menu.addAction('About MNE-Python', self.about_mne)
-        about_menu.addAction('About QT', self.app.aboutQt)
+        about_menu.addAction('About', partial(AboutDialog, self))
+        about_menu.addAction('About QT', QApplication.instance().aboutQt)
 
     def init_toolbar(self):
         self.toolbar = self.addToolBar('Tools')
-        # Add Project-Tools
-        self.project_tools()
+        # Add Project-UI
+        proj_box_label = QLabel('<b>Project: <b>')
+        self.toolbar.addWidget(proj_box_label)
+
+        self.project_box = QComboBox()
+        self.project_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.project_box.activated.connect(self.project_changed)
+        self.update_project_box()
+        self.toolbar.addWidget(self.project_box)
+
+        add_action = QAction(parent=self, icon=get_std_icon('SP_FileDialogNewFolder'))
+        add_action.triggered.connect(self.add_project)
+        self.toolbar.addAction(add_action)
+
+        remove_action = QAction(parent=self, icon=get_std_icon('SP_DialogDiscardButton'))
+        remove_action.triggered.connect(self.remove_project)
+        self.toolbar.addAction(remove_action)
         self.toolbar.addSeparator()
 
         # self.toolbar.addWidget(IntGui(QS(), 'n_threads', min_val=1,
@@ -351,7 +310,8 @@ class MainWindow(QMainWindow):
                                                    ' after execution of all subjects?'))
         self.toolbar.addWidget(IntGui(self.ct.settings, 'dpi', min_val=0, max_val=10000,
                                       description='Set dpi for saved plots', default=300, groupbox_layout=False))
-        self.toolbar.addWidget(ComboGui(self.ct.settings, 'img_format', {'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'},
+        self.toolbar.addWidget(ComboGui(self.ct.settings, 'img_format',
+                                        options={'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'},
                                         param_alias='Image-Format', description='Choose the image format for plots',
                                         default='.png', groupbox_layout=False))
         close_all_bt = QPushButton('Close All Plots')
@@ -492,19 +452,6 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.parameters_dock)
         self.view_menu.addAction(self.parameters_dock.toggleViewAction())
 
-    def dark_mode(self):
-        if self.adark_mode.isChecked():
-            self.app.setStyleSheet(self.dark_sheet)
-            QS().setValue('dark_mode', 1)
-            icon_name = 'mne_pipeline_icon_dark.png'
-        else:
-            self.app.setStyleSheet('')
-            QS().setValue('dark_mode', 0)
-            icon_name = 'mne_pipeline_icon_light.png'
-        with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
-            app_icon = QIcon(str(icon_path))
-        self.app.setWindowIcon(app_icon)
-
     def full_screen(self):
         if self.isFullScreen():
             self.showNormal()
@@ -521,11 +468,6 @@ class MainWindow(QMainWindow):
             # on osx we can raise the window. on unity the icon in the tray will just flash.
             self.activateWindow()
             self.raise_()
-
-    def change_style(self, style_name):
-        self.app.setStyle(QStyleFactory.create(style_name))
-        self.app.setPalette(QApplication.style().standardPalette())
-        center(self)
 
     def clear(self):
         for x in self.bt_dict:
@@ -632,47 +574,6 @@ class MainWindow(QMainWindow):
         sys_info_msg = SysInfoMsg(self)
         sys.stdout.signal.text_written.connect(sys_info_msg.add_text)
         mne.sys_info()
-
-    def about(self):
-        with resources.open_text('mne_pipeline_hd.pipeline_resources', 'license.txt') as file:
-            license_text = file.read()
-        license_text = license_text.replace('\n', '<br>')
-        text = '<h1>MNE-Pipeline HD</h1>' \
-               '<b>A Pipeline-GUI for MNE-Python</b><br>' \
-               '(originally developed for MEG-Lab Heidelberg)<br>' \
-               '<i>Development was initially inspired by: ' \
-               '<a href=https://doi.org/10.3389/fnins.2018.00006>Andersen L.M. 2018</a></i><br>' \
-               '<br>' \
-               'As for now, this program is still in alpha-state, so some features may not work as expected. ' \
-               'Be sure to check all the parameters for each step to be correctly adjusted to your needs.<br>' \
-               '<br>' \
-               '<b>Developed by:</b><br>' \
-               'Martin Schulz (medical student, Heidelberg)<br>' \
-               '<br>' \
-               '<b>Supported by:</b><br>' \
-               'PD Dr. André Rupp, Kristin Mierisch<br>' \
-               '<br>' \
-               '<b>Licensed under:</b><br>' \
-               + license_text
-
-        msgbox = QMessageBox(self)
-        msgbox.setWindowTitle('About')
-        msgbox.setStyleSheet('QLabel{min-width: 600px; max-height: 700px}')
-        msgbox.setText(text)
-        msgbox.open()
-
-    def about_mne(self):
-        with resources.open_text('mne_pipeline_hd.pipeline_resources', 'mne_license.txt') as file:
-            license_text = file.read()
-        license_text = license_text.replace('\n', '<br>')
-        text = '<h1>MNE-Python</h1>' \
-               + license_text
-
-        msgbox = QMessageBox(self)
-        msgbox.setWindowTitle('About MNE-Python')
-        msgbox.setStyleSheet('QLabel{min-width: 600px; max-height: 700px}')
-        msgbox.setText(text)
-        msgbox.open()
 
     def resizeEvent(self, event):
         if not self.first_init:

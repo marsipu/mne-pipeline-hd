@@ -19,9 +19,8 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
                              QMainWindow, QSizePolicy, QTextBrowser, QTextEdit, QVBoxLayout, QWidget, QWizard,
                              QWizardPage)
-
 from mne_pipeline_hd.gui.base_widgets import CheckDictEditList, CheckList
-from mne_pipeline_hd.gui.gui_utils import CodeEditor, center, set_ratio_geometry
+from mne_pipeline_hd.gui.gui_utils import center, set_ratio_geometry
 
 
 class EducationTour(QWizard):
@@ -67,18 +66,19 @@ class EducationEditor(QMainWindow):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
         self.edu = dict()
         self.edu['name'] = 'Education'
-        self.edu['meeg'] = self.mw.pr.sel_meeg.copy()
-        self.edu['fsmri'] = self.mw.pr.sel_fsmri.copy()
-        self.edu['groups'] = self.mw.pr.sel_groups.copy()
-        self.edu['functions'] = [f for f in self.mw.pr.sel_functions if f in self.mw.pr.sel_functions]
+        self.edu['meeg'] = self.ct.pr.sel_meeg.copy()
+        self.edu['fsmri'] = self.ct.pr.sel_fsmri.copy()
+        self.edu['groups'] = self.ct.pr.sel_groups.copy()
+        self.edu['functions'] = [f for f in self.ct.pr.sel_functions if f in self.ct.pr.sel_functions]
         self.edu['dock_kwargs'] = {'meeg_view': False, 'fsmri_view': False, 'group_view': False}
         self.edu['format'] = 'PlainText'
         self.edu['tour_list'] = list()
         self.edu['tour'] = dict()
 
-        self.edu_folder = join(self.mw.home_path, 'edu_programs')
+        self.edu_folder = join(self.ct.home_path, 'edu_programs')
         set_ratio_geometry(0.8, self)
 
         self.init_menu()
@@ -104,16 +104,16 @@ class EducationEditor(QMainWindow):
         layout.addWidget(self.name_ledit)
 
         select_layout = QHBoxLayout()
-        self.meeg_check_list = CheckList(self.mw.pr.all_meeg, self.edu['meeg'], title='Select MEEG')
+        self.meeg_check_list = CheckList(self.ct.pr.all_meeg, self.edu['meeg'], title='Select MEEG')
         select_layout.addWidget(self.meeg_check_list)
 
-        self.fsmri_check_list = CheckList(self.mw.pr.all_fsmri, self.edu['fsmri'], title='Select FSMRI')
+        self.fsmri_check_list = CheckList(self.ct.pr.all_fsmri, self.edu['fsmri'], title='Select FSMRI')
         select_layout.addWidget(self.fsmri_check_list)
 
-        self.group_check_list = CheckList(list(self.mw.pr.all_groups.keys()), self.edu['groups'], title='Select Groups')
+        self.group_check_list = CheckList(list(self.ct.pr.all_groups.keys()), self.edu['groups'], title='Select Groups')
         select_layout.addWidget(self.group_check_list)
 
-        self.func_check_list = CheckList(self.mw.pd_funcs.index, self.edu['functions'], title='Select Functions')
+        self.func_check_list = CheckList(self.ct.pd_funcs.index, self.edu['functions'], title='Select Functions')
         select_layout.addWidget(self.func_check_list)
 
         layout.addLayout(select_layout)
@@ -231,6 +231,6 @@ class EducationEditor(QMainWindow):
         with open(edu_path, 'w') as file:
             json.dump(self.edu, file, indent=4)
 
-        new_pscripts_path = join(self.mw.pr.project_path, f'_pipeline_scripts{self.edu["name"]}')
+        new_pscripts_path = join(self.ct.pr.project_path, f'_pipeline_scripts{self.edu["name"]}')
         # Copy Pipeline-Scripts
-        copytree(self.mw.pr.pscripts_path, new_pscripts_path, dirs_exist_ok=True)
+        copytree(self.ct.pr.pscripts_path, new_pscripts_path, dirs_exist_ok=True)

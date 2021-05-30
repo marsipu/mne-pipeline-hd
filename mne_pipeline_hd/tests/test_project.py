@@ -9,3 +9,4 @@ Written on top of MNE-Python
 Copyright © 2011-2021, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
+

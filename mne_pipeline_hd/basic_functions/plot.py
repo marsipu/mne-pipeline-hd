@@ -12,6 +12,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 from __future__ import print_function
 
 import gc
+import multiprocessing
 from os.path import join
 
 import matplotlib.pyplot as plt
@@ -85,7 +86,7 @@ def plot_power_spectra(meeg, show_plots, n_jobs):
 
     # Does not accept -1 for n_jobs
     if n_jobs == -1:
-        n_jobs = meeg.mw.threadpool.maxThreadCount()
+        n_jobs = multiprocessing.cpu_count()
 
     fig = raw.plot_psd(fmax=raw.info['lowpass'], show=show_plots, n_jobs=n_jobs)
     fig.suptitle(meeg.name)
@@ -98,7 +99,7 @@ def plot_power_spectra_topo(meeg, show_plots, n_jobs):
 
     # Does not accept -1 for n_jobs
     if n_jobs == -1:
-        n_jobs = meeg.mw.threadpool.maxThreadCount()
+        n_jobs = multiprocessing.cpu_count()
 
     fig = raw.plot_psd_topo(show=show_plots, n_jobs=n_jobs)
 
@@ -110,7 +111,7 @@ def plot_power_spectra_epochs(meeg, show_plots, n_jobs):
 
     # Does not accept -1 for n_jobs
     if n_jobs == -1:
-        n_jobs = meeg.mw.threadpool.maxThreadCount()
+        n_jobs = multiprocessing.cpu_count()
 
     for trial in meeg.sel_trials:
         fig = epochs[trial].plot_psd(show=show_plots, n_jobs=n_jobs)

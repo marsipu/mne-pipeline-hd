@@ -12,14 +12,13 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 from functools import partial
 from os.path import isfile, join
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThreadPool
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
                              QProgressDialog, QPushButton, QScrollArea, QSizePolicy, QSpinBox, QTabWidget, QToolBar,
                              QVBoxLayout, QWidget)
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
 from mne_pipeline_hd.gui.gui_utils import CodeEditor, MainConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
     set_ratio_geometry
@@ -65,6 +64,9 @@ class DataTerminal(QDialog):
     def __init__(self, main_win, current_object=None):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
+        self.pr = main_win.ct.pr
+        
         self.obj = current_object
         self.history = list()
 
@@ -72,10 +74,12 @@ class DataTerminal(QDialog):
 
         self.t_globals = {'mw': self.mw,
                           'main_window': self.mw,
-                          'pr': self.mw.pr,
-                          'project': self.mw.pr,
-                          'par': self.mw.pr.parameters,
-                          'parameters': self.mw.pr.parameters}
+                          'ct': self.ct,
+                          'controller': self.ct,
+                          'pr': self.pr,
+                          'project': self.pr,
+                          'par': self.pr.parameters,
+                          'parameters': self.pr.parameters}
 
         # Load the subject in globals if given in Class-Call
         if self.obj:
@@ -109,7 +113,7 @@ class DataTerminal(QDialog):
         self.layout = QVBoxLayout()
 
         self.sub_cmbx = QComboBox()
-        self.sub_cmbx.addItems(self.mw.pr.all_meeg)
+        self.sub_cmbx.addItems(self.pr.all_meeg)
         if self.obj:
             self.sub_cmbx.setCurrentText(self.obj.name)
         else:
@@ -233,6 +237,7 @@ class PlotViewSelection(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
+        self.ct = main_win.ct
 
         self.selected_func = None
         self.target = None
@@ -253,13 +258,13 @@ class PlotViewSelection(QDialog):
         layout = QVBoxLayout()
         list_layout = QHBoxLayout()
 
-        func_list = self.mw.pd_funcs[(self.mw.pd_funcs['matplotlib'] == True) |
-                                     (self.mw.pd_funcs['mayavi'] == True)].index
+        func_list = self.ct.pd_funcs[(self.ct.pd_funcs['matplotlib'] == True) |
+                                     (self.ct.pd_funcs['mayavi'] == True)].index
         func_select = SimpleList(func_list, title='Select Plot-Function')
         func_select.currentChanged.connect(self.func_selected)
         list_layout.addWidget(func_select)
 
-        self.p_preset_select = CheckList(list(self.mw.pr.parameters.keys()), self.selected_ppresets,
+        self.p_preset_select = CheckList(list(self.ct.pr.parameters.keys()), self.selected_ppresets,
                                          title='Select Parameter-Preset')
         self.p_preset_select.checkedChanged.connect(self.update_objects)
         list_layout.addWidget(self.p_preset_select)
@@ -292,21 +297,21 @@ class PlotViewSelection(QDialog):
         if self.selected_func is not None and self.target is not None:
             # Load object-list according to target
             if self.target == 'MEEG':
-                target_objects = self.mw.pr.all_meeg
+                target_objects = self.ct.pr.all_meeg
             elif self.target == 'FSMRI':
-                target_objects = self.mw.pr.all_fsmri
+                target_objects = self.ct.pr.all_fsmri
             elif self.target == 'Group':
-                target_objects = list(self.mw.pr.all_groups.keys())
+                target_objects = list(self.ct.pr.all_groups.keys())
             else:
                 target_objects = list()
 
             # If non-interactive only list objects where a plot-image already was saved
             if not self.interactive:
                 for ob in target_objects:
-                    if ob in self.mw.pr.plot_files:
+                    if ob in self.ct.pr.plot_files:
                         for p_preset in self.selected_ppresets:
-                            if p_preset in self.mw.pr.plot_files[ob]:
-                                if self.selected_func in self.mw.pr.plot_files[ob][p_preset]:
+                            if p_preset in self.ct.pr.plot_files[ob]:
+                                if self.selected_func in self.ct.pr.plot_files[ob][p_preset]:
                                     if ob not in self.objects:
                                         self.objects.append(ob)
             else:
@@ -317,7 +322,7 @@ class PlotViewSelection(QDialog):
     def func_selected(self, func):
         """Get selected function and adjust contents of Object-Selection to target"""
         self.selected_func = func
-        self.target = self.mw.pd_funcs.loc[func, 'target']
+        self.target = self.ct.pd_funcs.loc[func, 'target']
         self.update_objects()
 
     def interactive_toggled(self, checked):
@@ -364,9 +369,9 @@ class PlotViewSelection(QDialog):
                     # Load Matplotlib-Plots
                     if self.interactive_chkbx.isChecked():
                         # Get module of plot_function
-                        pkg_name = self.mw.pd_funcs.loc[self.selected_func, 'pkg_name']
-                        module_name = self.mw.pd_funcs.loc[self.selected_func, 'module']
-                        module = self.mw.all_modules[pkg_name][module_name][0]
+                        pkg_name = self.ct.pd_funcs.loc[self.selected_func, 'pkg_name']
+                        module_name = self.ct.pd_funcs.loc[self.selected_func, 'module']
+                        module = self.ct.all_modules[pkg_name][module_name][0]
 
                         # Get Arguments for Plot-Function
                         keyword_arguments = get_arguments(self.selected_func, module, obj, self.mw)
@@ -383,7 +388,7 @@ class PlotViewSelection(QDialog):
                         worker.signals.error.connect(lambda err_tuple, o_name=obj_name, ppreset=p_preset:
                                                      self.thread_error(err_tuple, o_name, ppreset, 'plot'))
                         print(f'Starting Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
-                        self.mw.threadpool.start(worker)
+                        QThreadPool.globalInstance().start(worker)
 
                     # Load Plot-Images
                     else:

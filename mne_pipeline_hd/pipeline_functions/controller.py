@@ -2,15 +2,14 @@ import json
 import logging
 import os
 import re
+import shutil
 import sys
 from importlib import reload, resources, util
 from os import listdir
-from os.path import isdir, isfile, join
+from os.path import isdir, join
 
 import mne
 import pandas as pd
-from PyQt5.QtCore import QSettings
-
 from mne_pipeline_hd import basic_functions, QS
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.pipeline_functions.project import Project
@@ -23,7 +22,7 @@ logger = logging.getLogger()
 
 class Controller:
 
-    def __init__(self, home_path=None, current_project=None, edu_program_name=None):
+    def __init__(self, home_path=None, selected_project=None, edu_program_name=None):
         # Check Home-Path
         self.errors = dict()
         # Try to load home_path from QSettings
@@ -92,22 +91,20 @@ class Controller:
 
             # Check Project
             self.pr = None
-            self.current_project = None
-            if current_project is None:
-                if 'current_project' in self.settings:
-                    current_project = self.settings['current_project']
+            if selected_project is None:
+                if 'selected_project' in self.settings:
+                    selected_project = self.settings['selected_project']
 
             if len(self.projects) == 0:
                 self.errors['project'] = 'No projects!'
 
-            elif current_project not in self.projects:
-                self.errors['project'] = f'{current_project} not in projects!'
+            elif selected_project not in self.projects:
+                self.errors['project'] = f'{selected_project} not in projects!'
 
             else:
-                logger.info(f'Selected-Project: {self.current_project}')
                 # Initialize Project
-                self.current_project = current_project
-                self.pr = Project(self, self.current_project)
+                self.pr = Project(self, selected_project)
+                logger.info(f'Selected-Project: {self.pr.name}')
 
     def load_settings(self):
         try:
@@ -149,23 +146,27 @@ class Controller:
 
     def change_project(self, new_project):
         self.pr = Project(self, new_project)
-        self.current_project = new_project
-        self.settings['current_project'] = new_project
+        self.settings['selected_project'] = new_project
         if new_project not in self.projects:
             self.projects.append(new_project)
 
+    def remove_project(self, project):
+        self.projects.remove(project)
+        if self.pr.name == project:
+            self.pr = None
+        # Remove Project-Folder
+        try:
+            shutil.rmtree(join(self.projects_path, project))
+        except OSError:
+            logger.critical(f'The folder of {project} can\'t be deleted and has to be deleted manually')
+
     def save(self, worker_signals=None):
         if self.pr is not None:
-            if worker_signals is not None:
-                worker_signals.pgbar_text.emit('Saving Project...')
 
             # Save Project
             self.pr.save(worker_signals)
+            self.settings['selected_project'] = self.pr.name
 
-        if worker_signals is not None:
-            worker_signals.pgbar_text.emit('Saving Settings...')
-
-        self.settings['current_project'] = self.current_project
         self.save_settings()
 
     def load_edu(self):

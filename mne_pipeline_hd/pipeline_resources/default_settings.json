@@ -1,6 +1,6 @@
 {
     "settings": {
-        "current_project": null,
+        "selected_project": null,
         "selected_modules": [
             "operations",
             "plot"
@@ -21,6 +21,10 @@
         "n_threads": 1,
         "save_ram": 1,
         "enable_cuda": 0,
-        "dark_mode": 0
+        "dark_mode": 0,
+        "log_level": 20,
+        "app_font": "SansSerif",
+        "app_font_size": 12,
+        "app_style": "light"
     }
 }

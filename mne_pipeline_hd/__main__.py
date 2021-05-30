@@ -15,12 +15,14 @@ from inspect import getsourcefile
 from os.path import abspath
 from pathlib import Path
 
-from PyQt5.QtCore import QSettings, QTimer, Qt
-from PyQt5.QtGui import QIcon
+import qdarkstyle
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication
-
 # Enable start also when not installed via pip (e.g. for development)
 # Get the package_path and add it at first position to PATH, should work across platforms and in spyder
+from qdarkstyle import DarkPalette, LightPalette
+
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent)
 if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
@@ -43,20 +45,34 @@ def main():
     app.setOrganizationName(organization_name)
     app.setOrganizationDomain(domain_name)
 
-    # Set Window-Icon
-    if QS().value('dark_mode') == 'true':
+    # Initialize Layout
+    font_family = QS().value('app_font')
+    font_size = QS().value('app_font_size')
+    app.setFont(QFont(font_family, font_size))
+
+    # Set Style and Window-Icon
+    app_style = QS().value('app_style')
+    if app_style == 'dark':
+        app.setStyleSheet(qdarkstyle.load_stylesheet(palette=DarkPalette))
         icon_name = 'mne_pipeline_icon_dark.png'
     else:
         icon_name = 'mne_pipeline_icon_light.png'
+        if app_style == 'light':
+            app.setStyleSheet(qdarkstyle.load_stylesheet(palette=LightPalette))
+        else:
+            app.setStyle(app_style)
+
     with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
         app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
 
+    # Disable Help-Button
     try:
         app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)
     except AttributeError:
         print('pyqt-Version is < 5.12')
 
+    # Mac-Workarounds
     if ismac:
         # Workaround for not showing with PyQt < 5.15.2
         os.environ['QT_MAC_WANTS_LAYER'] = '1'
@@ -68,11 +84,7 @@ def main():
 
     # Initialize Logger
     logger = logging.getLogger(__name__)
-    settings_log_level = QS().value('log_level', defaultValue=None)
-    if settings_log_level is not None:
-        logger.setLevel(settings_log_level)
-    else:
-        logger.setLevel(logging.INFO)
+    logger.setLevel(QS().value('log_level', defaultValue=logging.INFO))
     formatter = logging.Formatter('%(asctime)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)

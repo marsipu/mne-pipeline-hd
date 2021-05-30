@@ -9,34 +9,29 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
-import shutil
-import smtplib
-import ssl
-import sys
 from ast import literal_eval
 from collections import Counter
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from functools import partial
-from os.path import join
+from importlib import resources
 from pathlib import Path
 
 import mne
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
                              QInputDialog,
-                             QLabel, QLineEdit, QListView, QMessageBox, QPushButton,
-                             QScrollArea, QSizePolicy, QStyle, QTabWidget, QTextEdit, QVBoxLayout, QWidget)
+                             QLabel, QListView, QMessageBox, QPushButton,
+                             QScrollArea, QSizePolicy, QTabWidget, QTextEdit, QVBoxLayout, QWidget,
+                             QStyleFactory)
+from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
-from mne_pipeline_hd.gui.gui_utils import WorkerDialog, get_exception_tuple, set_ratio_geometry
+from mne_pipeline_hd.gui.gui_utils import WorkerDialog, get_exception_tuple, set_ratio_geometry, get_std_icon
 from mne_pipeline_hd.gui.models import CheckListModel
-from mne_pipeline_hd.gui.parameter_widgets import BoolGui, StringGui
 from mne_pipeline_hd.pipeline_functions import iswin
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
-from mne_pipeline_hd.pipeline_functions.project import Project
 
 
 class CheckListDlg(QDialog):
@@ -75,7 +70,7 @@ class CheckListDlg(QDialog):
 class RemovePPresetDlg(CheckListDlg):
     def __init__(self, parent):
         self.parent = parent
-        self.preset_list = [p for p in self.parent.mw.pr.parameters if p != 'Default']
+        self.preset_list = [p for p in self.parent.ct.pr.parameters if p != 'Default']
         self.rm_list = []
 
         super().__init__(parent, self.preset_list, self.rm_list)
@@ -90,12 +85,12 @@ class RemovePPresetDlg(CheckListDlg):
             self.preset_list.remove(p_preset)
             self.lm.layoutChanged.emit()
             # Remove from Parameters
-            self.parent.mw.pr.parameters.pop(p_preset)
+            self.parent.ct.pr.parameters.pop(p_preset)
             self.parent.update_ppreset_cmbx()
 
         # If current Parameter-Preset was deleted
-        if self.parent.mw.pr.p_preset not in self.parent.mw.pr.parameters:
-            self.parent.mw.pr.p_preset = list(self.parent.mw.pr.parameters.keys())[0]
+        if self.parent.ct.pr.p_preset not in self.parent.ct.pr.parameters:
+            self.parent.ct.pr.p_preset = list(self.parent.ct.pr.parameters.keys())[0]
             self.parent.update_all_param_guis()
 
         self.close()
@@ -115,26 +110,9 @@ class RemoveProjectsDlg(CheckListDlg):
 
     def remove_selected(self):
         for project in self.rm_list:
-            self.ct.projects.remove(project)
-            self.lm.layoutChanged.emit()
-
-            # Remove Project-Folder
-            try:
-                shutil.rmtree(join(self.ct.projects_path, project))
-            except OSError:
-                QMessageBox.critical(self, 'Deletion impossible',
-                                     f'The folder of {project} can\'t be deleted and has to be deleted manually')
-
-        # If current project was deleted, load remaining or create New
-        if self.ct.current_project not in self.ct.projects:
-            if len(self.ct.projects) != 0:
-                self.ct.current_project = self.ct.projects[0]
-            else:
-                self.ct.current_project = 'Dummy'
-            self.ct.pr = Project(self.ct, self.ct.current_project)
-            self.mw.project_updated()
-        else:
-            self.mw.update_project_box()
+            self.ct.remove_project(project)
+        self.lm.layoutChanged.emit()
+        self.mw.update_project_ui()
 
         self.close()
 
@@ -144,49 +122,91 @@ class SettingsDlg(QDialog):
         super().__init__(main_window)
         self.mw = main_window
 
+        self.settings_items = {
+            'app_font': {
+                'gui_type': 'BoolGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Application Font',
+                    'description': 'Changes default application font (Restart required).'
+                }
+            },
+            'app_font_size': {
+                'gui_type': 'IntGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Font Size',
+                    'description': 'Changes default application font-size (Restart required).',
+                    'min_val': 5,
+                    'max_val': 20
+                }
+            },
+            'app_style': {
+                'gui_type': 'ComboGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Application Style',
+                    'description': 'Changes the application style (Restart required).',
+                    'options' : ['light', 'dark'] + QStyleFactory().keys(),
+                    'groupbox_layout': False
+                }
+            },
+            'save_ram': {
+                'gui_type': 'BoolGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Save RAM',
+                    'description': 'Set to True on low RAM-Machines to avoid the process to be killed '
+                                   'by the OS due to low Memory (with leaving it off, the pipeline goes '
+                                   'a bit faster, because the data can be saved in memory).',
+                    'return_integer': True
+                }
+
+            },
+            'fs_path': {
+                'gui_type': 'StringGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'FREESURFER_HOME-Path',
+                    'description': 'Set the Path to the "freesurfer"-directory of your '
+                                   'Freesurfer-Installation '
+                                   '(for Windows to the LINUX-Path of the Freesurfer-Installation '
+                                   'in Windows-Subsystem for Linux(WSL))',
+                    'none_select': True
+                }
+            },
+            'mne_path': {
+                'gui_type': 'StringGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'MNE-Python-Path',
+                    'description': 'Set the LINUX-Path to the mne-environment (e.g '
+                                   '...anaconda3/envs/mne) in Windows-Subsystem for Linux(WSL))',
+                    'none_select': True
+                }
+            }
+        }
+
+        if iswin:
+            self.settings_items.pop('mne_path')
+
         self.init_ui()
         self.open()
 
     def init_ui(self):
         layout = QVBoxLayout()
 
-        # layout.addWidget(IntGui(self.mw.qsettings, 'n_jobs', min_val=-1, special_value_text='Auto',
-        #                         description='Set to the amount of cores of your machine '
-        #                              'you want to use for multiprocessing', default=-1))
-        # layout.addWidget(BoolGui(self.mw.settings, 'show_plots', param_alias='Show Plots',
-        #                          description='Do you want to show plots?\n'
-        #                               '(or just save them without showing, then just check "Save Plots")',
-        #                          default=True))
-        # layout.addWidget(BoolGui(self.mw.settings, 'save_plots', param_alias='Save Plots',
-        #                          description='Do you want to save the plots made to a file?', default=True))
-        # layout.addWidget(BoolGui(QS(), 'enable_cuda', param_alias='Enable CUDA',
-        #                          description='Do you want to enable CUDA? (system has to be setup for cuda)',
-        #                          default=False))
-        # layout.addWidget(BoolGui(self.mw.settings, 'shutdown', param_alias='Shutdown',
-        #                          description='Do you want to shut your system down after execution of all subjects?'))
-        # layout.addWidget(IntGui(self.mw.settings, 'dpi', min_val=0, max_val=10000,
-        #                         description='Set dpi for saved plots', default=300))
-        # layout.addWidget(ComboGui(self.mw.settings, 'img_format', self.mw.available_image_formats,
-        #                           param_alias='Image-Format', description='Choose the image format for plots',
-        #                           default='.png'))
-
-        layout.addWidget(BoolGui(self.mw.qsettings, 'save_ram', param_alias='Save RAM',
-                                 description='Set to True on low RAM-Machines to avoid the process to be killed '
-                                             'by the OS due to low Memory (with leaving it off, the pipeline goes'
-                                             'a bit faster, because the data can be saved in memory)', default=True))
-
-        layout.addWidget(StringGui(self.mw.qsettings, 'fs_path', param_alias='FREESURFER_HOME-Path',
-                                   description='Set the Path to the "freesurfer"-directory of your '
-                                               'Freesurfer-Installation '
-                                               '(for Windows to the LINUX-Path of the Freesurfer-Installation '
-                                               'in Windows-Subsystem for Linux(WSL))',
-                                   default=None, none_select=True))
-        if iswin:
-            layout.addWidget(StringGui(self.mw.qsettings, 'mne_path', param_alias='MNE-Python-Path',
-                                       description='Set the LINUX-Path to the mne-environment (e.g '
-                                                   '...anaconda3/envs/mne) '
-                                                   'in Windows-Subsystem for Linux(WSL))',
-                                       default=None, none_select=True))
+        for setting in self.settings_items:
+            gui_handle = getattr(parameter_widgets, self.settings_items[setting]['gui_type'])
+            gui_kwargs = self.settings_items[setting]['gui_kwargs']
+            if 'data_type' == 'QSettings':
+                gui_kwargs['data'] = QS()
+            elif 'data_type' == 'Controller':
+                gui_kwargs['data'] = self.mw.ct
+            else:
+                gui_kwargs['data'] = self.mw.ct.settings
+            gui_kwargs['param_name'] = setting
+            layout.addWidget(gui_handle(**gui_kwargs))
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
@@ -207,7 +227,7 @@ class ResetDialog(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout()
-        layout.addWidget(CheckList(list(self.pd.mw.pr.parameters[self.pd.mw.pr.p_preset].keys()),
+        layout.addWidget(CheckList(list(self.pd.ct.pr.parameters[self.pd.ct.pr.p_preset].keys()),
                                    self.selected_params,
                                    title='Select the Parameters to reset'))
         reset_bt = QPushButton('Reset')
@@ -222,9 +242,9 @@ class ResetDialog(QDialog):
 
     def reset_params(self):
         for param_name in self.selected_params:
-            self.pd.mw.pr.load_default_param(param_name)
+            self.pd.ct.pr.load_default_param(param_name)
             print(f'Reset {param_name}')
-        WorkerDialog(self, self.pd.mw.pr.save, title='Saving project...', blocking=True)
+        WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...', blocking=True)
         self.pd.update_all_param_guis()
         self.close()
 
@@ -233,7 +253,7 @@ class CopyPDialog(QDialog):
     def __init__(self, p_dock):
         super().__init__(p_dock)
         self.pd = p_dock
-        self.p = p_dock.mw.pr.parameters
+        self.p = p_dock.ct.pr.parameters
         self.selected_from = None
         self.selected_to = list()
         self.selected_ps = list()
@@ -282,7 +302,7 @@ class CopyPDialog(QDialog):
                 for parameter in self.selected_ps:
                     self.p[p_preset][parameter] = self.p[self.selected_from][parameter]
 
-            WorkerDialog(self, self.pd.mw.pr.save, title='Saving project...', blocking=True)
+            WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...', blocking=True)
             self.pd.update_all_param_guis()
             self.close()
 
@@ -291,6 +311,7 @@ class ParametersDock(QDockWidget):
     def __init__(self, main_win):
         super().__init__('Parameters', main_win)
         self.mw = main_win
+        self.ct = main_win.ct
         self.setAllowedAreas(Qt.RightDockWidgetArea)
         self.main_widget = QWidget()
         self.param_guis = {}
@@ -300,7 +321,7 @@ class ParametersDock(QDockWidget):
 
     def dropgroup_params(self):
         # Create a set of all unique parameters used by functions in selected_modules
-        sel_pdfuncs = self.mw.pd_funcs.loc[self.mw.pd_funcs['module'].isin(self.mw.get_setting('selected_modules'))]
+        sel_pdfuncs = self.ct.pd_funcs.loc[self.ct.pd_funcs['module'].isin(self.ct.get_setting('selected_modules'))]
         # Remove rows with NaN in func_args
         sel_pdfuncs = sel_pdfuncs.loc[sel_pdfuncs['func_args'].notna()]
         all_used_params_str = ','.join(sel_pdfuncs['func_args'])
@@ -308,7 +329,7 @@ class ParametersDock(QDockWidget):
         all_used_params_str = all_used_params_str.replace(' ', '')
         all_used_params = set(all_used_params_str.split(','))
         drop_idx_list = list()
-        self.cleaned_pd_params = self.mw.pd_params.copy()
+        self.cleaned_pd_params = self.ct.pd_params.copy()
         for param in self.cleaned_pd_params.index:
             if param in all_used_params:
                 # Group-Name (if not given, set to 'Various')
@@ -334,11 +355,11 @@ class ParametersDock(QDockWidget):
         self.update_ppreset_cmbx()
         title_layout1.addWidget(self.p_preset_cmbx)
 
-        add_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_FileDialogNewFolder))
+        add_bt = QPushButton(icon=get_std_icon('SP_FileDialogNewFolder'))
         add_bt.clicked.connect(self.add_p_preset)
         title_layout1.addWidget(add_bt)
 
-        rm_bt = QPushButton(icon=self.style().standardIcon(QStyle.SP_DialogDiscardButton))
+        rm_bt = QPushButton(icon=get_std_icon('SP_DialogDiscardButton'))
         rm_bt.clicked.connect(partial(RemovePPresetDlg, self))
         title_layout1.addWidget(rm_bt)
 
@@ -430,23 +451,23 @@ class ParametersDock(QDockWidget):
 
     def update_ppreset_cmbx(self):
         self.p_preset_cmbx.clear()
-        for p_preset in self.mw.pr.parameters.keys():
+        for p_preset in self.ct.pr.parameters.keys():
             self.p_preset_cmbx.addItem(p_preset)
-        if self.mw.pr.p_preset in self.mw.pr.parameters.keys():
-            self.p_preset_cmbx.setCurrentText(self.mw.pr.p_preset)
+        if self.ct.pr.p_preset in self.ct.pr.parameters.keys():
+            self.p_preset_cmbx.setCurrentText(self.ct.pr.p_preset)
         else:
-            self.p_preset_cmbx.setCurrentText(list(self.mw.pr.parameters.keys())[0])
+            self.p_preset_cmbx.setCurrentText(list(self.ct.pr.parameters.keys())[0])
 
     def p_preset_changed(self, idx):
-        self.mw.pr.p_preset = self.p_preset_cmbx.itemText(idx)
+        self.ct.pr.p_preset = self.p_preset_cmbx.itemText(idx)
         self.update_all_param_guis()
 
     def add_p_preset(self):
         preset_name, ok = QInputDialog.getText(self, 'New Parameter-Preset',
                                                'Enter a name for a new Parameter-Preset')
         if ok:
-            self.mw.pr.p_preset = preset_name
-            self.mw.pr.load_default_parameters()
+            self.ct.pr.p_preset = preset_name
+            self.ct.pr.load_default_parameters()
             self.p_preset_cmbx.addItem(preset_name)
             self.p_preset_cmbx.setCurrentText(preset_name)
         else:
@@ -471,7 +492,7 @@ class ParametersDock(QDockWidget):
                                       'Do you really want to reset all parameters to their default?',
                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if msgbox == QMessageBox.Yes:
-            self.mw.pr.load_default_parameters()
+            self.ct.pr.load_default_parameters()
             self.update_all_param_guis()
 
 
@@ -534,7 +555,7 @@ class RawInfo(QDialog):
 
     def init_ui(self):
         layout = QGridLayout()
-        meeg_list = SimpleList(self.mw.pr.all_meeg)
+        meeg_list = SimpleList(self.ct.pr.all_meeg)
         meeg_list.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         meeg_list.currentChanged.connect(self.meeg_selected)
         layout.addWidget(meeg_list, 0, 0)
@@ -608,3 +629,50 @@ class RawInfo(QDialog):
                 self.info_string += f'<b>{key_tuple[1]}:</b> {value} <i>{key_tuple[2]}</i><br>'
 
         self.info_label.setHtml(self.info_string)
+
+
+class AboutDialog(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+        with resources.open_text('mne_pipeline_hd.pipeline_resources', 'license.txt') as file:
+            license_text = file.read()
+        license_text = license_text.replace('\n', '<br>')
+        text = '<h1>MNE-Pipeline HD</h1>' \
+               '<b>A Pipeline-GUI for MNE-Python</b><br>' \
+               '(originally developed for MEG-Lab Heidelberg)<br>' \
+               '<i>Development was initially inspired by: ' \
+               '<a href=https://doi.org/10.3389/fnins.2018.00006>Andersen L.M. 2018</a></i><br>' \
+               '<br>' \
+               'As for now, this program is still in alpha-state, so some features may not work as expected. ' \
+               'Be sure to check all the parameters for each step to be correctly adjusted to your needs.<br>' \
+               '<br>' \
+               '<b>Developed by:</b><br>' \
+               'Martin Schulz (medical student, Heidelberg)<br>' \
+               '<br>' \
+               '<b>Dependencies:</b><br>' \
+               'MNE-Python: <a href=https://github.com/mne-tools/mne-python>Website</a>' \
+               '<a href=https://github.com/mne-tools/mne-python>GitHub</a><br>' \
+               '<a href=https://github.com/ColinDuquesnoy/QDarkStyleSheet>qdarkstyle</a><br>' \
+               '<a href=https://github.com/pyQode/pyQode>pyqode<br>' \
+               '<br>' \
+               '<b>Licensed under:</b><br>' \
+               + license_text
+
+        layout = QVBoxLayout()
+
+        image_label = QLabel()
+        with resources.path('mne_pipeline_hd.pipeline_resources',
+                            'mne_pipeline_logo_evee_smaller.jpg') as img_path:
+            image_label.setPixmap(QPixmap(str(img_path)))
+        layout.addWidget(image_label)
+
+        text_widget = QTextEdit()
+        text_widget.setReadOnly(True)
+        text_widget.setHtml(text)
+        layout.addWidget(text_widget)
+
+        self.setLayout(layout)
+        self.open()
+
+

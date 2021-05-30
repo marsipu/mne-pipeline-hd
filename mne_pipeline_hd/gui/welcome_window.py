@@ -9,17 +9,14 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
-import os
 from importlib import resources
 from os import listdir
 from os.path import isdir, join
 
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMessageBox, \
-    QPushButton, \
-    QVBoxLayout, QWidget
-
+from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInputDialog,
+                             QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget)
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center, WorkerDialog
@@ -31,7 +28,7 @@ class WelcomeWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.controller = Controller()
+        self.ct = Controller()
         self.main_window = None
         self.education_programs = list()
         self.education_on = QS().value('education', defaultValue=0)
@@ -106,19 +103,19 @@ class WelcomeWindow(QWidget):
         self.add_pr_bt.setEnabled(False)
 
         # Check for Home-Path-Problems
-        if 'home_path' in self.controller.errors:
-            ht = f'{self.controller.errors["home_path"]}\n' \
+        if 'home_path' in self.ct.errors:
+            ht = f'{self.ct.errors["home_path"]}\n' \
                  f'Select a folder as Home-Path!'
             self.home_path_label.setText(ht)
         else:
-            self.home_path_label.setText(f'{self.controller.home_path} selected.')
+            self.home_path_label.setText(f'{self.ct.home_path} selected.')
             self.project_cmbx.setEnabled(True)
             self.update_project_cmbx()
             self.add_pr_bt.setEnabled(True)
 
             # Add education-programs if there are any
             self.education_programs.clear()
-            edu_path = join(self.controller.home_path, 'edu_programs')
+            edu_path = join(self.ct.home_path, 'edu_programs')
             if isdir(edu_path):
                 for file in [f for f in listdir(edu_path) if f[-9:] == '-edu.json']:
                     self.education_programs.append(file)
@@ -126,18 +123,18 @@ class WelcomeWindow(QWidget):
             self.edu_selection.content_changed()
 
             # Check for Project-Problems
-            if 'project' in self.controller.errors:
-                pt = f'{self.controller.errors["project"]}\n' \
+            if 'project' in self.ct.errors:
+                pt = f'{self.ct.errors["project"]}\n' \
                      f'Select or add a project!'
                 self.project_label.setText(pt)
             else:
-                self.project_label.setText(f'{self.controller.current_project} selected.')
+                self.project_label.setText(f'{self.ct.pr.name} selected.')
                 self.start_bt.setEnabled(True)
 
                 # Check for Problems with Custom-Modules
-                if 'custom_modules' in self.controller.errors:
-                    for name in self.controller.errors['custom_modules']:
-                        error_msg = self.controller.errors['custom_modules'][name]
+                if 'custom_modules' in self.ct.errors:
+                    for name in self.ct.errors['custom_modules']:
+                        error_msg = self.ct.errors['custom_modules'][name]
                         if isinstance(error_msg, tuple):
                             ErrorDialog(error_msg, self,
                                         title=f'Error in import of custom-module: {name}')
@@ -145,35 +142,35 @@ class WelcomeWindow(QWidget):
                             QMessageBox.warning(self, 'Import-Problem', error_msg)
 
     def set_home_path(self):
-        loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.controller.home_path} not writable!'
+        loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.ct.home_path} not writable!'
                                                                   f'Select a folder as Home-Path')
         if loaded_home_path != '':
-            self.controller = Controller(str(loaded_home_path))
+            self.ct = Controller(str(loaded_home_path))
             self.check_controller()
 
     def project_changed(self, project_idx):
         project = self.project_cmbx.itemText(project_idx)
-        self.controller.change_project(project)
+        self.ct.change_project(project)
         self.update_project_cmbx()
 
     def update_project_cmbx(self):
-        if hasattr(self.controller, 'projects'):
+        if hasattr(self.ct, 'projects'):
             self.project_cmbx.clear()
-            self.project_cmbx.addItems(self.controller.projects)
-        if self.controller.current_project is not None:
-            self.project_label.setText(f'{self.controller.current_project} selected.')
-            self.project_cmbx.setCurrentText(self.controller.current_project)
+            self.project_cmbx.addItems(self.ct.projects)
+        if self.ct.pr is not None:
+            self.project_label.setText(f'{self.ct.pr.name} selected.')
+            self.project_cmbx.setCurrentText(self.ct.pr.name)
 
     def add_project(self):
         new_project, ok = QInputDialog.getText(self, 'Add Project',
                                                'Please enter the name of a project!')
         if ok and new_project != '':
-            self.controller.change_project(new_project)
+            self.ct.change_project(new_project)
             self.update_project_cmbx()
 
     def init_main_window(self):
-        self.controller.edu_program_name = self.edu_selection.get_current()
-        self.controller.load_edu()
+        self.ct.edu_program_name = self.edu_selection.get_current()
+        self.ct.load_edu()
 
         # Check if MNE-Python is installed
         try:
@@ -182,13 +179,13 @@ class WelcomeWindow(QWidget):
             QMessageBox.critical(self, 'MNE-Python not found!', 'MNE-Python was not found,'
                                                                 ' please install it before using MNE-Pipeline!')
         else:
-            self.main_window = MainWindow(self.controller, self)
+            self.main_window = MainWindow(self.ct, self)
             if self.edu_groupbox.isChecked():
                 self.main_window.start_edu()
             self.hide()
 
     def closeEvent(self, event):
-        WorkerDialog(self, self.controller.save, blocking=True, title='Saving Project!')
+        WorkerDialog(self, self.ct.save, blocking=True, title='Saving Project!')
         if self.edu_groupbox.isChecked():
             QS().setValue('education', 1)
         else:

@@ -22,11 +22,11 @@ from inspect import signature
 from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
-                             QProgressBar, QPushButton, QScrollArea, QTextEdit, QVBoxLayout)
-from pyqode.core.api import ColorScheme
-from pyqode.python.backend import server
+                             QProgressBar, QPushButton, QTextEdit, QVBoxLayout, QStyle)
 from pyqode.core import api, modes, panels
+from pyqode.core.api import ColorScheme
 from pyqode.python import modes as pymodes, panels as pypanels, widgets
+from pyqode.python.backend import server
 from pyqode.python.modes import PythonSH
 
 
@@ -45,6 +45,10 @@ def set_ratio_geometry(size_ratio, widget=None):
         widget.resize(width, height)
 
     return width, height
+
+
+def get_std_icon(icon_name):
+    return QApplication.instance().style().standardIcon(getattr(QStyle, icon_name))
 
 
 def get_exception_tuple():

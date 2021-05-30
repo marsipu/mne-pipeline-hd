@@ -21,7 +21,6 @@ from pathlib import Path
 import numpy as np
 
 from .pipeline_utils import TypedJSONEncoder, count_dict_keys, encode_tuples, type_json_hook
-from ..gui.gui_utils import WorkerDialog
 
 
 class Project:

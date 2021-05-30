@@ -16,12 +16,11 @@ from functools import partial
 
 import numpy as np
 from PyQt5.QtCore import QSettings, QTimer, Qt
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QGridLayout, QGroupBox,
-                             QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QSizePolicy,
-                             QSlider, QSpinBox, QVBoxLayout, QWidget)
-
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
+                             QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+                             QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout, QWidget)
 from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList
-from mne_pipeline_hd.pipeline_functions.project import Project
+from mne_pipeline_hd.pipeline_functions.controller import Controller
 
 
 class Param(QWidget):
@@ -35,7 +34,7 @@ class Param(QWidget):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -139,7 +138,7 @@ class Param(QWidget):
 
         # get data from Parameters in Project in MainWindow
         # (depending on selected parameter-preset and selected Project)
-        elif isinstance(self.data, QMainWindow):
+        elif isinstance(self.data, Controller):
             if self.param_name in self.data.pr.parameters[self.data.pr.p_preset]:
                 self.param_value = self.data.pr.parameters[self.data.pr.p_preset][self.param_name]
             else:
@@ -155,7 +154,7 @@ class Param(QWidget):
     def save_param(self):
         if isinstance(self.data, dict):
             self.data[self.param_name] = self.param_value
-        elif isinstance(self.data, QMainWindow):
+        elif isinstance(self.data, Controller):
             self.data.pr.parameters[self.data.pr.p_preset][self.param_name] = self.param_value
         elif isinstance(self.data, QSettings):
             self.data.setValue(self.param_name, self.param_value)
@@ -169,7 +168,7 @@ class IntGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -240,7 +239,7 @@ class FloatGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -315,7 +314,7 @@ class StringGui(Param):
 
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -380,7 +379,7 @@ class FuncGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -474,11 +473,11 @@ class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
     def __init__(self, data, param_name, param_alias=None, default=False, groupbox_layout=False, none_select=False,
-                 description=None, param_unit=None):
+                 description=None, param_unit=None, return_integer=False):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -487,7 +486,7 @@ class BoolGui(Param):
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : bool
+        default : bool | 0 | 1
             The default value, defaulting to False if not given.
         groupbox_layout : bool
             If a groupbox should be used as layout (otherwise it is just a label)
@@ -499,9 +498,12 @@ class BoolGui(Param):
             which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
+        return_integer : bool
+            Set True to return an integer (0|1) instead of a boolean (e.g. useful for QSettings)
         """
         super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
         self.param_unit = param_unit
+        self.return_integer = return_integer
         self.param_widget = QCheckBox()
         self.param_widget.toggled.connect(self.get_param)
 
@@ -524,9 +526,15 @@ class BoolGui(Param):
 
     def get_param(self):
         if self.param_widget.isChecked():
-            self.param_value = True
+            if self.return_integer:
+                self.param_value = 1
+            else:
+                self.param_value = True
         else:
-            self.param_value = False
+            if self.return_integer:
+                self.param_value = 0
+            else:
+                self.param_value = False
         self.save_param()
 
         return self.param_value
@@ -540,7 +548,7 @@ class TupleGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -635,7 +643,7 @@ class ComboGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -722,7 +730,7 @@ class ListGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -835,7 +843,7 @@ class CheckListGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -955,7 +963,7 @@ class DictGui(Param):
         
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -1043,7 +1051,7 @@ class SliderGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
@@ -1158,7 +1166,7 @@ class MultiTypeGui(Param):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
+        data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings from Main-Window).

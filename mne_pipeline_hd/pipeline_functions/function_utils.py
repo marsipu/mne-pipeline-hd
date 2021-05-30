@@ -15,11 +15,12 @@ import logging
 import re
 from collections import OrderedDict
 
+from PyQt5.QtCore import QThreadPool
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QDialog, QGridLayout, QHBoxLayout, QLabel, QListView, QProgressBar,
                              QPushButton, QSizePolicy, QStyle, QVBoxLayout)
-
 from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, Group, MEEG
+
 from .pipeline_utils import shutdown
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
@@ -336,7 +337,7 @@ class RunDialog(QDialog):
                                       func_name=self.current_func, obj=self.current_object, main_win=self.mw)
                 self.fworker.signals.error.connect(self.thread_error)
                 self.fworker.signals.finished.connect(self.thread_finished)
-                self.mw.threadpool.start(self.fworker)
+                QThreadPool.globalInstance().start(self.fworker)
 
         else:
             self.console_widget.add_html('<b><big>Finished</big></b><br>')
