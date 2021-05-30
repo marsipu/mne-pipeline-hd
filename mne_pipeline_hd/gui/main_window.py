@@ -569,12 +569,6 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def closeEvent(self, event):
-        wd = WorkerDialog(self, self.ct.save, show_buttons=False, show_console=False, blocking=True)
-
-        # This is necessary to avoid closing_dlg to persist on UNIX
-        wd.deleteLater()
-        wd.close()
-
         if self.restarting:
             answer = QMessageBox.No
         else:

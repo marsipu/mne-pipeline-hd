@@ -1,5 +1,6 @@
 # Import QSettings or provide Dummy-Class to be independent from PyQt/PySide
 import json
+from ast import literal_eval
 from importlib import resources
 
 
@@ -42,10 +43,14 @@ try:
             super(BaseSettings, self).__init__()
 
         def value(self, setting, defaultValue=None, type=None):
-            loaded_value = super().value(setting, defaultValue)
+            loaded_value = super().value(setting, defaultValue=defaultValue)
+            # Type-Conversion for UNIX-Systems (ini-File does not preserve type,
+            # converts to strings)
+            if not isinstance(loaded_value, type(self.get_default(setting))):
+                loaded_value = literal_eval(loaded_value)
             if loaded_value is None:
                 if defaultValue is None:
-                    return super().get_default(setting)
+                    return self.get_default(setting)
                 else:
                     return defaultValue
             else:
