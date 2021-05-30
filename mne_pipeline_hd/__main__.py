@@ -45,26 +45,6 @@ def main():
     app.setOrganizationName(organization_name)
     app.setOrganizationDomain(domain_name)
 
-    # Initialize Layout
-    font_family = QS().value('app_font')
-    font_size = QS().value('app_font_size')
-    app.setFont(QFont(font_family, font_size))
-
-    # Set Style and Window-Icon
-    app_style = QS().value('app_style')
-    if app_style == 'dark':
-        app.setStyleSheet(qdarkstyle.load_stylesheet(palette=DarkPalette))
-        icon_name = 'mne_pipeline_icon_dark.png'
-    else:
-        icon_name = 'mne_pipeline_icon_light.png'
-        if app_style == 'light':
-            app.setStyleSheet(qdarkstyle.load_stylesheet(palette=LightPalette))
-        else:
-            app.setStyle(app_style)
-
-    with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
-        app_icon = QIcon(str(icon_path))
-    app.setWindowIcon(app_icon)
 
     # Disable Help-Button
     try:
@@ -94,6 +74,27 @@ def main():
     # Initialize Exception-Hook
     qt_exception_hook = UncaughtHook()
 
+    # Initialize Layout
+    font_family = QS().value('app_font')
+    font_size = QS().value('app_font_size')
+    app.setFont(QFont(font_family, font_size))
+
+    # Set Style and Window-Icon
+    app_style = QS().value('app_style')
+    if app_style == 'dark':
+        app.setStyleSheet(qdarkstyle.load_stylesheet(palette=DarkPalette))
+        icon_name = 'mne_pipeline_icon_dark.png'
+    else:
+        icon_name = 'mne_pipeline_icon_light.png'
+        if app_style == 'light':
+            app.setStyleSheet(qdarkstyle.load_stylesheet(palette=LightPalette))
+        else:
+            app.setStyle(app_style)
+
+    with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
+        app_icon = QIcon(str(icon_path))
+    app.setWindowIcon(app_icon)
+    
     # Initiate WelcomeWindow
     ww = WelcomeWindow()
 
