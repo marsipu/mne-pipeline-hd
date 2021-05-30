@@ -192,9 +192,10 @@ class RemoveDialog(QDialog):
 class FileDock(QDockWidget):
     def __init__(self, main_win, meeg_view=True, fsmri_view=True, group_view=True):
         super().__init__('Object-Selection', main_win)
+        # Maintain main-window as top-level object from which the references to the
+        # objects of controller and project are taken.
         self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
+
         self.meeg_view = meeg_view
         self.fsmri_view = fsmri_view
         self.group_view = group_view
@@ -220,7 +221,7 @@ class FileDock(QDockWidget):
             # MEEG-List + Index-Line-Edit
             meeg_widget = QWidget()
             meeg_layout = QVBoxLayout()
-            self.meeg_list = CheckList(self.pr.all_meeg, self.pr.sel_meeg, ui_button_pos='top', show_index=True,
+            self.meeg_list = CheckList(self.mw.ct.pr.all_meeg, self.mw.ct.pr.sel_meeg, ui_button_pos='top', show_index=True,
                                        title='Select MEG/EEG')
             meeg_layout.addWidget(self.meeg_list)
 
@@ -248,7 +249,7 @@ class FileDock(QDockWidget):
             # MRI-Subjects-List + Index-Line-Edit
             fsmri_widget = QWidget()
             fsmri_layout = QVBoxLayout()
-            self.fsmri_list = CheckList(self.pr.all_fsmri, self.pr.sel_fsmri, ui_button_pos='top',
+            self.fsmri_list = CheckList(self.mw.ct.pr.all_fsmri, self.mw.ct.pr.sel_fsmri, ui_button_pos='top',
                                         show_index=True, title='Select Freesurfer-MRI')
             fsmri_layout.addWidget(self.fsmri_list)
 
@@ -282,11 +283,11 @@ class FileDock(QDockWidget):
 
     def update_dock(self):
         # Update lists when rereferenced elsewhere
-        self.meeg_list.replace_data(self.pr.all_meeg)
-        self.meeg_list.replace_checked(self.pr.sel_meeg)
+        self.meeg_list.replace_data(self.mw.ct.pr.all_meeg)
+        self.meeg_list.replace_checked(self.mw.ct.pr.sel_meeg)
 
-        self.fsmri_list.replace_data(self.pr.all_fsmri)
-        self.fsmri_list.replace_checked(self.pr.sel_fsmri)
+        self.fsmri_list.replace_data(self.mw.ct.pr.all_fsmri)
+        self.fsmri_list.replace_checked(self.mw.ct.pr.sel_fsmri)
 
         self.ga_widget.update_treew()
 
@@ -296,22 +297,22 @@ class FileDock(QDockWidget):
 
     def select_meeg(self):
         index = self.meeg_ledit.text()
-        self.pr.sel_meeg, idxs = index_parser(index, self.pr.all_meeg)
+        self.mw.ct.pr.sel_meeg, idxs = index_parser(index, self.mw.ct.pr.all_meeg)
         # Replace _checked in CheckListModel because of rereferencing above
-        self.meeg_list.replace_checked(self.pr.sel_meeg)
+        self.meeg_list.replace_checked(self.mw.ct.pr.sel_meeg)
 
     def select_fsmri(self):
         index = self.fsmri_ledit.text()
-        self.pr.sel_fsmri, idxs = index_parser(index, self.pr.all_fsmri)
+        self.mw.ct.pr.sel_fsmri, idxs = index_parser(index, self.mw.ct.pr.all_fsmri)
         # Replace _checked in CheckListModel because of rereferencing above
-        self.fsmri_list.replace_checked(self.pr.sel_fsmri)
+        self.fsmri_list.replace_checked(self.mw.ct.pr.sel_fsmri)
 
     def remove_meeg(self):
-        if len(self.pr.sel_meeg) > 0:
+        if len(self.mw.ct.pr.sel_meeg) > 0:
             RemoveDialog(self, 'MEEG')
 
     def remove_fsmri(self):
-        if len(self.pr.sel_fsmri) > 0:
+        if len(self.mw.ct.pr.sel_fsmri) > 0:
             RemoveDialog(self, 'FSMRI')
 
 
@@ -319,8 +320,6 @@ class GrandAvgWidget(QWidget):
     def __init__(self, main_win):
         super().__init__()
         self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
 
         self.init_layout()
         self.update_treew()
@@ -352,15 +351,15 @@ class GrandAvgWidget(QWidget):
     def update_treew(self):
         self.treew.clear()
         top_items = []
-        for group in self.pr.all_groups:
+        for group in self.mw.ct.pr.all_groups:
             top_item = QTreeWidgetItem()
             top_item.setText(0, group)
             top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEditable)
-            if group in self.pr.sel_groups:
+            if group in self.mw.ct.pr.sel_groups:
                 top_item.setCheckState(0, Qt.Checked)
             else:
                 top_item.setCheckState(0, Qt.Unchecked)
-            for file in self.pr.all_groups[group]:
+            for file in self.mw.ct.pr.all_groups[group]:
                 sub_item = QTreeWidgetItem(top_item)
                 sub_item.setText(0, file)
             top_items.append(top_item)
@@ -368,7 +367,7 @@ class GrandAvgWidget(QWidget):
 
     def get_treew(self):
         new_dict = {}
-        self.pr.sel_groups = []
+        self.mw.ct.pr.sel_groups = []
         for top_idx in range(self.treew.topLevelItemCount()):
             top_item = self.treew.topLevelItem(top_idx)
             top_text = top_item.text(0)
@@ -377,8 +376,8 @@ class GrandAvgWidget(QWidget):
                 child_item = top_item.child(child_idx)
                 new_dict[top_text].append(child_item.text(0))
             if top_item.checkState(0) == Qt.Checked:
-                self.pr.sel_groups.append(top_text)
-        self.pr.all_groups = new_dict
+                self.mw.ct.pr.sel_groups.append(top_text)
+        self.mw.ct.pr.all_groups = new_dict
 
     def add_group(self):
         text, ok = QInputDialog.getText(self, 'New Group', 'Enter the name for a new group:')
@@ -420,8 +419,7 @@ class GrandAvgFileAdd(QDialog):
     def __init__(self, main_win, group, ga_widget):
         super().__init__(ga_widget)
         self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
+
         self.group = group
         self.ga_widget = ga_widget
         self.setWindowTitle('Select Files to add')
@@ -470,8 +468,8 @@ class GrandAvgFileAdd(QDialog):
         self.load_list()
 
     def load_list(self):
-        for item_name in self.pr.all_meeg:
-            if item_name not in self.pr.all_groups[self.group.text(0)]:
+        for item_name in self.mw.ct.pr.all_meeg:
+            if item_name not in self.mw.ct.pr.all_groups[self.group.text(0)]:
                 item = QListWidgetItem(item_name)
                 item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
                 item.setCheckState(Qt.Unchecked)

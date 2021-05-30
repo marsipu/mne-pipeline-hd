@@ -19,6 +19,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
                              QMainWindow, QSizePolicy, QTextBrowser, QTextEdit, QVBoxLayout, QWidget, QWizard,
                              QWizardPage)
+from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.base_widgets import CheckDictEditList, CheckList
 from mne_pipeline_hd.gui.gui_utils import center, set_ratio_geometry
 
@@ -97,7 +98,7 @@ class EducationEditor(QMainWindow):
         self.setCentralWidget(QWidget())
 
         name_label = QLabel('Name:')
-        name_label.setFont(QFont('AnyStyle', 14))
+        name_label.setFont(QFont(QS().value('app_font'), 14))
         layout.addWidget(name_label)
         self.name_ledit = QLineEdit()
         self.name_ledit.textEdited.connect(self.name_changed)
@@ -119,7 +120,7 @@ class EducationEditor(QMainWindow):
         layout.addLayout(select_layout)
 
         page_label = QLabel('Make a Tour:')
-        page_label.setFont(QFont('AnyStyle', 14))
+        page_label.setFont(QFont(QS().value('app_font'), 14))
         self.format_cmbx = QComboBox()
         self.format_cmbx.addItems(['PlainText', 'HTML'])
         self.format_cmbx.currentTextChanged.connect(self.format_changed)

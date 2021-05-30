@@ -22,14 +22,14 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 from mne_pipeline_hd import QS
 
-from .dialogs import (ParametersDock, QuickGuide, RawInfo, RemoveProjectsDlg,
-                      SettingsDlg, SysInfoMsg, AboutDialog)
+from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
+                      SysInfoMsg, AboutDialog)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
 from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
-from .parameter_widgets import BoolGui, ComboGui, IntGui
+from .parameter_widgets import BoolGui, ComboGui, IntGui, ParametersDock, SettingsDlg
 from .tools import DataTerminal, PlotViewSelection
 from ..basic_functions.plot import close_all
 from ..pipeline_functions import iswin
@@ -332,9 +332,9 @@ class MainWindow(QMainWindow):
         start_bt = QPushButton('Start')
         stop_bt = QPushButton('Quit')
 
-        clear_bt.setFont(QFont('AnyStyle', 18))
-        start_bt.setFont(QFont('AnyStyle', 18))
-        stop_bt.setFont(QFont('AnyStyle', 18))
+        clear_bt.setFont(QFont(QS().value('app_font'), 18))
+        start_bt.setFont(QFont(QS().value('app_font'), 18))
+        stop_bt.setFont(QFont(QS().value('app_font'), 18))
 
         clear_bt.clicked.connect(self.clear)
         start_bt.clicked.connect(self.start)

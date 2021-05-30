@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLa
                              QVBoxLayout, QWidget)
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
 from mne_pipeline_hd.gui.gui_utils import CodeEditor, MainConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
     set_ratio_geometry
@@ -142,19 +143,19 @@ class DataTerminal(QDialog):
         self.sub_layout.addWidget(self.inputw, 0, 0, 3, 1)
 
         self.start_bt = QPushButton('Start')
-        self.start_bt.setFont(QFont('AnyStyle', 16))
+        self.start_bt.setFont(QFont(QS().value('app_font'), 16))
         self.start_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
         self.start_bt.clicked.connect(self.start_execution)
         self.sub_layout.addWidget(self.start_bt, 0, 1)
 
         self.history_bt = QPushButton('History')
-        self.history_bt.setFont(QFont('AnyStyle', 16))
+        self.history_bt.setFont(QFont(QS().value('app_font'), 16))
         self.history_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
         self.history_bt.clicked.connect(partial(HistoryDlg, self))
         self.sub_layout.addWidget(self.history_bt, 1, 1)
 
         self.quit_bt = QPushButton('Close')
-        self.quit_bt.setFont(QFont('AnyStyle', 16))
+        self.quit_bt.setFont(QFont(QS().value('app_font'), 16))
         self.quit_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
         self.quit_bt.clicked.connect(self.close)
         self.sub_layout.addWidget(self.quit_bt, 2, 1)

@@ -42,7 +42,7 @@ class WelcomeWindow(QWidget):
     def init_ui(self):
         layout = QVBoxLayout()
         title_label = QLabel('Welcome to MNE-Pipeline!')
-        title_label.setFont(QFont('AnyStyle', 20))
+        title_label.setFont(QFont(QS().value('app_font'), 20))
         layout.addWidget(title_label)
 
         image_label = QLabel()
@@ -84,14 +84,14 @@ class WelcomeWindow(QWidget):
 
         bt_layout = QHBoxLayout()
         self.start_bt = QPushButton('Start')
-        self.start_bt.setFont(QFont('AnyStyle', 20))
+        self.start_bt.setFont(QFont(QS().value('app_font'), 20))
         self.start_bt.setEnabled(False)
         self.start_bt.clicked.connect(self.init_main_window)
         bt_layout.addWidget(self.start_bt)
 
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
-        close_bt.setFont(QFont('AnyStyle', 20))
+        close_bt.setFont(QFont(QS().value('app_font'), 20))
         bt_layout.addWidget(close_bt)
 
         layout.addLayout(bt_layout)
@@ -170,8 +170,9 @@ class WelcomeWindow(QWidget):
             self.update_project_cmbx()
 
     def init_main_window(self):
-        self.ct.edu_program_name = self.edu_selection.get_current()
-        self.ct.load_edu()
+        if self.edu_groupbox.isChecked():
+            self.ct.edu_program_name = self.edu_selection.get_current()
+            self.ct.load_edu()
 
         # Check if MNE-Python is installed
         try:

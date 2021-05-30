@@ -151,11 +151,11 @@ class CustomFunctionImport(QDialog):
         # Import Button and Combobox
         add_bt_layout = QHBoxLayout()
         addfn_bt = QPushButton('Load Function/s')
-        addfn_bt.setFont(QFont('AnyStyle', 12))
+        addfn_bt.setFont(QFont(QS().value('app_font'), 12))
         addfn_bt.clicked.connect(self.get_functions)
         add_bt_layout.addWidget(addfn_bt)
         editfn_bt = QPushButton('Edit Function/s')
-        editfn_bt.setFont(QFont('AnyStyle', 12))
+        editfn_bt.setFont(QFont(QS().value('app_font'), 12))
         editfn_bt.clicked.connect(self.edit_functions)
         add_bt_layout.addWidget(editfn_bt)
         layout.addLayout(add_bt_layout)
@@ -354,17 +354,17 @@ class CustomFunctionImport(QDialog):
         bt_layout = QHBoxLayout()
 
         save_bt = QPushButton('Save')
-        save_bt.setFont(QFont('AnyStyle', 16))
+        save_bt.setFont(QFont(QS().value('app_font'), 16))
         save_bt.clicked.connect(self.save_pkg)
         bt_layout.addWidget(save_bt)
 
         src_bt = QPushButton('Show Code')
-        src_bt.setFont(QFont('AnyStyle', 16))
+        src_bt.setFont(QFont(QS().value('app_font'), 16))
         src_bt.clicked.connect(self.show_code)
         bt_layout.addWidget(src_bt)
 
         close_bt = QPushButton('Quit')
-        close_bt.setFont(QFont('AnyStyle', 16))
+        close_bt.setFont(QFont(QS().value('app_font'), 16))
         close_bt.clicked.connect(self.close)
         bt_layout.addWidget(close_bt)
 

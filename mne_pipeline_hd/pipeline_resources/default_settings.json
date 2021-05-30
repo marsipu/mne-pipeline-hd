@@ -16,15 +16,15 @@
         "overwrite": false
     },
     "qsettings": {
-        "home_path": null,
+        "home_path": "",
         "n_jobs": -1,
         "n_threads": 1,
         "save_ram": 1,
         "enable_cuda": 0,
-        "dark_mode": 0,
         "log_level": 20,
-        "fs_path": null,
-        "mne_path": null,
+        "education": 0,
+        "fs_path": "",
+        "mne_path": "",
         "app_font": "SansSerif",
         "app_font_size": 10,
         "app_style": "Fusion"

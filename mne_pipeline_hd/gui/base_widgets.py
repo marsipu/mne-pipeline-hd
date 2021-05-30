@@ -22,6 +22,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QHBoxLayout, QInputDialog, QLabel,
                              QListView, QPushButton, QScrollArea, QSizePolicy,
                              QSpinBox, QTabWidget, QTableView, QTreeView, QVBoxLayout, QWidget)
+from mne_pipeline_hd import QS
 
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
@@ -66,9 +67,9 @@ class Base(QWidget):
         if self.title:
             title_label = QLabel(self.title)
             if len(self.title) <= 12:
-                title_label.setFont(QFont('AnyStyle', 14))
+                title_label.setFont(QFont(QS().value('app_font'), 14))
             else:
-                title_label.setFont(QFont('AnyStyle', 12))
+                title_label.setFont(QFont(QS().value('app_font'), 12))
             layout.addWidget(title_label)
 
         layout.addWidget(self.view)
@@ -256,7 +257,7 @@ class EditList(BaseList):
         if self.title:
             super_layout = QVBoxLayout()
             title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
+            title_label.setFont(QFont(QS().value('app_font'), 14))
             super_layout.addWidget(title_label)
             super_layout.addLayout(layout)
             self.setLayout(super_layout)
@@ -353,7 +354,7 @@ class CheckList(BaseList):
         if self.title:
             super_layout = QVBoxLayout()
             title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
+            title_label.setFont(QFont(QS().value('app_font'), 14))
             super_layout.addWidget(title_label)
             super_layout.addLayout(layout)
             self.setLayout(super_layout)
@@ -665,7 +666,7 @@ class EditDict(BaseDict):
         if self.title:
             super_layout = QVBoxLayout()
             title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
+            title_label.setFont(QFont(QS().value('app_font'), 14))
             super_layout.addWidget(title_label)
             super_layout.addLayout(layout)
             self.setLayout(super_layout)
@@ -956,7 +957,7 @@ class EditPandasTable(BasePandasTable):
         if self.title:
             super_layout = QVBoxLayout()
             title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
+            title_label.setFont(QFont(QS().value('app_font'), 14))
             super_layout.addWidget(title_label)
             super_layout.addLayout(layout)
             self.setLayout(super_layout)
@@ -1132,13 +1133,13 @@ class AssignWidget(QWidget):
         bt_layout = QHBoxLayout()
         assign_bt = QPushButton('Assign')
         assign_bt.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        assign_bt.setFont(QFont('AnyStyle', 13))
+        assign_bt.setFont(QFont(QS().value('app_font'), 13))
         assign_bt.clicked.connect(self.assign)
         bt_layout.addWidget(assign_bt)
 
         show_assign_bt = QPushButton('Show Assignments')
         show_assign_bt.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        show_assign_bt.setFont(QFont('AnyStyle', 13))
+        show_assign_bt.setFont(QFont(QS().value('app_font'), 13))
         show_assign_bt.clicked.connect(self.show_assignments)
         bt_layout.addWidget(show_assign_bt)
         layout.addLayout(bt_layout)
@@ -1146,7 +1147,7 @@ class AssignWidget(QWidget):
         if self.title:
             super_layout = QVBoxLayout()
             title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyStyle', 14))
+            title_label.setFont(QFont(QS().value('app_font'), 14))
             super_layout.addWidget(title_label, alignment=Qt.AlignHCenter)
             super_layout.addLayout(layout)
             self.setLayout(super_layout)

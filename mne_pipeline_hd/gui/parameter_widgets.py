@@ -15,11 +15,18 @@ from ast import literal_eval
 from functools import partial
 
 import numpy as np
+import pandas as pd
 from PyQt5.QtCore import QSettings, QTimer, Qt
+from PyQt5.QtGui import QFontDatabase, QFont
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                             QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout, QWidget)
-from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList
+                             QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout, QWidget, QDockWidget, QTabWidget,
+                             QScrollArea, QInputDialog, QMessageBox, QStyleFactory)
+from mne_pipeline_hd import QS
+from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList, SimpleList
+from mne_pipeline_hd.gui.dialogs import CheckListDlg
+from mne_pipeline_hd.gui.gui_utils import get_std_icon, WorkerDialog, get_exception_tuple
+from mne_pipeline_hd.pipeline_functions import iswin
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 
 
@@ -1305,6 +1312,421 @@ class MultiTypeGui(Param):
             self.save_param()
 
         return self.param_value
+
+
+# Todo: Ordering Parameters in Tabs and add Find-Command
+class ResetDialog(QDialog):
+    def __init__(self, p_dock):
+        super().__init__(p_dock)
+        self.pd = p_dock
+        self.selected_params = list()
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+        layout.addWidget(CheckList(list(self.pd.ct.pr.parameters[self.pd.ct.pr.p_preset].keys()),
+                                   self.selected_params,
+                                   title='Select the Parameters to reset'))
+        reset_bt = QPushButton('Reset')
+        reset_bt.clicked.connect(self.reset_params)
+        layout.addWidget(reset_bt)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
+
+    def reset_params(self):
+        for param_name in self.selected_params:
+            self.pd.ct.pr.load_default_param(param_name)
+            print(f'Reset {param_name}')
+        WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...', blocking=True)
+        self.pd.update_all_param_guis()
+        self.close()
+
+
+class CopyPDialog(QDialog):
+    def __init__(self, p_dock):
+        super().__init__(p_dock)
+        self.pd = p_dock
+        self.p = p_dock.ct.pr.parameters
+        self.selected_from = None
+        self.selected_to = list()
+        self.selected_ps = list()
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        list_layout = QHBoxLayout()
+        copy_from = SimpleList(list(self.p.keys()))
+        copy_from.currentChanged.connect(self.from_selected)
+        list_layout.addWidget(copy_from)
+
+        self.copy_to = CheckList(checked=self.selected_to)
+        list_layout.addWidget(self.copy_to)
+
+        self.copy_ps = CheckList(checked=self.selected_ps)
+        list_layout.addWidget(self.copy_ps)
+
+        layout.addLayout(list_layout)
+
+        bt_layout = QHBoxLayout()
+
+        copy_bt = QPushButton('Copy')
+        copy_bt.clicked.connect(self.copy_parameters)
+        bt_layout.addWidget(copy_bt)
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        bt_layout.addWidget(close_bt)
+
+        layout.addLayout(bt_layout)
+
+        self.setLayout(layout)
+
+    def from_selected(self, current):
+        self.selected_from = current
+        self.copy_to.replace_data([pp for pp in self.p.keys() if pp != current])
+        self.copy_ps.replace_data([p for p in self.p[current]])
+
+    def copy_parameters(self):
+        if len(self.selected_to) > 0:
+            for p_preset in self.selected_to:
+                for parameter in self.selected_ps:
+                    self.p[p_preset][parameter] = self.p[self.selected_from][parameter]
+
+            WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...', blocking=True)
+            self.pd.update_all_param_guis()
+            self.close()
+
+
+class RemovePPresetDlg(CheckListDlg):
+    def __init__(self, parent):
+        self.parent = parent
+        self.preset_list = [p for p in self.parent.ct.pr.parameters if p != 'Default']
+        self.rm_list = []
+
+        super().__init__(parent, self.preset_list, self.rm_list)
+
+        self.do_bt.setText('Remove Parameter-Preset')
+        self.do_bt.clicked.connect(self.remove_selected)
+
+        self.open()
+
+    def remove_selected(self):
+        for p_preset in self.rm_list:
+            self.preset_list.remove(p_preset)
+            self.lm.layoutChanged.emit()
+            # Remove from Parameters
+            self.parent.ct.pr.parameters.pop(p_preset)
+            self.parent.update_ppreset_cmbx()
+
+        # If current Parameter-Preset was deleted
+        if self.parent.ct.pr.p_preset not in self.parent.ct.pr.parameters:
+            self.parent.ct.pr.p_preset = list(self.parent.ct.pr.parameters.keys())[0]
+            self.parent.update_all_param_guis()
+
+        self.close()
+
+
+class ParametersDock(QDockWidget):
+    def __init__(self, main_win):
+        super().__init__('Parameters', main_win)
+        self.mw = main_win
+        self.ct = main_win.ct
+        self.setAllowedAreas(Qt.RightDockWidgetArea)
+        self.main_widget = QWidget()
+        self.param_guis = {}
+
+        self.dropgroup_params()
+        self.init_ui()
+
+    def dropgroup_params(self):
+        # Create a set of all unique parameters used by functions in selected_modules
+        sel_pdfuncs = self.ct.pd_funcs.loc[self.ct.pd_funcs['module'].isin(self.ct.get_setting('selected_modules'))]
+        # Remove rows with NaN in func_args
+        sel_pdfuncs = sel_pdfuncs.loc[sel_pdfuncs['func_args'].notna()]
+        all_used_params_str = ','.join(sel_pdfuncs['func_args'])
+        # Make sure there are no spaces left
+        all_used_params_str = all_used_params_str.replace(' ', '')
+        all_used_params = set(all_used_params_str.split(','))
+        drop_idx_list = list()
+        self.cleaned_pd_params = self.ct.pd_params.copy()
+        for param in self.cleaned_pd_params.index:
+            if param in all_used_params:
+                # Group-Name (if not given, set to 'Various')
+                group_name = self.cleaned_pd_params.loc[param, 'group']
+                if pd.isna(group_name):
+                    self.cleaned_pd_params.loc[param, 'group'] = 'Various'
+            else:
+                # Drop Parameters which aren't used by functions
+                drop_idx_list.append(param)
+        self.cleaned_pd_params.drop(index=drop_idx_list, inplace=True)
+
+    def init_ui(self):
+        self.general_layout = QVBoxLayout()
+
+        # Add Parameter-Preset-ComboBox
+        title_layouts = QVBoxLayout()
+        title_layout1 = QHBoxLayout()
+        p_preset_l = QLabel('Parameter-Presets: ')
+        title_layout1.addWidget(p_preset_l)
+        self.p_preset_cmbx = QComboBox()
+        self.p_preset_cmbx.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.p_preset_cmbx.activated.connect(self.p_preset_changed)
+        self.update_ppreset_cmbx()
+        title_layout1.addWidget(self.p_preset_cmbx)
+
+        add_bt = QPushButton(icon=get_std_icon('SP_FileDialogNewFolder'))
+        add_bt.clicked.connect(self.add_p_preset)
+        title_layout1.addWidget(add_bt)
+
+        rm_bt = QPushButton(icon=get_std_icon('SP_DialogDiscardButton'))
+        rm_bt.clicked.connect(partial(RemovePPresetDlg, self))
+        title_layout1.addWidget(rm_bt)
+
+        title_layouts.addLayout(title_layout1)
+
+        title_layout2 = QHBoxLayout()
+        copy_bt = QPushButton('Copy')
+        copy_bt.setFont(QFont(QS().value('app_font'), 16))
+        copy_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        copy_bt.clicked.connect(partial(CopyPDialog, self))
+        title_layout2.addWidget(copy_bt)
+
+        reset_bt = QPushButton('Reset')
+        reset_bt.setFont(QFont(QS().value('app_font'), 16))
+        reset_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        reset_bt.clicked.connect(partial(ResetDialog, self))
+        title_layout2.addWidget(reset_bt)
+
+        reset_all_bt = QPushButton('Reset All')
+        reset_all_bt.setFont(QFont(QS().value('app_font'), 16))
+        reset_all_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        reset_all_bt.clicked.connect(self.reset_all_parameters)
+        title_layout2.addWidget(reset_all_bt)
+
+        title_layouts.addLayout(title_layout2)
+        self.general_layout.addLayout(title_layouts)
+
+        self.add_param_guis()
+
+        self.main_widget.setLayout(self.general_layout)
+        self.setWidget(self.main_widget)
+
+    def add_param_guis(self):
+        # Create Tab-Widget for Parameters, grouped by group
+        self.tab_param_widget = QTabWidget()
+
+        grouped_params = self.cleaned_pd_params.groupby('group', sort=False)
+
+        for group_name, group in grouped_params:
+            layout = QVBoxLayout()
+            tab = QScrollArea()
+            child_w = QWidget()
+            for idx, parameter in group.iterrows():
+
+                # Get Parameters for Gui-Call
+                if pd.notna(parameter['alias']):
+                    param_alias = parameter['alias']
+                else:
+                    param_alias = idx
+                if pd.notna(parameter['gui_type']):
+                    gui_name = parameter['gui_type']
+                else:
+                    gui_name = 'FuncGui'
+                try:
+                    default = literal_eval(parameter['default'])
+                except (SyntaxError, ValueError):
+                    if gui_name == 'FuncGui':
+                        default = eval(parameter['default'], {'np': np})
+                    else:
+                        default = parameter['default']
+                if pd.notna(parameter['description']):
+                    description = parameter['description']
+                else:
+                    description = ''
+                if pd.notna(parameter['unit']):
+                    unit = parameter['unit']
+                else:
+                    unit = None
+                try:
+                    gui_args = literal_eval(parameter['gui_args'])
+                except (SyntaxError, ValueError):
+                    gui_args = {}
+
+                try:
+                    self.param_guis[idx] = globals()[gui_name](self.ct, param_name=idx, param_alias=param_alias,
+                                                               default=default, description=description,
+                                                               param_unit=unit, **gui_args)
+                except:
+                    err_tuple = get_exception_tuple()
+                    raise RuntimeError(f'Initiliazation of Parameter-Widget "{idx}" failed:\n'
+                                       f'{err_tuple[1]}')
+
+                layout.addWidget(self.param_guis[idx])
+
+            child_w.setLayout(layout)
+            tab.setWidget(child_w)
+            self.tab_param_widget.addTab(tab, group_name)
+
+        # Set Layout of QWidget (the class itself)
+        self.general_layout.addWidget(self.tab_param_widget)
+
+    def update_ppreset_cmbx(self):
+        self.p_preset_cmbx.clear()
+        for p_preset in self.ct.pr.parameters.keys():
+            self.p_preset_cmbx.addItem(p_preset)
+        if self.ct.pr.p_preset in self.ct.pr.parameters.keys():
+            self.p_preset_cmbx.setCurrentText(self.ct.pr.p_preset)
+        else:
+            self.p_preset_cmbx.setCurrentText(list(self.ct.pr.parameters.keys())[0])
+
+    def p_preset_changed(self, idx):
+        self.ct.pr.p_preset = self.p_preset_cmbx.itemText(idx)
+        self.update_all_param_guis()
+
+    def add_p_preset(self):
+        preset_name, ok = QInputDialog.getText(self, 'New Parameter-Preset',
+                                               'Enter a name for a new Parameter-Preset')
+        if ok:
+            self.ct.pr.p_preset = preset_name
+            self.ct.pr.load_default_parameters()
+            self.p_preset_cmbx.addItem(preset_name)
+            self.p_preset_cmbx.setCurrentText(preset_name)
+        else:
+            pass
+
+    def redraw_param_widgets(self):
+        self.general_layout.removeWidget(self.tab_param_widget)
+        self.tab_param_widget.close()
+        del self.tab_param_widget
+        self.dropgroup_params()
+        self.add_param_guis()
+        self.update_ppreset_cmbx()
+
+    def update_all_param_guis(self):
+        for gui_name in self.param_guis:
+            param_gui = self.param_guis[gui_name]
+            param_gui.read_param()
+            param_gui.set_param()
+
+    def reset_all_parameters(self):
+        msgbox = QMessageBox.question(self, 'Reset all Parameters?',
+                                      'Do you really want to reset all parameters to their default?',
+                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if msgbox == QMessageBox.Yes:
+            self.ct.pr.load_default_parameters()
+            self.update_all_param_guis()
+
+
+class SettingsDlg(QDialog):
+    def __init__(self, parent_widget, controller):
+        super().__init__(parent_widget)
+        self.ct = controller
+
+        self.settings_items = {
+            'app_style': {
+                'gui_type': 'ComboGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Application Style',
+                    'description': 'Changes the application style (Restart required).',
+                    'options': ['light', 'dark'] + QStyleFactory().keys(),
+                    'groupbox_layout': False
+                }
+            },
+            'app_font': {
+                'gui_type': 'ComboGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Application Font',
+                    'description': 'Changes default application font (Restart required).',
+                    'options': QFontDatabase().families(QFontDatabase.Latin)
+                }
+            },
+            'app_font_size': {
+                'gui_type': 'IntGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Font Size',
+                    'description': 'Changes default application font-size (Restart required).',
+                    'min_val': 5,
+                    'max_val': 20
+                }
+            },
+            'save_ram': {
+                'gui_type': 'BoolGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Save RAM',
+                    'description': 'Set to True on low RAM-Machines to avoid the process to be killed '
+                                   'by the OS due to low Memory (with leaving it off, the pipeline goes '
+                                   'a bit faster, because the data can be saved in memory).',
+                    'return_integer': True
+                }
+
+            },
+            'fs_path': {
+                'gui_type': 'StringGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'FREESURFER_HOME-Path',
+                    'description': 'Set the Path to the "freesurfer"-directory of your '
+                                   'Freesurfer-Installation '
+                                   '(for Windows to the LINUX-Path of the Freesurfer-Installation '
+                                   'in Windows-Subsystem for Linux(WSL))',
+                    'none_select': True
+                }
+            },
+            'mne_path': {
+                'gui_type': 'StringGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'MNE-Python-Path',
+                    'description': 'Set the LINUX-Path to the mne-environment (e.g '
+                                   '...anaconda3/envs/mne) in Windows-Subsystem for Linux(WSL))',
+                    'none_select': True
+                }
+            }
+        }
+
+        if not iswin:
+            self.settings_items.pop('mne_path')
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        for setting in self.settings_items:
+            gui_handle = globals()[self.settings_items[setting]['gui_type']]
+            data_type = self.settings_items[setting]['data_type']
+            gui_kwargs = self.settings_items[setting]['gui_kwargs']
+            if data_type == 'QSettings':
+                gui_kwargs['data'] = QS()
+                gui_kwargs['default'] = self.ct.default_settings['qsettings'][setting]
+            elif data_type == 'Controller':
+                gui_kwargs['data'] = self.mw.ct
+                gui_kwargs['default'] = self.ct.pd_params.loc[setting, 'default']
+            else:
+                gui_kwargs['data'] = self.ct.settings
+                gui_kwargs['default'] = self.ct.default_settings['settings'][setting]
+            gui_kwargs['param_name'] = setting
+            layout.addWidget(gui_handle(**gui_kwargs))
+
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt)
+
+        self.setLayout(layout)
 
 
 # Testing

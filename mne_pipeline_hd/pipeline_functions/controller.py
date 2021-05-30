@@ -180,7 +180,7 @@ class Controller:
         self.save_settings()
 
     def load_edu(self):
-        if self.edu_program_name:
+        if self.edu_program_name is not None:
             edu_path = join(self.home_path, 'edu_programs', self.edu_program_name)
             with open(edu_path, 'r') as file:
                 self.edu_program = json.load(file)

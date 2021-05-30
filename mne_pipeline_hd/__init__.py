@@ -42,12 +42,15 @@ try:
             super(QSettings, self).__init__()
             super(BaseSettings, self).__init__()
 
-        def value(self, setting, defaultValue=None, type=None):
+        def value(self, setting, defaultValue=None):
             loaded_value = super().value(setting, defaultValue=defaultValue)
             # Type-Conversion for UNIX-Systems (ini-File does not preserve type,
             # converts to strings)
             if not isinstance(loaded_value, type(self.get_default(setting))):
-                loaded_value = literal_eval(loaded_value)
+                try:
+                    loaded_value = literal_eval(loaded_value)
+                except (SyntaxError, ValueError):
+                    return self.get_default(setting)
             if loaded_value is None:
                 if defaultValue is None:
                     return self.get_default(setting)
