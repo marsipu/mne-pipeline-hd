@@ -38,9 +38,12 @@ def center(widget):
 
 
 def set_ratio_geometry(size_ratio, widget=None):
+    if not isinstance(size_ratio, tuple):
+        size_ratio = (size_ratio, size_ratio)
+    wratio, hratio = size_ratio
     desk_geometry = QApplication.instance().desktop().availableGeometry()
-    height = int(desk_geometry.height() * size_ratio)
-    width = int(desk_geometry.width() * size_ratio)
+    width = int(desk_geometry.width() * wratio)
+    height = int(desk_geometry.height() * hratio)
     if widget:
         widget.resize(width, height)
 

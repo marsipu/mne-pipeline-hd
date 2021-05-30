@@ -19,7 +19,7 @@ import mne
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import (QComboBox, QDialog, QDockWidget, QGridLayout, QHBoxLayout,
                              QInputDialog,
                              QLabel, QListView, QMessageBox, QPushButton,
@@ -118,17 +118,28 @@ class RemoveProjectsDlg(CheckListDlg):
 
 
 class SettingsDlg(QDialog):
-    def __init__(self, main_window):
-        super().__init__(main_window)
-        self.mw = main_window
+    def __init__(self, parent_widget, controller):
+        super().__init__(parent_widget)
+        self.ct = controller
 
         self.settings_items = {
+            'app_style': {
+                'gui_type': 'ComboGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Application Style',
+                    'description': 'Changes the application style (Restart required).',
+                    'options': ['light', 'dark'] + QStyleFactory().keys(),
+                    'groupbox_layout': False
+                }
+            },
             'app_font': {
-                'gui_type': 'BoolGui',
+                'gui_type': 'ComboGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
                     'param_alias': 'Application Font',
-                    'description': 'Changes default application font (Restart required).'
+                    'description': 'Changes default application font (Restart required).',
+                    'options': QFontDatabase().families(QFontDatabase.Latin)
                 }
             },
             'app_font_size': {
@@ -139,16 +150,6 @@ class SettingsDlg(QDialog):
                     'description': 'Changes default application font-size (Restart required).',
                     'min_val': 5,
                     'max_val': 20
-                }
-            },
-            'app_style': {
-                'gui_type': 'ComboGui',
-                'data_type': 'QSettings',
-                'gui_kwargs': {
-                    'param_alias': 'Application Style',
-                    'description': 'Changes the application style (Restart required).',
-                    'options' : ['light', 'dark'] + QStyleFactory().keys(),
-                    'groupbox_layout': False
                 }
             },
             'save_ram': {
@@ -187,7 +188,7 @@ class SettingsDlg(QDialog):
             }
         }
 
-        if iswin:
+        if not iswin:
             self.settings_items.pop('mne_path')
 
         self.init_ui()
@@ -198,13 +199,17 @@ class SettingsDlg(QDialog):
 
         for setting in self.settings_items:
             gui_handle = getattr(parameter_widgets, self.settings_items[setting]['gui_type'])
+            data_type = self.settings_items[setting]['data_type']
             gui_kwargs = self.settings_items[setting]['gui_kwargs']
-            if 'data_type' == 'QSettings':
+            if data_type == 'QSettings':
                 gui_kwargs['data'] = QS()
-            elif 'data_type' == 'Controller':
+                gui_kwargs['default'] = self.ct.default_settings['qsettings'][setting]
+            elif data_type == 'Controller':
                 gui_kwargs['data'] = self.mw.ct
+                gui_kwargs['default'] = self.ct.pd_params.loc[setting, 'default']
             else:
-                gui_kwargs['data'] = self.mw.ct.settings
+                gui_kwargs['data'] = self.ct.settings
+                gui_kwargs['default'] = self.ct.default_settings['settings'][setting]
             gui_kwargs['param_name'] = setting
             layout.addWidget(gui_handle(**gui_kwargs))
 
@@ -654,18 +659,12 @@ class AboutDialog(QDialog):
                'MNE-Python: <a href=https://github.com/mne-tools/mne-python>Website</a>' \
                '<a href=https://github.com/mne-tools/mne-python>GitHub</a><br>' \
                '<a href=https://github.com/ColinDuquesnoy/QDarkStyleSheet>qdarkstyle</a><br>' \
-               '<a href=https://github.com/pyQode/pyQode>pyqode<br>' \
+               '<a href=https://github.com/pyQode/pyQode>pyqode</a><br>' \
                '<br>' \
                '<b>Licensed under:</b><br>' \
                + license_text
 
         layout = QVBoxLayout()
-
-        image_label = QLabel()
-        with resources.path('mne_pipeline_hd.pipeline_resources',
-                            'mne_pipeline_logo_evee_smaller.jpg') as img_path:
-            image_label.setPixmap(QPixmap(str(img_path)))
-        layout.addWidget(image_label)
 
         text_widget = QTextEdit()
         text_widget.setReadOnly(True)
@@ -673,6 +672,7 @@ class AboutDialog(QDialog):
         layout.addWidget(text_widget)
 
         self.setLayout(layout)
+        set_ratio_geometry((0.25, self))
         self.open()
 
 

@@ -64,8 +64,6 @@ class MainWindow(QMainWindow):
         self.first_init = True
         # True, if Pipeline is running (to avoid parallel starts of RunDialog)
         self.pipeline_running = False
-        # True when Project was saved before closing the MainWindow
-        self.project_saved = False
         # For the closeEvent to avoid showing the MessageBox when restarting
         self.restarting = False
 
@@ -79,7 +77,6 @@ class MainWindow(QMainWindow):
         self.init_main_widget()
 
         center(self)
-        self.raise_win()
 
         self.first_init = False
 
@@ -131,7 +128,7 @@ class MainWindow(QMainWindow):
 
     def add_project(self):
         # First save the former projects-data
-        WorkerDialog(self, self.ct.save.pr, blocking=True)
+        WorkerDialog(self, self.ct.pr.save, blocking=True)
 
         new_project, ok = QInputDialog.getText(self, 'New Project',
                                                'Enter a name for a new project')
@@ -141,13 +138,13 @@ class MainWindow(QMainWindow):
 
     def remove_project(self):
         # First save the former projects-data
-        WorkerDialog(self, self.ct.save.pr, blocking=True)
+        WorkerDialog(self, self.ct.pr.save, blocking=True)
 
         RemoveProjectsDlg(self, self.ct)
 
     def project_changed(self, idx):
         # First save the former projects-data
-        WorkerDialog(self, self.ct.save.pr, blocking=True)
+        WorkerDialog(self, self.ct.pr.save, blocking=True)
 
         # Get selected Project
         project = self.project_box.itemText(idx)
@@ -253,8 +250,9 @@ class MainWindow(QMainWindow):
         # Settings
         settings_menu = self.menuBar().addMenu('&Settings')
 
-        settings_menu.addAction('&Open Settings', partial(SettingsDlg, self))
+        settings_menu.addAction('&Open Settings', partial(SettingsDlg, self, self.ct))
         settings_menu.addAction('&Change Home-Path', self.change_home_path)
+        settings_menu.addAction('&Restart', self.restart)
 
         # About
         about_menu = self.menuBar().addMenu('About')
@@ -351,7 +349,7 @@ class MainWindow(QMainWindow):
     def add_func_bts(self):
         # Drop custom-modules, which aren't selected
         cleaned_pd_funcs = self.ct.pd_funcs.loc[self.ct.pd_funcs['module'].isin(
-            self.get_setting('selected_modules'))].copy()
+            self.ct.get_setting('selected_modules'))].copy()
         # Horizontal Border for Function-Groups
         max_h_size = self.tab_func_widget.geometry().width()
 
@@ -383,7 +381,7 @@ class MainWindow(QMainWindow):
                         pb = QPushButton(alias_name)
                         pb.setCheckable(True)
                         self.bt_dict[function] = pb
-                        if function in self.pr.sel_functions:
+                        if function in self.ct.pr.sel_functions:
                             pb.setChecked(True)
                         pb.clicked.connect(partial(self.func_selected, function))
                         group_box_layout.addWidget(pb)
@@ -458,17 +456,6 @@ class MainWindow(QMainWindow):
         else:
             self.showFullScreen()
 
-    def raise_win(self):
-        if iswin:
-            # on windows we can raise the window by minimizing and restoring
-            self.showMinimized()
-            self.setWindowState(Qt.WindowActive)
-            self.showNormal()
-        else:
-            # on osx we can raise the window. on unity the icon in the tray will just flash.
-            self.activateWindow()
-            self.raise_()
-
     def clear(self):
         for x in self.bt_dict:
             self.bt_dict[x].setChecked(False)
@@ -488,6 +475,11 @@ class MainWindow(QMainWindow):
                          blocking=True)
             self.run_dialog = RunDialog(self)
 
+    def restart(self):
+        self.restarting = True
+        self.close()
+        restart_program()
+
     def update_pipeline(self):
         command = f"pip install --upgrade --force-reinstall --no-deps" \
                   f"git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd"
@@ -499,11 +491,7 @@ class MainWindow(QMainWindow):
                                       'to apply the changes from the Update!')
 
         if answer == QMessageBox.Yes:
-            self.restarting = True
-            self.close()
-            restart_program()
-        else:
-            pass
+            self.restart()
 
     def update_mne(self):
         msg = QMessageBox(self)
@@ -581,35 +569,31 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def closeEvent(self, event):
-        if self.project_saved:
+        wd = WorkerDialog(self, self.ct.save, show_buttons=False, show_console=False, blocking=True)
+
+        # This is necessary to avoid closing_dlg to persist on UNIX
+        wd.deleteLater()
+        wd.close()
+
+        if self.restarting:
+            answer = QMessageBox.No
+        else:
+            answer = QMessageBox.question(self, 'Closing MNE-Pipeline',
+                                          'Do you want to return to the Welcome-Window?',
+                                          buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                          defaultButton=QMessageBox.Yes)
+
+        if answer == QMessageBox.Yes:
+            self.welcome_window.check_controller()
+            self.welcome_window.show()
+            if self.edu_tour:
+                self.edu_tour.close()
+            event.accept()
+
+        elif answer == QMessageBox.No:
+            self.welcome_window.close()
+            if self.edu_tour:
+                self.edu_tour.close()
             event.accept()
         else:
             event.ignore()
-            wd = WorkerDialog(self, self.ct.save, show_buttons=False, show_console=False, blocking=True)
-
-            # This is necessary to avoid closing_dlg to persist on UNIX
-            wd.deleteLater()
-            wd.close()
-
-            if self.restarting:
-                answer = QMessageBox.question(self, 'Closing MNE-Pipeline',
-                                              'Do you want to return to the Welcome-Window?',
-                                              buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                                              defaultButton=QMessageBox.Yes)
-            else:
-                answer = QMessageBox.No
-
-            if answer == QMessageBox.Yes:
-                self.welcome_window.check_controller()
-                self.welcome_window.show()
-                if self.edu_tour:
-                    self.edu_tour.close()
-                self.project_saved = True
-                self.close()
-
-            elif answer == QMessageBox.No:
-                self.welcome_window.close()
-                if self.edu_tour:
-                    self.edu_tour.close()
-                self.project_saved = True
-                self.close()

@@ -23,8 +23,10 @@
         "enable_cuda": 0,
         "dark_mode": 0,
         "log_level": 20,
+        "fs_path": null,
+        "mne_path": null,
         "app_font": "SansSerif",
-        "app_font_size": 12,
-        "app_style": "light"
+        "app_font_size": 10,
+        "app_style": "Fusion"
     }
 }

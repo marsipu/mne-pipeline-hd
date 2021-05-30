@@ -117,16 +117,26 @@ class Controller:
                 self.settings[setting] = self.default_settings['settings'][setting]
         except FileNotFoundError:
             self.settings = self.default_settings['settings']
+        else:
+            # Check integrity of Settings-Keys
+            s_keys = set(self.settings.keys())
+            default_keys = set(self.default_settings['settings'])
+            # Remove additional (old) keys not appearing in default-settings
+            for setting in s_keys - default_keys:
+                self.settings.pop(setting)
+            # Add new keys from default-settings which are not present in settings
+            for setting in default_keys - s_keys:
+                self.settings[setting] = self.default_settings['settings'][setting]
 
         # Check integrity of QSettings-Keys
         QS().sync()
-        qs = set(QS().childKeys())
-        ds = set(self.default_settings['qsettings'])
-        # Remove additional (old) QSettings not appearing in default-settings
-        for qsetting in qs - ds:
+        qs_keys = set(QS().childKeys())
+        qdefault_keys = set(self.default_settings['qsettings'])
+        # Remove additional (old) keys not appearing in default-settings
+        for qsetting in qs_keys - qdefault_keys:
             QS().remove(qsetting)
-        # Add new settings from default-settings which are not present in QSettings
-        for qsetting in ds - qs:
+        # Add new keys from default-settings which are not present in QSettings
+        for qsetting in qdefault_keys - qs_keys:
             QS().setValue(qsetting, self.default_settings['qsettings'][qsetting])
 
     def save_settings(self):

@@ -152,6 +152,7 @@ class WelcomeWindow(QWidget):
         project = self.project_cmbx.itemText(project_idx)
         self.ct.change_project(project)
         self.update_project_cmbx()
+        self.start_bt.setEnabled(True)
 
     def update_project_cmbx(self):
         if hasattr(self.ct, 'projects'):
