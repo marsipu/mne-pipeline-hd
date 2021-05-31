@@ -1046,7 +1046,7 @@ class CopyBadsDialog(QDialog):
         if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[0] in self.bad_channels_dict:
             for copy_to in self.copy_tos:
                 copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
-                copy_to_info = MEEG(copy_to, self.parent_w.mw).load_info()
+                copy_to_info = MEEG(copy_to, self.parent_w.mw.ct).load_info()
                 # Make sure, that only channels which exist too in copy_to are copied
                 for rm_ch in [r for r in copy_bad_chs if r not in copy_to_info['ch_names']]:
                     copy_bad_chs.remove(rm_ch)

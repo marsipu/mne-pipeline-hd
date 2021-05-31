@@ -22,15 +22,16 @@ from PyQt5.QtWidgets import (QDialog, QGridLayout, QHBoxLayout, QLabel, QListVie
 from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, Group, MEEG
 
 from .pipeline_utils import shutdown
+from .. import QS
 from ..basic_functions.plot import close_all
 from ..gui.base_widgets import SimpleList
-from ..gui.gui_utils import MainConsoleWidget, Worker, get_exception_tuple, set_ratio_geometry
+from ..gui.gui_utils import MainConsoleWidget, Worker, get_exception_tuple, get_std_icon, set_ratio_geometry
 from ..gui.models import RunModel
 
 
-def get_arguments(func_name, module, obj, main_win):
+def get_arguments(func_name, module, obj):
     keyword_arguments = {}
-    project_attributes = vars(main_win.pr)
+    project_attributes = vars(obj.pr)
 
     # Get arguments from function signature
     func = getattr(module, func_name)
@@ -44,14 +45,14 @@ def get_arguments(func_name, module, obj, main_win):
 
     # Get the values for parameter-names
     for arg_name in arg_names:
-        if arg_name == 'mw':
-            keyword_arguments.update({'mw': main_win})
-        elif arg_name == 'main_win':
-            keyword_arguments.update({'main_win': main_win})
+        if arg_name == 'ct':
+            keyword_arguments.update({'ct': obj.ct})
+        elif arg_name == 'controller':
+            keyword_arguments.update({'controller': obj.ct})
         elif arg_name == 'pr':
-            keyword_arguments.update({'pr': main_win.pr})
+            keyword_arguments.update({'pr': obj.pr})
         elif arg_name == 'project':
-            keyword_arguments.update({'project': main_win.pr})
+            keyword_arguments.update({'project': obj.pr})
         elif arg_name == 'meeg':
             keyword_arguments.update({'meeg': obj})
         elif arg_name == 'fsmri':
@@ -60,31 +61,31 @@ def get_arguments(func_name, module, obj, main_win):
             keyword_arguments.update({'group': obj})
         elif arg_name in project_attributes:
             keyword_arguments.update({arg_name: project_attributes[arg_name]})
-        elif arg_name in main_win.pr.parameters[main_win.pr.p_preset]:
-            keyword_arguments.update({arg_name: main_win.pr.parameters[main_win.pr.p_preset][arg_name]})
-        elif arg_name in main_win.settings:
-            keyword_arguments.update({arg_name: main_win.settings[arg_name]})
-        elif arg_name in main_win.qsettings:
-            keyword_arguments.update({arg_name: main_win.qsettings[arg_name]})
+        elif arg_name in obj.pr.parameters[obj.pr.p_preset]:
+            keyword_arguments.update({arg_name: obj.pr.parameters[obj.pr.p_preset][arg_name]})
+        elif arg_name in obj.ct.settings:
+            keyword_arguments.update({arg_name: obj.ct.settings[arg_name]})
+        elif arg_name in QS().childKeys():
+            keyword_arguments.update({arg_name: QS().value(arg_name)})
         else:
             raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
 
     # Add additional keyword-arguments if added for function by user
-    if func_name in main_win.pr.add_kwargs:
-        for kwarg in main_win.pr.add_kwargs[func_name]:
-            keyword_arguments[kwarg] = main_win.pr.add_kwargs[func_name][kwarg]
+    if func_name in obj.pr.add_kwargs:
+        for kwarg in obj.pr.add_kwargs[func_name]:
+            keyword_arguments[kwarg] = obj.pr.add_kwargs[func_name][kwarg]
 
     return keyword_arguments
 
 
-def func_from_def(func_name, obj, main_win):
+def func_from_def(func_name, obj):
     # Get module- and package-name, has to specified in pd_funcs
     # (which imports from functions.csv or the <custom_package>.csv)
-    pkg_name = main_win.pd_funcs.loc[func_name, 'pkg_name']
-    module_name = main_win.pd_funcs.loc[func_name, 'module']
-    module = main_win.all_modules[pkg_name][module_name][0]
+    pkg_name = obj.ct.pd_funcs.loc[func_name, 'pkg_name']
+    module_name = obj.ct.pd_funcs.loc[func_name, 'module']
+    module = obj.ct.all_modules[pkg_name][module_name][0]
 
-    keyword_arguments = get_arguments(func_name, module, obj, main_win)
+    keyword_arguments = get_arguments(func_name, module, obj)
 
     # Catch one error due to unexpected or missing keywords
     unexp_kw_pattern = r"(.*) got an unexpected keyword argument \'(.*)\'"
@@ -100,7 +101,7 @@ def func_from_def(func_name, obj, main_win):
             logging.warning(f'Caught unexpected keyword \"{match_unexp_kw.group(2)}\" for {func_name}')
             getattr(module, func_name)(**keyword_arguments)
         elif match_miss_kw:
-            add_kw_args = get_arguments([match_miss_kw.group(2)], module, obj, main_win)
+            add_kw_args = get_arguments([match_miss_kw.group(2)], module, obj)
             keyword_arguments.update(add_kw_args)
             logging.warning(f'Caught missing keyword \"{match_miss_kw.group(2)}\" for {func_name}')
             getattr(module, func_name)(**keyword_arguments)
@@ -143,31 +144,31 @@ class RunDialog(QDialog):
 
     def init_lists(self):
         # Lists of selected functions divided into object-types (MEEG, FSMRI, ...)
-        self.sel_fsmri_funcs = [mf for mf in self.mw.fsmri_funcs.index if mf in self.mw.pr.sel_functions]
-        self.sel_meeg_funcs = [ff for ff in self.mw.meeg_funcs.index if ff in self.mw.pr.sel_functions]
-        self.sel_group_funcs = [gf for gf in self.mw.group_funcs.index if gf in self.mw.pr.sel_functions]
-        self.sel_other_funcs = [of for of in self.mw.other_funcs.index if of in self.mw.pr.sel_functions]
+        self.sel_fsmri_funcs = [mf for mf in self.mw.ct.fsmri_funcs.index if mf in self.mw.ct.pr.sel_functions]
+        self.sel_meeg_funcs = [ff for ff in self.mw.ct.meeg_funcs.index if ff in self.mw.ct.pr.sel_functions]
+        self.sel_group_funcs = [gf for gf in self.mw.ct.group_funcs.index if gf in self.mw.ct.pr.sel_functions]
+        self.sel_other_funcs = [of for of in self.mw.ct.other_funcs.index if of in self.mw.ct.pr.sel_functions]
 
         # Get a dict with all objects paired with their functions and their type-definition
         # Give all objects and functions in all_objects the status 1 (which means pending)
-        if len(self.mw.pr.sel_fsmri) * len(self.sel_fsmri_funcs) != 0:
-            for fsmri in self.mw.pr.sel_fsmri:
+        if len(self.mw.ct.pr.sel_fsmri) * len(self.sel_fsmri_funcs) != 0:
+            for fsmri in self.mw.ct.pr.sel_fsmri:
                 self.all_objects[fsmri] = {'type': 'FSMRI',
                                            'functions': {x: 1 for x in self.sel_fsmri_funcs},
                                            'status': 1}
                 for fsmri_func in self.sel_fsmri_funcs:
                     self.all_steps.append((fsmri, fsmri_func))
 
-        if len(self.mw.pr.sel_meeg) * len(self.sel_meeg_funcs) != 0:
-            for meeg in self.mw.pr.sel_meeg:
+        if len(self.mw.ct.pr.sel_meeg) * len(self.sel_meeg_funcs) != 0:
+            for meeg in self.mw.ct.pr.sel_meeg:
                 self.all_objects[meeg] = {'type': 'MEEG',
                                           'functions': {x: 1 for x in self.sel_meeg_funcs},
                                           'status': 1}
                 for meeg_func in self.sel_meeg_funcs:
                     self.all_steps.append((meeg, meeg_func))
 
-        if len(self.mw.pr.sel_groups) * len(self.sel_group_funcs) != 0:
-            for group in self.mw.pr.sel_groups:
+        if len(self.mw.ct.pr.sel_groups) * len(self.sel_group_funcs) != 0:
+            for group in self.mw.ct.pr.sel_groups:
                 self.all_objects[group] = {'type': 'Group',
                                            'functions': {x: 1 for x in self.sel_group_funcs},
                                            'status': 1}
@@ -221,32 +222,32 @@ class RunDialog(QDialog):
 
         self.continue_bt = QPushButton('Continue')
         self.continue_bt.setFont(QFont('AnyStyle', 14))
-        self.continue_bt.setIcon(self.mw.app.style().standardIcon(QStyle.SP_MediaPlay))
+        self.continue_bt.setIcon(get_std_icon('SP_MediaPlay'))
         self.continue_bt.clicked.connect(self.start_thread)
         bt_layout.addWidget(self.continue_bt)
 
         self.pause_bt = QPushButton('Pause')
         self.pause_bt.setFont(QFont('AnyStyle', 14))
-        self.pause_bt.setIcon(self.mw.app.style().standardIcon(QStyle.SP_MediaPause))
+        self.pause_bt.setIcon(get_std_icon('SP_MediaPause'))
         self.pause_bt.clicked.connect(self.pause_funcs)
         bt_layout.addWidget(self.pause_bt)
 
         self.restart_bt = QPushButton('Restart')
         self.restart_bt.setFont(QFont('AnyStyle', 14))
-        self.restart_bt.setIcon(self.mw.app.style().standardIcon(QStyle.SP_BrowserReload))
+        self.restart_bt.setIcon(get_std_icon('SP_BrowserReload'))
         self.restart_bt.clicked.connect(self.restart)
         bt_layout.addWidget(self.restart_bt)
 
         self.autoscroll_bt = QPushButton('Auto-Scroll')
         self.autoscroll_bt.setCheckable(True)
         self.autoscroll_bt.setChecked(True)
-        self.autoscroll_bt.setIcon(self.mw.app.style().standardIcon(QStyle.SP_DialogOkButton))
+        self.autoscroll_bt.setIcon(get_std_icon('SP_DialogOkButton'))
         self.autoscroll_bt.clicked.connect(self.toggle_autoscroll)
         bt_layout.addWidget(self.autoscroll_bt)
 
         self.close_bt = QPushButton('Close')
         self.close_bt.setFont(QFont('AnyStyle', 14))
-        self.close_bt.setIcon(self.mw.app.style().standardIcon(QStyle.SP_MediaStop))
+        self.close_bt.setIcon(get_std_icon('SP_MediaStop'))
         self.close_bt.clicked.connect(self.close)
         bt_layout.addWidget(self.close_bt)
         layout.addLayout(bt_layout)
@@ -290,24 +291,24 @@ class RunDialog(QDialog):
                 self.console_widget.add_html(f'<br><h1>{object_name}</h1><br>')
 
                 if self.current_type == 'FSMRI':
-                    self.current_object = FSMRI(object_name, self.mw)
+                    self.current_object = FSMRI(object_name, self.mw.ct)
                     self.loaded_fsmri = self.current_object
 
                 elif self.current_type == 'MEEG':
                     # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
-                    if object_name in self.mw.pr.meeg_to_fsmri \
+                    if object_name in self.mw.ct.pr.meeg_to_fsmri \
                             and self.loaded_fsmri \
-                            and self.loaded_fsmri.name == self.mw.pr.meeg_to_fsmri[object_name]:
-                        self.current_object = MEEG(object_name, self.mw, fsmri=self.loaded_fsmri)
+                            and self.loaded_fsmri.name == self.mw.ct.pr.meeg_to_fsmri[object_name]:
+                        self.current_object = MEEG(object_name, self.mw.ct, fsmri=self.loaded_fsmri)
                     else:
-                        self.current_object = MEEG(object_name, self.mw)
+                        self.current_object = MEEG(object_name, self.mw.ct)
                     self.loaded_fsmri = self.current_object.fsmri
 
                 elif self.current_type == 'Group':
-                    self.current_object = Group(object_name, self.mw)
+                    self.current_object = Group(object_name, self.mw.ct)
 
                 elif self.current_type == 'Other':
-                    self.current_object = BaseLoading(object_name, self.mw)
+                    self.current_object = BaseLoading(object_name, self.mw.ct)
 
                 # Load functions for object into func_model (which displays functions in func_listview)
                 self.current_all_funcs = self.all_objects[object_name]['functions']
@@ -322,11 +323,11 @@ class RunDialog(QDialog):
             # Print Headline for function
             self.console_widget.add_html(f'<h2>{self.current_func}</h2><br>')
 
-            if (self.mw.pd_funcs.loc[self.current_func, 'mayavi']
-                    or self.mw.pd_funcs.loc[self.current_func, 'matplotlib'] and self.mw.get_setting('show_plots')):
+            if (self.mw.ct.pd_funcs.loc[self.current_func, 'mayavi']
+                    or self.mw.ct.pd_funcs.loc[self.current_func, 'matplotlib'] and self.mw.ct.get_setting('show_plots')):
                 # Plot functions with interactive plots currently can't run in a separate thread
                 try:
-                    func_from_def(self.current_func, self.current_object, self.mw)
+                    func_from_def(self.current_func, self.current_object)
                 except:
                     exc_tuple = get_exception_tuple()
                     self.thread_error(exc_tuple)
@@ -334,7 +335,7 @@ class RunDialog(QDialog):
                     self.thread_finished(None)
             else:
                 self.fworker = Worker(function=func_from_def,
-                                      func_name=self.current_func, obj=self.current_object, main_win=self.mw)
+                                      func_name=self.current_func, obj=self.current_object)
                 self.fworker.signals.error.connect(self.thread_error)
                 self.fworker.signals.finished.connect(self.thread_finished)
                 QThreadPool.globalInstance().start(self.fworker)
@@ -347,8 +348,8 @@ class RunDialog(QDialog):
             self.restart_bt.setEnabled(True)
             self.close_bt.setEnabled(True)
 
-            if self.mw.get_setting('shutdown'):
-                self.mw.save_main()
+            if self.mw.ct.get_setting('shutdown'):
+                self.mw.ct.save()
                 shutdown()
 
     def thread_finished(self, _):
@@ -357,7 +358,7 @@ class RunDialog(QDialog):
         self.mark_current_items(0)
 
         # Close all plots if not wanted
-        if not self.mw.get_setting('show_plots'):
+        if not self.mw.ct.get_setting('show_plots'):
             close_all()
 
         # Collect Garbage to free memory
@@ -393,7 +394,7 @@ class RunDialog(QDialog):
 
     def restart(self):
         # Reload modules to get latest changes
-        self.mw.reload_modules()
+        self.mw.ct.reload_modules()
 
         self.init_attributes()
         self.init_lists()

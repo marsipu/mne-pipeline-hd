@@ -153,7 +153,7 @@ class RawInfo(QDialog):
 
     def meeg_selected(self, meeg_name):
         # Get size in Mebibytes of all files associated to this
-        meeg = MEEG(meeg_name, self.mw)
+        meeg = MEEG(meeg_name, self.mw.ct)
         info = meeg.load_info()
         fp = meeg.file_parameters
         meeg.get_existing_paths()

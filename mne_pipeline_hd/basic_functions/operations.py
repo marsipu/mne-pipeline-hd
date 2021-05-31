@@ -547,7 +547,7 @@ def plot_ica_properties(meeg, show_plots):
 
     eog_indices = meeg.load_json('eog_indices', default=list())
     ecg_indices = meeg.load_json('ecg_indices', default=list())
-    psd_args = {'fmax': meeg.p["lowpass"]}
+    psd_args = {'fmax': meeg.pa["lowpass"]}
 
     if len(eog_indices) > 0:
         eog_epochs = meeg.load_eog_epochs()

@@ -202,14 +202,14 @@ class CheckDictModel(BaseListModel):
         Set True if you want to display the list-index in front of each value
     drag_drop: bool
         Set True to enable Drag&Drop.
-    yes_bt: int | None
-        Supply a identifier for an icon to mark the items existing in check_dict
-    no_bt: int | None
-        Supply a identifier for an icon to mark the items not existing in check_dict
+    yes_bt: str
+        Supply the name for a qt-standard-icon to mark the items existing in check_dict
+    no_bt: str
+        Supply the name for a qt-standard-icon to mark the items not existing in check_dict
 
     Notes
     -----
-    Identifiers for QT standard-icons:
+    Names for QT standard-icons:
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
@@ -218,8 +218,8 @@ class CheckDictModel(BaseListModel):
         super().__init__(data, show_index, drag_drop, **kwargs)
         self._check_dict = check_dict
 
-        self.yes_bt = yes_bt or QStyle.SP_DialogApplyButton
-        self.no_bt = no_bt or QStyle.SP_DialogCancelButton
+        self.yes_bt = yes_bt or 'SP_DialogApplyButton'
+        self.no_bt = no_bt or 'SP_DialogCancelButton'
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
@@ -250,14 +250,14 @@ class CheckDictEditModel(CheckDictModel, EditListModel):
         Set True if you want to display the list-index in front of each value
     drag_drop: bool
         Set True to enable Drag&Drop.
-    yes_bt: int | None
-        Supply a identifier for an icon to mark the items existing in check_dict
-    no_bt: int | None
-        Supply a identifier for an icon to mark the items not existing in check_dict
+    yes_bt: str
+        Supply the name for a qt-standard-icon to mark the items existing in check_dict
+    no_bt: str
+        Supply the name for a qt-standard-icon to mark the items not existing in check_dict
 
     Notes
     -----
-    Identifiers for QT standard-icons:
+    Names for QT standard-icons:
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 

@@ -97,7 +97,7 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
     try:
         # The last entry in FUNCTION should be the most recent
         function = obj.file_parameters[file_name]['FUNCTION']
-        critical_params_str = obj.mw.pd_funcs.loc[function, 'func_args']
+        critical_params_str = obj.ct.pd_funcs.loc[function, 'func_args']
         # Make sure there are no spaces left
         critical_params_str = critical_params_str.replace(' ', '')
         critical_params = critical_params_str.split(',')
@@ -106,11 +106,11 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
         function = None
 
     if not target_parameters:
-        target_parameters = obj.p.keys()
+        target_parameters = obj.pa.keys()
     for param in target_parameters:
         try:
             previous_value = obj.file_parameters[file_name][param]
-            current_value = obj.p[param]
+            current_value = obj.pa[param]
 
             equality = str(previous_value) == str(current_value)
 
@@ -133,7 +133,7 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
             if verbose:
                 print(f'{param} is missing in records for {file_name}')
 
-    if obj.mw.settings['overwrite']:
+    if obj.ct.settings['overwrite']:
         result_dict[param] = 'overwrite'
         if verbose:
             print(f'{file_name} will be overwritten anyway because Overwrite=True (Settings)')

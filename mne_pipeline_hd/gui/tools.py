@@ -172,7 +172,7 @@ class DataTerminal(QDialog):
 
         name = self.sub_cmbx.itemText(index)
         try:
-            self.obj = MEEG(name, self.mw)
+            self.obj = MEEG(name, self.ct)
         except:
             get_exception_tuple()
             # Return ComboBox to previous state
@@ -353,11 +353,11 @@ class PlotViewSelection(QDialog):
                 self.all_figs[p_preset] = dict()
                 for obj_name in self.selected_objs:
                     if self.target == 'MEEG':
-                        obj = MEEG(obj_name, self.mw)
+                        obj = MEEG(obj_name, self.ct)
                     elif self.target == 'FSMRI':
-                        obj = FSMRI(obj_name, self.mw)
+                        obj = FSMRI(obj_name, self.ct)
                     elif self.target == 'Group':
-                        obj = Group(obj_name, self.mw)
+                        obj = Group(obj_name, self.ct)
                     else:
                         break
 
@@ -375,7 +375,7 @@ class PlotViewSelection(QDialog):
                         module = self.ct.all_modules[pkg_name][module_name][0]
 
                         # Get Arguments for Plot-Function
-                        keyword_arguments = get_arguments(self.selected_func, module, obj, self.mw)
+                        keyword_arguments = get_arguments(self.selected_func, module, obj)
                         # Make sure that "show_plots" is False
                         keyword_arguments['show_plots'] = False
                         plot_func = getattr(module, self.selected_func)

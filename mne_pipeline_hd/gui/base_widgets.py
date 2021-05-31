@@ -401,10 +401,10 @@ class CheckDictList(BaseList):
         Set True if you want to display the list-index in front of each value
     drag_drop: bool
         Set True to enable Drag&Drop.
-    yes_bt: int | None
-        Supply a identifier for an icon to mark the items existing in check_dict, set None for standard icon
-    no_bt: int | None
-        Supply a identifier for an icon to mark the items not existing in check_dict, set None for standard icon
+    yes_bt: str
+        Supply the name for a qt-standard-icon to mark the items existing in check_dict
+    no_bt: str
+        Supply the name for a qt-standard-icon to mark the items not existing in check_dict
     parent : QWidget | None
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
@@ -418,7 +418,7 @@ class CheckDictList(BaseList):
     If you change the reference to data, call replace_data.
     If you change the reference to check_dict, call replace_check_dict.
 
-    Identifiers for QT standard-icons:
+    Names for QT standard-icons:
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
@@ -451,10 +451,10 @@ class CheckDictEditList(EditList):
         The side on which to show the buttons, 'right', 'left', 'top' or 'bottom'
     show_index: bool
         Set True if you want to display the list-index in front of each value
-    yes_bt: int | None
-        Supply a identifier for an icon to mark the items existing in check_dict, set None for standard icon
-    no_bt: int | None
-        Supply a identifier for an icon to mark the items not existing in check_dict, set None for standard icon
+    yes_bt: str
+        Supply the name for a qt-standard-icon to mark the items existing in check_dict
+    no_bt: str
+        Supply the name for a qt-standard-icon to mark the items not existing in check_dict
     drag_drop: bool
         Set True to enable Drag&Drop.
     parent : QWidget | None
@@ -470,7 +470,7 @@ class CheckDictEditList(EditList):
     If you change the reference to data, call replace_data.
     If you change the reference to check_dict, call replace_check_dict.
 
-    Identifiers for QT standard-icons:
+    Names for QT standard-icons:
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 

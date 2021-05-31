@@ -52,9 +52,6 @@ class MainWindow(QMainWindow):
         self.general_layout = QGridLayout()
         self.centralWidget().setLayout(self.general_layout)
 
-        # Initialize QThreadpool for creating separate Threads apart from GUI-Event-Loop later
-        print(f'max. {QThreadPool.globalInstance().maxThreadCount()} PyQT-Threads')
-
         # Initiate attributes for Main-Window
         self.ct = controller
         self.welcome_window = welcome_window

@@ -57,7 +57,7 @@ def plot_filtered(meeg, show_plots):
 
     raw.plot(events=events, n_channels=30, bad_color='red',
              scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
-             title=f'{meeg.name}_highpass={meeg.p["highpass"]}_lowpass={meeg.p["lowpass"]}', show=show_plots)
+             title=f'{meeg.name}_highpass={meeg.pa["highpass"]}_lowpass={meeg.pa["lowpass"]}', show=show_plots)
 
 
 def plot_sensors(meeg, plot_sensors_kind, ch_types, show_plots):
@@ -517,7 +517,7 @@ def plot_label_time_course(meeg, show_plots):
             plt.figure()
             plt.plot(ltcs[trial][label][1], ltcs[trial][label][0])
             plt.title(f'{meeg.name}-{trial}-{label}\n'
-                      f'Extraction-Mode: {meeg.p["extract_mode"]}')
+                      f'Extraction-Mode: {meeg.pa["extract_mode"]}')
             plt.xlabel('Time in s')
             plt.ylabel('Source amplitude')
             if show_plots:
@@ -635,7 +635,7 @@ def plot_grand_avg_ltc(group, show_plots):
             plt.figure()
             plt.plot(ga_ltc[trial][label][1], ga_ltc[trial][label][0])
             plt.title(f'Label-Time-Course for {group.name}-{trial}-{label}\n'
-                      f'with Extraction-Mode: {group.p["extract_mode"]}')
+                      f'with Extraction-Mode: {group.pa["extract_mode"]}')
             plt.xlabel('Time in ms')
             plt.ylabel('Source amplitude')
             if show_plots:

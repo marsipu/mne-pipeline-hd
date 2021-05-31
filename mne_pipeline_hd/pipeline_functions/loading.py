@@ -157,7 +157,7 @@ class BaseLoading:
         self.init_paths()
 
     def init_p_preset_deps(self):
-        self.p = self.pr.parameters[self.p_preset]
+        self.pa = self.pr.parameters[self.p_preset]
 
         # Prepare plot-files-dictionary for Loading-Object
         if self.name not in self.pr.plot_files:
@@ -224,8 +224,8 @@ class BaseLoading:
                 critical_params = critical_params_str.split(',')
 
                 # Add critical parameters
-                for p_name in [p for p in self.p if p in critical_params]:
-                    self.file_parameters[file_name][p_name] = self.p[p_name]
+                for p_name in [p for p in self.pa if p in critical_params]:
+                    self.file_parameters[file_name][p_name] = self.pa[p_name]
 
             self.file_parameters[file_name]['NAME'] = self.name
 
@@ -509,13 +509,13 @@ class MEEG(BaseLoading):
         self.ecg_epochs_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ecg-epo.fif')
         self.evokeds_path = join(self.save_dir, f'{self.name}_{self.p_preset}-ave.fif')
         self.power_tfr_epochs_path = join(self.save_dir,
-                                          f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-epo-pw-tfr.h5')
+                                          f'{self.name}_{self.p_preset}_{self.pa["tfr_method"]}-epo-pw-tfr.h5')
         self.itc_tfr_epochs_path = join(self.save_dir,
-                                        f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-epo-itc-tfr.h5')
+                                        f'{self.name}_{self.p_preset}_{self.pa["tfr_method"]}-epo-itc-tfr.h5')
         self.power_tfr_average_path = join(self.save_dir,
-                                           f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-ave-pw-tfr.h5')
+                                           f'{self.name}_{self.p_preset}_{self.pa["tfr_method"]}-ave-pw-tfr.h5')
         self.itc_tfr_average_path = join(self.save_dir,
-                                         f'{self.name}_{self.p_preset}_{self.p["tfr_method"]}-ave-itc-tfr.h5')
+                                         f'{self.name}_{self.p_preset}_{self.pa["tfr_method"]}-ave-itc-tfr.h5')
         self.trans_path = join(self.save_dir, f'{self.fsmri.name}-trans.fif')
         self.forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
         self.calm_cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-calm-cov.fif')
@@ -528,15 +528,15 @@ class MEEG(BaseLoading):
                                   for trial in self.sel_trials}
         self.ecd_paths = {trial: {dip: join(self.save_dir, 'ecd_dipoles',
                                             f'{self.name}_{trial}_{self.p_preset}_{dip}-ecd-dip.dip')
-                                  for dip in self.p['ecd_times']}
+                                  for dip in self.pa['ecd_times']}
                           for trial in self.sel_trials}
         self.ltc_paths = {trial: {label: join(self.save_dir, 'label_time_course',
                                               f'{self.name}_{trial}_{self.p_preset}_{label}-ltc.npy')
-                                  for label in self.p['target_labels']}
+                                  for label in self.pa['target_labels']}
                           for trial in self.sel_trials}
         self.con_paths = {trial: {con_method: join(self.save_dir,
                                                    f'{self.name}_{trial}_{self.p_preset}_{con_method}-con.npy')
-                                  for con_method in self.p['con_methods']}
+                                  for con_method in self.pa['con_methods']}
                           for trial in self.sel_trials}
 
         # This dictionary contains entries for each data-type which is loaded to/saved from disk
@@ -698,7 +698,7 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_epochs(self):
-        return mne.read_epochs(self.epochs_path, proj=self.p['apply_proj'], preload=True)
+        return mne.read_epochs(self.epochs_path, proj=self.pa['apply_proj'], preload=True)
 
     @save_decorator
     def save_epochs(self, epochs):
@@ -744,7 +744,7 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_evokeds(self):
-        return mne.read_evokeds(self.evokeds_path, proj=self.p['apply_proj'])
+        return mne.read_evokeds(self.evokeds_path, proj=self.pa['apply_proj'])
 
     @save_decorator
     def save_evokeds(self, evokeds):
@@ -951,14 +951,14 @@ class FSMRI(BaseLoading):
         self.save_dir = join(self.subjects_dir, self.name)
 
         # Data-Paths
-        self.source_space_path = join(self.save_dir, 'bem', f'{self.name}_{self.p["source_space_spacing"]}-src.fif')
+        self.source_space_path = join(self.save_dir, 'bem', f'{self.name}_{self.pa["source_space_spacing"]}-src.fif')
         # Todo: Bem-Paths with number of vertices in layers
         self.bem_model_path = join(self.save_dir, 'bem', f'{self.name}-bem.fif')
         self.bem_solution_path = join(self.save_dir, 'bem', f'{self.name}-bem-sol.fif')
         self.vol_source_space_path = join(self.save_dir, 'bem', f'{self.name}-vol-src.fif')
         self.source_morph_path = join(self.save_dir,
-                                      f'{self.name}--to--{self.p["morph_to"]}_'
-                                      f'{self.p["source_space_spacing"]}-morph.h5')
+                                      f'{self.name}--to--{self.pa["morph_to"]}_'
+                                      f'{self.pa["source_space_spacing"]}-morph.h5')
 
         # This dictionary contains entries for each data-type which is loaded to/saved from disk
         self.io_dict = {'Source-Space': {'path': self.source_space_path,
@@ -1024,9 +1024,9 @@ class FSMRI(BaseLoading):
 
 
 class Group(BaseLoading):
-    def __init__(self, name, main_win, suppress_warnings=True):
+    def __init__(self, name, controller, suppress_warnings=True):
         self.suppress_warnings = suppress_warnings
-        super().__init__(name, main_win)
+        super().__init__(name, controller)
 
     def init_attributes(self):
         """Initialize additional attributes for Group"""
@@ -1063,11 +1063,11 @@ class Group(BaseLoading):
                              for trial in self.sel_trials}
         self.ga_ltc_paths = {trial: {label: join(self.save_dir, 'label-time-courses',
                                                  f'{self.name}_{trial}_{self.p_preset}_{label}.npy')
-                                     for label in self.p['target_labels']}
+                                     for label in self.pa['target_labels']}
                              for trial in self.sel_trials}
         self.ga_con_paths = {trial: {con_method: join(self.save_dir, 'connectivity',
                                                       f'{self.name}_{trial}_{self.p_preset}_{con_method}.npy')
-                                     for con_method in self.p['con_methods']}
+                                     for con_method in self.pa['con_methods']}
                              for trial in self.sel_trials}
 
         # This dictionary contains entries for each data-type which is loaded to/saved from disk
