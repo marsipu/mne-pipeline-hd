@@ -247,7 +247,7 @@ class AboutDialog(QDialog):
         layout.addWidget(text_widget)
 
         self.setLayout(layout)
-        set_ratio_geometry((0.25, 0.9), self))
+        set_ratio_geometry((0.25, 0.9), self)
         self.open()
 
 
