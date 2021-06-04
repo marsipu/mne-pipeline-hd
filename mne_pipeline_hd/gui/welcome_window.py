@@ -142,7 +142,7 @@ class WelcomeWindow(QWidget):
                             QMessageBox.warning(self, 'Import-Problem', error_msg)
 
     def set_home_path(self):
-        loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.ct.home_path} not writable!'
+        loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.ct.home_path}'
                                                                   f'Select a folder as Home-Path')
         if loaded_home_path != '':
             self.ct = Controller(str(loaded_home_path))
