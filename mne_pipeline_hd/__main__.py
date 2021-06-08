@@ -30,7 +30,7 @@ if package_parent not in sys.path:
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
-from mne_pipeline_hd.pipeline_functions import ismac
+from mne_pipeline_hd import ismac, islin
 
 
 def main():
@@ -45,12 +45,15 @@ def main():
     app.setOrganizationName(organization_name)
     app.setOrganizationDomain(domain_name)
 
-
     # Disable Help-Button
     try:
         app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)
     except AttributeError:
         print('pyqt-Version is < 5.12')
+
+    # Avoid file-dialog-problems with custom file-managers in linux
+    if islin:
+        app.setAttribute(Qt.AA_DontUseNativeDialogs, True)
 
     # Mac-Workarounds
     if ismac:

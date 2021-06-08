@@ -1,7 +1,12 @@
 # Import QSettings or provide Dummy-Class to be independent from PyQt/PySide
 import json
+import sys
 from ast import literal_eval
 from importlib import resources
+
+ismac = sys.platform.startswith("darwin")
+iswin = sys.platform.startswith("win32")
+islin = not ismac and not iswin
 
 
 class BaseSettings:

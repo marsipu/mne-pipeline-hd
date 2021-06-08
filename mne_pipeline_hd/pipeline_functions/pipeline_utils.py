@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 import psutil
 
-from . import islin, ismac, iswin
+from .. import islin, ismac, iswin
 
 datetime_format = '%d.%m.%Y %H:%M:%S'
 

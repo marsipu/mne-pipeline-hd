@@ -22,12 +22,12 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubl
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
                              QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout, QWidget, QDockWidget, QTabWidget,
                              QScrollArea, QInputDialog, QMessageBox, QStyleFactory)
-from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui.base_widgets import CheckList, EditDict, EditList, SimpleList
-from mne_pipeline_hd.gui.dialogs import CheckListDlg
-from mne_pipeline_hd.gui.gui_utils import get_std_icon, WorkerDialog, get_exception_tuple
-from mne_pipeline_hd.pipeline_functions import iswin
-from mne_pipeline_hd.pipeline_functions.controller import Controller
+
+from .base_widgets import CheckList, EditDict, EditList, SimpleList
+from .dialogs import CheckListDlg
+from .gui_utils import get_std_icon, WorkerDialog, get_exception_tuple
+from .. import QS, iswin
+from ..pipeline_functions.controller import Controller
 
 
 class Param(QWidget):

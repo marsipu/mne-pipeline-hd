@@ -15,13 +15,13 @@ from subprocess import run
 
 import mne
 import pandas as pd
-from PyQt5.QtCore import QThreadPool, Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
-from mne_pipeline_hd import QS
 
+from mne_pipeline_hd import QS
 from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
                       SysInfoMsg, AboutDialog)
 from .education_widgets import EducationEditor, EducationTour
@@ -31,8 +31,8 @@ from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGu
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui, ParametersDock, SettingsDlg
 from .tools import DataTerminal, PlotViewSelection
+from .. import iswin
 from ..basic_functions.plot import close_all
-from ..pipeline_functions import iswin
 from ..pipeline_functions.controller import Controller
 from ..pipeline_functions.function_utils import RunDialog
 from ..pipeline_functions.pipeline_utils import restart_program
