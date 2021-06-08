@@ -520,24 +520,27 @@ class WorkerDialog(QDialog):
 
 
 class QProcessDialog(QDialog):
-    def __init__(self, parent, command, arguments=None, show_buttons=True,
-                 show_console=True, close_directly=False, blocking=True):
+    def __init__(self, parent, commands, show_buttons=True,
+                 show_console=True, close_directly=False, title=None, blocking=True):
         super().__init__(parent)
-        self.command = command
-        self.arguments = arguments or list()
+        # Parse command(s)
+        if not isinstance(commands, list):
+            commands = [commands]
+        for ix, cmd in enumerate(commands):
+            commands[ix] = cmd.split(' ')
         self.show_buttons = show_buttons
         self.show_console = show_console
         self.close_directly = close_directly
+        self.title = title
         self.is_finished = False
 
         self.init_ui()
+        self.start_process()
 
         if blocking:
             self.exec()
         else:
             self.open()
-
-        self.start_process()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -569,11 +572,15 @@ class QProcessDialog(QDialog):
 
     def handle_stdout(self):
         result = bytes(self.process.readAllStandardOutput()).decode('utf8')
-        self.console_output.write_stdout(result)
+        if self.show_console:
+            self.console_output.write_stdout(result)
+        sys.stdout.write(result)
 
     def handle_stderr(self):
         result = bytes(self.process.readAllStandardOutput()).decode('utf8')
-        self.console_output.write_stderr(result)
+        if self.show_console:
+            self.console_output.write_stderr(result)
+        sys.stderr.write(result)
 
     def process_finished(self):
         self.is_finished = True
@@ -591,11 +598,10 @@ class QProcessDialog(QDialog):
         self.process.readyReadStandardOutput.connect(self.handle_stdout)
         self.process.readyReadStandardError.connect(self.handle_stderr)
         self.process.finished.connect(self.process_finished)
-        self.process.start(self.command, arguments=self.arguments)
+        self.process.start(self.command, self.arguments)
 
     def closeEvent(self, event):
         if self.is_finished:
-            self.thread_finished.emit(self.return_value)
             self.deleteLater()
             event.accept()
         else:

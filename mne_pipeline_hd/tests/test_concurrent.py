@@ -15,7 +15,8 @@ import time
 
 from PyQt5.QtWidgets import QApplication, QWidget
 
-from mne_pipeline_hd.gui.gui_utils import WorkerDialog
+from mne_pipeline_hd.gui.gui_utils import WorkerDialog, QProcessDialog
+
 
 def app_test(test_func):
     @functools.wraps(test_func)
@@ -44,6 +45,8 @@ def test_blocking_worker_dialog():
     print(f'Worker-Dialog took {round(time2 - time1, 2)} s')
     assert time2 - time1 > 2
 
-
-if __name__ == '__main__':
-    test_blocking_worker_dialog()
+@app_test
+def test_process_dialog():
+    main_widget = QWidget()
+    main_widget.show()
+    pd = QProcessDialog(main_widget, 'pip', arguments=['list'])

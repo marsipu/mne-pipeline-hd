@@ -249,6 +249,7 @@ class MainWindow(QMainWindow):
 
         settings_menu.addAction('&Open Settings', partial(SettingsDlg, self, self.ct))
         settings_menu.addAction('&Change Home-Path', self.change_home_path)
+        settings_menu.addAction('&Update Pipeline', self.update_pipeline)
         settings_menu.addAction('&Restart', self.restart)
 
         # About
@@ -478,10 +479,10 @@ class MainWindow(QMainWindow):
         restart_program()
 
     def update_pipeline(self):
-        command = f"pip install --upgrade --force-reinstall --no-deps" \
-                  f"git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd"
-
-        QProcessDialog(self, command)
+        command = 'pip'
+        arguments = ['install', '--upgrade', '--force-reinstall', '--no-deps',
+                     'git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd']
+        QProcessDialog(self, command, arguments=arguments)
 
         answer = QMessageBox.question(self, 'Do you want to restart?',
                                       'Please restart the Pipeline-Program'
@@ -491,6 +492,7 @@ class MainWindow(QMainWindow):
             self.restart()
 
     def update_mne(self):
+        commands_dict =
         msg = QMessageBox(self)
         msg.setText('You are going to update your conda-environment called mne, if none is found, one will be created')
         msg.setInformativeText('Do you want to proceed? (May take a while, watch your console)')

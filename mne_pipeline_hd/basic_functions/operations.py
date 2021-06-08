@@ -824,12 +824,11 @@ def run_freesurfer_subprocess(command, subjects_dir, fs_path, mne_path=None):
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True, universal_newlines=True)
 
-    # write bash output in python console
-    for line in process.stdout:
-        sys.stdout.write(line)
-
-    # Wait for subprocess to finish
-    process.wait()
+    # write subprocess-output to main-tread streams
+    while process.poll() is None:
+        stdout_line = process.stdout.readline()
+        if stdout_line is not None:
+            sys.stdout.write(stdout_line)
 
 
 def apply_watershed(fsmri):
