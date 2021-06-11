@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
-from mne_pipeline_hd import QS
+from mne_pipeline_hd import QS, ismac
 from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
                       SysInfoMsg, AboutDialog)
 from .education_widgets import EducationEditor, EducationTour
@@ -242,7 +242,8 @@ class MainWindow(QMainWindow):
 
         # View
         self.view_menu = self.menuBar().addMenu('&View')
-        self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
+        if not ismac:
+            self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
 
         # Settings
         settings_menu = self.menuBar().addMenu('&Settings')
@@ -492,7 +493,6 @@ class MainWindow(QMainWindow):
             self.restart()
 
     def update_mne(self):
-        commands_dict =
         msg = QMessageBox(self)
         msg.setText('You are going to update your conda-environment called mne, if none is found, one will be created')
         msg.setInformativeText('Do you want to proceed? (May take a while, watch your console)')
