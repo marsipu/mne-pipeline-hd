@@ -652,7 +652,7 @@ class MEEG(BaseLoading):
     @load_decorator
     def load_raw(self):
         raw = mne.io.read_raw_fif(self.raw_path, preload=True)
-        raw.info['bads'] = self.bad_channels
+        raw.info['bads'] = [bc for bc in self.bad_channels if bc in raw.ch_names]
         return raw
 
     @save_decorator
@@ -661,7 +661,9 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_filtered(self):
-        return mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
+        raw = mne.io.read_raw_fif(self.raw_filtered_path, preload=True)
+        raw.info['bads'] = [bc for bc in self.bad_channels if bc in raw.ch_names]
+        return raw
 
     @save_decorator
     def save_filtered(self, raw_filtered):
