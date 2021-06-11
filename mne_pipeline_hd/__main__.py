@@ -57,9 +57,6 @@ def main():
         print('pyqt-Version is < 5.12')
 
     if ismac:
-        app.setAttribute(Qt.AA_DontShowIconsInMenus, True)
-        # Workaround for MAC menu-bar-focusing issue
-        app.setAttribute(Qt.AA_DontUseNativeMenuBar, True)
         # Workaround for not showing with PyQt < 5.15.2
         os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
