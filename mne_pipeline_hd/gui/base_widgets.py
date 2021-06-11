@@ -360,13 +360,6 @@ class CheckList(BaseList):
         else:
             self.setLayout(layout)
 
-    def content_changed(self):
-        """Check every time if _checked contains items not in _data"""
-        remove_items = [item for item in self.model._checked if item not in self.model._data]
-        for rmi in remove_items:
-            self.model._checked.remove(rmi)
-        self.model.layoutChanged.emit()
-
     def _checked_changed(self):
         self.checkedChanged.emit(self.model._checked)
         if self.verbose:
