@@ -11,7 +11,6 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import sys
 from functools import partial
-from subprocess import run
 
 import mne
 import pandas as pd
@@ -31,7 +30,6 @@ from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGu
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
 from .parameter_widgets import BoolGui, ComboGui, IntGui, ParametersDock, SettingsDlg
 from .tools import DataTerminal, PlotViewSelection
-from .. import iswin
 from ..basic_functions.plot import close_all
 from ..pipeline_functions.controller import Controller
 from ..pipeline_functions.function_utils import RunDialog
@@ -250,7 +248,9 @@ class MainWindow(QMainWindow):
 
         settings_menu.addAction('&Open Settings', partial(SettingsDlg, self, self.ct))
         settings_menu.addAction('&Change Home-Path', self.change_home_path)
+        settings_menu.addSeparator()
         settings_menu.addAction('&Update Pipeline', self.update_pipeline)
+        settings_menu.addAction('&Update MNE-Python', self.update_mne)
         settings_menu.addAction('&Restart', self.restart)
 
         # About
@@ -480,10 +480,10 @@ class MainWindow(QMainWindow):
         restart_program()
 
     def update_pipeline(self):
-        command = 'pip'
-        arguments = ['install', '--upgrade', '--force-reinstall', '--no-deps',
-                     'git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd']
-        QProcessDialog(self, command, arguments=arguments)
+        command = 'pip install --upgrade --force-reinstall --no-deps ' \
+                  'git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd'
+        QProcessDialog(self, command, show_buttons=True, show_console=True,
+                       close_directly=True, title='Updating Pipeline...', blocking=True)
 
         answer = QMessageBox.question(self, 'Do you want to restart?',
                                       'Please restart the Pipeline-Program'
@@ -493,69 +493,16 @@ class MainWindow(QMainWindow):
             self.restart()
 
     def update_mne(self):
-        msg = QMessageBox(self)
-        msg.setText('You are going to update your conda-environment called mne, if none is found, one will be created')
-        msg.setInformativeText('Do you want to proceed? (May take a while, watch your console)')
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg.setDefaultButton(QMessageBox.Yes)
-        msg.exec_()
+        command = 'pip install --upgrade mne'
+        QProcessDialog(self, command, show_buttons=True, show_console=True,
+                       close_directly=True, title='Updating MNE-Python...', blocking=True)
 
-        command_upd = "curl --remote-name " \
-                      "https://raw.githubusercontent.com/mne-tools/mne-python/main/environment.yml; " \
-                      "conda update conda; " \
-                      "conda activate mne; " \
-                      "conda env update --file environment.yml; pip install -r requirements.txt; " \
-                      "conda install -c conda-forge pyqt=5.12"
+        answer = QMessageBox.question(self, 'Do you want to restart?',
+                                      'Please restart the Pipeline-Program'
+                                      'to apply the changes from the Update!')
 
-        command_upd_win = "curl --remote-name " \
-                          "https://raw.githubusercontent.com/mne-tools/mne-python/main/environment.yml & " \
-                          "conda update conda & " \
-                          "conda activate mne & " \
-                          "conda env update --file environment.yml & pip install -r requirements.txt & " \
-                          "conda install -c conda-forge pyqt=5.12"
-
-        command_new = "curl --remote-name " \
-                      "https://raw.githubusercontent.com/mne-tools/mne-python/main/environment.yml; " \
-                      "conda update conda; " \
-                      "conda env create --name mne --file environment.yml;" \
-                      "conda activate mne; pip install -r requirements.txt; " \
-                      "conda install -c conda-forge pyqt=5.12"
-
-        command_new_win = "curl --remote-name " \
-                          "https://raw.githubusercontent.com/mne-tools/mne-python/main/environment.yml & " \
-                          "conda update conda & " \
-                          "conda env create --name mne_test --file environment.yml & " \
-                          "conda activate mne & pip install -r requirements.txt & " \
-                          "conda install -c conda-forge pyqt=5.12"
-
-        if msg.Yes:
-            result = run('conda env list', shell=True, capture_output=True, text=True)
-            if result.stdout:
-                if iswin:
-                    command = command_upd_win
-                else:
-                    command = command_upd
-                result2 = run(command, shell=True, capture_output=True, text=True)
-                if result2.stderr != '':
-                    print(result2.stderr)
-                    if iswin:
-                        command = command_new_win
-                    else:
-                        command = command_new
-                    result3 = run(command, shell=True, capture_output=True, text=True)
-                    print(result3.stdout)
-                else:
-                    print(result2.stdout)
-            else:
-                print('yeah')
-                if iswin:
-                    command = command_new_win
-                else:
-                    command = command_new
-                result4 = run(command, shell=True, capture_output=True, text=True)
-                print(result4.stdout)
-        else:
-            pass
+        if answer == QMessageBox.Yes:
+            self.restart()
 
     def show_sys_info(self):
         sys_info_msg = SysInfoMsg(self)

@@ -15,7 +15,7 @@ import time
 
 from PyQt5.QtWidgets import QApplication, QWidget
 
-from mne_pipeline_hd.gui.gui_utils import WorkerDialog, QProcessDialog
+from mne_pipeline_hd.gui.gui_utils import WorkerDialog, QProcessWorker
 
 
 def app_test(test_func):
@@ -45,8 +45,16 @@ def test_blocking_worker_dialog():
     print(f'Worker-Dialog took {round(time2 - time1, 2)} s')
     assert time2 - time1 > 2
 
-@app_test
-def test_process_dialog():
-    main_widget = QWidget()
-    main_widget.show()
-    pd = QProcessDialog(main_widget, 'pip', arguments=['list'])
+
+def test_qprocess_worker(qtbot):
+    commands = ['conda', 'quatsch']
+    pw = QProcessWorker(commands, printtostd=False)
+    output = list()
+    errors = list()
+    pw.stdoutSignal.connect(lambda x: output.append(x))
+    pw.stderrSignal.connect(lambda x: errors.append(x))
+    pw.start()
+    blocker = qtbot.waitSignals([pw.stdoutSignal, pw.stderrSignal], timeout=5000)
+    blocker.wait()
+    assert output[0].startswith('usage: conda-script.py [-h] [-V] command')
+    assert errors[0].startswith('An error occured with "quatsch')

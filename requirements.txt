@@ -9,7 +9,3 @@ qdarkstyle
 pyqode.core
 pyqode.python
 
-# Requirement for deployment (only source-space)
-PyQtWebEngine
-joblib
-sklearn

@@ -519,23 +519,99 @@ class WorkerDialog(QDialog):
                                 'You can\'t close this Dialog before this Thread finished!')
 
 
+class QProcessWorker(QObject):
+    """A worker for QProcess."""
+    # Send stdout from current process.
+    stdoutSignal = pyqtSignal(str)
+    # Send stderr from curren process.
+    stderrSignal = pyqtSignal(str)
+    # Send when all processes from commands are finished.
+    finished = pyqtSignal()
+
+    def __init__(self, commands, printtostd=True):
+        """
+        Parameters
+        ----------
+        commands : str, list
+            Provide a command or a list of commands.
+        printtostd : bool
+            Set False if stdout/stderr are not supposed
+             to be passed to sys.stdout/sys.stderr.
+        """
+        super().__init__()
+
+        # Parse command(s)
+        if not isinstance(commands, list):
+            commands = [commands]
+        self.commands = [cmd.split(' ') for cmd in commands]
+        self.printtostd = printtostd
+        self.process = None
+
+    def handle_stdout(self):
+        text = bytes(self.process.readAllStandardOutput()).decode('utf8')
+        self.stdoutSignal.emit(text)
+        if self.printtostd:
+            sys.stdout.write(text)
+
+    def handle_stderr(self):
+        text = bytes(self.process.readAllStandardError()).decode('utf8')
+        self.stderrSignal.emit(text)
+        if self.printtostd:
+            sys.stderr.write(text)
+
+    def error_occurred(self):
+        text = f'An error occured with \"{self.process.program()} {" ".join(self.process.arguments())}\":\n' \
+               f'{self.process.errorString()}\n'
+        self.stderrSignal.emit(text)
+        if self.printtostd:
+            sys.stderr.write(text)
+        self.process_finished()
+
+    def process_finished(self):
+        if self.process.exitCode() == 1:
+            text = f'\"{self.process.program()} {" ".join(self.process.arguments())}\" has crashed\n'
+            self.stderrSignal.emit(text)
+            if self.printtostd:
+                sys.stderr.write(text)
+        if len(self.commands) > 0:
+            self.start()
+        else:
+            self.finished.emit()
+
+    def start(self):
+        # Take the first command from commands until empty.
+        cmd = self.commands.pop(0)
+        self.process = QProcess()
+        self.process.errorOccurred.connect(self.error_occurred)
+        self.process.readyReadStandardOutput.connect(self.handle_stdout)
+        self.process.readyReadStandardError.connect(self.handle_stderr)
+        self.process.finished.connect(self.process_finished)
+        self.process.start(cmd[0], cmd[1:])
+
+    def kill(self, kill_all=False):
+        if kill_all:
+            self.commands = list()
+        if self.process:
+            self.process.kill()
+
+
 class QProcessDialog(QDialog):
     def __init__(self, parent, commands, show_buttons=True,
                  show_console=True, close_directly=False, title=None, blocking=True):
         super().__init__(parent)
-        # Parse command(s)
-        if not isinstance(commands, list):
-            commands = [commands]
-        for ix, cmd in enumerate(commands):
-            commands[ix] = cmd.split(' ')
+        self.commands = commands
         self.show_buttons = show_buttons
         self.show_console = show_console
         self.close_directly = close_directly
         self.title = title
+
+        self.process_worker = None
         self.is_finished = False
 
         self.init_ui()
         self.start_process()
+
+        set_ratio_geometry(0.5, self)
 
         if blocking:
             self.exec()
@@ -570,18 +646,6 @@ class QProcessDialog(QDialog):
 
         self.setLayout(layout)
 
-    def handle_stdout(self):
-        result = bytes(self.process.readAllStandardOutput()).decode('utf8')
-        if self.show_console:
-            self.console_output.write_stdout(result)
-        sys.stdout.write(result)
-
-    def handle_stderr(self):
-        result = bytes(self.process.readAllStandardOutput()).decode('utf8')
-        if self.show_console:
-            self.console_output.write_stderr(result)
-        sys.stderr.write(result)
-
     def process_finished(self):
         self.is_finished = True
         if self.show_buttons:
@@ -590,15 +654,15 @@ class QProcessDialog(QDialog):
             self.close()
 
     def cancel(self):
-        if self.process is not None:
-            self.process.kill()
+        self.process_worker.kill(kill_all=True)
 
     def start_process(self):
-        self.process = QProcess()
-        self.process.readyReadStandardOutput.connect(self.handle_stdout)
-        self.process.readyReadStandardError.connect(self.handle_stderr)
-        self.process.finished.connect(self.process_finished)
-        self.process.start(self.command, self.arguments)
+        self.process_worker = QProcessWorker(self.commands)
+        if self.show_console:
+            self.process_worker.stdoutSignal.connect(self.console_output.write_stdout)
+            self.process_worker.stderrSignal.connect(self.console_output.write_stderr)
+        self.process_worker.finished.connect(self.process_finished)
+        self.process_worker.start()
 
     def closeEvent(self, event):
         if self.is_finished:
