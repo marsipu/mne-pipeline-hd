@@ -25,13 +25,156 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout, QGroupBox,
                              QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QListWidgetItem,
-                             QMessageBox, QPushButton, QSizePolicy, QStyle, QTabWidget, QVBoxLayout)
+                             QMessageBox, QPushButton, QSizePolicy, QStyle, QTabWidget, QVBoxLayout, QGridLayout,
+                             QProgressBar)
+
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleDialog, SimpleList
 from mne_pipeline_hd.gui.gui_utils import CodeEditor, ErrorDialog, center, get_exception_tuple, set_ratio_geometry, \
-    get_std_icon
-from mne_pipeline_hd.gui.models import CustomFunctionModel
+    get_std_icon, MainConsoleWidget
+from mne_pipeline_hd.gui.models import CustomFunctionModel, RunModel
+from mne_pipeline_hd.pipeline_functions.function_utils import QRunController
+
+
+class RunDialog(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+
+        self.init_controller()
+        self.init_ui()
+
+        set_ratio_geometry(0.6, self)
+        self.show()
+
+        self.start()
+
+    def init_controller(self):
+        self.rc = QRunController(self, controller=self.mw.ct)
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        view_layout = QGridLayout()
+        view_layout.addWidget(QLabel('Objects: '), 0, 0)
+        self.object_view = QListView()
+        self.object_model = RunModel(self.rc.all_objects, mode='object')
+        self.object_view.setModel(self.object_model)
+        self.object_view.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        view_layout.addWidget(self.object_view, 1, 0)
+
+        view_layout.addWidget(QLabel('Functions: '), 0, 1)
+        self.func_view = QListView()
+        self.func_model = RunModel(self.rc.current_all_funcs, mode='func')
+        self.func_view.setModel(self.func_model)
+        self.func_view.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        view_layout.addWidget(self.func_view, 1, 1)
+
+        view_layout.addWidget(QLabel('Errors: '), 0, 2)
+        self.error_widget = SimpleList(list())
+        self.error_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        # Connect Signal from error_widget to function to enable inspecting the errors
+        self.error_widget.currentChanged.connect(self.show_error)
+        view_layout.addWidget(self.error_widget, 1, 2)
+
+        layout.addLayout(view_layout)
+
+        self.console_widget = MainConsoleWidget()
+        layout.addWidget(self.console_widget)
+
+        self.pgbar = QProgressBar()
+        self.pgbar.setValue(0)
+        self.pgbar.setMaximum(len(self.rc.all_steps))
+        layout.addWidget(self.pgbar)
+
+        bt_layout = QHBoxLayout()
+
+        self.continue_bt = QPushButton('Continue')
+        self.continue_bt.setFont(QFont('AnyStyle', 14))
+        self.continue_bt.setIcon(get_std_icon('SP_MediaPlay'))
+        self.continue_bt.clicked.connect(self.start)
+        bt_layout.addWidget(self.continue_bt)
+
+        self.pause_bt = QPushButton('Pause')
+        self.pause_bt.setFont(QFont('AnyStyle', 14))
+        self.pause_bt.setIcon(get_std_icon('SP_MediaPause'))
+        self.pause_bt.clicked.connect(self.pause_funcs)
+        bt_layout.addWidget(self.pause_bt)
+
+        self.restart_bt = QPushButton('Restart')
+        self.restart_bt.setFont(QFont('AnyStyle', 14))
+        self.restart_bt.setIcon(get_std_icon('SP_BrowserReload'))
+        self.restart_bt.clicked.connect(self.restart)
+        bt_layout.addWidget(self.restart_bt)
+
+        self.autoscroll_bt = QPushButton('Auto-Scroll')
+        self.autoscroll_bt.setCheckable(True)
+        self.autoscroll_bt.setChecked(True)
+        self.autoscroll_bt.setIcon(get_std_icon('SP_DialogOkButton'))
+        self.autoscroll_bt.clicked.connect(self.toggle_autoscroll)
+        bt_layout.addWidget(self.autoscroll_bt)
+
+        self.close_bt = QPushButton('Close')
+        self.close_bt.setFont(QFont('AnyStyle', 14))
+        self.close_bt.setIcon(get_std_icon('SP_MediaStop'))
+        self.close_bt.clicked.connect(self.close)
+        bt_layout.addWidget(self.close_bt)
+        layout.addLayout(bt_layout)
+
+        self.setLayout(layout)
+
+    def start(self):
+        # Set paused to false
+        self.rc.paused = False
+        # Enable/Disable Buttons
+        self.continue_bt.setEnabled(False)
+        self.pause_bt.setEnabled(True)
+        self.restart_bt.setEnabled(False)
+        self.close_bt.setEnabled(False)
+
+        self.rc.start()
+
+    def pause_funcs(self):
+        self.rc.paused = True
+        self.console_widget.add_html('<br><b>Finishing last function...</b><br>')
+
+    def restart(self):
+        # Reload modules to get latest changes
+        self.mw.ct.reload_modules()
+
+        self.init_controller()
+
+        # Clear Console-Widget
+        self.console_widget.clear()
+
+        # Redo References to display-widgets
+        self.object_model._data = self.rc.all_objects
+        self.object_model.layoutChanged.emit()
+        self.func_model._data = self.rccurrent_all_funcs
+        self.func_model.layoutChanged.emit()
+        self.error_widget.replace_data(list(self.rcerrors.keys()))
+
+        # Reset Progress-Bar
+        self.pgbar.setValue(0)
+
+        # Restart
+        self.start()
+
+    def toggle_autoscroll(self, state):
+        if state:
+            self.console_widget.set_autoscroll(True)
+        else:
+            self.console_widget.set_autoscroll(False)
+
+    def show_error(self, current, _):
+        self.console_widget.set_autoscroll(False)
+        self.autoscroll_bt.setChecked(False)
+        self.console_widget.scrollToAnchor(str(self.rcerrors[current][1]))
+
+    def closeEvent(self, event):
+        self.mw.pipeline_running = False
+        event.accept()
 
 
 class EditGuiArgsDlg(QDialog):

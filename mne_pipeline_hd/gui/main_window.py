@@ -24,7 +24,7 @@ from mne_pipeline_hd import QS, ismac
 from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
                       SysInfoMsg, AboutDialog)
 from .education_widgets import EducationEditor, EducationTour
-from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport
+from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport, RunDialog
 from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
@@ -32,7 +32,7 @@ from .parameter_widgets import BoolGui, ComboGui, IntGui, ParametersDock, Settin
 from .tools import DataTerminal, PlotViewSelection
 from ..basic_functions.plot import close_all
 from ..pipeline_functions.controller import Controller
-from ..pipeline_functions.function_utils import RunDialog
+from ..pipeline_functions.loading import Sample
 from ..pipeline_functions.pipeline_utils import restart_program
 
 
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         # Redraw function-buttons and parameter-widgets
         self.redraw_func_and_param()
         # Update Subject-Lists
-        self.subject_dock.update_dock()
+        self.file_dock.update_dock()
         # Update Project-Box
         self.update_project_box()
         # Update Statusbar
@@ -181,6 +181,8 @@ class MainWindow(QMainWindow):
         aaddfiles.setStatusTip('Add your MEG-Files here')
         aaddfiles.triggered.connect(partial(AddFilesDialog, self))
         input_menu.addAction(aaddfiles)
+
+        input_menu.addAction('Add Sample-Dataset', self.add_sample_dataset)
 
         input_menu.addAction('Reload Raw', partial(ReloadRaw, self))
 
@@ -441,13 +443,19 @@ class MainWindow(QMainWindow):
             dock_kwargs = self.ct.edu_program['dock_kwargs']
         else:
             dock_kwargs = dict()
-        self.subject_dock = FileDock(self, **dock_kwargs)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.subject_dock)
-        self.view_menu.addAction(self.subject_dock.toggleViewAction())
+        self.file_dock = FileDock(self, **dock_kwargs)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.file_dock)
+        self.view_menu.addAction(self.file_dock.toggleViewAction())
 
         self.parameters_dock = ParametersDock(self)
         self.addDockWidget(Qt.RightDockWidgetArea, self.parameters_dock)
         self.view_menu.addAction(self.parameters_dock.toggleViewAction())
+
+    def add_sample_dataset(self):
+        WorkerDialog(self, partial(Sample, self.ct), show_console=True,
+                     title='Loading Sample...', blocking=True)
+        self.ct.pr.all_meeg.append('_sample_')
+        self.file_dock.update_dock()
 
     def full_screen(self):
         if self.isFullScreen():

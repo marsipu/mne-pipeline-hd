@@ -16,6 +16,8 @@ import time
 from PyQt5.QtWidgets import QApplication, QWidget
 
 from mne_pipeline_hd.gui.gui_utils import WorkerDialog, QProcessWorker
+from mne_pipeline_hd.pipeline_functions.controller import Controller
+from mne_pipeline_hd.pipeline_functions.function_utils import RunController
 
 
 def app_test(test_func):
@@ -58,3 +60,14 @@ def test_qprocess_worker(qtbot):
     blocker.wait()
     assert output[0].startswith('usage: conda-script.py [-h] [-V] command')
     assert errors[0].startswith('An error occured with "quatsch')
+
+
+def test_run_controller(tmpdir, qtbot):
+    ct = Controller(tmpdir)
+    ct.change_project('Test')
+    ct.pr.sel_functions = ['print_info']
+    ct.pr.sel_meeg = ['_sample_']
+    rc = RunController(ct)
+    rc.start()
+    rc.pool.close()
+    rc.pool.join()

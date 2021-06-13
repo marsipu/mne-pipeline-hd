@@ -77,3 +77,4 @@ plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;operations;basic;mee
 plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_overlay_data,show_plots
 plot_ica_properties;Plot ICA-Properties;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
 plot_ica_scores;Plot ICA-Scores;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
+print_info;Print Info;MEEG;Plot;Raw;False;False;;operations;basic;meeg

@@ -27,9 +27,9 @@ import mne
 import numpy as np
 from mne.preprocessing import ICA
 
-from .. import ismac, iswin
-from ..pipeline_functions.loading import MEEG
-from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
+from mne_pipeline_hd import ismac, iswin
+from mne_pipeline_hd.pipeline_functions.loading import MEEG
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
 
 # Todo: Create docstrings for each function
@@ -1302,3 +1302,8 @@ def grand_avg_connect(group):
                 ga_con[trial][con_method] = average
 
     group.save_ga_con(ga_con)
+
+
+def print_info(meeg):
+    print(meeg.load_info())
+

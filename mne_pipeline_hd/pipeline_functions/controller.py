@@ -4,12 +4,14 @@ import os
 import re
 import shutil
 import sys
-from importlib import reload, resources, util
+from importlib import reload, resources, util, import_module
 from os import listdir
 from os.path import isdir, join
+from pathlib import Path
 
 import mne
 import pandas as pd
+
 from mne_pipeline_hd import basic_functions, QS
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.pipeline_functions.project import Project
@@ -211,10 +213,12 @@ class Controller:
         self.errors['custom_modules'] = dict()
 
         # Load basic-modules
+        # Add basic_functions to sys.path
+        sys.path.insert(0, str(Path(basic_functions.__file__).parent))
         basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
-        self.all_modules['basic'] = dict()
+        self.all_modules['basic'] = list()
         for module_name in basic_functions_list:
-            self.all_modules['basic'][module_name] = (getattr(basic_functions, module_name), None)
+            self.all_modules['basic'].append(module_name)
 
         # Load custom_modules
         pd_functions_pattern = r'.*_functions\.csv'
@@ -237,7 +241,7 @@ class Controller:
 
             # Check, that there is a whole set for a custom-module (module-file, functions, parameters)
             if all([value is not None or value != [] for value in file_dict.values()]):
-                self.all_modules[pkg_name] = dict()
+                self.all_modules[pkg_name] = list()
                 functions_path = file_dict['functions']
                 parameters_path = file_dict['parameters']
                 correct_count = 0
@@ -257,7 +261,9 @@ class Controller:
                         # Add module to sys.modules
                         sys.modules[module_name] = module
                         # Add Module to dictionary
-                        self.all_modules[pkg_name][module_name] = (module, spec)
+                        self.all_modules[pkg_name].append(module_name)
+                        # Add pkg-path to sys.path
+                        sys.path.insert(0, pkg_path)
 
                 # Make sure, that every module in modules is imported without error
                 # (otherwise don't append to pd_funcs and pd_params)
@@ -283,20 +289,15 @@ class Controller:
                              f'{[key for key in file_dict if file_dict[key] is None]}'
                 self.errors['custom_modules'][pkg_name] = error_text
 
-        self.fsmri_funcs = self.pd_funcs[self.pd_funcs['target'] == 'FSMRI']
-        self.meeg_funcs = self.pd_funcs[self.pd_funcs['target'] == 'MEEG']
-        self.group_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Group']
-        self.other_funcs = self.pd_funcs[self.pd_funcs['target'] == 'Other']
-
     def reload_modules(self):
         for pkg_name in self.all_modules:
             for module_name in self.all_modules[pkg_name]:
-                module = self.all_modules[pkg_name][module_name][0]
+                module = import_module(module_name)
                 try:
                     reload(module)
                 # Custom-Modules somehow can't be reloaded because spec is not found
                 except ModuleNotFoundError:
-                    spec = self.all_modules[pkg_name][module_name][1]
+                    spec = None
                     if spec:
                         # All errors occuring here will be caught by the UncaughtHook
                         spec.loader.exec_module(module)

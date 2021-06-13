@@ -10,6 +10,7 @@ Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.201
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 from functools import partial
+from importlib import import_module
 from os.path import isfile, join
 
 from PyQt5.QtCore import Qt, QThreadPool
@@ -19,6 +20,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLa
                              QVBoxLayout, QWidget)
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
 from mne_pipeline_hd.gui.gui_utils import CodeEditor, MainConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
@@ -370,15 +372,14 @@ class PlotViewSelection(QDialog):
                     # Load Matplotlib-Plots
                     if self.interactive_chkbx.isChecked():
                         # Get module of plot_function
-                        pkg_name = self.ct.pd_funcs.loc[self.selected_func, 'pkg_name']
                         module_name = self.ct.pd_funcs.loc[self.selected_func, 'module']
-                        module = self.ct.all_modules[pkg_name][module_name][0]
+                        module = import_module(module_name)
+                        plot_func = getattr(module, self.selected_func)
 
                         # Get Arguments for Plot-Function
-                        keyword_arguments = get_arguments(self.selected_func, module, obj)
+                        keyword_arguments = get_arguments(plot_func, obj)
                         # Make sure that "show_plots" is False
                         keyword_arguments['show_plots'] = False
-                        plot_func = getattr(module, self.selected_func)
 
                         # Create Thread for Plot-Function
                         worker = Worker(plot_func, **keyword_arguments)

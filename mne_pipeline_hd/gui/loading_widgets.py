@@ -29,8 +29,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
-from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 
+from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
                            SimpleList,
                            SimplePandasTable)
@@ -127,7 +127,7 @@ class RemoveDialog(QDialog):
     def __init__(self, parentw, mode):
         super().__init__(parentw)
         self.pw = parentw
-        self.pr = parentw.ct.pr
+        self.pr = parentw.mw.ct.pr
         self.mode = mode
 
         self.init_ui()
@@ -729,7 +729,7 @@ class AddFilesWidget(QWidget):
         self.update_model()
 
         self.pr.save()
-        self.mw.subject_dock.update_dock()
+        self.mw.file_dock.update_dock()
 
 
 class ErmKwDialog(QDialog):
@@ -926,7 +926,7 @@ class AddMRIWidget(QWidget):
         self.paths = dict()
 
         self.pr.save()
-        self.mw.subject_dock.update_dock()
+        self.mw.file_dock.update_dock()
 
 
 class AddMRIDialog(AddMRIWidget):

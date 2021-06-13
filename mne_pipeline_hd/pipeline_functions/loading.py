@@ -24,7 +24,6 @@ from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from PyQt5.QtCore import QSettings
 
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd import QS
@@ -931,6 +930,38 @@ class MEEG(BaseLoading):
         for trial in con_dict:
             for con_method in con_dict[trial]:
                 np.save(self.con_paths[trial][con_method])
+
+
+class Sample(MEEG):
+    def __init__(self, controller):
+        super().__init__('_sample_', controller)
+        self._load_bad_channels()
+
+    def init_attributes(self):
+        self.erm = 'ernoise'
+        self.fsmri = FSMRI('None', self.ct)
+        self.bad_channels = list()
+        self.sel_trials = list()
+        self.event_id = dict()
+
+    def init_paths(self):
+        super().init_paths()
+        sample_dir = join(mne.datasets.sample.data_path(), 'MEG', 'sample')
+        self.save_dir = join(self.pr.data_path, '_sample_')
+        if not isdir(self.save_dir):
+            print('Copying sample to data_path...')
+            shutil.copytree(sample_dir, self.save_dir)
+            print('Finished copying!')
+
+        self.raw_path = join(self.save_dir, 'sample_audvis_raw.fif')
+        self.erm_path = join(self.save_dir, 'ernoise_raw.fif')
+        self.events_path = join(self.save_dir, 'sample_audvis_raw-eve.fif')
+        self.evokeds_path = join(self.save_dir, 'sample_audvis-ave.fif')
+        self.trans_path = join(self.save_dir, 'sample_audvis_raw-trans.fif')
+        self.noise_covariance_path = join(self.save_dir, 'sample_audvis-cov.fif')
+
+    def _load_bad_channels(self):
+        self.bad_channels = self.load_info()['bads']
 
 
 class FSMRI(BaseLoading):

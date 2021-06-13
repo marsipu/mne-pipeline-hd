@@ -54,13 +54,28 @@ def get_std_icon(icon_name):
     return QApplication.instance().style().standardIcon(getattr(QStyle, icon_name))
 
 
+class ExceptionTuple(object):
+    def __init__(self, *args):
+        self._data = [*args]
+
+    def __getitem__(self, idx):
+        return self._data[idx]
+
+    def __setitem__(self, idx, value):
+        self._data[idx] = value
+
+    def __str__(self):
+        return self._data[2]
+
+
 def get_exception_tuple():
     traceback.print_exc()
     exctype, value = sys.exc_info()[:2]
     traceback_str = traceback.format_exc(limit=-10)
     logging.getLogger().error(f'{exctype}: {value}')
+    exc_tuple = ExceptionTuple(exctype, value, traceback_str)
 
-    return exctype, value, traceback_str
+    return exc_tuple
 
 
 # Todo: Rework how to send Issues (E-Mail, GitHub?)
@@ -353,16 +368,19 @@ class WorkerSignals(QObject):
     # Emitted when the function finished and returns the return-value
     finished = pyqtSignal(object)
 
-    # Emitted when the function throws an error and returns a tuple with information about the error
+    # Emitted when the function throws an error and returns
+    # a tuple with information about the error
     # (see get_exception_tuple)
-    error = pyqtSignal(tuple)
+    error = pyqtSignal(object)
 
-    # Can be passed to function to be emitted when a part of the function progresses to update a Progress-Bar
+    # Can be passed to function to be emitted when a part
+    # of the function progresses to update a Progress-Bar
     pgbar_max = pyqtSignal(int)
     pgbar_n = pyqtSignal(int)
     pgbar_text = pyqtSignal(str)
 
-    # Only an attribute which is stored here to maintain reference when passing it to the function
+    # Only an attribute which is stored here to maintain
+    # reference when passing it to the function
     was_canceled = False
 
 
