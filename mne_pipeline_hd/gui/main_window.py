@@ -267,7 +267,7 @@ class MainWindow(QMainWindow):
     def init_toolbar(self):
         self.toolbar = self.addToolBar('Tools')
         # Add Project-UI
-        proj_box_label = QLabel('<b>Project: <b>')
+        proj_box_label = QLabel('<b>Project: </b>')
         self.toolbar.addWidget(proj_box_label)
 
         self.project_box = QComboBox()
