@@ -26,8 +26,8 @@ import autoreject as ar
 import mne
 import numpy as np
 from mne.preprocessing import ICA
-from mne_pipeline_hd.pipeline_functions.loading import MEEG
 
+from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from ..pipeline_functions import ismac, iswin
 from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
@@ -657,14 +657,14 @@ def grand_avg_evokeds(group, ga_interpolate_bads, ga_drop_bads):
             else:
                 print(f'{evoked.comment} for {name} got nave=0')
 
-    ga_evokeds = []
+    ga_evokeds = dict()
     for trial in trial_dict:
         if len(trial_dict[trial]) != 0:
             ga = mne.grand_average(trial_dict[trial],
                                    interpolate_bads=ga_interpolate_bads,
                                    drop_bads=ga_drop_bads)
             ga.comment = trial
-            ga_evokeds.append(ga)
+            ga_evokeds[trial] = ga
 
     group.save_ga_evokeds(ga_evokeds)
 

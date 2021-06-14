@@ -1036,25 +1036,23 @@ class Group(BaseLoading):
             self.group_list = self.pr.all_groups[self.name]
 
         # The assigned event-id
-        if self.group_list[0] not in self.mw.pr.meeg_event_id:
-            self.mw.pr.meeg_event_id[self.group_list[0]] = dict()
-            if not self.suppress_warnings:
-                print(f'No EventID assigned for {self.name}, defaulting to empty dictionary')
-        self.event_id = self.mw.pr.meeg_event_id[self.group_list[0]]
+        self.event_id = dict()
+        for group_item in [gi for gi in self.group_list if gi in self.mw.pr.meeg_event_id]:
+            self.event_id = {**self.event_id, **self.mw.pr.meeg_event_id[group_item]}
 
         # The selected trials from the event-id
-        if self.group_list[0] not in self.mw.pr.sel_event_id:
-            self.mw.pr.sel_event_id[self.group_list[0]] = list()
-            if not self.suppress_warnings:
-                print(f'No Trials selected for {self.name}, defaulting to empty list')
-        self.sel_trials = self.mw.pr.sel_event_id[self.group_list[0]]
+        self.sel_trials = set()
+        for group_item in [gi for gi in self.group_list if gi in self.mw.pr.sel_event_id]:
+            self.sel_trials = self.sel_trials | set(self.mw.pr.sel_event_id[group_item])
 
     def init_paths(self):
         # Main Path
         self.save_dir = self.pr.save_dir_averages
 
         # Data Paths
-        self.ga_evokeds_path = join(self.save_dir, 'evokeds', f'{self.name}_{self.p_preset}-ave.fif')
+        self.ga_evokeds_paths = {trial: join(self.save_dir, 'evokeds',
+                                             f'{self.name}_{trial}_{self.p_preset}-ave.fif')
+                                 for trial in self.sel_trials}
         self.ga_tfr_paths = {trial: join(self.save_dir, 'time-frequency',
                                          f'{self.name}_{trial}_{self.p_preset}-tfr.h5')
                              for trial in self.sel_trials}
@@ -1071,7 +1069,7 @@ class Group(BaseLoading):
                              for trial in self.sel_trials}
 
         # This dictionary contains entries for each data-type which is loaded to/saved from disk
-        self.io_dict = {'Grand-Average Evokeds': {'path': self.ga_evokeds_path,
+        self.io_dict = {'Grand-Average Evokeds': {'path': self.ga_evokeds_paths,
                                                   'load': self.load_ga_evokeds,
                                                   'save': self.save_ga_evokeds},
                         'Grand-Average TFR': {'path': self.ga_tfr_paths,
@@ -1094,11 +1092,16 @@ class Group(BaseLoading):
     ####################################################################################################################
     @load_decorator
     def load_ga_evokeds(self):
-        return mne.read_evokeds(self.ga_evokeds_path)
+        ga_evokeds = dict()
+        for trial in self.sel_trials:
+            ga_evokeds[trial] = mne.read_evokeds(self.ga_evokeds_paths[trial])[0]
+
+        return ga_evokeds
 
     @save_decorator
     def save_ga_evokeds(self, ga_evokeds):
-        mne.evoked.write_evokeds(self.ga_evokeds_path, ga_evokeds)
+        for trial in ga_evokeds:
+            mne.evoked.write_evokeds(self.ga_evokeds_paths[trial], ga_evokeds[trial])
 
     @load_decorator
     def load_ga_tfr(self):

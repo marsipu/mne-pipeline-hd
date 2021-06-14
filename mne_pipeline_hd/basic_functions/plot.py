@@ -12,9 +12,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 from __future__ import print_function
 
 import gc
-from os import makedirs
-from os.path import isdir, join
-from pathlib import Path
+from os.path import join
 
 import matplotlib.pyplot as plt
 import mne
@@ -583,11 +581,11 @@ def plot_source_space_connectivity(meeg, target_labels, parcellation, con_fmin, 
 def plot_grand_avg_evokeds(group, show_plots):
     ga_evokeds = group.load_ga_evokeds()
 
-    for evoked in ga_evokeds:
-        fig = evoked.plot(window_title=f'{group.name}-{evoked.comment}',
-                          spatial_colors=True, gfp=True, show=show_plots)
+    for trial in ga_evokeds:
+        fig = ga_evokeds[trial].plot(window_title=f'{group.name}-{trial}',
+                                     spatial_colors=True, gfp=True, show=show_plots)
 
-        group.plot_save('ga_evokeds', trial=evoked.comment, matplotlib_figure=fig)
+        group.plot_save('ga_evokeds', trial=trial, matplotlib_figure=fig)
 
 
 def plot_grand_avg_tfr(group, show_plots):
