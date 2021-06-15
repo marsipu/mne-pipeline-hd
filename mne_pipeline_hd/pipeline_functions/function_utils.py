@@ -10,11 +10,13 @@ Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.201
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import inspect
+import io
+import sys
 from collections import OrderedDict
 from importlib import import_module
-from multiprocessing import Pool
+from multiprocessing import Pool, Queue
 
-from PyQt5.QtCore import QThreadPool
+from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtWidgets import (QAbstractItemView)
 
 from .loading import BaseLoading, FSMRI, Group, MEEG, Sample
@@ -81,7 +83,47 @@ def get_arguments(func, obj):
     return keyword_arguments
 
 
-def run_func(func, keywargs):
+class StreamSender(io.TextIOBase):
+    def __init__(self, kind, queue):
+        super().__init__()
+        self.kind = kind
+        if kind == 'stdout':
+            self.original_stream = sys.__stdout__
+        else:
+            self.original_stream = sys.__stderr__
+        self.queue = queue
+
+    def write(self, text):
+        # Still send output to the command-line
+        self.original_stream.write(text)
+        self.queue.put([text, self.kind])
+
+
+class StreamRcvSignals(QObject):
+    stdout_received = pyqtSignal(str)
+    stderr_received = pyqtSignal(str)
+
+
+class StreamReceiver(QRunnable):
+    def __init__(self, queue):
+        super().__init__()
+        self.queue = queue
+        self.signals = StreamRcvSignals()
+
+    @pyqtSlot()
+    def run(self):
+        while True:
+            text, kind = self.queue.get()
+            if kind == 'stdout':
+                self.signals.stdout_received.emit(text)
+            else:
+                self.signals.stderr_received.emit(text)
+
+
+def run_func(func, keywargs, queue=None):
+    if queue:
+        sys.stdout = StreamSender(kind='stdout', queue=queue)
+        sys.stderr = StreamSender(kind='stderr', queue=queue)
     try:
         return func(**keywargs)
     except:
@@ -89,10 +131,11 @@ def run_func(func, keywargs):
 
 
 class RunController:
-    def __init__(self, controller, n_parallel=1):
+    def __init__(self, controller, pool=None, n_parallel=1):
         self.ct = controller
         self.n_parallel = n_parallel
-        self.pool = None
+        # Create pool if not supplied
+        self.pool = pool or Pool(self.n_parallel)
 
         self.all_steps = list()
         self.thread_idx_count = 0
@@ -216,18 +259,11 @@ class RunController:
         else:
             self.finished()
 
-    def _start_process(self, kwds):
-        # Prepare multiprocessing-Pool if not initialized yet.
-        if not self.pool:
-            self.pool = Pool(self.n_parallel)
-
-        self.pool.apply_async(func=run_func, kwds=kwds,
-                              callback=self.process_finished)
-
     def start(self):
         kwds = self.prepare_start()
         if kwds:
-            self._start_process(kwds)
+            self.pool.apply_async(func=run_func, kwds=kwds,
+                                  callback=self.process_finished)
 
 
 class QRunController(RunController):
@@ -271,7 +307,7 @@ class QRunController(RunController):
         self.rd.console_widget.add_html(f'<h2>{self.current_func}</h2><br>')
 
     def process_finished(self, result):
-        super().process_finished(result)
+        self.prog_count += 1
         self.rd.pgbar.setValue(self.prog_count)
         self.mark_current_items(0)
         # Process
@@ -299,9 +335,6 @@ class QRunController(RunController):
             self.start()
 
     def finished(self):
-        if self.pool:
-            self.pool.close()
-            self.pool.join()
         self.rd.console_widget.add_html('<b><big>Finished</big></b><br>')
         # Enable/Disable Buttons
         self.rd.continue_bt.setEnabled(False)
@@ -316,10 +349,26 @@ class QRunController(RunController):
     def start(self):
         kwds = self.prepare_start()
         if kwds:
-            if self.use_qthread:
+            # Plot functions with interactive plots currently can't run in a separate thread, so they
+            #  excuted in the main thread
+            if (self.ct.pd_funcs.loc[self.current_func, 'mayavi']
+                    or self.ct.pd_funcs.loc[self.current_func, 'matplotlib'] and self.ct.get_setting(
+                        'show_plots')):
+                result = run_func(**kwds)
+                self.process_finished(result)
+
+            elif self.use_qthread:
                 worker = Worker(function=run_func, **kwds)
                 worker.signals.error.connect(self.process_finished)
                 worker.signals.finished.connect(self.process_finished)
                 QThreadPool.globalInstance().start(worker)
+
             else:
-                self._start_process(kwds)
+                queue = Queue()
+                kwds['queue'] = queue
+                stdout_rcv = StreamReceiver(queue)
+                stdout_rcv.signals.stdout_received.connect(self.rd.console_widget.write_stdout)
+                stdout_rcv.signals.stderr_received.connect(self.rd.console_widget.write_stderr)
+                QThreadPool.globalInstance().start(stdout_rcv)
+                self.pool.apply_async(func=run_func, kwds=kwds,
+                                      callback=self.process_finished)

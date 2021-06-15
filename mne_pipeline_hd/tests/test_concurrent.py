@@ -68,6 +68,7 @@ def test_run_controller(tmpdir, qtbot):
     ct.pr.sel_functions = ['print_info']
     ct.pr.sel_meeg = ['_sample_']
     rc = RunController(ct)
+    rc.finished()
     rc.start()
     rc.pool.close()
     rc.pool.join()

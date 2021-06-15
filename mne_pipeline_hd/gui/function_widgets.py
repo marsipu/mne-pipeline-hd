@@ -51,7 +51,7 @@ class RunDialog(QDialog):
         self.start()
 
     def init_controller(self):
-        self.rc = QRunController(self, controller=self.mw.ct)
+        self.rc = QRunController(self, controller=self.mw.ct, pool=self.mw.mp_pool)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -151,9 +151,9 @@ class RunDialog(QDialog):
         # Redo References to display-widgets
         self.object_model._data = self.rc.all_objects
         self.object_model.layoutChanged.emit()
-        self.func_model._data = self.rccurrent_all_funcs
+        self.func_model._data = self.rc.current_all_funcs
         self.func_model.layoutChanged.emit()
-        self.error_widget.replace_data(list(self.rcerrors.keys()))
+        self.error_widget.replace_data(list(self.rc.errors.keys()))
 
         # Reset Progress-Bar
         self.pgbar.setValue(0)
@@ -170,7 +170,7 @@ class RunDialog(QDialog):
     def show_error(self, current, _):
         self.console_widget.set_autoscroll(False)
         self.autoscroll_bt.setChecked(False)
-        self.console_widget.scrollToAnchor(str(self.rcerrors[current][1]))
+        self.console_widget.scrollToAnchor(str(self.rc.errors[current][1]))
 
     def closeEvent(self, event):
         self.mw.pipeline_running = False

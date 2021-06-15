@@ -239,6 +239,9 @@ def plot_evoked_butterfly(meeg, apply_proj, show_plots):
         meeg.plot_save('evokeds', subfolder='butterfly', trial=evoked.comment, matplotlib_figure=fig)
         evoked_figs.append(fig)
 
+    if not show_plots:
+        raise RuntimeError('Plot finished!')
+
     return evoked_figs
 
 
@@ -386,11 +389,13 @@ def brain_plot(meeg, stcs, folder_name, subject, mne_evoked_time=None):
                        font_size=14)
         meeg.plot_save(folder_name, trial=trial, brain=brain)
 
+    return brain
 
 def plot_stc(meeg, mne_evoked_time):
     stcs = meeg.load_source_estimates()
-    brain_plot(meeg, stcs, 'source-estimate', meeg.fsmri.name, mne_evoked_time)
+    brain = brain_plot(meeg, stcs, 'source-estimate', meeg.fsmri.name, mne_evoked_time)
 
+    return brain
 
 def plot_mixn(meeg, mne_evoked_time, parcellation):
     trans = meeg.load_transformation()

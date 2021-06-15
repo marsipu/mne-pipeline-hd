@@ -11,6 +11,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import sys
 from functools import partial
+from multiprocessing import Pool
 
 import mne
 import pandas as pd
@@ -74,6 +75,10 @@ class MainWindow(QMainWindow):
         center(self)
 
         self.first_init = False
+
+        # Todo: Initialize with number of desired parallel processes and reinitialize at change.
+        # Initialize Multiprocessing-Pool
+        self.mp_pool = Pool(1)
 
     def update_project_ui(self):
 
@@ -480,6 +485,8 @@ class MainWindow(QMainWindow):
         else:
             WorkerDialog(self, self._prepare_start, show_buttons=False, show_console=False,
                          blocking=True)
+            # Initialize RunController with pool created at startup
+
             self.run_dialog = RunDialog(self)
 
     def restart(self):
@@ -536,12 +543,16 @@ class MainWindow(QMainWindow):
             self.welcome_window.show()
             if self.edu_tour:
                 self.edu_tour.close()
+            if self.mp_pool:
+                self.mp_pool.close()
             event.accept()
 
         elif answer == QMessageBox.No:
             self.welcome_window.close()
             if self.edu_tour:
                 self.edu_tour.close()
+            if self.mp_pool:
+                self.mp_pool.close()
             event.accept()
         else:
             event.ignore()
