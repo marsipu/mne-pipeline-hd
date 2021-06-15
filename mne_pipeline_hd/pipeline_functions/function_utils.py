@@ -14,7 +14,7 @@ import io
 import sys
 from collections import OrderedDict
 from importlib import import_module
-from multiprocessing import Pool, Queue
+from multiprocessing import Pool, Pipe
 
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtWidgets import (QAbstractItemView)
@@ -83,20 +83,33 @@ def get_arguments(func, obj):
     return keyword_arguments
 
 
+class StreamManager:
+    def __init__(self, pipe):
+        self.pipe_busy = False
+        self.stdout_sender = StreamSender(self, 'stdout', pipe)
+        self.stderr_sender = StreamSender(self, 'stderr', pipe)
+
+
 class StreamSender(io.TextIOBase):
-    def __init__(self, kind, queue):
+    def __init__(self, manager, kind, pipe):
         super().__init__()
+        self.manager = manager
         self.kind = kind
         if kind == 'stdout':
             self.original_stream = sys.__stdout__
         else:
             self.original_stream = sys.__stderr__
-        self.queue = queue
+        self.pipe = pipe
 
     def write(self, text):
         # Still send output to the command-line
         self.original_stream.write(text)
-        self.queue.put([text, self.kind])
+        # Wait until pipe is free
+        while self.manager.pipe_busy:
+            pass
+        self.manager.pipe_busy = True
+        self.pipe.send((text, self.kind))
+        self.manager.pipe_busy = False
 
 
 class StreamRcvSignals(QObject):
@@ -105,25 +118,30 @@ class StreamRcvSignals(QObject):
 
 
 class StreamReceiver(QRunnable):
-    def __init__(self, queue):
+    def __init__(self, pipe):
         super().__init__()
-        self.queue = queue
+        self.pipe = pipe
         self.signals = StreamRcvSignals()
 
     @pyqtSlot()
     def run(self):
         while True:
-            text, kind = self.queue.get()
-            if kind == 'stdout':
-                self.signals.stdout_received.emit(text)
+            try:
+                text, kind = self.pipe.recv()
+            except EOFError:
+                break
             else:
-                self.signals.stderr_received.emit(text)
+                if kind == 'stdout':
+                    self.signals.stdout_received.emit(text)
+                else:
+                    self.signals.stderr_received.emit(text)
 
 
-def run_func(func, keywargs, queue=None):
-    if queue:
-        sys.stdout = StreamSender(kind='stdout', queue=queue)
-        sys.stderr = StreamSender(kind='stderr', queue=queue)
+def run_func(func, keywargs, pipe=None):
+    if pipe is not None:
+        stream_manager = StreamManager(pipe)
+        sys.stdout = stream_manager.stdout_sender
+        sys.stderr = stream_manager.stderr_sender
     try:
         return func(**keywargs)
     except:
@@ -267,7 +285,7 @@ class RunController:
 
 
 class QRunController(RunController):
-    def __init__(self, run_dialog, use_qthread=True, *args, **kwargs):
+    def __init__(self, run_dialog, use_qthread=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.rd = run_dialog
         self.use_qthread = use_qthread
@@ -364,9 +382,9 @@ class QRunController(RunController):
                 QThreadPool.globalInstance().start(worker)
 
             else:
-                queue = Queue()
-                kwds['queue'] = queue
-                stdout_rcv = StreamReceiver(queue)
+                recv_pipe, send_pipe = Pipe(False)
+                kwds['pipe'] = send_pipe
+                stdout_rcv = StreamReceiver(recv_pipe)
                 stdout_rcv.signals.stdout_received.connect(self.rd.console_widget.write_stdout)
                 stdout_rcv.signals.stderr_received.connect(self.rd.console_widget.write_stderr)
                 QThreadPool.globalInstance().start(stdout_rcv)
