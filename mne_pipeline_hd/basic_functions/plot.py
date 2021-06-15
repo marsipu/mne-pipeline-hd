@@ -229,13 +229,13 @@ def plot_evoked_joint(meeg, show_plots):
 
 def plot_evoked_butterfly(meeg, apply_proj, show_plots):
     evokeds = meeg.load_evokeds()
-    titles_dict = {'eeg': f'{meeg.name} - EEG'}
     evoked_figs = list()
     for evoked in evokeds:
+        titles_dict = {cht: f'{cht}: {meeg.name}-{evoked.comment}'
+                       for cht in evoked.get_channel_types(unique=True, only_data_chs=True)}
         fig = evoked.plot(spatial_colors=True, proj=apply_proj, titles=titles_dict,
                           window_title=meeg.name + ' - ' + evoked.comment,
                           selectable=True, gfp=True, zorder='std', show=show_plots)
-        fig.suptitle(meeg.name + ' - ' + evoked.comment)
         meeg.plot_save('evokeds', subfolder='butterfly', trial=evoked.comment, matplotlib_figure=fig)
         evoked_figs.append(fig)
 
