@@ -2,7 +2,10 @@
 import json
 import sys
 from ast import literal_eval
+from copy import deepcopy
 from importlib import resources
+from os.path import join, isfile
+from pathlib import Path
 
 ismac = sys.platform.startswith("darwin")
 iswin = sys.platform.startswith("win32")
@@ -28,14 +31,33 @@ class QSettingsDummy(BaseSettings):
     def __init__(self):
         super().__init__()
 
+        self.settings_path = join(Path.home(), 'mnephd_settings.json')
+
+    def _load_settings(self):
+        if isfile(self.settings_path):
+            with open(self.settings_path, 'r') as file:
+                self.settings = json.load(file)
+        else:
+            self.settings = deepcopy(self.default_qsettings)
+
+    def _write_settings(self):
+        with open(self.settings_path, 'w') as file:
+            json.dump(self.settings, file)
+
     def value(self, setting, defaultValue=None):
+        self._load_settings()
+        if setting in self.settings:
+            return self.settings[setting]
+
         if defaultValue is None:
             return self.get_default(setting)
         else:
             return defaultValue
 
-    def setValue(self, _, __):
-        pass
+    def setValue(self, setting, value):
+        self._load_settings()
+        self.settings[setting] = value
+        self._write_settings()
 
 
 try:
