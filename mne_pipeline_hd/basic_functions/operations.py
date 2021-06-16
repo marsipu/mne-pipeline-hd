@@ -1307,8 +1307,8 @@ def grand_avg_connect(group):
 
 def print_info(meeg):
     print(meeg.load_info())
-    for n in range(40):
+    for n in range(20):
         print(f'\r{n}', end='')
-        time.sleep(0.5)
+        time.sleep(0.1)
     raise RuntimeError('Test')
 
