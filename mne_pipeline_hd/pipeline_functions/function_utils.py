@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import (QAbstractItemView)
 
 from .loading import BaseLoading, FSMRI, Group, MEEG, Sample
 from .pipeline_utils import shutdown
-from .. import QS
+from .. import QS, ismac
 from ..gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
 
 
@@ -285,7 +285,7 @@ class RunController:
 
 
 class QRunController(RunController):
-    def __init__(self, run_dialog, use_qthread=False, *args, **kwargs):
+    def __init__(self, run_dialog, use_qthread=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.rd = run_dialog
         self.use_qthread = use_qthread
@@ -369,9 +369,10 @@ class QRunController(RunController):
         if kwds:
             # Plot functions with interactive plots currently can't run in a separate thread, so they
             #  excuted in the main thread
-            if (self.ct.pd_funcs.loc[self.current_func, 'mayavi']
-                    or self.ct.pd_funcs.loc[self.current_func, 'matplotlib'] and self.ct.get_setting(
-                        'show_plots')):
+            ismayavi = self.ct.pd_funcs.loc[self.current_func, 'mayavi']
+            ismpl = self.ct.pd_funcs.loc[self.current_func, 'matplotlib']
+            show_plots = self.ct.get_setting('show_plots')
+            if ismayavi or (ismpl and (show_plots or ismac)):
                 result = run_func(**kwds)
                 self.process_finished(result)
 

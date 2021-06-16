@@ -229,7 +229,6 @@ def plot_evoked_joint(meeg, show_plots):
 
 def plot_evoked_butterfly(meeg, apply_proj, show_plots):
     evokeds = meeg.load_evokeds()
-    evoked_figs = list()
     for evoked in evokeds:
         titles_dict = {cht: f'{cht}: {meeg.name}-{evoked.comment}'
                        for cht in evoked.get_channel_types(unique=True, only_data_chs=True)}
@@ -237,12 +236,9 @@ def plot_evoked_butterfly(meeg, apply_proj, show_plots):
                           window_title=meeg.name + ' - ' + evoked.comment,
                           selectable=True, gfp=True, zorder='std', show=show_plots)
         meeg.plot_save('evokeds', subfolder='butterfly', trial=evoked.comment, matplotlib_figure=fig)
-        evoked_figs.append(fig)
 
-    if not show_plots:
-        raise RuntimeError('Plot finished!')
-
-    return evoked_figs
+        if not show_plots:
+            plt.close(fig)
 
 
 def plot_evoked_white(meeg, show_plots):
