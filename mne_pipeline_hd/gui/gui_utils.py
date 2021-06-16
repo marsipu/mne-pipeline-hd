@@ -289,7 +289,7 @@ class ConsoleWidget(QTextEdit):
         self.buffer = list()
         self.buffer_timer = QTimer()
         self.buffer_timer.timeout.connect(self.write_buffer)
-        self.buffer_timer.start(20)
+        self.buffer_timer.start(50)
 
     def _add_html(self, text):
         self.insertHtml(text)
