@@ -152,7 +152,7 @@ class Param(QWidget):
                 self.param_value = self.default
 
         # get data from QSettings
-        elif isinstance(self.data, QSettings):
+        elif isinstance(self.data, QS):
             if self.param_name in self.data.childKeys():
                 self.param_value = self.data.value(self.param_name)
             else:
@@ -163,7 +163,7 @@ class Param(QWidget):
             self.data[self.param_name] = self.param_value
         elif isinstance(self.data, Controller):
             self.data.pr.parameters[self.data.pr.p_preset][self.param_name] = self.param_value
-        elif isinstance(self.data, QSettings):
+        elif isinstance(self.data, QS):
             self.data.setValue(self.param_name, self.param_value)
 
 

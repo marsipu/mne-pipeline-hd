@@ -51,7 +51,8 @@ class RunDialog(QDialog):
         self.start()
 
     def init_controller(self):
-        self.rc = QRunController(self, controller=self.mw.ct, pool=self.mw.mp_pool)
+        self.rc = QRunController(run_dialog=self, use_qthread=QS().value('use_qthread'),
+                                 controller=self.mw.ct, pool=self.mw.mp_pool)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -137,12 +138,10 @@ class RunDialog(QDialog):
 
     def pause_funcs(self):
         self.rc.paused = True
-        self.console_widget.add_html('<br><b>Finishing last function...</b><br>')
+        self.console_widget.write_html('<br><b>Finishing last function...</b><br>')
 
     def restart(self):
-        # Reload modules to get latest changes
-        self.mw.ct.reload_modules()
-
+        # Reinitialize controller
         self.init_controller()
 
         # Clear Console-Widget

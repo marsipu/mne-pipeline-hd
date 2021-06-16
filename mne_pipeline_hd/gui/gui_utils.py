@@ -11,6 +11,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import io
 import logging
+import multiprocessing
 import smtplib
 import ssl
 import sys
@@ -19,7 +20,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from inspect import signature
 
-from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot, QTimer
 from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
                              QProgressBar, QPushButton, QTextEdit, QVBoxLayout, QStyle)
@@ -68,11 +69,15 @@ class ExceptionTuple(object):
         return self._data[2]
 
 
-def get_exception_tuple():
+def get_exception_tuple(is_mp=False):
     traceback.print_exc()
     exctype, value = sys.exc_info()[:2]
     traceback_str = traceback.format_exc(limit=-10)
-    logging.getLogger().error(f'{exctype}: {value}')
+    if is_mp:
+        logger = multiprocessing.get_logger()
+    else:
+        logger = logging.getLogger()
+    logger.error(f'{exctype}: {value}')
     exc_tuple = ExceptionTuple(exctype, value, traceback_str)
 
     return exc_tuple
@@ -273,56 +278,77 @@ def _html_compatible(text):
 
 class ConsoleWidget(QTextEdit):
     """A Widget displaying formatted stdout/stderr-output"""
+
     def __init__(self):
         super().__init__()
 
         self.setReadOnly(True)
-        self.is_prog_text = False
         self.autoscroll = True
 
-    def add_html(self, text):
-        # Make sure the cursor is at the end of the console
-        cursor = self.textCursor()
-        if not cursor.atEnd():
-            cursor.movePosition(QTextCursor.End)
-            self.setTextCursor(cursor)
+        # Buffer to avoid crash for too many inputs
+        self.buffer = list()
+        self.buffer_timer = QTimer()
+        self.buffer_timer.timeout.connect(self.write_buffer)
+        self.buffer_timer.start(100)
 
+    def _add_html(self, text):
         self.insertHtml(text)
         if self.autoscroll:
             self.ensureCursorVisible()
 
+    def write_buffer(self):
+        if len(self.buffer) > 0:
+            text, kind = self.buffer.pop(0)
+            if kind == 'html':
+                self._add_html(text)
+
+            elif kind == 'progress':
+                text = text.replace('\r', '')
+                text = _html_compatible(text)
+                text = f'<font color="green">{text}</font>'
+                # Delete last line
+                cursor = self.textCursor()
+                cursor.select(QTextCursor.LineUnderCursor)
+                cursor.removeSelectedText()
+                self._add_html(text)
+
+            elif kind == 'stdout':
+                text = _html_compatible(text)
+                self._add_html(text)
+
+            elif kind == 'stderr':
+                # weird characters in some progress are excluded (e.g. from autoreject)
+                if '\x1b' not in text:
+                    text = _html_compatible(text)
+                    text = f'<font color="red">{text}</font>'
+                    self._add_html(text)
+
     def set_autoscroll(self, autoscroll):
         self.autoscroll = autoscroll
 
+    def write_html(self, text):
+        self.buffer.append((text, 'html'))
+
     def write_stdout(self, text):
-        self.is_prog_text = False
-        text = _html_compatible(text)
-        self.add_html(text)
+        self.buffer.append((text, 'stdout'))
 
     def write_stderr(self, text):
-        self.is_prog_text = False
-        text = _html_compatible(text)
-        text = f'<font color="red">{text}</font>'
-        self.add_html(text)
+        self.buffer.append((text, 'stderr'))
 
     def write_progress(self, text):
-        text = text.replace('\r', '')
-        text = _html_compatible(text)
-        text = f'<font color="green">{text}</font>'
-        if self.is_prog_text:
-            # Delete last line
-            cursor = self.textCursor()
-            cursor.movePosition(QTextCursor.End)
-            cursor.select(QTextCursor.LineUnderCursor)
-            cursor.removeSelectedText()
-            self.add_html(text)
-        else:
-            self.is_prog_text = True
-            self.add_html(text)
+        self.buffer.append((text, 'progress'))
+
+    # Make sure cursor is not moved
+    def mousePressEvent(self, event):
+        event.accept()
+
+    def mouseDoubleClickEvent(self, event):
+        event.accept()
 
 
 class MainConsoleWidget(ConsoleWidget):
     """A subclass of ConsoleWidget which is linked to stdout/stderr of the main process"""
+
     def __init__(self):
         super().__init__()
 

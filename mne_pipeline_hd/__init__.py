@@ -64,8 +64,12 @@ try:
             else:
                 return loaded_value
 
-    QS = ModQSettings
+    class QS(ModQSettings):
+        def __init__(self):
+            super().__init__()
 
 except ImportError:
 
-    QS = QSettingsDummy
+    class QS(QSettingsDummy):
+        def __init__(self):
+            super().__init__()

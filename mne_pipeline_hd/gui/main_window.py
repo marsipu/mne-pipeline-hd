@@ -290,13 +290,17 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(remove_action)
         self.toolbar.addSeparator()
 
-        # self.toolbar.addWidget(IntGui(QS(), 'n_threads', min_val=1,
-        #                               description='Set to the amount of threads you want to run simultaneously '
-        #                                           'in the pipeline', default=1, groupbox_layout=False))
         self.toolbar.addWidget(IntGui(QS(), 'n_jobs', min_val=-1, special_value_text='Auto',
                                       description='Set to the amount of (virtual) cores of your machine '
                                                   'you want to use for multiprocessing', default=-1,
                                       groupbox_layout=False))
+        # self.toolbar.addWidget(IntGui(QS(), 'n_parallel', min_val=1,
+        #                               description='Set to the amount of threads you want to run simultaneously '
+        #                                           'in the pipeline', default=1, groupbox_layout=False))
+        self.toolbar.addWidget(BoolGui(QS(), 'use_qthread', param_alias='Use QThreads',
+                                       description='Check to use QThreads for running the pipeline.\n'
+                                                   'This is faster then the default with separate processes,'
+                                                   'but has a few limitations', default=0, return_integer=True))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'overwrite', param_alias='Overwrite',
                                        description='Check to overwrite files even if their parameters where unchanged',
                                        default=False))
@@ -308,7 +312,7 @@ class MainWindow(QMainWindow):
                                        description='Do you want to save the plots made to a file?', default=True))
         self.toolbar.addWidget(BoolGui(QS(), 'enable_cuda', param_alias='Enable CUDA',
                                        description='Do you want to enable CUDA? (system has to be setup for cuda)',
-                                       default=False))
+                                       default=0, return_integer=True))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'shutdown', param_alias='Shutdown',
                                        description='Do you want to shut your system down'
                                                    ' after execution of all subjects?'))
@@ -473,17 +477,11 @@ class MainWindow(QMainWindow):
             self.bt_dict[x].setChecked(False)
         self.ct.pr.sel_functions.clear()
 
-    def _prepare_start(self, worker_signals):
-        # Save Main-Window-Settings and project before possible Errors happen
-        self.ct.save(worker_signals)
-        # Reload modules to get latest changes
-        self.ct.reload_modules()
-
     def start(self):
         if self.pipeline_running:
             QMessageBox.warning(self, 'Already running!', 'The Pipeline is already running!')
         else:
-            WorkerDialog(self, self._prepare_start, show_buttons=False, show_console=False,
+            WorkerDialog(self, self.ct.save, show_buttons=False, show_console=False,
                          blocking=True)
             # Initialize RunController with pool created at startup
 

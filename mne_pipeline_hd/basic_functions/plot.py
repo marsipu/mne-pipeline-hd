@@ -237,9 +237,6 @@ def plot_evoked_butterfly(meeg, apply_proj, show_plots):
                           selectable=True, gfp=True, zorder='std', show=show_plots)
         meeg.plot_save('evokeds', subfolder='butterfly', trial=evoked.comment, matplotlib_figure=fig)
 
-        if not show_plots:
-            plt.close(fig)
-
 
 def plot_evoked_white(meeg, show_plots):
     evokeds = meeg.load_evokeds()

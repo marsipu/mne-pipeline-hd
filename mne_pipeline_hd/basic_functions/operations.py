@@ -16,6 +16,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from functools import reduce
 from itertools import combinations
 from os import environ
@@ -1306,4 +1307,8 @@ def grand_avg_connect(group):
 
 def print_info(meeg):
     print(meeg.load_info())
+    for n in range(40):
+        print(f'\r{n}', end='')
+        time.sleep(0.5)
+    raise RuntimeError('Test')
 

@@ -13,11 +13,11 @@ import inspect
 import io
 import sys
 from collections import OrderedDict
-from importlib import import_module
+from importlib import import_module, reload
 from multiprocessing import Pool, Pipe
 
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
-from PyQt5.QtWidgets import (QAbstractItemView)
+from PyQt5.QtWidgets import (QAbstractItemView, QMessageBox)
 
 from .loading import BaseLoading, FSMRI, Group, MEEG, Sample
 from .pipeline_utils import shutdown
@@ -30,6 +30,7 @@ def get_func(func_name, obj):
     # (which imports from functions.csv or the <custom_package>.csv)
     module_name = obj.ct.pd_funcs.loc[func_name, 'module']
     module = import_module(module_name)
+    reload(module)
     func = getattr(module, func_name)
 
     return func
@@ -108,13 +109,18 @@ class StreamSender(io.TextIOBase):
         while self.manager.pipe_busy:
             pass
         self.manager.pipe_busy = True
-        self.pipe.send((text, self.kind))
+        if text[:1] == '\r':
+            kind = 'progress'
+        else:
+            kind = self.kind
+        self.pipe.send((text, kind))
         self.manager.pipe_busy = False
 
 
 class StreamRcvSignals(QObject):
     stdout_received = pyqtSignal(str)
     stderr_received = pyqtSignal(str)
+    progress_received = pyqtSignal(str)
 
 
 class StreamReceiver(QRunnable):
@@ -133,8 +139,10 @@ class StreamReceiver(QRunnable):
             else:
                 if kind == 'stdout':
                     self.signals.stdout_received.emit(text)
-                else:
+                elif kind == 'stderr':
                     self.signals.stderr_received.emit(text)
+                else:
+                    self.signals.progress_received.emit(text)
 
 
 def run_func(func, keywargs, pipe=None):
@@ -145,7 +153,7 @@ def run_func(func, keywargs, pipe=None):
     try:
         return func(**keywargs)
     except:
-        return get_exception_tuple()
+        return get_exception_tuple(is_mp=pipe is not None)
 
 
 class RunController:
@@ -285,7 +293,7 @@ class RunController:
 
 
 class QRunController(RunController):
-    def __init__(self, run_dialog, use_qthread=True, *args, **kwargs):
+    def __init__(self, run_dialog, use_qthread=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.rd = run_dialog
         self.use_qthread = use_qthread
@@ -315,14 +323,14 @@ class QRunController(RunController):
         super().get_object()
         # Print Headline for object if new
         if old_obj_name != self.current_obj_name:
-            self.rd.console_widget.add_html(f'<br><h1>{self.current_obj_name}</h1><br>')
+            self.rd.console_widget.write_html(f'<br><h1>{self.current_obj_name}</h1><br>')
         # Load functions for object into func_model (which displays functions in func_view)
         self.current_all_funcs = self.all_objects[self.current_obj_name]['functions']
         self.rd.func_model._data = self.current_all_funcs
         self.rd.func_model.layoutChanged.emit()
 
         # Print Headline for function
-        self.rd.console_widget.add_html(f'<h2>{self.current_func}</h2><br>')
+        self.rd.console_widget.write_html(f'<h2>{self.current_func}</h2><br>')
 
     def process_finished(self, result):
         self.prog_count += 1
@@ -330,7 +338,7 @@ class QRunController(RunController):
         self.mark_current_items(0)
         # Process
         if self.paused:
-            self.rd.console_widget.add_html('<b><big>Paused</big></b><br>')
+            self.rd.console_widget.write_html('<b><big>Paused</big></b><br>')
             # Enable/Disable Buttons
             self.rd.continue_bt.setEnabled(True)
             self.rd.pause_bt.setEnabled(False)
@@ -344,8 +352,8 @@ class QRunController(RunController):
                 self.rd.error_widget.replace_data(list(self.errors.keys()))
 
                 # Insert Error-Number into console-widget as an anchor for later inspection
-                self.rd.console_widget.add_html(f'<a name=\"{self.error_count}\" href={self.error_count}>'
-                                             f'<i>Error No.{self.error_count}</i><br></a>')
+                self.rd.console_widget.write_html(f'<a name=\"{self.error_count}\" href={self.error_count}>'
+                                                  f'<i>Error No.{self.error_count}</i><br></a>')
                 # Increase Error-Count by one
                 self.error_count += 1
 
@@ -353,7 +361,7 @@ class QRunController(RunController):
             self.start()
 
     def finished(self):
-        self.rd.console_widget.add_html('<b><big>Finished</big></b><br>')
+        self.rd.console_widget.write_html('<b><big>Finished</big></b><br>')
         # Enable/Disable Buttons
         self.rd.continue_bt.setEnabled(False)
         self.rd.pause_bt.setEnabled(False)
@@ -372,9 +380,23 @@ class QRunController(RunController):
             ismayavi = self.ct.pd_funcs.loc[self.current_func, 'mayavi']
             ismpl = self.ct.pd_funcs.loc[self.current_func, 'matplotlib']
             show_plots = self.ct.get_setting('show_plots')
-            if ismayavi or (ismpl and (show_plots or ismac)):
+            if ismayavi:
                 result = run_func(**kwds)
                 self.process_finished(result)
+
+            elif ismpl and show_plots and self.use_qthread:
+                QMessageBox.warning(self.rd, 'QThread-Problem!',
+                                    'It is not possible to show Matplotlib-Plots'
+                                    ' inside the QThreads without crashing!\n'
+                                    'Deselect "Use QThreads" or "Show Plots"')
+                self.process_finished(None)
+
+            elif ismpl and not show_plots and self.use_qthread and ismac:
+                QMessageBox.warning(self.rd, 'MacOS-Problem',
+                                    'It is not possible to have non-interactive Matplotlib-Plots'
+                                    ' inside a QThread on MacOS without crashing!\n'
+                                    'Deselect "Use QThreads" to do this.')
+                self.process_finished(None)
 
             elif self.use_qthread:
                 worker = Worker(function=run_func, **kwds)
@@ -385,9 +407,10 @@ class QRunController(RunController):
             else:
                 recv_pipe, send_pipe = Pipe(False)
                 kwds['pipe'] = send_pipe
-                stdout_rcv = StreamReceiver(recv_pipe)
-                stdout_rcv.signals.stdout_received.connect(self.rd.console_widget.write_stdout)
-                stdout_rcv.signals.stderr_received.connect(self.rd.console_widget.write_stderr)
-                QThreadPool.globalInstance().start(stdout_rcv)
+                stream_rcv = StreamReceiver(recv_pipe)
+                stream_rcv.signals.stdout_received.connect(self.rd.console_widget.write_stdout)
+                stream_rcv.signals.stderr_received.connect(self.rd.console_widget.write_stderr)
+                stream_rcv.signals.progress_received.connect(self.rd.console_widget.write_progress)
+                QThreadPool.globalInstance().start(stream_rcv)
                 self.pool.apply_async(func=run_func, kwds=kwds,
                                       callback=self.process_finished)
