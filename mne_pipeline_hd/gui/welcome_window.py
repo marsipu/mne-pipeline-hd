@@ -17,6 +17,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInputDialog,
                              QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget)
+
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center, WorkerDialog
@@ -168,6 +169,7 @@ class WelcomeWindow(QWidget):
         if ok and new_project != '':
             self.ct.change_project(new_project)
             self.update_project_cmbx()
+            self.start_bt.setEnabled(True)
 
     def init_main_window(self):
         if self.edu_groupbox.isChecked():

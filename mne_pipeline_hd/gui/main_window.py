@@ -29,7 +29,7 @@ from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImpo
 from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
-from .parameter_widgets import BoolGui, ComboGui, IntGui, ParametersDock, SettingsDlg
+from .parameter_widgets import BoolGui, IntGui, ParametersDock, SettingsDlg
 from .tools import DataTerminal, PlotViewSelection
 from ..basic_functions.plot import close_all
 from ..pipeline_functions.controller import Controller
@@ -310,18 +310,9 @@ class MainWindow(QMainWindow):
                                        default=True))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'save_plots', param_alias='Save Plots',
                                        description='Do you want to save the plots made to a file?', default=True))
-        self.toolbar.addWidget(BoolGui(QS(), 'enable_cuda', param_alias='Enable CUDA',
-                                       description='Do you want to enable CUDA? (system has to be setup for cuda)',
-                                       default=0, return_integer=True))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'shutdown', param_alias='Shutdown',
                                        description='Do you want to shut your system down'
                                                    ' after execution of all subjects?'))
-        self.toolbar.addWidget(IntGui(self.ct.settings, 'dpi', min_val=0, max_val=10000,
-                                      description='Set dpi for saved plots', default=300, groupbox_layout=False))
-        self.toolbar.addWidget(ComboGui(self.ct.settings, 'img_format',
-                                        options={'.png': 'PNG', '.jpg': 'JPEG', '.tiff': 'TIFF'},
-                                        param_alias='Image-Format', description='Choose the image format for plots',
-                                        default='.png', groupbox_layout=False))
         close_all_bt = QPushButton('Close All Plots')
         close_all_bt.pressed.connect(close_all)
         self.toolbar.addWidget(close_all_bt)
