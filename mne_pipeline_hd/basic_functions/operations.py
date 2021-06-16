@@ -646,7 +646,7 @@ def calculate_gfp(evoked):
 def grand_avg_evokeds(group, ga_interpolate_bads, ga_drop_bads):
     trial_dict = {}
     for name in group.group_list:
-        meeg = MEEG(name, group.mw)
+        meeg = MEEG(name, group.ct)
         print(f'Add {name} to grand_average')
         evokeds = meeg.load_evokeds()
         for evoked in evokeds:
@@ -743,7 +743,7 @@ def tfr(meeg, tfr_freqs, tfr_n_cycles, tfr_average, tfr_use_fft, tfr_baseline, t
 def grand_avg_tfr(group):
     trial_dict = dict()
     for name in group.group_list:
-        meeg = MEEG(name, group.mw)
+        meeg = MEEG(name, group.ct)
         print(f'Add {name} to grand_average')
         powers = meeg.load_power_tfr_average()
         for pw in powers:
@@ -1182,7 +1182,7 @@ def grand_avg_morphed(group, morph_to):
         ga_chunk = group.group_list[i:i + n_chunks]
         print(ga_chunk)
         for name in ga_chunk:
-            meeg = MEEG(name, group.mw)
+            meeg = MEEG(name, group.ct)
             print(f'Add {name} to grand_average')
             if morph_to == meeg.fsmri.name:
                 stcs = meeg.load_source_estimates()
@@ -1234,7 +1234,7 @@ def grand_avg_ltc(group):
     ltc_average_dict = {}
     times = None
     for name in group.group_list:
-        meeg = MEEG(name, group.mw)
+        meeg = MEEG(name, group.ct)
         print(f'Add {name} to grand_average')
         ltc_dict = meeg.load_ltc()
         for trial in ltc_dict:
@@ -1274,7 +1274,7 @@ def grand_avg_connect(group):
     # Prepare the Average-Dict
     con_average_dict = {}
     for name in group.group_list:
-        meeg = MEEG(name, group.mw)
+        meeg = MEEG(name, group.ct)
         print(f'Add {name} to grand_average')
         con_dict = meeg.load_connectivity()
         for trial in con_dict:
