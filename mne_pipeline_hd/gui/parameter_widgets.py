@@ -9,18 +9,17 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
-import sys
-import traceback
 from ast import literal_eval
 from functools import partial
 
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import QSettings, QTimer, Qt
+from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtGui import QFontDatabase, QFont
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                             QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout, QWidget, QDockWidget, QTabWidget,
+                             QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout,
+                             QWidget, QDockWidget, QTabWidget,
                              QScrollArea, QInputDialog, QMessageBox, QStyleFactory)
 
 from .base_widgets import CheckList, EditDict, EditList, SimpleList
@@ -656,6 +655,9 @@ class ComboGui(Param):
              e.g. displaying parameters from Project or displaying Settings from Main-Window).
         param_name : str
             The name of the key, which stores the value in the data-structure.
+        options : list | dict
+            Supply a list or a dictionary with the options to choose from. If supplied a dictionary,
+            dictionary-values are taken as aliases for the keys.
         param_alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
@@ -678,7 +680,10 @@ class ComboGui(Param):
         self.param_widget.activated.connect(self.get_param)
         self.param_unit = param_unit
         for option in self.options:
-            self.param_widget.addItem(str(option))
+            if isinstance(self.options, dict):
+                self.param_widget.addItem(str(self.options[option]))
+            else:
+                self.param_widget.addItem(str(option))
 
         self.read_param()
         self.init_layout()
@@ -695,13 +700,21 @@ class ComboGui(Param):
     def set_param(self):
         self.check_groupbox_state()
         if self.param_value is not None:
-            self.param_widget.setCurrentText(str(self.param_value))
+            if isinstance(self.options, dict):
+                self.param_widget.setCurrentText(str(self.options[self.param_value]))
+            else:
+                self.param_widget.setCurrentText(str(self.param_value))
 
     def get_param(self):
+        if isinstance(self.options, dict):
+            text = [key for key, value in self.options.items()
+                    if value == self.param_widget.currentText()][0]
+        else:
+            text = self.param_widget.currentText()
         try:
-            self.param_value = literal_eval(self.param_widget.currentText())
+            self.param_value = literal_eval(text)
         except (SyntaxError, ValueError):
-            self.param_value = self.param_widget.currentText()
+            self.param_value = text
         self.save_param()
 
         return self.param_value
@@ -1639,7 +1652,6 @@ class SettingsDlg(QDialog):
                     'param_alias': 'Application Style',
                     'description': 'Changes the application style (Restart required).',
                     'options': ['light', 'dark'] + QStyleFactory().keys(),
-                    'groupbox_layout': False
                 }
             },
             'app_font': {
@@ -1661,6 +1673,35 @@ class SettingsDlg(QDialog):
                     'max_val': 20
                 }
             },
+            'img_format': {
+                'gui_type': 'ComboGui',
+                'data_type': 'Settings',
+                'gui_kwargs': {
+                    'param_alias': 'Image Format',
+                    'description': 'Choose the image format for plots.',
+                    'options': ['.png', '.jpg', '.tiff'],
+                }
+            },
+            'dpi': {
+                'gui_type': 'IntGui',
+                'data_type': 'Settings',
+                'gui_kwargs': {
+                    'param_alias': 'DPI',
+                    'description': 'Set dpi for saved plots.',
+                    'min_val': 10,
+                    'max_val': 5000
+                }
+            },
+            'enable_cuda': {
+                'gui_type': 'BoolGui',
+                'data_type': 'QSettings',
+                'gui_kwargs': {
+                    'param_alias': 'Enable CUDA',
+                    'description': 'Enable for CUDA support (system has to be setup for cuda '
+                                   'as in https://mne.tools/stable/install/advanced.html#gpu-acceleration-with-cuda)',
+                    'return_integer': True
+                }
+            },
             'save_ram': {
                 'gui_type': 'BoolGui',
                 'data_type': 'QSettings',
@@ -1671,7 +1712,6 @@ class SettingsDlg(QDialog):
                                    'a bit faster, because the data can be saved in memory).',
                     'return_integer': True
                 }
-
             },
             'fs_path': {
                 'gui_type': 'StringGui',
@@ -1727,113 +1767,3 @@ class SettingsDlg(QDialog):
         layout.addWidget(close_bt)
 
         self.setLayout(layout)
-
-
-# Testing
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    widget = QWidget()
-    test_layout = QVBoxLayout()
-    grid_layout = QGridLayout()
-    max_cols = 4
-    set_none_select = True
-    set_groupbox_layout = True
-    set_param_alias = False
-
-    parameters = {'IntGui': None,
-                  'FloatGui': 5.3,
-                  'StringGui': 'Havona',
-                  'MultiTypeGui': 42,
-                  'FuncGui': 5000,
-                  'BoolGui': True,
-                  'TupleGui': (45, 6),
-                  'ComboGui': 'a',
-                  # 'ListGui': [1, 454.33, 'post_central-lh', 'raga', 5],
-                  'ListGui': None,
-                  'CheckListGui': ['bananaaa'],
-                  'DictGui': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
-                  'SliderGui': 5}
-
-    keyword_args = {
-        'IntGui': {'min_val': -4,
-                   'max_val': 10,
-                   'param_unit': 't'},
-        'FloatGui': {'min_val': -18,
-                     'max_val': 64,
-                     'step': 0.4,
-                     'param_unit': 'flurbo'},
-        'StringGui': {'input_mask': 'ppAAA.AA;_',
-                      'param_unit': 'N'},
-        'MultiTypeGui': {'type_selection': True},
-        'FuncGui': {'param_unit': 'u'},
-        'BoolGui': {},
-        'TupleGui': {'min_val': -10,
-                     'max_val': 100,
-                     'step': 1,
-                     'param_unit': 'Nm'},
-        'ComboGui': {'options': ['a', 'b', 'c'],
-                     'param_unit': 'g'},
-        'ListGui': {'param_unit': 'mol'},
-        'CheckListGui': {'options': ['lemon', 'pineapple', 'bananaaa'],
-                         'param_unit': 'V'},
-        'DictGui': {'param_unit': '°C'},
-        'SliderGui': {'min_val': -10,
-                      'max_val': 10,
-                      'step': 0.01,
-                      'param_unit': 'Hz'}
-    }
-
-    gui_dict = dict()
-
-    for idx, gui_nm in enumerate(keyword_args):
-        kw_args = keyword_args[gui_nm]
-        kw_args['none_select'] = set_none_select
-        kw_args['groupbox_layout'] = set_groupbox_layout
-        if set_param_alias:
-            kw_args['param_alias'] = gui_nm + '-alias'
-        kw_args['description'] = gui_nm + '-description'
-        gui = globals()[gui_nm](parameters, gui_nm, **kw_args)
-        grid_layout.addWidget(gui, idx // max_cols, idx % max_cols)
-        gui_dict[gui_nm] = gui
-
-    test_layout.addLayout(grid_layout)
-
-    set_layout = QHBoxLayout()
-    gui_cmbx = QComboBox()
-    gui_cmbx.addItems(gui_dict.keys())
-    set_layout.addWidget(gui_cmbx)
-
-    set_le = QLineEdit()
-    set_layout.addWidget(set_le)
-
-
-    def set_param():
-        try:
-            current_gui = gui_cmbx.currentText()
-            try:
-                value = literal_eval(set_le.text())
-            except (SyntaxError, ValueError):
-                value = set_le.text()
-            parameters[current_gui] = value
-            p_gui = gui_dict[current_gui]
-            p_gui.read_param()
-            p_gui.set_param()
-        except:
-            print(traceback.format_exc())
-
-
-    set_bt = QPushButton('Set')
-    set_bt.clicked.connect(set_param)
-    set_layout.addWidget(set_bt)
-
-    test_layout.addLayout(set_layout)
-
-    widget.setLayout(test_layout)
-    widget.show()
-
-    # Command-Line interrupt with Ctrl+C possible, easier debugging
-    timer = QTimer()
-    timer.timeout.connect(lambda: parameters)
-    timer.start(500)
-
-    sys.exit(app.exec())
