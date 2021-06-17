@@ -1307,8 +1307,8 @@ class SavePkgDialog(QDialog):
             self.cf_dialog.ct.save_settings()
 
             self.cf_dialog.ct.import_custom_modules()
-            self.cf_dialog.mw.init_mp_pool()
             self.cf_dialog.mw.redraw_func_and_param()
+            self.cf_dialog.mw.init_mp_pool()
             self.close()
 
         else:

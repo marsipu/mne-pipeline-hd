@@ -18,7 +18,7 @@ from importlib import import_module
 from multiprocessing import Pipe, Pool
 
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
-from PyQt5.QtWidgets import (QAbstractItemView, QMessageBox)
+from PyQt5.QtWidgets import (QAbstractItemView)
 
 from .loading import BaseLoading, FSMRI, Group, MEEG
 from .pipeline_utils import shutdown
@@ -375,24 +375,13 @@ class QRunController(RunController):
             ismayavi = self.ct.pd_funcs.loc[self.current_func, 'mayavi']
             ismpl = self.ct.pd_funcs.loc[self.current_func, 'matplotlib']
             show_plots = self.ct.get_setting('show_plots')
-            if ismayavi:
+            use_qthread = QS().value('use_qthread')
+            if ismayavi \
+                    or (ismpl and show_plots and use_qthread) \
+                    or (ismpl and not show_plots and use_qthread and ismac):
                 logging.getLogger().info('Starting in Main-Thread.')
                 result = run_func(**kwds)
                 self.process_finished(result)
-
-            elif ismpl and show_plots and QS().value('use_qthread'):
-                QMessageBox.warning(self.rd, 'QThread-Problem!',
-                                    'It is not possible to show Matplotlib-Plots'
-                                    ' inside the QThreads without crashing!\n'
-                                    'Deselect "Use QThreads" or "Show Plots"')
-                self.process_finished(None)
-
-            elif ismpl and not show_plots and QS().value('use_qthread') and ismac:
-                QMessageBox.warning(self.rd, 'MacOS-Problem',
-                                    'It is not possible to have non-interactive Matplotlib-Plots'
-                                    ' inside a QThread on MacOS without crashing!\n'
-                                    'Deselect "Use QThreads" to do this.')
-                self.process_finished(None)
 
             elif QS().value('use_qthread'):
                 logging.getLogger().info('Starting in separate Thread.')
