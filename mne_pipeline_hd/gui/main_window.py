@@ -11,6 +11,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import sys
 from functools import partial
+from multiprocessing import Pool
 
 import mne
 import pandas as pd
@@ -44,6 +45,10 @@ class MainWindow(QMainWindow):
     def __init__(self, controller, welcome_window):
         super().__init__()
 
+        # Initialize Multiprocessing-Pool
+        self.mp_pool = None
+        self.init_mp_pool(QS().value('use_qthread'))
+
         self.setWindowTitle('MNE-Pipeline HD')
 
         self.setCentralWidget(QWidget(self))
@@ -74,6 +79,18 @@ class MainWindow(QMainWindow):
         center(self)
 
         self.first_init = False
+
+    def init_mp_pool(self, use_qthread=None):
+        if use_qthread is None:
+            use_qthread = QS().value('use_qthread')
+        self.close_mp_pool()
+        if not use_qthread:
+            self.mp_pool = Pool(1)
+
+    def close_mp_pool(self):
+        if self.mp_pool:
+            self.mp_pool.close()
+            self.mp_pool.join()
 
     def update_project_ui(self):
 
@@ -301,7 +318,7 @@ class MainWindow(QMainWindow):
                                        description='Check to use QThreads for running the pipeline.\n'
                                                    'This is faster then the default with separate processes,'
                                                    'but has a few limitations', default=0, return_integer=True,
-                                       changed_slot=self.ct.init_mp_pool))
+                                       changed_slot=self.init_mp_pool))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'overwrite', param_alias='Overwrite',
                                        description='Check to overwrite files even if their parameters where unchanged',
                                        default=False))
@@ -539,18 +556,18 @@ class MainWindow(QMainWindow):
                                           buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
                                           defaultButton=QMessageBox.Yes)
 
-        if answer == QMessageBox.Yes:
-            self.welcome_window.check_controller()
-            self.welcome_window.show()
+        if any([answer == a for a in [QMessageBox.Yes, QMessageBox.No]]):
             if self.edu_tour:
                 self.edu_tour.close()
+            self.close_mp_pool()
             event.accept()
 
-        elif answer == QMessageBox.No:
-            self.welcome_window.close()
-            if self.edu_tour:
-                self.edu_tour.close()
-            self.ct.close()
-            event.accept()
+            if answer == QMessageBox.Yes:
+                self.welcome_window.check_controller()
+                self.welcome_window.show()
+
+            elif answer == QMessageBox.No:
+                self.welcome_window.close()
+
         else:
             event.ignore()

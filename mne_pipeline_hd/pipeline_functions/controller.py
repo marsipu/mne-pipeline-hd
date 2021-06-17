@@ -5,7 +5,6 @@ import re
 import shutil
 import sys
 from importlib import reload, resources, import_module
-from multiprocessing import Pool
 from os import listdir
 from os.path import isdir, join
 from pathlib import Path
@@ -26,8 +25,6 @@ logger = logging.getLogger()
 class Controller:
 
     def __init__(self, home_path=None, selected_project=None, edu_program_name=None):
-        # Multiprocessing Pool
-        self.mp_pool = None
         # Check Home-Path
         self.errors = dict()
         # Try to load home_path from QSettings
@@ -110,16 +107,6 @@ class Controller:
                 # Initialize Project
                 self.pr = Project(self, selected_project)
                 logger.info(f'Selected-Project: {self.pr.name}')
-
-    def init_mp_pool(self, use_qthread):
-        self.close_mp_pool()
-        if not use_qthread:
-            self.mp_pool = Pool(1)
-
-    def close_mp_pool(self):
-        if self.mp_pool:
-            self.mp_pool.close()
-            self.mp_pool.join()
 
     def load_settings(self):
         try:
@@ -296,8 +283,6 @@ class Controller:
                              f'{[key for key in file_dict if file_dict[key] is None]}'
                 self.errors['custom_modules'][pkg_name] = error_text
 
-        self.init_mp_pool(QS().value('use_qthread'))
-
     def reload_modules(self):
         for pkg_name in self.all_modules:
             for module_name in self.all_modules[pkg_name]:
@@ -312,8 +297,3 @@ class Controller:
                         spec.loader.exec_module(module)
                         sys.modules[module_name] = module
 
-        self.init_mp_pool(QS().value('use_qthread'))
-
-    def close(self):
-        self.save()
-        self.close_mp_pool()

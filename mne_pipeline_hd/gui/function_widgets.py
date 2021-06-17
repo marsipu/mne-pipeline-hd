@@ -51,7 +51,8 @@ class RunDialog(QDialog):
         self.start()
 
     def init_controller(self):
-        self.rc = QRunController(run_dialog=self, controller=self.mw.ct)
+        self.rc = QRunController(run_dialog=self, controller=self.mw.ct,
+                                 pool=self.mw.mp_pool)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -150,7 +151,7 @@ class RunDialog(QDialog):
         self.init_controller()
 
         if self.reload_chbx and self.reload_chbx.isChecked():
-            self.mw.ct.init_mp_pool(QS().value('use_qthread'))
+            self.mw.init_mp_pool()
 
         # Clear Console-Widget
         self.console_widget.clear()
@@ -1306,7 +1307,7 @@ class SavePkgDialog(QDialog):
             self.cf_dialog.ct.save_settings()
 
             self.cf_dialog.ct.import_custom_modules()
-            self.cf_dialog.ct.init_mp_pool(QS().value('use_qthread'))
+            self.cf_dialog.mw.init_mp_pool()
             self.cf_dialog.mw.redraw_func_and_param()
             self.close()
 
