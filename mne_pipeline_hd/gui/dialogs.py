@@ -16,6 +16,7 @@ from pathlib import Path
 import mne
 from PyQt5.QtWidgets import (QDialog, QGridLayout, QLabel, QListView, QPushButton,
                              QSizePolicy, QTextEdit, QVBoxLayout)
+
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
@@ -135,7 +136,7 @@ class RawInfo(QDialog):
 
     def init_ui(self):
         layout = QGridLayout()
-        meeg_list = SimpleList(self.ct.pr.all_meeg)
+        meeg_list = SimpleList(self.mw.ct.pr.all_meeg)
         meeg_list.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         meeg_list.currentChanged.connect(self.meeg_selected)
         layout.addWidget(meeg_list, 0, 0)

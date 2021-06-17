@@ -195,4 +195,5 @@ class WelcomeWindow(QWidget):
         else:
             QS().setValue('education', 0)
 
+        self.ct.close()
         event.accept()

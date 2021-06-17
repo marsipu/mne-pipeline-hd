@@ -4,7 +4,8 @@ import os
 import re
 import shutil
 import sys
-from importlib import reload, resources, util, import_module
+from importlib import reload, resources, import_module
+from multiprocessing import Pool
 from os import listdir
 from os.path import isdir, join
 from pathlib import Path
@@ -25,6 +26,8 @@ logger = logging.getLogger()
 class Controller:
 
     def __init__(self, home_path=None, selected_project=None, edu_program_name=None):
+        # Multiprocessing Pool
+        self.mp_pool = None
         # Check Home-Path
         self.errors = dict()
         # Try to load home_path from QSettings
@@ -107,6 +110,16 @@ class Controller:
                 # Initialize Project
                 self.pr = Project(self, selected_project)
                 logger.info(f'Selected-Project: {self.pr.name}')
+
+    def init_mp_pool(self, use_qthread):
+        self.close_mp_pool()
+        if not use_qthread:
+            self.mp_pool = Pool(1)
+
+    def close_mp_pool(self):
+        if self.mp_pool:
+            self.mp_pool.close()
+            self.mp_pool.join()
 
     def load_settings(self):
         try:
@@ -247,23 +260,17 @@ class Controller:
                 correct_count = 0
                 for module_match in file_dict['modules']:
                     module_name = module_match.group(1)
-                    module_file_name = module_match.group()
-
-                    spec = util.spec_from_file_location(module_name, join(pkg_path, module_file_name))
-                    module = util.module_from_spec(spec)
+                    # Add pkg-path to sys.path
+                    sys.path.insert(0, pkg_path)
                     try:
-                        spec.loader.exec_module(module)
+                        import_module(module_name)
                     except:
                         exc_tuple = get_exception_tuple()
                         self.errors['custom_modules'][module_name] = exc_tuple
                     else:
                         correct_count += 1
-                        # Add module to sys.modules
-                        sys.modules[module_name] = module
                         # Add Module to dictionary
                         self.all_modules[pkg_name].append(module_name)
-                        # Add pkg-path to sys.path
-                        sys.path.insert(0, pkg_path)
 
                 # Make sure, that every module in modules is imported without error
                 # (otherwise don't append to pd_funcs and pd_params)
@@ -289,6 +296,8 @@ class Controller:
                              f'{[key for key in file_dict if file_dict[key] is None]}'
                 self.errors['custom_modules'][pkg_name] = error_text
 
+        self.init_mp_pool(QS().value('use_qthread'))
+
     def reload_modules(self):
         for pkg_name in self.all_modules:
             for module_name in self.all_modules[pkg_name]:
@@ -302,3 +311,9 @@ class Controller:
                         # All errors occuring here will be caught by the UncaughtHook
                         spec.loader.exec_module(module)
                         sys.modules[module_name] = module
+
+        self.init_mp_pool(QS().value('use_qthread'))
+
+    def close(self):
+        self.save()
+        self.close_mp_pool()

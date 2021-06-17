@@ -11,15 +11,16 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import inspect
 import io
+import logging
 import sys
 from collections import OrderedDict
-from importlib import import_module, reload
+from importlib import import_module
 from multiprocessing import Pool, Pipe
 
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtWidgets import (QAbstractItemView, QMessageBox)
 
-from .loading import BaseLoading, FSMRI, Group, MEEG, Sample
+from .loading import BaseLoading, FSMRI, Group, MEEG
 from .pipeline_utils import shutdown
 from .. import QS, ismac
 from ..gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
@@ -30,7 +31,6 @@ def get_func(func_name, obj):
     # (which imports from functions.csv or the <custom_package>.csv)
     module_name = obj.ct.pd_funcs.loc[func_name, 'module']
     module = import_module(module_name)
-    reload(module)
     func = getattr(module, func_name)
 
     return func
@@ -239,9 +239,7 @@ class RunController:
 
             elif self.current_type == 'MEEG':
                 # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
-                if self.current_obj_name == '_sample_':
-                    self.current_object = Sample(self.ct)
-                elif self.current_obj_name in self.ct.pr.meeg_to_fsmri \
+                if self.current_obj_name in self.ct.pr.meeg_to_fsmri \
                         and self.loaded_fsmri \
                         and self.loaded_fsmri.name == self.ct.pr.meeg_to_fsmri[self.current_obj_name]:
                     self.current_object = MEEG(self.current_obj_name, self.ct, fsmri=self.loaded_fsmri)
@@ -381,6 +379,7 @@ class QRunController(RunController):
             ismpl = self.ct.pd_funcs.loc[self.current_func, 'matplotlib']
             show_plots = self.ct.get_setting('show_plots')
             if ismayavi:
+                logging.getLogger().info('Starting in Main-Thread.')
                 result = run_func(**kwds)
                 self.process_finished(result)
 
@@ -399,12 +398,14 @@ class QRunController(RunController):
                 self.process_finished(None)
 
             elif self.use_qthread:
+                logging.getLogger().info('Starting in separate Thread.')
                 worker = Worker(function=run_func, **kwds)
                 worker.signals.error.connect(self.process_finished)
                 worker.signals.finished.connect(self.process_finished)
                 QThreadPool.globalInstance().start(worker)
 
             else:
+                logging.getLogger().info('Starting in process from multiprocessing.')
                 recv_pipe, send_pipe = Pipe(False)
                 kwds['pipe'] = send_pipe
                 stream_rcv = StreamReceiver(recv_pipe)

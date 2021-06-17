@@ -11,7 +11,6 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import sys
 from functools import partial
-from multiprocessing import Pool
 
 import mne
 import pandas as pd
@@ -33,7 +32,7 @@ from .parameter_widgets import BoolGui, IntGui, ParametersDock, SettingsDlg
 from .tools import DataTerminal, PlotViewSelection
 from ..basic_functions.plot import close_all
 from ..pipeline_functions.controller import Controller
-from ..pipeline_functions.loading import Sample
+from ..pipeline_functions.loading import MEEG
 from ..pipeline_functions.pipeline_utils import restart_program
 
 
@@ -75,10 +74,6 @@ class MainWindow(QMainWindow):
         center(self)
 
         self.first_init = False
-
-        # Todo: Initialize with number of desired parallel processes and reinitialize at change.
-        # Initialize Multiprocessing-Pool
-        self.mp_pool = Pool(1)
 
     def update_project_ui(self):
 
@@ -177,10 +172,6 @@ class MainWindow(QMainWindow):
         # Input
         input_menu = self.menuBar().addMenu('&Input')
 
-        input_menu.addAction('Subject-Wizard', partial(SubjectWizard, self))
-
-        input_menu.addSeparator()
-
         aaddfiles = QAction('Add MEEG', parent=self)
         aaddfiles.setShortcut('Ctrl+M')
         aaddfiles.setStatusTip('Add your MEG-Files here')
@@ -191,32 +182,41 @@ class MainWindow(QMainWindow):
 
         input_menu.addAction('Reload Raw', partial(ReloadRaw, self))
 
+        input_menu.addSeparator()
+
         aaddmri = QAction('Add Freesurfer-MRI', self)
         aaddmri.setShortcut('Ctrl+F')
         aaddmri.setStatusTip('Add your Freesurfer-Segmentations here')
         aaddmri.triggered.connect(partial(AddMRIDialog, self))
         input_menu.addAction(aaddmri)
 
-        input_menu.addSeparator()
-
-        input_menu.addAction('Assign MEEG --> Freesurfer-MRI',
-                             partial(FileDictDialog, self, 'mri'))
-        input_menu.addAction('Assign MEEG --> Empty-Room',
-                             partial(FileDictDialog, self, 'erm'))
-        input_menu.addAction('Assign Bad-Channels --> MEEG',
-                             partial(SubBadsDialog, self))
-        input_menu.addAction('Assign Event-IDs --> MEEG', partial(EventIDGui, self))
-        input_menu.addAction('Select ICA-Components', partial(ICASelect, self))
+        input_menu.addAction('Add fsaverage', self.add_fsaverage)
 
         input_menu.addSeparator()
 
-        input_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
-        input_menu.addAction('Copy Transformation', partial(CopyTrans, self))
-
-        input_menu.addSeparator()
-
+        input_menu.addAction('Show Info', partial(RawInfo, self))
         input_menu.addAction('File-Management', partial(FileManagment, self))
-        input_menu.addAction('Raw-Info', partial(RawInfo, self))
+
+        prep_menu = self.menuBar().addMenu(('&Preparation'))
+        prep_menu.addAction('Subject-Wizard', partial(SubjectWizard, self))
+
+        prep_menu.addSeparator()
+
+        prep_menu.addAction('Assign MEEG --> Freesurfer-MRI',
+                             partial(FileDictDialog, self, 'mri'))
+        prep_menu.addAction('Assign MEEG --> Empty-Room',
+                             partial(FileDictDialog, self, 'erm'))
+        prep_menu.addAction('Assign Bad-Channels --> MEEG',
+                             partial(SubBadsDialog, self))
+        prep_menu.addAction('Assign Event-IDs --> MEEG', partial(EventIDGui, self))
+        prep_menu.addAction('Select ICA-Components', partial(ICASelect, self))
+
+        prep_menu.addSeparator()
+
+        prep_menu.addAction('MRI-Coregistration', mne.gui.coregistration)
+        prep_menu.addAction('Copy Transformation', partial(CopyTrans, self))
+
+        prep_menu.addSeparator()
 
         # Project
         project_menu = self.menuBar().addMenu('&Project')
@@ -300,7 +300,8 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(BoolGui(QS(), 'use_qthread', param_alias='Use QThreads',
                                        description='Check to use QThreads for running the pipeline.\n'
                                                    'This is faster then the default with separate processes,'
-                                                   'but has a few limitations', default=0, return_integer=True))
+                                                   'but has a few limitations', default=0, return_integer=True,
+                                       changed_slot=self.ct.init_mp_pool))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'overwrite', param_alias='Overwrite',
                                        description='Check to overwrite files even if their parameters where unchanged',
                                        default=False))
@@ -452,10 +453,24 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(self.parameters_dock.toggleViewAction())
 
     def add_sample_dataset(self):
-        WorkerDialog(self, partial(Sample, self.ct), show_console=True,
-                     title='Loading Sample...', blocking=True)
-        self.ct.pr.all_meeg.append('_sample_')
-        self.file_dock.update_dock()
+        if '_sample_' in self.ct.pr.all_meeg:
+            QMessageBox.information(self, 'sample exists!',
+                                'The sample-dataset is already imported as _sample_!')
+        else:
+            WorkerDialog(self, partial(MEEG, '_sample_', self.ct), show_console=True,
+                         title='Loading Sample...', blocking=True)
+            self.ct.pr.all_meeg.append('_sample_')
+            self.file_dock.update_dock()
+
+    def add_fsaverage(self):
+        if 'fsaverage' in self.ct.pr.all_fsmri:
+            QMessageBox.information(self, 'fsaverage exists!',
+                                    'fsaverage is already imported!')
+        else:
+            WorkerDialog(self, partial(mne.datasets.fetch_fsaverage, subjects_dir=self.ct.subjects_dir),
+                         show_console=True, title='Loading fsaverage...', blocking=True)
+            self.ct.pr.all_fsmri.append('fsaverage')
+            self.file_dock.update_dock()
 
     def full_screen(self):
         if self.isFullScreen():
@@ -474,8 +489,6 @@ class MainWindow(QMainWindow):
         else:
             WorkerDialog(self, self.ct.save, show_buttons=False, show_console=False,
                          blocking=True)
-            # Initialize RunController with pool created at startup
-
             self.run_dialog = RunDialog(self)
 
     def restart(self):
@@ -532,16 +545,13 @@ class MainWindow(QMainWindow):
             self.welcome_window.show()
             if self.edu_tour:
                 self.edu_tour.close()
-            if self.mp_pool:
-                self.mp_pool.close()
             event.accept()
 
         elif answer == QMessageBox.No:
             self.welcome_window.close()
             if self.edu_tour:
                 self.edu_tour.close()
-            if self.mp_pool:
-                self.mp_pool.close()
+            self.ct.close()
             event.accept()
         else:
             event.ignore()

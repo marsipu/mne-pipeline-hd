@@ -73,7 +73,8 @@ class DataTerminal(QDialog):
         self.obj = current_object
         self.history = list()
 
-        self.default_t_globals = ['mw', 'main_window', 'pr', 'project', 'par', 'parameters']
+        self.default_t_globals = ['mw', 'main_window', 'ct', 'controller',
+                                  'pr', 'project', 'par', 'parameters']
 
         self.t_globals = {'mw': self.mw,
                           'main_window': self.mw,

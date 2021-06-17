@@ -14,7 +14,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import QSettings, Qt, pyqtSignal
 from PyQt5.QtGui import QFontDatabase, QFont
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
@@ -34,9 +34,10 @@ class Param(QWidget):
     Base-Class Parameter-GUIs, not to be called directly
     Inherited Clases should have "Gui" in their name to get identified correctly
     """
+    paramChanged = pyqtSignal(object)
 
     def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
-                 none_select=False, description=None):
+                 none_select=False, description=None, changed_slot=None):
         """
         Parameters
         ----------
@@ -59,6 +60,8 @@ class Param(QWidget):
         description : str | None
             Supply an optional description for the parameter,
             which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
+        changed_slot : function
+            Supply a function as a slot if this parameter gets changed.
         """
 
         super().__init__()
@@ -80,6 +83,11 @@ class Param(QWidget):
         # (Selection of None works by checking/unchecking the GroupBox)
         if self.none_select:
             self.groupbox_layout = True
+
+        # Connect paramChanged to the changed_slot if given
+        self.changed_slot = changed_slot
+        if self.changed_slot:
+            self.paramChanged.connect(self.changed_slot)
 
     def init_ui(self, layout=None):
         """Base layout initialization, which adds the given layout to a group-box with the parameters name
@@ -232,6 +240,7 @@ class IntGui(Param):
 
     def get_param(self):
         self.param_value = self.param_widget.value()
+        self.paramChanged.emit(self.param_value)
         self.save_param()
 
         return self.param_value
@@ -479,7 +488,7 @@ class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
     def __init__(self, data, param_name, param_alias=None, default=False, groupbox_layout=False, none_select=False,
-                 description=None, param_unit=None, return_integer=False):
+                 description=None, changed_slot=None, param_unit=None, return_integer=False):
         """
         Parameters
         ----------
@@ -502,12 +511,15 @@ class BoolGui(Param):
         description : str | None
             Supply an optional description for the parameter,
             which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
+        changed_slot : function
+            Supply a function as a slot if this parameter gets changed.
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         return_integer : bool
             Set True to return an integer (0|1) instead of a boolean (e.g. useful for QSettings)
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout,
+                         none_select, description, changed_slot)
         self.param_unit = param_unit
         self.return_integer = return_integer
         self.param_widget = QCheckBox()
@@ -541,6 +553,7 @@ class BoolGui(Param):
                 self.param_value = 0
             else:
                 self.param_value = False
+        self.paramChanged.emit(self.param_value)
         self.save_param()
 
         return self.param_value

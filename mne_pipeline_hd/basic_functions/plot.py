@@ -382,13 +382,11 @@ def brain_plot(meeg, stcs, folder_name, subject, mne_evoked_time=None):
                        font_size=14)
         meeg.plot_save(folder_name, trial=trial, brain=brain)
 
-    return brain
 
 def plot_stc(meeg, mne_evoked_time):
     stcs = meeg.load_source_estimates()
-    brain = brain_plot(meeg, stcs, 'source-estimate', meeg.fsmri.name, mne_evoked_time)
+    brain_plot(meeg, stcs, 'source-estimate', meeg.fsmri.name, mne_evoked_time)
 
-    return brain
 
 def plot_mixn(meeg, mne_evoked_time, parcellation):
     trans = meeg.load_transformation()

@@ -1354,6 +1354,10 @@ class EventIDGui(QDialog):
         apply_bt.clicked.connect(partial(EvIDApply, self))
         bt_layout.addWidget(apply_bt)
 
+        show_events = QPushButton('Show Events')
+        show_events.clicked.connect(self.show_events)
+        bt_layout.addWidget(show_events)
+
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
         bt_layout.addWidget(close_bt)
@@ -1427,6 +1431,15 @@ class EventIDGui(QDialog):
 
         self.check_widget.replace_data(self.labels)
         self.check_widget.replace_checked(self.checked_labels)
+
+    def show_events(self):
+        try:
+            meeg = MEEG(self.name, self.ct, suppress_warnings=True)
+            events = meeg.load_events()
+            mne.viz.plot_events(events, event_id=self.event_id or None, show=True)
+        except FileNotFoundError:
+            QMessageBox.warning(self, 'No events!',
+                                f'No events found for {self.name}')
 
     def closeEvent(self, event):
         # Save event_id for last selected file

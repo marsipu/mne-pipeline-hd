@@ -26,7 +26,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout, QGroupBox,
                              QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QListWidgetItem,
                              QMessageBox, QPushButton, QSizePolicy, QStyle, QTabWidget, QVBoxLayout, QGridLayout,
-                             QProgressBar)
+                             QProgressBar, QCheckBox)
 
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui import parameter_widgets
@@ -52,7 +52,7 @@ class RunDialog(QDialog):
 
     def init_controller(self):
         self.rc = QRunController(run_dialog=self, use_qthread=QS().value('use_qthread'),
-                                 controller=self.mw.ct, pool=self.mw.mp_pool)
+                                 controller=self.mw.ct, pool=self.mw.ct.mp_pool)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -109,6 +109,12 @@ class RunDialog(QDialog):
         self.restart_bt.clicked.connect(self.restart)
         bt_layout.addWidget(self.restart_bt)
 
+        if QS().value('use_qthread'):
+            self.reload_chbx = None
+        else:
+            self.reload_chbx = QCheckBox('Reload Modules')
+            bt_layout.addWidget(self.reload_chbx)
+
         self.autoscroll_bt = QPushButton('Auto-Scroll')
         self.autoscroll_bt.setCheckable(True)
         self.autoscroll_bt.setChecked(True)
@@ -143,6 +149,9 @@ class RunDialog(QDialog):
     def restart(self):
         # Reinitialize controller
         self.init_controller()
+
+        if self.reload_chbx and self.reload_chbx.isChecked():
+            self.mw.ct.init_mp_pool(QS().value('use_qthread'))
 
         # Clear Console-Widget
         self.console_widget.clear()
@@ -249,6 +258,10 @@ class ChooseOptions(QDialog):
         self.setLayout(layout)
 
 
+# ToDo:
+#   Bug1: After saving a new function, the parameters stay in the table-view,
+#   Bug2: When editing existing functions, the proprietary parameters can not be edited (they land in exising_params)
+#   Bug3: When hitting Enter, the focus still lies on the AddFunc/EditFunc-Buttons which can disrupt setup
 class CustomFunctionImport(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -951,9 +964,6 @@ class CustomFunctionImport(QDialog):
             event.ignore()
 
 
-# ToDo:
-#   Bug1: After saving a new function, the parameters stay in the table-view,
-#   Bug2: When editing existing functions, the proprietary parameters can not be edited (they land in exising_params)
 class ImportFuncs(QDialog):
     def __init__(self, cf_dialog, edit_existing=False):
         super().__init__(cf_dialog)
@@ -1292,7 +1302,12 @@ class SavePkgDialog(QDialog):
             self.cf_dialog.clear_func_items()
             self.cf_dialog.clear_param_items()
 
+            # Add to selected modules
+            self.cf_dialog.ct.settings['selected_modules'].append(self.cf_dialog.file_path.stem)
+            self.cf_dialog.ct.save_settings()
+
             self.cf_dialog.ct.import_custom_modules()
+            self.cf_dialog.ct.init_mp_pool(QS().value('use_qthread'))
             self.cf_dialog.mw.redraw_func_and_param()
             self.close()
 
@@ -1306,7 +1321,7 @@ class ChooseCustomModules(QDialog):
         super().__init__(main_win)
         self.mw = main_win
         self.ct = main_win.ct
-        self.modules = {pkg_name: list(self.ct.all_modules[pkg_name].keys()) for pkg_name in self.ct.all_modules}
+        self.modules = {pkg_name: self.ct.all_modules[pkg_name] for pkg_name in self.ct.all_modules}
         self.selected_modules = self.ct.get_setting('selected_modules')
 
         self.init_ui()

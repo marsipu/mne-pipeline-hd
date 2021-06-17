@@ -69,7 +69,7 @@ def main():
     sys.stderr = StdoutStderrStream('stderr')
 
     # Initialize Logger
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     logger.setLevel(QS().value('log_level', defaultValue=logging.INFO))
     formatter = logging.Formatter('%(asctime)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
     console_handler = logging.StreamHandler()

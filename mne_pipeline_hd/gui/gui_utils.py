@@ -285,11 +285,14 @@ class ConsoleWidget(QTextEdit):
         self.setReadOnly(True)
         self.autoscroll = True
 
+        self.buffer_time = 50
+        self.buffer_limit = 20
+
         # Buffer to avoid crash for too many inputs
         self.buffer = list()
         self.buffer_timer = QTimer()
         self.buffer_timer.timeout.connect(self.write_buffer)
-        self.buffer_timer.start(50)
+        self.buffer_timer.start(self.buffer_time)
 
     def _add_html(self, text):
         self.insertHtml(text)
@@ -298,6 +301,12 @@ class ConsoleWidget(QTextEdit):
 
     def write_buffer(self):
         if len(self.buffer) > 0:
+            # Apply buffer-limit
+            if len(self.buffer) > self.buffer_limit:
+                self.buffer = self.buffer[-self.buffer_limit:]
+                text, kind = self.buffer[0]
+                if not kind == 'progress':
+                    self._add_html('[...]')
             text, kind = self.buffer.pop(0)
             if kind == 'html':
                 self._add_html(text)
@@ -386,6 +395,9 @@ class StdoutStderrStream(io.TextIOBase):
             self.signal.text_updated.emit(text)
         else:
             self.signal.text_written.emit(text)
+
+    def flush(self):
+        self.original_stream.flush()
 
 
 class WorkerSignals(QObject):
@@ -485,7 +497,7 @@ class WorkerDialog(QDialog):
         self.worker.start()
 
         if self.show_console:
-            set_ratio_geometry(0.3, self)
+            set_ratio_geometry(0.4, self)
 
         self.init_ui()
         if blocking:
