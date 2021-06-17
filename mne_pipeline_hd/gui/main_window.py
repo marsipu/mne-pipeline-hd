@@ -459,7 +459,6 @@ class MainWindow(QMainWindow):
         else:
             WorkerDialog(self, partial(MEEG, '_sample_', self.ct), show_console=True,
                          title='Loading Sample...', blocking=True)
-            self.ct.pr.all_meeg.append('_sample_')
             self.file_dock.update_dock()
 
     def add_fsaverage(self):

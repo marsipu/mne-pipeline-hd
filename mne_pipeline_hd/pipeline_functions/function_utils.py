@@ -15,7 +15,7 @@ import logging
 import sys
 from collections import OrderedDict
 from importlib import import_module
-from multiprocessing import Pool, Pipe
+from multiprocessing import Pipe
 
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtWidgets import (QAbstractItemView, QMessageBox)
@@ -157,11 +157,8 @@ def run_func(func, keywargs, pipe=None):
 
 
 class RunController:
-    def __init__(self, controller, pool=None, n_parallel=1):
+    def __init__(self, controller):
         self.ct = controller
-        self.n_parallel = n_parallel
-        # Create pool if not supplied
-        self.pool = pool or Pool(self.n_parallel)
 
         self.all_steps = list()
         self.thread_idx_count = 0
@@ -286,15 +283,14 @@ class RunController:
     def start(self):
         kwds = self.prepare_start()
         if kwds:
-            self.pool.apply_async(func=run_func, kwds=kwds,
-                                  callback=self.process_finished)
+            self.ct.mp_pool.apply_async(func=run_func, kwds=kwds,
+                                        callback=self.process_finished)
 
 
 class QRunController(RunController):
-    def __init__(self, run_dialog, use_qthread=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, run_dialog, controller):
+        super().__init__(controller)
         self.rd = run_dialog
-        self.use_qthread = use_qthread
         self.errors = dict()
         self.error_count = 0
         self.is_prog_text = False
@@ -383,21 +379,21 @@ class QRunController(RunController):
                 result = run_func(**kwds)
                 self.process_finished(result)
 
-            elif ismpl and show_plots and self.use_qthread:
+            elif ismpl and show_plots and QS().value('use_qthread'):
                 QMessageBox.warning(self.rd, 'QThread-Problem!',
                                     'It is not possible to show Matplotlib-Plots'
                                     ' inside the QThreads without crashing!\n'
                                     'Deselect "Use QThreads" or "Show Plots"')
                 self.process_finished(None)
 
-            elif ismpl and not show_plots and self.use_qthread and ismac:
+            elif ismpl and not show_plots and QS().value('use_qthread') and ismac:
                 QMessageBox.warning(self.rd, 'MacOS-Problem',
                                     'It is not possible to have non-interactive Matplotlib-Plots'
                                     ' inside a QThread on MacOS without crashing!\n'
                                     'Deselect "Use QThreads" to do this.')
                 self.process_finished(None)
 
-            elif self.use_qthread:
+            elif QS().value('use_qthread'):
                 logging.getLogger().info('Starting in separate Thread.')
                 worker = Worker(function=run_func, **kwds)
                 worker.signals.error.connect(self.process_finished)
@@ -413,5 +409,5 @@ class QRunController(RunController):
                 stream_rcv.signals.stderr_received.connect(self.rd.console_widget.write_stderr)
                 stream_rcv.signals.progress_received.connect(self.rd.console_widget.write_progress)
                 QThreadPool.globalInstance().start(stream_rcv)
-                self.pool.apply_async(func=run_func, kwds=kwds,
-                                      callback=self.process_finished)
+                self.ct.mp_pool.apply_async(func=run_func, kwds=kwds,
+                                            callback=self.process_finished)

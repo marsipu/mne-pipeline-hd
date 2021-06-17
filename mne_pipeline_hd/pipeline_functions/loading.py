@@ -625,15 +625,15 @@ class MEEG(BaseLoading):
         self.noise_covariance_path = join(self.save_dir, 'sample_audvis-cov.fif')
         self.inverse_path = join(self.save_dir, 'sample_audvis-meg-oct-6-meg-inv.fif')
 
-        # Initialize Empty-Room-File
-        self.erm = 'ernoise'
-        self.pr.meeg_to_erm[self.name] = self.erm
-
         if not isdir(self.save_dir):
             # Get sample-data
             sample_dir = join(mne.datasets.sample.data_path(), 'MEG', 'sample')
             print('Copying sample to data_path...')
             shutil.copytree(sample_dir, self.save_dir)
+            self.pr.all_meeg.append(self.name)
+            self.pr.all_erm.append('ernoise')
+            self.erm = 'ernoise'
+            self.pr.meeg_to_erm[self.name] = self.erm
             self.bad_channels = self.load_info()['bads']
             self.pr.meeg_bad_channels[self.name] = self.bad_channels
             print('Finished copying!')
