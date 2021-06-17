@@ -11,14 +11,9 @@ I would recommend to install in a separate conda environment with:
 2. `conda activate mne_p`
 3. `pip install https://github.com/marsipu/mne_pipeline_hd/zipball/main`
 
-(or do `pip install -e https://github.com/marsipu/mne_pipeline_hd/zipball/main`
-when you are in a directory where you want the mne_pipeline_hd-scripts installed)
-
-
 ## Update
-
 Just run `pip install --upgrade --no-deps --force-reinstall https://github.com/marsipu/mne_pipeline_hd/zipball/main`
-again
+again or use the update-funtion from within the programm (in Settings-Menu).
 
 ## Start
 Run `mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_p`)
@@ -27,8 +22,9 @@ Run `mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_p`)
 
 run \_\_main\_\_.py from the terminal or an IDE like PyCharm, VSCode, Atom, etc.
 
-***When using the pipeline and its functions bear in mind that the pipeline is still in development and the functions
-are partly still adjusted to my analysis!***
+***When using the pipeline and its functions bear in mind that the pipeline is still in development!
+The basic functions supplied are just a suggestion and you should verify before usage if they do what you need.
+They are also partly still adjusted to specific requirements which may not apply to all data.***
 
 ## Bug-Report/Feature-Request
 Please report bugs on GitHub as an issue or to me (dev@earthman-music.de) directly.
@@ -45,10 +41,11 @@ and should have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-
 2. Move to the folder where you want to clone to
 3. Clone **your forked repository** with git from a terminal: `git clone <url you get from the green clone-button from your forked repository on GitHub>`
 4. Add upstream to git for updates: `git remote add upstream git://github.com/marsipu/mne_pipeline_hd.git`
-5. Create a branch for changes: `git checkout -b <branch-name>`
-6. Commit changes: `git commit --all `
-7. Push changes to your forked repository on GitHub: `git push`
-8. Make "New pull request" from your new feature branch
+5. Install development version with pip: `pip install -e ./`
+6. Create a branch for changes: `git checkout -b <branch-name>`
+7. Commit changes: `git commit -am "<your commit message>"`
+8. Push changes to your forked repository on GitHub: `git push`
+9. Make "New pull request" from your new feature branch
 
 You can always [write me](mailto:dev@earthman-music.de), if you have questions about the contribution-process 
 or about the program-structure.
