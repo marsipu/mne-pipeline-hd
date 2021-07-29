@@ -60,6 +60,10 @@ def main():
         # Workaround for not showing with PyQt < 5.15.2
         os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
+    # Avoid Mayavi-Issues
+    os.environ['ETS_TOOLKIT'] = 'qt4'
+    os.environ['QT_API'] = 'pyqt5'
+
     # # Set multiprocessing method to spawn
     # multiprocessing.set_start_method('spawn')
 

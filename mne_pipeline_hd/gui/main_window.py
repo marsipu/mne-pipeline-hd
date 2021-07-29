@@ -47,7 +47,8 @@ class MainWindow(QMainWindow):
 
         # Initialize Multiprocessing-Pool
         self.mp_pool = None
-        self.init_mp_pool(QS().value('use_qthread'))
+        QS().setValue('use_qthread', False)
+        self.init_mp_pool()
 
         self.setWindowTitle('MNE-Pipeline HD')
 
@@ -314,11 +315,11 @@ class MainWindow(QMainWindow):
         # self.toolbar.addWidget(IntGui(QS(), 'n_parallel', min_val=1,
         #                               description='Set to the amount of threads you want to run simultaneously '
         #                                           'in the pipeline', default=1, groupbox_layout=False))
-        self.toolbar.addWidget(BoolGui(QS(), 'use_qthread', param_alias='Use QThreads',
-                                       description='Check to use QThreads for running the pipeline.\n'
-                                                   'This is faster then the default with separate processes,'
-                                                   'but has a few limitations', default=0, return_integer=True,
-                                       changed_slot=self.init_mp_pool))
+        # self.toolbar.addWidget(BoolGui(QS(), 'use_qthread', param_alias='Use QThreads',
+        #                                description='Check to use QThreads for running the pipeline.\n'
+        #                                            'This is faster then the default with separate processes,'
+        #                                            'but has a few limitations', default=0, return_integer=True,
+        #                                changed_slot=self.init_mp_pool))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'overwrite', param_alias='Overwrite',
                                        description='Check to overwrite files even if their parameters where unchanged',
                                        default=False))
