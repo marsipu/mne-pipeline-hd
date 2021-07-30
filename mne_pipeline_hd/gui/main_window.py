@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
 
         # Initialize Multiprocessing-Pool
         self.mp_pool = None
-        QS().setValue('use_qthread', False)
+        QS().setValue('use_qthread', True)
         self.init_mp_pool()
 
         self.setWindowTitle('MNE-Pipeline HD')
