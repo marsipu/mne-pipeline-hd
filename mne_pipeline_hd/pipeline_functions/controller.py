@@ -27,6 +27,7 @@ class Controller:
     def __init__(self, home_path=None, selected_project=None, edu_program_name=None):
         # Check Home-Path
         self.errors = dict()
+        self.pr = None
         # Try to load home_path from QSettings
         self.home_path = home_path or QS().value('home_path', defaultValue=None)
         if self.home_path is None:
@@ -92,7 +93,6 @@ class Controller:
             self.import_custom_modules()
 
             # Check Project
-            self.pr = None
             if selected_project is None:
                 if 'selected_project' in self.settings:
                     selected_project = self.settings['selected_project']
@@ -142,8 +142,11 @@ class Controller:
             QS().setValue(qsetting, self.default_settings['qsettings'][qsetting])
 
     def save_settings(self):
-        with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
-            json.dump(self.settings, file, indent=4)
+        try:
+            with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
+                json.dump(self.settings, file, indent=4)
+        except FileNotFoundError:
+            print('Settings could not be saved!')
 
         # Sync QSettings with other instances
         QS().sync()
