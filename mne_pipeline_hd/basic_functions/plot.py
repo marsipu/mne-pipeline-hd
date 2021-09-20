@@ -24,7 +24,7 @@ try:
     from mayavi import mlab
     from nilearn.plotting import plot_anat
     from surfer import Brain
-except ModuleNotFoundError:
+except (ModuleNotFoundError, ValueError):
     pass
 
 from mne_pipeline_hd.basic_functions import operations as op
