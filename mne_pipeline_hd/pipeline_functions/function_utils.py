@@ -15,7 +15,7 @@ import logging
 import sys
 from collections import OrderedDict
 from importlib import import_module
-from multiprocessing import Pipe, Pool
+from multiprocessing import Pipe
 
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtWidgets import (QAbstractItemView)
@@ -157,9 +157,9 @@ def run_func(func, keywargs, pipe=None):
 
 
 class RunController:
-    def __init__(self, controller, pool=None):
+    def __init__(self, controller, pool):
         self.ct = controller
-        self.pool = pool or Pool(1)
+        self.pool = pool
 
         self.all_steps = list()
         self.thread_idx_count = 0
@@ -284,8 +284,8 @@ class RunController:
     def start(self):
         kwds = self.prepare_start()
         if kwds:
-            self.ct.mp_pool.apply_async(func=run_func, kwds=kwds,
-                                        callback=self.process_finished)
+            self.pool.apply_async(func=run_func, kwds=kwds,
+                                  callback=self.process_finished)
 
 
 class QRunController(RunController):

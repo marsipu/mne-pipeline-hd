@@ -12,6 +12,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import functools
 import sys
 import time
+from multiprocessing import Pool
 
 from PyQt5.QtWidgets import QApplication, QWidget
 
@@ -67,7 +68,7 @@ def test_run_controller(tmpdir, qtbot):
     ct.change_project('Test')
     ct.pr.sel_functions = ['print_info']
     ct.pr.sel_meeg = ['_sample_']
-    rc = RunController(ct)
+    rc = RunController(ct, Pool(1))
     rc.finished()
     rc.start()
     rc.pool.close()
