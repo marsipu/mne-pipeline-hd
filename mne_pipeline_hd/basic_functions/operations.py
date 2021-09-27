@@ -12,6 +12,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 from __future__ import print_function
 
 import gc
+import logging
 import os
 import shutil
 import subprocess
@@ -32,14 +33,13 @@ from mne_pipeline_hd import ismac, iswin
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
+logger = logging.getLogger()
+
 
 # Todo: Create docstrings for each function
-
 # ==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
-
-
 def filter_data(meeg, filter_target, highpass, lowpass, filter_length, l_trans_bandwidth,
                 h_trans_bandwidth, filter_method, iir_params, fir_phase, fir_window,
                 fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda, erm_t_limit, bad_interpolation):
@@ -134,7 +134,7 @@ def add_erm_ssp(meeg, erm_ssp_duration, erm_n_grad, erm_n_mag, erm_n_eeg, n_jobs
 
     # Only include channels from Empty-Room-Data, which are present in filtered-data
     erm_filtered = erm_filtered.copy().pick_channels(
-            [ch for ch in erm_filtered.ch_names if ch in raw_filtered.ch_names])
+        [ch for ch in erm_filtered.ch_names if ch in raw_filtered.ch_names])
 
     erm_projs = mne.compute_proj_raw(erm_filtered, duration=erm_ssp_duration,
                                      n_grad=erm_n_grad, n_mag=erm_n_mag, n_eeg=erm_n_eeg, n_jobs=n_jobs)
@@ -911,11 +911,16 @@ def prepare_bem(fsmri, bem_spacing, bem_conductivity):
     fsmri.save_bem_solution(bem_solution)
 
 
-def morph_fsmri(fsmri, morph_to):
-    src = fsmri.load_source_space()
-    morph = mne.compute_source_morph(src, subject_from=fsmri.name,
-                                     subject_to=morph_to, subjects_dir=fsmri.subjects_dir)
-    fsmri.save_source_morph(morph)
+def morph_fsmri(meeg, morph_to):
+    if meeg.fsmri.name != morph_to:
+        forward = meeg.load_forward()
+        morph = mne.compute_source_morph(forward['src'], subject_from=meeg.fsmri.name,
+                                         subject_to=morph_to, subjects_dir=meeg.subjects_dir)
+        meeg.save_source_morph(morph)
+    else:
+        logger.info(f'There is no need to morph the source-space for {meeg.name}, '
+                    f'because the morph-destination "{morph_to}" '
+                    f'is the same as the associated FSMRI.')
 
 
 def morph_labels_from_fsaverage(fsmri):
@@ -1126,7 +1131,7 @@ def apply_morph(meeg, morph_to):
             morphed_stcs[trial] = morph.apply(stcs[trial])
         meeg.save_morphed_source_estimates(morphed_stcs)
     else:
-        print(f'{meeg.name} is already in source-space of {morph_to} and won\'t be morphed')
+        logger.info(f'{meeg.name} is already in source-space of {morph_to} and won\'t be morphed')
 
 
 def source_space_connectivity(meeg, parcellation, target_labels, inverse_method, lambda2, con_methods,
@@ -1160,8 +1165,8 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
 
         sfreq = info['sfreq']  # the sampling frequency
         con, freqs, times, n_epochs, n_tapers = mne.connectivity.spectral_connectivity(
-                label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
-                fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
+            label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
+            fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
 
         # con is a 3D array, get the connectivity for the first (and only) freq. band
         # for each con_method
@@ -1311,4 +1316,3 @@ def print_info(meeg):
         print(f'\r{n}', end='')
         time.sleep(0.1)
     raise RuntimeError('Test')
-

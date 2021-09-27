@@ -19,7 +19,7 @@ import os
 import pickle
 import shutil
 from datetime import datetime
-from os import listdir, makedirs, remove, rename
+from os import listdir, makedirs, remove
 from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
@@ -520,6 +520,9 @@ class MEEG(BaseLoading):
                                          f'{self.name}_{self.p_preset}_{self.pa["tfr_method"]}-ave-itc-tfr.h5')
         self.trans_path = join(self.save_dir, f'{self.fsmri.name}-trans.fif')
         self.forward_path = join(self.save_dir, f'{self.name}_{self.p_preset}-fwd.fif')
+        self.source_morph_path = join(self.save_dir,
+                                      f'{self.name}--to--{self.pa["morph_to"]}_'
+                                      f'{self.pa["source_space_spacing"]}-morph.h5')
         self.calm_cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-calm-cov.fif')
         self.erm_cov_path = join(self.save_dir, f'{self.name}_{self.p_preset}-erm-cov.fif')
         self.noise_covariance_path = join(self.save_dir, f'{self.name}_{self.p_preset}-cov.fif')
@@ -593,6 +596,9 @@ class MEEG(BaseLoading):
                         'Forward Solution': {'path': self.forward_path,
                                              'load': self.load_forward,
                                              'save': self.save_forward},
+                        'Source-Morph': {'path': self.source_morph_path,
+                                         'load': self.load_source_morph,
+                                         'save': self.save_source_morph},
                         'Noise Covariance': {'path': self.noise_covariance_path,
                                              'load': self.load_noise_covariance,
                                              'save': self.save_noise_covariance},
@@ -642,31 +648,35 @@ class MEEG(BaseLoading):
         # Stor old name
         old_name = self.name
         old_save_dir = self.save_dir
-        old_paths = dict()
+        all_old_paths = dict()
         for data_type in self.io_dict:
-            old_paths[data_type] = self._return_path_list(data_type)
+            all_old_paths[data_type] = self._return_path_list(data_type)
 
         # Update paths
         self.name = new_name
         self.init_paths()
 
-        # Rename save_dir
-        rename(old_save_dir, self.save_dir)
+        self.pr.all_meeg = [new_name if n == old_name else n for n in self.pr.all_meeg]
+        if old_name in self.pr.sel_meeg:
+            self.pr.sel_meeg = [new_name if n == old_name else n for n in self.pr.sel_meeg]
 
         # Update entries in dictionaries
-        self.pr.meeg_to_erm[self.name] = self.pr.meeg_to_erm[old_name].pop()
-        self.pr.meeg_to_fsmri[self.name] = self.pr.meeg_to_fsmri[old_name].pop()
-        self.pr.meeg_bad_channels[self.name] = self.pr.meeg_bad_channels[old_name].pop()
-        self.pr.meeg_event_id[self.name] = self.pr.meeg_event_id[old_name].pop()
-        self.pr.sel_event_id[self.name] = self.pr.sel_event_id[old_name].pop()
+        # ToDo: Rename Plot-Files
+        # ToDo: Rename File-Parameters
+        self.pr.meeg_to_erm[self.name] = self.pr.meeg_to_erm.pop(old_name)
+        self.pr.meeg_to_fsmri[self.name] = self.pr.meeg_to_fsmri.pop(old_name)
+        self.pr.meeg_bad_channels[self.name] = self.pr.meeg_bad_channels.pop(old_name)
+        self.pr.meeg_event_id[self.name] = self.pr.meeg_event_id.pop(old_name)
+        self.pr.sel_event_id[self.name] = self.pr.sel_event_id.pop(old_name)
         self.init_attributes()
 
         # Rename old paths to new paths
         for data_type in self.io_dict:
             new_paths = self._return_path_list(data_type)
-            for new_path in new_paths:
-                old_path = old_paths[data_type]
-                rename(old_path, new_path)
+            old_paths = all_old_paths[data_type]
+            for new_path, old_path in zip(new_paths, old_paths):
+                if isfile(old_path):
+                    os.renames(old_path, new_path)
 
     ####################################################################################################################
     # Load- & Save-Methods
@@ -817,6 +827,14 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_forward(self, forward):
         mne.write_forward_solution(self.forward_path, forward, overwrite=True)
+
+    @load_decorator
+    def load_source_morph(self):
+        return mne.read_source_morph(self.source_morph_path)
+
+    @save_decorator
+    def save_source_morph(self, source_morph):
+        source_morph.save(self.source_morph_path, overwrite=True)
 
     @load_decorator
     def load_noise_covariance(self):
@@ -1038,10 +1056,12 @@ class FSMRI(BaseLoading):
     def save_vol_source_space(self, vol_source_space):
         vol_source_space.save(self.vol_source_space_path, overwrite=True)
 
+    # Deprecated
     @load_decorator
     def load_source_morph(self):
         return mne.read_source_morph(self.source_morph_path)
 
+    # Deprecated
     @save_decorator
     def save_source_morph(self, source_morph):
         source_morph.save(self.source_morph_path, overwrite=True)
