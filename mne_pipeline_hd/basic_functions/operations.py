@@ -1124,7 +1124,12 @@ def ecd_fit(meeg, ecd_times, ecd_positions, ecd_orientations, t_epoch):
 def apply_morph(meeg, morph_to):
     if meeg.fsmri.name != morph_to:
         stcs = meeg.load_source_estimates()
-        morph = meeg.fsmri.load_source_morph()
+
+        # Deprecated when removed from FSMRI
+        try:
+            morph = meeg.load_source_morph()
+        except (OSError, FileNotFoundError):
+            morph = meeg.fsmri.load_source_morph()
 
         morphed_stcs = {}
         for trial in stcs:
