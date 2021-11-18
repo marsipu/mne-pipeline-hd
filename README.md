@@ -70,3 +70,5 @@ Many ideas and basics for GUI-Programming where taken from [LearnPyQt](https://w
 stackoverflow-questions/solutions.
 
 The development is financially supported by [Heidelberg University](https://www.uni-heidelberg.de/de/forschung/forschungsprofil/fields-of-focus/field-of-focus-i).
+
+Thank you to the members of my laboratory (especially my supervisor [Andre Rupp](https://www.klinikum.uni-heidelberg.de/personen/pd-dr-phil-andre-rupp-271)) for their feedback and testing in the early stages of development.
