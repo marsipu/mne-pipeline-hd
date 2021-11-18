@@ -68,3 +68,5 @@ This program also integrates [autoreject](https://doi.org/10.1016/j.neuroimage.2
 
 Many ideas and basics for GUI-Programming where taken from [LearnPyQt](https://www.learnpyqt.com/) and numerous
 stackoverflow-questions/solutions.
+
+The development is financially supported by [Heidelberg University](https://www.uni-heidelberg.de/de/forschung/forschungsprofil/fields-of-focus/field-of-focus-i).
