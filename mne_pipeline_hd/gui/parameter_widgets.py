@@ -1241,20 +1241,26 @@ class MultiTypeGui(Param):
                           'list': 'ListGui',
                           'dict': 'DictGui',
                           'tuple': 'TupleGui'}
-        self.param_type = self.types[0]
         self.param_unit = param_unit
 
         if self.type_selection:
             self.type_cmbx = QComboBox()
             self.type_cmbx.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             self.type_cmbx.addItems(self.types)
-            self.type_cmbx.currentTextChanged.connect(self.change_type)
+            self.type_cmbx.activated.connect(self.change_type)
         else:
             self.param_widget = QLineEdit()
             self.param_widget.textEdited.connect(self.get_param)
             self.type_display = QLabel()
 
         self.read_param()
+
+        # Get current type (NoneType not allowed)
+        self.param_type = type(self.param_value).__name__
+        if self.param_type == 'NoneType':
+            self.param_type = self.types[0]
+        self.type_cmbx.setCurrentText(self.param_type)
+
         self.init_layout()
         self.set_param()
         self.save_param()
@@ -1284,7 +1290,7 @@ class MultiTypeGui(Param):
         self.param_widget.set_param()
         self.type_layout.addWidget(self.param_widget)
 
-    def change_type(self, type_str):
+    def change_type(self, type_idx):
         # Set Param-Value to None to avoid conflicts whith values from other types
         self.param_value = None
         self.save_param()
@@ -1294,7 +1300,7 @@ class MultiTypeGui(Param):
         old_widget.widget().deleteLater()
         del old_widget, self.param_widget
 
-        self.param_type = type_str
+        self.param_type = self.types[type_idx]
 
         self.add_type_gui()
 
