@@ -1147,9 +1147,10 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
     src = inverse_operator['src']
 
     con_dict = {}
+
     for trial in all_epochs.event_id:
         con_dict[trial] = {}
-        epochs = all_epochs[trial]
+        epochs = all_epochs[trial][:10]
         # Compute inverse solution and for each epoch. By using "return_generator=True"
         # stcs will be a generator object instead of a list.
         stcs = mne.minimum_norm.apply_inverse_epochs(epochs, inverse_operator, lambda2, inverse_method,
@@ -1175,9 +1176,8 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
 
         # con is a 3D array, get the connectivity for the first (and only) freq. band
         # for each con_method
-        con_dict = dict()
-        for con_method, c in zip(con_methods, con):
-            con_dict[trial][con_method] = c
+        for method, c in zip(con_methods, con):
+            con_dict[trial][method] = c[:, :, 0]
 
     meeg.save_connectivity(con_dict)
 
