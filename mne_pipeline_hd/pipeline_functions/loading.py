@@ -110,25 +110,25 @@ def save_decorator(save_func):
         # TODO: Hotfix for unknown data-types, replace
         if len(data_type) == 1:
             data_type = data_type[0]
+            # Make sure, that parent-directory exists
+            paths = obj_instance._return_path_list(data_type)
+            for path in [p for p in paths if not isdir(Path(p).parent)]:
+                makedirs(Path(path).parent, exist_ok=True)
+
+            print(f'Saving {data_type} for {obj_instance.name}')
+            save_func(*args, **kwargs)
+
+            # Save data in data-dict for machines with big RAM
+            if not QS().value('save_ram'):
+                obj_instance.data_dict[data_type] = data
+
+            # Save File-Parameters
+            paths = obj_instance._return_path_list(data_type)
+            for path in paths:
+                obj_instance.save_file_params(path)
         else:
-            data_type = 'Unkown'
+            save_func(*args, **kwargs)
 
-        # Make sure, that parent-directory exists
-        paths = obj_instance._return_path_list(data_type)
-        for path in [p for p in paths if not isdir(Path(p).parent)]:
-            makedirs(Path(path).parent, exist_ok=True)
-
-        print(f'Saving {data_type} for {obj_instance.name}')
-        save_func(*args, **kwargs)
-
-        # Save data in data-dict for machines with big RAM
-        if not QS().value('save_ram'):
-            obj_instance.data_dict[data_type] = data
-
-        # Save File-Parameters
-        paths = obj_instance._return_path_list(data_type)
-        for path in paths:
-            obj_instance.save_file_params(path)
 
     return save_wrapper
 
