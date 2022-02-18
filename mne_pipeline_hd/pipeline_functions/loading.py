@@ -106,7 +106,12 @@ def save_decorator(save_func):
         # Get matching data-type from IO-Dict
         data_type = [k for k in obj_instance.io_dict
                      if obj_instance.io_dict[k]['save'] is not None
-                     and obj_instance.io_dict[k]['save'].__name__ == save_func.__name__][0]
+                     and obj_instance.io_dict[k]['save'].__name__ == save_func.__name__]
+        # TODO: Hotfix for unknown data-types, replace
+        if len(data_type) == 1:
+            data_type = data_type[0]
+        else:
+            data_type = 'Unkown'
 
         # Make sure, that parent-directory exists
         paths = obj_instance._return_path_list(data_type)
