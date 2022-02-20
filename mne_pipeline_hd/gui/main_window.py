@@ -13,7 +13,6 @@ import sys
 from functools import partial
 from multiprocessing import Pool
 
-import mne
 import pandas as pd
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -21,16 +20,17 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
-from mne_pipeline_hd import QS, ismac
+import mne
 from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
                       SysInfoMsg, AboutDialog)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport, RunDialog
 from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
-                              FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard)
+                              FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard, ExportDialog)
 from .parameter_widgets import BoolGui, IntGui, ParametersDock, SettingsDlg
 from .tools import DataTerminal, PlotViewSelection
+from .. import QS, ismac
 from ..basic_functions.plot import close_all
 from ..pipeline_functions.controller import Controller
 from ..pipeline_functions.loading import MEEG
@@ -188,44 +188,47 @@ class MainWindow(QMainWindow):
     def init_menu(self):
         # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
         # Input
-        input_menu = self.menuBar().addMenu('&Input')
+        import_menu = self.menuBar().addMenu('&Import')
 
         aaddfiles = QAction('Add MEEG', parent=self)
         aaddfiles.setShortcut('Ctrl+M')
         aaddfiles.setStatusTip('Add your MEG-Files here')
         aaddfiles.triggered.connect(partial(AddFilesDialog, self))
-        input_menu.addAction(aaddfiles)
+        import_menu.addAction(aaddfiles)
 
-        input_menu.addAction('Add Sample-Dataset', self.add_sample_dataset)
+        import_menu.addAction('Add Sample-Dataset', self.add_sample_dataset)
 
-        input_menu.addAction('Reload Raw', partial(ReloadRaw, self))
+        import_menu.addAction('Reload Raw', partial(ReloadRaw, self))
 
-        input_menu.addSeparator()
+        import_menu.addSeparator()
 
         aaddmri = QAction('Add Freesurfer-MRI', self)
         aaddmri.setShortcut('Ctrl+F')
         aaddmri.setStatusTip('Add your Freesurfer-Segmentations here')
         aaddmri.triggered.connect(partial(AddMRIDialog, self))
-        input_menu.addAction(aaddmri)
+        import_menu.addAction(aaddmri)
 
-        input_menu.addAction('Add fsaverage', self.add_fsaverage)
+        import_menu.addAction('Add fsaverage', self.add_fsaverage)
 
-        input_menu.addSeparator()
+        import_menu.addSeparator()
 
-        input_menu.addAction('Show Info', partial(RawInfo, self))
-        input_menu.addAction('File-Management', partial(FileManagment, self))
+        import_menu.addAction('Show Info', partial(RawInfo, self))
+        import_menu.addAction('File-Management', partial(FileManagment, self))
 
-        prep_menu = self.menuBar().addMenu(('&Preparation'))
+        export_menu = self.menuBar().addMenu('&Export')
+        export_menu.addAction('Export MEEG', partial(ExportDialog, self))
+
+        prep_menu = self.menuBar().addMenu('&Preparation')
         prep_menu.addAction('Subject-Wizard', partial(SubjectWizard, self))
 
         prep_menu.addSeparator()
 
         prep_menu.addAction('Assign MEEG --> Freesurfer-MRI',
-                             partial(FileDictDialog, self, 'mri'))
+                            partial(FileDictDialog, self, 'mri'))
         prep_menu.addAction('Assign MEEG --> Empty-Room',
-                             partial(FileDictDialog, self, 'erm'))
+                            partial(FileDictDialog, self, 'erm'))
         prep_menu.addAction('Assign Bad-Channels --> MEEG',
-                             partial(SubBadsDialog, self))
+                            partial(SubBadsDialog, self))
         prep_menu.addAction('Assign Event-IDs --> MEEG', partial(EventIDGui, self))
         prep_menu.addAction('Select ICA-Components', partial(ICASelect, self))
 
@@ -317,7 +320,7 @@ class MainWindow(QMainWindow):
         #                                           'in the pipeline', default=1, groupbox_layout=False))
         # self.toolbar.addWidget(BoolGui(QS(), 'use_qthread', param_alias='Use QThreads',
         #                                description='Check to use QThreads for running the pipeline.\n'
-        #                                            'This is faster then the default with separate processes,'
+        #                                            'This is faster than the default with separate processes,'
         #                                            'but has a few limitations', default=0, return_integer=True,
         #                                changed_slot=self.init_mp_pool))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'overwrite', param_alias='Overwrite',
@@ -473,7 +476,7 @@ class MainWindow(QMainWindow):
     def add_sample_dataset(self):
         if '_sample_' in self.ct.pr.all_meeg:
             QMessageBox.information(self, 'sample exists!',
-                                'The sample-dataset is already imported as _sample_!')
+                                    'The sample-dataset is already imported as _sample_!')
         else:
             WorkerDialog(self, partial(MEEG, '_sample_', self.ct), show_console=True,
                          title='Loading Sample...', blocking=True)

@@ -18,7 +18,6 @@ from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
-import mne
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
@@ -30,6 +29,7 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
+import mne
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
                            SimpleList,
@@ -221,8 +221,8 @@ class FileDock(QDockWidget):
             # MEEG-List + Index-Line-Edit
             meeg_widget = QWidget()
             meeg_layout = QVBoxLayout()
-            self.meeg_list = CheckList(self.mw.ct.pr.all_meeg, self.mw.ct.pr.sel_meeg, ui_button_pos='top', show_index=True,
-                                       title='Select MEG/EEG')
+            self.meeg_list = CheckList(self.mw.ct.pr.all_meeg, self.mw.ct.pr.sel_meeg, ui_button_pos='top',
+                                       show_index=True, title='Select MEG/EEG')
             meeg_layout.addWidget(self.meeg_list)
 
             self.meeg_ledit = QLineEdit()
@@ -236,6 +236,9 @@ class FileDock(QDockWidget):
             file_add_bt = QPushButton('Add MEEG')
             file_add_bt.clicked.connect(partial(AddFilesDialog, self.mw))
             meeg_bt_layout.addWidget(file_add_bt)
+            rename_bt = QPushButton('Rename')
+            rename_bt.clicked.connect(self._rename_meeg)
+            meeg_bt_layout.addWidget(rename_bt)
             file_rm_bt = QPushButton('Remove MEEG')
             file_rm_bt.clicked.connect(self.remove_meeg)
             meeg_bt_layout.addWidget(file_rm_bt)
@@ -306,6 +309,15 @@ class FileDock(QDockWidget):
         self.mw.ct.pr.sel_fsmri, idxs = index_parser(index, self.mw.ct.pr.all_fsmri)
         # Replace _checked in CheckListModel because of rereferencing above
         self.fsmri_list.replace_checked(self.mw.ct.pr.sel_fsmri)
+
+    def _rename_meeg(self):
+        current_meeg = self.meeg_list.get_current()
+        if current_meeg is not None:
+            meeg = MEEG(current_meeg, self.mw.ct)
+            new_name = QInputDialog.getText(self, 'Rename', 'Enter new name:')[0]
+            if new_name:
+                meeg.rename(new_name)
+                self.update_dock()
 
     def remove_meeg(self):
         if len(self.mw.ct.pr.sel_meeg) > 0:
@@ -1171,7 +1183,10 @@ class SubBadsWidget(QWidget):
 
         # Close current Plot-Window
         if self.raw_fig:
-            plt.close(self.raw_fig)
+            if hasattr(self.raw_fig, 'canvas'):
+                plt.close(self.raw_fig)
+            else:
+                self.raw_fig.close()
 
         self.make_bad_chbxs()
 
@@ -1201,6 +1216,8 @@ class SubBadsWidget(QWidget):
             WorkerDialog(self, self.current_obj.save_raw, raw=self.raw, show_console=True,
                          title='Saving Raw with Annotations')
 
+        self.raw_fig = None
+
     def plot_raw_bad(self):
         # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
         self.set_chkbx_enable(False)
@@ -1214,8 +1231,11 @@ class SubBadsWidget(QWidget):
         except FileNotFoundError:
             events = None
         self.raw_fig = self.raw.plot(events=events, n_channels=30, bad_color='red', title=self.current_obj.name)
-        # Connect Closing of Matplotlib-Figure to assignment of bad-channels
-        self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
+        if hasattr(self.raw_fig, 'canvas'):
+            # Connect Closing of Matplotlib-Figure to assignment of bad-channels
+            self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
+        else:
+            self.raw_fig.gotClosed.connect(partial(self.get_selected_bads, None))
         plot_dialog.close()
 
     def resizeEvent(self, event):
@@ -2199,3 +2219,65 @@ class ReloadRaw(QDialog):
         if raw_path:
             WorkerDialog(self, self.reload_raw, selected_raw=selected_raw, raw_path=raw_path,
                          show_console=True, title=f'Reloading Raw for {selected_raw}')
+
+
+class ExportDialog(QDialog):
+    def __init__(self, main_win):
+        super().__init__(main_win)
+        self.mw = main_win
+        self.ct = main_win.ct
+
+        self.common_types = list()
+        self.selected_types = list()
+        self.dest_path = None
+        self.export_paths = dict()
+
+        self._get_common_types()
+        self._init_ui()
+
+    def _get_common_types(self):
+        for meeg_name in self.ct.pr.sel_meeg:
+            meeg = MEEG(meeg_name, self.ct)
+            meeg.get_existing_paths()
+            type_set = set(meeg.existing_paths.keys())
+            if isinstance(self.common_types, list):
+                self.common_types = type_set
+            else:
+                self.common_types = self.common_types & type_set
+            self.export_paths[meeg_name] = meeg.existing_paths
+
+    def _get_destination(self):
+        dest = QFileDialog.getExistingDirectory(self, 'Select Destination-Folder')[0]
+        if dest:
+            self.dest_path = dest
+
+    def _init_ui(self):
+        layout = QVBoxLayout()
+        self.dest_label = QLabel('<No Destination-Folder set>')
+        layout.addWidget(self.dest_label)
+        dest_bt = QPushButton('Set Destination-Folder')
+        dest_bt.clicked.connect(self._get_destination)
+        layout.addWidget(dest_bt)
+        layout.addWidget(QLabel())
+        layout.addWidget(SimpleList(self.ct.pr.sel_meeg,
+                                    title='Export selected data for the following MEEG-Files:'))
+        layout.addWidget(CheckList(list(self.common_types), self.selected_types,
+                                   title='Selected Data-Types'))
+        export_bt = QPushButton('Export')
+        export_bt.clicked.connect(self.export_data)
+        layout.addWidget(export_bt)
+        self.setLayout(layout)
+
+    def export_data(self):
+        if self.dest_path:
+            print('Starting Export\n')
+            for meeg_name, path_types in self.export_paths.items():
+                os.mkdir(join(self.dest_path, meeg_name))
+                for path_type in [pt for pt in path_types if pt in self.selected_types]:
+                    paths = path_types[path_type]
+                    for src_path in paths:
+                        dest_name = Path(src_path).name
+                        shutil.copy2(src_path, join(self.dest_path, meeg_name, dest_name))
+                    print(f'\r{meeg_name}: Copying {path_type}...')
+        else:
+            QMessageBox.warning(self, 'Ups!', 'Destination-Path not set!')
