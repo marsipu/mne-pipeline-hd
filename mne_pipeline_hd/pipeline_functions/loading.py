@@ -107,28 +107,23 @@ def save_decorator(save_func):
         data_type = [k for k in obj_instance.io_dict
                      if obj_instance.io_dict[k]['save'] is not None
                      and obj_instance.io_dict[k]['save'].__name__ == save_func.__name__]
-        # TODO: Hotfix for unknown data-types, replace
-        if len(data_type) == 1:
-            data_type = data_type[0]
-            # Make sure, that parent-directory exists
-            paths = obj_instance._return_path_list(data_type)
-            for path in [p for p in paths if not isdir(Path(p).parent)]:
-                makedirs(Path(path).parent, exist_ok=True)
+        data_type = data_type[0]
+        # Make sure, that parent-directory exists
+        paths = obj_instance._return_path_list(data_type)
+        for path in [p for p in paths if not isdir(Path(p).parent)]:
+            makedirs(Path(path).parent, exist_ok=True)
 
-            print(f'Saving {data_type} for {obj_instance.name}')
-            save_func(*args, **kwargs)
+        print(f'Saving {data_type} for {obj_instance.name}')
+        save_func(*args, **kwargs)
 
-            # Save data in data-dict for machines with big RAM
-            if not QS().value('save_ram'):
-                obj_instance.data_dict[data_type] = data
+        # Save data in data-dict for machines with big RAM
+        if not QS().value('save_ram'):
+            obj_instance.data_dict[data_type] = data
 
-            # Save File-Parameters
-            paths = obj_instance._return_path_list(data_type)
-            for path in paths:
-                obj_instance.save_file_params(path)
-        else:
-            save_func(*args, **kwargs)
-
+        # Save File-Parameters
+        paths = obj_instance._return_path_list(data_type)
+        for path in paths:
+            obj_instance.save_file_params(path)
 
     return save_wrapper
 
@@ -621,7 +616,10 @@ class MEEG(BaseLoading):
                                 'save': self.save_ecd},
                         'LTC': {'path': self.ltc_paths,
                                 'load': self.load_ltc,
-                                'save': self.save_ltc}}
+                                'save': self.save_ltc},
+                        'Source-Space Connectivity': {'path': self.con_paths,
+                                                      'load': self.load_connectivity,
+                                                      'save': self.save_connectivity}}
 
         self.deprecated_paths = {'Source Estimate': {trial: join(self.save_dir,
                                                                  f'{self.name}_{trial}_{self.p_preset}')
@@ -977,7 +975,7 @@ class MEEG(BaseLoading):
     def save_connectivity(self, con_dict):
         for trial in con_dict:
             for con_method in con_dict[trial]:
-                np.save(self.con_paths[trial][con_method])
+                np.save(self.con_paths[trial][con_method], con_dict[trial][con_method])
 
 
 class FSMRI(BaseLoading):

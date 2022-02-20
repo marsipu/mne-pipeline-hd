@@ -17,6 +17,7 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 import mne
+import mne_connectivity
 import numpy as np
 
 # Make use of program also possible with sensor-space installation of mne
@@ -524,7 +525,7 @@ def plot_label_time_course(meeg, show_plots):
 
 def plot_source_space_connectivity(meeg, target_labels, parcellation, con_fmin, con_fmax, show_plots):
     con_dict = meeg.load_connectivity()
-    labels = mne.read_labels_from_annot(meeg.name, parc=parcellation, subjects_dir=meeg.subjects_dir)
+    labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation, subjects_dir=meeg.subjects_dir)
 
     actual_labels = [lb for lb in labels if lb.name in target_labels]
 
@@ -558,17 +559,19 @@ def plot_source_space_connectivity(meeg, target_labels, parcellation, con_fmin, 
     node_order.extend(lh_labels[::-1])  # reverse the order
     node_order.extend(rh_labels)
 
-    node_angles = mne.viz.circular_layout(label_names, node_order, start_pos=90,
-                                          group_boundaries=[0, len(label_names) / 2])
+    node_angles = mne_connectivity.viz.circular_layout(label_names, node_order, start_pos=90,
+                                                       group_boundaries=[0, len(label_names) / 2])
 
     # Plot the graph using node colors from the FreeSurfer parcellation. We only
     # show the 300 strongest connections.
     for trial in con_dict:
         for con_method in con_dict[trial]:
-            fig, axes = mne.viz.plot_connectivity_circle(con_dict[trial][con_method], label_names, n_lines=300,
-                                                         node_angles=node_angles, node_colors=label_colors,
-                                                         title=f'{con_method}: {str(con_fmin)}-{str(con_fmax)}',
-                                                         fontsize_names=12, show=show_plots)
+            fig, axes = mne_connectivity.viz.plot_connectivity_circle(con_dict[trial][con_method], label_names,
+                                                                      n_lines=300, node_angles=node_angles,
+                                                                      node_colors=label_colors,
+                                                                      title=f'{con_method}: '
+                                                                            f'{str(con_fmin)}-{str(con_fmax)}',
+                                                                      fontsize_names=12, show=show_plots)
 
             meeg.plot_save('connectivity', subfolder=con_method, trial=trial, matplotlib_figure=fig)
 
