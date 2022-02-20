@@ -277,9 +277,9 @@ class Controller:
 
                         # Check, that there are no duplicates
                         pd_funcs_to_append = read_pd_funcs.loc[~read_pd_funcs.index.isin(self.pd_funcs.index)]
-                        self.pd_funcs = self.pd_funcs.append(pd_funcs_to_append)
+                        self.pd_funcs = pd.concat([self.pd_funcs, pd_funcs_to_append])
                         pd_params_to_append = read_pd_params.loc[~read_pd_params.index.isin(self.pd_params.index)]
-                        self.pd_params = self.pd_params.append(pd_params_to_append)
+                        self.pd_params = pd.concat([self.pd_params, pd_params_to_append])
 
             else:
                 error_text = f'Files for import of {pkg_name} are missing: ' \
