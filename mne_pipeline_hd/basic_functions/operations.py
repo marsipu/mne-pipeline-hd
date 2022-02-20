@@ -26,6 +26,7 @@ from pathlib import Path
 
 import autoreject as ar
 import mne
+import mne_connectivity
 import numpy as np
 from mne.preprocessing import ICA
 
@@ -1150,7 +1151,7 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
 
     for trial in all_epochs.event_id:
         con_dict[trial] = {}
-        epochs = all_epochs[trial][:10]
+        epochs = all_epochs[trial]
         # Compute inverse solution and for each epoch. By using "return_generator=True"
         # stcs will be a generator object instead of a list.
         stcs = mne.minimum_norm.apply_inverse_epochs(epochs, inverse_operator, lambda2, inverse_method,
@@ -1170,14 +1171,17 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
                                                  return_generator=True)
 
         sfreq = info['sfreq']  # the sampling frequency
-        con, freqs, times, n_epochs, n_tapers = mne.connectivity.spectral_connectivity(
-            label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=con_fmin,
-            fmax=con_fmax, faverage=True, mt_adaptive=True, n_jobs=n_jobs)
+        con = mne_connectivity.spectral_connectivity(label_ts, method=con_methods, mode='multitaper',
+                                                     sfreq=sfreq, fmin=con_fmin, fmax=con_fmax,
+                                                     faverage=True, mt_adaptive=True, n_jobs=n_jobs)
+
+        if not isinstance(con, list):
+            con = [con]
 
         # con is a 3D array, get the connectivity for the first (and only) freq. band
         # for each con_method
         for method, c in zip(con_methods, con):
-            con_dict[trial][method] = c[:, :, 0]
+            con_dict[trial][method] = c.get_data(output='dense')[:, :, 0]
 
     meeg.save_connectivity(con_dict)
 
