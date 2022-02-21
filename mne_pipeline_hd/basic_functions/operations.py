@@ -1149,7 +1149,7 @@ def source_space_connectivity(meeg, parcellation, target_labels, inverse_method,
 
     con_dict = {}
 
-    for trial in all_epochs.event_id:
+    for trial in [t for t in all_epochs.event_id if t]:
         con_dict[trial] = {}
         epochs = all_epochs[trial]
         # Compute inverse solution and for each epoch. By using "return_generator=True"
