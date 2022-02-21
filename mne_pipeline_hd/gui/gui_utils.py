@@ -24,11 +24,6 @@ from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, Qt, pyqtSign
 from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
                              QProgressBar, QPushButton, QTextEdit, QVBoxLayout, QStyle)
-from pyqode.core import api, modes, panels
-from pyqode.core.api import ColorScheme
-from pyqode.python import modes as pymodes, panels as pypanels, widgets
-from pyqode.python.backend import server
-from pyqode.python.modes import PythonSH
 
 
 def center(widget):
@@ -218,53 +213,9 @@ class UncaughtHook(QObject):
             self._exception_caught.emit(exc_str)
 
 
-class CodeEditor(widgets.PyCodeEditBase):
+class CodeEditor(QTextEdit):
     def __init__(self, parent=None):
-        super().__init__(parent=parent)
-        # starts the default pyqode.python server (which enable the jedi code
-        # completion worker).
-        self.backend.start(server.__file__)
-
-        # # some other modes/panels require the analyser mode, the best is to
-        # # install it first
-        # self.modes.append(pymodes.DocumentAnalyserMode())
-
-        # --- core panels
-        self.panels.append(panels.FoldingPanel())
-        self.panels.append(panels.LineNumberPanel())
-        # self.panels.append(panels.CheckerPanel())
-        self.panels.append(panels.SearchAndReplacePanel(),
-                           panels.SearchAndReplacePanel.Position.BOTTOM)
-        self.panels.append(panels.EncodingPanel(), api.Panel.Position.TOP)
-        # add a context menu separator between editor's
-        # builtin action and the python specific actions
-        self.add_separator()
-
-        # --- python specific panels
-        self.panels.append(pypanels.QuickDocPanel(), api.Panel.Position.BOTTOM)
-
-        # Syntax-Highlighting
-        self.modes.append(PythonSH(self.document(), color_scheme=ColorScheme('autumn')))
-
-        # --- core modes
-        self.modes.append(modes.CaretLineHighlighterMode())
-        self.modes.append(modes.CodeCompletionMode())
-        self.modes.append(modes.ExtendedSelectionMode())
-        self.modes.append(modes.FileWatcherMode())
-        self.modes.append(modes.OccurrencesHighlighterMode())
-        # self.modes.append(modes.RightMarginMode())
-        self.modes.append(modes.SmartBackSpaceMode())
-        self.modes.append(modes.SymbolMatcherMode())
-        self.modes.append(modes.ZoomMode())
-
-        # ---  python specific modes
-        self.modes.append(pymodes.CommentsMode())
-        self.modes.append(pymodes.CalltipsMode())
-        # self.modes.append(pymodes.FrostedCheckerMode())
-        # self.modes.append(pymodes.PEP8CheckerMode())
-        self.modes.append(pymodes.PyAutoCompleteMode())
-        self.modes.append(pymodes.PyAutoIndentMode())
-        self.modes.append(pymodes.PyIndenterMode())
+        super().__init__(parent)
 
 
 def _html_compatible(text):

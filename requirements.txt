@@ -6,6 +6,4 @@ pandas
 https://api.github.com/repos/autoreject/autoreject/zipball/master
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 qdarkstyle
-pyqode.core
-pyqode.python
 
