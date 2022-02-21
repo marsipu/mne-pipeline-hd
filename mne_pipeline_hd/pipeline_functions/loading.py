@@ -482,7 +482,8 @@ class MEEG(BaseLoading):
                     key_list = [key]
 
                 new_id = '/'.join([k for k in key_list if k in self.sel_trials])
-                event_id[new_id] = value
+                if new_id:
+                    event_id[new_id] = value
 
             self.event_id = event_id
 
