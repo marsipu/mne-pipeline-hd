@@ -18,21 +18,20 @@ from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInputDialog,
                              QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget)
 
-from mne_pipeline_hd import QS
+from mne_pipeline_hd import QS, _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center, WorkerDialog
-from mne_pipeline_hd.gui.main_window import MainWindow
+from mne_pipeline_hd.gui.main_window import MainWindow, show_main_window
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 
 
 class WelcomeWindow(QWidget):
-    def __init__(self):
+    def __init__(self, controller):
         super().__init__()
 
-        self.ct = Controller()
+        self.ct = controller
         self.main_window = None
         self.education_programs = list()
-        self.education_on = QS().value('education', defaultValue=0)
 
         self.init_ui()
         self.check_controller()
@@ -73,10 +72,9 @@ class WelcomeWindow(QWidget):
 
         self.edu_groupbox = QGroupBox('Education')
         self.edu_groupbox.setCheckable(True)
-        if self.education_on == 'true':
-            self.edu_groupbox.setChecked(True)
-        else:
-            self.edu_groupbox.setChecked(False)
+        self.edu_groupbox.setChecked(QS().value('education', defaultValue=False))
+        self.edu_groupbox.toggled.connect(self.edu_toggled)
+
         edu_layout = QVBoxLayout()
         self.edu_selection = SimpleList(self.education_programs, title='Education')
         edu_layout.addWidget(self.edu_selection)
@@ -97,6 +95,9 @@ class WelcomeWindow(QWidget):
 
         layout.addLayout(bt_layout)
         self.setLayout(layout)
+
+    def edu_toggled(self, value):
+        QS().setValue('education', value)
 
     def check_controller(self):
         self.start_bt.setEnabled(False)
@@ -172,21 +173,13 @@ class WelcomeWindow(QWidget):
             self.start_bt.setEnabled(True)
 
     def init_main_window(self):
-        if self.edu_groupbox.isChecked():
+        edu_on = QS().value('education')
+        if edu_on:
             self.ct.edu_program_name = self.edu_selection.get_current()
             self.ct.load_edu()
 
-        # Check if MNE-Python is installed
-        try:
-            import mne
-        except ModuleNotFoundError:
-            QMessageBox.critical(self, 'MNE-Python not found!', 'MNE-Python was not found,'
-                                                                ' please install it before using MNE-Pipeline!')
-        else:
-            self.main_window = MainWindow(self.ct, self)
-            if self.edu_groupbox.isChecked():
-                self.main_window.start_edu()
-            self.hide()
+        self.hide()
+        show_main_window(self.ct)
 
     def closeEvent(self, event):
         WorkerDialog(self, self.ct.save, blocking=True, title='Saving Project!')
@@ -195,3 +188,9 @@ class WelcomeWindow(QWidget):
         else:
             QS().setValue('education', 0)
         event.accept()
+
+
+def show_welcome_window(controller):
+    welcome_window = WelcomeWindow(controller)
+    _object_refs['welcome_window'] = welcome_window
+    return welcome_window

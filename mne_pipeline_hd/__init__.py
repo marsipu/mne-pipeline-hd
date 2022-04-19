@@ -14,6 +14,11 @@ iswin = sys.platform.startswith("win32")
 islin = not ismac and not iswin
 
 
+# Keep reference to Qt-objects without parent to avoid garbage collection
+_object_refs = {'welcome_window': None,
+                'main_window': None}
+
+
 class BaseSettings:
     def __init__(self):
         # Load default settings
@@ -65,7 +70,7 @@ class QSettingsDummy(BaseSettings):
 try:
     from PyQt5.QtCore import QSettings
 
-
+    # ToDo: Test
     class ModQSettings(QSettings, BaseSettings):
         def __init__(self):
             super(QSettings, self).__init__()

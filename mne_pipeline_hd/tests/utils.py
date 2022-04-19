@@ -8,6 +8,6 @@ def init_test_instance(tmpdir):
     ct = Controller(tmpdir)
     ct.change_project('Test')
 
-    main_window = MainWindow(ct, QWidget())
+    main_window = MainWindow(ct)
 
 

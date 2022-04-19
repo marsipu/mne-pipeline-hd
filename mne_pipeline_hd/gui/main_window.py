@@ -11,7 +11,6 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import sys
 from functools import partial
-from multiprocessing import Pool
 
 import pandas as pd
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -30,7 +29,7 @@ from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGu
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard, ExportDialog)
 from .parameter_widgets import BoolGui, IntGui, ParametersDock, SettingsDlg
 from .tools import DataTerminal, PlotViewSelection
-from .. import QS, ismac
+from .. import QS, ismac, _object_refs
 from ..basic_functions.plot import close_all
 from ..pipeline_functions.controller import Controller
 from ..pipeline_functions.loading import MEEG
@@ -42,23 +41,15 @@ class MainWindow(QMainWindow):
     cancel_functions = pyqtSignal(bool)
     plot_running = pyqtSignal(bool)
 
-    def __init__(self, controller, welcome_window):
+    def __init__(self, controller):
         super().__init__()
-
-        # Initialize Multiprocessing-Pool
-        self.mp_pool = None
-        QS().setValue('use_qthread', True)
-        self.init_mp_pool()
-
         self.setWindowTitle('MNE-Pipeline HD')
 
-        self.setCentralWidget(QWidget(self))
-        self.general_layout = QGridLayout()
-        self.centralWidget().setLayout(self.general_layout)
+        # Set QThread as default (ToDo: MP)
+        QS().setValue('use_qthread', True)
 
         # Initiate attributes for Main-Window
         self.ct = controller
-        self.welcome_window = welcome_window
         self.edu_tour = None
         self.bt_dict = dict()
         # For functions, which should or should not be called durin initialization
@@ -76,22 +67,11 @@ class MainWindow(QMainWindow):
         self.init_toolbar()
         self.init_docks()
         self.init_main_widget()
+        self.init_edu()
 
         center(self)
 
         self.first_init = False
-
-    def init_mp_pool(self, use_qthread=None):
-        if use_qthread is None:
-            use_qthread = QS().value('use_qthread')
-        self.close_mp_pool()
-        if not use_qthread:
-            self.mp_pool = Pool(1)
-
-    def close_mp_pool(self):
-        if self.mp_pool:
-            self.mp_pool.close()
-            self.mp_pool.join()
 
     def update_project_ui(self):
 
@@ -133,7 +113,7 @@ class MainWindow(QMainWindow):
                         new_controller.change_project(new_controller.projects[0])
 
                 self.ct = new_controller
-                self.welcome_window.ct = new_controller
+                _object_refs['welcome_window'].ct = new_controller
                 self.statusBar().showMessage(f'Home-Path: {self.ct.home_path}, '
                                              f'Project: {self.ct.pr.name}')
 
@@ -181,8 +161,9 @@ class MainWindow(QMainWindow):
         if self.ct.pr is not None:
             self.project_box.setCurrentText(self.ct.pr.name)
 
-    def start_edu(self):
-        if self.ct.edu_program and len(self.ct.edu_program['tour_list']) > 0:
+    def init_edu(self):
+        if QS().value('education') and \
+                self.ct.edu_program and len(self.ct.edu_program['tour_list']) > 0:
             self.edu_tour = EducationTour(self, self.ct.edu_program)
 
     def init_menu(self):
@@ -259,7 +240,7 @@ class MainWindow(QMainWindow):
         if self.ct.edu_program is None:
             education_menu.addAction('&Education-Editor', partial(EducationEditor, self))
         else:
-            education_menu.addAction('&Start Education-Tour', self.start_edu)
+            education_menu.addAction('&Start Education-Tour', self.init_edu)
 
         # Tools
         tool_menu = self.menuBar().addMenu('&Tools')
@@ -340,6 +321,11 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(close_all_bt)
 
     def init_main_widget(self):
+        self.setCentralWidget(QWidget(self))
+        self.general_layout = QGridLayout()
+        self.centralWidget().setLayout(self.general_layout)
+
+
         self.tab_func_widget = QTabWidget()
         self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
 
@@ -563,15 +549,23 @@ class MainWindow(QMainWindow):
         if any([answer == a for a in [QMessageBox.Yes, QMessageBox.No]]):
             if self.edu_tour:
                 self.edu_tour.close()
-            self.close_mp_pool()
             event.accept()
 
+            welcome_window = _object_refs['welcome_window']
+
             if answer == QMessageBox.Yes:
-                self.welcome_window.check_controller()
-                self.welcome_window.show()
+                welcome_window.check_controller()
+                welcome_window.show()
 
             elif answer == QMessageBox.No:
-                self.welcome_window.close()
+                welcome_window.close()
 
         else:
             event.ignore()
+
+
+def show_main_window(controller):
+    main_window = MainWindow(controller)
+    _object_refs['main_window'] = main_window
+
+    return main_window

@@ -35,6 +35,7 @@ from mne_pipeline_hd.gui.gui_utils import CodeEditor, ErrorDialog, center, get_e
     get_std_icon, MainConsoleWidget
 from mne_pipeline_hd.gui.models import CustomFunctionModel, RunModel
 from mne_pipeline_hd.pipeline_functions.function_utils import QRunController
+from mne_pipeline_hd.pipeline_functions.parallel import init_mp_pool
 
 
 class RunDialog(QDialog):
@@ -150,8 +151,9 @@ class RunDialog(QDialog):
         # Reinitialize controller
         self.init_controller()
 
-        if self.reload_chbx and self.reload_chbx.isChecked():
-            self.mw.init_mp_pool()
+        # ToDo: MP
+        # if self.reload_chbx and self.reload_chbx.isChecked():
+        #     init_mp_pool()
 
         # Clear Console-Widget
         self.console_widget.clear()
@@ -1308,7 +1310,8 @@ class SavePkgDialog(QDialog):
 
             self.cf_dialog.ct.import_custom_modules()
             self.cf_dialog.mw.redraw_func_and_param()
-            self.cf_dialog.mw.init_mp_pool()
+            # ToDo: MP
+            #init_mp_pool()
             self.close()
 
         else:

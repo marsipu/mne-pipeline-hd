@@ -23,12 +23,14 @@ from PyQt5.QtWidgets import QApplication
 # Get the package_path and add it at first position to PATH, should work across platforms and in spyder
 from qdarkstyle import DarkPalette, LightPalette
 
+from mne_pipeline_hd.pipeline_functions.controller import Controller
+
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent)
 if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
 
 from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
+from mne_pipeline_hd.gui.welcome_window import WelcomeWindow, show_welcome_window
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd import ismac, islin
 
@@ -108,7 +110,8 @@ def main():
     app.setWindowIcon(app_icon)
     
     # Initiate WelcomeWindow
-    ww = WelcomeWindow()
+    controller = Controller()
+    show_welcome_window(controller)
 
     # Redirect stdout to capture it later in GUI
     sys.stdout = StdoutStderrStream('stdout')
