@@ -7,6 +7,8 @@ from importlib import resources
 from os.path import join, isfile
 from pathlib import Path
 
+from ._version import __version__  # noqa
+
 ismac = sys.platform.startswith("darwin")
 iswin = sys.platform.startswith("win32")
 islin = not ismac and not iswin
