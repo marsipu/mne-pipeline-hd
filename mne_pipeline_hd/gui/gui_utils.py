@@ -179,15 +179,13 @@ def show_error_dialog(exc_str):
         logging.getLogger().debug("No QApplication instance available.")
 
 
+# ToDo: Test
 class UncaughtHook(QObject):
     """This class is a modified version of https://timlehr.com/python-exception-hooks-with-qt-message-box/"""
     _exception_caught = pyqtSignal(object)
 
     def __init__(self, *args, **kwargs):
         super(UncaughtHook, self).__init__(*args, **kwargs)
-
-        # this registers the exception_hook() function as hook with the Python interpreter
-        sys.excepthook = self.exception_hook
 
         # connect signal to execute the message box function always on main thread
         self._exception_caught.connect(show_error_dialog)
