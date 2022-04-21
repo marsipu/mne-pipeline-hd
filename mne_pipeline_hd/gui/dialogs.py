@@ -17,10 +17,10 @@ import mne
 from PyQt5.QtWidgets import (QDialog, QGridLayout, QLabel, QListView, QPushButton,
                              QSizePolicy, QTextEdit, QVBoxLayout)
 
-from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
-from mne_pipeline_hd.gui.models import CheckListModel
-from mne_pipeline_hd.pipeline_functions.loading import MEEG
+from .base_widgets import SimpleList
+from .gui_utils import set_ratio_geometry
+from .models import CheckListModel
+from ..pipeline_functions.loading import MEEG
 
 
 class CheckListDlg(QDialog):

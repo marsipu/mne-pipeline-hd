@@ -12,6 +12,7 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 import sys
 from functools import partial
 
+import mne
 import pandas as pd
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -19,7 +20,6 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
-import mne
 from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
                       SysInfoMsg, AboutDialog)
 from .education_widgets import EducationEditor, EducationTour

@@ -26,7 +26,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 # Make use of program also possible with sensor-space installation of mne
-from mne_pipeline_hd import QS
+from .. import QS
 
 try:
     from mayavi import mlab
@@ -39,7 +39,7 @@ import numpy as np
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, type_json_hook
+from ..pipeline_functions.pipeline_utils import TypedJSONEncoder, type_json_hook
 
 
 def load_decorator(load_func):

@@ -11,28 +11,18 @@ import logging
 import os
 import sys
 from importlib import resources
-from inspect import getsourcefile
-from os.path import abspath
-from pathlib import Path
 
 import qdarkstyle
+from qdarkstyle import DarkPalette, LightPalette
+
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication
-# Enable start also when not installed via pip (e.g. for development)
-# Get the package_path and add it at first position to PATH, should work across platforms and in spyder
-from qdarkstyle import DarkPalette, LightPalette
 
-from mne_pipeline_hd.pipeline_functions.controller import Controller
-
-package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent)
-if package_parent not in sys.path:
-    sys.path.insert(0, package_parent)
-
-from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui.welcome_window import show_welcome_window
-from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
-from mne_pipeline_hd import ismac, islin
+from . import QS, ismac, islin
+from .gui.welcome_window import show_welcome_window
+from .gui.gui_utils import StdoutStderrStream, UncaughtHook
+from .pipeline_functions.controller import Controller
 
 
 def main():

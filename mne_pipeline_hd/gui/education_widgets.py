@@ -19,9 +19,10 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
                              QMainWindow, QSizePolicy, QTextBrowser, QTextEdit, QVBoxLayout, QWidget, QWizard,
                              QWizardPage)
-from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui.base_widgets import CheckDictEditList, CheckList
-from mne_pipeline_hd.gui.gui_utils import center, set_ratio_geometry
+
+from .base_widgets import CheckDictEditList, CheckList
+from .gui_utils import center, set_ratio_geometry
+from .. import QS
 
 
 class EducationTour(QWizard):

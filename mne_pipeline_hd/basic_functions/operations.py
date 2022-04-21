@@ -25,14 +25,14 @@ from os.path import isdir, isfile, join
 from pathlib import Path
 
 import autoreject as ar
-import numpy as np
-
 import mne
-from mne.preprocessing import ICA
-from mne_pipeline_hd import ismac, iswin
-from mne_pipeline_hd.pipeline_functions.loading import MEEG
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 import mne_connectivity
+import numpy as np
+from mne.preprocessing import ICA
+
+from .. import ismac, iswin
+from ..pipeline_functions.loading import MEEG
+from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
 logger = logging.getLogger()
 

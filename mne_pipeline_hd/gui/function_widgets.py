@@ -28,14 +28,14 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFor
                              QMessageBox, QPushButton, QSizePolicy, QStyle, QTabWidget, QVBoxLayout, QGridLayout,
                              QProgressBar, QCheckBox)
 
-from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import CheckDictList, CheckList, EditDict, EditList, SimpleDialog, SimpleList
-from mne_pipeline_hd.gui.gui_utils import CodeEditor, ErrorDialog, center, get_exception_tuple, set_ratio_geometry, \
-    get_std_icon, MainConsoleWidget
-from mne_pipeline_hd.gui.models import CustomFunctionModel, RunModel
-from mne_pipeline_hd.pipeline_functions.function_utils import QRunController
-from mne_pipeline_hd.pipeline_functions.parallel import init_mp_pool
+from . import parameter_widgets
+from .base_widgets import (CheckDictList, CheckList, EditDict, EditList,
+                           SimpleDialog, SimpleList)
+from .gui_utils import (CodeEditor, ErrorDialog, center, get_exception_tuple,
+                        set_ratio_geometry, get_std_icon, MainConsoleWidget)
+from .models import CustomFunctionModel, RunModel
+from .. import QS
+from ..pipeline_functions.function_utils import QRunController
 
 
 class RunDialog(QDialog):

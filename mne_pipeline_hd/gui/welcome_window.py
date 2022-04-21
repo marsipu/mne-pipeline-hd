@@ -9,7 +9,6 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
-from hmac import new
 from importlib import resources
 from os import listdir
 from os.path import isdir, join
@@ -19,11 +18,11 @@ from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout,
                              QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget)
 
-from mne_pipeline_hd import QS, _object_refs
-from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center, WorkerDialog, get_user_input_string
-from mne_pipeline_hd.gui.main_window import MainWindow, show_main_window
-from mne_pipeline_hd.pipeline_functions.controller import Controller
+from .base_widgets import SimpleList
+from .gui_utils import ErrorDialog, center, WorkerDialog, get_user_input_string
+from .main_window import show_main_window
+from .. import QS, _object_refs
+from ..pipeline_functions.controller import Controller
 
 
 class WelcomeWindow(QWidget):

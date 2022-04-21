@@ -25,7 +25,7 @@ from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
                              QProgressBar, QPushButton, QTextEdit, QVBoxLayout, QStyle, QInputDialog)
 
-from mne_pipeline_hd import QS, _object_refs
+from .. import QS, _object_refs
 
 
 def center(widget):

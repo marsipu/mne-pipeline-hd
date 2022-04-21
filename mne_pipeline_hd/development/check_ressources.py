@@ -10,7 +10,7 @@ import pandas as pd
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
 
-from mne_pipeline_hd import basic_functions
+from .. import basic_functions
 
 # Check, if the function-arguments saved in functions.csv are the same as in the signature of the actual function
 # (May have changed during development without changing func_args in functions.csv)

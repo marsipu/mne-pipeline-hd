@@ -21,12 +21,12 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLa
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
-from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
-from mne_pipeline_hd.gui.gui_utils import CodeEditor, MainConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
+from .. import QS
+from .base_widgets import CheckList, SimpleList
+from .gui_utils import CodeEditor, MainConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
     set_ratio_geometry
-from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
-from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
+from ..pipeline_functions.function_utils import get_arguments
+from ..pipeline_functions.loading import FSMRI, Group, MEEG
 
 
 class HistoryDlg(QDialog):

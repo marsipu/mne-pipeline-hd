@@ -12,9 +12,9 @@ from pathlib import Path
 import mne
 import pandas as pd
 
-from mne_pipeline_hd import basic_functions, QS
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, get_user_input_string
-from mne_pipeline_hd.pipeline_functions.project import Project
+from .project import Project
+from .. import basic_functions, QS
+from ..gui.gui_utils import get_exception_tuple, get_user_input_string
 
 home_dirs = ['custom_packages', 'freesurfer', 'projects']
 project_dirs = ['_pipeline_scripts', 'data', 'figures']

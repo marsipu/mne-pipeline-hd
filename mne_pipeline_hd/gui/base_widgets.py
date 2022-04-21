@@ -11,9 +11,6 @@ inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
 import itertools
 import sys
-from inspect import getsourcefile
-from os.path import abspath
-from pathlib import Path
 
 import numpy as np
 import pandas
@@ -22,15 +19,13 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QHBoxLayout, QLabel,
                              QListView, QPushButton, QScrollArea, QSizePolicy,
                              QSpinBox, QTabWidget, QTableView, QTreeView, QVBoxLayout, QWidget)
-from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui.gui_utils import get_user_input_string
 
-package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
-sys.path.insert(0, package_parent)
-
-from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel,
-                                        CheckDictEditModel, CheckDictModel, CheckListModel,
-                                        EditDictModel, EditListModel, EditPandasModel, FileManagementModel, TreeModel)
+from .gui_utils import get_user_input_string
+from .models import (BaseDictModel, BaseListModel, BasePandasModel,
+                     CheckDictEditModel, CheckDictModel, CheckListModel,
+                     EditDictModel, EditListModel, EditPandasModel,
+                     FileManagementModel, TreeModel)
+from .. import QS
 
 
 class Base(QWidget):

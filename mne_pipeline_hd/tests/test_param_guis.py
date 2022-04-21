@@ -6,8 +6,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QGridLayout,
                              QHBoxLayout, QComboBox, QLineEdit,
                              QPushButton, QApplication, QDialog)
 
-from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import SimpleDict
+from ..gui import parameter_widgets
+from ..gui.base_widgets import SimpleDict
 
 
 class ParamGuiTest(QWidget):

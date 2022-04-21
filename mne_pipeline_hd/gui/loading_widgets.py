@@ -18,6 +18,7 @@ from functools import partial
 from os.path import exists, isdir, isfile, join
 from pathlib import Path
 
+import mne
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
@@ -29,8 +30,6 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
 
-import mne
-from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
                            SimpleList,
                            SimplePandasTable)
@@ -39,6 +38,7 @@ from .gui_utils import (ErrorDialog, Worker, WorkerDialog, center, get_exception
 from .models import AddFilesModel
 from .parameter_widgets import ComboGui
 from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_properties, plot_ica_sources
+from ..pipeline_functions.loading import FSMRI, Group, MEEG
 from ..pipeline_functions.pipeline_utils import compare_filep
 
 
