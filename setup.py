@@ -13,13 +13,11 @@ import pathlib
 
 from setuptools import find_packages, setup
 
-# UnicodeDecodeError somehow
-# with open("README.md", "r") as fh:
-#     long_description = fh.read()
+long_description = (pathlib.Path(__file__).parent / "README.md").read_text('UTF-8')
 
 # Get version as in mne-tools/mne-qt-browser
 version = None
-with open(pathlib.Path('mne_qt_browser') / '_version.py', 'r') as fid:
+with open(pathlib.Path(__file__).parent / 'mne_pipeline_hd/_version.py', 'r') as fid:
     for line in (line.strip() for line in fid):
         if line.startswith('__version__'):
             version = line.split('=')[1].strip().strip('\'')
@@ -30,6 +28,7 @@ if version is None:
 setup(name='mne_pipeline_hd',
       version=version,
       description='A pipeline-GUI for brain-data analysis with MNE-Python',
+      long_description=long_description,
       long_description_content_type='text/markdown',
       url='https://github.com/marsipu/mne_pipeline_hd',
       author='Martin Schulz',
