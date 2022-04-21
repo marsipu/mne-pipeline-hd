@@ -23,7 +23,7 @@ import pandas as pd
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDockWidget, QFileDialog,
-                             QGridLayout, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
+                             QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
                              QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QPushButton,
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
@@ -34,7 +34,8 @@ from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
                            SimpleList,
                            SimplePandasTable)
-from .gui_utils import (ErrorDialog, Worker, WorkerDialog, center, get_exception_tuple, set_ratio_geometry)
+from .gui_utils import (ErrorDialog, Worker, WorkerDialog, center, get_exception_tuple, set_ratio_geometry,
+                        get_user_input_string)
 from .models import AddFilesModel
 from .parameter_widgets import ComboGui
 from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_properties, plot_ica_sources
@@ -314,8 +315,8 @@ class FileDock(QDockWidget):
         current_meeg = self.meeg_list.get_current()
         if current_meeg is not None:
             meeg = MEEG(current_meeg, self.mw.ct)
-            new_name = QInputDialog.getText(self, 'Rename', 'Enter new name:')[0]
-            if new_name:
+            new_name = get_user_input_string('Enter new name:', 'Rename')
+            if new_name is not None:
                 meeg.rename(new_name)
                 self.update_dock()
 
@@ -392,14 +393,14 @@ class GrandAvgWidget(QWidget):
         self.mw.ct.pr.all_groups = new_dict
 
     def add_group(self):
-        text, ok = QInputDialog.getText(self, 'New Group', 'Enter the name for a new group:')
-        if ok and text:
+        text = get_user_input_string('Enter the name for a new group:', 'New Group')
+        if text is not None:
             top_item = QTreeWidgetItem()
             top_item.setText(0, text)
             top_item.setFlags(top_item.flags() | Qt.ItemIsUserCheckable)
             top_item.setCheckState(0, Qt.Checked)
             self.treew.addTopLevelItem(top_item)
-        self.get_treew()
+            self.get_treew()
 
     def add_files(self):
         sel_group = self.treew.currentItem()

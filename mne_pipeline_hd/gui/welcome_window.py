@@ -9,18 +9,19 @@ Written on top of MNE-Python
 Copyright © 2011-2020, authors of MNE-Python (https://doi.org/10.3389/fnins.2013.00267)
 inspired by Andersen, L. M. (2018) (https://doi.org/10.3389/fnins.2018.00006)
 """
+from hmac import new
 from importlib import resources
 from os import listdir
 from os.path import isdir, join
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QInputDialog,
+from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout,
                              QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget)
 
 from mne_pipeline_hd import QS, _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center, WorkerDialog
+from mne_pipeline_hd.gui.gui_utils import ErrorDialog, center, WorkerDialog, get_user_input_string
 from mne_pipeline_hd.gui.main_window import MainWindow, show_main_window
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 
@@ -165,9 +166,8 @@ class WelcomeWindow(QWidget):
             self.project_cmbx.setCurrentText(self.ct.pr.name)
 
     def add_project(self):
-        new_project, ok = QInputDialog.getText(self, 'Add Project',
-                                               'Please enter the name of a project!')
-        if ok and new_project != '':
+        new_project = get_user_input_string('Please enter the name of a project!', 'Add Project')
+        if new_project is not None:
             self.ct.change_project(new_project)
             self.update_project_cmbx()
             self.start_bt.setEnabled(True)
@@ -188,6 +188,7 @@ class WelcomeWindow(QWidget):
         else:
             QS().setValue('education', 0)
         event.accept()
+        _object_refs['welcom_window'] = None
 
 
 def show_welcome_window(controller):

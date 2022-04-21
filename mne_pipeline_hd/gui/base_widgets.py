@@ -19,10 +19,11 @@ import numpy as np
 import pandas
 from PyQt5.QtCore import QItemSelectionModel, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QHBoxLayout, QInputDialog, QLabel,
+from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QHBoxLayout, QLabel,
                              QListView, QPushButton, QScrollArea, QSizePolicy,
                              QSpinBox, QTabWidget, QTableView, QTreeView, QVBoxLayout, QWidget)
 from mne_pipeline_hd import QS
+from mne_pipeline_hd.gui.gui_utils import get_user_input_string
 
 package_parent = str(Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent)
 sys.path.insert(0, package_parent)
@@ -1014,15 +1015,15 @@ class EditPandasTable(BasePandasTable):
     def edit_row_header(self):
         row = self.view.selectionModel().currentIndex().row()
         old_value = self.model._data.index[row]
-        text, ok = QInputDialog.getText(self, 'Change Row-Header', f'Change {old_value} in row {row} to:')
-        if text and ok:
+        text = get_user_input_string(f'Change {old_value} in row {row} to:', 'Change Row-Header')
+        if text is not None:
             self.model.setHeaderData(row, Qt.Vertical, text)
 
     def edit_col_header(self):
         column = self.view.selectionModel().currentIndex().column()
         old_value = self.model._data.columns[column]
-        text, ok = QInputDialog.getText(self, 'Change Column-Header', f'Change {old_value} in column {column} to:')
-        if text and ok:
+        text = get_user_input_string(f'Change {old_value} in column {column} to:', 'Change Column-Header')
+        if text is not None:
             self.model.setHeaderData(column, Qt.Horizontal, text)
 
 

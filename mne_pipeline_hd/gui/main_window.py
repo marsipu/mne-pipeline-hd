@@ -16,7 +16,7 @@ import pandas as pd
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
-                             QGridLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox,
+                             QGridLayout, QGroupBox, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
 import mne
@@ -24,7 +24,7 @@ from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
                       SysInfoMsg, AboutDialog)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport, RunDialog
-from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon
+from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon, get_user_input_string
 from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
                               FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard, ExportDialog)
 from .parameter_widgets import BoolGui, IntGui, ParametersDock, SettingsDlg
@@ -99,18 +99,10 @@ class MainWindow(QMainWindow):
                                      new_controller.errors['home_path'])
             else:
                 if 'project' in new_controller.errors:
-                    if new_controller.errors['project'] == 'No projects':
-                        new_project = QInputDialog.getText(self, 'No Project!',
-                                                           'There is no project in this Home-Path, '
-                                                           'please enter a name for a new project:',
-                                                           text='<Project-Name>')
-                        if new_project == '':
-                            new_project = 'Dummy'
+                    new_project = get_user_input_string('There is no project in this Home-Path, please enter a name '\
+                                                        'for a new project:', 'Add Project!', force=True)
 
-                        new_controller.change_project(new_project)
-
-                    else:
-                        new_controller.change_project(new_controller.projects[0])
+                    new_controller.change_project(new_project)
 
                 self.ct = new_controller
                 _object_refs['welcome_window'].ct = new_controller
@@ -123,9 +115,9 @@ class MainWindow(QMainWindow):
         # First save the former projects-data
         WorkerDialog(self, self.ct.pr.save, blocking=True)
 
-        new_project, ok = QInputDialog.getText(self, 'New Project',
-                                               'Enter a name for a new project')
-        if ok:
+        new_project = get_user_input_string('Enter a name for a new project',
+                                            'Add Project')
+        if new_project is not None:
             self.ct.change_project(new_project)
             self.update_project_ui()
 
@@ -550,7 +542,7 @@ class MainWindow(QMainWindow):
             if self.edu_tour:
                 self.edu_tour.close()
             event.accept()
-
+            _object_refs['main_window'] = None
             welcome_window = _object_refs['welcome_window']
 
             if answer == QMessageBox.Yes:

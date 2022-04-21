@@ -38,7 +38,7 @@ class QSettingsDummy(BaseSettings):
     def __init__(self):
         super().__init__()
 
-        self.settings_path = join(Path.home(), 'mnephd_settings.json')
+        self.settings_path = join(Path.home(), '.mnephd_settings.json')
 
     def _load_settings(self):
         if isfile(self.settings_path):

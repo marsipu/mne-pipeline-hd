@@ -249,5 +249,3 @@ class AboutDialog(QDialog):
         self.setLayout(layout)
         set_ratio_geometry((0.25, 0.9), self)
         self.open()
-
-

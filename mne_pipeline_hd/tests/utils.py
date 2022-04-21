@@ -9,5 +9,3 @@ def init_test_instance(tmpdir):
     ct.change_project('Test')
 
     main_window = MainWindow(ct)
-
-

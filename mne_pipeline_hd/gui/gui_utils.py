@@ -23,7 +23,9 @@ from inspect import signature
 from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot, QTimer
 from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
-                             QProgressBar, QPushButton, QTextEdit, QVBoxLayout, QStyle)
+                             QProgressBar, QPushButton, QTextEdit, QVBoxLayout, QStyle, QInputDialog)
+
+from mne_pipeline_hd import QS, _object_refs
 
 
 def center(widget):
@@ -677,3 +679,30 @@ class QProcessDialog(QDialog):
             event.ignore()
             QMessageBox.warning(self, 'Closing not possible!',
                                 'You can\'t close the Dialog before this Process finished!')
+
+
+def get_user_input_string(prompt, title='Input required!', force=False):
+    # Determine GUI or non-GUI-mode
+    if QS().value('gui') and any([obj is not None for obj in _object_refs.values()]):
+        parent = _object_refs['main_window'] or _object_refs['welcome_window']
+    else:
+        parent = None
+    if parent is not None:
+        user_input, ok = QInputDialog.getText(parent, title, prompt)
+    else:
+        user_input = input(f'{title}: {prompt}')
+        ok = True
+
+    # Check user input
+    if not user_input or not ok:
+        if force:
+            if parent:
+                QMessageBox().warning(parent, 'Input required!',
+                                      'You need to provide an appropriate input to proceed!')
+            else:
+                print('Warning: Input required! You need to provide an appropriate input to proceed!')
+            user_input = get_user_input_string(prompt, title, force)
+        else:
+            user_input = None
+
+    return user_input

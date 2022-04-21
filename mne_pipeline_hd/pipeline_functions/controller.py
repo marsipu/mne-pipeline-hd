@@ -13,7 +13,7 @@ import mne
 import pandas as pd
 
 from mne_pipeline_hd import basic_functions, QS
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, get_user_input_string
 from mne_pipeline_hd.pipeline_functions.project import Project
 
 home_dirs = ['custom_packages', 'freesurfer', 'projects']
@@ -42,6 +42,11 @@ class Controller:
             self.errors['home_path'] = f'{self.home_path} not writable!'
 
         else:
+            # Initialize log-file
+            self.logging_path = join(self.home_path, '_pipeline.log')
+            file_handler = logging.FileHandler(self.logging_path, 'w')
+            logger.addHandler(file_handler)
+
             logger.info(f'Home-Path: {self.home_path}')
             QS().setValue('home_path', self.home_path)
             # Create subdirectories if not existing for a valid home_path
@@ -94,19 +99,20 @@ class Controller:
 
             # Check Project
             if selected_project is None:
-                if 'selected_project' in self.settings:
-                    selected_project = self.settings['selected_project']
+                selected_project = self.settings['selected_project']
 
-            if len(self.projects) == 0:
-                self.errors['project'] = 'No projects!'
+            if selected_project is None:
+                if len(self.projects) == 0:
+                    self.errors['project'] = 'No projects!'
+                else:
+                    selected_project = self.projects[0]
 
-            elif selected_project not in self.projects:
-                self.errors['project'] = f'{selected_project} not in projects!'
-
-            else:
-                # Initialize Project
-                self.pr = Project(self, selected_project)
+            # Initialize Project
+            if selected_project is not None:
+                self.change_project(selected_project)
                 logger.info(f'Selected-Project: {self.pr.name}')
+
+
 
     def load_settings(self):
         try:
@@ -168,12 +174,19 @@ class Controller:
     def remove_project(self, project):
         self.projects.remove(project)
         if self.pr.name == project:
-            self.pr = None
+            if len(self.projects) > 0:
+                new_project = self.projects[0]
+            else:
+                new_project = get_user_input_string('Please enter the name of a new project!',
+                                                    'Add Project', force=True)
+            self.change_project(new_project)
+
         # Remove Project-Folder
         try:
             shutil.rmtree(join(self.projects_path, project))
-        except OSError:
-            logger.critical(f'The folder of {project} can\'t be deleted and has to be deleted manually')
+        except OSError as error:
+            print(error)
+            logger.critical(f'The folder of {project} can\'t be deleted and has to be deleted manually!')
 
     def save(self, worker_signals=None):
         if self.pr is not None:

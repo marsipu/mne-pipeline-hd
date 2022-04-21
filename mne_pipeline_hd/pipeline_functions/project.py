@@ -35,7 +35,6 @@ class Project:
         self.init_main_paths()
         self.init_attributes()
         self.init_pipeline_scripts()
-        self.set_logging()
         self.load()
         # self.check_data()
 
@@ -106,9 +105,6 @@ class Project:
 
     def init_pipeline_scripts(self):
         # Initiate Project-Lists and Dicts
-        # Logging Path
-        self.log_path = join(self.pscripts_path, '_pipeline.log')
-
         self.all_meeg_path = join(self.pscripts_path, f'all_meeg_{self.name}.json')
         self.sel_meeg_path = join(self.pscripts_path, f'selected_meeg_{self.name}.json')
         self.meeg_bad_channels_path = join(self.pscripts_path, f'meeg_bad_channels_{self.name}.json')
@@ -149,12 +145,6 @@ class Project:
                                   self.parameters_path: 'parameters',
                                   self.sel_p_preset_path: 'p_preset',
                                   self.file_parameters_path: 'file_parameters'}
-
-    def set_logging(self):
-        # Add File to logging
-        logger = logging.getLogger()
-        file_handler = logging.FileHandler(self.log_path, 'w')
-        logger.addHandler(file_handler)
 
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)

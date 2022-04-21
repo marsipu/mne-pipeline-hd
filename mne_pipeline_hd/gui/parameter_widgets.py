@@ -20,11 +20,11 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
                              QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout,
                              QWidget, QDockWidget, QTabWidget,
-                             QScrollArea, QInputDialog, QMessageBox, QStyleFactory)
+                             QScrollArea, QMessageBox, QStyleFactory)
 
 from .base_widgets import CheckList, EditDict, EditList, SimpleList
 from .dialogs import CheckListDlg
-from .gui_utils import get_std_icon, WorkerDialog, get_exception_tuple
+from .gui_utils import get_std_icon, WorkerDialog, get_exception_tuple, get_user_input_string
 from .. import QS, iswin
 from ..pipeline_functions.controller import Controller
 
@@ -1625,15 +1625,13 @@ class ParametersDock(QDockWidget):
         self.update_all_param_guis()
 
     def add_p_preset(self):
-        preset_name, ok = QInputDialog.getText(self, 'New Parameter-Preset',
-                                               'Enter a name for a new Parameter-Preset')
-        if ok:
+        preset_name = get_user_input_string('Enter a name for a new Parameter-Preset:',
+                                            'Add Parameter-Preset')
+        if preset_name is not None:
             self.ct.pr.p_preset = preset_name
             self.ct.pr.load_default_parameters()
             self.p_preset_cmbx.addItem(preset_name)
             self.p_preset_cmbx.setCurrentText(preset_name)
-        else:
-            pass
 
     def redraw_param_widgets(self):
         self.general_layout.removeWidget(self.tab_param_widget)

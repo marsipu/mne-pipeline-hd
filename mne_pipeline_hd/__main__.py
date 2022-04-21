@@ -30,7 +30,7 @@ if package_parent not in sys.path:
     sys.path.insert(0, package_parent)
 
 from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui.welcome_window import WelcomeWindow, show_welcome_window
+from mne_pipeline_hd.gui.welcome_window import show_welcome_window
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd import ismac, islin
 
@@ -66,6 +66,7 @@ def main():
     os.environ['ETS_TOOLKIT'] = 'qt4'
     os.environ['QT_API'] = 'pyqt5'
 
+    # ToDo: MP
     # # Set multiprocessing method to spawn
     # multiprocessing.set_start_method('spawn')
 
