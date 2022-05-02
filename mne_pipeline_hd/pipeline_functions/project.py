@@ -8,7 +8,6 @@ License: BSD (3-clause)
 """
 
 import json
-import logging
 import os
 from ast import literal_eval
 from copy import deepcopy
@@ -18,6 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .loading import MEEG, FSMRI, Group
 from .pipeline_utils import TypedJSONEncoder, count_dict_keys, encode_tuples, type_json_hook
 
 
@@ -95,8 +95,6 @@ class Project:
         self.parameters = dict()
         # Parameter-Preset
         self.p_preset = 'Default'
-        # Stores parameters for each file saved to disk from the current run (know, what you did to your data)
-        self.file_parameters = dict()
 
         # Attributes, which have their own special function for loading
         self.special_loads = ['parameters', 'p_preset']
@@ -121,7 +119,6 @@ class Project:
         self.add_kwargs_path = join(self.pscripts_path, f'additional_kwargs_{self.name}.json')
         self.parameters_path = join(self.pscripts_path, f'parameters_{self.name}.json')
         self.sel_p_preset_path = join(self.pscripts_path, f'sel_p_preset_{self.name}.json')
-        self.file_parameters_path = join(self.pscripts_path, f'file_parameters_{self.name}.json')
 
         # Map the paths to their attribute in the Project-Class
         self.path_to_attribute = {self.all_meeg_path: 'all_meeg',
@@ -141,8 +138,7 @@ class Project:
                                   self.sel_functions_path: 'sel_functions',
                                   self.add_kwargs_path: 'add_kwargs',
                                   self.parameters_path: 'parameters',
-                                  self.sel_p_preset_path: 'p_preset',
-                                  self.file_parameters_path: 'file_parameters'}
+                                  self.sel_p_preset_path: 'p_preset'}
 
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
@@ -297,83 +293,42 @@ class Project:
         self.save()
 
     def clean_file_parameters(self, worker_signals=None):
-
-        # Set maximum for progress-bar
         if worker_signals is not None:
-            worker_signals.pgbar_max.emit(count_dict_keys(self.file_parameters, max_level=3))
+            worker_signals.pgbar_max.emit(len(self.all_meeg + self.all_fsmri + self.all_groups))
+        count = 0
 
-        remove_obj_keys = list()
-        key_count = 0
-        for obj_key in self.file_parameters:
-            key_count += 1
+        for meeg in self.all_meeg:
+            meeg = MEEG(meeg, self.ct)
+            worker_signals.pgbar_text.emit(f'Cleaning File-Parameters for {meeg}')
+            meeg.clean_file_parameters()
+            count += 1
             if worker_signals is not None:
-                worker_signals.pgbar_n.emit(key_count)
+                worker_signals.pgbar_n.emit(count)
+                if worker_signals.was_canceled:
+                    print('Cleaning was canceled by the user!')
+                    return
 
-            if obj_key not in self.all_meeg + self.all_erm + self.all_fsmri + list(self.all_groups.keys()):
-                remove_obj_keys.append(obj_key)
+        for fsmri in self.all_fsmri:
+            fsmri = FSMRI(fsmri, self.ct)
+            worker_signals.pgbar_text.emit(f'Cleaning File-Parameters for {fsmri}')
+            fsmri.clean_file_parameters()
+            count += 1
+            if worker_signals is not None:
+                worker_signals.pgbar_n.emit(count)
+                if worker_signals.was_canceled:
+                    print('Cleaning was canceled by the user!')
+                    return
 
-            remove_files = list()
-            n_remove_params = 0
-            for file_name in self.file_parameters[obj_key]:
-                key_count += 1
-                if worker_signals is not None:
-                    worker_signals.pgbar_n.emit(key_count)
-
-                path = self.file_parameters[obj_key][file_name]['PATH']
-                # Can be changed to only relative path (12.02.2021)
-                if not isfile(path) and not isfile(join(self.data_path, path)) \
-                        and not isfile(join(self.data_path, obj_key, file_name)):
-                    remove_files.append(file_name)
-
-                # Remove lists (can be removed soon 12.02.2021)
-                if isinstance(self.file_parameters[obj_key][file_name]['FUNCTION'], list):
-                    self.file_parameters[obj_key][file_name]['FUNCTION'] = \
-                        self.file_parameters[obj_key][file_name]['FUNCTION'][0]
-                if isinstance(self.file_parameters[obj_key][file_name]['TIME'], list):
-                    self.file_parameters[obj_key][file_name]['TIME'] = \
-                        self.file_parameters[obj_key][file_name]['TIME'][0]
-
-                function = self.file_parameters[obj_key][file_name]['FUNCTION']
-                # ToDo: Why is there sometimes <module> as FUNCTION?
-                if function == '<module>' or function not in self.ct.pd_funcs.index:
-                    key_count += len(self.file_parameters[obj_key][file_name])
-                    if worker_signals is not None:
-                        worker_signals.pgbar_n.emit(key_count)
-                else:
-                    remove_params = list()
-                    # ToDo: Critical param-removal can/should be removed,
-                    #  when file-parameters upgraded with dependencies
-                    critical_params_str = self.ct.pd_funcs.loc[function, 'func_args']
-                    # Make sure there are no spaces left
-                    critical_params_str = critical_params_str.replace(' ', '')
-                    critical_params = critical_params_str.split(',')
-                    critical_params += ['FUNCTION', 'NAME', 'PATH', 'TIME', 'SIZE', 'P_PRESET']
-
-                    for param in self.file_parameters[obj_key][file_name]:
-                        key_count += 1
-                        if worker_signals is not None:
-                            worker_signals.pgbar_n.emit(key_count)
-
-                        # Cancel if canceled
-                        if worker_signals is not None and worker_signals.was_canceled:
-                            print('Cleaning was canceled by user')
-                            return
-
-                        if param not in critical_params:
-                            remove_params.append(param)
-
-                    for param in remove_params:
-                        self.file_parameters[obj_key][file_name].pop(param)
-
-                    n_remove_params += len(remove_params)
-
-            for file_name in remove_files:
-                self.file_parameters[obj_key].pop(file_name)
-            print(f'Removed {len(remove_files)} Files and {n_remove_params} Parameters from {obj_key}')
-
-        for remove_key in remove_obj_keys:
-            self.file_parameters.pop(remove_key)
-        print(f'Removed {len(remove_obj_keys)} Objects from File-Parameters')
+        for group in self.all_groups:
+            group = Group(group, self.ct)
+            worker_signals.pgbar_text.emit(f'Cleaning File-Parameters for {group}')
+            group.clean_file_parameters()
+            count += 1
+            if worker_signals is not None:
+                worker_signals.pgbar_n.emit(count)
+                if worker_signals.was_canceled:
+                    print('Cleaning was canceled by the user!')
+                    return
 
     def clean_plot_files(self, worker_signals=None):
         all_image_paths = list()

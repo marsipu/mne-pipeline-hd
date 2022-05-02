@@ -21,6 +21,7 @@ from pathlib import Path
 import mne
 import pandas as pd
 
+from .legacy import transfer_file_params_to_single_subject
 from .project import Project
 from .. import basic_functions, QS
 from ..gui.gui_utils import get_exception_tuple, get_user_input_string
@@ -121,8 +122,6 @@ class Controller:
                 self.change_project(selected_project)
                 logger.info(f'Selected-Project: {self.pr.name}')
 
-
-
     def load_settings(self):
         try:
             with open(join(self.home_path,
@@ -179,6 +178,8 @@ class Controller:
         self.settings['selected_project'] = new_project
         if new_project not in self.projects:
             self.projects.append(new_project)
+        # Legacy
+        transfer_file_params_to_single_subject(self)
 
     def remove_project(self, project):
         self.projects.remove(project)

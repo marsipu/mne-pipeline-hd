@@ -162,8 +162,6 @@ class RemoveDialog(QDialog):
                 self.pr.meeg_to_fsmri.pop(meeg, None)
                 self.pr.meeg_bad_channels.pop(meeg, None)
                 self.pr.meeg_event_id.pop(meeg, None)
-                if meeg in self.pr.file_parameters:
-                    self.pr.file_parameters.pop(meeg)
                 if remove_files:
                     try:
                         remove_path = join(self.pr.data_path, meeg)

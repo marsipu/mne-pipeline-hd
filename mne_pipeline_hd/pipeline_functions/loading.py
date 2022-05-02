@@ -141,17 +141,13 @@ class BaseLoading:
         self.img_format = self.ct.get_setting('img_format')
         self.dpi = self.ct.get_setting('dpi')
 
-        # Prepare file-parameters-dictionary for Loading-Object
-        if self.name not in self.pr.file_parameters:
-            self.pr.file_parameters[self.name] = dict()
-        self.file_parameters = self.pr.file_parameters[self.name]
-
         self.data_dict = dict()
         self.existing_paths = dict()
 
         self.init_p_preset_deps()
         self.init_attributes()
         self.init_paths()
+        self.load_file_parameter_file()
 
     def init_p_preset_deps(self):
         self.pa = self.pr.parameters[self.p_preset]
@@ -193,7 +189,19 @@ class BaseLoading:
 
         return paths
 
-    # Todo: Only save relevant parameters (with dependencies)
+    def load_file_parameter_file(self):
+        self.file_parameters_path = join(self.save_dir, f'_{self.name}_file_parameters.json')
+        try:
+            with open(self.file_parameters_path, 'r') as file:
+                self.file_parameters = json.load(file, object_hook=type_json_hook)
+        except (json.JSONDecodeError, FileNotFoundError):
+            self.file_parameters = dict()
+
+    def save_file_parameter_file(self):
+        # Save File-Parameters file
+        with open(self.file_parameters_path, 'w') as file:
+            json.dump(self.file_parameters, file, cls=TypedJSONEncoder, indent=4)
+
     def save_file_params(self, path):
 
         # Check existence of path and append appendices for hemispheres
@@ -226,14 +234,55 @@ class BaseLoading:
 
             self.file_parameters[file_name]['NAME'] = self.name
 
-            # Save Path relative to Home-Path (to avoid conflicts between OS)
-            self.file_parameters[file_name]['PATH'] = os.path.relpath(path, self.pr.data_path)
-
-            self.file_parameters[file_name]['TIME'] = datetime.now()
+            self.file_parameters[file_name]['TIME'] = str(datetime.now())
 
             self.file_parameters[file_name]['SIZE'] = getsize(path)
 
             self.file_parameters[file_name]['P_PRESET'] = self.p_preset
+
+        self.save_file_parameter_file()
+
+    def clean_file_parameters(self):
+        remove_files = list()
+        n_remove_params = 0
+        for file_name in self.file_parameters:
+
+            # Can be changed to only relative path (12.02.2021)
+            if not isfile(join(self.save_dir, file_name)):
+                remove_files.append(file_name)
+
+            # Remove lists (can be removed soon 12.02.2021)
+            if isinstance(self.file_parameters[file_name]['FUNCTION'], list):
+                self.file_parameters[file_name]['FUNCTION'] = \
+                    self.file_parameters[file_name]['FUNCTION'][0]
+            if isinstance(self.file_parameters[file_name]['TIME'], list):
+                self.file_parameters[file_name]['TIME'] = \
+                    self.file_parameters[file_name]['TIME'][0]
+
+            function = self.file_parameters[file_name]['FUNCTION']
+            # ToDo: Why is there sometimes <module> as FUNCTION?
+            if function == '<module>' or function not in self.ct.pd_funcs.index:
+                pass
+            else:
+                remove_params = list()
+                critical_params_str = self.ct.pd_funcs.loc[function, 'func_args']
+                # Make sure there are no spaces left
+                critical_params_str = critical_params_str.replace(' ', '')
+                critical_params = critical_params_str.split(',')
+                critical_params += ['FUNCTION', 'NAME', 'TIME', 'SIZE', 'P_PRESET']
+
+                for param in self.file_parameters[file_name]:
+                    if param not in critical_params:
+                        remove_params.append(param)
+
+                for param in remove_params:
+                    self.file_parameters[file_name].pop(param)
+
+                n_remove_params += len(remove_params)
+
+        for file_name in remove_files:
+            self.file_parameters.pop(file_name)
+        print(f'Removed {len(remove_files)} Files and {n_remove_params} Parameters.')
 
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):
