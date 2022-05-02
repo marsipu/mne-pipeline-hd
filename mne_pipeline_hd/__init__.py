@@ -1,4 +1,12 @@
-# Import QSettings or provide Dummy-Class to be independent from PyQt/PySide
+# -*- coding: utf-8 -*-
+"""
+Pipeline-GUI for Analysis with MNE-Python
+@author: Martin Schulz
+@email: dev@earthman-music.de
+@github: https://github.com/marsipu/mne_pipeline_hd
+License: BSD (3-clause)
+"""
+
 import json
 import sys
 from ast import literal_eval
@@ -19,6 +27,7 @@ _object_refs = {'welcome_window': None,
                 'main_window': None}
 
 
+# Import QSettings or provide Dummy-Class to be independent from PyQt/PySide
 class BaseSettings:
     def __init__(self):
         # Load default settings
