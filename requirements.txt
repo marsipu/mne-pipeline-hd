@@ -1,5 +1,6 @@
 # MNE-Python-Requirements
 mne
+mne_connectivity
 pandas
 
 # Special Pipeline-Requirements
