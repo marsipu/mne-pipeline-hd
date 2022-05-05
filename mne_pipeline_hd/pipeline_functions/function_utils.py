@@ -155,9 +155,8 @@ def run_func(func, keywargs, pipe=None):
 
 
 class RunController:
-    def __init__(self, controller, pool):
+    def __init__(self, controller):
         self.ct = controller
-        self.pool = pool
 
         self.all_steps = list()
         self.thread_idx_count = 0
@@ -282,13 +281,14 @@ class RunController:
     def start(self):
         kwds = self.prepare_start()
         if kwds:
+            # ToDo: MP
             self.pool.apply_async(func=run_func, kwds=kwds,
                                   callback=self.process_finished)
 
 
 class QRunController(RunController):
-    def __init__(self, run_dialog, controller, pool):
-        super().__init__(controller, pool)
+    def __init__(self, run_dialog, controller):
+        super().__init__(controller)
         self.rd = run_dialog
         self.errors = dict()
         self.error_count = 0
@@ -377,19 +377,19 @@ class QRunController(RunController):
             if ismayavi \
                     or (ismpl and show_plots and use_qthread) \
                     or (ismpl and not show_plots and use_qthread and ismac):
-                logging.getLogger().info('Starting in Main-Thread.')
+                logging.info('Starting in Main-Thread.')
                 result = run_func(**kwds)
                 self.process_finished(result)
 
             elif QS().value('use_qthread'):
-                logging.getLogger().info('Starting in separate Thread.')
+                logging.info('Starting in separate Thread.')
                 worker = Worker(function=run_func, **kwds)
                 worker.signals.error.connect(self.process_finished)
                 worker.signals.finished.connect(self.process_finished)
                 QThreadPool.globalInstance().start(worker)
 
             else:
-                logging.getLogger().info('Starting in process from multiprocessing.')
+                logging.info('Starting in process from multiprocessing.')
                 recv_pipe, send_pipe = Pipe(False)
                 kwds['pipe'] = send_pipe
                 stream_rcv = StreamReceiver(recv_pipe)
@@ -397,5 +397,6 @@ class QRunController(RunController):
                 stream_rcv.signals.stderr_received.connect(self.rd.console_widget.write_stderr)
                 stream_rcv.signals.progress_received.connect(self.rd.console_widget.write_progress)
                 QThreadPool.globalInstance().start(stream_rcv)
+                # ToDO: MP
                 self.pool.apply_async(func=run_func, kwds=kwds,
                                       callback=self.process_finished)

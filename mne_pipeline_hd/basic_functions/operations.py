@@ -32,8 +32,6 @@ from .. import ismac, iswin
 from ..pipeline_functions.loading import MEEG
 from ..pipeline_functions.pipeline_utils import check_kwargs, compare_filep
 
-logger = logging.getLogger()
-
 
 # Todo: Create docstrings for each function
 # ==============================================================================
@@ -917,9 +915,9 @@ def morph_fsmri(meeg, morph_to):
                                          subject_to=morph_to, subjects_dir=meeg.subjects_dir)
         meeg.save_source_morph(morph)
     else:
-        logger.info(f'There is no need to morph the source-space for {meeg.name}, '
-                    f'because the morph-destination "{morph_to}" '
-                    f'is the same as the associated FSMRI.')
+        logging.info(f'There is no need to morph the source-space for {meeg.name}, '
+                     f'because the morph-destination "{morph_to}" '
+                     f'is the same as the associated FSMRI.')
 
 
 def morph_labels_from_fsaverage(fsmri):
@@ -1135,7 +1133,7 @@ def apply_morph(meeg, morph_to):
             morphed_stcs[trial] = morph.apply(stcs[trial])
         meeg.save_morphed_source_estimates(morphed_stcs)
     else:
-        logger.info(f'{meeg.name} is already in source-space of {morph_to} and won\'t be morphed')
+        logging.info(f'{meeg.name} is already in source-space of {morph_to} and won\'t be morphed')
 
 
 def source_space_connectivity(meeg, parcellation, target_labels, inverse_method, lambda2, con_methods,

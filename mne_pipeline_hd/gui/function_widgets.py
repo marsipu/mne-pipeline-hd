@@ -50,8 +50,7 @@ class RunDialog(QDialog):
         self.start()
 
     def init_controller(self):
-        self.rc = QRunController(run_dialog=self, controller=self.mw.ct,
-                                 pool=self.mw.mp_pool)
+        self.rc = QRunController(run_dialog=self, controller=self.mw.ct)
 
     def init_ui(self):
         layout = QVBoxLayout()

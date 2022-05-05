@@ -68,6 +68,7 @@ def get_exception_tuple(is_mp=False):
     traceback.print_exc()
     exctype, value = sys.exc_info()[:2]
     traceback_str = traceback.format_exc(limit=-10)
+    # ToDo: Is this doing what it's supposed to do?
     if is_mp:
         logger = multiprocessing.get_logger()
     else:
@@ -176,7 +177,7 @@ def show_error_dialog(exc_str):
     if QApplication.instance() is not None:
         ErrorDialog(exc_str, title='A unexpected error occurred')
     else:
-        logging.getLogger().debug("No QApplication instance available.")
+        logging.debug("No QApplication instance available.")
 
 
 # ToDo: Test
@@ -202,7 +203,7 @@ class UncaughtHook(QObject):
             traceback.print_exception(exc_type, exc_value, exc_traceback)
             exc_info = (exc_type, exc_value, exc_traceback)
             exc_str = (exc_type.__name__, exc_value, ''.join(traceback.format_tb(exc_traceback)))
-            logging.getLogger().critical(f'Uncaught exception:\n'
+            logging.critical(f'Uncaught exception:\n'
                                          f'{exc_str[0]}: {exc_str[1]}\n'
                                          f'{exc_str[2]}',
                                          exc_info=exc_info)

@@ -13,6 +13,7 @@ import functools
 import inspect
 import itertools
 import json
+import logging
 import os
 import pickle
 import shutil
@@ -1126,7 +1127,7 @@ class Group(BaseLoading):
     def init_attributes(self):
         """Initialize additional attributes for Group"""
         if self.name not in self.pr.all_groups:
-            self.group_list = [None]
+            self.group_list = []
             if not self.suppress_warnings:
                 print(f'No objects assigned for {self.name}, defaulting to empty list')
         else:
@@ -1187,6 +1188,25 @@ class Group(BaseLoading):
     ####################################################################################################################
     # Load- & Save-Methods
     ####################################################################################################################
+    def load_items(self, obj_type='MEEG', data_type=None):
+        """Returns a generator for group items."""
+        for obj_name in self.group_list:
+            if obj_type == 'MEEG':
+                obj = MEEG(obj_name, self.ct)
+            elif obj_type == 'FSMRI':
+                obj = FSMRI(obj_name, self.ct)
+            else:
+                logging.error(f'The object-type {obj_type} is not valid!')
+                continue
+            if data_type is None:
+                yield obj
+            elif data_type in obj.io_dict:
+                data = obj.io_dict[data_type]['load']()
+                yield data
+            else:
+
+
+
     @load_decorator
     def load_ga_evokeds(self):
         ga_evokeds = dict()

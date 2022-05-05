@@ -181,13 +181,13 @@ def restart_program():
        cleanup
        From: https://stackoverflow.com/questions/11329917/restart-python-script-from-within-itself
     """
-    logging.getLogger().info('Restarting')
+    logging.info('Restarting')
     try:
         p = psutil.Process(os.getpid())
         for handler in p.open_files() + p.connections():
             os.close(handler.fd)
     except Exception as e:
-        logging.getLogger().error(e)
+        logging.error(e)
 
     python = sys.executable
     os.execl(python, python, *sys.argv)

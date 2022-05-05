@@ -14,13 +14,11 @@ from os.path import join, isfile
 from .loading import MEEG, FSMRI, Group
 from .pipeline_utils import type_json_hook
 
-logger = logging.getLogger()
-
 
 def transfer_file_params_to_single_subject(ct):
     old_fp_path = join(ct.pr.pscripts_path, f'file_parameters_{ct.pr.name}.json')
     if isfile(old_fp_path):
-        logger.info('Transfering File-Parameters to single files...')
+        logging.info('Transfering File-Parameters to single files...')
         with open(old_fp_path, 'r') as file:
             file_parameters = json.load(file, object_hook=type_json_hook)
             for obj_name in file_parameters:
@@ -37,7 +35,7 @@ def transfer_file_params_to_single_subject(ct):
                     obj.save_file_parameter_file()
                     obj.clean_file_parameters()
         os.remove(old_fp_path)
-        logger.info('Done!')
+        logging.info('Done!')
 
 
 

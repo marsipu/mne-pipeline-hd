@@ -29,8 +29,6 @@ from ..gui.gui_utils import get_exception_tuple, get_user_input_string
 home_dirs = ['custom_packages', 'freesurfer', 'projects']
 project_dirs = ['_pipeline_scripts', 'data', 'figures']
 
-logger = logging.getLogger()
-
 
 class Controller:
 
@@ -55,9 +53,9 @@ class Controller:
             # Initialize log-file
             self.logging_path = join(self.home_path, '_pipeline.log')
             file_handler = logging.FileHandler(self.logging_path, 'w')
-            logger.addHandler(file_handler)
+            logging.addHandler(file_handler)
 
-            logger.info(f'Home-Path: {self.home_path}')
+            logging.info(f'Home-Path: {self.home_path}')
             QS().setValue('home_path', self.home_path)
             # Create subdirectories if not existing for a valid home_path
             for subdir in [d for d in home_dirs if not isdir(join(self.home_path, d))]:
@@ -120,7 +118,7 @@ class Controller:
             # Initialize Project
             if selected_project is not None:
                 self.change_project(selected_project)
-                logger.info(f'Selected-Project: {self.pr.name}')
+                logging.info(f'Selected-Project: {self.pr.name}')
 
     def load_settings(self):
         try:
@@ -196,7 +194,7 @@ class Controller:
             shutil.rmtree(join(self.projects_path, project))
         except OSError as error:
             print(error)
-            logger.critical(f'The folder of {project} can\'t be deleted and has to be deleted manually!')
+            logging.warning(f'The folder of {project} can\'t be deleted and has to be deleted manually!')
 
     def save(self, worker_signals=None):
         if self.pr is not None:
