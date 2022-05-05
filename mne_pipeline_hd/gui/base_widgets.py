@@ -23,7 +23,7 @@ from .models import (BaseDictModel, BaseListModel, BasePandasModel,
                      CheckDictEditModel, CheckDictModel, CheckListModel,
                      EditDictModel, EditListModel, EditPandasModel,
                      FileManagementModel, TreeModel)
-from .. import QS
+from .. import QS, _object_refs
 
 
 class Base(QWidget):
@@ -1056,6 +1056,8 @@ class SimpleDialog(QDialog):
                  show_close_bt=True):
         super().__init__(parent)
 
+        _object_refs['dialogs'][self.__class__.__name__] = self
+
         layout = QVBoxLayout()
 
         if title:
@@ -1082,6 +1084,10 @@ class SimpleDialog(QDialog):
             self.open()
         else:
             self.show()
+
+    def closeEvent(self, event):
+        event.accept()
+        _object_refs['dialogs'].pop(self.__class__.__name__)
 
 
 class AssignWidget(QWidget):

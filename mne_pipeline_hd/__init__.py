@@ -22,9 +22,10 @@ iswin = sys.platform.startswith("win32")
 islin = not ismac and not iswin
 
 
-# Keep reference to Qt-objects without parent to avoid garbage collection
+# Keep reference to Qt-objects without parent for tests and to avoid garbage collection
 _object_refs = {'welcome_window': None,
-                'main_window': None}
+                'main_window': None,
+                'dialogs': dict()}
 
 
 # Import QSettings or provide Dummy-Class to be independent from PyQt/PySide

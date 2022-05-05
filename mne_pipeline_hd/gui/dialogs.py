@@ -13,12 +13,13 @@ from pathlib import Path
 
 import mne
 from PyQt5.QtWidgets import (QDialog, QGridLayout, QLabel, QListView, QPushButton,
-                             QSizePolicy, QTextEdit, QVBoxLayout)
+                             QSizePolicy, QTextEdit, QVBoxLayout, QWidget, QComboBox, QMessageBox)
 
-from .base_widgets import SimpleList
+from .base_widgets import SimpleList, SimpleDialog
 from .gui_utils import set_ratio_geometry
 from .models import CheckListModel
 from ..pipeline_functions.loading import MEEG
+from ..pipeline_functions.project import Project
 
 
 class CheckListDlg(QDialog):
@@ -208,6 +209,77 @@ class RawInfo(QDialog):
                 self.info_string += f'<b>{key_tuple[1]}:</b> {value} <i>{key_tuple[2]}</i><br>'
 
         self.info_label.setHtml(self.info_string)
+
+
+class CopyParamsDialog(SimpleDialog):
+    def __init__(self, main_win):
+        self.main_win = main_win
+        self.ct = main_win.ct
+        widget = QWidget()
+        layout = QGridLayout()
+        layout.addWidget(QLabel('From:'), 0, 0)
+        self.from_cmbx = QComboBox()
+        self.from_cmbx.addItems(self.ct.projects)
+        self.from_cmbx.currentTextChanged.connect(self.from_selected)
+        layout.addWidget(self.from_cmbx, 1, 0)
+        layout.addWidget(QLabel('Parameter-Preset:'), 2, 0)
+        self.from_pp_cmbx = QComboBox()
+        layout.addWidget(self.from_pp_cmbx, 3, 0)
+
+        layout.addWidget(QLabel('To:'), 0, 1)
+        self.to_cmbx = QComboBox()
+        self.to_cmbx.currentTextChanged.connect(self.to_selected)
+        self.to_cmbx.setEnabled(False)
+        layout.addWidget(self.to_cmbx, 1, 1)
+        layout.addWidget(QLabel('Parameter-Preset:'), 2, 1)
+        self.to_pp_cmbx = QComboBox()
+        self.to_pp_cmbx.setEditable(True)
+        layout.addWidget(self.to_pp_cmbx, 3, 1)
+
+        copy_bt = QPushButton('Copy')
+        copy_bt.clicked.connect(self.copy_parameters)
+        layout.addWidget(copy_bt, 4, 0)
+        close_bt = QPushButton('Close')
+        close_bt.clicked.connect(self.close)
+        layout.addWidget(close_bt, 4, 1)
+
+        widget.setLayout(layout)
+        super().__init__(widget, parent=main_win, title='Copy Parameters between Projects',
+                         window_title='Copy Parameters', show_close_bt=False)
+
+    def _get_p_presets(self, pr_name):
+        if self.ct.pr.name == pr_name:
+            project = self.ct.pr
+        else:
+            project = Project(self.ct, pr_name)
+
+        return list(project.parameters.keys())
+
+    def from_selected(self, from_name):
+        if from_name:
+            self.to_cmbx.setEnabled(True)
+            self.to_cmbx.clear()
+            self.to_cmbx.addItems([p for p in self.ct.projects if p != from_name])
+
+            self.from_pp_cmbx.clear()
+            self.from_pp_cmbx.addItems(self._get_p_presets(from_name))
+
+    def to_selected(self, to_name):
+        if to_name:
+            self.to_pp_cmbx.clear()
+            self.to_pp_cmbx.addItems(self._get_p_presets(to_name))
+
+    def copy_parameters(self):
+        from_name = self.from_cmbx.currentText()
+        from_pp = self.from_pp_cmbx.currentText()
+        to_name = self.to_cmbx.currentText()
+        to_pp = self.to_pp_cmbx.currentText()
+        if from_name and to_name:
+            self.ct.copy_parameters_between_projects(from_name, from_pp, to_name, to_pp)
+        if to_name == self.ct.pr.name:
+            self.main_win.parameters_dock.redraw_param_widgets()
+        QMessageBox().information(self, 'Finished',
+                                  f'Parameters copied from {from_name} to {to_name}!')
 
 
 class AboutDialog(QDialog):

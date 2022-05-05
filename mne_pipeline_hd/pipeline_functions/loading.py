@@ -1204,7 +1204,7 @@ class Group(BaseLoading):
                 data = obj.io_dict[data_type]['load']()
                 yield data
             else:
-
+                logging.error(f'{data_type} is not valid for {obj_type}')
 
 
     @load_decorator

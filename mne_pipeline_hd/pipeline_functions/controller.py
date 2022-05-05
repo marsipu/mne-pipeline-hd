@@ -53,7 +53,7 @@ class Controller:
             # Initialize log-file
             self.logging_path = join(self.home_path, '_pipeline.log')
             file_handler = logging.FileHandler(self.logging_path, 'w')
-            logging.addHandler(file_handler)
+            logging.getLogger().addHandler(file_handler)
 
             logging.info(f'Home-Path: {self.home_path}')
             QS().setValue('home_path', self.home_path)
@@ -195,6 +195,16 @@ class Controller:
         except OSError as error:
             print(error)
             logging.warning(f'The folder of {project} can\'t be deleted and has to be deleted manually!')
+
+    def copy_parameters_between_projects(self, from_name, from_p_preset,
+                                         to_name, to_p_preset):
+        from_project = Project(self, from_name)
+        if to_name == self.pr.name:
+            to_project = self.pr
+        else:
+            to_project = Project(self, to_name)
+        to_project.parameters[to_p_preset] = from_project.parameters[from_p_preset]
+        to_project.save()
 
     def save(self, worker_signals=None):
         if self.pr is not None:

@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
 from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
-                      SysInfoMsg, AboutDialog)
+                      SysInfoMsg, AboutDialog, CopyParamsDialog)
 from .education_widgets import EducationEditor, EducationTour
 from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport, RunDialog
 from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon, get_user_input_string
@@ -103,7 +103,9 @@ class MainWindow(QMainWindow):
                     new_controller.change_project(new_project)
 
                 self.ct = new_controller
-                _object_refs['welcome_window'].ct = new_controller
+                welcome_window = _object_refs['welcome_window']
+                if welcome_window is not None:
+                    welcome_window.ct = new_controller
                 self.statusBar().showMessage(f'Home-Path: {self.ct.home_path}, '
                                              f'Project: {self.ct.pr.name}')
 
@@ -144,6 +146,9 @@ class MainWindow(QMainWindow):
     def pr_clean_pf(self):
         WorkerDialog(self, self.ct.pr.clean_plot_files, show_buttons=True,
                      show_console=True, close_directly=False, title='Cleaning Plot-Files')
+
+    def pr_copy_parameters(self):
+        CopyParamsDialog(self)
 
     def update_project_box(self):
         self.project_box.clear()
@@ -214,6 +219,7 @@ class MainWindow(QMainWindow):
         project_menu = self.menuBar().addMenu('&Project')
         project_menu.addAction('&Clean File-Parameters', self.pr_clean_fp)
         project_menu.addAction('&Clean Plot-Files', self.pr_clean_pf)
+        project_menu.addAction('&Copy Parameters between Projects', self.pr_copy_parameters)
 
         # Custom-Functions
         func_menu = self.menuBar().addMenu('&Functions')
@@ -528,30 +534,29 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def closeEvent(self, event):
-        if self.restarting:
+        welcome_window = _object_refs['welcome_window']
+        if self.restarting or welcome_window is None:
             answer = QMessageBox.No
         else:
             answer = QMessageBox.question(self, 'Closing MNE-Pipeline',
                                           'Do you want to return to the Welcome-Window?',
                                           buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
                                           defaultButton=QMessageBox.Yes)
-
-        if any([answer == a for a in [QMessageBox.Yes, QMessageBox.No]]):
+        if answer not in [QMessageBox.Yes, QMessageBox.No]:
+            event.ignore()
+        else:
             if self.edu_tour:
                 self.edu_tour.close()
             event.accept()
             _object_refs['main_window'] = None
-            welcome_window = _object_refs['welcome_window']
 
-            if answer == QMessageBox.Yes:
-                welcome_window.check_controller()
-                welcome_window.show()
+            if welcome_window is not None:
+                if answer == QMessageBox.Yes:
+                    welcome_window.check_controller()
+                    welcome_window.show()
 
-            elif answer == QMessageBox.No:
-                welcome_window.close()
-
-        else:
-            event.ignore()
+                elif answer == QMessageBox.No:
+                    welcome_window.close()
 
 
 def show_main_window(controller):
