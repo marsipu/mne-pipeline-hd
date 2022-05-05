@@ -9,7 +9,7 @@ License: BSD (3-clause)
 import json
 import logging
 import os
-from os.path import join, isfile
+from os.path import isdir, join, isfile
 
 from .loading import MEEG, FSMRI, Group
 from .pipeline_utils import type_json_hook
@@ -31,6 +31,8 @@ def transfer_file_params_to_single_subject(ct):
                 else:
                     obj = None
                 if obj is not None:
+                    if not isdir(obj.save_dir):
+                        continue
                     obj.file_parameters = file_parameters[obj_name]
                     obj.save_file_parameter_file()
                     obj.clean_file_parameters()
