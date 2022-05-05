@@ -1,6 +1,1 @@
 pytest-qt
-
-# Requirement for deployment (only source-space)
-PyQtWebEngine
-joblib
-sklearn
