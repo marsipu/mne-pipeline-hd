@@ -382,6 +382,8 @@ def brain_plot(meeg, stcs, folder_name, subject, mne_evoked_time=None):
         brain.add_text(0, 0.9, f'{meeg.name}-{trial}', 'title',
                        font_size=14)
         meeg.plot_save(folder_name, trial=trial, brain=brain)
+        if not meeg.ct.settings['show_plots']:
+            brain.close()
 
 
 def plot_stc(meeg, mne_evoked_time):
