@@ -11,9 +11,21 @@ import pathlib
 
 from setuptools import find_packages, setup
 
-long_description = (pathlib.Path(__file__).parent / "README.md").read_text('UTF-8')
 
-# Get version as in mne-tools/mne-qt-browser
+# Get version and requirements as in mne-tools/mne-qt-browser
+def parse_requirements_file(fname):
+    requirements = list()
+    with open(fname, 'r') as fid:
+        for line in fid:
+            req = line.strip()
+            if req.startswith('#'):
+                continue
+            # strip end-of-line comments
+            req = req.split('#', maxsplit=1)[0].strip()
+            requirements.append(req)
+    return requirements
+
+
 version = None
 with open(pathlib.Path(__file__).parent / 'mne_pipeline_hd/_version.py', 'r') as fid:
     for line in (line.strip() for line in fid):
@@ -22,6 +34,8 @@ with open(pathlib.Path(__file__).parent / 'mne_pipeline_hd/_version.py', 'r') as
             break
 if version is None:
     raise RuntimeError('Could not determine version')
+
+long_description = (pathlib.Path(__file__).parent / "README.md").read_text('UTF-8')
 
 setup(name='mne_pipeline_hd',
       version=version,
@@ -32,14 +46,7 @@ setup(name='mne_pipeline_hd',
       author='Martin Schulz',
       author_email='dev@earthman-music.de',
       python_requires='>=3.7',
-      install_requires=['mne',
-                        'pandas',
-                        'autoreject',
-                        'qdarkstyle',
-                        'PyQtWebEngine',
-                        'joblib',
-                        'sklearn',
-                        'pyobjc-framework-Cocoa; sys_platform == "darwin"'],
+      install_requires=[parse_requirements_file('requirements.txt')],
       license='BSD (3-clause)',
       packages=find_packages(exclude=['docs', 'tests', 'development']),
       package_data={},

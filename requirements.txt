@@ -1,10 +1,9 @@
 # MNE-Python-Requirements
 mne
 mne_connectivity
-pandas
 
 # Special Pipeline-Requirements
-https://api.github.com/repos/autoreject/autoreject/zipball/master
+autoreject
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 qdarkstyle
 
