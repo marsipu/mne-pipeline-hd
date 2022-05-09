@@ -15,12 +15,11 @@ from shutil import copytree
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-                             QMainWindow, QSizePolicy, QTextBrowser, QTextEdit, QVBoxLayout, QWidget, QWizard,
-                             QWizardPage)
-
-from .base_widgets import CheckDictEditList, CheckList
-from .gui_utils import center, set_ratio_geometry
-from .. import QS
+                             QMainWindow, QSizePolicy, QTextBrowser, QTextEdit, QVBoxLayout,
+                             QWidget, QWizard, QWizardPage)
+from mne_pipeline_hd import QS
+from mne_pipeline_hd.gui.base_widgets import CheckDictEditList, CheckList
+from mne_pipeline_hd.gui.gui_utils import center, set_ratio_geometry
 
 
 class EducationTour(QWizard):
@@ -72,7 +71,8 @@ class EducationEditor(QMainWindow):
         self.edu['meeg'] = self.ct.pr.sel_meeg.copy()
         self.edu['fsmri'] = self.ct.pr.sel_fsmri.copy()
         self.edu['groups'] = self.ct.pr.sel_groups.copy()
-        self.edu['functions'] = [f for f in self.ct.pr.sel_functions if f in self.ct.pr.sel_functions]
+        self.edu['functions'] = [f for f in self.ct.pr.sel_functions if
+                                 f in self.ct.pr.sel_functions]
         self.edu['dock_kwargs'] = {'meeg_view': False, 'fsmri_view': False, 'group_view': False}
         self.edu['format'] = 'PlainText'
         self.edu['tour_list'] = list()
@@ -107,13 +107,16 @@ class EducationEditor(QMainWindow):
         self.meeg_check_list = CheckList(self.ct.pr.all_meeg, self.edu['meeg'], title='Select MEEG')
         select_layout.addWidget(self.meeg_check_list)
 
-        self.fsmri_check_list = CheckList(self.ct.pr.all_fsmri, self.edu['fsmri'], title='Select FSMRI')
+        self.fsmri_check_list = CheckList(self.ct.pr.all_fsmri, self.edu['fsmri'],
+                                          title='Select FSMRI')
         select_layout.addWidget(self.fsmri_check_list)
 
-        self.group_check_list = CheckList(list(self.ct.pr.all_groups.keys()), self.edu['groups'], title='Select Groups')
+        self.group_check_list = CheckList(list(self.ct.pr.all_groups.keys()), self.edu['groups'],
+                                          title='Select Groups')
         select_layout.addWidget(self.group_check_list)
 
-        self.func_check_list = CheckList(self.ct.pd_funcs.index, self.edu['functions'], title='Select Functions')
+        self.func_check_list = CheckList(self.ct.pd_funcs.index, self.edu['functions'],
+                                         title='Select Functions')
         select_layout.addWidget(self.func_check_list)
 
         layout.addLayout(select_layout)

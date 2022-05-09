@@ -9,7 +9,7 @@ License: BSD (3-clause)
 
 import io
 
-from ..pipeline_functions.controller import Controller
+from mne_pipeline_hd.pipeline_functions.controller import Controller
 
 controller_attributes = ['home_path', 'projects', 'pr', 'projects_path', 'subjects_dir']
 
@@ -57,5 +57,3 @@ def test_project_management(tmpdir, monkeypatch):
     _check_project(ct, 'test3')
 
     assert len(ct.projects) == 2
-
-

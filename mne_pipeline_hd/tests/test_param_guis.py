@@ -14,26 +14,25 @@ from ast import literal_eval
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QGridLayout,
                              QHBoxLayout, QComboBox, QLineEdit,
                              QPushButton, QApplication, QDialog)
-
-from ..gui import parameter_widgets
-from ..gui.base_widgets import SimpleDict
+from mne_pipeline_hd.gui import parameter_widgets
+from mne_pipeline_hd.gui.base_widgets import SimpleDict
 
 
 class ParamGuiTest(QWidget):
     def __init__(self):
         super().__init__()
         self.parameters = {'IntGui': None,
-                      'FloatGui': 5.3,
-                      'StringGui': 'Havona',
-                      'MultiTypeGui': 42,
-                      'FuncGui': 5000,
-                      'BoolGui': True,
-                      'TupleGui': (45, 6),
-                      'ComboGui': 'a',
-                      'ListGui': [1, 454.33, 'post_central-lh', 'raga', 5],
-                      'CheckListGui': ['bananaaa'],
-                      'DictGui': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
-                      'SliderGui': 5}
+                           'FloatGui': 5.3,
+                           'StringGui': 'Havona',
+                           'MultiTypeGui': 42,
+                           'FuncGui': 5000,
+                           'BoolGui': True,
+                           'TupleGui': (45, 6),
+                           'ComboGui': 'a',
+                           'ListGui': [1, 454.33, 'post_central-lh', 'raga', 5],
+                           'CheckListGui': ['bananaaa'],
+                           'DictGui': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
+                           'SliderGui': 5}
 
         self.keyword_args = {
             'IntGui': {'min_val': -4,

@@ -21,23 +21,25 @@ import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDockWidget, QFileDialog,
-                             QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
-                             QListWidget, QListWidgetItem, QMessageBox, QProgressBar, QPushButton,
+from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
+                             QDockWidget, QFileDialog, QGridLayout, QHBoxLayout,
+                             QHeaderView, QLabel, QLineEdit, QListWidget,
+                             QListWidgetItem, QMessageBox, QProgressBar, QPushButton,
                              QScrollArea, QSizePolicy, QTabWidget, QTableView, QTreeWidget,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
 from matplotlib import pyplot as plt
-
-from .base_widgets import (AssignWidget, CheckDictList, CheckList, EditDict, EditList, FilePandasTable, SimpleDialog,
-                           SimpleList,
-                           SimplePandasTable)
-from .gui_utils import (ErrorDialog, Worker, WorkerDialog, center, get_exception_tuple, set_ratio_geometry,
-                        get_user_input_string)
-from .models import AddFilesModel
-from .parameter_widgets import ComboGui
-from ..basic_functions.operations import plot_ica_components, plot_ica_overlay, plot_ica_properties, plot_ica_sources
-from ..pipeline_functions.loading import FSMRI, Group, MEEG
-from ..pipeline_functions.pipeline_utils import compare_filep
+from mne_pipeline_hd.basic_functions.operations import (plot_ica_components, plot_ica_overlay,
+                                                        plot_ica_properties, plot_ica_sources)
+from mne_pipeline_hd.gui.base_widgets import (AssignWidget, CheckDictList, CheckList,
+                                              EditDict, EditList, FilePandasTable,
+                                              SimpleDialog, SimpleList, SimplePandasTable)
+from mne_pipeline_hd.gui.gui_utils import (ErrorDialog, Worker, WorkerDialog,
+                                           center, get_exception_tuple,
+                                           set_ratio_geometry, get_user_input_string)
+from mne_pipeline_hd.gui.models import AddFilesModel
+from mne_pipeline_hd.gui.parameter_widgets import ComboGui
+from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import compare_filep
 
 
 def index_parser(index, all_items):
@@ -218,7 +220,8 @@ class FileDock(QDockWidget):
             # MEEG-List + Index-Line-Edit
             meeg_widget = QWidget()
             meeg_layout = QVBoxLayout()
-            self.meeg_list = CheckList(self.mw.ct.pr.all_meeg, self.mw.ct.pr.sel_meeg, ui_button_pos='top',
+            self.meeg_list = CheckList(self.mw.ct.pr.all_meeg, self.mw.ct.pr.sel_meeg,
+                                       ui_button_pos='top',
                                        show_index=True, title='Select MEG/EEG')
             meeg_layout.addWidget(self.meeg_list)
 
@@ -249,7 +252,8 @@ class FileDock(QDockWidget):
             # MRI-Subjects-List + Index-Line-Edit
             fsmri_widget = QWidget()
             fsmri_layout = QVBoxLayout()
-            self.fsmri_list = CheckList(self.mw.ct.pr.all_fsmri, self.mw.ct.pr.sel_fsmri, ui_button_pos='top',
+            self.fsmri_list = CheckList(self.mw.ct.pr.all_fsmri, self.mw.ct.pr.sel_fsmri,
+                                        ui_button_pos='top',
                                         show_index=True, title='Select Freesurfer-MRI')
             fsmri_layout.addWidget(self.fsmri_list)
 
@@ -505,7 +509,8 @@ def load_raw_file(path, file_type=None, load_kwargs=None):
         raw = mne.io.read_raw_cnt(path, preload=True, **load_kwargs)
     elif file_type == '.ds':
         raw = mne.io.read_raw_ctf(path, preload=True, **load_kwargs)
-    elif any(f == file_type for f in ['.dat', '.dap', '.rs3', '.cdt', '.cdt.dpa', '.cdt.cef', '.cef']):
+    elif any(f == file_type for f in
+             ['.dat', '.dap', '.rs3', '.cdt', '.cdt.dpa', '.cdt.cef', '.cef']):
         raw = mne.io.read_raw_curry(path, preload=True, **load_kwargs)
     elif file_type == '.edf':
         raw = mne.io.read_raw_edf(path, preload=True, **load_kwargs)
@@ -543,7 +548,8 @@ class AddFilesWidget(QWidget):
         self.pr = main_win.ct.pr
         self.layout = QVBoxLayout()
 
-        self.erm_keywords = ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room', 'raum', 'Raum']
+        self.erm_keywords = ['leer', 'Leer', 'erm', 'ERM', 'empty', 'Empty', 'room', 'Room', 'raum',
+                             'Raum']
         self.supported_file_types = {'.*': 'All Files',
                                      '.bin': 'Artemis123',
                                      '.cnt': 'Neuroscan',
@@ -613,7 +619,8 @@ class AddFilesWidget(QWidget):
 
     def delete_item(self):
         # Sorted indexes in reverse to avoid problems when removing several indices at once
-        row_idxs = sorted(set([idx.row() for idx in self.view.selectionModel().selectedIndexes()]), reverse=True)
+        row_idxs = sorted(set([idx.row() for idx in self.view.selectionModel().selectedIndexes()]),
+                          reverse=True)
         for row_idx in row_idxs:
             self.model.removeRow(row_idx)
         # Update pd_files, because reference is changed with model.removeRow()
@@ -647,7 +654,8 @@ class AddFilesWidget(QWidget):
                     erm = 0
 
                 self.pd_files = self.pd_files.append({'Name': file_name, 'File-Type': p.suffix,
-                                                      'Empty-Room?': erm, 'Path': file_path}, ignore_index=True)
+                                                      'Empty-Room?': erm, 'Path': file_path},
+                                                     ignore_index=True)
 
             self.update_model()
 
@@ -656,15 +664,19 @@ class AddFilesWidget(QWidget):
                                         f'These files already exist in your meeg.pr: {existing_files}')
 
     def get_files_path(self):
-        filter_list = [f'{self.supported_file_types[key]} (*{key})' for key in self.supported_file_types]
+        filter_list = [f'{self.supported_file_types[key]} (*{key})' for key in
+                       self.supported_file_types]
         filter_list.insert(0, 'All Files (*.*)')
         filter_qstring = ';;'.join(filter_list)
-        files_list = QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import', filter=filter_qstring)[0]
+        files_list = \
+            QFileDialog.getOpenFileNames(self, 'Choose raw-file/s to import',
+                                         filter=filter_qstring)[0]
         self.insert_files(files_list)
 
     def get_folder_path(self):
-        folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder to import your raw-Files from (including '
-                                                             'subfolders)')
+        folder_path = QFileDialog.getExistingDirectory(self,
+                                                       'Choose a folder to import your raw-Files from (including '
+                                                       'subfolders)')
         if folder_path != '':
             # create a list of file and obj directories
             # names in the given directory
@@ -677,8 +689,9 @@ class AddFilesWidget(QWidget):
                         match = re.match(rf'(.+)({file_type})', file)
                         if match and len(match.group()) == len(file):
                             # Make sure, that no files from Pipeline-Analysis are included
-                            if not any(x in file for x in ['-eve.', '-epo.', '-ica.', '-ave.', '-tfr.', '-fwd.',
-                                                           '-cov.', '-inv.', '-src.', '-trans.', '-bem-sol.']):
+                            if not any(x in file for x in
+                                       ['-eve.', '-epo.', '-ica.', '-ave.', '-tfr.', '-fwd.',
+                                        '-cov.', '-inv.', '-src.', '-trans.', '-bem-sol.']):
                                 files_list.append(join(dirpath, file))
             self.insert_files(files_list)
 
@@ -693,7 +706,8 @@ class AddFilesWidget(QWidget):
     def add_files(self, worker_signals):
 
         # Resolve identical file-names (but different types)
-        duplicates = [item for item, i_cnt in Counter(list(self.pd_files['Name'])).items() if i_cnt > 1]
+        duplicates = [item for item, i_cnt in Counter(list(self.pd_files['Name'])).items() if
+                      i_cnt > 1]
         for name in duplicates:
             dupl_df = self.pd_files[self.pd_files['Name'] == name]
             for idx in dupl_df.index:
@@ -872,7 +886,8 @@ class AddMRIWidget(QWidget):
             self.paths[new_name] = self.paths[old_name]
 
     def import_mri_subject(self):
-        folder_path = QFileDialog.getExistingDirectory(self, 'Choose a folder with a subject\'s Freesurfe-Segmentation')
+        folder_path = QFileDialog.getExistingDirectory(self,
+                                                       'Choose a folder with a subject\'s Freesurfe-Segmentation')
 
         if folder_path != '':
             if exists(join(folder_path, 'surf')):
@@ -887,9 +902,11 @@ class AddMRIWidget(QWidget):
                 print('Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
 
     def import_mri_subjects(self):
-        parent_folder = QFileDialog.getExistingDirectory(self, 'Choose a folder containting several '
-                                                               'Freesurfer-Segmentations')
-        folder_list = sorted([f for f in os.listdir(parent_folder) if not f.startswith('.')], key=str.lower)
+        parent_folder = QFileDialog.getExistingDirectory(self,
+                                                         'Choose a folder containting several '
+                                                         'Freesurfer-Segmentations')
+        folder_list = sorted([f for f in os.listdir(parent_folder) if not f.startswith('.')],
+                             key=str.lower)
 
         for fsmri in folder_list:
             folder_path = join(parent_folder, fsmri)
@@ -1052,7 +1069,8 @@ class CopyBadsDialog(QDialog):
 
     def copy_bads(self):
         # Check, that at least one item is selected in each list and that the copy_from-item is in meeg_bad_channels
-        if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[0] in self.bad_channels_dict:
+        if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[
+            0] in self.bad_channels_dict:
             for copy_to in self.copy_tos:
                 copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
                 copy_to_info = MEEG(copy_to, self.parent_w.mw.ct).load_info()
@@ -1172,7 +1190,8 @@ class SubBadsWidget(QWidget):
             if self.current_obj.name in self.info_dict:
                 self._make_bad_chbxs(self.info_dict[self.current_obj.name])
             else:
-                worker_dlg = WorkerDialog(self, self.current_obj.load_info, title='Loading Channels...')
+                worker_dlg = WorkerDialog(self, self.current_obj.load_info,
+                                          title='Loading Channels...')
                 worker_dlg.thread_finished.connect(self._make_bad_chbxs)
 
     def bad_dict_selected(self, current, _):
@@ -1227,7 +1246,8 @@ class SubBadsWidget(QWidget):
             events = self.current_obj.load_events()
         except FileNotFoundError:
             events = None
-        self.raw_fig = self.raw.plot(events=events, n_channels=30, bad_color='red', title=self.current_obj.name)
+        self.raw_fig = self.raw.plot(events=events, n_channels=30, bad_color='red',
+                                     title=self.current_obj.name)
         if hasattr(self.raw_fig, 'canvas'):
             # Connect Closing of Matplotlib-Figure to assignment of bad-channels
             self.raw_fig.canvas.mpl_connect('close_event', self.get_selected_bads)
@@ -1349,10 +1369,11 @@ class EventIDGui(QDialog):
         self.event_id_widget = EditDict(self.event_id, ui_buttons=True, title='Event-ID')
         # Connect editing of Event-ID-Table to update of Check-List
         self.event_id_widget.dataChanged.connect(self.update_check_list)
-        self.event_id_widget.setToolTip('Add a Trial-Descriptor (as key) for each Event-ID (as value) '
-                                        'you want to include it in you analysis.\n'
-                                        'You can assign multiple descriptors per ID by '
-                                        'separating them by "/"')
+        self.event_id_widget.setToolTip(
+            'Add a Trial-Descriptor (as key) for each Event-ID (as value) '
+            'you want to include it in you analysis.\n'
+            'You can assign multiple descriptors per ID by '
+            'separating them by "/"')
         event_id_layout.addWidget(self.event_id_widget)
 
         self.event_id_label = QLabel()
@@ -1658,9 +1679,11 @@ class FileManagment(QDialog):
                         try:
                             # Add Time
                             # Last entry in TIME should be the most recent one
-                            obj_pd_time.loc[obj_name, path_type] = obj.file_parameters[Path(path).name]['TIME']
+                            obj_pd_time.loc[obj_name, path_type] = \
+                                obj.file_parameters[Path(path).name]['TIME']
                             # Add Size (accumulate, if there are several files)
-                            obj_pd_size.loc[obj_name, path_type] += obj.file_parameters[Path(path).name]['SIZE']
+                            obj_pd_size.loc[obj_name, path_type] += \
+                                obj.file_parameters[Path(path).name]['SIZE']
                         except KeyError:
                             pass
 
@@ -1846,7 +1869,8 @@ class FileManagment(QDialog):
 
         obj_name, path_type = self._get_current(kind)
 
-        if obj_name and path_type and obj_name in self.param_results and path_type in self.param_results[obj_name]:
+        if obj_name and path_type and obj_name in self.param_results and path_type in \
+                self.param_results[obj_name]:
             result_dict = self.param_results[obj_name][path_type]
 
             for param in result_dict:
@@ -1855,8 +1879,10 @@ class FileManagment(QDialog):
 
             if len(compare_pd.index) > 0:
                 # Show changed parameters
-                SimpleDialog(widget=SimplePandasTable(compare_pd, title='Changed Parameters', resize_rows=True,
-                                                      resize_columns=True), parent=self, scroll=False)
+                SimpleDialog(widget=SimplePandasTable(compare_pd, title='Changed Parameters',
+                                                      resize_rows=True,
+                                                      resize_columns=True), parent=self,
+                             scroll=False)
 
             else:
                 QMessageBox.information(self, 'All parameters equal!',
@@ -1913,7 +1939,8 @@ class FileManagment(QDialog):
 
         """
 
-        msgbx = QMessageBox.question(self, 'Remove files?', 'Do you really want to remove the selected Files?')
+        msgbx = QMessageBox.question(self, 'Remove files?',
+                                     'Do you really want to remove the selected Files?')
 
         if msgbx == QMessageBox.Yes:
             if kind == 'MEEG':
@@ -1923,7 +1950,8 @@ class FileManagment(QDialog):
             else:
                 selected_files = self.group_table.get_selected()
             wd = WorkerDialog(self, self._file_remover, selected_files=selected_files,
-                              kind=kind, show_buttons=True, show_console=True, title='Removing Files')
+                              kind=kind, show_buttons=True, show_console=True,
+                              title='Removing Files')
             wd.thread_finished.connect(partial(self._remove_finished, kind))
 
 
@@ -2047,8 +2075,10 @@ class ICASelect(QDialog):
         if self.main_layout.count() > 1:
             old_layout = self.main_layout.itemAt(self.main_layout.count() - 1)
             self.main_layout.removeItem(old_layout)
-            for sub_layout in [old_layout.itemAt(idx).layout() for idx in range(old_layout.count())]:
-                for widget in [sub_layout.itemAt(idx).widget() for idx in range(sub_layout.count())]:
+            for sub_layout in [old_layout.itemAt(idx).layout() for idx in
+                               range(old_layout.count())]:
+                for widget in [sub_layout.itemAt(idx).widget() for idx in
+                               range(sub_layout.count())]:
                     widget.deleteLater()
             del old_layout
 
@@ -2080,7 +2110,8 @@ class ICASelect(QDialog):
 
     def component_selected(self):
         if self.current_obj:
-            self.pr.ica_exclude[self.current_obj.name] = [idx for idx in self.chkbxs if self.chkbxs[idx].isChecked()]
+            self.pr.ica_exclude[self.current_obj.name] = [idx for idx in self.chkbxs if
+                                                          self.chkbxs[idx].isChecked()]
         self.file_list.content_changed()
 
     def set_chkbx_enable(self, enable):
@@ -2105,7 +2136,8 @@ class ICASelect(QDialog):
                 if not isinstance(figs, list):
                     figs = [figs]
                 for fig in figs:
-                    fig.canvas.mpl_connect('close_event', partial(self.get_selected_components, ica))
+                    fig.canvas.mpl_connect('close_event',
+                                           partial(self.get_selected_components, ica))
             except:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
@@ -2124,11 +2156,13 @@ class ICASelect(QDialog):
             dialog.open()
             try:
                 figs, ica = plot_ica_sources(meeg=self.current_obj,
-                                             ica_source_data=self.parameters['ica_source_data'], show_plots=True)
+                                             ica_source_data=self.parameters['ica_source_data'],
+                                             show_plots=True)
                 if not isinstance(figs, list):
                     figs = [figs]
                 for fig in figs:
-                    fig.canvas.mpl_connect('close_event', partial(self.get_selected_components, ica))
+                    fig.canvas.mpl_connect('close_event',
+                                           partial(self.get_selected_components, ica))
             except:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
@@ -2146,7 +2180,8 @@ class ICASelect(QDialog):
             dialog.setWindowTitle('Opening...')
             dialog.open()
             try:
-                plot_ica_overlay(meeg=self.current_obj, ica_overlay_data=self.parameters['ica_overlay_data'],
+                plot_ica_overlay(meeg=self.current_obj,
+                                 ica_overlay_data=self.parameters['ica_overlay_data'],
                                  show_plots=True)
             except:
                 err_tuple = get_exception_tuple()

@@ -17,8 +17,7 @@ from pathlib import Path
 
 import numpy as np
 import psutil
-
-from .. import islin, ismac, iswin
+from mne_pipeline_hd import islin, ismac, iswin
 
 datetime_format = '%d.%m.%Y %H:%M:%S'
 
@@ -120,12 +119,14 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
                 if param in critical_params:
                     result_dict[param] = (previous_value, current_value, True)
                     if verbose:
-                        print(f'{param} changed from {previous_value} to {current_value} for {file_name} '
-                              f'and is probably crucial for {function}')
+                        print(
+                            f'{param} changed from {previous_value} to {current_value} for {file_name} '
+                            f'and is probably crucial for {function}')
                 else:
                     result_dict[param] = (previous_value, current_value, False)
                     if verbose:
-                        print(f'{param} changed from {previous_value} to {current_value} for {file_name}')
+                        print(
+                            f'{param} changed from {previous_value} to {current_value} for {file_name}')
         except KeyError:
             result_dict[param] = 'missing'
             if verbose:

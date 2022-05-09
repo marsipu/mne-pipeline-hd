@@ -13,18 +13,19 @@ from os.path import isfile, join
 
 from PyQt5.QtCore import Qt, QThreadPool
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
-                             QProgressDialog, QPushButton, QScrollArea, QSizePolicy, QSpinBox, QTabWidget, QToolBar,
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel,
+                             QMainWindow, QMessageBox, QProgressDialog, QPushButton,
+                             QScrollArea, QSizePolicy, QSpinBox, QTabWidget, QToolBar,
                              QVBoxLayout, QWidget)
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-
-from .. import QS
-from .base_widgets import CheckList, SimpleList
-from .gui_utils import CodeEditor, MainConsoleWidget, Worker, WorkerDialog, get_exception_tuple, \
-    set_ratio_geometry
-from ..pipeline_functions.function_utils import get_arguments
-from ..pipeline_functions.loading import FSMRI, Group, MEEG
+from mne_pipeline_hd import QS
+from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
+from mne_pipeline_hd.gui.gui_utils import (CodeEditor, MainConsoleWidget, Worker,
+                                           WorkerDialog, get_exception_tuple,
+                                           set_ratio_geometry)
+from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
+from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
 
 
 class HistoryDlg(QDialog):
@@ -67,7 +68,7 @@ class DataTerminal(QDialog):
         self.mw = main_win
         self.ct = main_win.ct
         self.pr = main_win.ct.pr
-        
+
         self.obj = current_object
         self.history = list()
 
@@ -339,7 +340,8 @@ class PlotViewSelection(QDialog):
         # Show ProgressBar
         self.total_loads = len(self.selected_objs) * len(self.selected_ppresets)
         if self.total_loads == 0:
-            QMessageBox.warning(self, 'Not enought selected!', 'An important parameter seems to be missing')
+            QMessageBox.warning(self, 'Not enought selected!',
+                                'An important parameter seems to be missing')
         else:
             self.prog_dlg = QProgressDialog()
             self.prog_dlg.setLabelText('Loading Plots...')
@@ -384,17 +386,21 @@ class PlotViewSelection(QDialog):
                         worker = Worker(plot_func, **keyword_arguments)
                         # Pass Object-Name into the plot_finished-Slot
                         # (needs to be set as default in lambda-function to survive loop)
-                        worker.signals.finished.connect(lambda val, o_name=obj_name, ppreset=p_preset:
-                                                        self.plot_finished(val, o_name, ppreset))
-                        worker.signals.error.connect(lambda err_tuple, o_name=obj_name, ppreset=p_preset:
-                                                     self.thread_error(err_tuple, o_name, ppreset, 'plot'))
-                        print(f'Starting Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
+                        worker.signals.finished.connect(
+                            lambda val, o_name=obj_name, ppreset=p_preset:
+                            self.plot_finished(val, o_name, ppreset))
+                        worker.signals.error.connect(
+                            lambda err_tuple, o_name=obj_name, ppreset=p_preset:
+                            self.thread_error(err_tuple, o_name, ppreset, 'plot'))
+                        print(
+                            f'Starting Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
                         QThreadPool.globalInstance().start(worker)
 
                     # Load Plot-Images
                     else:
                         try:
-                            image_paths = [join(obj.figures_path, p) for p in obj.plot_files[self.selected_func]]
+                            image_paths = [join(obj.figures_path, p) for p in
+                                           obj.plot_files[self.selected_func]]
                         except KeyError as ke:
                             self.all_images[p_preset][obj_name] = f'{ke} not found for {obj_name}'
                             self.thread_finished(None)
@@ -512,8 +518,9 @@ class PlotViewer(QMainWindow):
                         else:
                             view_widget = QLabel()
                             # Zoom Pixmap
-                            view_widget.setPixmap(item.scaled(item.size() * (self.zoom_factor / 100),
-                                                              Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                            view_widget.setPixmap(
+                                item.scaled(item.size() * (self.zoom_factor / 100),
+                                            Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
                         if len(obj_items) > 1:
                             tab_widget.addTab(view_widget, str(item_idx))
@@ -585,7 +592,8 @@ class PlotViewer(QMainWindow):
         # (when setCentralWidget in QMainWindow, the previous reference to widgets inside are deleted,
         # so I found no way to store the reference to the TabWidget beforehand)
         viewer_layout = self.centralWidget().layout().itemAt(0)
-        for n in range(viewer_layout.count()):  # Get GridLayouts in scroll_areas for Parameter-Presets
+        for n in range(
+                viewer_layout.count()):  # Get GridLayouts in scroll_areas for Parameter-Presets
             scroll_area = viewer_layout.itemAt(n).itemAt(1).widget()
             grid_layout = scroll_area.widget().layout()
             for c in range(grid_layout.count()):
@@ -599,7 +607,8 @@ class PlotViewer(QMainWindow):
     def update_layout(self):
         old_layout = self.main_layout.itemAt(0)
         self.main_layout.removeItem(old_layout)
-        for p_preset_layout in [old_layout.itemAt(idx).layout() for idx in range(old_layout.count())]:
+        for p_preset_layout in [old_layout.itemAt(idx).layout() for idx in
+                                range(old_layout.count())]:
             title_label = p_preset_layout.itemAt(0).widget()
             title_label.deleteLater()
             scroll_area = p_preset_layout.itemAt(1).widget()

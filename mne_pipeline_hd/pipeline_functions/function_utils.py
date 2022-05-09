@@ -17,11 +17,10 @@ from multiprocessing import Pipe
 
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtWidgets import (QAbstractItemView)
-
-from .loading import BaseLoading, FSMRI, Group, MEEG
-from .pipeline_utils import shutdown
-from .. import QS, ismac
-from ..gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
+from mne_pipeline_hd import QS, ismac
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
+from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, Group, MEEG
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import shutdown
 
 
 def get_func(func_name, obj):
@@ -179,9 +178,12 @@ class RunController:
 
         # Lists of selected functions divided into object-types (MEEG, FSMRI, ...)
         self.sel_meeg_funcs = [ff for ff in self.meeg_funcs.index if ff in self.ct.pr.sel_functions]
-        self.sel_fsmri_funcs = [mf for mf in self.fsmri_funcs.index if mf in self.ct.pr.sel_functions]
-        self.sel_group_funcs = [gf for gf in self.group_funcs.index if gf in self.ct.pr.sel_functions]
-        self.sel_other_funcs = [of for of in self.other_funcs.index if of in self.ct.pr.sel_functions]
+        self.sel_fsmri_funcs = [mf for mf in self.fsmri_funcs.index if
+                                mf in self.ct.pr.sel_functions]
+        self.sel_group_funcs = [gf for gf in self.group_funcs.index if
+                                gf in self.ct.pr.sel_functions]
+        self.sel_other_funcs = [of for of in self.other_funcs.index if
+                                of in self.ct.pr.sel_functions]
 
         # Get a dict with all objects paired with their functions and their type-definition
         # Give all objects and functions in all_objects the status 1 (which means pending)
@@ -236,8 +238,10 @@ class RunController:
                 # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
                 if self.current_obj_name in self.ct.pr.meeg_to_fsmri \
                         and self.loaded_fsmri \
-                        and self.loaded_fsmri.name == self.ct.pr.meeg_to_fsmri[self.current_obj_name]:
-                    self.current_object = MEEG(self.current_obj_name, self.ct, fsmri=self.loaded_fsmri)
+                        and self.loaded_fsmri.name == self.ct.pr.meeg_to_fsmri[
+                    self.current_obj_name]:
+                    self.current_object = MEEG(self.current_obj_name, self.ct,
+                                               fsmri=self.loaded_fsmri)
                 else:
                     self.current_object = MEEG(self.current_obj_name, self.ct)
                 self.loaded_fsmri = self.current_object.fsmri
@@ -345,8 +349,9 @@ class QRunController(RunController):
                 self.rd.error_widget.replace_data(list(self.errors.keys()))
 
                 # Insert Error-Number into console-widget as an anchor for later inspection
-                self.rd.console_widget.write_html(f'<a name=\"{self.error_count}\" href={self.error_count}>'
-                                                  f'<i>Error No.{self.error_count}</i><br></a>')
+                self.rd.console_widget.write_html(
+                    f'<a name=\"{self.error_count}\" href={self.error_count}>'
+                    f'<i>Error No.{self.error_count}</i><br></a>')
                 # Increase Error-Count by one
                 self.error_count += 1
 

@@ -17,13 +17,12 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QHBoxLayout, QLabel,
                              QListView, QPushButton, QScrollArea, QSizePolicy,
                              QSpinBox, QTabWidget, QTableView, QTreeView, QVBoxLayout, QWidget)
-
-from .gui_utils import get_user_input_string
-from .models import (BaseDictModel, BaseListModel, BasePandasModel,
-                     CheckDictEditModel, CheckDictModel, CheckListModel,
-                     EditDictModel, EditListModel, EditPandasModel,
-                     FileManagementModel, TreeModel)
-from .. import QS, _object_refs
+from mne_pipeline_hd import QS, _object_refs
+from mne_pipeline_hd.gui.gui_utils import get_user_input_string
+from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel,
+                                        CheckDictEditModel, CheckDictModel, CheckListModel,
+                                        EditDictModel, EditListModel, EditPandasModel,
+                                        FileManagementModel, TreeModel)
 
 
 class Base(QWidget):
@@ -124,7 +123,8 @@ class Base(QWidget):
 
 
 class BaseList(Base):
-    def __init__(self, model, view, extended_selection=False, drag_drop=False, parent=None, title=None, verbose=False):
+    def __init__(self, model, view, extended_selection=False, drag_drop=False, parent=None,
+                 title=None, verbose=False):
         super().__init__(model, view, drag_drop, parent, title, verbose=verbose)
 
         if extended_selection:
@@ -205,7 +205,8 @@ class EditList(BaseList):
     """
 
     def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
-                 show_index=False, drag_drop=False, parent=None, title=None, model=None, verbose=False):
+                 show_index=False, drag_drop=False, parent=None, title=None, model=None,
+                 verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
@@ -306,7 +307,8 @@ class CheckList(BaseList):
 
     checkedChanged = pyqtSignal(list)
 
-    def __init__(self, data=None, checked=None, ui_buttons=True, ui_button_pos='right', one_check=False,
+    def __init__(self, data=None, checked=None, ui_buttons=True, ui_button_pos='right',
+                 one_check=False,
                  show_index=False, drag_drop=False, parent=None, title=None, verbose=False):
 
         self.ui_buttons = ui_buttons
@@ -416,11 +418,14 @@ class CheckDictList(BaseList):
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False, drag_drop=False,
+    def __init__(self, data=None, check_dict=None, extended_selection=False, show_index=False,
+                 drag_drop=False,
                  yes_bt=None, no_bt=None, parent=None, title=None, verbose=False):
-        super().__init__(model=CheckDictModel(data, check_dict, show_index, drag_drop, yes_bt, no_bt), view=QListView(),
-                         extended_selection=extended_selection, drag_drop=drag_drop,
-                         parent=parent, title=title, verbose=verbose)
+        super().__init__(
+            model=CheckDictModel(data, check_dict, show_index, drag_drop, yes_bt, no_bt),
+            view=QListView(),
+            extended_selection=extended_selection, drag_drop=drag_drop,
+            parent=parent, title=title, verbose=verbose)
 
     def replace_check_dict(self, new_check_dict=None):
         """Replaces model.check_dict with new check_dict
@@ -468,11 +473,15 @@ class CheckDictEditList(EditList):
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data=None, check_dict=None, ui_buttons=True, ui_button_pos='right', extended_selection=False,
-                 show_index=False, yes_bt=None, no_bt=None, drag_drop=False, parent=None, title=None, verbose=False):
-        model = CheckDictEditModel(data, check_dict, show_index=show_index, yes_bt=yes_bt, no_bt=no_bt)
+    def __init__(self, data=None, check_dict=None, ui_buttons=True, ui_button_pos='right',
+                 extended_selection=False,
+                 show_index=False, yes_bt=None, no_bt=None, drag_drop=False, parent=None,
+                 title=None, verbose=False):
+        model = CheckDictEditModel(data, check_dict, show_index=show_index, yes_bt=yes_bt,
+                                   no_bt=no_bt)
         super().__init__(data=data, ui_buttons=ui_buttons, ui_button_pos=ui_button_pos,
-                         extended_selection=extended_selection, show_index=show_index, drag_drop=drag_drop,
+                         extended_selection=extended_selection, show_index=show_index,
+                         drag_drop=drag_drop,
                          parent=parent, title=title, verbose=verbose, model=model)
 
     def replace_check_dict(self, new_check_dict=None):
@@ -587,8 +596,10 @@ class SimpleDict(BaseDict):
 
     def __init__(self, data=None, drag_drop=False, parent=None, title=None, resize_rows=False,
                  resize_columns=False, verbose=False):
-        super().__init__(model=BaseDictModel(data), view=QTableView(), drag_drop=drag_drop, parent=parent,
-                         title=title, resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
+        super().__init__(model=BaseDictModel(data), view=QTableView(), drag_drop=drag_drop,
+                         parent=parent,
+                         title=title, resize_rows=resize_rows, resize_columns=resize_columns,
+                         verbose=verbose)
 
 
 class EditDict(BaseDict):
@@ -617,13 +628,15 @@ class EditDict(BaseDict):
 
     """
 
-    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', drag_drop=False, parent=None, title=None,
+    def __init__(self, data=None, ui_buttons=True, ui_button_pos='right', drag_drop=False,
+                 parent=None, title=None,
                  resize_rows=False, resize_columns=False, verbose=False):
 
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditDictModel(data), view=QTableView(), drag_drop=drag_drop, parent=parent, title=title,
+        super().__init__(model=EditDictModel(data), view=QTableView(), drag_drop=drag_drop,
+                         parent=parent, title=title,
                          resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
 
     def init_ui(self):
@@ -700,7 +713,8 @@ class BasePandasTable(Base):
 
     def __init__(self, model, view, drag_drop=False, parent=None, title=None,
                  resize_rows=False, resize_columns=False, verbose=False):
-        super().__init__(model=model, view=view, drag_drop=drag_drop, parent=parent, title=title, verbose=verbose)
+        super().__init__(model=model, view=view, drag_drop=drag_drop, parent=parent, title=title,
+                         verbose=verbose)
         self.verbose = verbose
 
         if resize_rows:
@@ -727,7 +741,8 @@ class BasePandasTable(Base):
         """
         data = self.model.getData(index)
         row = self.model.headerData(index.row(), orientation=Qt.Vertical, role=Qt.DisplayRole)
-        column = self.model.headerData(index.column(), orientation=Qt.Horizontal, role=Qt.DisplayRole)
+        column = self.model.headerData(index.column(), orientation=Qt.Horizontal,
+                                       role=Qt.DisplayRole)
 
         data_list.append((data, row, column))
 
@@ -884,8 +899,10 @@ class EditPandasTable(BasePandasTable):
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
 
-        super().__init__(model=EditPandasModel(data), view=QTableView(), drag_drop=drag_drop, parent=parent,
-                         title=title, resize_rows=resize_rows, resize_columns=resize_columns, verbose=verbose)
+        super().__init__(model=EditPandasModel(data), view=QTableView(), drag_drop=drag_drop,
+                         parent=parent,
+                         title=title, resize_rows=resize_rows, resize_columns=resize_columns,
+                         verbose=verbose)
 
     def init_ui(self):
         if self.ui_button_pos in ['top', 'bottom']:
@@ -991,13 +1008,15 @@ class EditPandasTable(BasePandasTable):
         self.update_data()
 
     def remove_row(self):
-        rows = sorted(set([ix.row() for ix in self.view.selectionModel().selectedIndexes()]), reverse=True)
+        rows = sorted(set([ix.row() for ix in self.view.selectionModel().selectedIndexes()]),
+                      reverse=True)
         for row in rows:
             self.model.removeRow(row)
         self.update_data()
 
     def remove_column(self):
-        columns = sorted(set([ix.column() for ix in self.view.selectionModel().selectedIndexes()]), reverse=True)
+        columns = sorted(set([ix.column() for ix in self.view.selectionModel().selectedIndexes()]),
+                         reverse=True)
         for column in columns:
             self.model.removeColumn(column)
         self.update_data()
@@ -1015,7 +1034,8 @@ class EditPandasTable(BasePandasTable):
     def edit_col_header(self):
         column = self.view.selectionModel().currentIndex().column()
         old_value = self.model._data.columns[column]
-        text = get_user_input_string(f'Change {old_value} in column {column} to:', 'Change Column-Header')
+        text = get_user_input_string(f'Change {old_value} in column {column} to:',
+                                     'Change Column-Header')
         if text is not None:
             self.model.setHeaderData(column, Qt.Horizontal, text)
 
@@ -1041,13 +1061,15 @@ class FilePandasTable(BasePandasTable):
     """
 
     def __init__(self, data=None, parent=None, title=None, verbose=False):
-        super().__init__(model=FileManagementModel(data), view=QTableView(), parent=parent, title=title,
+        super().__init__(model=FileManagementModel(data), view=QTableView(), parent=parent,
+                         title=title,
                          resize_rows=True, resize_columns=True, verbose=verbose)
 
 
 class DictTree(Base):
     def __init__(self, data, drag_drop=False, parent=None, title=None, verbose=False):
-        super().__init__(model=TreeModel(data), view=QTreeView(), drag_drop=drag_drop, parent=parent,
+        super().__init__(model=TreeModel(data), view=QTreeView(), drag_drop=drag_drop,
+                         parent=parent,
                          title=title, verbose=verbose)
 
 
@@ -1118,15 +1140,18 @@ class AssignWidget(QWidget):
         else:
             subtitle1, subtitle2 = None, None
 
-        self.items_w = CheckDictList(self.items, self.assignments, extended_selection=True, title=subtitle1,
+        self.items_w = CheckDictList(self.items, self.assignments, extended_selection=True,
+                                     title=subtitle1,
                                      verbose=self.verbose)
         self.items_w.selectionChanged.connect(self.items_selected)
         list_layout.addWidget(self.items_w)
 
         if self.props_editable:
-            self.props_w = EditList(self.props, extended_selection=False, title=subtitle2, verbose=self.verbose)
+            self.props_w = EditList(self.props, extended_selection=False, title=subtitle2,
+                                    verbose=self.verbose)
         else:
-            self.props_w = SimpleList(self.props, extended_selection=False, title=subtitle2, verbose=self.verbose)
+            self.props_w = SimpleList(self.props, extended_selection=False, title=subtitle2,
+                                      verbose=self.verbose)
         list_layout.addWidget(self.props_w)
         layout.addLayout(list_layout)
 
@@ -1188,7 +1213,8 @@ class AllBaseWidgets(QWidget):
                        'Zeus': 'Boss',
                        'Ares': self.exassignments}
         self.exchecked = ['Athena']
-        self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], columns=['A', 'B', 'C', 'D'])
+        self.expd = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]],
+                                     columns=['A', 'B', 'C', 'D'])
         self.extree = {'A': {'Aa': 2,
                              'Ab': {'Ab1': 'Hermes',
                                     'Ab2': 'Hades'},
@@ -1215,18 +1241,20 @@ class AllBaseWidgets(QWidget):
                             'DictTree': [self.extree],
                             'AssignWidget': [self.exlist, self.exattributes, self.exassignments]}
 
-        self.widget_kwargs = {'SimpleList': {'extended_selection': True, 'title': 'BaseList', 'verbose': True},
-                              'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList',
-                                           'verbose': True},
-                              'CheckList': {'one_check': False, 'title': 'CheckList', 'verbose': True},
-                              'CheckDictList': {'extended_selection': True, 'title': 'CheckDictList', 'verbose': True},
-                              'CheckDictEditList': {'title': 'CheckDictEditList', 'verbose': True},
-                              'SimpleDict': {'title': 'BaseDict', 'verbose': True},
-                              'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict', 'verbose': True},
-                              'SimplePandasTable': {'title': 'BasePandasTable', 'verbose': True},
-                              'EditPandasTable': {'title': 'EditPandasTable', 'verbose': True},
-                              'DictTree': {'title': 'BaseDictTree', 'verbose': True},
-                              'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget', 'verbose': True}}
+        self.widget_kwargs = {
+            'SimpleList': {'extended_selection': True, 'title': 'BaseList', 'verbose': True},
+            'EditList': {'ui_button_pos': 'bottom', 'extended_selection': True, 'title': 'EditList',
+                         'verbose': True},
+            'CheckList': {'one_check': False, 'title': 'CheckList', 'verbose': True},
+            'CheckDictList': {'extended_selection': True, 'title': 'CheckDictList',
+                              'verbose': True},
+            'CheckDictEditList': {'title': 'CheckDictEditList', 'verbose': True},
+            'SimpleDict': {'title': 'BaseDict', 'verbose': True},
+            'EditDict': {'ui_button_pos': 'left', 'title': 'EditDict', 'verbose': True},
+            'SimplePandasTable': {'title': 'BasePandasTable', 'verbose': True},
+            'EditPandasTable': {'title': 'EditPandasTable', 'verbose': True},
+            'DictTree': {'title': 'BaseDictTree', 'verbose': True},
+            'AssignWidget': {'properties_editable': True, 'title': 'AssignWidget', 'verbose': True}}
 
         self.tab_widget = QTabWidget()
 
@@ -1237,7 +1265,8 @@ class AllBaseWidgets(QWidget):
     def init_ui(self):
         layout = QVBoxLayout()
         for widget_name in self.widget_args:
-            widget = globals()[widget_name](*self.widget_args[widget_name], **self.widget_kwargs[widget_name])
+            widget = globals()[widget_name](*self.widget_args[widget_name],
+                                            **self.widget_kwargs[widget_name])
             setattr(self, widget_name, widget)
             self.tab_widget.addTab(widget, widget_name)
 

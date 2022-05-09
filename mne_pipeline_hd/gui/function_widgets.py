@@ -21,19 +21,19 @@ from types import FunctionType
 import pandas as pd
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout, QGroupBox,
-                             QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QListWidgetItem,
-                             QMessageBox, QPushButton, QSizePolicy, QStyle, QTabWidget, QVBoxLayout, QGridLayout,
-                             QProgressBar, QCheckBox)
-
-from . import parameter_widgets
-from .base_widgets import (CheckDictList, CheckList, EditDict, EditList,
-                           SimpleDialog, SimpleList)
-from .gui_utils import (CodeEditor, ErrorDialog, center, get_exception_tuple,
-                        set_ratio_geometry, get_std_icon, MainConsoleWidget)
-from .models import CustomFunctionModel, RunModel
-from .. import QS
-from ..pipeline_functions.function_utils import QRunController
+from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout,
+                             QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListView,
+                             QListWidget, QListWidgetItem, QMessageBox, QPushButton,
+                             QSizePolicy, QStyle, QTabWidget, QVBoxLayout,
+                             QGridLayout, QProgressBar, QCheckBox)
+from mne_pipeline_hd import QS
+from mne_pipeline_hd.gui import parameter_widgets
+from mne_pipeline_hd.gui.base_widgets import (CheckDictList, CheckList, EditDict, EditList,
+                                              SimpleDialog, SimpleList)
+from mne_pipeline_hd.gui.gui_utils import (CodeEditor, ErrorDialog, center, get_exception_tuple,
+                                           set_ratio_geometry, get_std_icon, MainConsoleWidget)
+from mne_pipeline_hd.gui.models import CustomFunctionModel, RunModel
+from mne_pipeline_hd.pipeline_functions.function_utils import QRunController
 
 
 class RunDialog(QDialog):
@@ -192,13 +192,15 @@ class EditGuiArgsDlg(QDialog):
         self.default_gui_args = dict()
 
         if self.cf.current_parameter:
-            covered_params = ['data', 'param_name', 'param_alias', 'default', 'param_unit', 'description']
+            covered_params = ['data', 'param_name', 'param_alias', 'default', 'param_unit',
+                              'description']
             # Get possible default GUI-Args additional to those covered by the Main-GUI
             gui_type = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type']
             if pd.notna(gui_type):
                 gui_handle = getattr(parameter_widgets, gui_type)
                 psig = inspect.signature(gui_handle).parameters
-                self.default_gui_args = {p: psig[p].default for p in psig if p not in covered_params}
+                self.default_gui_args = {p: psig[p].default for p in psig if
+                                         p not in covered_params}
 
             # Get current GUI-Args
             loaded_gui_args = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_args']
@@ -227,7 +229,8 @@ class EditGuiArgsDlg(QDialog):
 
     def closeEvent(self, event):
         # Remove all options which don't differ from the default
-        for arg_key in [ak for ak in self.gui_args if self.gui_args[ak] == self.default_gui_args[ak]]:
+        for arg_key in [ak for ak in self.gui_args if
+                        self.gui_args[ak] == self.default_gui_args[ak]]:
             self.gui_args.pop(arg_key)
 
         if len(self.gui_args) > 0:
@@ -249,7 +252,8 @@ class ChooseOptions(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout()
-        layout.addWidget(QLabel(f'For {self.gui_type}, you need to specify the options to choose from'))
+        layout.addWidget(
+            QLabel(f'For {self.gui_type}, you need to specify the options to choose from'))
         layout.addWidget(EditList(data=self.options))
         close_bt = QPushButton('Close')
         close_bt.clicked.connect(self.close)
@@ -284,12 +288,15 @@ class CustomFunctionImport(QDialog):
         self.code_dict = dict()
 
         # Get available parameter-guis
-        self.available_param_guis = [pg for pg in dir(parameter_widgets) if 'Gui' in pg and pg != 'QtGui']
+        self.available_param_guis = [pg for pg in dir(parameter_widgets) if
+                                     'Gui' in pg and pg != 'QtGui']
 
         self.add_pd_funcs = pd.DataFrame(columns=['alias', 'target', 'tab', 'group', 'matplotlib',
-                                                  'mayavi', 'dependencies', 'module', 'func_args', 'ready'])
-        self.add_pd_params = pd.DataFrame(columns=['alias', 'group', 'default', 'unit', 'description', 'gui_type',
-                                                   'gui_args', 'functions', 'ready'])
+                                                  'mayavi', 'dependencies', 'module', 'func_args',
+                                                  'ready'])
+        self.add_pd_params = pd.DataFrame(
+            columns=['alias', 'group', 'default', 'unit', 'description', 'gui_type',
+                     'gui_args', 'functions', 'ready'])
 
         self.yes_icon = get_std_icon('SP_DialogApplyButton')
         self.no_icon = get_std_icon('SP_DialogCancelButton')
@@ -406,7 +413,8 @@ class CustomFunctionImport(QDialog):
         self.mtpl_bts.addButton(self.mtpl_void)
         mtpl_layout.addWidget(self.mtpl_yesbt)
         mtpl_layout.addWidget(self.mtpl_nobt)
-        self.mtpl_yesbt.setToolTip('Choose, if the function contains an interactive Matplotlib-Plot')
+        self.mtpl_yesbt.setToolTip(
+            'Choose, if the function contains an interactive Matplotlib-Plot')
         self.mtpl_nobt.setToolTip('Choose, if the function contains no interactive Matplotlib-Plot')
         self.mtpl_bts.buttonToggled.connect(self.mtpl_changed)
         self.mtpl_chkl = QLabel()
@@ -434,8 +442,9 @@ class CustomFunctionImport(QDialog):
         func_setup_formlayout.addRow('Pyvista/Mayavi?', myv_layout)
 
         self.dpd_bt = QPushButton('Set Dependencies')
-        self.dpd_bt.setToolTip('Set the functions that must be activated before or the files that must be present '
-                               'for this function to work')
+        self.dpd_bt.setToolTip(
+            'Set the functions that must be activated before or the files that must be present '
+            'for this function to work')
         self.dpd_bt.clicked.connect(partial(SelectDependencies, self))
         func_setup_formlayout.addRow('Dependencies', self.dpd_bt)
 
@@ -465,7 +474,8 @@ class CustomFunctionImport(QDialog):
 
         default_layout = QHBoxLayout()
         self.default_le = QLineEdit()
-        self.default_le.setToolTip('Set the default for the parameter (it has to fit the gui-type!)')
+        self.default_le.setToolTip(
+            'Set the default for the parameter (it has to fit the gui-type!)')
         self.default_le.textEdited.connect(self.pdefault_changed)
         default_layout.addWidget(self.default_le)
         self.default_chkl = QLabel()
@@ -576,7 +586,8 @@ class CustomFunctionImport(QDialog):
                 self.update_param_view()
                 self.current_parameter = \
                     self.add_pd_params.loc[
-                        [self.current_function in str(x) for x in self.add_pd_params['functions']]].index[0]
+                        [self.current_function in str(x) for x in
+                         self.add_pd_params['functions']]].index[0]
                 self.update_exst_param_label()
                 self.update_param_setup()
             else:
@@ -634,7 +645,8 @@ class CustomFunctionImport(QDialog):
     def update_exst_param_label(self):
         if self.current_function:
             if len(self.param_exst_dict[self.current_function]) > 0:
-                self.exstparam_l.setText(f'Already existing Parameters: {self.param_exst_dict[self.current_function]}')
+                self.exstparam_l.setText(
+                    f'Already existing Parameters: {self.param_exst_dict[self.current_function]}')
                 self.exstparam_l.show()
             else:
                 self.exstparam_l.hide()
@@ -655,11 +667,13 @@ class CustomFunctionImport(QDialog):
         else:
             self.unit_le.clear()
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'description']):
-            self.description_le.setText(self.add_pd_params.loc[self.current_parameter, 'description'])
+            self.description_le.setText(
+                self.add_pd_params.loc[self.current_parameter, 'description'])
         else:
             self.description_le.clear()
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_type']):
-            self.guitype_cmbx.setCurrentText(self.add_pd_params.loc[self.current_parameter, 'gui_type'])
+            self.guitype_cmbx.setCurrentText(
+                self.add_pd_params.loc[self.current_parameter, 'gui_type'])
             self.guitype_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
         else:
             self.guitype_cmbx.setCurrentIndex(-1)
@@ -667,10 +681,12 @@ class CustomFunctionImport(QDialog):
 
     def check_func_setup(self):
         # Check, that all obligatory items of the Subject-Setup and the Parameter-Setup are set
-        if all([pd.notna(self.add_pd_funcs.loc[self.current_function, i]) for i in self.oblig_func]):
+        if all([pd.notna(self.add_pd_funcs.loc[self.current_function, i]) for i in
+                self.oblig_func]):
             function_params = self.add_pd_params.loc[
                 [self.current_function in str(x) for x in self.add_pd_params['functions']]]
-            if pd.notna(self.add_pd_params.loc[function_params.index, self.oblig_params]).all().all():
+            if pd.notna(
+                    self.add_pd_params.loc[function_params.index, self.oblig_params]).all().all():
                 self.func_chkl.setPixmap(self.yes_icon.pixmap(16, 16))
                 self.add_pd_funcs.loc[self.current_function, 'ready'] = 1
             else:
@@ -686,7 +702,8 @@ class CustomFunctionImport(QDialog):
 
     def check_param_setup(self):
         # Check, that all obligatory items of the Parameter-Setup are set
-        if all([pd.notna(self.add_pd_params.loc[self.current_parameter, i]) for i in self.oblig_params]):
+        if all([pd.notna(self.add_pd_params.loc[self.current_parameter, i]) for i in
+                self.oblig_params]):
             self.add_pd_params.loc[self.current_parameter, 'ready'] = 1
         else:
             self.add_pd_params.loc[self.current_parameter, 'ready'] = 0
@@ -742,12 +759,14 @@ class CustomFunctionImport(QDialog):
     def populate_tab_cmbx(self):
         self.tab_cmbx.clear()
         self.tab_cmbx.insertItems(0, set(self.ct.pd_funcs['tab']) |
-                                  set(self.add_pd_funcs.loc[pd.notna(self.add_pd_funcs['tab']), 'tab']))
+                                  set(self.add_pd_funcs.loc[
+                                          pd.notna(self.add_pd_funcs['tab']), 'tab']))
 
     def populate_group_cmbx(self):
         self.group_cmbx.clear()
         self.group_cmbx.insertItems(0, set(self.ct.pd_funcs['group']) |
-                                    set(self.add_pd_funcs.loc[pd.notna(self.add_pd_funcs['group']), 'group']))
+                                    set(self.add_pd_funcs.loc[
+                                            pd.notna(self.add_pd_funcs['group']), 'group']))
 
     def populate_guitype_cmbx(self):
         self.guitype_cmbx.insertItems(0, self.available_param_guis)
@@ -817,8 +836,8 @@ class CustomFunctionImport(QDialog):
             # Check, if default_value and gui_type match
             if pd.notna(self.add_pd_params.loc[self.current_parameter, 'default']):
                 result, _ = self.test_param_gui(
-                        default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
-                        gui_type=text, gui_args=gui_args)
+                    default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
+                    gui_type=text, gui_args=gui_args)
             else:
                 result = None
 
@@ -836,11 +855,12 @@ class CustomFunctionImport(QDialog):
     def pguiargs_changed(self, gui_args):
         if self.current_parameter:
             # Check, if default_value and gui_type match
-            if pd.notna(self.add_pd_params.loc[self.current_parameter, ['default', 'gui_type']]).all():
+            if pd.notna(
+                    self.add_pd_params.loc[self.current_parameter, ['default', 'gui_type']]).all():
                 result, _ = self.test_param_gui(
-                        default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
-                        gui_type=self.add_pd_params.loc[self.current_parameter, 'gui_type'],
-                        gui_args=gui_args)
+                    default_string=self.add_pd_params.loc[self.current_parameter, 'default'],
+                    gui_type=self.add_pd_params.loc[self.current_parameter, 'gui_type'],
+                    gui_args=gui_args)
             else:
                 result = None
 
@@ -874,7 +894,8 @@ class CustomFunctionImport(QDialog):
         # Returns tuple of files-list and file-type
         cf_path_string = QFileDialog.getOpenFileName(self,
                                                      'Choose the Python-File containing the functions to edit',
-                                                     filter='Python-File (*.py)', directory=self.ct.custom_pkg_path)[0]
+                                                     filter='Python-File (*.py)',
+                                                     directory=self.ct.custom_pkg_path)[0]
         if cf_path_string:
             self.file_path = Path(cf_path_string)
             ImportFuncs(self, edit_existing=True)
@@ -910,7 +931,8 @@ class CustomFunctionImport(QDialog):
         try:
             if 'param_unit' in handle_params:
                 gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
-                                 param_alias=param_alias, description=description, param_unit=param_unit, **gui_args)
+                                 param_alias=param_alias, description=description,
+                                 param_unit=param_unit, **gui_args)
             else:
                 gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
                                  param_alias=param_alias, description=description, **gui_args)
@@ -927,7 +949,8 @@ class CustomFunctionImport(QDialog):
         return result, gui
 
     def show_param_gui(self):
-        if self.current_parameter and pd.notna(self.add_pd_params.loc[self.current_parameter, 'gui_type']):
+        if self.current_parameter and pd.notna(
+                self.add_pd_params.loc[self.current_parameter, 'gui_type']):
             TestParamGui(self)
 
     def update_code_editor(self):
@@ -939,7 +962,8 @@ class CustomFunctionImport(QDialog):
         self.code_editor = CodeEditor(self)
         self.code_editor.setReadOnly(True)
         self.update_code_editor()
-        code_dialog = SimpleDialog(self.code_editor, parent=self, modal=False, window_title='Source-Code')
+        code_dialog = SimpleDialog(self.code_editor, parent=self, modal=False,
+                                   window_title='Source-Code')
         set_ratio_geometry(0.5, code_dialog)
         center(code_dialog)
 
@@ -951,9 +975,10 @@ class CustomFunctionImport(QDialog):
         drop_funcs = [f for f in self.add_pd_funcs.index if not self.add_pd_funcs.loc[f, 'ready']]
 
         if len(drop_funcs) > 0:
-            answer = QMessageBox.question(self, 'Close Custom-Functions?', f'There are still unfinished functions:\n'
-                                                                           f'{drop_funcs}\n'
-                                                                           f'Do you still want to quit?')
+            answer = QMessageBox.question(self, 'Close Custom-Functions?',
+                                          f'There are still unfinished functions:\n'
+                                          f'{drop_funcs}\n'
+                                          f'Do you still want to quit?')
         else:
             answer = None
 
@@ -987,7 +1012,8 @@ class ImportFuncs(QDialog):
             if self.edit_existing:
                 self.cf.pkg_name = self.cf.file_path.parent.name
                 pd_funcs_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_functions.csv')
-                pd_params_path = join(self.cf.file_path.parent, f'{self.cf.pkg_name}_parameters.csv')
+                pd_params_path = join(self.cf.file_path.parent,
+                                      f'{self.cf.pkg_name}_parameters.csv')
                 self.cf.add_pd_funcs = pd.read_csv(pd_funcs_path, sep=';', index_col=0)
                 self.cf.add_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
 
@@ -1025,11 +1051,13 @@ class ImportFuncs(QDialog):
             layout.addWidget(exst_label)
 
         view_layout = QHBoxLayout()
-        load_list = CheckList(self.loaded_cfs, self.selected_cfs, ui_button_pos='bottom', title='New functions')
+        load_list = CheckList(self.loaded_cfs, self.selected_cfs, ui_button_pos='bottom',
+                              title='New functions')
         view_layout.addWidget(load_list)
 
         if len(self.edit_loaded_cfs) > 0:
-            edit_list = CheckList(self.edit_loaded_cfs, self.selected_edit_cfs, ui_button_pos='bottom',
+            edit_list = CheckList(self.edit_loaded_cfs, self.selected_edit_cfs,
+                                  ui_button_pos='bottom',
                                   title='Functions to edit')
             view_layout.addWidget(edit_list)
 
@@ -1047,8 +1075,9 @@ class ImportFuncs(QDialog):
                          [cf for cf in self.edit_loaded_cfs if cf in self.selected_edit_cfs]
         if self.edit_existing:
             # Drop Functions which are not selected
-            self.cf.add_pd_funcs.drop(index=[f for f in self.cf.add_pd_funcs.index if f not in selected_funcs],
-                                      inplace=True)
+            self.cf.add_pd_funcs.drop(
+                index=[f for f in self.cf.add_pd_funcs.index if f not in selected_funcs],
+                inplace=True)
 
         for func_key in selected_funcs:
             func = self.module.__dict__[func_key]
@@ -1107,7 +1136,8 @@ class SelectDependencies(QDialog):
         super().__init__(cf_dialog)
         self.cf_dialog = cf_dialog
         if pd.notna(cf_dialog.add_pd_funcs.loc[cf_dialog.current_function, 'dependencies']):
-            self.dpd_list = literal_eval(cf_dialog.add_pd_funcs.loc[cf_dialog.current_function, 'dependencies'])
+            self.dpd_list = literal_eval(
+                cf_dialog.add_pd_funcs.loc[cf_dialog.current_function, 'dependencies'])
         else:
             self.dpd_list = []
 
@@ -1141,7 +1171,8 @@ class SelectDependencies(QDialog):
             self.dpd_list.remove(item.text())
 
     def close_dlg(self):
-        self.cf_dialog.add_pd_funcs.loc[self.cf_dialog.current_function, 'dependencies'] = str(self.dpd_list)
+        self.cf_dialog.add_pd_funcs.loc[self.cf_dialog.current_function, 'dependencies'] = str(
+            self.dpd_list)
         self.close()
 
 
@@ -1155,7 +1186,8 @@ class TestParamGui(QDialog):
         default_string = self.cf.add_pd_params.loc[self.cf.current_parameter, 'default']
         gui_type = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type']
         try:
-            gui_args = literal_eval(self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_args'])
+            gui_args = literal_eval(
+                self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_args'])
         except (SyntaxError, ValueError):
             gui_args = {}
 
@@ -1196,7 +1228,8 @@ class SavePkgDialog(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        self.func_list = SimpleList(list(self.cf_dialog.add_pd_funcs.loc[self.cf_dialog.add_pd_funcs['ready'] == 1].index))
+        self.func_list = SimpleList(
+            list(self.cf_dialog.add_pd_funcs.loc[self.cf_dialog.add_pd_funcs['ready'] == 1].index))
         layout.addWidget(self.func_list)
 
         pkg_name_label = QLabel('Package-Name:')
@@ -1224,12 +1257,14 @@ class SavePkgDialog(QDialog):
     def save_pkg(self):
         if self.my_pkg_name or self.cf_dialog.pkg_name:
             # Drop all functions with unfinished setup and add the remaining to the main_window-DataFrame
-            drop_funcs = self.cf_dialog.add_pd_funcs.loc[self.cf_dialog.add_pd_funcs['ready'] == 0].index
+            drop_funcs = self.cf_dialog.add_pd_funcs.loc[
+                self.cf_dialog.add_pd_funcs['ready'] == 0].index
             final_add_pd_funcs = self.cf_dialog.add_pd_funcs.drop(index=drop_funcs)
 
             drop_params = list()
             for param in self.cf_dialog.add_pd_params.index:
-                if not any([f in str(self.cf_dialog.add_pd_params.loc[param, 'functions']) for f in final_add_pd_funcs.index]):
+                if not any([f in str(self.cf_dialog.add_pd_params.loc[param, 'functions']) for f in
+                            final_add_pd_funcs.index]):
                     drop_params.append(param)
             final_add_pd_params = self.cf_dialog.add_pd_params.drop(index=drop_params)
 
@@ -1254,7 +1289,8 @@ class SavePkgDialog(QDialog):
                 if isfile(pd_params_path):
                     read_pd_params = pd.read_csv(pd_params_path, sep=';', index_col=0)
                     # Replace indexes from file with same name
-                    drop_params = [p for p in read_pd_params.index if p in final_add_pd_params.index]
+                    drop_params = [p for p in read_pd_params.index if
+                                   p in final_add_pd_params.index]
                     read_pd_params.drop(index=drop_params, inplace=True)
                     final_add_pd_params = read_pd_params.append(final_add_pd_params)
 
@@ -1288,15 +1324,18 @@ class SavePkgDialog(QDialog):
             if 'pkg_name' in final_add_pd_funcs:
                 final_add_pd_funcs['pkg_name'] = self.my_pkg_name
             else:
-                final_add_pd_funcs.insert(len(final_add_pd_funcs.columns) - 1, 'pkg_name', self.my_pkg_name)
+                final_add_pd_funcs.insert(len(final_add_pd_funcs.columns) - 1, 'pkg_name',
+                                          self.my_pkg_name)
 
             final_add_pd_funcs.to_csv(pd_funcs_path, sep=';')
             final_add_pd_params.to_csv(pd_params_path, sep=';')
 
-            for func in [f for f in final_add_pd_funcs.index if f in self.cf_dialog.add_pd_funcs.index]:
+            for func in [f for f in final_add_pd_funcs.index if
+                         f in self.cf_dialog.add_pd_funcs.index]:
                 self.cf_dialog.add_pd_funcs.drop(index=func, inplace=True)
             self.cf_dialog.update_func_cmbx()
-            for param in [p for p in final_add_pd_params.index if p in self.cf_dialog.add_pd_params]:
+            for param in [p for p in final_add_pd_params.index if
+                          p in self.cf_dialog.add_pd_params]:
                 self.cf_dialog.add_pd_params.drop(index=param, inplace=True)
             self.cf_dialog.clear_func_items()
             self.cf_dialog.clear_param_items()
@@ -1308,12 +1347,13 @@ class SavePkgDialog(QDialog):
             self.cf_dialog.ct.import_custom_modules()
             self.cf_dialog.mw.redraw_func_and_param()
             # ToDo: MP
-            #init_mp_pool()
+            # init_mp_pool()
             self.close()
 
         else:
             # If no valid pkg_name is existing
-            QMessageBox.warning(self, 'No valid Package-Name!', 'You need to enter a valid Package-Name!')
+            QMessageBox.warning(self, 'No valid Package-Name!',
+                                'You need to enter a valid Package-Name!')
 
 
 class ChooseCustomModules(QDialog):

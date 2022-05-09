@@ -15,12 +15,11 @@ from importlib import resources
 from os.path import join, isfile
 from pathlib import Path
 
-from ._version import __version__  # noqa
+from mne_pipeline_hd._version import __version__  # noqa
 
 ismac = sys.platform.startswith("darwin")
 iswin = sys.platform.startswith("win32")
 islin = not ismac and not iswin
-
 
 # Keep reference to Qt-objects without parent for tests and to avoid garbage collection
 _object_refs = {'welcome_window': None,
@@ -80,6 +79,7 @@ class QSettingsDummy(BaseSettings):
 try:
     from PyQt5.QtCore import QSettings
 
+
     # ToDo: Test
     class ModQSettings(QSettings, BaseSettings):
         def __init__(self):
@@ -102,6 +102,7 @@ try:
                     return defaultValue
             else:
                 return loaded_value
+
 
     class QS(ModQSettings):
         def __init__(self):

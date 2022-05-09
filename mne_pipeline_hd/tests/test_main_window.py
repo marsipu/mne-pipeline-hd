@@ -7,7 +7,7 @@ Pipeline-GUI for Analysis with MNE-Python
 License: BSD (3-clause)
 """
 
-from .. import _object_refs
+from mne_pipeline_hd import _object_refs
 
 
 def test_init(main_window):

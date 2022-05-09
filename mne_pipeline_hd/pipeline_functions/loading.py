@@ -23,9 +23,8 @@ from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-
 # Make use of program also possible with sensor-space installation of mne
-from .. import QS
+from mne_pipeline_hd import QS
 
 try:
     from mayavi import mlab
@@ -38,7 +37,7 @@ import numpy as np
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
-from ..pipeline_functions.pipeline_utils import TypedJSONEncoder, type_json_hook
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, type_json_hook
 
 
 def load_decorator(load_func):
@@ -74,7 +73,8 @@ def load_decorator(load_func):
                     obj_instance.p_preset = actual_p_preset
                     obj_instance.init_paths()
                 elif data_type in obj_instance.deprecated_paths:
-                    obj_instance.io_dict[data_type]['path'] = obj_instance.deprecated_paths[data_type]
+                    obj_instance.io_dict[data_type]['path'] = obj_instance.deprecated_paths[
+                        data_type]
                     data = load_func(*args, **kwargs)
                 else:
                     raise err
@@ -285,7 +285,8 @@ class BaseLoading:
             self.file_parameters.pop(file_name)
         print(f'Removed {len(remove_files)} Files and {n_remove_params} Parameters.')
 
-    def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None, mayavi=False,
+    def plot_save(self, plot_name, subfolder=None, trial=None, idx=None, matplotlib_figure=None,
+                  mayavi=False,
                   mayavi_figure=None, brain=None, dpi=None):
         """
         Save a plot with this method either by letting the figure be detected by the backend (pyplot, mayavi) or by
@@ -543,10 +544,12 @@ class MEEG(BaseLoading):
 
         # Data-Paths
         self.raw_path = join(self.save_dir, f'{self.name}-raw.fif')
-        self.raw_filtered_path = join(self.save_dir, f'{self.name}_{self.p_preset}-filtered-raw.fif')
+        self.raw_filtered_path = join(self.save_dir,
+                                      f'{self.name}_{self.p_preset}-filtered-raw.fif')
         if self.erm:
             self.erm_path = join(self.pr.data_path, self.erm, f'{self.erm}-raw.fif')
-            self.old_erm_processed_path = join(self.pr.data_path, self.erm, f'{self.erm}_{self.p_preset}-raw.fif')
+            self.old_erm_processed_path = join(self.pr.data_path, self.erm,
+                                               f'{self.erm}_{self.p_preset}-raw.fif')
             self.erm_processed_path = join(self.pr.data_path, self.erm,
                                            f'{self.erm}-{self.name}_{self.p_preset}-processed-raw.fif')
         else:
@@ -578,8 +581,9 @@ class MEEG(BaseLoading):
         self.inverse_path = join(self.save_dir, f'{self.name}_{self.p_preset}-inv.fif')
         self.stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-stc')
                           for trial in self.sel_trials}
-        self.morphed_stc_paths = {trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
-                                  for trial in self.sel_trials}
+        self.morphed_stc_paths = {
+            trial: join(self.save_dir, f'{self.name}_{trial}_{self.p_preset}-morphed')
+            for trial in self.sel_trials}
         self.ecd_paths = {trial: {dip: join(self.save_dir, 'ecd_dipoles',
                                             f'{self.name}_{trial}_{self.p_preset}_{dip}-ecd-dip.dip')
                                   for dip in self.pa['ecd_times']}
@@ -921,7 +925,8 @@ class MEEG(BaseLoading):
     def load_morphed_source_estimates(self):
         morphed_stcs = dict()
         for trial in self.morphed_stc_paths:
-            morphed_stcs[trial] = mne.source_estimate.read_source_estimate(self.morphed_stc_paths[trial])
+            morphed_stcs[trial] = mne.source_estimate.read_source_estimate(
+                self.morphed_stc_paths[trial])
 
         return morphed_stcs
 
@@ -1045,7 +1050,8 @@ class FSMRI(BaseLoading):
         self.save_dir = join(self.subjects_dir, self.name)
 
         # Data-Paths
-        self.source_space_path = join(self.save_dir, 'bem', f'{self.name}_{self.pa["source_space_spacing"]}-src.fif')
+        self.source_space_path = join(self.save_dir, 'bem',
+                                      f'{self.name}_{self.pa["source_space_spacing"]}-src.fif')
         # Todo: Bem-Paths with number of vertices in layers
         self.bem_model_path = join(self.save_dir, 'bem', f'{self.name}-bem.fif')
         self.bem_solution_path = join(self.save_dir, 'bem', f'{self.name}-bem-sol.fif')
@@ -1205,7 +1211,6 @@ class Group(BaseLoading):
                 yield data
             else:
                 logging.error(f'{data_type} is not valid for {obj_type}')
-
 
     @load_decorator
     def load_ga_evokeds(self):

@@ -26,7 +26,7 @@ try:
 except (ModuleNotFoundError, ValueError):
     pass
 
-from . import operations as op
+from mne_pipeline_hd.basic_functions import operations as op
 
 
 # ==============================================================================

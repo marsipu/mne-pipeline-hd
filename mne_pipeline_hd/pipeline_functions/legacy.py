@@ -11,8 +11,8 @@ import logging
 import os
 from os.path import isdir, join, isfile
 
-from .loading import MEEG, FSMRI, Group
-from .pipeline_utils import type_json_hook
+from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import type_json_hook
 
 
 def transfer_file_params_to_single_subject(ct):
@@ -38,6 +38,3 @@ def transfer_file_params_to_single_subject(ct):
                     obj.clean_file_parameters()
         os.remove(old_fp_path)
         logging.info('Done!')
-
-
-

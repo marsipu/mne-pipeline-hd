@@ -14,12 +14,11 @@ from pathlib import Path
 import mne
 from PyQt5.QtWidgets import (QDialog, QGridLayout, QLabel, QListView, QPushButton,
                              QSizePolicy, QTextEdit, QVBoxLayout, QWidget, QComboBox, QMessageBox)
-
-from .base_widgets import SimpleList, SimpleDialog
-from .gui_utils import set_ratio_geometry
-from .models import CheckListModel
-from ..pipeline_functions.loading import MEEG
-from ..pipeline_functions.project import Project
+from mne_pipeline_hd.gui.base_widgets import SimpleList, SimpleDialog
+from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
+from mne_pipeline_hd.gui.models import CheckListModel
+from mne_pipeline_hd.pipeline_functions.loading import MEEG
+from mne_pipeline_hd.pipeline_functions.project import Project
 
 
 class CheckListDlg(QDialog):
@@ -175,8 +174,10 @@ class RawInfo(QDialog):
             other_infos['size'] = f'{int(sizes_sum / 1024 ** 2)}'
             size_unit = 'MB'
 
-        ch_type_counter = Counter([mne.io.pick.channel_type(info, idx) for idx in range(len(info['chs']))])
-        other_infos['ch_types'] = ', '.join([f'{key}: {value}' for key, value in ch_type_counter.items()])
+        ch_type_counter = Counter(
+            [mne.io.pick.channel_type(info, idx) for idx in range(len(info['chs']))])
+        other_infos['ch_types'] = ', '.join(
+            [f'{key}: {value}' for key, value in ch_type_counter.items()])
 
         key_list = [('no_files', 'Size of all associated files'),
                     ('size', 'Size of all associated files', size_unit),

@@ -13,16 +13,14 @@ import sys
 from importlib import resources
 
 import qdarkstyle
-from qdarkstyle import DarkPalette, LightPalette
-
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication
-
-from . import QS, ismac, islin
-from .gui.welcome_window import show_welcome_window
-from .gui.gui_utils import StdoutStderrStream, UncaughtHook
-from .pipeline_functions.controller import Controller
+from mne_pipeline_hd import QS, ismac, islin
+from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
+from mne_pipeline_hd.gui.welcome_window import show_welcome_window
+from mne_pipeline_hd.pipeline_functions.controller import Controller
+from qdarkstyle import DarkPalette, LightPalette
 
 
 def main():
@@ -99,7 +97,7 @@ def main():
     with resources.path('mne_pipeline_hd.pipeline_resources', icon_name) as icon_path:
         app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
-    
+
     # Initiate WelcomeWindow
     controller = Controller()
     show_welcome_window(controller)

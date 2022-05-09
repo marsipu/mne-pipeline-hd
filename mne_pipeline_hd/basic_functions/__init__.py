@@ -8,5 +8,4 @@ License: BSD (3-clause)
 """
 
 # Important to get submodules in name-space for later call in main-win
-from . import operations
-from . import plot
+from mne_pipeline_hd.basic_functions import operations, plot

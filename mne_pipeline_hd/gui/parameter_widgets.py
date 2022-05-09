@@ -19,12 +19,12 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout,
                              QWidget, QDockWidget, QTabWidget,
                              QScrollArea, QMessageBox, QStyleFactory)
-
-from .base_widgets import CheckList, EditDict, EditList, SimpleList
-from .dialogs import CheckListDlg
-from .gui_utils import get_std_icon, WorkerDialog, get_exception_tuple, get_user_input_string
-from .. import QS, iswin
-from ..pipeline_functions.controller import Controller
+from mne_pipeline_hd import QS, iswin
+from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList, SimpleList)
+from mne_pipeline_hd.gui.dialogs import CheckListDlg
+from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
+                                           get_exception_tuple, get_user_input_string)
+from mne_pipeline_hd.pipeline_functions.controller import Controller
 
 
 class Param(QWidget):
@@ -175,8 +175,10 @@ class Param(QWidget):
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True, none_select=False,
-                 description=None, param_unit=None, min_val=0, max_val=1000, special_value_text=None):
+    def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True,
+                 none_select=False,
+                 description=None, param_unit=None, min_val=0, max_val=1000,
+                 special_value_text=None):
         """
         Parameters
         ----------
@@ -209,7 +211,8 @@ class IntGui(Param):
             Supply an optional text for the value 0.
         """
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
 
         self.param_widget = QSpinBox()
         self.param_widget.setMinimum(min_val)
@@ -247,8 +250,10 @@ class IntGui(Param):
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1., groupbox_layout=True, none_select=False,
-                 description=None, param_unit=None, min_val=-1000., max_val=1000., step=0.1, decimals=2):
+    def __init__(self, data, param_name, param_alias=None, default=1., groupbox_layout=True,
+                 none_select=False,
+                 description=None, param_unit=None, min_val=-1000., max_val=1000., step=0.1,
+                 decimals=2):
         """
         Parameters
         ----------
@@ -283,7 +288,8 @@ class FloatGui(Param):
             Set the number of decimals of the value.
         """
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.param_widget = QDoubleSpinBox()
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
@@ -321,7 +327,8 @@ class StringGui(Param):
     A GUI for String-Parameters
     """
 
-    def __init__(self, data, param_name, param_alias=None, default='', groupbox_layout=True, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default='', groupbox_layout=True,
+                 none_select=False,
                  description=None, param_unit=None, input_mask=None):
         """
 
@@ -352,7 +359,8 @@ class StringGui(Param):
             Define a string as in https://doc.qt.io/qt-5/qlineedit.html#inputMask-prop
         """
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.param_widget = QLineEdit()
         self.param_unit = param_unit
         if input_mask:
@@ -387,7 +395,8 @@ class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy
     """
 
-    def __init__(self, data, param_name, param_alias=None, default=0, groupbox_layout=True, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default=0, groupbox_layout=True,
+                 none_select=False,
                  description=None, param_unit=None):
         """
         Parameters
@@ -414,12 +423,14 @@ class FuncGui(Param):
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.param_exp = None
         self.param_widget = QLineEdit()
         self.param_unit = param_unit
-        self.param_widget.setToolTip('Use of functions also allowed (from already imported modules + numpy as np)\n'
-                                     'Be carefull as everything entered will be executed!')
+        self.param_widget.setToolTip(
+            'Use of functions also allowed (from already imported modules + numpy as np)\n'
+            'Be carefull as everything entered will be executed!')
         self.param_widget.editingFinished.connect(self.get_param)
 
         self.display_widget = QLabel()
@@ -485,7 +496,8 @@ class FuncGui(Param):
 class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=False, groupbox_layout=False, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default=False, groupbox_layout=False,
+                 none_select=False,
                  description=None, changed_slot=None, param_unit=None, return_integer=False):
         """
         Parameters
@@ -560,7 +572,8 @@ class BoolGui(Param):
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+                 none_select=False,
                  description=None, param_unit=None, min_val=-1000., max_val=1000., step=.1):
         """
         Parameters
@@ -594,7 +607,8 @@ class TupleGui(Param):
             Set the amount, one step takes
         """
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
 
         if step == 1:
             self.param_widget1 = QSpinBox()
@@ -655,7 +669,8 @@ class TupleGui(Param):
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
 
-    def __init__(self, data, param_name, options, param_alias=None, default=object(), groupbox_layout=True,
+    def __init__(self, data, param_name, options, param_alias=None, default=object(),
+                 groupbox_layout=True,
                  none_select=False, description=None, param_unit=None):
         """
         Parameters
@@ -685,7 +700,8 @@ class ComboGui(Param):
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.options = options
         self.param_widget = QComboBox()
         self.param_widget.activated.connect(self.get_param)
@@ -756,7 +772,8 @@ class ListDialog(QDialog):
 class ListGui(Param):
     """A GUI for as list"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+                 none_select=False,
                  description=None, param_unit=None, value_string_length=30):
         """
         Parameters
@@ -788,7 +805,8 @@ class ListGui(Param):
 
         default = default or list()
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.param_unit = param_unit
         self.value_string_length = value_string_length
         # Cache param_value to use after
@@ -869,8 +887,10 @@ class CheckListGui(Param):
     """A GUI to select items from a list of options
     """
 
-    def __init__(self, data, param_name, options, param_alias=None, default=None, groupbox_layout=True,
-                 none_select=False, description=None, param_unit=None, value_string_length=30, one_check=False):
+    def __init__(self, data, param_name, options, param_alias=None, default=None,
+                 groupbox_layout=True,
+                 none_select=False, description=None, param_unit=None, value_string_length=30,
+                 one_check=False):
         """
         Parameters
         ----------
@@ -909,7 +929,8 @@ class CheckListGui(Param):
             options = ['Empty']
             default = ['Empty']
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.options = options
         self.param_unit = param_unit
         self.value_string_length = value_string_length
@@ -988,7 +1009,8 @@ class DictDialog(QDialog):
 class DictGui(Param):
     """A GUI for a dictionary"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+                 none_select=False,
                  description=None, param_unit=None, value_string_length=30):
         """
         
@@ -1021,7 +1043,8 @@ class DictGui(Param):
 
         default = default or dict()
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.param_unit = param_unit
         self.value_string_length = value_string_length
         # Cache param_value to use after setting param_value to None with GroupBox-Checkbox
@@ -1077,7 +1100,8 @@ class DictGui(Param):
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True, none_select=False,
+    def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True,
+                 none_select=False,
                  description=None, param_unit=None, min_val=0, max_val=100, step=1):
         """
         Parameters
@@ -1110,13 +1134,15 @@ class SliderGui(Param):
         step : int | float
             Set the step-size, defaults to 1.
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.min_val = min_val
         self.max_val = max_val
         self.param_widget = QSlider()
         self.param_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.param_unit = param_unit
-        self.decimal_count = max([len(str(value)[str(value).find('.'):]) - 1 for value in [min_val, max_val, step]])
+        self.decimal_count = max(
+            [len(str(value)[str(value).find('.'):]) - 1 for value in [min_val, max_val, step]])
         if self.decimal_count > 0:
             self.param_widget.setMinimum(int(self.min_val * 10 ** self.decimal_count))
             self.param_widget.setMaximum(int(self.max_val * 10 ** self.decimal_count))
@@ -1192,8 +1218,9 @@ class SliderGui(Param):
 class MultiTypeGui(Param):
     """A GUI which accepts multiple types of values in a single LineEdit"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True, none_select=False,
-                 description=None, param_unit=None, type_selection=False, types=None, type_kwargs=None):
+    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+                 none_select=False, description=None, param_unit=None, type_selection=False,
+                 types=None, type_kwargs=None):
         """
         Parameters
         ----------
@@ -1226,7 +1253,8 @@ class MultiTypeGui(Param):
             Specify keyword-arguments for the different GUIs (look into their documentation), 
             the key is the name of the GUI!
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select, description)
+        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+                         description)
         self.type_selection = type_selection
         self.types = types or ['int', 'float', 'bool', 'str', 'list', 'dict', 'tuple']
         self.type_kwargs = type_kwargs or dict()
@@ -1479,7 +1507,8 @@ class ParametersDock(QDockWidget):
 
     def dropgroup_params(self):
         # Create a set of all unique parameters used by functions in selected_modules
-        sel_pdfuncs = self.ct.pd_funcs.loc[self.ct.pd_funcs['module'].isin(self.ct.get_setting('selected_modules'))]
+        sel_pdfuncs = self.ct.pd_funcs.loc[
+            self.ct.pd_funcs['module'].isin(self.ct.get_setting('selected_modules'))]
         # Remove rows with NaN in func_args
         sel_pdfuncs = sel_pdfuncs.loc[sel_pdfuncs['func_args'].notna()]
         all_used_params_str = ','.join(sel_pdfuncs['func_args'])
@@ -1592,8 +1621,10 @@ class ParametersDock(QDockWidget):
                     gui_args = {}
 
                 try:
-                    self.param_guis[idx] = globals()[gui_name](self.ct, param_name=idx, param_alias=param_alias,
-                                                               default=default, description=description,
+                    self.param_guis[idx] = globals()[gui_name](self.ct, param_name=idx,
+                                                               param_alias=param_alias,
+                                                               default=default,
+                                                               description=description,
                                                                param_unit=unit, **gui_args)
                 except:
                     err_tuple = get_exception_tuple()

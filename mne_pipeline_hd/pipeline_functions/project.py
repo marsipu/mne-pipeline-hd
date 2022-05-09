@@ -16,9 +16,9 @@ from os.path import exists, getsize, isfile, join
 from pathlib import Path
 
 import numpy as np
-
-from .loading import MEEG, FSMRI, Group
-from .pipeline_utils import TypedJSONEncoder, count_dict_keys, encode_tuples, type_json_hook
+from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, count_dict_keys, \
+    encode_tuples, type_json_hook
 
 
 class Project:
@@ -103,7 +103,8 @@ class Project:
         # Initiate Project-Lists and Dicts
         self.all_meeg_path = join(self.pscripts_path, f'all_meeg_{self.name}.json')
         self.sel_meeg_path = join(self.pscripts_path, f'selected_meeg_{self.name}.json')
-        self.meeg_bad_channels_path = join(self.pscripts_path, f'meeg_bad_channels_{self.name}.json')
+        self.meeg_bad_channels_path = join(self.pscripts_path,
+                                           f'meeg_bad_channels_{self.name}.json')
         self.meeg_event_id_path = join(self.pscripts_path, f'meeg_event_id_{self.name}.json')
         self.sel_event_id_path = join(self.pscripts_path, f'selected_event_ids_{self.name}.json')
         self.all_erm_path = join(self.pscripts_path, f'all_erm_{self.name}.json')
@@ -171,7 +172,8 @@ class Project:
                           self.sel_groups_path: self.old_sel_groups_path,
                           self.sel_functions_path: self.old_sel_funcs_path}
 
-        for path in [p for p in self.path_to_attribute if self.path_to_attribute[p] not in self.special_loads]:
+        for path in [p for p in self.path_to_attribute if
+                     self.path_to_attribute[p] not in self.special_loads]:
             attribute_name = self.path_to_attribute[path]
             try:
                 with open(path, 'r') as file:
@@ -195,13 +197,15 @@ class Project:
 
                 for p_preset in loaded_parameters:
                     # Make sure, that only parameters, which exist in pd_params are loaded
-                    for param in [p for p in loaded_parameters[p_preset] if p not in self.ct.pd_params.index]:
+                    for param in [p for p in loaded_parameters[p_preset] if
+                                  p not in self.ct.pd_params.index]:
                         if '_exp' not in param:
                             loaded_parameters[p_preset].pop(param)
 
                     # Add parameters, which exist in pipeline_resources/parameters.csv,
                     # but not in loaded-parameters (e.g. added with custom-module)
-                    for param in [p for p in self.ct.pd_params.index if p not in loaded_parameters[p_preset]]:
+                    for param in [p for p in self.ct.pd_params.index if
+                                  p not in loaded_parameters[p_preset]]:
                         try:
                             eval_param = literal_eval(self.ct.pd_params.loc[param, 'default'])
                         except (ValueError, SyntaxError, NameError):
@@ -287,8 +291,10 @@ class Project:
             self.all_meeg.append(obj)
 
         # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
-        read_dir = sorted([f for f in os.listdir(self.ct.subjects_dir) if not f.startswith('.')], key=str.lower)
-        self.all_fsmri = [fsmri for fsmri in read_dir if exists(join(self.ct.subjects_dir, fsmri, 'surf'))]
+        read_dir = sorted([f for f in os.listdir(self.ct.subjects_dir) if not f.startswith('.')],
+                          key=str.lower)
+        self.all_fsmri = [fsmri for fsmri in read_dir if
+                          exists(join(self.ct.subjects_dir, fsmri, 'surf'))]
 
         self.save()
 
@@ -346,7 +352,8 @@ class Project:
             if worker_signals is not None:
                 worker_signals.pgbar_n.emit(key_count)
 
-            if obj_key not in self.all_meeg + self.all_erm + self.all_fsmri + list(self.all_groups.keys()):
+            if obj_key not in self.all_meeg + self.all_erm + self.all_fsmri + list(
+                    self.all_groups.keys()):
                 remove_obj.append(obj_key)
             else:
                 # Remove Parameter-Presets which no longer exist
@@ -381,8 +388,10 @@ class Project:
                                 # Remove image-paths which no longer exist
                                 for rel_image_path in self.plot_files[obj_key][p_preset][func]:
                                     image_path = Path(join(self.figures_path, rel_image_path))
-                                    if not isfile(image_path) or self.figures_path in rel_image_path:
-                                        self.plot_files[obj_key][p_preset][func].remove(rel_image_path)
+                                    if not isfile(
+                                            image_path) or self.figures_path in rel_image_path:
+                                        self.plot_files[obj_key][p_preset][func].remove(
+                                            rel_image_path)
                                     else:
                                         all_image_paths.append(str(image_path))
                                 if len(self.plot_files[obj_key][p_preset][func]) == 0:
@@ -397,7 +406,8 @@ class Project:
                     self.plot_files[obj_key].pop(remove_preset_key)
                 n_remove_ppreset += len(remove_p_preset)
 
-            print(f'Removed {n_remove_ppreset} Parameter-Presets and {n_remove_funcs} from {obj_key}')
+            print(
+                f'Removed {n_remove_ppreset} Parameter-Presets and {n_remove_funcs} from {obj_key}')
 
         for remove_key in remove_obj:
             self.plot_files.pop(remove_key)

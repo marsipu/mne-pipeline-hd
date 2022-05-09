@@ -13,10 +13,9 @@ import time
 from multiprocessing import Pool
 
 from PyQt5.QtWidgets import QApplication, QWidget
-
-from ..gui.gui_utils import WorkerDialog, QProcessWorker
-from ..pipeline_functions.controller import Controller
-from ..pipeline_functions.function_utils import RunController
+from mne_pipeline_hd.gui.gui_utils import WorkerDialog, QProcessWorker
+from mne_pipeline_hd.pipeline_functions.controller import Controller
+from mne_pipeline_hd.pipeline_functions.function_utils import RunController
 
 
 def app_test(test_func):

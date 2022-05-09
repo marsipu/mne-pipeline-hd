@@ -18,12 +18,13 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from inspect import signature
 
-from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, Qt, pyqtSignal, pyqtSlot, QTimer
+from PyQt5.QtCore import (QObject, QProcess, QRunnable, QThreadPool,
+                          Qt, pyqtSignal, pyqtSlot, QTimer)
 from PyQt5.QtGui import QFont, QTextCursor
-from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout, QLabel, QMessageBox,
-                             QProgressBar, QPushButton, QTextEdit, QVBoxLayout, QStyle, QInputDialog)
-
-from .. import QS, _object_refs
+from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog, QHBoxLayout,
+                             QLabel, QMessageBox, QProgressBar, QPushButton,
+                             QTextEdit, QVBoxLayout, QStyle, QInputDialog)
+from mne_pipeline_hd import QS, _object_refs
 
 
 def center(widget):
@@ -164,10 +165,12 @@ class ErrorDialog(QDialog):
                 with smtplib.SMTP_SSL('smtp.gmail.com', port, context=context) as server:
                     server.login('mne.pipeline@gmail.com', password)
                     server.sendmail(adress, adress, message.as_string())
-                QMessageBox.information(self, 'E-Mail sent', 'An E-Mail was sent to mne.pipeline@gmail.com\n'
-                                                             'Thank you for the Report!')
+                QMessageBox.information(self, 'E-Mail sent',
+                                        'An E-Mail was sent to mne.pipeline@gmail.com\n'
+                                        'Thank you for the Report!')
             except OSError:
-                QMessageBox.information(self, 'E-Mail not sent', 'Sending an E-Mail is not possible on your OS')
+                QMessageBox.information(self, 'E-Mail not sent',
+                                        'Sending an E-Mail is not possible on your OS')
 
 
 def show_error_dialog(exc_str):
@@ -204,9 +207,9 @@ class UncaughtHook(QObject):
             exc_info = (exc_type, exc_value, exc_traceback)
             exc_str = (exc_type.__name__, exc_value, ''.join(traceback.format_tb(exc_traceback)))
             logging.critical(f'Uncaught exception:\n'
-                                         f'{exc_str[0]}: {exc_str[1]}\n'
-                                         f'{exc_str[2]}',
-                                         exc_info=exc_info)
+                             f'{exc_str[0]}: {exc_str[1]}\n'
+                             f'{exc_str[2]}',
+                             exc_info=exc_info)
 
             # trigger showing of error-dialog
             self._exception_caught.emit(exc_str)
@@ -426,7 +429,8 @@ class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
     thread_finished = pyqtSignal(object)
 
-    def __init__(self, parent, function, show_buttons=False, show_console=False, close_directly=True, blocking=False,
+    def __init__(self, parent, function, show_buttons=False, show_console=False,
+                 close_directly=True, blocking=False,
                  title=None, **kwargs):
         super().__init__(parent)
 
@@ -699,7 +703,8 @@ def get_user_input_string(prompt, title='Input required!', force=False):
                 QMessageBox().warning(parent, 'Input required!',
                                       'You need to provide an appropriate input to proceed!')
             else:
-                print('Warning: Input required! You need to provide an appropriate input to proceed!')
+                print(
+                    'Warning: Input required! You need to provide an appropriate input to proceed!')
             user_input = get_user_input_string(prompt, title, force)
         else:
             user_input = None

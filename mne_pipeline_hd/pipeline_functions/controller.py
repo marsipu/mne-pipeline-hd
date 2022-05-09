@@ -20,11 +20,10 @@ from pathlib import Path
 
 import mne
 import pandas as pd
-
-from .legacy import transfer_file_params_to_single_subject
-from .project import Project
-from .. import basic_functions, QS
-from ..gui.gui_utils import get_exception_tuple, get_user_input_string
+from mne_pipeline_hd import basic_functions, QS
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, get_user_input_string
+from mne_pipeline_hd.pipeline_functions.legacy import transfer_file_params_to_single_subject
+from mne_pipeline_hd.pipeline_functions.project import Project
 
 home_dirs = ['custom_packages', 'freesurfer', 'projects']
 project_dirs = ['_pipeline_scripts', 'data', 'figures']
@@ -194,7 +193,8 @@ class Controller:
             shutil.rmtree(join(self.projects_path, project))
         except OSError as error:
             print(error)
-            logging.warning(f'The folder of {project} can\'t be deleted and has to be deleted manually!')
+            logging.warning(
+                f'The folder of {project} can\'t be deleted and has to be deleted manually!')
 
     def copy_parameters_between_projects(self, from_name, from_p_preset,
                                          to_name, to_p_preset):
@@ -208,7 +208,6 @@ class Controller:
 
     def save(self, worker_signals=None):
         if self.pr is not None:
-
             # Save Project
             self.pr.save(worker_signals)
             self.settings['selected_project'] = self.pr.name
@@ -223,21 +222,25 @@ class Controller:
 
             self.all_pd_funcs = self.pd_funcs.copy()
             # Exclude functions which are not selected
-            self.pd_funcs = self.pd_funcs.loc[self.pd_funcs.index.isin(self.edu_program['functions'])]
+            self.pd_funcs = self.pd_funcs.loc[
+                self.pd_funcs.index.isin(self.edu_program['functions'])]
 
             # Change the Project-Scripts-Path to a new folder to store the Education-Project-Scripts separately
-            self.pr.pscripts_path = join(self.pr.project_path, f'_pipeline_scripts{self.edu_program["name"]}')
+            self.pr.pscripts_path = join(self.pr.project_path,
+                                         f'_pipeline_scripts{self.edu_program["name"]}')
             if not isdir(self.pr.pscripts_path):
                 os.mkdir(self.pr.pscripts_path)
             self.pr.init_pipeline_scripts()
 
             # Exclude MEEG
             self.pr._all_meeg = self.pr.all_meeg.copy()
-            self.pr.all_meeg = [meeg for meeg in self.pr.all_meeg if meeg in self.edu_program['meeg']]
+            self.pr.all_meeg = [meeg for meeg in self.pr.all_meeg if
+                                meeg in self.edu_program['meeg']]
 
             # Exclude FSMRI
             self.pr._all_fsmri = self.pr.all_fsmri.copy()
-            self.pr.all_fsmri = [meeg for meeg in self.pr.all_meeg if meeg in self.edu_program['meeg']]
+            self.pr.all_fsmri = [meeg for meeg in self.pr.all_meeg if
+                                 meeg in self.edu_program['meeg']]
 
     def import_custom_modules(self):
         """
@@ -258,7 +261,8 @@ class Controller:
         pd_functions_pattern = r'.*_functions\.csv'
         pd_parameters_pattern = r'.*_parameters\.csv'
         custom_module_pattern = r'(.+)(\.py)$'
-        for directory in [d for d in os.scandir(self.custom_pkg_path) if not d.name.startswith('.')]:
+        for directory in [d for d in os.scandir(self.custom_pkg_path) if
+                          not d.name.startswith('.')]:
             pkg_name = directory.name
             pkg_path = directory.path
             file_dict = {'functions': None, 'parameters': None, 'modules': list()}
@@ -307,9 +311,11 @@ class Controller:
                         read_pd_funcs['pkg_name'] = pkg_name
 
                         # Check, that there are no duplicates
-                        pd_funcs_to_append = read_pd_funcs.loc[~read_pd_funcs.index.isin(self.pd_funcs.index)]
+                        pd_funcs_to_append = read_pd_funcs.loc[
+                            ~read_pd_funcs.index.isin(self.pd_funcs.index)]
                         self.pd_funcs = pd.concat([self.pd_funcs, pd_funcs_to_append])
-                        pd_params_to_append = read_pd_params.loc[~read_pd_params.index.isin(self.pd_params.index)]
+                        pd_params_to_append = read_pd_params.loc[
+                            ~read_pd_params.index.isin(self.pd_params.index)]
                         self.pd_params = pd.concat([self.pd_params, pd_params_to_append])
 
             else:
@@ -330,4 +336,3 @@ class Controller:
                         # All errors occuring here will be caught by the UncaughtHook
                         spec.loader.exec_module(module)
                         sys.modules[module_name] = module
-

@@ -11,10 +11,10 @@ from ast import literal_eval
 from datetime import datetime
 
 import pandas as pd
-from PyQt5.QtCore import QAbstractItemModel, QAbstractListModel, QAbstractTableModel, QModelIndex, Qt
+from PyQt5.QtCore import (QAbstractItemModel, QAbstractListModel,
+                          QAbstractTableModel, QModelIndex, Qt)
 from PyQt5.QtGui import QBrush, QFont
-
-from ..gui.gui_utils import get_std_icon
+from mne_pipeline_hd.gui.gui_utils import get_std_icon
 
 
 class BaseListModel(QAbstractListModel):
@@ -501,7 +501,8 @@ class EditPandasModel(BasePandasModel):
         elif column == len(self._data.columns):
             self._data = pd.concat([self._data, add_data], axis=1)
         else:
-            self._data = pd.concat([self._data.iloc[:, :column], add_data, self._data.iloc[:, column:]], axis=1)
+            self._data = pd.concat(
+                [self._data.iloc[:, :column], add_data, self._data.iloc[:, column:]], axis=1)
         self.endInsertColumns()
 
         return True
@@ -527,7 +528,8 @@ class EditPandasModel(BasePandasModel):
         elif column + count >= len(self._data.columns):
             self._data = self._data.iloc[:, :column]
         else:
-            self._data = pd.concat([self._data.iloc[:, :column], self._data.iloc[:, column + count:]], axis=1)
+            self._data = pd.concat(
+                [self._data.iloc[:, :column], self._data.iloc[:, column + count:]], axis=1)
         self.endRemoveColumns()
 
         return True

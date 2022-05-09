@@ -15,23 +15,27 @@ import pandas as pd
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
-                             QGridLayout, QGroupBox, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
-                             QPushButton, QScrollArea, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
-
-from .dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
-                      SysInfoMsg, AboutDialog, CopyParamsDialog)
-from .education_widgets import EducationEditor, EducationTour
-from .function_widgets import AddKwargs, ChooseCustomModules, CustomFunctionImport, RunDialog
-from .gui_utils import QProcessDialog, WorkerDialog, center, set_ratio_geometry, get_std_icon, get_user_input_string
-from .loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans, EventIDGui, FileDictDialog, FileDock,
-                              FileManagment, ICASelect, ReloadRaw, SubBadsDialog, SubjectWizard, ExportDialog)
-from .parameter_widgets import BoolGui, IntGui, ParametersDock, SettingsDlg
-from .tools import DataTerminal, PlotViewSelection
-from .. import QS, ismac, _object_refs
-from ..basic_functions.plot import close_all
-from ..pipeline_functions.controller import Controller
-from ..pipeline_functions.loading import MEEG
-from ..pipeline_functions.pipeline_utils import restart_program
+                             QGridLayout, QGroupBox, QHBoxLayout, QLabel,
+                             QMainWindow, QMessageBox, QPushButton, QScrollArea,
+                             QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
+from mne_pipeline_hd import QS, ismac, _object_refs
+from mne_pipeline_hd.basic_functions.plot import close_all
+from mne_pipeline_hd.gui.dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
+                                         SysInfoMsg, AboutDialog, CopyParamsDialog)
+from mne_pipeline_hd.gui.education_widgets import EducationEditor, EducationTour
+from mne_pipeline_hd.gui.function_widgets import (AddKwargs, ChooseCustomModules,
+                                                  CustomFunctionImport, RunDialog)
+from mne_pipeline_hd.gui.gui_utils import (QProcessDialog, WorkerDialog, center,
+                                           set_ratio_geometry, get_std_icon, get_user_input_string)
+from mne_pipeline_hd.gui.loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans,
+                                                 EventIDGui, FileDictDialog, FileDock,
+                                                 FileManagment, ICASelect, ReloadRaw,
+                                                 SubBadsDialog, SubjectWizard, ExportDialog)
+from mne_pipeline_hd.gui.parameter_widgets import BoolGui, IntGui, ParametersDock, SettingsDlg
+from mne_pipeline_hd.gui.tools import DataTerminal, PlotViewSelection
+from mne_pipeline_hd.pipeline_functions.controller import Controller
+from mne_pipeline_hd.pipeline_functions.loading import MEEG
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import restart_program
 
 
 class MainWindow(QMainWindow):
@@ -97,8 +101,9 @@ class MainWindow(QMainWindow):
                                      new_controller.errors['home_path'])
             else:
                 if 'project' in new_controller.errors:
-                    new_project = get_user_input_string('There is no project in this Home-Path, please enter a name '\
-                                                        'for a new project:', 'Add Project!', force=True)
+                    new_project = get_user_input_string(
+                        'There is no project in this Home-Path, please enter a name ' \
+                        'for a new project:', 'Add Project!', force=True)
 
                     new_controller.change_project(new_project)
 
@@ -308,7 +313,8 @@ class MainWindow(QMainWindow):
                                                    '(or just save them without showing, then just check "Save Plots")',
                                        default=True))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'save_plots', param_alias='Save Plots',
-                                       description='Do you want to save the plots made to a file?', default=True))
+                                       description='Do you want to save the plots made to a file?',
+                                       default=True))
         self.toolbar.addWidget(BoolGui(self.ct.settings, 'shutdown', param_alias='Shutdown',
                                        description='Do you want to shut your system down'
                                                    ' after execution of all subjects?'))
@@ -320,7 +326,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(QWidget(self))
         self.general_layout = QGridLayout()
         self.centralWidget().setLayout(self.general_layout)
-
 
         self.tab_func_widget = QTabWidget()
         self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
@@ -469,7 +474,8 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, 'fsaverage exists!',
                                     'fsaverage is already imported!')
         else:
-            WorkerDialog(self, partial(mne.datasets.fetch_fsaverage, subjects_dir=self.ct.subjects_dir),
+            WorkerDialog(self,
+                         partial(mne.datasets.fetch_fsaverage, subjects_dir=self.ct.subjects_dir),
                          show_console=True, title='Loading fsaverage...', blocking=True)
             self.ct.pr.all_fsmri.append('fsaverage')
             self.file_dock.update_dock()

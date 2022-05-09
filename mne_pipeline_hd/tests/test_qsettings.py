@@ -12,7 +12,7 @@ import sys
 from importlib import resources
 
 from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtWidgets import QApplication
 
 
 def test_qsettings_types():
