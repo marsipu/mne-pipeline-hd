@@ -732,7 +732,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_events(self, events):
-        mne.event.write_events(self.events_path, events)
+        mne.event.write_events(self.events_path, events, overwrite=True)
 
     @load_decorator
     def load_epochs(self):
