@@ -416,7 +416,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
 
     # Remove projections
     if ica_remove_proj:
-        filt_data.info['proj'] = list()
+        filt_data.del_proj()
 
     fit_kwargs = check_kwargs(kwargs, ica.fit)
     ica.fit(filt_data, reject=reject, reject_by_annotation=reject_by_annotation, **fit_kwargs)
