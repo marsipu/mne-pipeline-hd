@@ -23,6 +23,7 @@ from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd import QS
 
