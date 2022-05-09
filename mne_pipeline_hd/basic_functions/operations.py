@@ -27,6 +27,7 @@ import mne
 import mne_connectivity
 import numpy as np
 from mne.preprocessing import ICA
+
 from mne_pipeline_hd import ismac, iswin
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import (check_kwargs, compare_filep)
