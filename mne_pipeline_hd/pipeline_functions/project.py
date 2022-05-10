@@ -16,6 +16,7 @@ from os.path import exists, getsize, isfile, join
 from pathlib import Path
 
 import numpy as np
+
 from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, count_dict_keys, \
     encode_tuples, type_json_hook
@@ -300,7 +301,8 @@ class Project:
 
     def clean_file_parameters(self, worker_signals=None):
         if worker_signals is not None:
-            worker_signals.pgbar_max.emit(len(self.all_meeg + self.all_fsmri + self.all_groups))
+            worker_signals.pgbar_max.emit(len(self.all_meeg) + len(self.all_fsmri) +
+                                          len(self.all_groups.keys()))
         count = 0
 
         for meeg in self.all_meeg:
