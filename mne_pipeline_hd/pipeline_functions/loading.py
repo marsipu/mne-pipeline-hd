@@ -19,11 +19,10 @@ import pickle
 import shutil
 from datetime import datetime
 from os import listdir, makedirs, remove
-from os.path import exists, getsize, isdir, isfile, join
+from os.path import exists, getsize, isdir, isfile, join, dirname
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd import QS
 
@@ -40,41 +39,75 @@ import numpy as np
 # ==============================================================================
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, type_json_hook
 
+sample_paths = {'Raw': 'sample_audvis_raw.fif',
+                'Raw (Filtered)': 'sample_audvis_filt-0-40_raw.fif',
+                'EmptyRoom': 'ernoise_raw.fif',
+                'Events': 'sample_audvis_raw-eve.fif',
+                'ICA': 'sample_audvis_ica.fif',
+                'Evoked': 'sample_audvis-ave.fif',
+                'Transformation': 'sample_audvis_raw-trans.fif',
+                'Noise Covariance': 'sample_audvis-cov.fif',
+                'Invers Operator': 'sample_audvis-meg-oct-6-meg-inv.fif'}
+
+io_paths = {'Raw': 'test_raw.fif',
+            'Events': 'test-eve.fif',
+            'Evoked': 'test-ave.fif',
+            'Noise Covariance': 'test-cov.fif'}
+
+
+def _copy_test_file(data_type, self, source):
+    if source == 'sample':
+        test_data_folder = join(mne.datasets.sample.data_path(), 'MEG', 'sample')
+        test_file_name = sample_paths[data_type]
+    elif source == 'io':
+        test_data_folder = join(dirname(mne.__file__), 'io', 'tests', 'data')
+        test_file_name = io_paths[data_type]
+    else:
+        logging.warning(f'No test-file from "{source}" for "{data_type}"!')
+        return
+    test_file_path = join(test_data_folder, test_file_name)
+    file_path = self.io_dict[data_type]['path']
+
+    if isfile(test_file_path) and not isfile(file_path):
+        print(f'Copying {data_type} from sample-dataset...')
+        shutil.copy2(test_file_path, file_path)
+        print('Done!')
+
 
 def load_decorator(load_func):
     @functools.wraps(load_func)
-    def load_wrapper(*args, **kwargs):
-        # Get Loading-Class
-        obj_instance = args[0]
+    def load_wrapper(self, *args, **kwargs):
 
         # Get matching data-type from IO-Dict
-        data_type = [k for k in obj_instance.io_dict
-                     if obj_instance.io_dict[k]['load'] is not None
-                     and obj_instance.io_dict[k]['load'].__name__ == load_func.__name__][0]
+        data_type = [k for k in self.io_dict
+                     if self.io_dict[k]['load'] == load_func][0]
 
-        print(f'Loading {data_type} for {obj_instance.name}')
+        print(f'Loading {data_type} for {self.name}')
 
-        if data_type in obj_instance.data_dict:
-            data = obj_instance.data_dict[data_type]
+        if self.name == '_sample_':
+            _copy_test_file(data_type, self, source='sample')
+
+        if data_type in self.data_dict:
+            data = self.data_dict[data_type]
         else:
             # Todo: Dependencies!
             try:
                 data = load_func(*args, **kwargs)
             except (FileNotFoundError, OSError) as err:
-                if obj_instance.p_preset != 'Default':
-                    print(f'No File for {data_type} from {obj_instance.name}'
-                          f' with Parameter-Preset={obj_instance.p_preset} found, trying Default')
+                if self.p_preset != 'Default':
+                    print(f'No File for {data_type} from {self.name}'
+                          f' with Parameter-Preset={self.p_preset} found, trying Default')
 
-                    actual_p_preset = obj_instance.p_preset
-                    obj_instance.p_preset = 'Default'
-                    obj_instance.init_paths()
+                    actual_p_preset = self.p_preset
+                    self.p_preset = 'Default'
+                    self.init_paths()
 
                     data = load_func(*args, **kwargs)
 
-                    obj_instance.p_preset = actual_p_preset
-                    obj_instance.init_paths()
-                elif data_type in obj_instance.deprecated_paths:
-                    obj_instance.io_dict[data_type]['path'] = obj_instance.deprecated_paths[
+                    self.p_preset = actual_p_preset
+                    self.init_paths()
+                elif data_type in self.deprecated_paths:
+                    self.io_dict[data_type]['path'] = self.deprecated_paths[
                         data_type]
                     data = load_func(*args, **kwargs)
                 else:
@@ -82,7 +115,7 @@ def load_decorator(load_func):
 
         # Save data in data-dict for machines with big RAM
         if not QS().value('save_ram'):
-            obj_instance.data_dict[data_type] = data
+            self.data_dict[data_type] = data
 
         return data
 
@@ -91,9 +124,7 @@ def load_decorator(load_func):
 
 def save_decorator(save_func):
     @functools.wraps(save_func)
-    def save_wrapper(*args, **kwargs):
-        # Get Loading-Class
-        obj_instance = args[0]
+    def save_wrapper(self, *args, **kwargs):
 
         # Get data-object
         if len(args) > 1:
@@ -104,26 +135,26 @@ def save_decorator(save_func):
             data = None
 
         # Get matching data-type from IO-Dict
-        data_type = [k for k in obj_instance.io_dict
-                     if obj_instance.io_dict[k]['save'] is not None
-                     and obj_instance.io_dict[k]['save'].__name__ == save_func.__name__]
+        data_type = [k for k in self.io_dict
+                     if self.io_dict[k]['save'] is not None
+                     and self.io_dict[k]['save'].__name__ == save_func.__name__]
         data_type = data_type[0]
         # Make sure, that parent-directory exists
-        paths = obj_instance._return_path_list(data_type)
+        paths = self._return_path_list(data_type)
         for path in [p for p in paths if not isdir(Path(p).parent)]:
             makedirs(Path(path).parent, exist_ok=True)
 
-        print(f'Saving {data_type} for {obj_instance.name}')
+        print(f'Saving {data_type} for {self.name}')
         save_func(*args, **kwargs)
 
         # Save data in data-dict for machines with big RAM
         if not QS().value('save_ram'):
-            obj_instance.data_dict[data_type] = data
+            self.data_dict[data_type] = data
 
         # Save File-Parameters
-        paths = obj_instance._return_path_list(data_type)
+        paths = self._return_path_list(data_type)
         for path in paths:
-            obj_instance.save_file_params(path)
+            self.save_file_params(path)
 
     return save_wrapper
 
@@ -475,7 +506,9 @@ class MEEG(BaseLoading):
         super().__init__(name, controller)
 
         if name == '_sample_':
-            self.init_sample_paths()
+            self.init_sample()
+        elif name == '_io_':
+            self.init_io()
 
     def init_attributes(self):
         """Initialize additional attributes for MEEG"""
@@ -679,27 +712,20 @@ class MEEG(BaseLoading):
                                                                  f'{self.name}_{trial}_{self.p_preset}')
                                                      for trial in self.sel_trials}}
 
-    def init_sample_paths(self):
-        self.raw_path = join(self.save_dir, 'sample_audvis_raw.fif')
-        self.erm_path = join(self.save_dir, 'ernoise_raw.fif')
-        self.events_path = join(self.save_dir, 'sample_audvis_raw-eve.fif')
-        self.evokeds_path = join(self.save_dir, 'sample_audvis-ave.fif')
-        self.trans_path = join(self.save_dir, 'sample_audvis_raw-trans.fif')
-        self.noise_covariance_path = join(self.save_dir, 'sample_audvis-cov.fif')
-        self.inverse_path = join(self.save_dir, 'sample_audvis-meg-oct-6-meg-inv.fif')
+    def init_sample(self):
+        # Add _sample_ to project and update attributes
+        self.pr.all_meeg.append(self.name)
+        self.pr.all_erm.append('ernoise')
+        self.erm = 'ernoise'
+        self.pr.meeg_to_erm[self.name] = self.erm
+        self.bad_channels = self.load_info()['bads']
+        self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
-        if not isdir(self.save_dir):
-            # Get sample-data
-            sample_dir = join(mne.datasets.sample.data_path(), 'MEG', 'sample')
-            print('Copying sample to data_path...')
-            shutil.copytree(sample_dir, self.save_dir)
-            self.pr.all_meeg.append(self.name)
-            self.pr.all_erm.append('ernoise')
-            self.erm = 'ernoise'
-            self.pr.meeg_to_erm[self.name] = self.erm
-            self.bad_channels = self.load_info()['bads']
-            self.pr.meeg_bad_channels[self.name] = self.bad_channels
-            print('Finished copying!')
+    def init_io(self):
+        # Init paths for dataset in mne.io.tests.data
+        self.pr.all_meeg.append(self.name)
+        self.bad_channels = self.load_info()['bads']
+        self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
     def rename(self, new_name):
         # Stor old name
