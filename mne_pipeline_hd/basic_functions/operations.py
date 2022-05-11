@@ -500,13 +500,13 @@ def _ica_plotto_helper(meeg, ica_plotto):
     elif ica_plotto == 'epochs_ecg':
         data = meeg.load_ecg_epochs()
 
-    elif ica_plotto == 'Evokeds':
+    elif ica_plotto == 'evoked':
         data = meeg.load_evokeds()
 
-    elif ica_plotto == 'Evokeds (EOG)':
+    elif ica_plotto == 'evoked (EOG)':
         data = meeg.load_eog_epochs().average()
 
-    elif ica_plotto == 'Evokeds (ECG)':
+    elif ica_plotto == 'evoked (ECG)':
         data = meeg.load_ecg_epochs().average()
 
     else:

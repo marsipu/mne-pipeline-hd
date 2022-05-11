@@ -4,7 +4,7 @@ add_erm_ssp;Empty-Room SSP;MEEG;Compute;Preprocessing;True;False;;operations;bas
 eeg_reference_raw;Set EEG Reference;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ref_channels
 find_events;Find events;MEEG;Compute;events;False;False;;operations;basic;meeg,stim_channels,min_duration,shortest_event,adjust_timeline_by_msec
 find_6ch_binary_events;Find events HD;MEEG;Compute;events;False;False;;operations;basic;meeg,min_duration,shortest_event,adjust_timeline_by_msec
-epoch_raw;Get epochs;MEEG;Compute;events;False;False;;operations;basic;meeg,ch_types,ch_names,t_epoch,baseline,apply_proj,reject,flat,reject_by_annotation,bad_interpolation,use_autoreject,consensus_percs,n_interpolates,overwrite_ar,decim,n_jobs
+epoch_raw;Get Epochs;MEEG;Compute;events;False;False;;operations;basic;meeg,ch_types,ch_names,t_epoch,baseline,apply_proj,reject,flat,reject_by_annotation,bad_interpolation,use_autoreject,consensus_percs,n_interpolates,overwrite_ar,decim,n_jobs
 estimate_noise_covariance;Noise-Covariance;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,baseline,n_jobs,noise_cov_mode,noise_cov_method
 run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_method,ica_fitto,n_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,ch_types,ch_names,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
 apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,n_pca_components
@@ -38,27 +38,27 @@ plot_noise_covariance;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
 plot_transformation;;MEEG;Plot;Forward;True;True;;plot;basic;meeg
 plot_sensitivity_maps;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,ch_types
 plot_sensors;;MEEG;Plot;Forward;True;False;;plot;basic;meeg,plot_sensors_kind,ch_types,show_plots
-plot_raw;;MEEG;Plot;raw;True;False;;plot;basic;meeg,show_plots
-plot_filtered;;MEEG;Plot;raw;True;False;;plot;basic;meeg,show_plots
+plot_raw;;MEEG;Plot;Raw;True;False;;plot;basic;meeg,show_plots
+plot_filtered;;MEEG;Plot;Raw;True;False;;plot;basic;meeg,show_plots
 plot_events;;MEEG;Plot;events;True;False;;plot;basic;meeg,show_plots
 plot_power_spectra;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
 plot_power_spectra_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
 plot_power_spectra_epochs;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
 plot_power_spectra_epochs_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
 plot_tfr;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots
-plot_epochs;;MEEG;Plot;epochs;True;False;;plot;basic;meeg,show_plots
-plot_epochs_image;;MEEG;Plot;epochs;True;False;;plot;basic;meeg,show_plots
-plot_epochs_topo;;MEEG;Plot;epochs;True;False;;plot;basic;meeg,show_plots
-plot_epochs_drop_log;;MEEG;Plot;epochs;True;False;;plot;basic;meeg,show_plots
-plot_autoreject_log;;MEEG;Plot;epochs;True;False;;plot;basic;meeg,show_plots
-plot_evoked_topo;;MEEG;Plot;evoked;True;False;;plot;basic;meeg,show_plots
-plot_evoked_topomap;;MEEG;Plot;evoked;True;False;;plot;basic;meeg,show_plots
-plot_evoked_butterfly;;MEEG;Plot;evoked;True;False;;plot;basic;meeg,apply_proj,show_plots
-plot_evoked_joint;;MEEG;Plot;evoked;True;False;;plot;basic;meeg,show_plots
-plot_evoked_white;;MEEG;Plot;evoked;True;False;;plot;basic;meeg,show_plots
-plot_evoked_image;;MEEG;Plot;evoked;True;False;;plot;basic;meeg,show_plots
-plot_compare_evokeds;;MEEG;Plot;evoked;True;False;;plot;basic;meeg,show_plots
-plot_gfp;;MEEG;Plot;evoked;True;False;;plot;basic;meeg,show_plots
+plot_epochs;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_epochs_image;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_epochs_topo;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_epochs_drop_log;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_autoreject_log;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
+plot_evoked_topo;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_topomap;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_butterfly;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,apply_proj,show_plots
+plot_evoked_joint;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_compare_evokeds;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
+plot_gfp;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,mne_evoked_time
 plot_mixn;Plot Mixed-Norm-Solution;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,mne_evoked_time,parcellation
 plot_animated_stc;Plot Source-Estimate Video;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,stc_animation,stc_animation_dilat
@@ -77,4 +77,4 @@ plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;operations;basic;mee
 plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_overlay_data,show_plots
 plot_ica_properties;Plot ICA-Properties;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
 plot_ica_scores;Plot ICA-Scores;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
-print_info;Print Info;MEEG;Plot;raw;False;False;;operations;basic;meeg
+print_info;Print Info;MEEG;Plot;Raw;False;False;;operations;basic;meeg

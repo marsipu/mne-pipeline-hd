@@ -14,9 +14,49 @@ from os.path import isdir, join, isfile
 from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import type_json_hook
 
+renamed_parameters = {
+    'filter_target': {
+        'Raw': 'raw',
+        'Epochs': 'epochs',
+        'Evoked': 'evoked'
+    },
+    'bad_interpolation': {
+        'Raw (Filtered)': 'raw_filtered',
+        'Epochs': 'epochs',
+        'Evoked': 'evoked'
+    },
+    'ica_fitto': {
+        'Raw (Unfiltered)': 'raw',
+        'Raw (Filtered)': 'raw_filtered',
+        'Epochs': 'epochs'
+    },
+    'noise_cov_mode': {
+        'Empty-Room': 'erm',
+        'Epochs': 'epochs'
+    },
+    'ica_source_data': {
+        'Raw (Unfiltered)': 'raw',
+        'Raw (Filtered)': 'raw_filtered',
+        'Epochs': 'epochs',
+        'Epochs (EOG)': 'epochs_eog',
+        'Epochs (ECG)': 'epochs_ecg',
+        'Evokeds': 'evoked',
+        'Evokeds (EOG)': 'evoked (EOG)',
+        'Evokeds (ECG)': 'evoked (ECG)'
+    },
+    'ica_overlay_data': {
+        'Raw (Unfiltered)': 'raw',
+        'Raw (Filtered)': 'raw_filtered',
+        'Evokeds': 'evoked',
+        'Evokeds (EOG)': 'evoked (EOG)',
+        'Evokeds (ECG)': 'evoked (ECG)'
+    }
+}
+
 
 def transfer_file_params_to_single_subject(ct):
-    old_fp_path = join(ct.pr.pscripts_path, f'file_parameters_{ct.pr.name}.json')
+    old_fp_path = join(ct.pr.pscripts_path,
+                       f'file_parameters_{ct.pr.name}.json')
     if isfile(old_fp_path):
         logging.info('Transfering File-Parameters to single files...')
         with open(old_fp_path, 'r') as file:

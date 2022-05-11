@@ -77,8 +77,8 @@ ecd_times;;Inverse;{};;;DictGui;
 ecd_positions;;Inverse;{};;;DictGui;
 ecd_orientations;;Inverse;{};;;DictGui;
 morph_to;;Grand-Average;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
-ica_source_data;;ICA;raw_filtered;;Which data to plot in sources-plot from ICA;ComboGui;{'options':['raw', 'raw_filtered', 'epochs', 'epochs_eog', 'epochs (ECG)',  'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
-ica_overlay_data;;ICA;Evokeds;;Which data to plot in overlay-plot from ICA;ComboGui;{'options':['raw', 'raw_filtered', 'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)']}
+ica_source_data;;ICA;raw_filtered;;Which data to plot in sources-plot from ICA;ComboGui;{'options':['raw', 'raw_filtered', 'epochs', 'epochs_eog', 'epochs_ecg',  'evoked', 'evoked (EOG)', 'evoked (ECG)']}
+ica_overlay_data;;ICA;Evokeds;;Which data to plot in overlay-plot from ICA;ComboGui;{'options':['raw', 'raw_filtered', 'evoked', 'evoked (EOG)', 'evoked (ECG)']}
 plot_sensors_kind;;Plot;'topomap';;The kind of plot for plot_sensors;ComboGui;{'options':['topomap', '3d', 'select']}
 erm_ssp_duration;;Preprocessing;1;s;The time-chunk to use for ssp;IntGui;
 erm_n_grad;;Preprocessing;2;;The number of projections for Gradiometer;IntGui;

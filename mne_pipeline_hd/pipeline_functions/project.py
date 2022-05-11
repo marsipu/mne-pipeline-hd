@@ -17,8 +17,10 @@ from pathlib import Path
 
 import numpy as np
 
+from mne_pipeline_hd.pipeline_functions.legacy import renamed_parameters
 from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, count_dict_keys, \
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, \
+    count_dict_keys, \
     encode_tuples, type_json_hook
 
 
@@ -50,8 +52,10 @@ class Project:
         # A folder to store all pipeline-scripts as .json-files
         self.pscripts_path = join(self.project_path, '_pipeline_scripts')
 
-        self.main_paths = [self.ct.subjects_dir, self.data_path, self.save_dir_averages,
-                           self.pscripts_path, self.ct.custom_pkg_path, self.figures_path]
+        self.main_paths = [self.ct.subjects_dir, self.data_path,
+                           self.save_dir_averages,
+                           self.pscripts_path, self.ct.custom_pkg_path,
+                           self.figures_path]
 
         # Create or check existence of main_paths
         for path in self.main_paths:
@@ -102,25 +106,42 @@ class Project:
 
     def init_pipeline_scripts(self):
         # Initiate Project-Lists and Dicts
-        self.all_meeg_path = join(self.pscripts_path, f'all_meeg_{self.name}.json')
-        self.sel_meeg_path = join(self.pscripts_path, f'selected_meeg_{self.name}.json')
+        self.all_meeg_path = join(self.pscripts_path,
+                                  f'all_meeg_{self.name}.json')
+        self.sel_meeg_path = join(self.pscripts_path,
+                                  f'selected_meeg_{self.name}.json')
         self.meeg_bad_channels_path = join(self.pscripts_path,
                                            f'meeg_bad_channels_{self.name}.json')
-        self.meeg_event_id_path = join(self.pscripts_path, f'meeg_event_id_{self.name}.json')
-        self.sel_event_id_path = join(self.pscripts_path, f'selected_event_ids_{self.name}.json')
-        self.all_erm_path = join(self.pscripts_path, f'all_erm_{self.name}.json')
-        self.meeg_to_erm_path = join(self.pscripts_path, f'meeg_to_erm_{self.name}.json')
-        self.all_fsmri_path = join(self.pscripts_path, f'all_fsmri_{self.name}.json')
-        self.sel_fsmri_path = join(self.pscripts_path, f'selected_fsmri_{self.name}.json')
-        self.meeg_to_fsmri_path = join(self.pscripts_path, f'meeg_to_fsmri_{self.name}.json')
-        self.ica_exclude_path = join(self.pscripts_path, f'ica_exclude_{self.name}.json')
-        self.all_groups_path = join(self.pscripts_path, f'all_groups_{self.name}.json')
-        self.sel_groups_path = join(self.pscripts_path, f'selected_groups_{self.name}.json')
-        self.plot_files_path = join(self.pscripts_path, f'plot_files_{self.name}.json')
-        self.sel_functions_path = join(self.pscripts_path, f'selected_functions_{self.name}.json')
-        self.add_kwargs_path = join(self.pscripts_path, f'additional_kwargs_{self.name}.json')
-        self.parameters_path = join(self.pscripts_path, f'parameters_{self.name}.json')
-        self.sel_p_preset_path = join(self.pscripts_path, f'sel_p_preset_{self.name}.json')
+        self.meeg_event_id_path = join(self.pscripts_path,
+                                       f'meeg_event_id_{self.name}.json')
+        self.sel_event_id_path = join(self.pscripts_path,
+                                      f'selected_event_ids_{self.name}.json')
+        self.all_erm_path = join(self.pscripts_path,
+                                 f'all_erm_{self.name}.json')
+        self.meeg_to_erm_path = join(self.pscripts_path,
+                                     f'meeg_to_erm_{self.name}.json')
+        self.all_fsmri_path = join(self.pscripts_path,
+                                   f'all_fsmri_{self.name}.json')
+        self.sel_fsmri_path = join(self.pscripts_path,
+                                   f'selected_fsmri_{self.name}.json')
+        self.meeg_to_fsmri_path = join(self.pscripts_path,
+                                       f'meeg_to_fsmri_{self.name}.json')
+        self.ica_exclude_path = join(self.pscripts_path,
+                                     f'ica_exclude_{self.name}.json')
+        self.all_groups_path = join(self.pscripts_path,
+                                    f'all_groups_{self.name}.json')
+        self.sel_groups_path = join(self.pscripts_path,
+                                    f'selected_groups_{self.name}.json')
+        self.plot_files_path = join(self.pscripts_path,
+                                    f'plot_files_{self.name}.json')
+        self.sel_functions_path = join(self.pscripts_path,
+                                       f'selected_functions_{self.name}.json')
+        self.add_kwargs_path = join(self.pscripts_path,
+                                    f'additional_kwargs_{self.name}.json')
+        self.parameters_path = join(self.pscripts_path,
+                                    f'parameters_{self.name}.json')
+        self.sel_p_preset_path = join(self.pscripts_path,
+                                      f'sel_p_preset_{self.name}.json')
 
         # Map the paths to their attribute in the Project-Class
         self.path_to_attribute = {self.all_meeg_path: 'all_meeg',
@@ -145,18 +166,26 @@ class Project:
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
         self.old_all_meeg_path = join(self.pscripts_path, 'file_list.json')
-        self.old_sel_meeg_path = join(self.pscripts_path, 'selected_files.json')
-        self.old_meeg_bad_channels_path = join(self.pscripts_path, 'bad_channels_dict.json')
-        self.old_meeg_event_id_path = join(self.pscripts_path, 'event_id_dict.json')
-        self.old_sel_event_id_path = join(self.pscripts_path, 'selected_evid_labels.json')
+        self.old_sel_meeg_path = join(self.pscripts_path,
+                                      'selected_files.json')
+        self.old_meeg_bad_channels_path = join(self.pscripts_path,
+                                               'bad_channels_dict.json')
+        self.old_meeg_event_id_path = join(self.pscripts_path,
+                                           'event_id_dict.json')
+        self.old_sel_event_id_path = join(self.pscripts_path,
+                                          'selected_evid_labels.json')
         self.old_all_erm_path = join(self.pscripts_path, 'erm_list.json')
         self.old_meeg_to_erm_path = join(self.pscripts_path, 'erm_dict.json')
         self.old_all_fsmri_path = join(self.pscripts_path, 'mri_sub_list.json')
-        self.old_sel_fsmri_path = join(self.pscripts_path, 'selected_mri_files.json')
+        self.old_sel_fsmri_path = join(self.pscripts_path,
+                                       'selected_mri_files.json')
         self.old_meeg_to_fsmri_path = join(self.pscripts_path, 'sub_dict.json')
-        self.old_all_groups_path = join(self.pscripts_path, 'grand_avg_dict.json')
-        self.old_sel_groups_path = join(self.pscripts_path, 'selected_grand_average_groups.json')
-        self.old_sel_funcs_path = join(self.pscripts_path, 'selected_funcs.json')
+        self.old_all_groups_path = join(self.pscripts_path,
+                                        'grand_avg_dict.json')
+        self.old_sel_groups_path = join(self.pscripts_path,
+                                        'selected_grand_average_groups.json')
+        self.old_sel_funcs_path = join(self.pscripts_path,
+                                       'selected_funcs.json')
 
         # Old Paths to allow transition (22.11.2020)
         self.old_paths = {self.all_meeg_path: self.old_all_meeg_path,
@@ -178,23 +207,28 @@ class Project:
             attribute_name = self.path_to_attribute[path]
             try:
                 with open(path, 'r') as file:
-                    loaded_attribute = json.load(file, object_hook=type_json_hook)
+                    loaded_attribute = json.load(file,
+                                                 object_hook=type_json_hook)
                     # Make sure, that loaded object has same type as default from __init__
-                    if isinstance(loaded_attribute, type(getattr(self, attribute_name))):
+                    if isinstance(loaded_attribute,
+                                  type(getattr(self, attribute_name))):
                         setattr(self, attribute_name, loaded_attribute)
             # Either empty file or no file, leaving default from __init__
             except (json.JSONDecodeError, FileNotFoundError):
                 # Old Paths to allow transition (22.11.2020)
                 try:
                     with open(self.old_paths[path], 'r') as file:
-                        setattr(self, attribute_name, json.load(file, object_hook=type_json_hook))
+                        setattr(self, attribute_name,
+                                json.load(file, object_hook=type_json_hook))
                 except (json.JSONDecodeError, FileNotFoundError, KeyError):
                     pass
 
     def load_parameters(self):
         try:
-            with open(join(self.pscripts_path, f'parameters_{self.name}.json'), 'r') as read_file:
-                loaded_parameters = json.load(read_file, object_hook=type_json_hook)
+            with open(join(self.pscripts_path, f'parameters_{self.name}.json'),
+                      'r') as read_file:
+                loaded_parameters = json.load(read_file,
+                                              object_hook=type_json_hook)
 
                 for p_preset in loaded_parameters:
                     # Make sure, that only parameters, which exist in pd_params are loaded
@@ -208,17 +242,28 @@ class Project:
                     for param in [p for p in self.ct.pd_params.index if
                                   p not in loaded_parameters[p_preset]]:
                         try:
-                            eval_param = literal_eval(self.ct.pd_params.loc[param, 'default'])
+                            eval_param = literal_eval(
+                                self.ct.pd_params.loc[param, 'default'])
                         except (ValueError, SyntaxError, NameError):
                             # Allow parameters to be defined by functions e.g. by numpy, etc.
-                            if self.ct.pd_params.loc[param, 'gui_type'] == 'FuncGui':
-                                default_string = self.ct.pd_params.loc[param, 'default']
+                            if self.ct.pd_params.loc[
+                                param, 'gui_type'] == 'FuncGui':
+                                default_string = self.ct.pd_params.loc[
+                                    param, 'default']
                                 eval_param = eval(default_string, {'np': np})
                                 exp_name = param + '_exp'
-                                loaded_parameters[p_preset].update({exp_name: default_string})
+                                loaded_parameters[p_preset].update(
+                                    {exp_name: default_string})
                             else:
-                                eval_param = self.ct.pd_params.loc[param, 'default']
+                                eval_param = self.ct.pd_params.loc[
+                                    param, 'default']
                         loaded_parameters[p_preset].update({param: eval_param})
+                    # Change renamed legacy parameters
+                    for param, value in loaded_parameters[p_preset].items():
+                        if param in renamed_parameters:
+                            if value in renamed_parameters[param]:
+                                loaded_parameters[p_preset][param] = \
+                                    renamed_parameters[param][value]
 
                 self.parameters = loaded_parameters
         except (FileNotFoundError, json.decoder.JSONDecodeError):
@@ -227,11 +272,13 @@ class Project:
     def load_default_param(self, param_name):
         string_param = self.ct.pd_params.loc[param_name, 'default']
         try:
-            self.parameters[self.p_preset][param_name] = literal_eval(string_param)
+            self.parameters[self.p_preset][param_name] = literal_eval(
+                string_param)
         except (ValueError, SyntaxError):
             # Allow parameters to be defined by functions e.g. by numpy, etc.
             if self.ct.pd_params.loc[param_name, 'gui_type'] == 'FuncGui':
-                self.parameters[self.p_preset][param_name] = eval(string_param, {'np': np})
+                self.parameters[self.p_preset][param_name] = eval(string_param,
+                                                                  {'np': np})
                 exp_name = param_name + '_exp'
                 self.parameters[self.p_preset][exp_name] = string_param
             else:
@@ -266,7 +313,8 @@ class Project:
         for idx, path in enumerate(self.path_to_attribute):
             if worker_signals:
                 worker_signals.pgbar_n.emit(idx)
-                worker_signals.pgbar_text.emit(f'Saving {self.path_to_attribute[path]}')
+                worker_signals.pgbar_text.emit(
+                    f'Saving {self.path_to_attribute[path]}')
 
             attribute = getattr(self, self.path_to_attribute[path], None)
 
@@ -292,7 +340,8 @@ class Project:
             self.all_meeg.append(obj)
 
         # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
-        read_dir = sorted([f for f in os.listdir(self.ct.subjects_dir) if not f.startswith('.')],
+        read_dir = sorted([f for f in os.listdir(self.ct.subjects_dir) if
+                           not f.startswith('.')],
                           key=str.lower)
         self.all_fsmri = [fsmri for fsmri in read_dir if
                           exists(join(self.ct.subjects_dir, fsmri, 'surf'))]
@@ -301,13 +350,15 @@ class Project:
 
     def clean_file_parameters(self, worker_signals=None):
         if worker_signals is not None:
-            worker_signals.pgbar_max.emit(len(self.all_meeg) + len(self.all_fsmri) +
-                                          len(self.all_groups.keys()))
+            worker_signals.pgbar_max.emit(
+                len(self.all_meeg) + len(self.all_fsmri) +
+                len(self.all_groups.keys()))
         count = 0
 
         for meeg in self.all_meeg:
             meeg = MEEG(meeg, self.ct)
-            worker_signals.pgbar_text.emit(f'Cleaning File-Parameters for {meeg}')
+            worker_signals.pgbar_text.emit(
+                f'Cleaning File-Parameters for {meeg}')
             meeg.clean_file_parameters()
             count += 1
             if worker_signals is not None:
@@ -318,7 +369,8 @@ class Project:
 
         for fsmri in self.all_fsmri:
             fsmri = FSMRI(fsmri, self.ct)
-            worker_signals.pgbar_text.emit(f'Cleaning File-Parameters for {fsmri}')
+            worker_signals.pgbar_text.emit(
+                f'Cleaning File-Parameters for {fsmri}')
             fsmri.clean_file_parameters()
             count += 1
             if worker_signals is not None:
@@ -329,7 +381,8 @@ class Project:
 
         for group in self.all_groups:
             group = Group(group, self.ct)
-            worker_signals.pgbar_text.emit(f'Cleaning File-Parameters for {group}')
+            worker_signals.pgbar_text.emit(
+                f'Cleaning File-Parameters for {group}')
             group.clean_file_parameters()
             count += 1
             if worker_signals is not None:
@@ -346,7 +399,8 @@ class Project:
         n_remove_funcs = 0
 
         if worker_signals is not None:
-            worker_signals.pgbar_max.emit(count_dict_keys(self.plot_files, max_level=3))
+            worker_signals.pgbar_max.emit(
+                count_dict_keys(self.plot_files, max_level=3))
         key_count = 0
 
         for obj_key in self.plot_files:
@@ -388,20 +442,26 @@ class Project:
                                 remove_funcs.append(func)
                             else:
                                 # Remove image-paths which no longer exist
-                                for rel_image_path in self.plot_files[obj_key][p_preset][func]:
-                                    image_path = Path(join(self.figures_path, rel_image_path))
+                                for rel_image_path in \
+                                        self.plot_files[obj_key][p_preset][
+                                            func]:
+                                    image_path = Path(join(self.figures_path,
+                                                           rel_image_path))
                                     if not isfile(
                                             image_path) or self.figures_path in rel_image_path:
-                                        self.plot_files[obj_key][p_preset][func].remove(
+                                        self.plot_files[obj_key][p_preset][
+                                            func].remove(
                                             rel_image_path)
                                     else:
                                         all_image_paths.append(str(image_path))
-                                if len(self.plot_files[obj_key][p_preset][func]) == 0:
+                                if len(self.plot_files[obj_key][p_preset][
+                                           func]) == 0:
                                     # Keys can't be dropped from dictionary during iteration
                                     remove_funcs.append(func)
 
                         for remove_func_key in remove_funcs:
-                            self.plot_files[obj_key][p_preset].pop(remove_func_key)
+                            self.plot_files[obj_key][p_preset].pop(
+                                remove_func_key)
                         n_remove_funcs += len(remove_funcs)
 
                 for remove_preset_key in remove_p_preset:
@@ -421,7 +481,8 @@ class Project:
         n_removed_images = 0
         for root, _, files in os.walk(self.figures_path):
             files = [join(root, f) for f in files]
-            for file_path in [fp for fp in files if str(Path(fp)) not in all_image_paths]:
+            for file_path in [fp for fp in files if
+                              str(Path(fp)) not in all_image_paths]:
                 free_space += getsize(file_path)
                 n_removed_images += 1
                 os.remove(file_path)
@@ -436,7 +497,8 @@ class Project:
             folder_loop = False
             for root, folders, _ in os.walk(self.figures_path):
                 folders = [join(root, fd) for fd in folders]
-                for folder in [fdp for fdp in folders if len(listdir(fdp)) == 0]:
+                for folder in [fdp for fdp in folders if
+                               len(listdir(fdp)) == 0]:
                     os.rmdir(folder)
                     n_removed_folders += 1
                     folder_loop = True
