@@ -96,6 +96,7 @@ def _get_data_type_from_func(self, func, method):
 def load_decorator(load_func):
     @functools.wraps(load_func)
     def load_wrapper(self, *args, **kwargs):
+        # Get matching data-type from IO-Dict
         data_type = _get_data_type_from_func(self, load_func, 'load')
         print(f'Loading {data_type} for {self.name}')
 
@@ -140,6 +141,8 @@ def load_decorator(load_func):
 def save_decorator(save_func):
     @functools.wraps(save_func)
     def save_wrapper(self, *args, **kwargs):
+        # Get matching data-type from IO-Dict
+        data_type = _get_data_type_from_func(self, save_func, 'save')
 
         # Get data-object
         if len(args) > 1:
@@ -149,9 +152,6 @@ def save_decorator(save_func):
         else:
             data = None
 
-        # Get matching data-type from IO-Dict
-        data_type = _get_data_type_from_func(self, save_func, 'save')
-        data_type = data_type[0]
         # Make sure, that parent-directory exists
         paths = self._return_path_list(data_type)
         for path in [p for p in paths if not isdir(Path(p).parent)]:
