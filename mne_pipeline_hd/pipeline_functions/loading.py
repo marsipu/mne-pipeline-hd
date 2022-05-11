@@ -77,14 +77,26 @@ def _copy_test_file(data_type, self, source):
         print('Done!')
 
 
+def _get_data_type_from_func(self, func, method):
+    # Get matching data-type from IO-Dict
+    func_name = func.__name__
+    data_type = None
+    for dt in self.io_dict:
+        io_func = self.io_dict[dt][method]
+        if getattr(io_func, '__name__', None) == func_name:
+            data_type = dt
+            break
+    if data_type is None:
+        raise RuntimeError(f'No datatype for loading-function '
+                           f'"{func_name}"!')
+
+    return data_type
+
+
 def load_decorator(load_func):
     @functools.wraps(load_func)
     def load_wrapper(self, *args, **kwargs):
-
-        # Get matching data-type from IO-Dict
-        data_type = [k for k in self.io_dict
-                     if self.io_dict[k]['load'] == load_func][0]
-
+        data_type = _get_data_type_from_func(self, load_func, 'load')
         print(f'Loading {data_type} for {self.name}')
 
         if self.name == '_sample_':
@@ -95,7 +107,7 @@ def load_decorator(load_func):
         else:
             # Todo: Dependencies!
             try:
-                data = load_func(*args, **kwargs)
+                data = load_func(self, *args, **kwargs)
             except (FileNotFoundError, OSError) as err:
                 if self.p_preset != 'Default':
                     print(f'No File for {data_type} from {self.name}'
@@ -138,10 +150,7 @@ def save_decorator(save_func):
             data = None
 
         # Get matching data-type from IO-Dict
-        data_type = [k for k in self.io_dict
-                     if self.io_dict[k]['save'] is not None
-                     and self.io_dict[k][
-                         'save'].__name__ == save_func.__name__]
+        data_type = _get_data_type_from_func(self, save_func, 'save')
         data_type = data_type[0]
         # Make sure, that parent-directory exists
         paths = self._return_path_list(data_type)
@@ -149,7 +158,7 @@ def save_decorator(save_func):
             makedirs(Path(path).parent, exist_ok=True)
 
         print(f'Saving {data_type} for {self.name}')
-        save_func(*args, **kwargs)
+        save_func(self, *args, **kwargs)
 
         # Save data in data-dict for machines with big RAM
         if not QS().value('save_ram'):
