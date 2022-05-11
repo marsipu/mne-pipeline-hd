@@ -335,8 +335,9 @@ class BaseLoading:
 
         for file_name in remove_files:
             self.file_parameters.pop(file_name)
-        print(
-            f'Removed {len(remove_files)} Files and {n_remove_params} Parameters.')
+        print(f'Removed {len(remove_files)} Files '
+              f'and {n_remove_params} Parameters.')
+        self.save_file_parameter_file()
 
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None,
                   matplotlib_figure=None,
