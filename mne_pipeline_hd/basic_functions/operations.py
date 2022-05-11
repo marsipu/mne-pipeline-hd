@@ -27,10 +27,10 @@ import mne
 import mne_connectivity
 import numpy as np
 from mne.preprocessing import ICA
-
 from mne_pipeline_hd import ismac, iswin
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import (check_kwargs, compare_filep)
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import (check_kwargs,
+                                                               compare_filep)
 
 
 # Todo: Create docstrings for each function
@@ -55,21 +55,28 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length, l_trans_b
             n_jobs = 'cuda'
 
         # Filter Data
-        if filter_target == 'Evoked':
+        if filter_target == 'evoked':
             for evoked in data:
-                evoked.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
-                              h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method,
-                              iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
-                              skip_by_annotation=skip_by_annotation, pad=fir_pad)
+                evoked.filter(highpass, lowpass, filter_length=filter_length,
+                              l_trans_bandwidth=l_trans_bandwidth,
+                              h_trans_bandwidth=h_trans_bandwidth,
+                              n_jobs=n_jobs, method=filter_method,
+                              iir_params=iir_params, phase=fir_phase,
+                              fir_window=fir_window, fir_design=fir_design,
+                              skip_by_annotation=skip_by_annotation,
+                              pad=fir_pad)
         else:
-            data.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
-                        h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method, iir_params=iir_params,
-                        phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
+            data.filter(highpass, lowpass, filter_length=filter_length,
+                        l_trans_bandwidth=l_trans_bandwidth,
+                        h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs,
+                        method=filter_method, iir_params=iir_params,
+                        phase=fir_phase, fir_window=fir_window,
+                        fir_design=fir_design,
                         skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
         # Save Data
-        if filter_target == 'Raw':
-            meeg.io_dict['Raw (Filtered)']['save'](data)
+        if filter_target == 'raw':
+            meeg.io_dict['raw_filtered']['save'](data)
         else:
             meeg.io_dict[filter_target]['save'](data)
 
@@ -100,7 +107,7 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length, l_trans_b
                            iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
                            skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
-            if bad_interpolation == 'Raw':
+            if bad_interpolation == 'raw':
                 info = meeg.load_info()
                 erm_raw.info['dig'] = info['dig']
                 erm_raw = erm_raw.interpolate_bads()
@@ -117,7 +124,7 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length, l_trans_b
 def interpolate_bads(meeg, bad_interpolation):
     data = meeg.io_dict[bad_interpolation]['load']()
 
-    if bad_interpolation == 'Evoked':
+    if bad_interpolation == 'evoked':
         for evoked in data:
             evoked.interpolate_bads()
     else:
@@ -313,7 +320,7 @@ def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, f
         raw_filtered.pick_channels(ch_names)
 
     if bad_interpolation is None:
-        # Exclude bad-channels if no Bad-Channel-Interpolation is intended after making the Epochs or the Evokeds
+        # Exclude bad-channels if no Bad-Channel-Interpolation is intended after making the epochs or the Evokeds
         raw_filtered.pick('all', exclude='bads')
 
     epochs = mne.Epochs(raw_filtered, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
@@ -366,11 +373,11 @@ def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, f
 
 def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove_proj, ica_reject, ica_autoreject,
             ch_types, ch_names, reject_by_annotation, ica_eog, eog_channel, ica_ecg, ecg_channel, **kwargs):
-    if ica_fitto == 'Epochs':
+    if ica_fitto == 'epochs':
         data = meeg.load_epochs()
         # Bad-Channels and Channel-Types are already picked in epoch_raw
     else:
-        if ica_fitto == 'Raw (Unfiltered)':
+        if ica_fitto == 'raw':
             data = meeg.load_raw()
 
         else:
@@ -395,15 +402,16 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
     ica = ICA(n_components=n_components, noise_cov=noise_cov, random_state=8,
               method=ica_method, **ica_kwargs)
 
-    if ica_autoreject and ica_fitto != 'Epochs':
+    if ica_autoreject and ica_fitto != 'epochs':
         # Estimate Reject-Thresholds on simulated epochs
         # Creating simulated epochs with len 1s
         simulated_events = mne.make_fixed_length_events(data, duration=1)
-        simulated_epochs = mne.Epochs(data, simulated_events, baseline=None, tmin=0, tmax=1,
+        simulated_epochs = mne.Epochs(data, simulated_events, baseline=None,
+                                      tmin=0, tmax=1,
                                       proj=False)
         reject = ar.get_rejection_threshold(simulated_epochs)
         print(f'Autoreject Rejection-Threshold: {reject}')
-    elif ica_autoreject and ica_fitto == 'Epochs':
+    elif ica_autoreject and ica_fitto == 'epochs':
         reject = meeg.load_json('autoreject_threshold')
         if not reject:
             reject = ar.get_rejection_threshold(data)
@@ -418,7 +426,7 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
     fit_kwargs = check_kwargs(kwargs, ica.fit)
     ica.fit(filt_data, reject=reject, reject_by_annotation=reject_by_annotation, **fit_kwargs)
 
-    # Load Raw for EOG/ECG-Detection without picks (e.g. still containing EEG for EOG or EOG channels)
+    # Load raw for EOG/ECG-Detection without picks (e.g. still containing EEG for EOG or EOG channels)
     eog_ecg_raw = meeg.load_filtered()
     # Include EOG/ECG with all the data-channels
     eog_ecg_raw.pick_types(meg=True, eeg=True, eog=True, ecg=True, seeg=True, ecog=True, fnirs=True, exclude='bads')
@@ -476,19 +484,19 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
 def _ica_plotto_helper(meeg, ica_plotto):
     ica = meeg.load_ica()
 
-    if ica_plotto == 'Raw (Unfiltered)':
+    if ica_plotto == 'raw':
         data = meeg.load_raw()
 
-    elif ica_plotto == 'Raw (Filtered)':
+    elif ica_plotto == 'raw_filtered':
         data = meeg.load_filtered()
 
-    elif ica_plotto == 'Epochs':
+    elif ica_plotto == 'epochs':
         data = meeg.load_epochs()
 
-    elif ica_plotto == 'Epochs (EOG)':
+    elif ica_plotto == 'epochs_eog':
         data = meeg.load_eog_epochs()
 
-    elif ica_plotto == 'Epochs (ECG)':
+    elif ica_plotto == 'epochs_ecg':
         data = meeg.load_ecg_epochs()
 
     elif ica_plotto == 'Evokeds':
@@ -509,7 +517,8 @@ def _ica_plotto_helper(meeg, ica_plotto):
 def plot_ica_components(meeg, show_plots):
     ica = meeg.load_ica()
     components_fig = ica.plot_components(title=meeg.name, show=show_plots)
-    meeg.plot_save('ICA', subfolder='components', matplotlib_figure=components_fig)
+    meeg.plot_save('ica', subfolder='components',
+                   matplotlib_figure=components_fig)
 
     return components_fig, ica
 
@@ -517,7 +526,7 @@ def plot_ica_components(meeg, show_plots):
 def plot_ica_sources(meeg, ica_source_data, show_plots):
     ica, data = _ica_plotto_helper(meeg, ica_source_data)
     sources_fig = ica.plot_sources(data, stop=ica.n_components, title=meeg.name, show=show_plots)
-    meeg.plot_save('ICA', subfolder='sources', matplotlib_figure=sources_fig)
+    meeg.plot_save('ica', subfolder='sources', matplotlib_figure=sources_fig)
 
     return sources_fig, ica
 
@@ -534,7 +543,7 @@ def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
         ovl_fig = ica.plot_overlay(data, title=meeg.name, show=show_plots)
         overlay_figs.append(ovl_fig)
 
-    meeg.plot_save('ICA', subfolder='overlay', matplotlib_figure=overlay_figs)
+    meeg.plot_save('ica', subfolder='overlay', matplotlib_figure=overlay_figs)
 
     return overlay_figs
 
@@ -551,18 +560,21 @@ def plot_ica_properties(meeg, show_plots):
         eog_epochs = meeg.load_eog_epochs()
         eog_prop_figs = ica.plot_properties(eog_epochs, eog_indices, psd_args=psd_args,
                                             show=show_plots)
-        meeg.plot_save('ICA', subfolder='properties', trial='eog', matplotlib_figure=eog_prop_figs)
+        meeg.plot_save('ica', subfolder='properties', trial='eog',
+                       matplotlib_figure=eog_prop_figs)
 
     if len(ecg_indices) > 0:
         ecg_epochs = meeg.load_ecg_epochs()
         ecg_prop_figs = ica.plot_properties(ecg_epochs, ecg_indices, psd_args=psd_args,
                                             show=show_plots)
-        meeg.plot_save('ICA', subfolder='properties', trial='ecg', matplotlib_figure=ecg_prop_figs)
+        meeg.plot_save('ica', subfolder='properties', trial='ecg',
+                       matplotlib_figure=ecg_prop_figs)
 
     remaining_indices = [ix for ix in ica.exclude if ix not in eog_indices + ecg_indices]
     if len(remaining_indices) > 0:
         prop_figs = ica.plot_properties(epochs, remaining_indices, psd_args=psd_args, show=show_plots)
-        meeg.plot_save('ICA', subfolder='properties', trial='manually', matplotlib_figure=prop_figs)
+        meeg.plot_save('ica', subfolder='properties', trial='manually',
+                       matplotlib_figure=prop_figs)
 
 
 def plot_ica_scores(meeg, show_plots):
@@ -570,7 +582,8 @@ def plot_ica_scores(meeg, show_plots):
     if len(eog_scores) > 1:
         ica = meeg.load_ica()
         eog_score_fig = ica.plot_scores(eog_scores, title=f'{meeg.name}: EOG', show=show_plots)
-        meeg.plot_save('ICA', subfolder='scores', trial='eog', matplotlib_figure=eog_score_fig)
+        meeg.plot_save('ica', subfolder='scores', trial='eog',
+                       matplotlib_figure=eog_score_fig)
     else:
         eog_score_fig = None
 
@@ -578,7 +591,8 @@ def plot_ica_scores(meeg, show_plots):
     if len(ecg_scores) > 1:
         ica = meeg.load_ica()
         ecg_score_fig = ica.plot_scores(ecg_scores, title=f'{meeg.name}: ECG', show=show_plots)
-        meeg.plot_save('ICA', subfolder='scores', trial='ecg', matplotlib_figure=ecg_score_fig)
+        meeg.plot_save('ica', subfolder='scores', trial='ecg',
+                       matplotlib_figure=ecg_score_fig)
     else:
         ecg_score_fig = None
 
@@ -586,13 +600,13 @@ def plot_ica_scores(meeg, show_plots):
 
 
 def apply_ica(meeg, n_pca_components):
-    # Check file-parameters to make sure, that ICA is not applied twice in a row
+    # Check file-parameters to make sure, that ica is not applied twice in a row
     epochs_file = Path(meeg.epochs_path).name
     if epochs_file in meeg.file_parameters and meeg.file_parameters[epochs_file]['FUNCTION'] == 'apply_ica':
         print(f'Not applying ICA because it was already applied to this file '
               f'on {meeg.file_parameters[epochs_file]["TIME"]}. If you '
-              f'want to apply ICA again, delete the Epochs-File in FileManagement '
-              f'and redo the Epochs.')
+              f'want to apply ICA again, delete the epochs-File in FileManagement '
+              f'and redo the epochs.')
     else:
         epochs = meeg.load_epochs()
         ica = meeg.load_ica()
@@ -880,24 +894,24 @@ def make_dense_scalp_surfaces(fsmri):
 # MNE SOURCE RECONSTRUCTIONS
 # ==============================================================================
 
-def setup_src(fsmri, source_space_spacing, surface, n_jobs):
-    src = mne.setup_source_space(fsmri.name, spacing=source_space_spacing,
-                                 surface=surface, subjects_dir=fsmri.subjects_dir,
-                                 add_dist=False, n_jobs=n_jobs)
-    fsmri.save_source_space(src)
+def setup_src(fsmri, src_spacing, surface, n_jobs):
+    src = mne.setup_src(fsmri.name, spacing=src_spacing,
+                        surface=surface, subjects_dir=fsmri.subjects_dir,
+                        add_dist=False, n_jobs=n_jobs)
+    fsmri.save_src(src)
 
 
-def setup_vol_src(fsmri, vol_source_space_spacing):
+def setup_vol_src(fsmri, vol_src_spacing):
     bem = fsmri.load_bem_solution()
-    vol_src = mne.setup_volume_source_space(fsmri.name, pos=vol_source_space_spacing, bem=bem,
-                                            subjects_dir=fsmri.subjects_dir)
-    fsmri.save_vol_source_space(vol_src)
+    vol_src = mne.setup_volume_src(fsmri.name, pos=vol_src_spacing, bem=bem,
+                                   subjects_dir=fsmri.subjects_dir)
+    fsmri.save_vol_src(vol_src)
 
 
 def compute_src_distances(fsmri, n_jobs):
-    src = fsmri.load_source_space()
-    src_computed = mne.add_source_space_distances(src, n_jobs=n_jobs)
-    fsmri.save_source_space(src_computed)
+    src = fsmri.load_src()
+    src_computed = mne.add_src_distances(src, n_jobs=n_jobs)
+    fsmri.save_src(src_computed)
 
 
 def prepare_bem(fsmri, bem_spacing, bem_conductivity):
@@ -952,28 +966,30 @@ def create_forward_solution(meeg, n_jobs, ch_types):
     info = meeg.load_info()
     trans = meeg.load_transformation()
     bem = meeg.fsmri.load_bem_solution()
-    source_space = meeg.fsmri.load_source_space()
+    src = meeg.fsmri.load_src()
 
     if 'eeg' in ch_types:
         eeg = True
     else:
         eeg = False
 
-    forward = mne.make_forward_solution(info, trans, source_space, bem, eeg=eeg,
+    forward = mne.make_forward_solution(info, trans, src, bem, eeg=eeg,
                                         n_jobs=n_jobs)
 
     meeg.save_forward(forward)
 
 
-def estimate_noise_covariance(meeg, baseline, n_jobs, noise_cov_mode, noise_cov_method, **kwargs):
-    if noise_cov_mode == 'Epochs' or meeg.erm is None:
-        print('Noise Covariance on Epochs-Baseline')
+def estimate_noise_covariance(meeg, baseline, n_jobs, noise_cov_mode,
+                              noise_cov_method, **kwargs):
+    if noise_cov_mode == 'epochs' or meeg.erm is None:
+        print('Noise Covariance on epochs-Baseline')
         epochs = meeg.load_epochs()
 
         tmin, tmax = baseline
         kwargs = check_kwargs(kwargs, mne.compute_covariance)
         noise_covariance = mne.compute_covariance(epochs, tmin=tmin, tmax=tmax,
-                                                  method=noise_cov_method, n_jobs=n_jobs, **kwargs)
+                                                  method=noise_cov_method,
+                                                  n_jobs=n_jobs, **kwargs)
         meeg.save_noise_covariance(noise_covariance)
 
     else:
@@ -1011,7 +1027,7 @@ def source_estimate(meeg, inverse_method, pick_ori, lambda2):
 
 def label_time_course(meeg, target_labels, parcellation, extract_mode):
     stcs = meeg.load_source_estimates()
-    src = meeg.fsmri.load_source_space()
+    src = meeg.fsmri.load_src()
 
     labels = mne.read_labels_from_annot(meeg.fsmri.name,
                                         subjects_dir=meeg.subjects_dir,
@@ -1122,12 +1138,7 @@ def ecd_fit(meeg, ecd_times, ecd_positions, ecd_orientations, t_epoch):
 def apply_morph(meeg, morph_to):
     if meeg.fsmri.name != morph_to:
         stcs = meeg.load_source_estimates()
-
-        # Deprecated when removed from FSMRI
-        try:
-            morph = meeg.load_source_morph()
-        except (OSError, FileNotFoundError):
-            morph = meeg.fsmri.load_source_morph()
+        morph = meeg.load_source_morph()
 
         morphed_stcs = {}
         for trial in stcs:
@@ -1137,8 +1148,9 @@ def apply_morph(meeg, morph_to):
         logging.info(f'{meeg.name} is already in source-space of {morph_to} and won\'t be morphed')
 
 
-def source_space_connectivity(meeg, parcellation, target_labels, inverse_method, lambda2, con_methods,
-                              con_fmin, con_fmax, n_jobs):
+def src_connectivity(meeg, parcellation, target_labels, inverse_method,
+                     lambda2, con_methods,
+                     con_fmin, con_fmax, n_jobs):
     info = meeg.load_info()
     all_epochs = meeg.load_epochs()
     inverse_operator = meeg.load_inverse_operator()

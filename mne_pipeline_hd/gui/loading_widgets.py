@@ -22,20 +22,30 @@ import pandas as pd
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
-                             QDockWidget, QFileDialog, QGridLayout, QHBoxLayout,
+                             QDockWidget, QFileDialog, QGridLayout,
+                             QHBoxLayout,
                              QHeaderView, QLabel, QLineEdit, QListWidget,
-                             QListWidgetItem, QMessageBox, QProgressBar, QPushButton,
-                             QScrollArea, QSizePolicy, QTabWidget, QTableView, QTreeWidget,
-                             QTreeWidgetItem, QVBoxLayout, QWidget, QWizard, QWizardPage)
+                             QListWidgetItem, QMessageBox, QProgressBar,
+                             QPushButton,
+                             QScrollArea, QSizePolicy, QTabWidget, QTableView,
+                             QTreeWidget,
+                             QTreeWidgetItem, QVBoxLayout, QWidget, QWizard,
+                             QWizardPage)
 from matplotlib import pyplot as plt
-from mne_pipeline_hd.basic_functions.operations import (plot_ica_components, plot_ica_overlay,
-                                                        plot_ica_properties, plot_ica_sources)
-from mne_pipeline_hd.gui.base_widgets import (AssignWidget, CheckDictList, CheckList,
-                                              EditDict, EditList, FilePandasTable,
-                                              SimpleDialog, SimpleList, SimplePandasTable)
+from mne_pipeline_hd.basic_functions.operations import (plot_ica_components,
+                                                        plot_ica_overlay,
+                                                        plot_ica_properties,
+                                                        plot_ica_sources)
+from mne_pipeline_hd.gui.base_widgets import (AssignWidget, CheckDictList,
+                                              CheckList,
+                                              EditDict, EditList,
+                                              FilePandasTable,
+                                              SimpleDialog, SimpleList,
+                                              SimplePandasTable)
 from mne_pipeline_hd.gui.gui_utils import (ErrorDialog, Worker, WorkerDialog,
                                            center, get_exception_tuple,
-                                           set_ratio_geometry, get_user_input_string)
+                                           set_ratio_geometry,
+                                           get_user_input_string)
 from mne_pipeline_hd.gui.models import AddFilesModel
 from mne_pipeline_hd.gui.parameter_widgets import ComboGui
 from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
@@ -1116,7 +1126,7 @@ class SubBadsWidget(QWidget):
         # Add Buttons
         self.bt_layout = QHBoxLayout()
 
-        plot_bt = QPushButton('Plot Raw')
+        plot_bt = QPushButton('Plot raw')
         plot_bt.clicked.connect(self.plot_raw_bad)
         self.bt_layout.addWidget(plot_bt)
 
@@ -1229,8 +1239,9 @@ class SubBadsWidget(QWidget):
         self.set_chkbx_enable(True)
 
         if self.save_raw_annot.isChecked():
-            WorkerDialog(self, self.current_obj.save_raw, raw=self.raw, show_console=True,
-                         title='Saving Raw with Annotations')
+            WorkerDialog(self, self.current_obj.save_raw, raw=self.raw,
+                         show_console=True,
+                         title='Saving raw with Annotations')
 
         self.raw_fig = None
 
@@ -1239,7 +1250,7 @@ class SubBadsWidget(QWidget):
         self.set_chkbx_enable(False)
 
         plot_dialog = QDialog(self)
-        plot_dialog.setWindowTitle('Opening Raw-Plot...')
+        plot_dialog.setWindowTitle('Opening raw-Plot...')
         plot_dialog.open()
         self.raw = self.current_obj.load_raw()
         try:
@@ -1392,7 +1403,7 @@ class EventIDGui(QDialog):
         apply_bt.clicked.connect(partial(EvIDApply, self))
         bt_layout.addWidget(apply_bt)
 
-        show_events = QPushButton('Show Events')
+        show_events = QPushButton('Show events')
         show_events.clicked.connect(self.show_events)
         bt_layout.addWidget(show_events)
 
@@ -1413,14 +1424,14 @@ class EventIDGui(QDialog):
         self.event_id_widget.replace_data(self.event_id)
 
         try:
-            # Load Events from File
+            # Load events from File
             meeg = MEEG(self.name, self.ct, suppress_warnings=True)
             events = meeg.load_events()
         except FileNotFoundError:
             self.event_id_label.setText(f'No events found for {self.name}')
         else:
             ids = np.unique(events[:, 2])
-            self.event_id_label.setText(f'Events found: {ids}')
+            self.event_id_label.setText(f'events found: {ids}')
 
     def save_event_id(self):
         if self.name:
@@ -2014,10 +2025,12 @@ class ICASelect(QDialog):
 
         # Create Parameter-GUI which stores parameter in dictionary (not the same as project.parameters)
         ica_source_data_param = ComboGui(self.parameters, 'ica_source_data',
-                                         options=['Raw (Unfiltered)', 'Raw (Filtered)',
-                                                  'Epochs', 'Epochs (EOG)', 'Epochs (ECG)',
-                                                  'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)'],
-                                         default='Raw (Filtered)')
+                                         options=['raw', 'raw_filtered',
+                                                  'epochs', 'epochs_eog',
+                                                  'epochs (ECG)',
+                                                  'Evokeds', 'Evokeds (EOG)',
+                                                  'Evokeds (ECG)'],
+                                         default='raw_filtered')
         bt_layout.addWidget(ica_source_data_param)
 
         plot_source_bt = QPushButton('Plot Source')
@@ -2025,9 +2038,10 @@ class ICASelect(QDialog):
         bt_layout.addWidget(plot_source_bt)
 
         ica_overlay_data_param = ComboGui(self.parameters, 'ica_overlay_data',
-                                          options=['Raw (Unfiltered)', 'Raw (Filtered)',
-                                                   'Evokeds', 'Evokeds (EOG)', 'Evokeds (ECG)'],
-                                          default='Raw (Filtered)')
+                                          options=['raw', 'raw_filtered',
+                                                   'Evokeds', 'Evokeds (EOG)',
+                                                   'Evokeds (ECG)'],
+                                          default='raw_filtered')
         bt_layout.addWidget(ica_overlay_data_param)
 
         plot_overlay_bt = QPushButton('Plot Overlay')
@@ -2225,7 +2239,8 @@ class ReloadRaw(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        self.raw_list = SimpleList(self.pr.all_meeg, title='Select Raw to reload')
+        self.raw_list = SimpleList(self.pr.all_meeg,
+                                   title='Select raw to reload')
         layout.addWidget(self.raw_list)
 
         reload_bt = QPushButton('Reload')
@@ -2242,15 +2257,18 @@ class ReloadRaw(QDialog):
         meeg = MEEG(selected_raw, self.ct)
         raw = load_raw_file(raw_path)
         meeg.save_raw(raw)
-        print(f'Reloaded Raw for {selected_raw}')
+        print(f'Reloaded raw for {selected_raw}')
 
     def start_reload(self):
         # Not with partial because otherwise the clicked-arg from clicked goes into *args
         selected_raw = self.raw_list.get_current()
-        raw_path = QFileDialog.getOpenFileName(self, 'Select Raw for Reload')[0]
+        raw_path = QFileDialog.getOpenFileName(self, 'Select raw for Reload')[
+            0]
         if raw_path:
-            WorkerDialog(self, self.reload_raw, selected_raw=selected_raw, raw_path=raw_path,
-                         show_console=True, title=f'Reloading Raw for {selected_raw}')
+            WorkerDialog(self, self.reload_raw, selected_raw=selected_raw,
+                         raw_path=raw_path,
+                         show_console=True,
+                         title=f'Reloading raw for {selected_raw}')
 
 
 class ExportDialog(QDialog):

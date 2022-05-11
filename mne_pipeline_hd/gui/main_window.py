@@ -16,22 +16,35 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-                             QMainWindow, QMessageBox, QPushButton, QScrollArea,
+                             QMainWindow, QMessageBox, QPushButton,
+                             QScrollArea,
                              QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 from mne_pipeline_hd import QS, ismac, _object_refs
 from mne_pipeline_hd.basic_functions.plot import close_all
-from mne_pipeline_hd.gui.dialogs import (QuickGuide, RawInfo, RemoveProjectsDlg,
-                                         SysInfoMsg, AboutDialog, CopyParamsDialog)
-from mne_pipeline_hd.gui.education_widgets import EducationEditor, EducationTour
-from mne_pipeline_hd.gui.function_widgets import (AddKwargs, ChooseCustomModules,
-                                                  CustomFunctionImport, RunDialog)
-from mne_pipeline_hd.gui.gui_utils import (QProcessDialog, WorkerDialog, center,
-                                           set_ratio_geometry, get_std_icon, get_user_input_string)
-from mne_pipeline_hd.gui.loading_widgets import (AddFilesDialog, AddMRIDialog, CopyTrans,
-                                                 EventIDGui, FileDictDialog, FileDock,
-                                                 FileManagment, ICASelect, ReloadRaw,
-                                                 SubBadsDialog, SubjectWizard, ExportDialog)
-from mne_pipeline_hd.gui.parameter_widgets import BoolGui, IntGui, ParametersDock, SettingsDlg
+from mne_pipeline_hd.gui.dialogs import (QuickGuide, RawInfo,
+                                         RemoveProjectsDlg,
+                                         SysInfoMsg, AboutDialog,
+                                         CopyParamsDialog)
+from mne_pipeline_hd.gui.education_widgets import EducationEditor, \
+    EducationTour
+from mne_pipeline_hd.gui.function_widgets import (AddKwargs,
+                                                  ChooseCustomModules,
+                                                  CustomFunctionImport,
+                                                  RunDialog)
+from mne_pipeline_hd.gui.gui_utils import (QProcessDialog, WorkerDialog,
+                                           center,
+                                           set_ratio_geometry, get_std_icon,
+                                           get_user_input_string)
+from mne_pipeline_hd.gui.loading_widgets import (AddFilesDialog, AddMRIDialog,
+                                                 CopyTrans,
+                                                 EventIDGui, FileDictDialog,
+                                                 FileDock,
+                                                 FileManagment, ICASelect,
+                                                 ReloadRaw,
+                                                 SubBadsDialog, SubjectWizard,
+                                                 ExportDialog)
+from mne_pipeline_hd.gui.parameter_widgets import BoolGui, IntGui, \
+    ParametersDock, SettingsDlg
 from mne_pipeline_hd.gui.tools import DataTerminal, PlotViewSelection
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
@@ -179,7 +192,7 @@ class MainWindow(QMainWindow):
 
         import_menu.addAction('Add Sample-Dataset', self.add_sample_dataset)
 
-        import_menu.addAction('Reload Raw', partial(ReloadRaw, self))
+        import_menu.addAction('Reload raw', partial(ReloadRaw, self))
 
         import_menu.addSeparator()
 

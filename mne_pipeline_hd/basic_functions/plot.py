@@ -305,25 +305,28 @@ def plot_transformation(meeg):
     meeg.plot_save('transformation', mayavi=True)
 
 
-def plot_source_space(fsmri):
-    source_space = fsmri.load_source_space()
-    source_space.plot()
+def plot_src(fsmri):
+    src = fsmri.load_src()
+    src.plot()
     mlab.view(-90, 7)
 
-    fsmri.plot_save('source_space', mayavi=True)
+    fsmri.plot_save('src', mayavi=True)
 
 
 def plot_bem(fsmri, show_plots):
-    source_space = fsmri.load_source_space()
-    fig1 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=source_space, show=show_plots)
+    src = fsmri.load_src()
+    fig1 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=src,
+                            show=show_plots)
 
     fsmri.plot_save('bem', subfolder='source-space', matplotlib_figure=fig1)
 
     try:
-        vol_src = fsmri.load_vol_source_space()
-        fig2 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=vol_src, show=show_plots)
+        vol_src = fsmri.load_vol_src()
+        fig2 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=vol_src,
+                                show=show_plots)
 
-        fsmri.plot_save('bem', subfolder='volume-source-space', matplotlib_figure=fig2)
+        fsmri.plot_save('bem', subfolder='volume-source-space',
+                        matplotlib_figure=fig2)
 
     except FileNotFoundError:
         pass
@@ -464,7 +467,8 @@ def plot_ecd(meeg):
                                         mode='orthoview', idx='gof')
             fig.suptitle(meeg.name, horizontalalignment='right')
 
-            meeg.plot_save('ECD', subfolder=dipole, trial=trial, matplotlib_figure=fig)
+            meeg.plot_save('ecd', subfolder=dipole, trial=trial,
+                           matplotlib_figure=fig)
 
             # find time point with highest GOF to plot
             best_idx = np.argmax(dipole.gof)
@@ -523,9 +527,11 @@ def plot_label_time_course(meeg, show_plots):
             meeg.plot_save('label-time-course', subfolder=label, trial=trial)
 
 
-def plot_source_space_connectivity(meeg, target_labels, parcellation, con_fmin, con_fmax, show_plots):
+def plot_src_connectivity(meeg, target_labels, parcellation, con_fmin,
+                          con_fmax, show_plots):
     con_dict = meeg.load_connectivity()
-    labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation, subjects_dir=meeg.subjects_dir)
+    labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation,
+                                        subjects_dir=meeg.subjects_dir)
 
     actual_labels = [lb for lb in labels if lb.name in target_labels]
 
@@ -620,7 +626,8 @@ def plot_grand_avg_stc_anim(group, stc_animation, stc_animation_dilat, morph_to)
         brain.title = f'{group.name}-{trial}'
 
         print('Saving Video')
-        save_path = join(group.figures_path, group.p_preset, 'grand_averages/source_space/stc_movie',
+        save_path = join(group.figures_path, group.p_preset,
+                         'grand_averages/src/stc_movie',
                          f'{group.name}_{trial}_{group.pr.p_preset}-stc_movie.mp4')
         brain.save_movie(save_path, time_dilation=stc_animation_dilat,
                          tmin=stc_animation[0], tmax=stc_animation[1], framerate=30)
