@@ -762,7 +762,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_ica(self, ica):
-        ica.save(self.ica_path)
+        ica.save(self.ica_path, overwrite=True)
 
     @load_decorator
     def load_eog_epochs(self):
@@ -786,7 +786,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_evokeds(self, evokeds):
-        mne.evoked.write_evokeds(self.evokeds_path, evokeds)
+        mne.evoked.write_evokeds(self.evokeds_path, evokeds, overwrite=True)
 
     @load_decorator
     def load_power_tfr_epochs(self):
@@ -846,7 +846,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_noise_covariance(self, noise_cov):
-        mne.cov.write_cov(self.noise_covariance_path, noise_cov)
+        mne.cov.write_cov(self.noise_covariance_path, noise_cov, overwrite=True)
 
     @load_decorator
     def load_inverse_operator(self):
@@ -854,7 +854,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_inverse_operator(self, inverse):
-        mne.minimum_norm.write_inverse_operator(self.inverse_path, inverse)
+        mne.minimum_norm.write_inverse_operator(self.inverse_path, inverse, overwrite=True)
 
     @load_decorator
     def load_source_estimates(self):
@@ -880,7 +880,7 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_morphed_source_estimates(self, morphed_stcs):
         for trial in morphed_stcs:
-            morphed_stcs[trial].save(self.morphed_stc_paths[trial])
+            morphed_stcs[trial].save(self.morphed_stc_paths[trial], overwrite=True)
 
     def load_mixn_dipoles(self):
         mixn_dips = dict()
@@ -909,7 +909,7 @@ class MEEG(BaseLoading):
             for idx, dip in enumerate(mixn_dips[trial]):
                 mxn_dip_path = join(self.save_dir, 'mixn_dipoles',
                                     f'{self.name}_{trial}_{self.p_preset}-mixn-dip{idx}.dip')
-                dip.save(mxn_dip_path)
+                dip.save(mxn_dip_path, overwrite=True)
 
     def load_mixn_source_estimates(self):
         mixn_stcs = dict()
