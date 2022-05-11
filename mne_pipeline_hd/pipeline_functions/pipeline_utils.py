@@ -17,6 +17,7 @@ from pathlib import Path
 
 import numpy as np
 import psutil
+
 from mne_pipeline_hd import islin, ismac, iswin
 
 datetime_format = '%d.%m.%Y %H:%M:%S'
@@ -97,7 +98,10 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
         critical_params_str = obj.ct.pd_funcs.loc[function, 'func_args']
         # Make sure there are no spaces left
         critical_params_str = critical_params_str.replace(' ', '')
-        critical_params = critical_params_str.split(',')
+        if ',' in critical_params_str:
+            critical_params = critical_params_str.split(',')
+        else:
+            critical_params = [critical_params_str]
     except KeyError:
         critical_params = list()
         function = None
@@ -109,9 +113,7 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
             previous_value = obj.file_parameters[file_name][param]
             current_value = obj.pa[param]
 
-            equality = str(previous_value) == str(current_value)
-
-            if equality:
+            if str(previous_value) == str(current_value):
                 result_dict[param] = 'equal'
                 if verbose:
                     print(f'{param} equal for {file_name}')
