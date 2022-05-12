@@ -2,18 +2,18 @@
     "settings": {
         "selected_project": null,
         "selected_modules": [
-            "operations",
-            "plot"
+          "operations",
+          "plot"
         ],
-        "parameter_preset": "Default",
-        "checked_funcs": [],
-        "show_plots": true,
-        "save_plots": true,
-        "shutdown": false,
-        "img_format": ".png",
-        "dpi": 150,
-
-        "overwrite": false
+      "parameter_preset": "Default",
+      "checked_funcs": [],
+      "show_plots": true,
+      "save_plots": true,
+      "shutdown": false,
+      "img_format": ".png",
+      "dpi": 150,
+      "overwrite": false,
+      "use_plot_manager": false
     },
     "qsettings": {
         "gui": true,

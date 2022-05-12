@@ -14,10 +14,13 @@ from os.path import isdir, join
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout,
-                             QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget)
+                             QLabel, QMessageBox, QPushButton, QVBoxLayout,
+                             QWidget)
+
 from mne_pipeline_hd import QS, _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import (ErrorDialog, center, WorkerDialog, get_user_input_string)
+from mne_pipeline_hd.gui.gui_utils import (ErrorDialog, center, WorkerDialog,
+                                           get_user_input_string)
 from mne_pipeline_hd.gui.main_window import show_main_window
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 
@@ -188,6 +191,8 @@ class WelcomeWindow(QWidget):
 
 
 def show_welcome_window(controller):
-    welcome_window = WelcomeWindow(controller)
-    _object_refs['welcome_window'] = welcome_window
-    return welcome_window
+    if _object_refs['welcome_window'] is None:
+        welcome_window = WelcomeWindow(controller)
+        _object_refs['welcome_window'] = welcome_window
+
+    return _object_refs['welcome_window']

@@ -19,10 +19,11 @@ import mne_connectivity
 import numpy as np
 
 # Make use of program also possible with sensor-space installation of mne
+from mne_pipeline_hd.pipeline_functions.plot_utils import pipeline_plot
+
 try:
-    from mayavi import mlab
+    from mne.viz import Brain
     from nilearn.plotting import plot_anat
-    from surfer import Brain
 except (ModuleNotFoundError, ValueError):
     pass
 
@@ -71,6 +72,7 @@ def plot_sensors(meeg, plot_sensors_kind, ch_types, show_plots):
                          show=show_plots)
 
 
+@pipeline_plot
 def plot_events(meeg, show_plots):
     events = meeg.load_events()
 
@@ -78,6 +80,8 @@ def plot_events(meeg, show_plots):
     fig.suptitle(meeg.name)
 
     meeg.plot_save('events', matplotlib_figure=fig)
+
+    return fig
 
 
 def plot_power_spectra(meeg, show_plots, n_jobs):
@@ -87,7 +91,8 @@ def plot_power_spectra(meeg, show_plots, n_jobs):
     if n_jobs == -1:
         n_jobs = multiprocessing.cpu_count()
 
-    fig = raw.plot_psd(fmax=raw.info['lowpass'], show=show_plots, n_jobs=n_jobs)
+    fig = raw.plot_psd(fmax=raw.info['lowpass'], show=show_plots,
+                       n_jobs=n_jobs)
     fig.suptitle(meeg.name)
 
     meeg.plot_save('power_spectra', subfolder='raw', matplotlib_figure=fig)
@@ -226,15 +231,22 @@ def plot_evoked_joint(meeg, show_plots):
         meeg.plot_save('evokeds', subfolder='joint', trial=evoked.comment, matplotlib_figure=fig)
 
 
+@pipeline_plot
 def plot_evoked_butterfly(meeg, apply_proj, show_plots):
     evokeds = meeg.load_evokeds()
     for evoked in evokeds:
         titles_dict = {cht: f'{cht}: {meeg.name}-{evoked.comment}'
-                       for cht in evoked.get_channel_types(unique=True, only_data_chs=True)}
-        fig = evoked.plot(spatial_colors=True, proj=apply_proj, titles=titles_dict,
+                       for cht in evoked.get_channel_types(unique=True,
+                                                           only_data_chs=True)}
+        fig = evoked.plot(spatial_colors=True, proj=apply_proj,
+                          titles=titles_dict,
                           window_title=meeg.name + ' - ' + evoked.comment,
-                          selectable=True, gfp=True, zorder='std', show=show_plots)
-        meeg.plot_save('evokeds', subfolder='butterfly', trial=evoked.comment, matplotlib_figure=fig)
+                          selectable=True, gfp=True, zorder='std',
+                          show=show_plots)
+        meeg.plot_save('evokeds', subfolder='butterfly', trial=evoked.comment,
+                       matplotlib_figure=fig)
+        
+        return fig
 
 
 def plot_evoked_white(meeg, show_plots):
