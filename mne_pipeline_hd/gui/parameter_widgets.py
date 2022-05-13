@@ -143,9 +143,11 @@ class Param(QWidget):
             if self.param_value is None:
                 self.group_box.setChecked(False)
             else:
-                # Save param_value separatetly, because when Widget inside GroupBox changes Enabled-State to Enabled,
-                # the get_param-method may be invoked leading to rewriting param_value with the displayed value
-                # and not with the original value
+                # Save param_value separatetly, because when Widget inside
+                # GroupBox changes Enabled-State to Enabled,
+                # the get_param-method may be invoked leading to rewriting
+                # param_value with the displayed value and not with the
+                # original value.
                 saved_value = self.param_value
                 self.group_box.setChecked(True)
                 self.param_value = saved_value

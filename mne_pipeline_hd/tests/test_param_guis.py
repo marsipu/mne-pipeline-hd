@@ -16,12 +16,78 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QGridLayout,
                              QPushButton, QApplication, QDialog)
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import SimpleDict
+from mne_pipeline_hd.gui.parameter_widgets import IntGui
+
+parameters = {'IntGui': 1,
+              'FloatGui': 5.3,
+              'StringGui': 'Havona',
+              'MultiTypeGui': 42,
+              'FuncGui': 5000,
+              'BoolGui': True,
+              'TupleGui': (45, 6),
+              'ComboGui': 'a',
+              'ListGui': [1, 454.33, 'post_central-lh', 5],
+              'CheckListGui': ['bananaaa'],
+              'DictGui': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
+              'SliderGui': 5}
+
+keyword_args = {
+    'IntGui': {'min_val': -4,
+               'max_val': 10,
+               'param_unit': 't'},
+    'FloatGui': {'min_val': -18,
+                 'max_val': 64,
+                 'step': 0.4,
+                 'param_unit': 'flurbo'},
+    'StringGui': {'input_mask': 'ppAAA.AA;_',
+                  'param_unit': 'N'},
+    'MultiTypeGui': {'type_selection': True},
+    'FuncGui': {'param_unit': 'u'},
+    'BoolGui': {},
+    'TupleGui': {'min_val': -10,
+                 'max_val': 100,
+                 'step': 1,
+                 'param_unit': 'Nm'},
+    'ComboGui': {'options': {'a': 'A', 'b': 'B', 'c': 'C'},
+                 'param_unit': 'g'},
+    'ListGui': {'param_unit': 'mol'},
+    'CheckListGui': {'options': ['lemon', 'pineapple', 'bananaaa'],
+                     'param_unit': 'V'},
+    'DictGui': {'param_unit': '°C'},
+    'SliderGui': {'min_val': -10,
+                  'max_val': 10,
+                  'step': 0.01,
+                  'param_unit': 'Hz'}
+}
+
+
+def test_int_gui(qtbot):
+    kwargs = keyword_args['IntGui']
+    gui = IntGui(parameters, 'IntGui', none_select=True, **kwargs)
+    qtbot.addWidget(gui)
+
+    assert gui.get_param() == parameters['IntGui']
+    parameters['IntGui'] = 3
+    gui.read_param()
+    gui.set_param()
+    assert gui.get_param() == 3
+    gui.param_widget.setValue(5)
+    assert parameters['IntGui'] == 5
+    # more than max
+    gui.param_widget.setValue(1000)
+    assert parameters['IntGui'] == kwargs['max_val']
+    # less than min
+    gui.param_widget.setValue(-1000)
+    assert parameters['IntGui'] == kwargs['min_val']
+    # Uncheck for None as value
+    gui.group_box.setChecked(False)
+    assert parameters['IntGui'] is None
 
 
 class ParamGuiTest(QWidget):
     def __init__(self):
         super().__init__()
-        self.parameters = {'IntGui': None,
+        self.parameters = {'IntGui': 1,
                            'FloatGui': 5.3,
                            'StringGui': 'Havona',
                            'MultiTypeGui': 42,
@@ -29,7 +95,7 @@ class ParamGuiTest(QWidget):
                            'BoolGui': True,
                            'TupleGui': (45, 6),
                            'ComboGui': 'a',
-                           'ListGui': [1, 454.33, 'post_central-lh', 'raga', 5],
+                           'ListGui': [1, 454.33, 'post_central-lh', 5],
                            'CheckListGui': ['bananaaa'],
                            'DictGui': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
                            'SliderGui': 5}
@@ -82,7 +148,8 @@ class ParamGuiTest(QWidget):
             if set_param_alias:
                 kw_args['param_alias'] = gui_nm + '-alias'
             kw_args['description'] = gui_nm + '-description'
-            gui = getattr(parameter_widgets, gui_nm)(self.parameters, gui_nm, **kw_args)
+            gui = getattr(parameter_widgets, gui_nm)(self.parameters, gui_nm,
+                                                     **kw_args)
             grid_layout.addWidget(gui, idx // max_cols, idx % max_cols)
             self.gui_dict[gui_nm] = gui
 
@@ -130,7 +197,7 @@ class ParamGuiTest(QWidget):
         dlg.open()
 
 
-def test_param_guis():
+def show_param_gui_test():
     app = QApplication(sys.argv)
     test_widget = ParamGuiTest()
     test_widget.show()
