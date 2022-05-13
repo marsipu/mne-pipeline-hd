@@ -23,6 +23,9 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QScrollArea, QMessageBox, QStyleFactory)
 from mne import read_labels_from_annot
 from mne.viz import Brain
+from vtkmodules.vtkCommonCore import vtkCommand
+from vtkmodules.vtkRenderingCore import vtkCellPicker
+
 from mne_pipeline_hd import QS, iswin
 from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
                                               SimpleList)
@@ -33,8 +36,6 @@ from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import \
     _get_available_parcellations
-from vtkmodules.vtkCommonCore import vtkCommand
-from vtkmodules.vtkRenderingCore import vtkCellPicker
 
 
 class Param(QWidget):
@@ -1577,6 +1578,9 @@ class LabelDialog(QDialog):
         parcellations = _get_available_parcellations(self.ct, self._fsmri)
         self.parcellation_cmbx.clear()
         self.parcellation_cmbx.addItems(parcellations)
+        param_parc = self.ct.pr.parameters[self.ct.pr.p_preset]['parcellation']
+        if param_parc in parcellations:
+            self.parcellation_cmbx.setCurrentText(param_parc)
         self._parc_changed()
 
     def _parc_changed(self):

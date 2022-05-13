@@ -23,6 +23,7 @@ from os.path import exists, getsize, isdir, isfile, join, dirname
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd import QS
 
@@ -338,6 +339,7 @@ class BaseLoading:
               f'and {n_remove_params} Parameters.')
         self.save_file_parameter_file()
 
+    # Todo: Type recognition
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None,
                   matplotlib_figure=None,
                   mayavi=False,
@@ -362,7 +364,7 @@ class BaseLoading:
             Set to True without supplying a mayavi-figure to save the current figure with mlab.savefig().
         mayavi_figure : mayavi.core.scene.Scene | None
             Supply a mayavi-figure here.
-        brain : surfer.Brain | None
+        brain : mne.viz.Brain | None
             Supply a Brain-instance here.
         dpi :
             Set the dpi-setting if you want another than specified in the MainWindow-Settings

@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import mne
 import mne_connectivity
 import numpy as np
+
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd.pipeline_functions.plot_utils import pipeline_plot
 
@@ -403,45 +404,54 @@ def plot_noise_covariance(meeg, show_plots):
                    matplotlib_figure=fig2)
 
 
-def brain_plot(meeg, stcs, folder_name, subject, mne_evoked_time=None):
-    # backend = mne.viz.get_3d_backend()
-    # mne_evoked_time = mne_evoked_time or list()
-    mne.viz.use_3d_backend('pyvista')
-    for trial in stcs:
-        stc = stcs[trial]
-        # file_patternlh = join(meeg.figures_path, meeg.p_preset, folder_name, trial,
-        #                       f'{meeg.name}-{trial}_{meeg.p_preset}_lh-%s{meeg.img_format}')
-        # file_patternrh = join(meeg.figures_path, meeg.p_preset, folder_name, trial,
-        #                       f'{meeg.name}-{trial}_{meeg.p_preset}_rh-%s{meeg.img_format}')
-        # # Check, if folder exists
-        # parent_path = Path(file_patternlh).parent
-        # if not isdir(parent_path):
-        #     makedirs(parent_path)
-        #
-        # if backend == 'mayavi':
-        #     brain = stc.plot(subject=subject, surface='inflated', subjects_dir=meeg.subjects_dir,
-        #                      hemi='lh', title=f'{meeg.name}-{trial}-lh')
-        #     brain.save_image_sequence(mne_evoked_time, fname_pattern=file_patternlh)
-        #     brain = stc.plot(subject=subject, surface='inflated', subjects_dir=meeg.subjects_dir,
-        #                      hemi='rh', title=f'{meeg.name}-{trial}-lh')
-        #     brain.save_image_sequence(mne_evoked_time, fname_pattern=file_patternrh)
-        #
-        # else:
-        brain = stc.plot(subject=subject, surface='inflated',
+def plot_stc(meeg, parcellation, target_labels,
+             stc_surface, stc_hemi, stc_views):
+    stcs = meeg.load_source_estimates()
+    parc_labels = mne.read_labels_from_annot(meeg.fsmri.name,
+                                             parc=parcellation,
+                                             subjects_dir=meeg.subjects_dir)
+    for trial, stc in stcs.items():
+        title = f'{meeg.name}-{trial}'
+        brain = stc.plot(subject=meeg.fsmri.name, surface=stc_surface,
                          subjects_dir=meeg.subjects_dir,
-                         hemi='split', title=f'{meeg.name}-{trial}',
-                         size=(1200, 600),
-                         initial_time=0)
-        brain.add_text(0, 0.9, f'{meeg.name}-{trial}', 'title',
-                       font_size=14)
-        meeg.plot_save(folder_name, trial=trial, brain=brain)
+                         hemi=stc_hemi, views=stc_views,
+                         title=title, time_viewer=False)
+        for label_name in target_labels:
+            for label in parc_labels:
+                if label.name == label_name:
+                    brain.add_label(label, borders=True)
+        brain.add_text(0, 0.9, title, 'title', font_size=14)
+        meeg.plot_save('source_estimates', trial=trial, brain=brain)
+
         if not meeg.ct.settings['show_plots']:
             brain.close()
 
 
-def plot_stc(meeg, mne_evoked_time):
+def plot_stc_interactive(meeg, stc_surface, stc_hemi, stc_views):
     stcs = meeg.load_source_estimates()
-    brain_plot(meeg, stcs, 'source-estimate', meeg.fsmri.name, mne_evoked_time)
+    for trial, stc in stcs.items():
+        title = f'{meeg.name}-{trial}'
+        brain = stc.plot(subject=meeg.fsmri.name, surface=stc_surface,
+                         subjects_dir=meeg.subjects_dir,
+                         hemi=stc_hemi, views=stc_views,
+                         title=title, time_viewer=True)
+        brain.add_text(0, 0.9, title, 'title', font_size=14)
+
+
+def plot_labels(fsmri, parcellation, target_labels,
+                stc_hemi, stc_surface, stc_views):
+    Brain = mne.viz.get_brain_class()
+    brain = Brain(subject_id=fsmri.name, hemi=stc_hemi,
+                  surf=stc_surface, subjects_dir=fsmri.subjects_dir,
+                  views=stc_views)
+    parc_labels = mne.read_labels_from_annot(fsmri.name,
+                                             parc=parcellation,
+                                             subjects_dir=fsmri.subjects_dir)
+    for label_name in target_labels:
+        for label in parc_labels:
+            if label.name == label_name:
+                brain.add_label(label, borders=False)
+    fsmri.plot_save('labels', brain=brain)
 
 
 def plot_mixn(meeg, mne_evoked_time, parcellation):
@@ -518,7 +528,6 @@ def plot_animated_stc(meeg, stc_animation, stc_animation_dilat):
         brain.save_movie(save_path, time_dilation=stc_animation_dilat,
                          tmin=stc_animation[0], tmax=stc_animation[1],
                          framerate=30)
-        mlab.close()
 
 
 def plot_ecd(meeg):

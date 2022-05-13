@@ -59,7 +59,9 @@ plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_compare_evokeds;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_gfp;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
-plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,mne_evoked_time
+plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,parcellation,target_labels,stc_surface,stc_hemi,stc_views
+plot_stc_interactive;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,stc_surface,stc_hemi,stc_views
+plot_labels;;FSMRI;Plot;Inverse;True;True;;plot;basic;fsmri,stc_hemi,stc_surface,stc_views
 plot_mixn;Plot Mixed-Norm-Solution;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,mne_evoked_time,parcellation
 plot_animated_stc;Plot Source-Estimate Video;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,stc_animation,stc_animation_dilat
 plot_snr;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
