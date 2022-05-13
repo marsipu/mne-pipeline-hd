@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 import inspect
@@ -21,17 +21,23 @@ from types import FunctionType
 import pandas as pd
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog, QFormLayout,
-                             QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListView,
-                             QListWidget, QListWidgetItem, QMessageBox, QPushButton,
+from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog,
+                             QFormLayout,
+                             QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+                             QListView,
+                             QListWidget, QListWidgetItem, QMessageBox,
+                             QPushButton,
                              QSizePolicy, QStyle, QTabWidget, QVBoxLayout,
                              QGridLayout, QProgressBar, QCheckBox)
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.base_widgets import (CheckDictList, CheckList, EditDict, EditList,
+from mne_pipeline_hd.gui.base_widgets import (CheckDictList, CheckList,
+                                              EditDict, EditList,
                                               SimpleDialog, SimpleList)
-from mne_pipeline_hd.gui.gui_utils import (CodeEditor, ErrorDialog, center, get_exception_tuple,
-                                           set_ratio_geometry, get_std_icon, MainConsoleWidget)
+from mne_pipeline_hd.gui.gui_utils import (CodeEditor, ErrorDialog, center,
+                                           get_exception_tuple,
+                                           set_ratio_geometry, get_std_icon,
+                                           MainConsoleWidget)
 from mne_pipeline_hd.gui.models import CustomFunctionModel, RunModel
 from mne_pipeline_hd.pipeline_functions.function_utils import QRunController
 

@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 import itertools
@@ -14,14 +14,19 @@ import numpy as np
 import pandas
 from PyQt5.QtCore import QItemSelectionModel, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog, QHBoxLayout, QLabel,
+from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog,
+                             QHBoxLayout, QLabel,
                              QListView, QPushButton, QScrollArea, QSizePolicy,
-                             QSpinBox, QTabWidget, QTableView, QTreeView, QVBoxLayout, QWidget)
+                             QSpinBox, QTabWidget, QTableView, QTreeView,
+                             QVBoxLayout, QWidget)
 from mne_pipeline_hd import QS, _object_refs
 from mne_pipeline_hd.gui.gui_utils import get_user_input_string
-from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel, BasePandasModel,
-                                        CheckDictEditModel, CheckDictModel, CheckListModel,
-                                        EditDictModel, EditListModel, EditPandasModel,
+from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel,
+                                        BasePandasModel,
+                                        CheckDictEditModel, CheckDictModel,
+                                        CheckListModel,
+                                        EditDictModel, EditListModel,
+                                        EditPandasModel,
                                         FileManagementModel, TreeModel)
 
 

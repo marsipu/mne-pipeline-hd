@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 import json
@@ -21,8 +21,10 @@ from pathlib import Path
 import mne
 import pandas as pd
 from mne_pipeline_hd import basic_functions, QS
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, get_user_input_string
-from mne_pipeline_hd.pipeline_functions.legacy import transfer_file_params_to_single_subject
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, \
+    get_user_input_string
+from mne_pipeline_hd.pipeline_functions.legacy import \
+    transfer_file_params_to_single_subject
 from mne_pipeline_hd.pipeline_functions.project import Project
 
 home_dirs = ['custom_packages', 'freesurfer', 'projects']
@@ -31,7 +33,8 @@ project_dirs = ['_pipeline_scripts', 'data', 'figures']
 
 class Controller:
 
-    def __init__(self, home_path=None, selected_project=None, edu_program_name=None):
+    def __init__(self, home_path=None, selected_project=None,
+                 edu_program_name=None):
         # Check Home-Path
         self.errors = dict()
         self.pr = None

@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 import logging
 from functools import partial
@@ -22,13 +22,12 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mne.viz import Brain, Figure3D
-from mne_qt_browser.figure import MNEQtBrowser
-
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList, CheckList
 from mne_pipeline_hd.gui.gui_utils import Worker, set_ratio_geometry
 from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
 from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
+from mne_qt_browser.figure import MNEQtBrowser
 
 
 class PlotManager(QMainWindow):

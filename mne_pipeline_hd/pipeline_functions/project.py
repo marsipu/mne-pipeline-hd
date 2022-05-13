@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 import json
@@ -16,7 +16,6 @@ from os.path import exists, getsize, isfile, join
 from pathlib import Path
 
 import numpy as np
-
 from mne_pipeline_hd.pipeline_functions.legacy import renamed_parameters
 from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, \

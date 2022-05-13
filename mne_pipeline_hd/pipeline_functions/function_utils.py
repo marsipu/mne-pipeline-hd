@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 import inspect
@@ -18,8 +18,10 @@ from multiprocessing import Pipe
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtWidgets import (QAbstractItemView)
 from mne_pipeline_hd import QS, ismac
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
-from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, Group, MEEG
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, \
+    Worker
+from mne_pipeline_hd.pipeline_functions.loading import BaseLoading, FSMRI, \
+    Group, MEEG
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import shutdown
 
 

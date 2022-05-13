@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 from __future__ import print_function
@@ -27,7 +27,6 @@ import mne
 import mne_connectivity
 import numpy as np
 from mne.preprocessing import ICA
-
 from mne_pipeline_hd import ismac, iswin
 from mne_pipeline_hd.pipeline_functions.loading import MEEG
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import (check_kwargs,

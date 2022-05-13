@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 from importlib import resources
@@ -16,7 +16,6 @@ from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout,
                              QLabel, QMessageBox, QPushButton, QVBoxLayout,
                              QWidget)
-
 from mne_pipeline_hd import QS, _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import (ErrorDialog, center, WorkerDialog,

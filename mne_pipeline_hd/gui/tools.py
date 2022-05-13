@@ -4,33 +4,21 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 from functools import partial
-from importlib import import_module
-from os.path import isfile, join
 
-from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout,
-                             QHBoxLayout, QLabel,
-                             QMainWindow, QMessageBox, QProgressDialog,
-                             QPushButton,
-                             QScrollArea, QSizePolicy, QSpinBox, QTabWidget,
-                             QToolBar,
-                             QVBoxLayout, QWidget)
-from matplotlib import pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (QComboBox, QDialog, QGridLayout,
+                             QHBoxLayout, QPushButton,
+                             QSizePolicy, QVBoxLayout)
 from mne_pipeline_hd import QS
-from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
+from mne_pipeline_hd.gui.base_widgets import CheckList
 from mne_pipeline_hd.gui.gui_utils import (CodeEditor, MainConsoleWidget,
-                                           Worker,
                                            WorkerDialog, get_exception_tuple,
                                            set_ratio_geometry)
-from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
-from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
+from mne_pipeline_hd.pipeline_functions.loading import MEEG
 
 
 class HistoryDlg(QDialog):

@@ -4,7 +4,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
 @github: https://github.com/marsipu/mne_pipeline_hd
-License: BSD (3-clause)
+License: GPL-3.0
 """
 
 from collections import Counter
@@ -12,8 +12,10 @@ from importlib import resources
 from pathlib import Path
 
 import mne
-from PyQt5.QtWidgets import (QDialog, QGridLayout, QLabel, QListView, QPushButton,
-                             QSizePolicy, QTextEdit, QVBoxLayout, QWidget, QComboBox, QMessageBox)
+from PyQt5.QtWidgets import (QDialog, QGridLayout, QLabel, QListView,
+                             QPushButton,
+                             QSizePolicy, QTextEdit, QVBoxLayout, QWidget,
+                             QComboBox, QMessageBox)
 from mne_pipeline_hd.gui.base_widgets import SimpleList, SimpleDialog
 from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
