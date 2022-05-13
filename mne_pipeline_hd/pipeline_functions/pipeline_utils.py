@@ -13,11 +13,11 @@ import logging
 import os
 import sys
 from datetime import datetime
+from os.path import join
 from pathlib import Path
 
 import numpy as np
 import psutil
-
 from mne_pipeline_hd import islin, ismac, iswin
 
 datetime_format = '%d.%m.%Y %H:%M:%S'
@@ -194,3 +194,11 @@ def restart_program():
 
     python = sys.executable
     os.execl(python, python, *sys.argv)
+
+
+def _get_available_parcellations(ct, fsmri):
+    annot_dir = join(ct.subjects_dir, fsmri, 'label')
+    files = os.listdir(annot_dir)
+    annotations = set([file[3:-6] for file in files if file[-6:] == '.annot'])
+
+    return annotations

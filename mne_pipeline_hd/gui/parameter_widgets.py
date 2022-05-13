@@ -15,16 +15,26 @@ import pandas as pd
 from PyQt5.QtCore import QSettings, Qt, pyqtSignal
 from PyQt5.QtGui import QFontDatabase, QFont
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
-                             QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                             QPushButton, QSizePolicy, QSlider, QSpinBox, QVBoxLayout,
+                             QGridLayout, QGroupBox, QHBoxLayout, QLabel,
+                             QLineEdit,
+                             QPushButton, QSizePolicy, QSlider, QSpinBox,
+                             QVBoxLayout,
                              QWidget, QDockWidget, QTabWidget,
                              QScrollArea, QMessageBox, QStyleFactory)
+from mne import read_labels_from_annot
+from mne.viz import Brain
 from mne_pipeline_hd import QS, iswin
-from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList, SimpleList)
+from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
+                                              SimpleList)
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
 from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
-                                           get_exception_tuple, get_user_input_string)
+                                           get_exception_tuple,
+                                           get_user_input_string)
 from mne_pipeline_hd.pipeline_functions.controller import Controller
+from mne_pipeline_hd.pipeline_functions.pipeline_utils import \
+    _get_available_parcellations
+from vtkmodules.vtkCommonCore import vtkCommand
+from vtkmodules.vtkRenderingCore import vtkCellPicker
 
 
 class Param(QWidget):
@@ -34,7 +44,8 @@ class Param(QWidget):
     """
     paramChanged = pyqtSignal(object)
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default=None,
+                 groupbox_layout=True,
                  none_select=False, description=None, changed_slot=None):
         """
         Parameters
@@ -151,8 +162,11 @@ class Param(QWidget):
         # get data from Parameters in Project in MainWindow
         # (depending on selected parameter-preset and selected Project)
         elif isinstance(self.data, Controller):
-            if self.param_name in self.data.pr.parameters[self.data.pr.p_preset]:
-                self.param_value = self.data.pr.parameters[self.data.pr.p_preset][self.param_name]
+            if self.param_name in self.data.pr.parameters[
+                self.data.pr.p_preset]:
+                self.param_value = \
+                    self.data.pr.parameters[self.data.pr.p_preset][
+                        self.param_name]
             else:
                 self.param_value = self.default
 
@@ -167,7 +181,8 @@ class Param(QWidget):
         if isinstance(self.data, dict):
             self.data[self.param_name] = self.param_value
         elif isinstance(self.data, Controller):
-            self.data.pr.parameters[self.data.pr.p_preset][self.param_name] = self.param_value
+            self.data.pr.parameters[self.data.pr.p_preset][
+                self.param_name] = self.param_value
         elif isinstance(self.data, QS):
             self.data.setValue(self.param_name, self.param_value)
 
@@ -175,7 +190,8 @@ class Param(QWidget):
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default=1,
+                 groupbox_layout=True,
                  none_select=False,
                  description=None, param_unit=None, min_val=0, max_val=1000,
                  special_value_text=None):
@@ -211,13 +227,15 @@ class IntGui(Param):
             Supply an optional text for the value 0.
         """
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
 
         self.param_widget = QSpinBox()
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
-        self.param_widget.setToolTip(f'MinValue = {min_val}\nMaxValue = {max_val}')
+        self.param_widget.setToolTip(
+            f'MinValue = {min_val}\nMaxValue = {max_val}')
         if special_value_text:
             self.param_widget.setSpecialValueText(special_value_text)
         if param_unit:
@@ -250,9 +268,11 @@ class IntGui(Param):
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1., groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default=1.,
+                 groupbox_layout=True,
                  none_select=False,
-                 description=None, param_unit=None, min_val=-1000., max_val=1000., step=0.1,
+                 description=None, param_unit=None, min_val=-1000.,
+                 max_val=1000., step=0.1,
                  decimals=2):
         """
         Parameters
@@ -288,14 +308,16 @@ class FloatGui(Param):
             Set the number of decimals of the value.
         """
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.param_widget = QDoubleSpinBox()
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
         self.param_widget.setSingleStep(step)
         self.param_widget.setDecimals(decimals)
-        self.param_widget.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}')
+        self.param_widget.setToolTip(
+            f'MinValue = {min_val}\nMaxVal = {max_val}')
         if param_unit:
             self.param_widget.setSuffix(f' {param_unit}')
         self.param_widget.valueChanged.connect(self.get_param)
@@ -327,7 +349,8 @@ class StringGui(Param):
     A GUI for String-Parameters
     """
 
-    def __init__(self, data, param_name, param_alias=None, default='', groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default='',
+                 groupbox_layout=True,
                  none_select=False,
                  description=None, param_unit=None, input_mask=None):
         """
@@ -359,7 +382,8 @@ class StringGui(Param):
             Define a string as in https://doc.qt.io/qt-5/qlineedit.html#inputMask-prop
         """
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.param_widget = QLineEdit()
         self.param_unit = param_unit
@@ -395,7 +419,8 @@ class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy
     """
 
-    def __init__(self, data, param_name, param_alias=None, default=0, groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default=0,
+                 groupbox_layout=True,
                  none_select=False,
                  description=None, param_unit=None):
         """
@@ -423,7 +448,8 @@ class FuncGui(Param):
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.param_exp = None
         self.param_widget = QLineEdit()
@@ -496,9 +522,11 @@ class FuncGui(Param):
 class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=False, groupbox_layout=False,
+    def __init__(self, data, param_name, param_alias=None, default=False,
+                 groupbox_layout=False,
                  none_select=False,
-                 description=None, changed_slot=None, param_unit=None, return_integer=False):
+                 description=None, changed_slot=None, param_unit=None,
+                 return_integer=False):
         """
         Parameters
         ----------
@@ -528,7 +556,8 @@ class BoolGui(Param):
         return_integer : bool
             Set True to return an integer (0|1) instead of a boolean (e.g. useful for QSettings)
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout,
                          none_select, description, changed_slot)
         self.param_unit = param_unit
         self.return_integer = return_integer
@@ -572,9 +601,11 @@ class BoolGui(Param):
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default=None,
+                 groupbox_layout=True,
                  none_select=False,
-                 description=None, param_unit=None, min_val=-1000., max_val=1000., step=.1):
+                 description=None, param_unit=None, min_val=-1000.,
+                 max_val=1000., step=.1):
         """
         Parameters
         ----------
@@ -607,7 +638,8 @@ class TupleGui(Param):
             Set the amount, one step takes
         """
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
 
         if step == 1:
@@ -622,8 +654,10 @@ class TupleGui(Param):
             self.param_widget1.setDecimals(decimals)
             self.param_widget2.setDecimals(decimals)
 
-        self.param_widget1.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n')
-        self.param_widget2.setToolTip(f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n')
+        self.param_widget1.setToolTip(
+            f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n')
+        self.param_widget2.setToolTip(
+            f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n')
 
         self.param_widget1.setMinimum(min_val)
         self.param_widget1.setMaximum(max_val)
@@ -660,7 +694,8 @@ class TupleGui(Param):
             self.param_widget2.setValue(self.loaded_value[1])
 
     def get_param(self):
-        self.param_value = (self.param_widget1.value(), self.param_widget2.value())
+        self.param_value = (
+            self.param_widget1.value(), self.param_widget2.value())
         self.save_param()
 
         return self.param_value
@@ -669,7 +704,8 @@ class TupleGui(Param):
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
 
-    def __init__(self, data, param_name, options, param_alias=None, default=object(),
+    def __init__(self, data, param_name, options, param_alias=None,
+                 default=object(),
                  groupbox_layout=True,
                  none_select=False, description=None, param_unit=None):
         """
@@ -700,7 +736,8 @@ class ComboGui(Param):
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.options = options
         self.param_widget = QComboBox()
@@ -728,7 +765,8 @@ class ComboGui(Param):
         self.check_groupbox_state()
         if self.param_value is not None:
             if isinstance(self.options, dict):
-                self.param_widget.setCurrentText(str(self.options[self.param_value]))
+                self.param_widget.setCurrentText(
+                    str(self.options[self.param_value]))
             else:
                 self.param_widget.setCurrentText(str(self.param_value))
 
@@ -772,7 +810,8 @@ class ListDialog(QDialog):
 class ListGui(Param):
     """A GUI for as list"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default=None,
+                 groupbox_layout=True,
                  none_select=False,
                  description=None, param_unit=None, value_string_length=30):
         """
@@ -805,7 +844,8 @@ class ListGui(Param):
 
         default = default or list()
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.param_unit = param_unit
         self.value_string_length = value_string_length
@@ -824,7 +864,8 @@ class ListGui(Param):
         list_layout.addWidget(self.value_label)
 
         self.param_widget = QPushButton('Edit')
-        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum,
+                                        QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(ListDialog, self))
         list_layout.addWidget(self.param_widget, alignment=Qt.AlignCenter)
 
@@ -836,11 +877,13 @@ class ListGui(Param):
         self.check_groupbox_state()
         if self.param_value is not None:
             if self.param_unit:
-                val_str = ', '.join([f'{item} {self.param_unit}' for item in self.param_value])
+                val_str = ', '.join(
+                    [f'{item} {self.param_unit}' for item in self.param_value])
             else:
                 val_str = ', '.join([str(item) for item in self.param_value])
             if len(val_str) >= self.value_string_length:
-                self.value_label.setText(f'{val_str[:self.value_string_length]} ...')
+                self.value_label.setText(
+                    f'{val_str[:self.value_string_length]} ...')
             else:
                 self.value_label.setText(val_str)
         else:
@@ -868,7 +911,8 @@ class CheckListDialog(QDialog):
 
     def init_layout(self):
         layout = QVBoxLayout()
-        layout.addWidget(CheckList(data=self.paramw.options, checked=self.paramw.param_value,
+        layout.addWidget(CheckList(data=self.paramw.options,
+                                   checked=self.paramw.param_value,
                                    one_check=self.paramw.one_check))
 
         close_bt = QPushButton('Close')
@@ -887,9 +931,11 @@ class CheckListGui(Param):
     """A GUI to select items from a list of options
     """
 
-    def __init__(self, data, param_name, options, param_alias=None, default=None,
+    def __init__(self, data, param_name, options, param_alias=None,
+                 default=None,
                  groupbox_layout=True,
-                 none_select=False, description=None, param_unit=None, value_string_length=30,
+                 none_select=False, description=None, param_unit=None,
+                 value_string_length=30,
                  one_check=False):
         """
         Parameters
@@ -929,7 +975,8 @@ class CheckListGui(Param):
             options = ['Empty']
             default = ['Empty']
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.options = options
         self.param_unit = param_unit
@@ -950,7 +997,8 @@ class CheckListGui(Param):
         check_list_layout.addWidget(self.value_label)
 
         self.param_widget = QPushButton('Edit')
-        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum,
+                                        QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(CheckListDialog, self))
         check_list_layout.addWidget(self.param_widget)
 
@@ -962,11 +1010,13 @@ class CheckListGui(Param):
         self.check_groupbox_state()
         if self.param_value is not None:
             if self.param_unit:
-                val_str = ', '.join([f'{item} {self.param_unit}' for item in self.param_value])
+                val_str = ', '.join(
+                    [f'{item} {self.param_unit}' for item in self.param_value])
             else:
                 val_str = ', '.join([str(item) for item in self.param_value])
             if len(val_str) >= self.value_string_length:
-                self.value_label.setText(f'{val_str[:self.value_string_length]} ...')
+                self.value_label.setText(
+                    f'{val_str[:self.value_string_length]} ...')
             else:
                 self.value_label.setText(val_str)
         else:
@@ -1009,7 +1059,8 @@ class DictDialog(QDialog):
 class DictGui(Param):
     """A GUI for a dictionary"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default=None,
+                 groupbox_layout=True,
                  none_select=False,
                  description=None, param_unit=None, value_string_length=30):
         """
@@ -1043,7 +1094,8 @@ class DictGui(Param):
 
         default = default or dict()
 
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.param_unit = param_unit
         self.value_string_length = value_string_length
@@ -1062,7 +1114,8 @@ class DictGui(Param):
         dict_layout.addWidget(self.value_label)
 
         self.param_widget = QPushButton('Edit')
-        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum,
+                                        QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(DictDialog, self))
         dict_layout.addWidget(self.param_widget)
 
@@ -1074,12 +1127,15 @@ class DictGui(Param):
         self.check_groupbox_state()
         if self.param_value is not None:
             if self.param_unit:
-                val_str = ', '.join([f'{key} {self.param_unit}: {value} {self.param_unit}'
-                                     for key, value in self.param_value.items()])
+                val_str = ', '.join(
+                    [f'{key} {self.param_unit}: {value} {self.param_unit}'
+                     for key, value in self.param_value.items()])
             else:
-                val_str = ', '.join([f'{key}: {value}' for key, value in self.param_value.items()])
+                val_str = ', '.join([f'{key}: {value}' for key, value in
+                                     self.param_value.items()])
             if len(val_str) > self.value_string_length:
-                self.value_label.setText(f'{val_str[:self.value_string_length]} ...')
+                self.value_label.setText(
+                    f'{val_str[:self.value_string_length]} ...')
             else:
                 self.value_label.setText(val_str)
         else:
@@ -1100,9 +1156,11 @@ class DictGui(Param):
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1, groupbox_layout=True,
+    def __init__(self, data, param_name, param_alias=None, default=1,
+                 groupbox_layout=True,
                  none_select=False,
-                 description=None, param_unit=None, min_val=0, max_val=100, step=1):
+                 description=None, param_unit=None, min_val=0, max_val=100,
+                 step=1):
         """
         Parameters
         ----------
@@ -1134,29 +1192,36 @@ class SliderGui(Param):
         step : int | float
             Set the step-size, defaults to 1.
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.min_val = min_val
         self.max_val = max_val
         self.param_widget = QSlider()
-        self.param_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.param_widget.setSizePolicy(QSizePolicy.Expanding,
+                                        QSizePolicy.Maximum)
         self.param_unit = param_unit
         self.decimal_count = max(
-            [len(str(value)[str(value).find('.'):]) - 1 for value in [min_val, max_val, step]])
+            [len(str(value)[str(value).find('.'):]) - 1 for value in
+             [min_val, max_val, step]])
         if self.decimal_count > 0:
-            self.param_widget.setMinimum(int(self.min_val * 10 ** self.decimal_count))
-            self.param_widget.setMaximum(int(self.max_val * 10 ** self.decimal_count))
+            self.param_widget.setMinimum(
+                int(self.min_val * 10 ** self.decimal_count))
+            self.param_widget.setMaximum(
+                int(self.max_val * 10 ** self.decimal_count))
         else:
             self.param_widget.setMinimum(self.min_val)
             self.param_widget.setMaximum(self.max_val)
         self.param_widget.setSingleStep(int(step))
         self.param_widget.setOrientation(Qt.Horizontal)
         self.param_widget.setTracking(True)
-        self.param_widget.setToolTip(f'MinValue = {min_val}\nMaxValue = {max_val}\nStep = {step}')
+        self.param_widget.setToolTip(
+            f'MinValue = {min_val}\nMaxValue = {max_val}\nStep = {step}')
         self.param_widget.valueChanged.connect(self.get_param)
 
         self.display_widget = QLineEdit()
-        self.display_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.display_widget.setSizePolicy(QSizePolicy.Maximum,
+                                          QSizePolicy.Maximum)
         self.display_widget.setAlignment(Qt.AlignRight)
         self.display_widget.editingFinished.connect(self.display_edited)
 
@@ -1193,13 +1258,15 @@ class SliderGui(Param):
         #         self.param_widget.setMaximum(self.max_val * 10 ** self.decimal_count)
         if new_value:
             self.param_value = new_value
-            self.param_widget.setValue(int(new_value * 10 ** self.decimal_count))
+            self.param_widget.setValue(
+                int(new_value * 10 ** self.decimal_count))
 
     def set_param(self):
         self.check_groupbox_state()
         if self.param_value is not None:
             if self.decimal_count > 0:
-                self.param_widget.setValue(int(self.param_value * 10 ** self.decimal_count))
+                self.param_widget.setValue(
+                    int(self.param_value * 10 ** self.decimal_count))
             else:
                 self.param_widget.setValue(self.param_value)
             self.display_widget.setText(str(self.param_value))
@@ -1218,8 +1285,10 @@ class SliderGui(Param):
 class MultiTypeGui(Param):
     """A GUI which accepts multiple types of values in a single LineEdit"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None, groupbox_layout=True,
-                 none_select=False, description=None, param_unit=None, type_selection=False,
+    def __init__(self, data, param_name, param_alias=None, default=None,
+                 groupbox_layout=True,
+                 none_select=False, description=None, param_unit=None,
+                 type_selection=False,
                  types=None, type_kwargs=None):
         """
         Parameters
@@ -1253,10 +1322,12 @@ class MultiTypeGui(Param):
             Specify keyword-arguments for the different GUIs (look into their documentation), 
             the key is the name of the GUI!
         """
-        super().__init__(data, param_name, param_alias, default, groupbox_layout, none_select,
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select,
                          description)
         self.type_selection = type_selection
-        self.types = types or ['int', 'float', 'bool', 'str', 'list', 'dict', 'tuple']
+        self.types = types or ['int', 'float', 'bool', 'str', 'list', 'dict',
+                               'tuple']
         self.type_kwargs = type_kwargs or dict()
 
         # A dictionary to map possible types with their GUI
@@ -1271,7 +1342,8 @@ class MultiTypeGui(Param):
 
         if self.type_selection:
             self.type_cmbx = QComboBox()
-            self.type_cmbx.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+            self.type_cmbx.setSizePolicy(QSizePolicy.Maximum,
+                                         QSizePolicy.Maximum)
             self.type_cmbx.addItems(self.types)
             self.type_cmbx.activated.connect(self.change_type)
         else:
@@ -1349,7 +1421,8 @@ class MultiTypeGui(Param):
             self.param_widget.set_param()
         elif self.param_value is not None:
             self.param_widget.setText(str(self.param_value))
-            self.type_display.setText(f'Type: {type(self.param_value).__name__}')
+            self.type_display.setText(
+                f'Type: {type(self.param_value).__name__}')
 
     def get_param(self):
         if self.type_selection:
@@ -1372,6 +1445,260 @@ class MultiTypeGui(Param):
         return self.param_value
 
 
+class LabelPicker(Brain):
+    def __init__(self, paramdlg, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.paramdlg = paramdlg
+        self.paramw = paramdlg.paramw
+
+        self._shown_labels = list()
+
+        self._set_annotations()
+        self._init_picking()
+        self.add_text(0, 0.9, 'Pick labels', 'title', font_size=14)
+
+    def _set_annotations(self):
+        fsmri = self.paramdlg._fsmri
+        parcellation = self.paramdlg._parcellation
+        self.clear_glyphs()
+        self.remove_labels()
+        self.remove_annotations()
+        self.add_annotation(parcellation, color='w', alpha=0.75)
+        for hemi in self._hemis:
+            labels = read_labels_from_annot(subject=fsmri,
+                                            parc=parcellation,
+                                            hemi=hemi,
+                                            subjects_dir=
+                                            self.paramdlg.ct.subjects_dir)
+            self._vertex_to_label_id[hemi] = np.full(
+                self.geo[hemi].coords.shape[0], -1)
+            self._annotation_labels[hemi] = labels
+            for idx, label in enumerate(labels):
+                self._vertex_to_label_id[hemi][label.vertices] = idx
+
+    def _init_picking(self):
+        self._mouse_no_mvt = -1
+        add_obs = self._renderer.plotter.iren.add_observer
+        add_obs(vtkCommand.RenderEvent, self._on_mouse_move)
+        add_obs(vtkCommand.LeftButtonPressEvent, self._on_button_press)
+        add_obs(vtkCommand.EndInteractionEvent, self._on_button_release)
+        self._renderer.plotter.picker = vtkCellPicker()
+        self._renderer.plotter.picker.AddObserver(vtkCommand.EndPickEvent,
+                                                  self._label_picked)
+
+    def _label_picked(self, vtk_picker, event):
+        cell_id = vtk_picker.GetCellId()
+        mesh = vtk_picker.GetDataSet()
+        if mesh is not None:
+            hemi = mesh._hemi
+            if mesh is None or cell_id == -1 or not self._mouse_no_mvt:
+                return  # don't pick
+            pos = np.array(vtk_picker.GetPickPosition())
+            vtk_cell = mesh.GetCell(cell_id)
+            cell = [vtk_cell.GetPointId(point_id) for point_id
+                    in range(vtk_cell.GetNumberOfPoints())]
+            vertices = mesh.points[cell]
+            idx = np.argmin(abs(vertices - pos), axis=0)
+            vertex_id = cell[idx[0]]
+
+            label_id = self._vertex_to_label_id[hemi][vertex_id]
+            label = self._annotation_labels[hemi][label_id]
+
+            if label.name in self.paramw.param_value:
+                self._remove_label_name(label.name, hemi)
+                self.paramw.param_value.remove(label.name)
+            else:
+                self._add_label_name(label.name, hemi, label)
+                self.paramw.param_value.append(label.name)
+            self.paramdlg.label_list.content_changed()
+
+    def _add_label_name(self, label_name, hemi, label=None):
+        if label is None:
+            for lb in self._annotation_labels[hemi]:
+                if lb.name == label_name:
+                    label = lb
+                    break
+        if label is not None:
+            self.add_label(label, borders=False, reset_camera=False)
+            self._shown_labels.append(label_name)
+
+    def _remove_label_name(self, label_name, hemi):
+        self._layered_meshes[hemi].remove_overlay(label_name)
+        self._shown_labels.remove(label_name)
+        self._renderer._update()
+
+
+class LabelDialog(QDialog):
+    def __init__(self, paramw):
+        super().__init__(paramw)
+        self.paramw = paramw
+        self.ct = paramw.data
+        self.param_value = paramw.param_value
+
+        self._label_picker = None
+        self._fsmri = None
+        self._parcellation = None
+        self._all_labels = list()
+        self._all_label_names = list()
+
+        self.init_layout()
+        self.open()
+
+    def init_layout(self):
+        layout = QVBoxLayout(self)
+
+        self.fsmri_cmbx = QComboBox()
+        self.fsmri_cmbx.addItems(self.ct.pr.all_fsmri)
+        self.fsmri_cmbx.activated.connect(self._subject_changed)
+        layout.addWidget(self.fsmri_cmbx)
+
+        self.parcellation_cmbx = QComboBox()
+        self.parcellation_cmbx.activated.connect(self._parc_changed)
+        layout.addWidget(self.parcellation_cmbx)
+
+        self.label_list = CheckList(data=self._all_label_names,
+                                    checked=self.param_value,
+                                    ui_buttons=False)
+        self.label_list.checkedChanged.connect(self._labels_changed)
+        layout.addWidget(self.label_list)
+
+        choose_bt = QPushButton('Choose Labels')
+        choose_bt.clicked.connect(self._open_label_picker)
+        layout.addWidget(choose_bt)
+
+        # Initialize with first items
+        self._subject_changed()
+        self._parc_changed()
+
+    def _subject_changed(self):
+        self._fsmri = self.fsmri_cmbx.currentText()
+        parcellations = _get_available_parcellations(self.ct, self._fsmri)
+        self.parcellation_cmbx.clear()
+        self.parcellation_cmbx.addItems(parcellations)
+        self._parc_changed()
+
+    def _parc_changed(self):
+        self._parcellation = self.parcellation_cmbx.currentText()
+        self._all_labels = read_labels_from_annot(self._fsmri,
+                                                  parc=self._parcellation,
+                                                  subjects_dir=
+                                                  self.ct.subjects_dir)
+        self._all_label_names = [lb.name for lb in self._all_labels]
+
+        self.param_value.clear()
+        self.label_list.replace_data(self._all_label_names)
+
+        if self._label_picker is not None:
+            self._label_picker._set_annotations()
+
+    def _labels_changed(self, labels):
+        if self._label_picker is not None:
+            shown_labels = self._label_picker._shown_labels
+            for add_name in [lb for lb in labels if lb not in shown_labels]:
+                hemi = add_name[-2:]
+                self._label_picker._add_label_name(add_name, hemi)
+            for remove_name in [lb for lb in shown_labels if lb not in labels]:
+                hemi = remove_name[-2:]
+                self._label_picker._remove_label_name(remove_name, hemi)
+
+    def _open_label_picker(self):
+        self._label_picker = LabelPicker(self, self._fsmri, hemi='split',
+                                         views=['lat', 'med'],
+                                         surf='inflated', title='Pick labels',
+                                         subjects_dir=
+                                         self.ct.subjects_dir,
+                                         block=False)
+
+
+class LabelGui(Param):
+    """This GUI lets the user pick labels from a brain."""
+
+    def __init__(self, data, param_name, param_alias=None, default=None,
+                 groupbox_layout=True, none_select=False,
+                 description=None, param_unit=None, value_string_length=30):
+        """
+        Parameters
+        ----------
+        data : dict | QMainWindow | QSettings
+            The data-structure, in which the value of the parameter is stored
+            (depends on the scenario how the Parameter-Widget is used,
+             e.g. displaying parameters from Project or displaying Settings from Main-Window).
+        param_name : str
+            The name of the key, which stores the value in the data-structure.
+        param_alias : str | None
+            An optional alias-name for the parameter for display
+            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
+        default : int | None
+            The default value, if not given defaults to [].
+        groupbox_layout : bool
+            If a groupbox should be used as layout (otherwise it is just a label)
+        none_select : bool
+            Set True if it should be possible to set the value to None by unchecking the GroupBox
+            (on the left of the name).
+        description : str | None
+            Supply an optional description for the parameter,
+            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
+        param_unit : str | None
+            Supply an optional suffix with the name of the unit.
+        value_string_length : int | None
+            Set the limit of characters to which the value converted to a string will be displayed
+        """
+
+        super().__init__(data, param_name, param_alias, default,
+                         groupbox_layout, none_select, description)
+        self.param_unit = param_unit
+        self.value_string_length = value_string_length
+        if not isinstance(data, Controller):
+            raise RuntimeError(f'LabelGui can only used with an instance of '
+                               f'Controller passed as data.')
+        self.read_param()
+        self.init_layout()
+        self.set_param()
+        self.save_param()
+
+    def init_layout(self):
+        check_list_layout = QHBoxLayout()
+
+        self.value_label = QLabel()
+        check_list_layout.addWidget(self.value_label)
+
+        self.param_widget = QPushButton('Edit')
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum,
+                                        QSizePolicy.Maximum)
+        self.param_widget.clicked.connect(partial(LabelDialog, self))
+        check_list_layout.addWidget(self.param_widget)
+
+        self.init_ui(check_list_layout)
+
+    def set_param(self):
+        if self.param_value is not None:
+            self.cached_value = self.param_value
+        self.check_groupbox_state()
+        if self.param_value is not None:
+            if self.param_unit:
+                val_str = ', '.join([f'{item}' for item in self.param_value])
+            else:
+                val_str = ', '.join([str(item) for item in self.param_value])
+            if len(val_str) >= self.value_string_length:
+                self.value_label.setText(
+                    f'{val_str[:self.value_string_length]} ...')
+            else:
+                self.value_label.setText(val_str)
+        else:
+            self.value_label.setText('None')
+
+    def get_param(self):
+        if self.param_value is None:
+            if self.cached_value:
+                self.param_value = self.cached_value
+            else:
+                self.param_value = list()
+            self.value_label.clear()
+        self.save_param()
+
+        return self.param_value
+
+
 # Todo: Ordering Parameters in Tabs and add Find-Command
 class ResetDialog(QDialog):
     def __init__(self, p_dock):
@@ -1384,9 +1711,10 @@ class ResetDialog(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout()
-        layout.addWidget(CheckList(list(self.pd.ct.pr.parameters[self.pd.ct.pr.p_preset].keys()),
-                                   self.selected_params,
-                                   title='Select the Parameters to reset'))
+        layout.addWidget(CheckList(
+            list(self.pd.ct.pr.parameters[self.pd.ct.pr.p_preset].keys()),
+            self.selected_params,
+            title='Select the Parameters to reset'))
         reset_bt = QPushButton('Reset')
         reset_bt.clicked.connect(self.reset_params)
         layout.addWidget(reset_bt)
@@ -1401,7 +1729,8 @@ class ResetDialog(QDialog):
         for param_name in self.selected_params:
             self.pd.ct.pr.load_default_param(param_name)
             print(f'Reset {param_name}')
-        WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...', blocking=True)
+        WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...',
+                     blocking=True)
         self.pd.update_all_param_guis()
         self.close()
 
@@ -1450,16 +1779,19 @@ class CopyPDialog(QDialog):
 
     def from_selected(self, current):
         self.selected_from = current
-        self.copy_to.replace_data([pp for pp in self.p.keys() if pp != current])
+        self.copy_to.replace_data(
+            [pp for pp in self.p.keys() if pp != current])
         self.copy_ps.replace_data([p for p in self.p[current]])
 
     def copy_parameters(self):
         if len(self.selected_to) > 0:
             for p_preset in self.selected_to:
                 for parameter in self.selected_ps:
-                    self.p[p_preset][parameter] = self.p[self.selected_from][parameter]
+                    self.p[p_preset][parameter] = self.p[self.selected_from][
+                        parameter]
 
-            WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...', blocking=True)
+            WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...',
+                         blocking=True)
             self.pd.update_all_param_guis()
             self.close()
 
@@ -1467,7 +1799,8 @@ class CopyPDialog(QDialog):
 class RemovePPresetDlg(CheckListDlg):
     def __init__(self, parent):
         self.parent = parent
-        self.preset_list = [p for p in self.parent.ct.pr.parameters if p != 'Default']
+        self.preset_list = [p for p in self.parent.ct.pr.parameters if
+                            p != 'Default']
         self.rm_list = []
 
         super().__init__(parent, self.preset_list, self.rm_list)
@@ -1487,7 +1820,8 @@ class RemovePPresetDlg(CheckListDlg):
 
         # If current Parameter-Preset was deleted
         if self.parent.ct.pr.p_preset not in self.parent.ct.pr.parameters:
-            self.parent.ct.pr.p_preset = list(self.parent.ct.pr.parameters.keys())[0]
+            self.parent.ct.pr.p_preset = \
+                list(self.parent.ct.pr.parameters.keys())[0]
             self.parent.update_all_param_guis()
 
         self.close()
@@ -1508,7 +1842,8 @@ class ParametersDock(QDockWidget):
     def dropgroup_params(self):
         # Create a set of all unique parameters used by functions in selected_modules
         sel_pdfuncs = self.ct.pd_funcs.loc[
-            self.ct.pd_funcs['module'].isin(self.ct.get_setting('selected_modules'))]
+            self.ct.pd_funcs['module'].isin(
+                self.ct.get_setting('selected_modules'))]
         # Remove rows with NaN in func_args
         sel_pdfuncs = sel_pdfuncs.loc[sel_pdfuncs['func_args'].notna()]
         all_used_params_str = ','.join(sel_pdfuncs['func_args'])
@@ -1621,15 +1956,18 @@ class ParametersDock(QDockWidget):
                     gui_args = {}
 
                 try:
-                    self.param_guis[idx] = globals()[gui_name](self.ct, param_name=idx,
+                    self.param_guis[idx] = globals()[gui_name](self.ct,
+                                                               param_name=idx,
                                                                param_alias=param_alias,
                                                                default=default,
                                                                description=description,
-                                                               param_unit=unit, **gui_args)
+                                                               param_unit=unit,
+                                                               **gui_args)
                 except:
                     err_tuple = get_exception_tuple()
-                    raise RuntimeError(f'Initiliazation of Parameter-Widget "{idx}" failed:\n'
-                                       f'{err_tuple[1]}')
+                    raise RuntimeError(
+                        f'Initiliazation of Parameter-Widget "{idx}" failed:\n'
+                        f'{err_tuple[1]}')
 
                 layout.addWidget(self.param_guis[idx])
 
@@ -1647,15 +1985,17 @@ class ParametersDock(QDockWidget):
         if self.ct.pr.p_preset in self.ct.pr.parameters.keys():
             self.p_preset_cmbx.setCurrentText(self.ct.pr.p_preset)
         else:
-            self.p_preset_cmbx.setCurrentText(list(self.ct.pr.parameters.keys())[0])
+            self.p_preset_cmbx.setCurrentText(
+                list(self.ct.pr.parameters.keys())[0])
 
     def p_preset_changed(self, idx):
         self.ct.pr.p_preset = self.p_preset_cmbx.itemText(idx)
         self.update_all_param_guis()
 
     def add_p_preset(self):
-        preset_name = get_user_input_string('Enter a name for a new Parameter-Preset:',
-                                            'Add Parameter-Preset')
+        preset_name = get_user_input_string(
+            'Enter a name for a new Parameter-Preset:',
+            'Add Parameter-Preset')
         if preset_name is not None:
             self.ct.pr.p_preset = preset_name
             self.ct.pr.load_default_parameters()
@@ -1679,7 +2019,8 @@ class ParametersDock(QDockWidget):
     def reset_all_parameters(self):
         msgbox = QMessageBox.question(self, 'Reset all Parameters?',
                                       'Do you really want to reset all parameters to their default?',
-                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                                      QMessageBox.Yes | QMessageBox.No,
+                                      QMessageBox.No)
         if msgbox == QMessageBox.Yes:
             self.ct.pr.load_default_parameters()
             self.update_all_param_guis()
@@ -1798,13 +2139,16 @@ class SettingsDlg(QDialog):
             gui_kwargs = self.settings_items[setting]['gui_kwargs']
             if data_type == 'QSettings':
                 gui_kwargs['data'] = QS()
-                gui_kwargs['default'] = self.ct.default_settings['qsettings'][setting]
+                gui_kwargs['default'] = self.ct.default_settings['qsettings'][
+                    setting]
             elif data_type == 'Controller':
                 gui_kwargs['data'] = self.mw.ct
-                gui_kwargs['default'] = self.ct.pd_params.loc[setting, 'default']
+                gui_kwargs['default'] = self.ct.pd_params.loc[
+                    setting, 'default']
             else:
                 gui_kwargs['data'] = self.ct.settings
-                gui_kwargs['default'] = self.ct.default_settings['settings'][setting]
+                gui_kwargs['default'] = self.ct.default_settings['settings'][
+                    setting]
             gui_kwargs['param_name'] = setting
             layout.addWidget(gui_handle(**gui_kwargs))
 

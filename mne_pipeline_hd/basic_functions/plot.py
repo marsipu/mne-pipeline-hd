@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import mne
 import mne_connectivity
 import numpy as np
-
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd.pipeline_functions.plot_utils import pipeline_plot
 
@@ -812,5 +811,4 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation,
 
 def close_all():
     plt.close('all')
-    mlab.close(all=True)
     gc.collect()
