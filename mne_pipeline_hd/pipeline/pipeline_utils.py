@@ -18,6 +18,7 @@ from pathlib import Path
 
 import numpy as np
 import psutil
+
 from mne_pipeline_hd import islin, ismac, iswin
 
 datetime_format = '%d.%m.%Y %H:%M:%S'
@@ -137,7 +138,8 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
     if obj.ct.settings['overwrite']:
         result_dict[param] = 'overwrite'
         if verbose:
-            print(f'{file_name} will be overwritten anyway because Overwrite=True (Settings)')
+            print(f'{file_name} will be overwritten anyway'
+                  f' because Overwrite=True (Settings)')
 
     return result_dict
 
@@ -181,9 +183,7 @@ def shutdown():
 
 def restart_program():
     """Restarts the current program, with file objects and descriptors
-       cleanup
-       From: https://stackoverflow.com/questions/11329917/restart-python-script-from-within-itself
-    """
+       cleanup."""
     logging.info('Restarting')
     try:
         p = psutil.Process(os.getpid())
@@ -196,7 +196,7 @@ def restart_program():
     os.execl(python, python, *sys.argv)
 
 
-def _get_available_parcellations(ct, fsmri):
+def _get_available_parc(ct, fsmri):
     annot_dir = join(ct.subjects_dir, fsmri, 'label')
     files = os.listdir(annot_dir)
     annotations = set([file[3:-6] for file in files if file[-6:] == '.annot'])

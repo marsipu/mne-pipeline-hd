@@ -16,11 +16,10 @@ from PyQt5.QtCore import QSettings, Qt, pyqtSignal
 from PyQt5.QtGui import QFontDatabase, QFont
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-                             QLineEdit,
-                             QPushButton, QSizePolicy, QSlider, QSpinBox,
-                             QVBoxLayout,
-                             QWidget, QDockWidget, QTabWidget,
-                             QScrollArea, QMessageBox, QStyleFactory)
+                             QLineEdit, QPushButton, QSizePolicy, QSlider,
+                             QSpinBox, QVBoxLayout, QWidget, QDockWidget,
+                             QTabWidget, QScrollArea, QMessageBox,
+                             QStyleFactory)
 from mne import read_labels_from_annot
 from mne.viz import Brain
 from vtkmodules.vtkCommonCore import vtkCommand
@@ -34,32 +33,14 @@ from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
                                            get_exception_tuple,
                                            get_user_input_string)
 from mne_pipeline_hd.pipeline.controller import Controller
-from mne_pipeline_hd.pipeline.pipeline_utils import \
-    _get_available_parcellations
-
-param_docs = dict()
-param_docs['data'] = """
-data : dict | Controller | QSettings
-    The data-structure, in which the value of the parameter is stored
-    (depends on the scenario how the Parameter-Widget is used,
-    e.g. displaying parameters from Project or displaying Settings
-    from Main-Window).
-"""
-param_docs['param_name'] = """
-param_name : str
-    The name of the key, which stores the value in the data-structure.
-"""
-param_docs['param_alias'] = """
-param_alias : str | None
-    An optional alias-name for the parameter for display
-    (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-"""
+from mne_pipeline_hd.pipeline.pipeline_utils import (_get_available_parc)
 
 
 class Param(QWidget):
     """
     Base-Class Parameter-GUIs, not to be called directly
-    Inherited Clases should have "Gui" in their name to get identified correctly
+    Inherited Clases should have "Gui" in their name to get
+    identified correctly.
     """
     paramChanged = pyqtSignal(object)
 
@@ -72,22 +53,26 @@ class Param(QWidget):
         data : dict | Controller | QSettings
             The data-structure, in which the value of the parameter is stored
             (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
+             e.g. displaying parameters from Project or displaying Settings
+             from Main-Window).
         param_name : str
             The name of the key, which stores the value in the data-structure.
         param_alias : str | None
             An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
+            (if you want to use a name, which is more readable, but can't or
+            shouldn't be used as a key in Python).
         default : object
             The default value depending on GUI-Type.
         groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label), if None no label
+            If a groupbox should be used as layout
+            (otherwise it is just a label), if None no label
         none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox 
-            (on the left of the name).
+            Set True if it should be possible to set the value to None
+            by unchecking the GroupBox (on the left of the name).
         description : str | None
             Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
+            which will displayed as a Tool-Tip when the mouse
+            is hovered over the Widget.
         changed_slot : function
             Supply a function as a slot if this parameter gets changed.
         """
@@ -210,7 +195,6 @@ class Param(QWidget):
 
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
-
     def __init__(self, data, param_name, param_alias=None, default=1,
                  groupbox_layout=True,
                  none_select=False,
@@ -1626,7 +1610,7 @@ class LabelDialog(SimpleDialog):
 
     def _subject_changed(self):
         self._fsmri = self.fsmri_cmbx.currentText()
-        parcellations = _get_available_parcellations(self.ct, self._fsmri)
+        parcellations = _get_available_parc(self.ct, self._fsmri)
         self.parcellation_cmbx.clear()
         self.parcellation_cmbx.addItems(parcellations)
         param_parc = self.ct.pr.parameters[self.ct.pr.p_preset]['parcellation']
