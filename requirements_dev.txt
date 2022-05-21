@@ -1,2 +1,3 @@
 pytest-qt
 sphinx
+pydata-sphinx-theme

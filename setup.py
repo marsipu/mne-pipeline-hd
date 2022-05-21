@@ -13,9 +13,9 @@ from setuptools import find_packages, setup
 
 
 # Get version and requirements as in mne-tools/mne-qt-browser
-def parse_requirements_file(fname):
+def parse_requirements():
     requirements = list()
-    with open(fname, 'r') as fid:
+    with open('requirements.txt', 'r') as fid:
         for line in fid:
             req = line.strip()
             if req.startswith('#'):
@@ -26,19 +26,25 @@ def parse_requirements_file(fname):
     return requirements
 
 
-version = None
-with open(pathlib.Path(__file__).parent / 'mne_pipeline_hd/_version.py', 'r') as fid:
-    for line in (line.strip() for line in fid):
-        if line.startswith('__version__'):
-            version = line.split('=')[1].strip().strip('\'')
-            break
-if version is None:
-    raise RuntimeError('Could not determine version')
+def parse_version():
+    version = None
+    with open(pathlib.Path(__file__).parent /
+              'mne_pipeline_hd/_version.py', 'r') as fid:
+        for line in (line.strip() for line in fid):
+            if line.startswith('__version__'):
+                version = line.split('=')[1].strip().strip('\'')
+                break
+    if version is None:
+        raise RuntimeError('Could not determine version')
 
-long_description = (pathlib.Path(__file__).parent / "README.md").read_text('UTF-8')
+    return version
+
+
+long_description = (pathlib.Path(__file__).parent /
+                    "README.md").read_text('UTF-8')
 
 setup(name='mne-pipeline-hd',
-      version=version,
+      version=parse_version(),
       description='A pipeline-GUI for brain-data analysis with MNE-Python',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -46,7 +52,7 @@ setup(name='mne-pipeline-hd',
       author='Martin Schulz',
       author_email='dev@earthman-music.de',
       python_requires='>=3.7',
-      install_requires=[parse_requirements_file('requirements.txt')],
+      install_requires=[parse_requirements()],
       license='BSD (3-clause)',
       packages=find_packages(exclude=['docs', 'tests', 'development']),
       package_data={},
