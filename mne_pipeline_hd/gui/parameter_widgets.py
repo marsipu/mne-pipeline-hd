@@ -3,7 +3,7 @@
 Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne_pipeline_hd
+@github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
 
@@ -23,9 +23,6 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QScrollArea, QMessageBox, QStyleFactory)
 from mne import read_labels_from_annot
 from mne.viz import Brain
-from vtkmodules.vtkCommonCore import vtkCommand
-from vtkmodules.vtkRenderingCore import vtkCellPicker
-
 from mne_pipeline_hd import QS, iswin
 from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
                                               SimpleList)
@@ -36,6 +33,8 @@ from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
 from mne_pipeline_hd.pipeline_functions.controller import Controller
 from mne_pipeline_hd.pipeline_functions.pipeline_utils import \
     _get_available_parcellations
+from vtkmodules.vtkCommonCore import vtkCommand
+from vtkmodules.vtkRenderingCore import vtkCellPicker
 
 
 class Param(QWidget):

@@ -3,7 +3,7 @@
 Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne_pipeline_hd
+@github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
 
@@ -23,7 +23,6 @@ from os.path import exists, getsize, isdir, isfile, join, dirname
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd import QS
 

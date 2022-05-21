@@ -3,7 +3,7 @@
 Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne_pipeline_hd
+@github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
 
@@ -37,12 +37,12 @@ if version is None:
 
 long_description = (pathlib.Path(__file__).parent / "README.md").read_text('UTF-8')
 
-setup(name='mne_pipeline_hd',
+setup(name='mne-pipeline-hd',
       version=version,
       description='A pipeline-GUI for brain-data analysis with MNE-Python',
       long_description=long_description,
       long_description_content_type='text/markdown',
-      url='https://github.com/marsipu/mne_pipeline_hd',
+      url='https://github.com/marsipu/mne-pipeline-hd',
       author='Martin Schulz',
       author_email='dev@earthman-music.de',
       python_requires='>=3.7',

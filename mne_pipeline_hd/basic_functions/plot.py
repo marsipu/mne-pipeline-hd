@@ -3,7 +3,7 @@
 Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne_pipeline_hd
+@github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
 
@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import mne
 import mne_connectivity
 import numpy as np
-
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd.pipeline_functions.plot_utils import pipeline_plot
 

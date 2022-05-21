@@ -3,7 +3,7 @@
 Pipeline-GUI for Analysis with MNE-Python
 @author: Martin Schulz
 @email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne_pipeline_hd
+@github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
 
@@ -24,9 +24,9 @@ from qdarkstyle import DarkPalette, LightPalette
 
 
 def main():
-    app_name = 'mne_pipeline_hd'
+    app_name = 'mne-pipeline-hd'
     organization_name = 'marsipu'
-    domain_name = 'https://github.com/marsipu/mne_pipeline_hd'
+    domain_name = 'https://github.com/marsipu/mne-pipeline-hd'
 
     app = QApplication.instance()
     if not app:

@@ -1,18 +1,20 @@
-# mne_pipeline_hd
+# mne-pipeline-hd
 ### A [MNE-Python](https://mne.tools/stable/index.html) Pipeline-GUI for MEG-Lab Heidelberg
 ###### inspired by: [Andersen L.M. 2018](https://doi.org/10.3389/fnins.2018.00006)
 
-![mne_pipeline_hd Logo](mne_pipeline_hd/pipeline_resources/mne_pipeline_logo_evee_smaller.jpg)
+![mne-pipeline-hd Logo](mne_pipeline_hd/pipeline_resources/mne_pipeline_logo_evee_smaller.jpg)
 
 ## Installation
 1. Install MNE-python as instructed on the [website](https://www.martinos.org/mne/stable/install_mne_python.html),
 I would recommend to install in a separate conda environment with:
 `conda env create -n mne_p -f environment.yml`
 2. `conda activate mne_p`
-3. `pip install https://github.com/marsipu/mne_pipeline_hd/zipball/main`
+3. `pip install https://github.com/marsipu/mne-pipeline-hd/zipball/main`
 
 ## Update
-Just run `pip install --upgrade --no-deps --force-reinstall https://github.com/marsipu/mne_pipeline_hd/zipball/main`
+
+Just
+run `pip install --upgrade --no-deps --force-reinstall https://github.com/marsipu/mne-pipeline-hd/zipball/main`
 again or use the update-funtion from within the programm (in Settings-Menu).
 
 ## Start
@@ -39,8 +41,10 @@ and should have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-
 
 1. Fork this repository on GitHub
 2. Move to the folder where you want to clone to
-3. Clone **your forked repository** with git from a terminal: `git clone <url you get from the green clone-button from your forked repository on GitHub>`
-4. Add upstream to git for updates: `git remote add upstream git://github.com/marsipu/mne_pipeline_hd.git`
+3. Clone **your forked repository** with git from a
+   terminal: `git clone <url you get from the green clone-button from your forked repository on GitHub>`
+4. Add upstream to git for
+   updates: `git remote add upstream git://github.com/marsipu/mne-pipeline-hd.git`
 5. Install development version with pip: `pip install -e ./`
 6. Create a branch for changes: `git checkout -b <branch-name>`
 7. Commit changes: `git commit -am "<your commit message>"`
