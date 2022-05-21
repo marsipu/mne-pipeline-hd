@@ -19,8 +19,9 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QMainWindow, QMessageBox, QPushButton,
                              QScrollArea,
                              QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
+
 from mne_pipeline_hd import QS, ismac, _object_refs
-from mne_pipeline_hd.basic_functions.plot import close_all
+from mne_pipeline_hd.functions.plot import close_all
 from mne_pipeline_hd.gui.dialogs import (QuickGuide, RawInfo,
                                          RemoveProjectsDlg,
                                          SysInfoMsg, AboutDialog,
@@ -47,9 +48,9 @@ from mne_pipeline_hd.gui.parameter_widgets import BoolGui, IntGui, \
     ParametersDock, SettingsDlg
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
-from mne_pipeline_hd.pipeline_functions.controller import Controller
-from mne_pipeline_hd.pipeline_functions.loading import MEEG
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import restart_program
+from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.pipeline.loading import MEEG
+from mne_pipeline_hd.pipeline.pipeline_utils import restart_program
 
 
 class MainWindow(QMainWindow):

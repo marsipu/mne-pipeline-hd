@@ -13,12 +13,13 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QComboBox, QDialog, QGridLayout,
                              QHBoxLayout, QPushButton,
                              QSizePolicy, QVBoxLayout)
+
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui.base_widgets import CheckList
 from mne_pipeline_hd.gui.gui_utils import (CodeEditor, MainConsoleWidget,
                                            WorkerDialog, get_exception_tuple,
                                            set_ratio_geometry)
-from mne_pipeline_hd.pipeline_functions.loading import MEEG
+from mne_pipeline_hd.pipeline.loading import MEEG
 
 
 class HistoryDlg(QDialog):

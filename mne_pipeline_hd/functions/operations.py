@@ -27,19 +27,23 @@ import mne
 import mne_connectivity
 import numpy as np
 from mne.preprocessing import ICA
+
 from mne_pipeline_hd import ismac, iswin
-from mne_pipeline_hd.pipeline_functions.loading import MEEG
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import (check_kwargs,
-                                                               compare_filep)
+from mne_pipeline_hd.pipeline.loading import MEEG
+from mne_pipeline_hd.pipeline.pipeline_utils import (check_kwargs,
+                                                     compare_filep)
 
 
 # Todo: Create docstrings for each function
 # ==============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # ==============================================================================
-def filter_data(meeg, filter_target, highpass, lowpass, filter_length, l_trans_bandwidth,
-                h_trans_bandwidth, filter_method, iir_params, fir_phase, fir_window,
-                fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda, erm_t_limit,
+def filter_data(meeg, filter_target, highpass, lowpass, filter_length,
+                l_trans_bandwidth,
+                h_trans_bandwidth, filter_method, iir_params, fir_phase,
+                fir_window,
+                fir_design, skip_by_annotation, fir_pad, n_jobs, enable_cuda,
+                erm_t_limit,
                 bad_interpolation):
     # Compare Parameters from last run
     filtered_path = meeg.io_dict[filter_target]['path']

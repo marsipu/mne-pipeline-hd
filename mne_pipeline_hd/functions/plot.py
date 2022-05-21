@@ -17,8 +17,9 @@ import matplotlib.pyplot as plt
 import mne
 import mne_connectivity
 import numpy as np
+
 # Make use of program also possible with sensor-space installation of mne
-from mne_pipeline_hd.pipeline_functions.plot_utils import pipeline_plot
+from mne_pipeline_hd.pipeline.plot_utils import pipeline_plot
 
 try:
     from mne.viz import Brain
@@ -26,7 +27,7 @@ try:
 except (ModuleNotFoundError, ValueError):
     pass
 
-from mne_pipeline_hd.basic_functions import operations as op
+from mne_pipeline_hd.functions import operations as op
 
 
 # ==============================================================================

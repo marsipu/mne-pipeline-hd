@@ -3,14 +3,15 @@ import traceback
 from ast import literal_eval
 
 from PyQt5.QtWidgets import *
+
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import SimpleDict
 
 
-class Widget(QWidget):
+class StandardWidgets(QWidget):
 
     def __init__(self, parent=None):
-        super(Widget, self).__init__()
+        super(StandardWidgets, self).__init__()
 
         icons = [
             'SP_ArrowBack',
@@ -100,11 +101,6 @@ class Widget(QWidget):
         self.setLayout(layout)
 
 
-def show_standard_widgets():
-    dialog = Widget()
-    dialog.show()
-
-
 class ParamGuis(QWidget):
     def __init__(self):
         super().__init__()
@@ -158,8 +154,8 @@ class ParamGuis(QWidget):
         test_layout = QVBoxLayout()
         grid_layout = QGridLayout()
         max_cols = 4
-        set_none_select = True
-        set_groupbox_layout = True
+        set_none_select = False
+        set_groupbox_layout = False
         set_param_alias = False
 
         for idx, gui_nm in enumerate(self.keyword_args):
@@ -218,13 +214,10 @@ class ParamGuis(QWidget):
         dlg.open()
 
 
-def show_param_gui_test():
-    test_widget = ParamGuis()
-    test_widget.show()
-
-
 if __name__ == '__main__':
     app = QApplication.instance() or QApplication(sys.argv)
-    show_standard_widgets()
-    show_param_gui_test()
-    app.exec()
+    # standard_widgets = StandardWidgets()
+    # standard_widgets.show()
+    test_widget = ParamGuis()
+    test_widget.show()
+    sys.exit(app.exec())

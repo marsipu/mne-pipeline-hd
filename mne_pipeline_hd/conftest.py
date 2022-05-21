@@ -9,7 +9,7 @@ License: GPL-3.0
 import pytest
 
 from mne_pipeline_hd.gui.main_window import MainWindow
-from mne_pipeline_hd.pipeline_functions.controller import Controller
+from mne_pipeline_hd.pipeline.controller import Controller
 
 
 @pytest.fixture

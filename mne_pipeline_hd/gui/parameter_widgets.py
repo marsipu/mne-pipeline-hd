@@ -23,6 +23,9 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QScrollArea, QMessageBox, QStyleFactory)
 from mne import read_labels_from_annot
 from mne.viz import Brain
+from vtkmodules.vtkCommonCore import vtkCommand
+from vtkmodules.vtkRenderingCore import vtkCellPicker
+
 from mne_pipeline_hd import QS, iswin
 from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
                                               SimpleList, SimpleDialog)
@@ -30,11 +33,27 @@ from mne_pipeline_hd.gui.dialogs import CheckListDlg
 from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
                                            get_exception_tuple,
                                            get_user_input_string)
-from mne_pipeline_hd.pipeline_functions.controller import Controller
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import \
+from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.pipeline.pipeline_utils import \
     _get_available_parcellations
-from vtkmodules.vtkCommonCore import vtkCommand
-from vtkmodules.vtkRenderingCore import vtkCellPicker
+
+param_docs = dict()
+param_docs['data'] = """
+data : dict | Controller | QSettings
+    The data-structure, in which the value of the parameter is stored
+    (depends on the scenario how the Parameter-Widget is used,
+    e.g. displaying parameters from Project or displaying Settings
+    from Main-Window).
+"""
+param_docs['param_name'] = """
+param_name : str
+    The name of the key, which stores the value in the data-structure.
+"""
+param_docs['param_alias'] = """
+param_alias : str | None
+    An optional alias-name for the parameter for display
+    (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
+"""
 
 
 class Param(QWidget):

@@ -21,7 +21,6 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QGridLayout, QComboBox,
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-
 from mne.viz import Brain
 try:
     from mne.viz import Figure3D
@@ -30,9 +29,8 @@ except ImportError:
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList, CheckList
 from mne_pipeline_hd.gui.gui_utils import Worker, set_ratio_geometry
-from mne_pipeline_hd.pipeline_functions.function_utils import get_arguments
-from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
-from mne_qt_browser.figure import MNEQtBrowser
+from mne_pipeline_hd.pipeline.function_utils import get_arguments
+from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
 
 
 class PlotManager(QMainWindow):

@@ -9,7 +9,7 @@ License: GPL-3.0
 
 import io
 
-from mne_pipeline_hd.pipeline_functions.controller import Controller
+from mne_pipeline_hd.pipeline.controller import Controller
 
 controller_attributes = ['home_path', 'projects', 'pr', 'projects_path',
                          'subjects_dir']

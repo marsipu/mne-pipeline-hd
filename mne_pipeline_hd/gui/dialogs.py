@@ -16,11 +16,12 @@ from PyQt5.QtWidgets import (QDialog, QGridLayout, QLabel, QListView,
                              QPushButton,
                              QSizePolicy, QTextEdit, QVBoxLayout, QWidget,
                              QComboBox, QMessageBox)
+
 from mne_pipeline_hd.gui.base_widgets import SimpleList, SimpleDialog
 from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
-from mne_pipeline_hd.pipeline_functions.loading import MEEG
-from mne_pipeline_hd.pipeline_functions.project import Project
+from mne_pipeline_hd.pipeline.loading import MEEG
+from mne_pipeline_hd.pipeline.project import Project
 
 
 class CheckListDlg(QDialog):
@@ -289,7 +290,8 @@ class AboutDialog(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
-        with resources.open_text('mne_pipeline_hd.pipeline_resources', 'license.txt') as file:
+        with resources.open_text('mne_pipeline_hd.assets',
+                                 'license.txt') as file:
             license_text = file.read()
         license_text = license_text.replace('\n', '<br>')
         text = '<h1>MNE-Pipeline HD</h1>' \

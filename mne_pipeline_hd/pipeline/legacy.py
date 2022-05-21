@@ -11,8 +11,8 @@ import logging
 import os
 from os.path import isdir, join, isfile
 
-from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import type_json_hook
+from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
+from mne_pipeline_hd.pipeline.pipeline_utils import type_json_hook
 
 renamed_parameters = {
     'filter_target': {

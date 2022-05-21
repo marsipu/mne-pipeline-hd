@@ -23,6 +23,7 @@ from os.path import exists, getsize, isdir, isfile, join, dirname
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+
 # Make use of program also possible with sensor-space installation of mne
 from mne_pipeline_hd import QS
 
@@ -37,7 +38,7 @@ import numpy as np
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, \
+from mne_pipeline_hd.pipeline.pipeline_utils import TypedJSONEncoder, \
     type_json_hook
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',

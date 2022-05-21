@@ -16,12 +16,13 @@ from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout,
                              QLabel, QMessageBox, QPushButton, QVBoxLayout,
                              QWidget)
+
 from mne_pipeline_hd import QS, _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import (ErrorDialog, center, WorkerDialog,
                                            get_user_input_string)
 from mne_pipeline_hd.gui.main_window import show_main_window
-from mne_pipeline_hd.pipeline_functions.controller import Controller
+from mne_pipeline_hd.pipeline.controller import Controller
 
 
 class WelcomeWindow(QWidget):
@@ -45,7 +46,7 @@ class WelcomeWindow(QWidget):
         layout.addWidget(title_label)
 
         image_label = QLabel()
-        with resources.path('mne_pipeline_hd.pipeline_resources',
+        with resources.path('mne_pipeline_hd.assets',
                             'mne_pipeline_logo_evee_smaller.jpg') as img_path:
             image_label.setPixmap(QPixmap(str(img_path)))
         layout.addWidget(image_label)

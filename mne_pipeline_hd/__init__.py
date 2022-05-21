@@ -32,7 +32,7 @@ _object_refs = {'welcome_window': None,
 class BaseSettings:
     def __init__(self):
         # Load default settings
-        with resources.open_text('mne_pipeline_hd.pipeline_resources',
+        with resources.open_text('mne_pipeline_hd.assets',
                                  'default_settings.json') as file:
             self.default_qsettings = json.load(file)['qsettings']
 

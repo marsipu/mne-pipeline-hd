@@ -32,10 +32,11 @@ from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
                              QTreeWidgetItem, QVBoxLayout, QWidget, QWizard,
                              QWizardPage)
 from matplotlib import pyplot as plt
-from mne_pipeline_hd.basic_functions.operations import (plot_ica_components,
-                                                        plot_ica_overlay,
-                                                        plot_ica_properties,
-                                                        plot_ica_sources)
+
+from mne_pipeline_hd.functions.operations import (plot_ica_components,
+                                                  plot_ica_overlay,
+                                                  plot_ica_properties,
+                                                  plot_ica_sources)
 from mne_pipeline_hd.gui.base_widgets import (AssignWidget, CheckDictList,
                                               CheckList,
                                               EditDict, EditList,
@@ -48,8 +49,8 @@ from mne_pipeline_hd.gui.gui_utils import (ErrorDialog, Worker, WorkerDialog,
                                            get_user_input_string)
 from mne_pipeline_hd.gui.models import AddFilesModel
 from mne_pipeline_hd.gui.parameter_widgets import ComboGui
-from mne_pipeline_hd.pipeline_functions.loading import FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import compare_filep
+from mne_pipeline_hd.pipeline.loading import FSMRI, Group, MEEG
+from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep
 
 
 def index_parser(index, all_items):

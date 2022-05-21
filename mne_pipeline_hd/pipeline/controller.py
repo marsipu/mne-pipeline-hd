@@ -20,12 +20,13 @@ from pathlib import Path
 
 import mne
 import pandas as pd
-from mne_pipeline_hd import basic_functions, QS
+
+from mne_pipeline_hd import functions, QS
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, \
     get_user_input_string
-from mne_pipeline_hd.pipeline_functions.legacy import \
+from mne_pipeline_hd.pipeline.legacy import \
     transfer_file_params_to_single_subject
-from mne_pipeline_hd.pipeline_functions.project import Project
+from mne_pipeline_hd.pipeline.project import Project
 
 home_dirs = ['custom_packages', 'freesurfer', 'projects']
 project_dirs = ['_pipeline_scripts', 'data', 'figures']
@@ -82,7 +83,7 @@ class Controller:
             self.edu_program = None
 
             # Load default settings
-            with resources.open_text('mne_pipeline_hd.pipeline_resources',
+            with resources.open_text('mne_pipeline_hd.assets',
                                      'default_settings.json') as file:
                 self.default_settings = json.load(file)
 
@@ -94,15 +95,17 @@ class Controller:
             self.all_pd_funcs = None
 
             # Pandas-DataFrame for contextual data of basic functions (included with program)
-            with resources.path('mne_pipeline_hd.pipeline_resources',
+            with resources.path('mne_pipeline_hd.assets',
                                 'functions.csv') as pd_funcs_path:
-                self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';', index_col=0)
+                self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';',
+                                            index_col=0)
 
             # Pandas-DataFrame for contextual data of parameters
             # for basic functions (included with program)
-            with resources.path('mne_pipeline_hd.pipeline_resources',
+            with resources.path('mne_pipeline_hd.assets',
                                 'parameters.csv') as pd_params_path:
-                self.pd_params = pd.read_csv(str(pd_params_path), sep=';', index_col=0)
+                self.pd_params = pd.read_csv(str(pd_params_path), sep=';',
+                                             index_col=0)
 
             # Import the basic- and custom-function-modules
             self.import_custom_modules()
@@ -247,15 +250,15 @@ class Controller:
 
     def import_custom_modules(self):
         """
-        Load all modules in basic_functions and custom_functions
+        Load all modules in functions and custom_functions
         """
 
         self.errors['custom_modules'] = dict()
 
         # Load basic-modules
-        # Add basic_functions to sys.path
-        sys.path.insert(0, str(Path(basic_functions.__file__).parent))
-        basic_functions_list = [x for x in dir(basic_functions) if '__' not in x]
+        # Add functions to sys.path
+        sys.path.insert(0, str(Path(functions.__file__).parent))
+        basic_functions_list = [x for x in dir(functions) if '__' not in x]
         self.all_modules['basic'] = list()
         for module_name in basic_functions_list:
             self.all_modules['basic'].append(module_name)

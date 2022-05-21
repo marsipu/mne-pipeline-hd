@@ -16,9 +16,10 @@ from os.path import exists, getsize, isfile, join
 from pathlib import Path
 
 import numpy as np
-from mne_pipeline_hd.pipeline_functions.legacy import renamed_parameters
-from mne_pipeline_hd.pipeline_functions.loading import MEEG, FSMRI, Group
-from mne_pipeline_hd.pipeline_functions.pipeline_utils import TypedJSONEncoder, \
+
+from mne_pipeline_hd.pipeline.legacy import renamed_parameters
+from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
+from mne_pipeline_hd.pipeline.pipeline_utils import TypedJSONEncoder, \
     count_dict_keys, \
     encode_tuples, type_json_hook
 
@@ -236,7 +237,7 @@ class Project:
                         if '_exp' not in param:
                             loaded_parameters[p_preset].pop(param)
 
-                    # Add parameters, which exist in pipeline_resources/parameters.csv,
+                    # Add parameters, which exist in assets/parameters.csv,
                     # but not in loaded-parameters (e.g. added with custom-module)
                     for param in [p for p in self.ct.pd_params.index if
                                   p not in loaded_parameters[p_preset]]:

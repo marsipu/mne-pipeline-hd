@@ -29,6 +29,7 @@ from PyQt5.QtWidgets import (QButtonGroup, QComboBox, QDialog, QFileDialog,
                              QPushButton,
                              QSizePolicy, QStyle, QTabWidget, QVBoxLayout,
                              QGridLayout, QProgressBar, QCheckBox)
+
 from mne_pipeline_hd import QS
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import (CheckDictList, CheckList,
@@ -39,7 +40,7 @@ from mne_pipeline_hd.gui.gui_utils import (CodeEditor, ErrorDialog, center,
                                            set_ratio_geometry, get_std_icon,
                                            MainConsoleWidget)
 from mne_pipeline_hd.gui.models import CustomFunctionModel, RunModel
-from mne_pipeline_hd.pipeline_functions.function_utils import QRunController
+from mne_pipeline_hd.pipeline.function_utils import QRunController
 
 
 class RunDialog(QDialog):

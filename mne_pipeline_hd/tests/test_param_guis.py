@@ -9,6 +9,7 @@ License: GPL-3.0
 import inspect
 
 import pytest
+
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.parameter_widgets import IntGui
 
@@ -84,3 +85,4 @@ def test_basic_param_guis(qtbot, gui_name):
     gui_kwargs = keyword_args[gui_name]
     gui_parameters = inspect.signature(gui)
     gui_instance = gui(parameters, gui_name, **gui_kwargs)
+    qtbot.addWidget(gui_instance)
