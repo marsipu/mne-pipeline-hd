@@ -17,8 +17,8 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel,
                              QMainWindow, QMessageBox, QPushButton,
-                             QScrollArea,
-                             QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
+                             QScrollArea, QSizePolicy, QTabWidget,
+                             QVBoxLayout, QWidget)
 
 from mne_pipeline_hd import QS, ismac, _object_refs
 from mne_pipeline_hd.functions.plot import close_all
@@ -26,8 +26,8 @@ from mne_pipeline_hd.gui.dialogs import (QuickGuide, RawInfo,
                                          RemoveProjectsDlg,
                                          SysInfoMsg, AboutDialog,
                                          CopyParamsDialog)
-from mne_pipeline_hd.gui.education_widgets import EducationEditor, \
-    EducationTour
+from mne_pipeline_hd.gui.education_widgets import (EducationEditor,
+                                                   EducationTour)
 from mne_pipeline_hd.gui.function_widgets import (AddKwargs,
                                                   ChooseCustomModules,
                                                   CustomFunctionImport,
@@ -37,15 +37,13 @@ from mne_pipeline_hd.gui.gui_utils import (QProcessDialog, WorkerDialog,
                                            set_ratio_geometry, get_std_icon,
                                            get_user_input_string)
 from mne_pipeline_hd.gui.loading_widgets import (AddFilesDialog, AddMRIDialog,
-                                                 CopyTrans,
-                                                 EventIDGui, FileDictDialog,
-                                                 FileDock,
+                                                 CopyTrans, EventIDGui,
+                                                 FileDictDialog, FileDock,
                                                  FileManagment, ICASelect,
-                                                 ReloadRaw,
-                                                 SubBadsDialog, SubjectWizard,
-                                                 ExportDialog)
-from mne_pipeline_hd.gui.parameter_widgets import BoolGui, IntGui, \
-    ParametersDock, SettingsDlg
+                                                 ReloadRaw, SubBadsDialog,
+                                                 SubjectWizard, ExportDialog)
+from mne_pipeline_hd.gui.parameter_widgets import (BoolGui, IntGui,
+                                                   ParametersDock, SettingsDlg)
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
@@ -54,7 +52,8 @@ from mne_pipeline_hd.pipeline.pipeline_utils import restart_program
 
 
 class MainWindow(QMainWindow):
-    # Define Main-Window-Signals to send into QThread to control function execution
+    # Define Main-Window-Signals to send into QThread
+    # to control function execution
     cancel_functions = pyqtSignal(bool)
     plot_running = pyqtSignal(bool)
 
@@ -69,14 +68,16 @@ class MainWindow(QMainWindow):
         self.ct = controller
         self.edu_tour = None
         self.bt_dict = dict()
-        # For functions, which should or should not be called durin initialization
+        # For functions, which should or should not
+        # be called durin initialization
         self.first_init = True
         # True, if Pipeline is running (to avoid parallel starts of RunDialog)
         self.pipeline_running = False
         # For the closeEvent to avoid showing the MessageBox when restarting
         self.restarting = False
 
-        # Set geometry to ratio of screen-geometry (before adding func-buttons to allow adjustment to size)
+        # Set geometry to ratio of screen-geometry
+        # (before adding func-buttons to allow adjustment to size)
         set_ratio_geometry(0.9, self)
 
         # Call window-methods
@@ -106,8 +107,8 @@ class MainWindow(QMainWindow):
         # First save the former projects-data
         WorkerDialog(self, self.ct.save, blocking=True)
 
-        new_home_path = QFileDialog.getExistingDirectory(self,
-                                                         'Change your Home-Path (top-level folder of Pipeline-Data)')
+        new_home_path = QFileDialog.getExistingDirectory(
+            self, 'Change your Home-Path (top-level folder of Pipeline-Data)')
         if new_home_path != '':
             new_controller = Controller(new_home_path)
 
@@ -117,8 +118,9 @@ class MainWindow(QMainWindow):
             else:
                 if 'project' in new_controller.errors:
                     new_project = get_user_input_string(
-                        'There is no project in this Home-Path, please enter a name ' \
-                        'for a new project:', 'Add Project!', force=True)
+                        'There is no project in this Home-Path,'
+                        ' please enter a name for a new project:',
+                        'Add Project!', force=True)
 
                     new_controller.change_project(new_project)
 
@@ -126,8 +128,8 @@ class MainWindow(QMainWindow):
                 welcome_window = _object_refs['welcome_window']
                 if welcome_window is not None:
                     welcome_window.ct = new_controller
-                self.statusBar().showMessage(f'Home-Path: {self.ct.home_path}, '
-                                             f'Project: {self.ct.pr.name}')
+                self.statusBar().showMessage(f'Home-Path: {self.ct.home_path},'
+                                             f' Project: {self.ct.pr.name}')
 
                 self.update_project_ui()
 
@@ -160,12 +162,14 @@ class MainWindow(QMainWindow):
         self.update_project_ui()
 
     def pr_clean_fp(self):
-        WorkerDialog(self, self.ct.pr.clean_file_parameters, show_buttons=True, show_console=True,
-                     close_directly=False, title='Cleaning File-Parameters')
+        WorkerDialog(self, self.ct.pr.clean_file_parameters, show_buttons=True,
+                     show_console=True, close_directly=False,
+                     title='Cleaning File-Parameters')
 
     def pr_clean_pf(self):
         WorkerDialog(self, self.ct.pr.clean_plot_files, show_buttons=True,
-                     show_console=True, close_directly=False, title='Cleaning Plot-Files')
+                     show_console=True, close_directly=False,
+                     title='Cleaning Plot-Files')
 
     def pr_copy_parameters(self):
         CopyParamsDialog(self)
@@ -178,11 +182,13 @@ class MainWindow(QMainWindow):
 
     def init_edu(self):
         if QS().value('education') and \
-                self.ct.edu_program and len(self.ct.edu_program['tour_list']) > 0:
+                self.ct.edu_program and \
+                len(self.ct.edu_program['tour_list']) > 0:
             self.edu_tour = EducationTour(self, self.ct.edu_program)
 
     def init_menu(self):
-        # & in front of text-string creates automatically a shortcut with Alt + <letter after &>
+        # & in front of text-string creates automatically a shortcut
+        # with Alt + <letter after &>
         # Input
         import_menu = self.menuBar().addMenu('&Import')
 
@@ -225,7 +231,8 @@ class MainWindow(QMainWindow):
                             partial(FileDictDialog, self, 'erm'))
         prep_menu.addAction('Assign Bad-Channels --> MEEG',
                             partial(SubBadsDialog, self))
-        prep_menu.addAction('Assign Event-IDs --> MEEG', partial(EventIDGui, self))
+        prep_menu.addAction('Assign Event-IDs --> MEEG',
+                            partial(EventIDGui, self))
         prep_menu.addAction('Select ICA-Components', partial(ICASelect, self))
 
         prep_menu.addSeparator()
@@ -239,22 +246,27 @@ class MainWindow(QMainWindow):
         project_menu = self.menuBar().addMenu('&Project')
         project_menu.addAction('&Clean File-Parameters', self.pr_clean_fp)
         project_menu.addAction('&Clean Plot-Files', self.pr_clean_pf)
-        project_menu.addAction('&Copy Parameters between Projects', self.pr_copy_parameters)
+        project_menu.addAction('&Copy Parameters between Projects',
+                               self.pr_copy_parameters)
 
         # Custom-Functions
         func_menu = self.menuBar().addMenu('&Functions')
-        func_menu.addAction('&Import Custom', partial(CustomFunctionImport, self))
+        func_menu.addAction('&Import Custom',
+                            partial(CustomFunctionImport, self))
 
-        func_menu.addAction('&Choose Custom-Modules', partial(ChooseCustomModules, self))
+        func_menu.addAction('&Choose Custom-Modules',
+                            partial(ChooseCustomModules, self))
 
         func_menu.addAction('&Reload Modules', self.ct.reload_modules)
         func_menu.addSeparator()
-        func_menu.addAction('Additional Keyword-Arguments', partial(AddKwargs, self))
+        func_menu.addAction('Additional Keyword-Arguments',
+                            partial(AddKwargs, self))
 
         # Education
         education_menu = self.menuBar().addMenu('&Education')
         if self.ct.edu_program is None:
-            education_menu.addAction('&Education-Editor', partial(EducationEditor, self))
+            education_menu.addAction('&Education-Editor',
+                                     partial(EducationEditor, self))
         else:
             education_menu.addAction('&Start Education-Tour', self.init_edu)
 
@@ -266,12 +278,14 @@ class MainWindow(QMainWindow):
         # View
         self.view_menu = self.menuBar().addMenu('&View')
         if not ismac:
-            self.view_menu.addAction('&Full-Screen', self.full_screen).setCheckable(True)
+            self.view_menu.addAction('&Full-Screen',
+                                     self.full_screen).setCheckable(True)
 
         # Settings
         settings_menu = self.menuBar().addMenu('&Settings')
 
-        settings_menu.addAction('&Open Settings', partial(SettingsDlg, self, self.ct))
+        settings_menu.addAction('&Open Settings',
+                                partial(SettingsDlg, self, self.ct))
         settings_menu.addAction('&Change Home-Path', self.change_home_path)
         settings_menu.addSeparator()
         settings_menu.addAction('&Update Pipeline', self.update_pipeline)
@@ -299,40 +313,67 @@ class MainWindow(QMainWindow):
         self.update_project_box()
         self.toolbar.addWidget(self.project_box)
 
-        add_action = QAction(parent=self, icon=get_std_icon('SP_FileDialogNewFolder'))
+        add_action = QAction(parent=self,
+                             icon=get_std_icon('SP_FileDialogNewFolder'))
         add_action.triggered.connect(self.add_project)
         self.toolbar.addAction(add_action)
 
-        remove_action = QAction(parent=self, icon=get_std_icon('SP_DialogDiscardButton'))
+        remove_action = QAction(parent=self,
+                                icon=get_std_icon('SP_DialogDiscardButton'))
         remove_action.triggered.connect(self.remove_project)
         self.toolbar.addAction(remove_action)
         self.toolbar.addSeparator()
 
-        self.toolbar.addWidget(IntGui(QS(), 'n_jobs', min_val=-1, special_value_text='Auto',
-                                      description='Set to the amount of (virtual) cores of your machine '
-                                                  'you want to use for multiprocessing', default=-1,
-                                      groupbox_layout=False))
-        # self.toolbar.addWidget(IntGui(QS(), 'n_parallel', min_val=1,
-        #                               description='Set to the amount of threads you want to run simultaneously '
-        #                                           'in the pipeline', default=1, groupbox_layout=False))
-        # self.toolbar.addWidget(BoolGui(QS(), 'use_qthread', param_alias='Use QThreads',
-        #                                description='Check to use QThreads for running the pipeline.\n'
-        #                                            'This is faster than the default with separate processes,'
-        #                                            'but has a few limitations', default=0, return_integer=True,
+        self.toolbar.addWidget(IntGui(data=QS(), name='n_jobs',
+                                      min_val=-1,
+                                      special_value_text='Auto',
+                                      description='Set to the amount of '
+                                                  '(virtual) cores of '
+                                                  'your machine you want'
+                                                  ' to use for ' \
+                                                  'multiprocessing.',
+                                      default=-1, groupbox_layout=False))
+        # self.toolbar.addWidget(IntGui(data=QS(), name='n_parallel', min_val=1,
+        #                               description='Set to the amount of'
+        #                                           ' threads you want to run '
+        #                                           'simultaneously in the '\
+        #                                           'pipeline', default=1,
+        #                               groupbox_layout=False))
+        # self.toolbar.addWidget(BoolGui(data=QS(), name='use_qthread',
+        #                                alias='Use QThreads',
+        #                                description='Check to use QThreads for '
+        #                                            'running the pipeline.\n'
+        #                                            'This is faster than the'
+        #                                            ' default with separate '
+        #                                            'processes,'
+        #                                            'but has a few limitations',
+        #                                default=0, return_integer=True,
         #                                changed_slot=self.init_mp_pool))
-        self.toolbar.addWidget(BoolGui(self.ct.settings, 'overwrite', param_alias='Overwrite',
-                                       description='Check to overwrite files even if their parameters where unchanged',
+        self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='overwrite',
+                                       alias='Overwrite',
+                                       description='Check to overwrite files'
+                                                   ' even if their parameters '
+                                                   'where unchanged.',
                                        default=False))
-        self.toolbar.addWidget(BoolGui(self.ct.settings, 'show_plots', param_alias='Show Plots',
-                                       description='Do you want to show plots?\n'
-                                                   '(or just save them without showing, then just check "Save Plots")',
+        self.toolbar.addWidget(BoolGui(data=self.ct.settings,
+                                       name='show_plots', alias='Show Plots',
+                                       description='Do you want to show'
+                                                   ' plots?\n'
+                                                   '(or just save them without'
+                                                   ' showing, then just check'
+                                                   ' "Save Plots").',
                                        default=True))
-        self.toolbar.addWidget(BoolGui(self.ct.settings, 'save_plots', param_alias='Save Plots',
-                                       description='Do you want to save the plots made to a file?',
+        self.toolbar.addWidget(BoolGui(data=self.ct.settings,
+                                       name='save_plots', alias='Save Plots',
+                                       description='Do you want to save the '
+                                                   'plots made to a file?',
                                        default=True))
-        self.toolbar.addWidget(BoolGui(self.ct.settings, 'shutdown', param_alias='Shutdown',
-                                       description='Do you want to shut your system down'
-                                                   ' after execution of all subjects?'))
+        self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='shutdown',
+                                       alias='Shutdown',
+                                       description='Do you want to shut your '
+                                                   'system down after '
+                                                   ' execution of all '
+                                                   'subjects?'))
         close_all_bt = QPushButton('Close All Plots')
         close_all_bt.pressed.connect(close_all)
         self.toolbar.addWidget(close_all_bt)
@@ -373,8 +414,9 @@ class MainWindow(QMainWindow):
     #   make button-dependencies
     def add_func_bts(self):
         # Drop custom-modules, which aren't selected
-        cleaned_pd_funcs = self.ct.pd_funcs.loc[self.ct.pd_funcs['module'].isin(
-            self.ct.get_setting('selected_modules'))].copy()
+        cleaned_pd_funcs = self.ct.pd_funcs.loc[
+            self.ct.pd_funcs['module'].isin(
+                self.ct.get_setting('selected_modules'))].copy()
         # Horizontal Border for Function-Groups
         max_h_size = self.tab_func_widget.geometry().width()
 
@@ -392,7 +434,8 @@ class MainWindow(QMainWindow):
                 # Add groupbox for each group
                 for function_group, _ in group_grouped:
                     group_box = QGroupBox(function_group, self)
-                    group_box.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+                    group_box.setSizePolicy(QSizePolicy.Maximum,
+                                            QSizePolicy.Maximum)
                     setattr(self, f'{function_group}_gbox', group_box)
                     group_box.setCheckable(True)
                     group_box.toggled.connect(self.func_group_toggled)
@@ -400,7 +443,8 @@ class MainWindow(QMainWindow):
                     # Add button for each function
                     for function in group_grouped.groups[function_group]:
                         if pd.notna(cleaned_pd_funcs.loc[function, 'alias']):
-                            alias_name = cleaned_pd_funcs.loc[function, 'alias']
+                            alias_name = cleaned_pd_funcs.loc[
+                                function, 'alias']
                         else:
                             alias_name = function
                         pb = QPushButton(alias_name)
@@ -408,7 +452,8 @@ class MainWindow(QMainWindow):
                         self.bt_dict[function] = pb
                         if function in self.ct.pr.sel_functions:
                             pb.setChecked(True)
-                        pb.clicked.connect(partial(self.func_selected, function))
+                        pb.clicked.connect(
+                            partial(self.func_selected, function))
                         group_box_layout.addWidget(pb)
 
                     group_box.setLayout(group_box_layout)
@@ -417,7 +462,8 @@ class MainWindow(QMainWindow):
                         tab_v_layout.addLayout(tab_h_layout)
                         h_size = group_box.sizeHint().width()
                         tab_h_layout = QHBoxLayout()
-                    tab_h_layout.addWidget(group_box, alignment=Qt.AlignLeft | Qt.AlignTop)
+                    tab_h_layout.addWidget(group_box,
+                                           alignment=Qt.AlignLeft | Qt.AlignTop)
 
                 if tab_h_layout.count() > 0:
                     tab_v_layout.addLayout(tab_h_layout)
@@ -448,12 +494,14 @@ class MainWindow(QMainWindow):
             self.ct.pr.sel_functions.remove(function)
 
     def func_selected(self, function):
-        self._update_selected_functions(function, self.bt_dict[function].isChecked())
+        self._update_selected_functions(function,
+                                        self.bt_dict[function].isChecked())
 
     def func_group_toggled(self):
         for function in self.bt_dict:
             self._update_selected_functions(function,
-                                            self.bt_dict[function].isChecked() and
+                                            self.bt_dict[
+                                                function].isChecked() and
                                             self.bt_dict[function].isEnabled())
 
     def update_selected_funcs(self):
@@ -480,7 +528,8 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, 'sample exists!',
                                     'The sample-dataset is already imported as _sample_!')
         else:
-            WorkerDialog(self, partial(MEEG, '_sample_', self.ct), show_console=True,
+            WorkerDialog(self, partial(MEEG, '_sample_', self.ct),
+                         show_console=True,
                          title='Loading Sample...', blocking=True)
             self.file_dock.update_dock()
 
@@ -490,8 +539,10 @@ class MainWindow(QMainWindow):
                                     'fsaverage is already imported!')
         else:
             WorkerDialog(self,
-                         partial(mne.datasets.fetch_fsaverage, subjects_dir=self.ct.subjects_dir),
-                         show_console=True, title='Loading fsaverage...', blocking=True)
+                         partial(mne.datasets.fetch_fsaverage,
+                                 subjects_dir=self.ct.subjects_dir),
+                         show_console=True, title='Loading fsaverage...',
+                         blocking=True)
             self.ct.pr.all_fsmri.append('fsaverage')
             self.file_dock.update_dock()
 
@@ -508,9 +559,11 @@ class MainWindow(QMainWindow):
 
     def start(self):
         if self.pipeline_running:
-            QMessageBox.warning(self, 'Already running!', 'The Pipeline is already running!')
+            QMessageBox.warning(self, 'Already running!',
+                                'The Pipeline is already running!')
         else:
-            WorkerDialog(self, self.ct.save, show_buttons=False, show_console=False,
+            WorkerDialog(self, self.ct.save, show_buttons=False,
+                         show_console=False,
                          blocking=True)
             self.run_dialog = RunDialog(self)
 
@@ -523,7 +576,8 @@ class MainWindow(QMainWindow):
         command = 'pip install --upgrade --force-reinstall --no-deps ' \
                   'git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd'
         QProcessDialog(self, command, show_buttons=True, show_console=True,
-                       close_directly=True, title='Updating Pipeline...', blocking=True)
+                       close_directly=True, title='Updating Pipeline...',
+                       blocking=True)
 
         answer = QMessageBox.question(self, 'Do you want to restart?',
                                       'Please restart the Pipeline-Program'
@@ -535,7 +589,8 @@ class MainWindow(QMainWindow):
     def update_mne(self):
         command = 'pip install --upgrade mne'
         QProcessDialog(self, command, show_buttons=True, show_console=True,
-                       close_directly=True, title='Updating MNE-Python...', blocking=True)
+                       close_directly=True, title='Updating MNE-Python...',
+                       blocking=True)
 
         answer = QMessageBox.question(self, 'Do you want to restart?',
                                       'Please restart the Pipeline-Program'

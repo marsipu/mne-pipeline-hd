@@ -199,7 +199,7 @@ class EditGuiArgsDlg(QDialog):
         self.default_gui_args = dict()
 
         if self.cf.current_parameter:
-            covered_params = ['data', 'param_name', 'param_alias', 'default', 'param_unit',
+            covered_params = ['data', 'name', 'alias', 'default', 'param_unit',
                               'description']
             # Get possible default GUI-Args additional to those covered by the Main-GUI
             gui_type = self.cf.add_pd_params.loc[self.cf.current_parameter, 'gui_type']
@@ -913,19 +913,23 @@ class CustomFunctionImport(QDialog):
             gui_args = {}
         test_parameters = dict()
         try:
-            test_parameters[self.current_parameter] = literal_eval(default_string)
+            test_parameters[self.current_parameter] = \
+                literal_eval(default_string)
         except (ValueError, SyntaxError):
             # Allow parameters to be defined by functions by numpy, etc.
-            if self.add_pd_params.loc[self.current_parameter, 'gui_type'] == 'FuncGui':
+            if self.add_pd_params.loc[self.current_parameter, 'gui_type'] \
+                    == 'FuncGui':
                 test_parameters[self.current_parameter] = eval(default_string)
             else:
                 test_parameters[self.current_parameter] = default_string
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'alias']):
-            param_alias = self.add_pd_params.loc[self.current_parameter, 'alias']
+            alias = self.add_pd_params.loc[self.current_parameter, 'alias']
         else:
-            param_alias = self.current_parameter
-        if pd.notna(self.add_pd_params.loc[self.current_parameter, 'description']):
-            description = self.add_pd_params.loc[self.current_parameter, 'description']
+            alias = self.current_parameter
+        if pd.notna(self.add_pd_params.loc[self.current_parameter,
+                                           'description']):
+            description = self.add_pd_params.loc[self.current_parameter,
+                                                 'description']
         else:
             description = None
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'unit']):
@@ -937,18 +941,23 @@ class CustomFunctionImport(QDialog):
         handle_params = inspect.signature(gui_handle).parameters
         try:
             if 'param_unit' in handle_params:
-                gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
-                                 param_alias=param_alias, description=description,
+                gui = gui_handle(data=test_parameters,
+                                 name=self.current_parameter,
+                                 alias=alias, description=description,
                                  param_unit=param_unit, **gui_args)
             else:
-                gui = gui_handle(data=test_parameters, param_name=self.current_parameter,
-                                 param_alias=param_alias, description=description, **gui_args)
+                gui = gui_handle(data=test_parameters,
+                                 name=self.current_parameter,
+                                 alias=alias, description=description,
+                                 **gui_args)
         except Exception as e:
             gui = None
             result = e
             QMessageBox.warning(self, 'Error in ParamGui',
-                                f'The execution of {gui_type} with {default_string} as default '
-                                f'and {gui_args} as additional parameters raises the following error:\n'
+                                f'The execution of {gui_type} with '
+                                f'{default_string} as default and ' \
+                                '{gui_args} as additional parameters raises'
+                                ' the following error:\n'
                                 f'{result}')
         else:
             result = None
@@ -963,7 +972,8 @@ class CustomFunctionImport(QDialog):
     def update_code_editor(self):
         if self.code_editor:
             self.code_editor.clear()
-            self.code_editor.insertPlainText(self.code_dict[self.current_function])
+            self.code_editor.insertPlainText(self.code_dict[
+                                                 self.current_function])
 
     def show_code(self):
         self.code_editor = CodeEditor(self)
@@ -979,11 +989,13 @@ class CustomFunctionImport(QDialog):
             SavePkgDialog(self)
 
     def closeEvent(self, event):
-        drop_funcs = [f for f in self.add_pd_funcs.index if not self.add_pd_funcs.loc[f, 'ready']]
+        drop_funcs = [f for f in self.add_pd_funcs.index
+                      if not self.add_pd_funcs.loc[f, 'ready']]
 
         if len(drop_funcs) > 0:
             answer = QMessageBox.question(self, 'Close Custom-Functions?',
-                                          f'There are still unfinished functions:\n'
+                                          f'There are still '
+                                          f'unfinished functions:\n'
                                           f'{drop_funcs}\n'
                                           f'Do you still want to quit?')
         else:

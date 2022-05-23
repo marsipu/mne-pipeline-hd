@@ -154,19 +154,20 @@ class ParamGuis(QWidget):
         test_layout = QVBoxLayout()
         grid_layout = QGridLayout()
         max_cols = 4
-        set_none_select = False
+        set_none_select = True
         set_groupbox_layout = False
-        set_param_alias = False
+        set_alias = False
 
         for idx, gui_nm in enumerate(self.keyword_args):
             kw_args = self.keyword_args[gui_nm]
+            kw_args['data'] = self.parameters
+            kw_args['name'] = gui_nm
             kw_args['none_select'] = set_none_select
             kw_args['groupbox_layout'] = set_groupbox_layout
-            if set_param_alias:
-                kw_args['param_alias'] = gui_nm + '-alias'
+            if set_alias:
+                kw_args['alias'] = gui_nm + '-alias'
             kw_args['description'] = gui_nm + '-description'
-            gui = getattr(parameter_widgets, gui_nm)(self.parameters, gui_nm,
-                                                     **kw_args)
+            gui = getattr(parameter_widgets, gui_nm)(**kw_args)
             grid_layout.addWidget(gui, idx // max_cols, idx % max_cols)
             self.gui_dict[gui_nm] = gui
 

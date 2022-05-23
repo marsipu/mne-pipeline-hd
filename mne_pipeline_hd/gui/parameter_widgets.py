@@ -41,11 +41,16 @@ class Param(QWidget):
     Base-Class Parameter-GUIs, not to be called directly
     Inherited Clases should have "Gui" in their name to get
     identified correctly.
+
+    Attributes
+    ----------
+    paramChanged : pyqtSignal
+        This signal is emmited when the parameter changes.
     """
     paramChanged = pyqtSignal(object)
 
-    def __init__(self, data, param_name, param_alias=None, default=None,
-                 groupbox_layout=True,
+    def __init__(self, data, name, alias=None, default=None,
+                 param_unit=None, groupbox_layout=True,
                  none_select=False, description=None, changed_slot=None):
         """
         Parameters
@@ -55,14 +60,16 @@ class Param(QWidget):
             (depends on the scenario how the Parameter-Widget is used,
              e.g. displaying parameters from Project or displaying Settings
              from Main-Window).
-        param_name : str
+        name : str
             The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
+        alias : str | None
             An optional alias-name for the parameter for display
             (if you want to use a name, which is more readable, but can't or
             shouldn't be used as a key in Python).
         default : object
             The default value depending on GUI-Type.
+        param_unit : str | None
+            Supply an optional suffix with the name of the unit.
         groupbox_layout : bool
             If a groupbox should be used as layout
             (otherwise it is just a label), if None no label
@@ -79,13 +86,14 @@ class Param(QWidget):
 
         super().__init__()
         self.data = data
-        self.param_name = param_name
-        if param_alias is not None:
-            self.param_alias = param_alias
+        self.name = name
+        if alias is not None:
+            self.alias = alias
         else:
-            self.param_alias = self.param_name
+            self.alias = self.name
         self.param_value = None
         self.default = default
+        self.param_unit = param_unit
         self.groupbox_layout = groupbox_layout
         self.none_select = none_select
         self.description = description
@@ -110,7 +118,7 @@ class Param(QWidget):
         main_layout = QHBoxLayout()
 
         if self.groupbox_layout:
-            self.group_box = QGroupBox(self.param_alias)
+            self.group_box = QGroupBox(self.alias)
             self.group_box.setLayout(layout)
 
             if self.none_select:
@@ -128,8 +136,8 @@ class Param(QWidget):
 
         else:
             # Add this to get no label in MultiTypeGui
-            if self.param_alias != '':
-                main_layout.addWidget(QLabel(self.param_alias))
+            if self.alias != '':
+                main_layout.addWidget(QLabel(self.alias))
             main_layout.addLayout(layout)
 
         self.setLayout(main_layout)
@@ -160,81 +168,58 @@ class Param(QWidget):
     def read_param(self):
         # get data from dictionary
         if isinstance(self.data, dict):
-            if self.param_name in self.data:
-                self.param_value = self.data[self.param_name]
+            if self.name in self.data:
+                self.param_value = self.data[self.name]
             else:
                 self.param_value = self.default
 
         # get data from Parameters in Project in MainWindow
         # (depending on selected parameter-preset and selected Project)
         elif isinstance(self.data, Controller):
-            if self.param_name in self.data.pr.parameters[
+            if self.name in self.data.pr.parameters[
                 self.data.pr.p_preset]:
                 self.param_value = \
                     self.data.pr.parameters[self.data.pr.p_preset][
-                        self.param_name]
+                        self.name]
             else:
                 self.param_value = self.default
 
         # get data from QSettings
         elif isinstance(self.data, QS):
-            if self.param_name in self.data.childKeys():
-                self.param_value = self.data.value(self.param_name)
+            if self.name in self.data.childKeys():
+                self.param_value = self.data.value(self.name)
             else:
                 self.param_value = self.default
 
     def save_param(self):
         if isinstance(self.data, dict):
-            self.data[self.param_name] = self.param_value
+            self.data[self.name] = self.param_value
         elif isinstance(self.data, Controller):
             self.data.pr.parameters[self.data.pr.p_preset][
-                self.param_name] = self.param_value
+                self.name] = self.param_value
         elif isinstance(self.data, QS):
-            self.data.setValue(self.param_name, self.param_value)
+            self.data.setValue(self.name, self.param_value)
 
 
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
-    def __init__(self, data, param_name, param_alias=None, default=1,
-                 groupbox_layout=True,
-                 none_select=False,
-                 description=None, param_unit=None, min_val=0, max_val=1000,
-                 special_value_text=None):
+
+    def __init__(self, min_val=0, max_val=1000,
+                 special_value_text=None, **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : int
-            The default value, if not given defaults to 1.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         min_val : int
             Set the minimumx value, defaults to 0.
         max_val : int
             Set the maximum value, defaults to 100.
         special_value_text : str | None
             Supply an optional text for the value 0.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
 
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
 
         self.param_widget = QSpinBox()
         self.param_widget.setMinimum(min_val)
@@ -243,8 +228,8 @@ class IntGui(Param):
             f'MinValue = {min_val}\nMaxValue = {max_val}')
         if special_value_text:
             self.param_widget.setSpecialValueText(special_value_text)
-        if param_unit:
-            self.param_widget.setSuffix(f' {param_unit}')
+        if self.param_unit:
+            self.param_widget.setSuffix(f' {self.param_unit}')
         self.param_widget.valueChanged.connect(self.get_param)
 
         self.read_param()
@@ -273,36 +258,12 @@ class IntGui(Param):
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1.,
-                 groupbox_layout=True,
-                 none_select=False,
-                 description=None, param_unit=None, min_val=-1000.,
+    def __init__(self, min_val=-1000.,
                  max_val=1000., step=0.1,
-                 decimals=2):
+                 decimals=2, **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : float
-            The default value, if not given defaults to 1.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         min_val : int | float
             Set the minimumx value, defaults to -100..
         max_val : int | float
@@ -311,11 +272,11 @@ class FloatGui(Param):
             Set the step-size, defaults to 0.1.
         decimals : int
             Set the number of decimals of the value.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
 
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
         self.param_widget = QDoubleSpinBox()
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
@@ -323,8 +284,8 @@ class FloatGui(Param):
         self.param_widget.setDecimals(decimals)
         self.param_widget.setToolTip(
             f'MinValue = {min_val}\nMaxVal = {max_val}')
-        if param_unit:
-            self.param_widget.setSuffix(f' {param_unit}')
+        if self.param_unit:
+            self.param_widget.setSuffix(f' {self.param_unit}')
         self.param_widget.valueChanged.connect(self.get_param)
 
         self.read_param()
@@ -354,44 +315,19 @@ class StringGui(Param):
     A GUI for String-Parameters
     """
 
-    def __init__(self, data, param_name, param_alias=None, default='',
-                 groupbox_layout=True,
-                 none_select=False,
-                 description=None, param_unit=None, input_mask=None):
+    def __init__(self, input_mask=None, **kwargs):
         """
 
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : str
-            The default value, if not given to 'Empty'
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         input_mask : str | None
             Define a string as in https://doc.qt.io/qt-5/qlineedit.html#inputMask-prop
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
 
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
         self.param_widget = QLineEdit()
-        self.param_unit = param_unit
         if input_mask:
             self.param_widget.setInputMask(input_mask)
         self.param_widget.textChanged.connect(self.get_param)
@@ -424,43 +360,19 @@ class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy
     """
 
-    def __init__(self, data, param_name, param_alias=None, default=0,
-                 groupbox_layout=True,
-                 none_select=False,
-                 description=None, param_unit=None):
+    def __init__(self, **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : object
-            The default value, defaulting to 0 if not given
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
         self.param_exp = None
         self.param_widget = QLineEdit()
-        self.param_unit = param_unit
         self.param_widget.setToolTip(
-            'Use of functions also allowed (from already imported modules + numpy as np)\n'
+            'Use of functions also allowed '
+            '(from already imported modules + numpy as np)\n'
             'Be carefull as everything entered will be executed!')
         self.param_widget.editingFinished.connect(self.get_param)
 
@@ -503,68 +415,44 @@ class FuncGui(Param):
             return self.param_value
 
     def read_param(self):
-        # Get not only param_value, but also param_exp storing the exact expression which is evaluated
+        # Get not only param_value, but also param_exp storing
+        # the exact expression which is evaluated
         super().read_param()
         real_value = self.param_value
-        self.param_name = self.param_name + '_exp'
+        self.name = self.name + '_exp'
         super().read_param()
         if str(self.param_value) == str(self.default):
             self.param_value = ''
         self.param_exp = self.param_value
-        self.param_name = self.param_name[:-4]
+        self.name = self.name[:-4]
         self.param_value = real_value
 
     def save_param(self):
         super().save_param()
         real_value = self.param_value
-        self.param_name = self.param_name + '_exp'
+        self.name = self.name + '_exp'
         self.param_value = self.param_exp
         super().save_param()
-        self.param_name = self.param_name[:-4]
+        self.name = self.name[:-4]
         self.param_value = real_value
 
 
 class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=False,
-                 groupbox_layout=False,
-                 none_select=False,
-                 description=None, changed_slot=None, param_unit=None,
-                 return_integer=False):
+    def __init__(self, return_integer=False, **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : bool | 0 | 1
-            The default value, defaulting to False if not given.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        changed_slot : function
-            Supply a function as a slot if this parameter gets changed.
         param_unit : str | None
             Supply an optional suffix with the name of the unit.
         return_integer : bool
-            Set True to return an integer (0|1) instead of a boolean (e.g. useful for QSettings)
+            Set True to return an integer (0|1) instead of a boolean
+            (e.g. useful for QSettings).
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout,
-                         none_select, description, changed_slot)
-        self.param_unit = param_unit
+        super().__init__(**kwargs)
         self.return_integer = return_integer
         self.param_widget = QCheckBox()
         self.param_widget.toggled.connect(self.get_param)
@@ -606,46 +494,21 @@ class BoolGui(Param):
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None,
-                 groupbox_layout=True,
-                 none_select=False,
-                 description=None, param_unit=None, min_val=-1000.,
-                 max_val=1000., step=.1):
+    def __init__(self, min_val=-1000., max_val=1000., step=.1, **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : tuple
-            The default value, defaulting to (0, 1) if not given.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         min_val : int | float
             Set the minimumx value, defaults to -100..
         max_val : int | float
             Set the maximum value, defaults to 100..
         step : int | float
-            Set the amount, one step takes
+            Set the amount, one step takes.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
 
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
 
         if step == 1:
             self.param_widget1 = QSpinBox()
@@ -667,15 +530,15 @@ class TupleGui(Param):
         self.param_widget1.setMinimum(min_val)
         self.param_widget1.setMaximum(max_val)
         self.param_widget1.setSingleStep(step)
-        if param_unit:
-            self.param_widget1.setSuffix(f' {param_unit}')
+        if self.param_unit:
+            self.param_widget1.setSuffix(f' {self.param_unit}')
         self.param_widget1.valueChanged.connect(self.get_param)
 
         self.param_widget2.setMinimum(min_val)
         self.param_widget2.setMaximum(max_val)
         self.param_widget2.setSingleStep(step)
-        if param_unit:
-            self.param_widget2.setSuffix(f' {param_unit}')
+        if self.param_unit:
+            self.param_widget2.setSuffix(f' {self.param_unit}')
         self.param_widget2.valueChanged.connect(self.get_param)
 
         self.read_param()
@@ -691,7 +554,8 @@ class TupleGui(Param):
 
     def set_param(self):
         # Signal valueChanged is already emitted after first setValue,
-        # which leads to second param_value being 0 without being preserved in self.loaded_value
+        # which leads to second param_value being 0 without being
+        # preserved in self.loaded_value
         self.check_groupbox_state()
         if self.param_value is not None:
             self.loaded_value = self.param_value
@@ -709,45 +573,21 @@ class TupleGui(Param):
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
 
-    def __init__(self, data, param_name, options, param_alias=None,
-                 default=object(),
-                 groupbox_layout=True,
-                 none_select=False, description=None, param_unit=None):
+    def __init__(self, options, **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
         options : list | dict
-            Supply a list or a dictionary with the options to choose from. If supplied a dictionary,
-            dictionary-values are taken as aliases for the keys.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : object
-            The default value, defaulting to an empty object
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
+            Supply a list or a dictionary with the options to choose from.
+            If supplied a dictionary, dictionary-values are
+            taken as aliases for the keys.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
         self.options = options
         self.param_widget = QComboBox()
         self.param_widget.activated.connect(self.get_param)
-        self.param_unit = param_unit
         for option in self.options:
             if isinstance(self.options, dict):
                 self.param_widget.addItem(str(self.options[option]))
@@ -815,44 +655,18 @@ class ListDialog(QDialog):
 class ListGui(Param):
     """A GUI for as list"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None,
-                 groupbox_layout=True,
-                 none_select=False,
-                 description=None, param_unit=None, value_string_length=30):
+    def __init__(self, value_string_length=30, **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : list
-            The default value, defaulting to empty list if not given.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         value_string_length : int | None
-            Set the limit of characters to which the value converted to a string will be displayed
+            Set the limit of characters to which the value converted to a
+            string will be displayed.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
 
-        default = default or list()
-
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
-        self.param_unit = param_unit
+        super().__init__(**kwargs)
         self.value_string_length = value_string_length
         # Cache param_value to use after
         self.cached_value = None
@@ -936,55 +750,29 @@ class CheckListGui(Param):
     """A GUI to select items from a list of options
     """
 
-    def __init__(self, data, param_name, options, param_alias=None,
-                 default=None,
-                 groupbox_layout=True,
-                 none_select=False, description=None, param_unit=None,
-                 value_string_length=30,
-                 one_check=False):
+    def __init__(self, options, value_string_length=30, one_check=False,
+                 **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
         options : list
             The items from which to choose
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : None | list
-            The default value, set to empty dictionary if not given or None.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         value_string_length : int | None
-            Set the limit of characters to which the value converted to a string will be displayed
+            Set the limit of characters to which the value converted to a
+            string will be displayed.
         one_check : bool
-            Set to True, if only one item should be selectable (or use ComboGUI)
+            Set to True, if only one item should be selectable
+             (or use ComboGUI).
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
-
-        default = default or list()
 
         if not isinstance(options, list) or len(options) == 0:
             options = ['Empty']
             default = ['Empty']
 
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
         self.options = options
-        self.param_unit = param_unit
         self.value_string_length = value_string_length
         self.one_check = one_check
         # Cache param_value to use after
@@ -1064,45 +852,19 @@ class DictDialog(QDialog):
 class DictGui(Param):
     """A GUI for a dictionary"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None,
-                 groupbox_layout=True,
-                 none_select=False,
-                 description=None, param_unit=None, value_string_length=30):
+    def __init__(self, value_string_length=30, **kwargs):
         """
         
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : dict | None
-            The default value, if not given or None set to an empty dict.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         value_string_length : int | None
-            Set the limit of characters to which the value converted to a string will be displayed
+            Set the limit of characters to which the value converted
+            to a string will be displayed.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
 
-        default = default or dict()
-
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
-        self.param_unit = param_unit
+        super().__init__(**kwargs)
         self.value_string_length = value_string_length
         # Cache param_value to use after setting param_value to None with GroupBox-Checkbox
         self.cached_value = None
@@ -1161,51 +923,25 @@ class DictGui(Param):
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, data, param_name, param_alias=None, default=1,
-                 groupbox_layout=True,
-                 none_select=False,
-                 description=None, param_unit=None, min_val=0, max_val=100,
-                 step=1):
+    def __init__(self, min_val=0, max_val=100, step=1, **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : int
-            The default value, if not given to 1.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         min_val : int | float
             Set the minimumx value, defaults to 0.
         max_val : int | float
             Set the maximum value, defaults to 100..
         step : int | float
             Set the step-size, defaults to 1.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
         self.min_val = min_val
         self.max_val = max_val
         self.param_widget = QSlider()
         self.param_widget.setSizePolicy(QSizePolicy.Expanding,
                                         QSizePolicy.Maximum)
-        self.param_unit = param_unit
         self.decimal_count = max(
             [len(str(value)[str(value).find('.'):]) - 1 for value in
              [min_val, max_val, step]])
@@ -1249,18 +985,6 @@ class SliderGui(Param):
             new_value = literal_eval(self.display_widget.text())
         except (ValueError, SyntaxError):
             new_value = None
-        # if isinstance(new_value, int):
-        #     self.decimal_count = 0
-        #     self.param_widget.setMinimum(self.min_val)
-        #     self.param_widget.setMaximum(self.max_val)
-        #     self.param_value = new_value
-        #     self.param_widget.setValue(new_value)
-        # elif isinstance(new_value, float):
-        #     new_decimal_count = len(str(new_value)[str(new_value).find('.'):]) - 1
-        #     if new_decimal_count > 0 and new_decimal_count != self.decimal_count:
-        #         self.decimal_count = new_decimal_count
-        #         self.param_widget.setMinimum(self.min_val * 10 ** self.decimal_count)
-        #         self.param_widget.setMaximum(self.max_val * 10 ** self.decimal_count)
         if new_value:
             self.param_value = new_value
             self.param_widget.setValue(
@@ -1291,46 +1015,25 @@ class SliderGui(Param):
 class MultiTypeGui(Param):
     """A GUI which accepts multiple types of values in a single LineEdit"""
 
-    def __init__(self, data, param_name, param_alias=None, default=None,
-                 groupbox_layout=True,
-                 none_select=False, description=None, param_unit=None,
-                 type_selection=False,
-                 types=None, type_kwargs=None):
+    def __init__(self, type_selection=False, types=None, type_kwargs=None,
+                 **kwargs):
         """
         Parameters
         ----------
-        data : dict | Controller | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : int | float | bytes | bool | str | list | dict | tuple | set | None
-            The default value, if not given defaults to None.
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         type_selection : bool
-            If True, the use can choose in a QComboBox which type they want to enter and then use the appropriate GUI
+            If True, the use can choose in a QComboBox which type they want
+            to enter and then use the appropriate GUI.
         types : list of str
-            If type_selection is True, the type-selection will be limited to the given types (type-name as string)
+            If type_selection is True, the type-selection will be limited
+            to the given types (type-name as string).
         type_kwargs : dict
-            Specify keyword-arguments for the different GUIs (look into their documentation), 
+            Specify keyword-arguments for the different GUIs
+            (look into their documentation),
             the key is the name of the GUI!
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select,
-                         description)
+        super().__init__(**kwargs)
         self.type_selection = type_selection
         self.types = types or ['int', 'float', 'bool', 'str', 'list', 'dict',
                                'tuple']
@@ -1344,7 +1047,6 @@ class MultiTypeGui(Param):
                           'list': 'ListGui',
                           'dict': 'DictGui',
                           'tuple': 'TupleGui'}
-        self.param_unit = param_unit
 
         if self.type_selection:
             self.type_cmbx = QComboBox()
@@ -1381,8 +1083,8 @@ class MultiTypeGui(Param):
 
         # Set standard parameter-keyword-arguments as given to MultiTypeGui
         kwargs['data'] = self.data
-        kwargs['param_name'] = self.param_name
-        kwargs['param_alias'] = ''
+        kwargs['name'] = self.name
+        kwargs['alias'] = ''
         kwargs['default'] = self.default
         kwargs['groupbox_layout'] = False
         kwargs['none_select'] = False
@@ -1661,42 +1363,20 @@ class LabelDialog(SimpleDialog):
 class LabelGui(Param):
     """This GUI lets the user pick labels from a brain."""
 
-    def __init__(self, data, param_name, param_alias=None, default=None,
-                 groupbox_layout=True, none_select=False,
-                 description=None, param_unit=None, value_string_length=30):
+    def __init__(self, value_string_length=30, **kwargs):
         """
         Parameters
         ----------
-        data : dict | QMainWindow | QSettings
-            The data-structure, in which the value of the parameter is stored
-            (depends on the scenario how the Parameter-Widget is used,
-             e.g. displaying parameters from Project or displaying Settings from Main-Window).
-        param_name : str
-            The name of the key, which stores the value in the data-structure.
-        param_alias : str | None
-            An optional alias-name for the parameter for display
-            (if you want to use a name, which is more readable, but can't or shouldn't be used as a key in Python).
-        default : int | None
-            The default value, if not given defaults to [].
-        groupbox_layout : bool
-            If a groupbox should be used as layout (otherwise it is just a label)
-        none_select : bool
-            Set True if it should be possible to set the value to None by unchecking the GroupBox
-            (on the left of the name).
-        description : str | None
-            Supply an optional description for the parameter,
-            which will displayed as a Tool-Tip when the mouse is hovered over the Widget.
-        param_unit : str | None
-            Supply an optional suffix with the name of the unit.
         value_string_length : int | None
-            Set the limit of characters to which the value converted to a string will be displayed
+            Set the limit of characters to which the value converted to a
+            string will be displayed.
+        **kwargs
+            All the parameters fo :method:`~Param.__init__` go here.
         """
 
-        super().__init__(data, param_name, param_alias, default,
-                         groupbox_layout, none_select, description)
-        self.param_unit = param_unit
+        super().__init__(**kwargs)
         self.value_string_length = value_string_length
-        if not isinstance(data, Controller):
+        if not isinstance(self.data, Controller):
             raise RuntimeError(f'LabelGui can only used with an instance of '
                                f'Controller passed as data.')
         self.read_param()
@@ -1774,9 +1454,9 @@ class ResetDialog(QDialog):
         self.setLayout(layout)
 
     def reset_params(self):
-        for param_name in self.selected_params:
-            self.pd.ct.pr.load_default_param(param_name)
-            print(f'Reset {param_name}')
+        for name in self.selected_params:
+            self.pd.ct.pr.load_default_param(name)
+            print(f'Reset {name}')
         WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...',
                      blocking=True)
         self.pd.update_all_param_guis()
@@ -1976,9 +1656,9 @@ class ParametersDock(QDockWidget):
 
                 # Get Parameters for Gui-Call
                 if pd.notna(parameter['alias']):
-                    param_alias = parameter['alias']
+                    alias = parameter['alias']
                 else:
-                    param_alias = idx
+                    alias = idx
                 if pd.notna(parameter['gui_type']):
                     gui_name = parameter['gui_type']
                 else:
@@ -2004,13 +1684,14 @@ class ParametersDock(QDockWidget):
                     gui_args = {}
 
                 try:
-                    self.param_guis[idx] = globals()[gui_name](self.ct,
-                                                               param_name=idx,
-                                                               param_alias=param_alias,
-                                                               default=default,
-                                                               description=description,
-                                                               param_unit=unit,
-                                                               **gui_args)
+                    self.param_guis[idx] = globals()[gui_name](
+                        data=self.ct,
+                        name=idx,
+                        alias=alias,
+                        default=default,
+                        description=description,
+                        param_unit=unit,
+                        **gui_args)
                 except:
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
@@ -2084,7 +1765,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'ComboGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
-                    'param_alias': 'Application Style',
+                    'alias': 'Application Style',
                     'description': 'Changes the application style (Restart required).',
                     'options': ['light', 'dark'] + QStyleFactory().keys(),
                 }
@@ -2093,7 +1774,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'ComboGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
-                    'param_alias': 'Application Font',
+                    'alias': 'Application Font',
                     'description': 'Changes default application font (Restart required).',
                     'options': QFontDatabase().families(QFontDatabase.Latin)
                 }
@@ -2102,7 +1783,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'IntGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
-                    'param_alias': 'Font Size',
+                    'alias': 'Font Size',
                     'description': 'Changes default application font-size (Restart required).',
                     'min_val': 5,
                     'max_val': 20
@@ -2112,7 +1793,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'ComboGui',
                 'data_type': 'Settings',
                 'gui_kwargs': {
-                    'param_alias': 'Image Format',
+                    'alias': 'Image Format',
                     'description': 'Choose the image format for plots.',
                     'options': ['.png', '.jpg', '.tiff'],
                 }
@@ -2121,7 +1802,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'IntGui',
                 'data_type': 'Settings',
                 'gui_kwargs': {
-                    'param_alias': 'DPI',
+                    'alias': 'DPI',
                     'description': 'Set dpi for saved plots.',
                     'min_val': 10,
                     'max_val': 5000
@@ -2131,7 +1812,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'BoolGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
-                    'param_alias': 'Enable CUDA',
+                    'alias': 'Enable CUDA',
                     'description': 'Enable for CUDA support (system has to be setup for cuda '
                                    'as in https://mne.tools/stable/install/advanced.html#gpu-acceleration-with-cuda)',
                     'return_integer': True
@@ -2141,7 +1822,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'BoolGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
-                    'param_alias': 'Save RAM',
+                    'alias': 'Save RAM',
                     'description': 'Set to True on low RAM-Machines to avoid the process to be killed '
                                    'by the OS due to low Memory (with leaving it off, the pipeline goes '
                                    'a bit faster, because the data can be saved in memory).',
@@ -2152,7 +1833,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'StringGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
-                    'param_alias': 'FREESURFER_HOME-Path',
+                    'alias': 'FREESURFER_HOME-Path',
                     'description': 'Set the Path to the "freesurfer"-directory of your '
                                    'Freesurfer-Installation '
                                    '(for Windows to the LINUX-Path of the Freesurfer-Installation '
@@ -2164,7 +1845,7 @@ class SettingsDlg(QDialog):
                 'gui_type': 'StringGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
-                    'param_alias': 'MNE-Python-Path',
+                    'alias': 'MNE-Python-Path',
                     'description': 'Set the LINUX-Path to the mne-environment (e.g '
                                    '...anaconda3/envs/mne) in Windows-Subsystem for Linux(WSL))',
                     'none_select': True
@@ -2197,7 +1878,7 @@ class SettingsDlg(QDialog):
                 gui_kwargs['data'] = self.ct.settings
                 gui_kwargs['default'] = self.ct.default_settings['settings'][
                     setting]
-            gui_kwargs['param_name'] = setting
+            gui_kwargs['name'] = setting
             layout.addWidget(gui_handle(**gui_kwargs))
 
         close_bt = QPushButton('Close')
