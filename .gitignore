@@ -141,3 +141,9 @@ cython_debug/
 
 # PyCharm Project-Settings
 .idea/*
+
+# VSCode
+.vscode/*
+
+# Misc
+mne_pipeline_hd/environment.yml

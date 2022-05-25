@@ -40,6 +40,7 @@ class Controller:
         self.pr = None
         # Try to load home_path from QSettings
         self.home_path = home_path or QS().value('home_path', defaultValue=None)
+        self.settings = dict()
         if self.home_path is None:
             self.errors['home_path'] = f'No Home-Path found!'
 
@@ -87,7 +88,6 @@ class Controller:
 
             # Load settings (which are stored as .json-file in home_path)
             # settings=<everything, that's OS-independent>
-            self.settings = dict()
             self.load_settings()
 
             self.all_modules = dict()
