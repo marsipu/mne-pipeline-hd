@@ -711,8 +711,8 @@ def plot_grand_avg_stc(group, morph_to, target_labels, parcellation, stc_surface
                                              parc=parcellation,
                                              subjects_dir=group.subjects_dir)
     for trial, stc in ga_stcs.items():
-        title = f'{meeg.name}-{trial}'
-        brain = stc.plot(subject=group.fsmri.name, surface=stc_surface,
+        title = f'{group.name}-{trial}'
+        brain = stc.plot(subject=morph_to, surface=stc_surface,
                          subjects_dir=group.subjects_dir,
                          hemi=stc_hemi, views=stc_views,
                          title=title, time_viewer=False)
@@ -721,7 +721,7 @@ def plot_grand_avg_stc(group, morph_to, target_labels, parcellation, stc_surface
                 if label.name == label_name:
                     brain.add_label(label, borders=True)
         brain.add_text(0, 0.9, title, 'title', font_size=14)
-        group.plot_save('group_source_estimates', trial=trial, brain=brain)
+        group.plot_save('grand_average_source_estimates', trial=trial, brain=brain)
 
         if not group.ct.settings['show_plots']:
             brain.close()
