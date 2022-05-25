@@ -29,7 +29,7 @@ ecd_fit;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,ecd_times,ecd_p
 src_connectivity;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,parcellation,target_labels,inverse_method,lambda2,con_methods,con_fmin,con_fmax,n_jobs
 grand_avg_evokeds;;Group;Compute;Grand-Average;False;False;;operations;basic;group,ga_interpolate_bads,ga_drop_bads
 grand_avg_tfr;;Group;Compute;Grand-Average;False;False;;operations;basic;group
-grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;basic;group,morph_to
+grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;basic;group,morph_to,target_labels
 grand_avg_ltc;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 grand_avg_connect;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 plot_src;;FSMRI;Plot;MRI-Preprocessing;True;True;;plot;basic;fsmri
