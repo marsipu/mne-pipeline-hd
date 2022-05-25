@@ -70,7 +70,7 @@ plot_ecd;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg
 plot_src_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,target_labels,parcellation,con_fmin,con_fmax,show_plots
 plot_grand_avg_evokeds;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_tfr;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
-plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,morph_to
+plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,morph_to,parcellation,stc_surface,stc_hemi,stc_views
 plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;basic;group,stc_animation,stc_animation_dilat,morph_to
 plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,con_fmin,con_fmax,parcellation,target_labels,morph_to,show_plots

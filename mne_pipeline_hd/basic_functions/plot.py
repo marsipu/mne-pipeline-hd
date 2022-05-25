@@ -705,9 +705,9 @@ def plot_grand_avg_tfr(group, show_plots):
                         matplotlib_figure=fig4)
 
 
-def plot_grand_avg_stc(group, morph_to, target_labels):
+def plot_grand_avg_stc(group, morph_to, target_labels, parcellation, stc_surface, stc_hemi, stc_views):
     ga_stcs = group.load_ga_stc()
-    parc_labels = mne.read_labels_from_annot(group.fsmri.name,
+    parc_labels = mne.read_labels_from_annot(morph_to,
                                              parc=parcellation,
                                              subjects_dir=group.subjects_dir)
     for trial, stc in ga_stcs.items():
@@ -725,6 +725,7 @@ def plot_grand_avg_stc(group, morph_to, target_labels):
 
         if not group.ct.settings['show_plots']:
             brain.close()
+
 
 def plot_grand_avg_stc_anim(group, stc_animation, stc_animation_dilat,
                             morph_to):
