@@ -25,7 +25,7 @@ from matplotlib.figure import Figure
 from mne.viz import Brain
 try:
     from mne.viz import Figure3D
-except ModuleNotFoundError:
+except ImportError:
     Figure3D = None
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList, CheckList
