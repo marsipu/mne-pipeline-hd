@@ -1359,7 +1359,8 @@ class MultiTypeGui(Param):
         self.param_type = type(self.param_value).__name__
         if self.param_type == 'NoneType':
             self.param_type = self.types[0]
-        self.type_cmbx.setCurrentText(self.param_type)
+        if self.type_selection:
+            self.type_cmbx.setCurrentText(self.param_type)
 
         self.init_layout()
         self.set_param()

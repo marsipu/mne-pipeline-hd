@@ -67,6 +67,11 @@ lambda2;;Inverse;1.0 / 3.0 ** 2;;lambda2 for Source-Estimate;FuncGui;
 stc_surface;;Inverse;inflated;;Select the surface type for Source Estimate Plots;ComboGui;{'options':['inflated', 'white', 'pial']}
 stc_hemi;;Inverse;'split';;Select the hemispheres for Source Estimate Plots;ComboGui;{'options':['lh', 'rh', 'both', 'split']}
 stc_views;;Inverse;['med', 'lat'];;Select the views for Source Estimate Plots;MultiTypeGui;{'type_selection': True, 'types': ['str', 'list']}
+stc_time;;Inverse;0;;Initial time for Source Estimate Plots;FloatGui;
+stc_background;;Inverse;'black';;Background for Source Estimate Plots;MultiTypeGui;{'type_selection': False}
+stc_roll;;Inverse;0;;Roll for view in for Source Estimate Plots;FloatGui;
+stc_azimuth;;Inverse;0;;Azimuth for view for Source Estimate Plots;FloatGui;
+stc_elevation;;Inverse;0;;Elevation for view for Source Estimate Plots;FloatGui;
 stc_animation;;Inverse;(0,0.5);s;time-span for stc-animation[s];TupleGui;
 stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
 parcellation;;Inverse;aparc;;;StringGui;

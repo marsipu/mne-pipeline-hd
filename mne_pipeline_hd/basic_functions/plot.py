@@ -404,7 +404,7 @@ def plot_noise_covariance(meeg, show_plots):
 
 
 def plot_stc(meeg, parcellation, target_labels,
-             stc_surface, stc_hemi, stc_views):
+             stc_surface, stc_hemi, stc_views, stc_time, stc_background, stc_roll, stc_azimuth, stc_elevation):
     stcs = meeg.load_source_estimates()
     parc_labels = mne.read_labels_from_annot(meeg.fsmri.name,
                                              parc=parcellation,
@@ -414,11 +414,13 @@ def plot_stc(meeg, parcellation, target_labels,
         brain = stc.plot(subject=meeg.fsmri.name, surface=stc_surface,
                          subjects_dir=meeg.subjects_dir,
                          hemi=stc_hemi, views=stc_views,
+                         initial_time=stc_time, background=stc_background,
                          title=title, time_viewer=False)
         for label_name in target_labels:
             for label in parc_labels:
                 if label.name == label_name:
                     brain.add_label(label, borders=True)
+        brain.show_view(None, roll=stc_roll, azimuth=stc_azimuth, elevation=stc_elevation)
         brain.add_text(0, 0.9, title, 'title', font_size=14)
         meeg.plot_save('source_estimates', trial=trial, brain=brain)
 
@@ -426,14 +428,17 @@ def plot_stc(meeg, parcellation, target_labels,
             brain.close()
 
 
-def plot_stc_interactive(meeg, stc_surface, stc_hemi, stc_views):
+def plot_stc_interactive(meeg, stc_surface, stc_hemi, stc_views, stc_time, stc_background,
+                         stc_roll, stc_azimuth, stc_elevation):
     stcs = meeg.load_source_estimates()
     for trial, stc in stcs.items():
         title = f'{meeg.name}-{trial}'
         brain = stc.plot(subject=meeg.fsmri.name, surface=stc_surface,
                          subjects_dir=meeg.subjects_dir,
-                         hemi=stc_hemi, views=stc_views, background='white',
+                         hemi=stc_hemi, views=stc_views, background=stc_background,
+                         initial_time=stc_time,
                          title=title, time_viewer=True)
+        brain.show_view(None, roll=stc_roll, azimuth=stc_azimuth, elevation=stc_elevation)
         brain.add_text(0, 0.9, title, 'title', font_size=14)
 
 
@@ -705,7 +710,8 @@ def plot_grand_avg_tfr(group, show_plots):
                         matplotlib_figure=fig4)
 
 
-def plot_grand_avg_stc(group, morph_to, target_labels, parcellation, stc_surface, stc_hemi, stc_views):
+def plot_grand_avg_stc(group, morph_to, target_labels, parcellation, stc_surface, stc_hemi, stc_views,
+                       stc_time, stc_background, stc_roll, stc_azimuth, stc_elevation):
     ga_stcs = group.load_ga_stc()
     parc_labels = mne.read_labels_from_annot(morph_to,
                                              parc=parcellation,
@@ -714,8 +720,10 @@ def plot_grand_avg_stc(group, morph_to, target_labels, parcellation, stc_surface
         title = f'{group.name}-{trial}'
         brain = stc.plot(subject=morph_to, surface=stc_surface,
                          subjects_dir=group.subjects_dir,
-                         hemi=stc_hemi, views=stc_views,
+                         hemi=stc_hemi, views=stc_views, background=stc_background,
+                         initial_time=stc_time,
                          title=title, time_viewer=False)
+        brain.show_view(None, roll=stc_roll, azimuth=stc_azimuth, elevation=stc_elevation)
         for label_name in target_labels:
             for label in parc_labels:
                 if label.name == label_name:
@@ -725,6 +733,19 @@ def plot_grand_avg_stc(group, morph_to, target_labels, parcellation, stc_surface
 
         if not group.ct.settings['show_plots']:
             brain.close()
+
+
+def plot_grand_average_stc_interactive(group, morph_to, stc_surface, stc_hemi, stc_views,
+                       stc_time, stc_background, stc_roll, stc_azimuth, stc_elevation):
+
+    stcs = group.load_ga_stc()
+    for trial, stc in stcs.items():
+        title = f'{group.name}-{trial}'
+        brain = stc.plot(subject=morph_to, surface=stc_surface,
+                         subjects_dir=group.subjects_dir,
+                         hemi=stc_hemi, views=stc_views, background=stc_background,
+                         initial_time=stc_time, title=title, time_viewer=True)
+        brain.add_text(0, 0.9, title, 'title', font_size=14)
 
 
 def plot_grand_avg_stc_anim(group, stc_animation, stc_animation_dilat,
