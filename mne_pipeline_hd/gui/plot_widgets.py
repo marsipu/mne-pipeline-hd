@@ -21,7 +21,12 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QGridLayout, QComboBox,
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from mne.viz import Brain, Figure3D
+
+from mne.viz import Brain
+try:
+    from mne.viz import Figure3D
+except ModuleNotFoundError:
+    Figure3D = None
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList, CheckList
 from mne_pipeline_hd.gui.gui_utils import Worker, set_ratio_geometry
