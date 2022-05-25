@@ -1500,7 +1500,11 @@ class LabelPicker(Brain):
         elevation = self.paramdlg.elevation_slider.get_param()
         azimuth = self.paramdlg.azimuth_slider.get_param()
 
-        self.show_view(None, roll=roll, elevation=elevation, azimuth=azimuth)
+        try:
+            self.show_view(None, roll=roll, elevation=elevation, azimuth=azimuth,
+                           row=0, col=0)
+        except TypeError:
+            pass
 
     def _label_picked(self, vtk_picker, event):
         cell_id = vtk_picker.GetCellId()
@@ -1551,6 +1555,7 @@ class LabelDialog(SimpleDialog):
                          window_title='Label Picker', modal=False)
         self.paramw = paramw
         self.ct = paramw.data
+        self.params = self.ct.pr.parameters[self.ct.pr.p_preset]
         self.param_value = paramw.param_value
 
         self._label_picker = None
@@ -1580,7 +1585,7 @@ class LabelDialog(SimpleDialog):
         self.label_list.checkedChanged.connect(self._labels_changed)
         layout.addWidget(self.label_list)
 
-        self.elevation_slider = SliderGui(self.paramw.data, 'elevation')
+        self.elevation_slider = SliderGui(self.paramw.data, 'stc_elevation')
         self.elevation_slider.paramChanged.connect(self._slider_changed)
         layout.addWidget(self.elevation_slider)
 
@@ -1639,12 +1644,15 @@ class LabelDialog(SimpleDialog):
             self._label_picker.update_view()
 
     def _open_label_picker(self):
-        self._label_picker = LabelPicker(self, self._fsmri, hemi='split',
-                                         views=['lat', 'med'],
+        background = self.params['stc_background']
+
+        self._label_picker = LabelPicker(self, self._fsmri, hemi='lh',
+                                         views='lateral',
                                          surf='inflated', title='Pick labels',
                                          subjects_dir=
                                          self.ct.subjects_dir,
-                                         block=False)
+                                         block=False, background=background)
+        self._label_picker.update_view()
 
 
 class LabelGui(Param):
