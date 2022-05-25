@@ -25,7 +25,7 @@ from mne import read_labels_from_annot
 from mne.viz import Brain
 from mne_pipeline_hd import QS, iswin
 from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
-                                              SimpleList)
+                                              SimpleList, SimpleDialog)
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
 from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
                                            get_exception_tuple,
@@ -1279,6 +1279,7 @@ class SliderGui(Param):
             new_value /= 10 ** self.decimal_count
         self.param_value = new_value
         self.display_widget.setText(str(self.param_value))
+        self.paramChanged.emit(self.param_value)
         self.save_param()
 
         return self.param_value
@@ -1450,7 +1451,12 @@ class MultiTypeGui(Param):
 
 class LabelPicker(Brain):
     def __init__(self, paramdlg, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        try:
+            super().__init__(*args, **kwargs)
+        except TypeError:
+            # Backwards compatibility mne==0.24
+            kwargs.pop('block')
+            super().__init__(*args, **kwargs)
         self.paramdlg = paramdlg
         self.paramw = paramdlg.paramw
 
@@ -1488,6 +1494,13 @@ class LabelPicker(Brain):
         self._renderer.plotter.picker = vtkCellPicker()
         self._renderer.plotter.picker.AddObserver(vtkCommand.EndPickEvent,
                                                   self._label_picked)
+
+    def update_view(self):
+        roll = self.paramdlg.roll_slider.get_param()
+        elevation = self.paramdlg.elevation_slider.get_param()
+        azimuth = self.paramdlg.azimuth_slider.get_param()
+
+        self.show_view(None, roll=roll, elevation=elevation, azimuth=azimuth)
 
     def _label_picked(self, vtk_picker, event):
         cell_id = vtk_picker.GetCellId()
@@ -1531,9 +1544,11 @@ class LabelPicker(Brain):
         self._renderer._update()
 
 
-class LabelDialog(QDialog):
+class LabelDialog(SimpleDialog):
     def __init__(self, paramw):
-        super().__init__(paramw)
+        self.main_widget = QWidget()
+        super().__init__(self.main_widget, parent=paramw, title='Choose a label!',
+                         window_title='Label Picker', modal=False)
         self.paramw = paramw
         self.ct = paramw.data
         self.param_value = paramw.param_value
@@ -1548,7 +1563,7 @@ class LabelDialog(QDialog):
         self.open()
 
     def init_layout(self):
-        layout = QVBoxLayout(self)
+        layout = QVBoxLayout(self.main_widget)
 
         self.fsmri_cmbx = QComboBox()
         self.fsmri_cmbx.addItems(self.ct.pr.all_fsmri)
@@ -1564,6 +1579,18 @@ class LabelDialog(QDialog):
                                     ui_buttons=False)
         self.label_list.checkedChanged.connect(self._labels_changed)
         layout.addWidget(self.label_list)
+
+        self.elevation_slider = SliderGui(self.paramw.data, 'elevation')
+        self.elevation_slider.paramChanged.connect(self._slider_changed)
+        layout.addWidget(self.elevation_slider)
+
+        self.roll_slider = SliderGui(self.paramw.data, 'stc_roll')
+        self.roll_slider.paramChanged.connect(self._slider_changed)
+        layout.addWidget(self.roll_slider)
+
+        self.azimuth_slider = SliderGui(self.paramw.data, 'stc_azimuth')
+        self.azimuth_slider.paramChanged.connect(self._slider_changed)
+        layout.addWidget(self.azimuth_slider)
 
         choose_bt = QPushButton('Choose Labels')
         choose_bt.clicked.connect(self._open_label_picker)
@@ -1606,6 +1633,10 @@ class LabelDialog(QDialog):
             for remove_name in [lb for lb in shown_labels if lb not in labels]:
                 hemi = remove_name[-2:]
                 self._label_picker._remove_label_name(remove_name, hemi)
+
+    def _slider_changed(self, value):
+        if self._label_picke is not None:
+            self._label_picker.update_view()
 
     def _open_label_picker(self):
         self._label_picker = LabelPicker(self, self._fsmri, hemi='split',
