@@ -1635,7 +1635,7 @@ class LabelDialog(SimpleDialog):
                 self._label_picker._remove_label_name(remove_name, hemi)
 
     def _slider_changed(self, value):
-        if self._label_picke is not None:
+        if self._label_picker is not None:
             self._label_picker.update_view()
 
     def _open_label_picker(self):
