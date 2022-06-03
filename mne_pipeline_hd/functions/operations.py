@@ -902,20 +902,20 @@ def setup_src(fsmri, src_spacing, surface, n_jobs):
     src = mne.setup_src(fsmri.name, spacing=src_spacing,
                         surface=surface, subjects_dir=fsmri.subjects_dir,
                         add_dist=False, n_jobs=n_jobs)
-    fsmri.save_src(src)
+    fsmri.save_source_space(src)
 
 
 def setup_vol_src(fsmri, vol_src_spacing):
     bem = fsmri.load_bem_solution()
     vol_src = mne.setup_volume_src(fsmri.name, pos=vol_src_spacing, bem=bem,
                                    subjects_dir=fsmri.subjects_dir)
-    fsmri.save_vol_src(vol_src)
+    fsmri.save_volume_source_space(vol_src)
 
 
 def compute_src_distances(fsmri, n_jobs):
-    src = fsmri.load_src()
+    src = fsmri.load_source_space()
     src_computed = mne.add_src_distances(src, n_jobs=n_jobs)
-    fsmri.save_src(src_computed)
+    fsmri.save_source_space(src_computed)
 
 
 def prepare_bem(fsmri, bem_spacing, bem_conductivity):
@@ -970,7 +970,7 @@ def create_forward_solution(meeg, n_jobs, ch_types):
     info = meeg.load_info()
     trans = meeg.load_transformation()
     bem = meeg.fsmri.load_bem_solution()
-    src = meeg.fsmri.load_src()
+    src = meeg.fsmri.load_source_space()
 
     if 'eeg' in ch_types:
         eeg = True
@@ -1031,7 +1031,7 @@ def source_estimate(meeg, inverse_method, pick_ori, lambda2):
 
 def label_time_course(meeg, target_labels, parcellation, extract_mode):
     stcs = meeg.load_source_estimates()
-    src = meeg.fsmri.load_src()
+    src = meeg.fsmri.load_source_space()
 
     labels = mne.read_labels_from_annot(meeg.fsmri.name,
                                         subjects_dir=meeg.subjects_dir,

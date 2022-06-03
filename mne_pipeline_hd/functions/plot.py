@@ -354,7 +354,7 @@ def plot_transformation(meeg):
 
 
 def plot_src(fsmri):
-    src = fsmri.load_src()
+    src = fsmri.load_source_space()
     src.plot()
     mlab.view(-90, 7)
 
@@ -362,14 +362,14 @@ def plot_src(fsmri):
 
 
 def plot_bem(fsmri, show_plots):
-    src = fsmri.load_src()
+    src = fsmri.load_source_space()
     fig1 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=src,
                             show=show_plots)
 
     fsmri.plot_save('bem', subfolder='source-space', matplotlib_figure=fig1)
 
     try:
-        vol_src = fsmri.load_vol_src()
+        vol_src = fsmri.load_volume_source_space()
         fig2 = mne.viz.plot_bem(fsmri.name, fsmri.subjects_dir, src=vol_src,
                                 show=show_plots)
 

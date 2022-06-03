@@ -1174,8 +1174,8 @@ class FSMRI(BaseLoading):
         # This dictionary contains entries for each data-type which is loaded to/saved from disk
         self.io_dict = {
             'src': {'path': self.src_path,
-                    'load': self.load_src,
-                    'save': self.save_src},
+                    'load': self.load_source_space,
+                    'save': self.save_source_space},
             'bem_model': {'path': self.bem_model_path,
                           'load': self.load_bem_model,
                           'save': self.save_bem_model},
@@ -1183,8 +1183,8 @@ class FSMRI(BaseLoading):
                              'load': self.load_bem_solution,
                              'save': self.save_bem_solution},
             'volume_src': {'path': self.vol_src_path,
-                           'load': self.load_vol_src,
-                           'save': self.save_vol_src}
+                           'load': self.load_volume_source_space,
+                           'save': self.save_volume_source_space}
         }
 
         self.deprecated_paths = {}
@@ -1193,11 +1193,11 @@ class FSMRI(BaseLoading):
     # Load- & Save-Methods
     ####################################################################################################################
     @load_decorator
-    def load_src(self):
-        return mne.src.read_srcs(self.src_path)
+    def load_source_space(self):
+        return mne.read_source_spaces(self.src_path)
 
     @save_decorator
-    def save_src(self, src):
+    def save_source_space(self, src):
         src.save(self.src_path, overwrite=True)
 
     @load_decorator
@@ -1218,11 +1218,11 @@ class FSMRI(BaseLoading):
                                overwrite=True)
 
     @load_decorator
-    def load_vol_src(self):
-        return mne.src.read_srcs(self.vol_src_path)
+    def load_volume_source_space(self):
+        return mne.read_source_spaces(self.vol_src_path)
 
     @save_decorator
-    def save_vol_src(self, vol_src):
+    def save_volume_source_space(self, vol_src):
         vol_src.save(self.vol_src_path, overwrite=True)
 
 
