@@ -202,3 +202,10 @@ def _get_available_parc(ct, fsmri):
     annotations = set([file[3:-6] for file in files if file[-6:] == '.annot'])
 
     return annotations
+
+
+def _get_func_param_kwargs(func, params):
+    kwargs = {kwarg: params[kwarg] if kwarg in params else None
+              for kwarg in inspect.signature(func).parameters}
+
+    return kwargs

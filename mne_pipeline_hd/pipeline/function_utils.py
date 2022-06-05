@@ -15,14 +15,14 @@ from collections import OrderedDict
 from importlib import import_module
 from multiprocessing import Pipe
 
-from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
+from PyQt5.QtCore import (QThreadPool, QRunnable, pyqtSlot,
+                          QObject, pyqtSignal)
 from PyQt5.QtWidgets import (QAbstractItemView)
 
 from mne_pipeline_hd import QS, ismac
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, \
-    Worker
-from mne_pipeline_hd.pipeline.loading import BaseLoading, FSMRI, \
-    Group, MEEG
+from mne_pipeline_hd.gui.gui_utils import (get_exception_tuple,
+                                           ExceptionTuple, Worker)
+from mne_pipeline_hd.pipeline.loading import (BaseLoading, FSMRI, Group, MEEG)
 from mne_pipeline_hd.pipeline.pipeline_utils import shutdown
 
 
@@ -68,13 +68,15 @@ def get_arguments(func, obj):
         elif arg_name in project_attributes:
             keyword_arguments.update({arg_name: project_attributes[arg_name]})
         elif arg_name in obj.pr.parameters[obj.pr.p_preset]:
-            keyword_arguments.update({arg_name: obj.pr.parameters[obj.pr.p_preset][arg_name]})
+            keyword_arguments.update({arg_name: obj.pr.parameters[
+                obj.pr.p_preset][arg_name]})
         elif arg_name in obj.ct.settings:
             keyword_arguments.update({arg_name: obj.ct.settings[arg_name]})
         elif arg_name in QS().childKeys():
             keyword_arguments.update({arg_name: QS().value(arg_name)})
         else:
-            raise RuntimeError(f'{arg_name} could not be found in Subject, Project or Parameters')
+            raise RuntimeError(f'{arg_name} could not be found '
+                               f'in Subject, Project or Parameters')
 
     # Add additional keyword-arguments if added for function by user
     if func.__name__ in obj.pr.add_kwargs:
@@ -174,13 +176,19 @@ class RunController:
 
     def init_lists(self):
         # Lists dividing the
-        self.meeg_funcs = self.ct.pd_funcs[self.ct.pd_funcs['target'] == 'MEEG']
-        self.fsmri_funcs = self.ct.pd_funcs[self.ct.pd_funcs['target'] == 'FSMRI']
-        self.group_funcs = self.ct.pd_funcs[self.ct.pd_funcs['target'] == 'Group']
-        self.other_funcs = self.ct.pd_funcs[self.ct.pd_funcs['target'] == 'Other']
+        self.meeg_funcs = self.ct.pd_funcs[
+            self.ct.pd_funcs['target'] == 'MEEG']
+        self.fsmri_funcs = self.ct.pd_funcs[
+            self.ct.pd_funcs['target'] == 'FSMRI']
+        self.group_funcs = self.ct.pd_funcs[
+            self.ct.pd_funcs['target'] == 'Group']
+        self.other_funcs = self.ct.pd_funcs[
+            self.ct.pd_funcs['target'] == 'Other']
 
-        # Lists of selected functions divided into object-types (MEEG, FSMRI, ...)
-        self.sel_meeg_funcs = [ff for ff in self.meeg_funcs.index if ff in self.ct.pr.sel_functions]
+        # Lists of selected functions divided into object-types
+        # (MEEG, FSMRI, ...)
+        self.sel_meeg_funcs = [ff for ff in self.meeg_funcs.index
+                               if ff in self.ct.pr.sel_functions]
         self.sel_fsmri_funcs = [mf for mf in self.fsmri_funcs.index if
                                 mf in self.ct.pr.sel_functions]
         self.sel_group_funcs = [gf for gf in self.group_funcs.index if
@@ -188,37 +196,42 @@ class RunController:
         self.sel_other_funcs = [of for of in self.other_funcs.index if
                                 of in self.ct.pr.sel_functions]
 
-        # Get a dict with all objects paired with their functions and their type-definition
-        # Give all objects and functions in all_objects the status 1 (which means pending)
+        # Get a dict with all objects paired with their functions
+        # and their type-definition. Give all objects and functions in
+        # all_objects the status 1 (which means pending)
         if len(self.ct.pr.sel_fsmri) * len(self.sel_fsmri_funcs) != 0:
             for fsmri in self.ct.pr.sel_fsmri:
-                self.all_objects[fsmri] = {'type': 'FSMRI',
-                                           'functions': {x: 1 for x in self.sel_fsmri_funcs},
-                                           'status': 1}
+                self.all_objects[fsmri] = {
+                    'type': 'FSMRI',
+                    'functions': {x: 1 for x in self.sel_fsmri_funcs},
+                    'status': 1}
                 for fsmri_func in self.sel_fsmri_funcs:
                     self.all_steps.append((fsmri, fsmri_func))
 
         if len(self.ct.pr.sel_meeg) * len(self.sel_meeg_funcs) != 0:
             for meeg in self.ct.pr.sel_meeg:
-                self.all_objects[meeg] = {'type': 'MEEG',
-                                          'functions': {x: 1 for x in self.sel_meeg_funcs},
-                                          'status': 1}
+                self.all_objects[meeg] = {
+                    'type': 'MEEG',
+                    'functions': {x: 1 for x in self.sel_meeg_funcs},
+                    'status': 1}
                 for meeg_func in self.sel_meeg_funcs:
                     self.all_steps.append((meeg, meeg_func))
 
         if len(self.ct.pr.sel_groups) * len(self.sel_group_funcs) != 0:
             for group in self.ct.pr.sel_groups:
-                self.all_objects[group] = {'type': 'Group',
-                                           'functions': {x: 1 for x in self.sel_group_funcs},
-                                           'status': 1}
+                self.all_objects[group] = {
+                    'type': 'Group',
+                    'functions': {x: 1 for x in self.sel_group_funcs},
+                    'status': 1}
                 for group_func in self.sel_group_funcs:
                     self.all_steps.append((group, group_func))
 
         if len(self.sel_other_funcs) != 0:
             # blank object-name for other functions
-            self.all_objects[''] = {'type': 'Other',
-                                    'functions': {x: 1 for x in self.sel_other_funcs},
-                                    'status': 1}
+            self.all_objects[''] = {
+                'type': 'Other',
+                'functions': {x: 1 for x in self.sel_other_funcs},
+                'status': 1}
             for other_func in self.sel_other_funcs:
                 self.all_steps.append(('', other_func))
 
@@ -226,23 +239,26 @@ class RunController:
         # Mark current object with status
         self.all_objects[self.current_object.name]['status'] = status
         # Mark current function with status
-        self.all_objects[self.current_object.name]['functions'][self.current_func] = status
+        self.all_objects[self.current_object.name]['functions'][
+            self.current_func] = status
 
     def get_object(self):
         self.current_type = self.all_objects[self.current_obj_name]['type']
 
         # Load object if the preceding object is not the same
-        if not self.current_object or self.current_object.name != self.current_obj_name:
+        if not self.current_object \
+                or self.current_object.name != self.current_obj_name:
             if self.current_type == 'FSMRI':
                 self.current_object = FSMRI(self.current_obj_name, self.ct)
                 self.loaded_fsmri = self.current_object
 
             elif self.current_type == 'MEEG':
-                # Avoid reloading of same MRI-Subject for multiple files (with the same MRI-Subject)
+                # Avoid reloading of same MRI-Subject for multiple files
+                # (with the same MRI-Subject)
                 if self.current_obj_name in self.ct.pr.meeg_to_fsmri \
                         and self.loaded_fsmri \
-                        and self.loaded_fsmri.name == self.ct.pr.meeg_to_fsmri[
-                    self.current_obj_name]:
+                        and self.loaded_fsmri.name == \
+                        self.ct.pr.meeg_to_fsmri[self.current_obj_name]:
                     self.current_object = MEEG(self.current_obj_name, self.ct,
                                                fsmri=self.loaded_fsmri)
                 else:
@@ -253,7 +269,8 @@ class RunController:
                 self.current_object = Group(self.current_obj_name, self.ct)
 
             elif self.current_type == 'Other':
-                self.current_object = BaseLoading(self.current_obj_name, self.ct)
+                self.current_object = BaseLoading(self.current_obj_name,
+                                                  self.ct)
 
     def process_finished(self, result):
         # ToDo: tqdm-progressbar for headless-mode
@@ -305,27 +322,32 @@ class QRunController(RunController):
     def mark_current_items(self, status):
         super().mark_current_items(status)
         obj_idx = list(self.all_objects.keys()).index(self.current_object.name)
-        func_idx = list(self.all_objects[self.current_object.name]['functions'].keys()
-                        ).index(self.current_func)
+        func_idx = list(self.all_objects[self.current_object.name]
+                        ['functions'].keys()).index(self.current_func)
         # Notify Object-Model of change
         self.rd.object_model.layoutChanged.emit()
         # Scroll to current object
-        self.rd.object_view.scrollTo(self.rd.object_model.createIndex(obj_idx, 0),
-                                     QAbstractItemView.PositionAtCenter)
+        self.rd.object_view.scrollTo(
+            self.rd.object_model.createIndex(obj_idx, 0),
+            QAbstractItemView.PositionAtCenter)
         # Notify Function-Model of change
         self.rd.func_model.layoutChanged.emit()
         # Scroll to current function
-        self.rd.func_view.scrollTo(self.rd.func_model.createIndex(func_idx, 0),
-                                   QAbstractItemView.PositionAtCenter)
+        self.rd.func_view.scrollTo(
+            self.rd.func_model.createIndex(func_idx, 0),
+            QAbstractItemView.PositionAtCenter)
 
     def get_object(self):
         old_obj_name = self.current_obj_name
         super().get_object()
         # Print Headline for object if new
         if old_obj_name != self.current_obj_name:
-            self.rd.console_widget.write_html(f'<br><h1>{self.current_obj_name}</h1><br>')
-        # Load functions for object into func_model (which displays functions in func_view)
-        self.current_all_funcs = self.all_objects[self.current_obj_name]['functions']
+            self.rd.console_widget.write_html(
+                f'<br><h1>{self.current_obj_name}</h1><br>')
+        # Load functions for object into func_model
+        # (which displays functions in func_view)
+        self.current_all_funcs = self.all_objects[
+            self.current_obj_name]['functions']
         self.rd.func_model._data = self.current_all_funcs
         self.rd.func_model.layoutChanged.emit()
 
@@ -346,12 +368,15 @@ class QRunController(RunController):
             self.rd.close_bt.setEnabled(True)
         else:
             if isinstance(result, ExceptionTuple):
-                error_cause = f'{self.error_count}: {self.current_object.name} <- {self.current_func}'
+                error_cause = f'{self.error_count}: ' \
+                              f'{self.current_object.name} ' \
+                              f'<- {self.current_func}'
                 self.errors[error_cause] = (result, self.error_count)
                 # Update Error-Widget
                 self.rd.error_widget.replace_data(list(self.errors.keys()))
 
-                # Insert Error-Number into console-widget as an anchor for later inspection
+                # Insert Error-Number into console-widget as an anchor
+                # for later inspection
                 self.rd.console_widget.write_html(
                     f'<a name=\"{self.error_count}\" href={self.error_count}>'
                     f'<i>Error No.{self.error_count}</i><br></a>')
@@ -376,7 +401,8 @@ class QRunController(RunController):
     def start(self):
         kwds = self.prepare_start()
         if kwds:
-            # Plot functions with interactive plots currently can't run in a separate thread, so they
+            # Plot functions with interactive plots currently can't
+            # run in a separate thread, so they
             #  excuted in the main thread
             ismayavi = self.ct.pd_funcs.loc[self.current_func, 'mayavi']
             ismpl = self.ct.pd_funcs.loc[self.current_func, 'matplotlib']
@@ -401,9 +427,12 @@ class QRunController(RunController):
                 recv_pipe, send_pipe = Pipe(False)
                 kwds['pipe'] = send_pipe
                 stream_rcv = StreamReceiver(recv_pipe)
-                stream_rcv.signals.stdout_received.connect(self.rd.console_widget.write_stdout)
-                stream_rcv.signals.stderr_received.connect(self.rd.console_widget.write_stderr)
-                stream_rcv.signals.progress_received.connect(self.rd.console_widget.write_progress)
+                stream_rcv.signals.stdout_received.connect(
+                    self.rd.console_widget.write_stdout)
+                stream_rcv.signals.stderr_received.connect(
+                    self.rd.console_widget.write_stderr)
+                stream_rcv.signals.progress_received.connect(
+                    self.rd.console_widget.write_progress)
                 QThreadPool.globalInstance().start(stream_rcv)
                 # ToDO: MP
                 self.pool.apply_async(func=run_func, kwds=kwds,

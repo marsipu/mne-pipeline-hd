@@ -30,8 +30,8 @@ from mne_pipeline_hd import QS
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
-from mne_pipeline_hd.pipeline.pipeline_utils import TypedJSONEncoder, \
-    type_json_hook
+from mne_pipeline_hd.pipeline.pipeline_utils import (TypedJSONEncoder,
+                                                     type_json_hook)
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',
                 'raw_filtered': 'sample_audvis_filt-0-40_raw.fif',
@@ -41,7 +41,7 @@ sample_paths = {'raw': 'sample_audvis_raw.fif',
                 'evoked': 'sample_audvis-ave.fif',
                 'trans': 'sample_audvis_raw-trans.fif',
                 'noise_cov': 'sample_audvis-cov.fif',
-                'Invers Operator': 'sample_audvis-meg-oct-6-meg-inv.fif'}
+                'inverse': 'sample_audvis-meg-oct-6-meg-inv.fif'}
 
 test_data_paths = {'raw': 'test_raw.fif',
                    'events': 'test-eve.fif',
@@ -50,23 +50,38 @@ test_data_paths = {'raw': 'test_raw.fif',
 
 
 def _copy_test_file(data_type, self, source):
-    if source == 'sample':
+    if source == '_sample_':
         test_data_folder = join(mne.datasets.sample.data_path(), 'MEG',
                                 'sample')
-        test_file_name = sample_paths[data_type]
-    elif source == 'test':
+        test_file_dict = sample_paths
+    elif source == '_test_':
         test_data_folder = join(dirname(mne.__file__), 'io', 'tests', 'data')
-        test_file_name = test_data_paths[data_type]
+        test_file_dict = test_data_paths
     else:
         logging.warning(f'No test-file from "{source}" for "{data_type}"!')
         return
-    test_file_path = join(test_data_folder, test_file_name)
-    file_path = self.io_dict[data_type]['path']
+    if data_type in test_file_dict:
+        test_file_name = test_file_dict[data_type]
+        test_file_path = join(test_data_folder, test_file_name)
+        file_path = self.io_dict[data_type]['path']
 
-    if isfile(test_file_path) and not isfile(file_path):
-        print(f'Copying {data_type} from sample-dataset...')
-        shutil.copy2(test_file_path, file_path)
-        print('Done!')
+        if isfile(test_file_path) and not isfile(file_path):
+            print(f'Copying {data_type} from sample-dataset...')
+            folder = Path(file_path).parent
+            if not isdir(folder):
+                os.mkdir(folder)
+            shutil.copy2(test_file_path, file_path)
+            print('Done!')
+        else:
+            logging.warning(f'File for {data_type} could not be '
+                            f'copied for {source}')
+    else:
+        if data_type == 'erm' and not isfile(self.erm_path):
+            shutil.copy2(self.raw_path, self.erm_path)
+        elif data_type == 'trans' and not isfile(self.trans_path):
+            trans_file = join(dirname(mne.__file__), 'data', 'fsaverage',
+                              'fsaverage-trans.fif')
+            shutil.copy2(trans_file, self.trans_path)
 
 
 def _get_data_type_from_func(self, func, method):
@@ -92,8 +107,8 @@ def load_decorator(load_func):
         data_type = _get_data_type_from_func(self, load_func, 'load')
         print(f'Loading {data_type} for {self.name}')
 
-        if self.name == '_sample_':
-            _copy_test_file(data_type, self, source='sample')
+        if self.name == '_sample_' or self.name == '_test_':
+            _copy_test_file(data_type, self, source=self.name)
 
         if data_type in self.data_dict:
             data = self.data_dict[data_type]
@@ -621,6 +636,8 @@ class MEEG(BaseLoading):
 
         # Main save directory
         self.save_dir = join(self.pr.data_path, self.name)
+        if not isdir(self.save_dir):
+            os.mkdir(self.save_dir)
 
         # Data-Paths
         self.raw_path = join(self.save_dir, f'{self.name}-raw.fif')
@@ -797,11 +814,16 @@ class MEEG(BaseLoading):
         self.pr.all_erm.append('ernoise')
         self.erm = 'ernoise'
         self.pr.meeg_to_erm[self.name] = self.erm
+        self.init_paths()
+        for data_type in sample_paths:
+            _copy_test_file(data_type, self, '_sample_')
         self.bad_channels = self.load_info()['bads']
         self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
     def init_test_data(self):
         # Init paths for dataset in mne.io.tests.data
+        for data_type in test_data_paths:
+            _copy_test_file(data_type, self, '_test_')
         self.pr.all_meeg.append(self.name)
         self.bad_channels = self.load_info()['bads']
         self.pr.meeg_bad_channels[self.name] = self.bad_channels
@@ -1182,6 +1204,8 @@ class FSMRI(BaseLoading):
     def init_paths(self):
         # Main Path
         self.save_dir = join(self.subjects_dir, self.name)
+        if not isdir(self.save_dir):
+            os.mkdir(self.save_dir)
 
         # Data-Paths
         self.src_path = join(self.save_dir, 'bem',
@@ -1283,6 +1307,8 @@ class Group(BaseLoading):
     def init_paths(self):
         # Main Path
         self.save_dir = self.pr.save_dir_averages
+        if not isdir(self.save_dir):
+            os.mkdir(self.save_dir)
 
         # Data Paths
         self.ga_evokeds_paths = {trial: join(self.save_dir, 'evokeds',

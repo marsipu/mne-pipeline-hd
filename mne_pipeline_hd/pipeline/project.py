@@ -9,12 +9,14 @@ License: GPL-3.0
 
 import json
 import os
+import shutil
 from ast import literal_eval
 from copy import deepcopy
 from os import listdir, makedirs
 from os.path import exists, getsize, isfile, join
 from pathlib import Path
 
+import mne
 import numpy as np
 
 from mne_pipeline_hd.pipeline.legacy import renamed_parameters
@@ -330,6 +332,63 @@ class Project:
             except json.JSONDecodeError as err:
                 print(f'There is a problem with path:\n'
                       f'{err}')
+
+    def add_meeg(self, name, file_path, file_type=None, is_erm=False):
+        raw = mne.io.read_raw(file_path, preload=True)
+
+        if is_erm:
+            # Organize Empty-Room-FIles
+            self.all_erm.append(name)
+        else:
+            # Organize other files
+            self.all_meeg.append(name)
+
+        # Copy sub_files to destination (with MEEG-Class
+        # to also include raw into file_parameters)
+        meeg = MEEG(name, self.ct)
+
+        # Get bad-channels from raw-file
+        loaded_bads = raw.info['bads']
+        if len(loaded_bads) > 0:
+            self.meeg_bad_channels[name] = raw.info['bads']
+
+        meeg.save_raw(raw)
+
+    def remove_meeg(self, remove_files):
+        for meeg in self.sel_meeg:
+            # Remove MEEG from Lists/Dictionaries
+            self.all_meeg.remove(meeg)
+            self.meeg_to_erm.pop(meeg, None)
+            self.meeg_to_fsmri.pop(meeg, None)
+            self.meeg_bad_channels.pop(meeg, None)
+            self.meeg_event_id.pop(meeg, None)
+            if remove_files:
+                try:
+                    remove_path = join(self.data_path, meeg)
+                    shutil.rmtree(remove_path)
+                    print(f'Succesful removed {remove_path}')
+                except FileNotFoundError:
+                    print(join(self.data_path, meeg) + ' not found!')
+        self.sel_meeg.clear()
+
+    def add_fsmri(self):
+        pass
+
+    def remove_fsmri(self, remove_files):
+        for fsmri in self.sel_fsmri:
+            self.all_fsmri.remove(fsmri)
+            if remove_files:
+                try:
+                    shutil.rmtree(join(self.ct.subjects_dir, fsmri))
+                except FileNotFoundError:
+                    print(join(self.ct.subjects_dir, fsmri) + ' not found!')
+        self.sel_fsmri.clear()
+
+    def add_group(self):
+        pass
+
+    def remove_group(self):
+        pass
 
     def check_data(self):
 

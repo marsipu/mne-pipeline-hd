@@ -354,7 +354,7 @@ class MainWindow(QMainWindow):
                                        description='Check to overwrite files'
                                                    ' even if their parameters '
                                                    'where unchanged.',
-                                       default=False))
+                                       groupbox_layout=False))
         self.toolbar.addWidget(BoolGui(data=self.ct.settings,
                                        name='show_plots', alias='Show Plots',
                                        description='Do you want to show'
@@ -362,18 +362,20 @@ class MainWindow(QMainWindow):
                                                    '(or just save them without'
                                                    ' showing, then just check'
                                                    ' "Save Plots").',
-                                       default=True))
+
+                                       groupbox_layout=False))
         self.toolbar.addWidget(BoolGui(data=self.ct.settings,
                                        name='save_plots', alias='Save Plots',
                                        description='Do you want to save the '
                                                    'plots made to a file?',
-                                       default=True))
+                                       groupbox_layout=False))
         self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='shutdown',
                                        alias='Shutdown',
                                        description='Do you want to shut your '
                                                    'system down after '
                                                    ' execution of all '
-                                                   'subjects?'))
+                                                   'subjects?',
+                                       groupbox_layout=False))
         close_all_bt = QPushButton('Close All Plots')
         close_all_bt.pressed.connect(close_all)
         self.toolbar.addWidget(close_all_bt)
@@ -386,7 +388,8 @@ class MainWindow(QMainWindow):
         self.tab_func_widget = QTabWidget()
         self.general_layout.addWidget(self.tab_func_widget, 0, 0, 1, 3)
 
-        # Show already here to get the width of tab_func_widget to fit the function-groups inside
+        # Show already here to get the width of tab_func_widget to fit
+        # the function-groups inside
         self.show()
         self.general_layout.invalidate()
 
