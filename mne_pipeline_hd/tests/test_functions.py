@@ -6,9 +6,12 @@ Pipeline-GUI for Analysis with MNE-Python
 @github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
-from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.pipeline.function_utils import RunController
 
 
-def test_all_functions(tmpdir):
-    ct = Controller(home_path=tmpdir, selected_project='test')
-    # ToDo: Determine Run-Order with dependencies
+def test_all_functions(controller):
+    controller.pr.sel_functions = list(controller.pd_funcs.index)
+    controller.sel_meeg = ['_sample_', '_test_']
+    controller.sel_fsmri = ['fsmri']
+    rc = RunController(controller)
+    rc.start()

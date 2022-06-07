@@ -196,10 +196,14 @@ def restart_program():
     os.execl(python, python, *sys.argv)
 
 
-def _get_available_parc(ct, fsmri):
-    annot_dir = join(ct.subjects_dir, fsmri, 'label')
-    files = os.listdir(annot_dir)
-    annotations = set([file[3:-6] for file in files if file[-6:] == '.annot'])
+def _get_available_parc(ct, name):
+    annot_dir = join(ct.subjects_dir, name, 'label')
+    try:
+        files = os.listdir(annot_dir)
+        annotations = list(
+            set([file[3:-6] for file in files if file[-6:] == '.annot']))
+    except FileNotFoundError:
+        annotations = list()
 
     return annotations
 

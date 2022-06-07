@@ -31,7 +31,8 @@ from mne_pipeline_hd import QS
 # LOADING FUNCTIONS
 # ==============================================================================
 from mne_pipeline_hd.pipeline.pipeline_utils import (TypedJSONEncoder,
-                                                     type_json_hook)
+                                                     type_json_hook,
+                                                     _get_available_parc)
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',
                 'raw_filtered': 'sample_audvis_filt-0-40_raw.fif',
@@ -48,6 +49,11 @@ test_data_paths = {'raw': 'test_raw.fif',
                    'evoked': 'test-ave.fif',
                    'noise_cov': 'test-cov.fif'}
 
+fsaverage_paths = {'src': 'fsaverage-ico-5-src.fif',
+                   'bem_model': 'fsaverage-5120-5120-5120-bem.fif',
+                   'bem_solution': 'fsaverage-5120-5120-5120-bem-sol.fif',
+                   'volume_src': 'fsaverage-vol-5-src.fif'}
+
 
 def _copy_test_file(data_type, self, source):
     if source == '_sample_':
@@ -57,6 +63,9 @@ def _copy_test_file(data_type, self, source):
     elif source == '_test_':
         test_data_folder = join(dirname(mne.__file__), 'io', 'tests', 'data')
         test_file_dict = test_data_paths
+    elif source == 'fsaverage':
+        test_data_folder = join(self.subjects_dir, self.name)
+        test_file_dict = fsaverage_paths
     else:
         logging.warning(f'No test-file from "{source}" for "{data_type}"!')
         return
@@ -107,7 +116,7 @@ def load_decorator(load_func):
         data_type = _get_data_type_from_func(self, load_func, 'load')
         print(f'Loading {data_type} for {self.name}')
 
-        if self.name == '_sample_' or self.name == '_test_':
+        if self.name in ['_sample_', '_test_', 'fsaverage']:
             _copy_test_file(data_type, self, source=self.name)
 
         if data_type in self.data_dict:
@@ -117,7 +126,22 @@ def load_decorator(load_func):
             try:
                 data = load_func(self, *args, **kwargs)
             except (FileNotFoundError, OSError) as err:
-                if self.p_preset != 'Default':
+                deprc_path = self.deprecated_paths.get(data_type, '')
+                if isfile(deprc_path):
+                    new_path = self.io_dict[data_type]['path']
+                    self.io_dict[data_type]['path'] = deprc_path
+                    data = load_func(self, *args, **kwargs)
+                    self.io_dict[data_type]['path'] = new_path
+                    logging.info(f'Deprecated path: Saving file for '
+                                 f'{data_type} in updated path...')
+                    # Save data with new path
+                    save_func = self.io_dict[data_type]['save']
+                    # Does only support save-functions with no extra args
+                    save_func(self, data)
+                    # Remove deprecated path
+                    os.remove(deprc_path)
+
+                elif self.p_preset != 'Default':
                     print(f'No File for {data_type} from {self.name}'
                           f' with Parameter-Preset={self.p_preset} found,'
                           f' trying Default')
@@ -130,10 +154,6 @@ def load_decorator(load_func):
 
                     self.p_preset = actual_p_preset
                     self.init_paths()
-                elif data_type in self.deprecated_paths:
-                    self.io_dict[data_type]['path'] = self.deprecated_paths[
-                        data_type]
-                    data = load_func(*args, **kwargs)
                 else:
                     raise err
 
@@ -810,7 +830,6 @@ class MEEG(BaseLoading):
 
     def init_sample(self):
         # Add _sample_ to project and update attributes
-        self.pr.all_meeg.append(self.name)
         self.pr.all_erm.append('ernoise')
         self.erm = 'ernoise'
         self.pr.meeg_to_erm[self.name] = self.erm
@@ -824,7 +843,6 @@ class MEEG(BaseLoading):
         # Init paths for dataset in mne.io.tests.data
         for data_type in test_data_paths:
             _copy_test_file(data_type, self, '_test_')
-        self.pr.all_meeg.append(self.name)
         self.bad_channels = self.load_info()['bads']
         self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
@@ -1193,6 +1211,9 @@ class FSMRI(BaseLoading):
     def __init__(self, name, controller):
         if name is None:
             name = 'None'
+        elif name == 'fsaverage':
+            logging.info('Downloading fsaverage...')
+            mne.datasets.fetch_fsaverage(subjects_dir=controller.subjects_dir)
 
         super().__init__(name, controller)
 
@@ -1208,15 +1229,18 @@ class FSMRI(BaseLoading):
             os.mkdir(self.save_dir)
 
         # Data-Paths
-        self.src_path = join(self.save_dir, 'bem',
-                             f'{self.name}_{self.pa["src_spacing"]}-src.fif')
-        # Todo: Bem-Paths with number of vertices in layers
-        self.bem_model_path = join(self.save_dir, 'bem',
-                                   f'{self.name}-bem.fif')
-        self.bem_solution_path = join(self.save_dir, 'bem',
-                                      f'{self.name}-bem-sol.fif')
-        self.vol_src_path = join(self.save_dir, 'bem',
-                                 f'{self.name}-vol-src.fif')
+        self.src_path = join(
+            self.save_dir, 'bem',
+            f'{self.name}_{self.p_preset}_{self.pa["src_spacing"]}-src.fif')
+        self.bem_model_path = join(
+            self.save_dir, 'bem',
+            f'{self.name}_{self.p_preset}-bem.fif')
+        self.bem_solution_path = join(
+            self.save_dir, 'bem',
+            f'{self.name}_{self.p_preset}-bem-sol.fif')
+        self.vol_src_path = join(
+            self.save_dir, 'bem',
+            f'{self.name}_{self.p_preset}-vol-src.fif')
 
         # This dictionary contains entries for each data-type
         # which is loaded to/saved from disk
@@ -1235,7 +1259,19 @@ class FSMRI(BaseLoading):
                            'save': self.save_volume_source_space}
         }
 
-        self.deprecated_paths = {}
+        self.deprecated_paths = {
+            'src': join(self.save_dir, 'bem',
+                        f'{self.name}_{self.pa["src_spacing"]}-src.fif'),
+            'bem_model': join(self.save_dir, 'bem',
+                              f'{self.name}-bem.fif'),
+            'bem_solution': join(self.save_dir, 'bem',
+                                 f'{self.name}-bem-sol.fif'),
+            'volume_src': join(self.save_dir, 'bem',
+                               f'{self.name}-vol-src.fif')
+        }
+        # Initialize Parcellations
+        if self.name != 'None':
+            self.parcellations = _get_available_parc(self.ct, self.name)
 
     ###########################################################################
     # Load- & Save-Methods

@@ -31,7 +31,7 @@ from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
 from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
                                            get_exception_tuple,
-                                           get_user_input_string)
+                                           get_user_input_string, center)
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.pipeline_utils import (_get_available_parc)
 
@@ -144,10 +144,10 @@ class Param(QWidget):
 
     def groupbox_toggled(self, checked):
         if checked:
-            self.get_param()
+            self._get_param()
         else:
             self.param_value = None
-        self.set_param()
+        self._set_param()
         self.save_param()
 
     def check_groupbox_state(self):
@@ -164,6 +164,26 @@ class Param(QWidget):
                 self.group_box.setChecked(True)
                 self.param_value = saved_value
                 self.save_param()
+
+    def _get_param(self):
+        """Get current parameter value from gui."""
+        self.param_value = self.get_value()
+        self.paramChanged.emit(self.param_value)
+        self.save_param()
+
+    def _set_param(self):
+        """Set current parameter value to gui."""
+        self.check_groupbox_state()
+        if self.param_value is not None:
+            self.set_value(self.param_value)
+
+    def set_param(self, value):
+        """Set parameter externally to gui and parameters."""
+        self.param_value = value
+        self._set_param()
+        if value is not None:
+            # Read from widget to get value e.g. inside min/max-bounds
+            self._get_param()
 
     def read_param(self):
         # get data from dictionary
@@ -230,29 +250,23 @@ class IntGui(Param):
             self.param_widget.setSpecialValueText(special_value_text)
         if self.param_unit:
             self.param_widget.setSuffix(f' {self.param_unit}')
-        self.param_widget.valueChanged.connect(self.get_param)
+        self.param_widget.valueChanged.connect(self._get_param)
 
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QHBoxLayout()
         layout.addWidget(self.param_widget)
         self.init_ui(layout)
 
-    def set_param(self):
-        self.check_groupbox_state()
-        if self.param_value is not None:
-            self.param_widget.setValue(int(self.param_value))
+    def set_value(self, value):
+        self.param_widget.setValue(int(value))
 
-    def get_param(self):
-        self.param_value = self.param_widget.value()
-        self.paramChanged.emit(self.param_value)
-        self.save_param()
-
-        return self.param_value
+    def get_value(self):
+        return self.param_widget.value()
 
 
 class FloatGui(Param):
@@ -286,28 +300,23 @@ class FloatGui(Param):
             f'MinValue = {min_val}\nMaxVal = {max_val}')
         if self.param_unit:
             self.param_widget.setSuffix(f' {self.param_unit}')
-        self.param_widget.valueChanged.connect(self.get_param)
+        self.param_widget.valueChanged.connect(self._get_param)
 
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QHBoxLayout()
         layout.addWidget(self.param_widget)
         self.init_ui(layout)
 
-    def set_param(self):
-        self.check_groupbox_state()
-        if self.param_value is not None:
-            self.param_widget.setValue(float(self.param_value))
+    def set_value(self, value):
+        self.param_widget.setValue(float(value))
 
-    def get_param(self):
-        self.param_value = self.param_widget.value()
-        self.save_param()
-
-        return self.param_value
+    def get_value(self):
+        return self.param_widget.value()
 
 
 class StringGui(Param):
@@ -320,40 +329,31 @@ class StringGui(Param):
 
         Parameters
         ----------
-        input_mask : str | None
-            Define a string as in https://doc.qt.io/qt-5/qlineedit.html#inputMask-prop
         **kwargs
             All the parameters fo :method:`~Param.__init__` go here.
         """
 
         super().__init__(**kwargs)
         self.param_widget = QLineEdit()
-        if input_mask:
-            self.param_widget.setInputMask(input_mask)
-        self.param_widget.textChanged.connect(self.get_param)
+        self.param_widget.textChanged.connect(self._get_param)
 
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QHBoxLayout()
         layout.addWidget(self.param_widget)
         if self.param_unit is not None:
             layout.addWidget(QLabel(self.param_unit))
         self.init_ui(layout)
 
-    def set_param(self):
-        self.check_groupbox_state()
-        if self.param_value is not None:
-            self.param_widget.setText(self.param_value)
+    def set_value(self, value):
+        self.param_widget.setText(value)
 
-    def get_param(self):
-        self.param_value = self.param_widget.text()
-        self.save_param()
-
-        return self.param_value
+    def get_value(self):
+        return self.param_widget.text()
 
 
 class FuncGui(Param):
@@ -374,14 +374,11 @@ class FuncGui(Param):
             'Use of functions also allowed '
             '(from already imported modules + numpy as np)\n'
             'Be carefull as everything entered will be executed!')
-        self.param_widget.editingFinished.connect(self.get_param)
+        self.param_widget.editingFinished.connect(self._get_param)
 
         self.display_widget = QLabel()
-
-        self.read_param()
         self.init_func_layout()
-        self.set_param()
-        self.save_param()
+        super().__init__(**kwargs)
 
     def init_func_layout(self):
         func_layout = QGridLayout()
@@ -395,24 +392,20 @@ class FuncGui(Param):
             func_layout.addWidget(QLabel(self.param_unit))
         self.init_ui(func_layout)
 
-    def set_param(self):
-        self.check_groupbox_state()
-        if self.param_value is not None:
-            self.param_widget.setText(str(self.param_exp))
-            self.display_widget.setText(str(self.param_value)[:20])
+    def set_value(self, value):
+        self.param_widget.setText(str(self.param_exp))
+        self.display_widget.setText(str(value)[:20])
 
-    def get_param(self):
+    def get_value(self):
         self.param_exp = self.param_widget.text()
         try:
-            self.param_value = eval(self.param_exp, {'np': np})
-            self.display_widget.setText(str(self.param_value)[:20])
+            value = eval(self.param_exp, {'np': np})
+            self.display_widget.setText(str(value)[:20])
+            return value
         except (NameError, SyntaxError) as err:
             self.display_widget.setText(str(err)[:20])
             self.param_value = None
             return None
-        else:
-            self.save_param()
-            return self.param_value
 
     def read_param(self):
         # Get not only param_value, but also param_exp storing
@@ -455,40 +448,27 @@ class BoolGui(Param):
         super().__init__(**kwargs)
         self.return_integer = return_integer
         self.param_widget = QCheckBox()
-        self.param_widget.toggled.connect(self.get_param)
+        self.param_widget.toggled.connect(self._get_param)
 
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QVBoxLayout()
         layout.addWidget(self.param_widget)
         self.init_ui(layout)
 
-    def set_param(self):
-        if self.param_value is not None:
-            if self.param_value:
-                self.param_widget.setChecked(True)
-            else:
-                self.param_widget.setChecked(False)
+    def set_value(self, value):
+        self.param_widget.setChecked(bool(value))
 
-    def get_param(self):
-        if self.param_widget.isChecked():
-            if self.return_integer:
-                self.param_value = 1
-            else:
-                self.param_value = True
-        else:
-            if self.return_integer:
-                self.param_value = 0
-            else:
-                self.param_value = False
-        self.paramChanged.emit(self.param_value)
-        self.save_param()
+    def get_value(self):
+        value = self.param_widget.isChecked()
+        if self.return_integer:
+            value = 1 if value else 0
 
-        return self.param_value
+        return value
 
 
 class TupleGui(Param):
@@ -532,18 +512,18 @@ class TupleGui(Param):
         self.param_widget1.setSingleStep(step)
         if self.param_unit:
             self.param_widget1.setSuffix(f' {self.param_unit}')
-        self.param_widget1.valueChanged.connect(self.get_param)
+        self.param_widget1.valueChanged.connect(self._get_param)
 
         self.param_widget2.setMinimum(min_val)
         self.param_widget2.setMaximum(max_val)
         self.param_widget2.setSingleStep(step)
         if self.param_unit:
             self.param_widget2.setSuffix(f' {self.param_unit}')
-        self.param_widget2.valueChanged.connect(self.get_param)
+        self.param_widget2.valueChanged.connect(self._get_param)
 
         self.read_param()
         self.init_tuple_layout()
-        self.set_param()
+        self._set_param()
         self.save_param()
 
     def init_tuple_layout(self):
@@ -552,22 +532,15 @@ class TupleGui(Param):
         tuple_layout.addWidget(self.param_widget2)
         self.init_ui(tuple_layout)
 
-    def set_param(self):
+    def set_value(self, value):
         # Signal valueChanged is already emitted after first setValue,
         # which leads to second param_value being 0 without being
         # preserved in self.loaded_value
-        self.check_groupbox_state()
-        if self.param_value is not None:
-            self.loaded_value = self.param_value
-            self.param_widget1.setValue(self.loaded_value[0])
-            self.param_widget2.setValue(self.loaded_value[1])
+        self.param_widget1.setValue(value[0])
+        self.param_widget2.setValue(value[1])
 
-    def get_param(self):
-        self.param_value = (
-            self.param_widget1.value(), self.param_widget2.value())
-        self.save_param()
-
-        return self.param_value
+    def get_value(self):
+        return (self.param_widget1.value(), self.param_widget2.value())
 
 
 class ComboGui(Param):
@@ -587,7 +560,7 @@ class ComboGui(Param):
         super().__init__(**kwargs)
         self.options = options
         self.param_widget = QComboBox()
-        self.param_widget.activated.connect(self.get_param)
+        self.param_widget.activated.connect(self._get_param)
         for option in self.options:
             if isinstance(self.options, dict):
                 self.param_widget.addItem(str(self.options[option]))
@@ -595,39 +568,36 @@ class ComboGui(Param):
                 self.param_widget.addItem(str(option))
 
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QHBoxLayout()
         layout.addWidget(self.param_widget)
         if self.param_unit is not None:
             layout.addWidget(QLabel(self.param_unit))
         self.init_ui(layout)
 
-    def set_param(self):
-        self.check_groupbox_state()
-        if self.param_value is not None:
-            if isinstance(self.options, dict):
-                self.param_widget.setCurrentText(
-                    str(self.options[self.param_value]))
-            else:
-                self.param_widget.setCurrentText(str(self.param_value))
+    def set_value(self, value):
+        if isinstance(self.options, dict):
+            self.param_widget.setCurrentText(
+                str(self.options[value]))
+        else:
+            self.param_widget.setCurrentText(str(value))
 
-    def get_param(self):
+    def get_value(self):
         if isinstance(self.options, dict):
             text = [key for key, value in self.options.items()
                     if value == self.param_widget.currentText()][0]
         else:
             text = self.param_widget.currentText()
         try:
-            self.param_value = literal_eval(text)
+            value = literal_eval(text)
         except (SyntaxError, ValueError):
-            self.param_value = text
-        self.save_param()
+            value = text
 
-        return self.param_value
+        return value
 
 
 class ListDialog(QDialog):
@@ -635,10 +605,10 @@ class ListDialog(QDialog):
         super().__init__(paramw)
         self.paramw = paramw
 
-        self.init_layout()
+        self._init_layout()
         self.open()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QVBoxLayout()
         layout.addWidget(EditList(self.paramw.param_value))
         close_bt = QPushButton('Close')
@@ -647,7 +617,7 @@ class ListDialog(QDialog):
         self.setLayout(layout)
 
     def closeEvent(self, event):
-        self.paramw.set_param()
+        self.paramw._set_param()
         self.paramw.save_param()
         event.accept()
 
@@ -672,11 +642,11 @@ class ListGui(Param):
         self.cached_value = None
 
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         list_layout = QHBoxLayout()
 
         self.value_label = QLabel()
@@ -690,16 +660,16 @@ class ListGui(Param):
 
         self.init_ui(list_layout)
 
-    def set_param(self):
-        if self.param_value is not None:
-            self.cached_value = self.param_value
+    def set_value(self, value):
+        if value is not None:
+            self.cached_value = value
         self.check_groupbox_state()
-        if self.param_value is not None:
+        if value is not None:
             if self.param_unit:
                 val_str = ', '.join(
-                    [f'{item} {self.param_unit}' for item in self.param_value])
+                    [f'{item} {self.param_unit}' for item in value])
             else:
-                val_str = ', '.join([str(item) for item in self.param_value])
+                val_str = ', '.join([str(item) for item in value])
             if len(val_str) >= self.value_string_length:
                 self.value_label.setText(
                     f'{val_str[:self.value_string_length]} ...')
@@ -708,16 +678,17 @@ class ListGui(Param):
         else:
             self.value_label.setText('None')
 
-    def get_param(self):
+    def get_value(self):
         if self.param_value is None:
             if self.cached_value is not None:
-                self.param_value = self.cached_value
+                value = self.cached_value
             else:
-                self.param_value = list()
+                value = list()
             self.value_label.clear()
-        self.save_param()
+        else:
+            value = self.param_value
 
-        return self.param_value
+        return value
 
 
 class CheckListDialog(QDialog):
@@ -725,10 +696,10 @@ class CheckListDialog(QDialog):
         super().__init__(paramw)
         self.paramw = paramw
 
-        self.init_layout()
+        self._init_layout()
         self.open()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QVBoxLayout()
         layout.addWidget(CheckList(data=self.paramw.options,
                                    checked=self.paramw.param_value,
@@ -741,7 +712,7 @@ class CheckListDialog(QDialog):
         self.setLayout(layout)
 
     def closeEvent(self, event):
-        self.paramw.set_param()
+        self.paramw._set_param()
         self.paramw.save_param()
         event.accept()
 
@@ -779,11 +750,11 @@ class CheckListGui(Param):
         self.cached_value = None
 
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         check_list_layout = QHBoxLayout()
 
         self.value_label = QLabel()
@@ -797,16 +768,16 @@ class CheckListGui(Param):
 
         self.init_ui(check_list_layout)
 
-    def set_param(self):
-        if self.param_value is not None:
-            self.cached_value = self.param_value
+    def set_value(self, value):
+        if value is not None:
+            self.cached_value = value
         self.check_groupbox_state()
-        if self.param_value is not None:
+        if value is not None:
             if self.param_unit:
                 val_str = ', '.join(
-                    [f'{item} {self.param_unit}' for item in self.param_value])
+                    [f'{item} {self.param_unit}' for item in value])
             else:
-                val_str = ', '.join([str(item) for item in self.param_value])
+                val_str = ', '.join([str(item) for item in value])
             if len(val_str) >= self.value_string_length:
                 self.value_label.setText(
                     f'{val_str[:self.value_string_length]} ...')
@@ -815,16 +786,17 @@ class CheckListGui(Param):
         else:
             self.value_label.setText('None')
 
-    def get_param(self):
+    def get_value(self):
         if self.param_value is None:
             if self.cached_value:
-                self.param_value = self.cached_value
+                value = self.cached_value
             else:
-                self.param_value = list()
+                value = list()
             self.value_label.clear()
-        self.save_param()
+        else:
+            value = self.param_value
 
-        return self.param_value
+        return value
 
 
 class DictDialog(QDialog):
@@ -832,10 +804,10 @@ class DictDialog(QDialog):
         super().__init__(paramw)
         self.paramw = paramw
 
-        self.init_layout()
+        self._init_layout()
         self.open()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QVBoxLayout()
         layout.addWidget(EditDict(self.paramw.param_value))
         close_bt = QPushButton('Close')
@@ -844,7 +816,7 @@ class DictDialog(QDialog):
         self.setLayout(layout)
 
     def closeEvent(self, event):
-        self.paramw.set_param()
+        self.paramw._set_param()
         self.paramw.save_param()
         event.accept()
 
@@ -870,11 +842,11 @@ class DictGui(Param):
         self.cached_value = None
 
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         dict_layout = QHBoxLayout()
 
         self.value_label = QLabel()
@@ -888,18 +860,18 @@ class DictGui(Param):
 
         self.init_ui(dict_layout)
 
-    def set_param(self):
-        if self.param_value is not None:
-            self.cached_value = self.param_value
+    def set_value(self, value):
+        if value is not None:
+            self.cached_value = value
         self.check_groupbox_state()
-        if self.param_value is not None:
+        if value is not None:
             if self.param_unit:
                 val_str = ', '.join(
                     [f'{key} {self.param_unit}: {value} {self.param_unit}'
-                     for key, value in self.param_value.items()])
+                     for key, value in value.items()])
             else:
                 val_str = ', '.join([f'{key}: {value}' for key, value in
-                                     self.param_value.items()])
+                                     value.items()])
             if len(val_str) > self.value_string_length:
                 self.value_label.setText(
                     f'{val_str[:self.value_string_length]} ...')
@@ -908,16 +880,17 @@ class DictGui(Param):
         else:
             self.value_label.setText('None')
 
-    def get_param(self):
+    def get_value(self):
         if self.param_value is None:
             if self.cached_value:
-                self.param_value = self.cached_value
+                value = self.cached_value
             else:
-                self.param_value = dict()
+                value = dict()
             self.value_label.clear()
-        self.save_param()
+        else:
+            value = self.param_value
 
-        return self.param_value
+        return value
 
 
 class SliderGui(Param):
@@ -955,10 +928,11 @@ class SliderGui(Param):
             self.param_widget.setMaximum(self.max_val)
         self.param_widget.setSingleStep(int(step))
         self.param_widget.setOrientation(Qt.Horizontal)
-        self.param_widget.setTracking(True)
+        # Only change value when slider is released
+        self.param_widget.setTracking(False)
         self.param_widget.setToolTip(
             f'MinValue = {min_val}\nMaxValue = {max_val}\nStep = {step}')
-        self.param_widget.valueChanged.connect(self.get_param)
+        self.param_widget.valueChanged.connect(self._get_param)
 
         self.display_widget = QLineEdit()
         self.display_widget.setSizePolicy(QSizePolicy.Maximum,
@@ -968,7 +942,7 @@ class SliderGui(Param):
 
         self.read_param()
         self.init_slider_ui()
-        self.set_param()
+        self._set_param()
         self.save_param()
 
     def init_slider_ui(self):
@@ -990,26 +964,23 @@ class SliderGui(Param):
             self.param_widget.setValue(
                 int(new_value * 10 ** self.decimal_count))
 
-    def set_param(self):
+    def set_value(self, value):
         self.check_groupbox_state()
-        if self.param_value is not None:
+        if value is not None:
             if self.decimal_count > 0:
                 self.param_widget.setValue(
-                    int(self.param_value * 10 ** self.decimal_count))
+                    int(value * 10 ** self.decimal_count))
             else:
-                self.param_widget.setValue(self.param_value)
-            self.display_widget.setText(str(self.param_value))
+                self.param_widget.setValue(value)
+            self.display_widget.setText(str(value))
 
-    def get_param(self):
-        new_value = self.param_widget.value()
+    def get_value(self):
+        value = self.param_widget.value()
         if self.decimal_count > 0:
-            new_value /= 10 ** self.decimal_count
-        self.param_value = new_value
-        self.display_widget.setText(str(self.param_value))
-        self.paramChanged.emit(self.param_value)
-        self.save_param()
+            value /= 10 ** self.decimal_count
+        self.display_widget.setText(str(value))
 
-        return self.param_value
+        return value
 
 
 class MultiTypeGui(Param):
@@ -1056,7 +1027,7 @@ class MultiTypeGui(Param):
             self.type_cmbx.activated.connect(self.change_type)
         else:
             self.param_widget = QLineEdit()
-            self.param_widget.textEdited.connect(self.get_param)
+            self.param_widget.textEdited.connect(self._get_param)
             self.type_display = QLabel()
 
         self.read_param()
@@ -1068,8 +1039,8 @@ class MultiTypeGui(Param):
         if self.type_selection:
             self.type_cmbx.setCurrentText(self.param_type)
 
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
     def add_type_gui(self):
@@ -1093,12 +1064,13 @@ class MultiTypeGui(Param):
 
         self.param_widget = globals()[gui_name](**kwargs)
         self.param_widget.param_value = self.param_value
-        self.param_widget.get_param()
-        self.param_widget.set_param()
+        self.param_widget._get_param()
+        self.param_widget._set_param()
         self.type_layout.addWidget(self.param_widget)
 
     def change_type(self, type_idx):
-        # Set Param-Value to None to avoid conflicts whith values from other types
+        # Set Param-Value to None to avoid conflicts
+        # whith values from other types
         self.param_value = None
         self.save_param()
 
@@ -1111,7 +1083,7 @@ class MultiTypeGui(Param):
 
         self.add_type_gui()
 
-    def init_layout(self):
+    def _init_layout(self):
         if self.type_selection:
             self.type_layout = QHBoxLayout()
             self.type_layout.addWidget(self.type_cmbx)
@@ -1123,35 +1095,35 @@ class MultiTypeGui(Param):
             type_layout.addWidget(self.type_display)
             self.init_ui(type_layout)
 
-    def set_param(self):
+    def set_value(self, value):
         self.check_groupbox_state()
         if self.type_selection:
-            self.param_widget.param_value = self.param_value
-            self.param_widget.set_param()
-        elif self.param_value is not None:
-            self.param_widget.setText(str(self.param_value))
+            self.param_widget.param_value = value
+            self.param_widget._set_param()
+        elif value is not None:
+            self.param_widget.setText(str(value))
             self.type_display.setText(
-                f'Type: {type(self.param_value).__name__}')
+                f'Type: {type(value).__name__}')
 
-    def get_param(self):
+    def get_value(self):
         if self.type_selection:
-            self.param_widget.get_param()
-            self.param_value = self.param_widget.param_value
+            self.param_widget._get_param()
+            value = self.param_widget.param_value
         else:
             text = self.param_widget.text()
             try:
-                self.param_value = literal_eval(text)
-                self.param_type = type(self.param_value).__name__
+                value = literal_eval(text)
+                self.param_type = type(value).__name__
             except ValueError:
-                self.param_value = text
+                value = text
                 self.param_type = 'str'
             except SyntaxError:
-                self.param_value = None
+                value = None
                 self.param_type = 'error'
             self.type_display.setText(f'Type: {self.param_type}')
             self.save_param()
 
-        return self.param_value
+        return value
 
 
 class LabelPicker(Brain):
@@ -1200,17 +1172,6 @@ class LabelPicker(Brain):
         self._renderer.plotter.picker.AddObserver(vtkCommand.EndPickEvent,
                                                   self._label_picked)
 
-    def update_view(self):
-        roll = self.paramdlg.roll_slider.get_param()
-        elevation = self.paramdlg.elevation_slider.get_param()
-        azimuth = self.paramdlg.azimuth_slider.get_param()
-
-        try:
-            self.show_view(None, roll=roll, elevation=elevation, azimuth=azimuth,
-                           row=0, col=0)
-        except TypeError:
-            pass
-
     def _label_picked(self, vtk_picker, event):
         cell_id = vtk_picker.GetCellId()
         mesh = vtk_picker.GetDataSet()
@@ -1229,12 +1190,12 @@ class LabelPicker(Brain):
             label_id = self._vertex_to_label_id[hemi][vertex_id]
             label = self._annotation_labels[hemi][label_id]
 
-            if label.name in self.paramw.param_value:
+            if label.name in self.paramdlg._selected_labels:
                 self._remove_label_name(label.name, hemi)
-                self.paramw.param_value.remove(label.name)
+                self.paramdlg._selected_labels.remove(label.name)
             else:
                 self._add_label_name(label.name, hemi, label)
-                self.paramw.param_value.append(label.name)
+                self.paramdlg._selected_labels.append(label.name)
             self.paramdlg.label_list.content_changed()
 
     def _add_label_name(self, label_name, hemi, label=None):
@@ -1252,11 +1213,16 @@ class LabelPicker(Brain):
         self._shown_labels.remove(label_name)
         self._renderer._update()
 
+    def closeEvent(self, event):
+        self.paramdlg._label_picker = None
+        super().closeEvent(event)
+
 
 class LabelDialog(SimpleDialog):
     def __init__(self, paramw):
         self.main_widget = QWidget()
-        super().__init__(self.main_widget, parent=paramw, title='Choose a label!',
+        super().__init__(self.main_widget, parent=paramw,
+                         title='Choose a label!',
                          window_title='Label Picker', modal=False)
         self.paramw = paramw
         self.ct = paramw.data
@@ -1268,11 +1234,15 @@ class LabelDialog(SimpleDialog):
         self._parcellation = None
         self._all_labels = list()
         self._all_label_names = list()
+        self._selected_labels = list()
 
-        self.init_layout()
+        self.resize(400, 800)
+        center(self)
+
+        self._init_layout()
         self.open()
 
-    def init_layout(self):
+    def _init_layout(self):
         layout = QVBoxLayout(self.main_widget)
 
         self.fsmri_cmbx = QComboBox()
@@ -1285,20 +1255,23 @@ class LabelDialog(SimpleDialog):
         layout.addWidget(self.parcellation_cmbx)
 
         self.label_list = CheckList(data=self._all_label_names,
-                                    checked=self.param_value,
-                                    ui_buttons=False)
+                                    checked=self._selected_labels,
+                                    ui_buttons=True, ui_button_pos='bottom')
         self.label_list.checkedChanged.connect(self._labels_changed)
         layout.addWidget(self.label_list)
 
-        self.elevation_slider = SliderGui(self.paramw.data, 'stc_elevation')
+        self.elevation_slider = SliderGui(data=self.paramw.data,
+                                          name='stc_elevation', max_val=360)
         self.elevation_slider.paramChanged.connect(self._slider_changed)
         layout.addWidget(self.elevation_slider)
 
-        self.roll_slider = SliderGui(self.paramw.data, 'stc_roll')
+        self.roll_slider = SliderGui(data=self.paramw.data,
+                                     name='stc_roll', max_val=360)
         self.roll_slider.paramChanged.connect(self._slider_changed)
         layout.addWidget(self.roll_slider)
 
-        self.azimuth_slider = SliderGui(self.paramw.data, 'stc_azimuth')
+        self.azimuth_slider = SliderGui(data=self.paramw.data,
+                                        name='stc_azimuth', max_val=360)
         self.azimuth_slider.paramChanged.connect(self._slider_changed)
         layout.addWidget(self.azimuth_slider)
 
@@ -1327,9 +1300,10 @@ class LabelDialog(SimpleDialog):
                                                   subjects_dir=
                                                   self.ct.subjects_dir)
         self._all_label_names = [lb.name for lb in self._all_labels]
-
-        self.param_value.clear()
         self.label_list.replace_data(self._all_label_names)
+        self._selected_labels = [lb for lb in self.paramw.param_value
+                                 if lb in self._all_label_names]
+        self.label_list.replace_checked(self._selected_labels)
 
         if self._label_picker is not None:
             self._label_picker._set_annotations()
@@ -1346,18 +1320,34 @@ class LabelDialog(SimpleDialog):
 
     def _slider_changed(self, value):
         if self._label_picker is not None:
-            self._label_picker.update_view()
+            roll = self.roll_slider.param_value
+            elevation = self.elevation_slider.param_value
+            azimuth = self.azimuth_slider.param_value
+            for row, col in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+                self._label_picker.show_view(roll=roll, elevation=elevation,
+                                             azimuth=azimuth, row=row,
+                                             col=col)
 
     def _open_label_picker(self):
         background = self.params['stc_background']
 
-        self._label_picker = LabelPicker(self, self._fsmri, hemi='lh',
-                                         views='lateral',
+        self._label_picker = LabelPicker(self, self._fsmri, hemi='split',
+                                         views=['lat', 'med'],
                                          surf='inflated', title='Pick labels',
                                          subjects_dir=
                                          self.ct.subjects_dir,
                                          block=False, background=background)
-        self._label_picker.update_view()
+        self._slider_changed(None)
+
+    def closeEvent(self, event):
+        event.accept()
+        self.paramw.param_value = self._selected_labels
+        self.paramw._get_param()
+        self.paramw._set_param()
+        if self._label_picker is not None:
+            if self._label_picker.plotter is not None:
+                self._label_picker.plotter.close()
+        # ToDo: Update slider across all instances
 
 
 class LabelGui(Param):
@@ -1380,11 +1370,11 @@ class LabelGui(Param):
             raise RuntimeError(f'LabelGui can only used with an instance of '
                                f'Controller passed as data.')
         self.read_param()
-        self.init_layout()
-        self.set_param()
+        self._init_layout()
+        self._set_param()
         self.save_param()
 
-    def init_layout(self):
+    def _init_layout(self):
         check_list_layout = QHBoxLayout()
 
         self.value_label = QLabel()
@@ -1398,15 +1388,15 @@ class LabelGui(Param):
 
         self.init_ui(check_list_layout)
 
-    def set_param(self):
-        if self.param_value is not None:
-            self.cached_value = self.param_value
+    def set_value(self, value):
+        if value is not None:
+            self.cached_value = value
         self.check_groupbox_state()
-        if self.param_value is not None:
+        if value is not None:
             if self.param_unit:
-                val_str = ', '.join([f'{item}' for item in self.param_value])
+                val_str = ', '.join([f'{item}' for item in value])
             else:
-                val_str = ', '.join([str(item) for item in self.param_value])
+                val_str = ', '.join([str(item) for item in value])
             if len(val_str) >= self.value_string_length:
                 self.value_label.setText(
                     f'{val_str[:self.value_string_length]} ...')
@@ -1415,16 +1405,17 @@ class LabelGui(Param):
         else:
             self.value_label.setText('None')
 
-    def get_param(self):
+    def get_value(self):
         if self.param_value is None:
             if self.cached_value:
-                self.param_value = self.cached_value
+                value = self.cached_value
             else:
-                self.param_value = list()
+                value = list()
             self.value_label.clear()
-        self.save_param()
+        else:
+            value = self.param_value
 
-        return self.param_value
+        return value
 
 
 # Todo: Ordering Parameters in Tabs and add Find-Command
@@ -1743,7 +1734,7 @@ class ParametersDock(QDockWidget):
         for gui_name in self.param_guis:
             param_gui = self.param_guis[gui_name]
             param_gui.read_param()
-            param_gui.set_param()
+            param_gui._set_param()
 
     def reset_all_parameters(self):
         msgbox = QMessageBox.question(self, 'Reset all Parameters?',

@@ -13,7 +13,7 @@ import shutil
 import time
 from collections import Counter
 from functools import partial
-from os.path import exists, isdir, isfile, join
+from os.path import exists, isfile, join
 from pathlib import Path
 
 import mne
@@ -688,9 +688,8 @@ class AddFilesWidget(QWidget):
             if not worker_signals.was_canceled:
                 worker_signals.pgbar_text.emit(f'Copying {name}')
                 file_path = self.pd_files.loc[idx, 'Path']
-                file_type = self.pd_files.loc[idx, 'File-Type']
                 is_erm = self.pd_files.loc[idx, 'Empty-Room?']
-                self.pr.add_meeg(name, file_path, file_type, is_erm)
+                self.pr.add_meeg(name, file_path, is_erm)
                 worker_signals.pgbar_n.emit(n + 1)
             else:
                 print('Canceled Loading')
@@ -780,7 +779,6 @@ class AddMRIWidget(QWidget):
 
         self.folders = list()
         self.paths = dict()
-        self.file_types = dict()
 
         self.init_ui()
 
@@ -883,21 +881,11 @@ class AddMRIWidget(QWidget):
 
     def add_mri_subjects(self, worker_signals):
         worker_signals.pgbar_max.emit(len(self.folders))
-        for n, fsmri in enumerate(self.folders):
+        for n, name in enumerate(self.folders):
             if not worker_signals.was_canceled:
-                worker_signals.pgbar_text.emit(f'Copying {fsmri}')
-                src = self.paths[fsmri]
-                dst = join(self.ct.subjects_dir, fsmri)
-                self.pr.all_fsmri.append(fsmri)
-                if not isdir(dst):
-                    print(f'Copying Folder from {src}...')
-                    try:
-                        shutil.copytree(src, dst)
-                    except shutil.Error:  # surfaces with .H and .K at the end can't be copied
-                        pass
-                    print(f'Finished Copying to {dst}')
-                else:
-                    print(f'{dst} already exists')
+                worker_signals.pgbar_text.emit(f'Copying {name}')
+                src = self.paths[name]
+                self.pr.add_fsmri(name, src)
                 worker_signals.pgbar_n.emit(n)
             else:
                 break

@@ -123,7 +123,6 @@ class Controller:
             # Initialize Project
             if selected_project is not None:
                 self.change_project(selected_project)
-                logging.info(f'Selected-Project: {self.pr.name}')
 
     def load_settings(self):
         try:
@@ -181,6 +180,7 @@ class Controller:
         self.settings['selected_project'] = new_project
         if new_project not in self.projects:
             self.projects.append(new_project)
+        logging.info(f'Selected-Project: {self.pr.name}')
         # Legacy
         transfer_file_params_to_single_subject(self)
 

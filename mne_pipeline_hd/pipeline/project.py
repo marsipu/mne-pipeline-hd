@@ -13,7 +13,7 @@ import shutil
 from ast import literal_eval
 from copy import deepcopy
 from os import listdir, makedirs
-from os.path import exists, getsize, isfile, join
+from os.path import exists, getsize, isfile, join, isdir
 from pathlib import Path
 
 import mne
@@ -39,7 +39,7 @@ class Project:
         self.init_attributes()
         self.init_pipeline_scripts()
         self.load()
-        # self.check_data()
+        self.check_data()
 
     def init_main_paths(self):
 
@@ -333,9 +333,7 @@ class Project:
                 print(f'There is a problem with path:\n'
                       f'{err}')
 
-    def add_meeg(self, name, file_path, file_type=None, is_erm=False):
-        raw = mne.io.read_raw(file_path, preload=True)
-
+    def add_meeg(self, name, file_path=None, is_erm=False):
         if is_erm:
             # Organize Empty-Room-FIles
             self.all_erm.append(name)
@@ -347,12 +345,16 @@ class Project:
         # to also include raw into file_parameters)
         meeg = MEEG(name, self.ct)
 
-        # Get bad-channels from raw-file
-        loaded_bads = raw.info['bads']
-        if len(loaded_bads) > 0:
-            self.meeg_bad_channels[name] = raw.info['bads']
+        if file_path is not None:
+            # Get bad-channels from raw-file
+            raw = mne.io.read_raw(file_path, preload=True)
+            loaded_bads = raw.info['bads']
+            if len(loaded_bads) > 0:
+                self.meeg_bad_channels[name] = raw.info['bads']
 
-        meeg.save_raw(raw)
+            meeg.save_raw(raw)
+
+        return meeg
 
     def remove_meeg(self, remove_files):
         for meeg in self.sel_meeg:
@@ -371,8 +373,24 @@ class Project:
                     print(join(self.data_path, meeg) + ' not found!')
         self.sel_meeg.clear()
 
-    def add_fsmri(self):
-        pass
+    def add_fsmri(self, name, src_dir=None):
+        self.all_fsmri.append(name)
+        # Initialize FSMRI
+        fsmri = FSMRI(name, self.ct)
+        if src_dir is not None:
+            dst_dir = join(self.ct.subjects_dir, name)
+            if not isdir(dst_dir):
+                print(f'Copying Folder from {src_dir}...')
+                try:
+                    shutil.copytree(src_dir, dst_dir)
+                # surfaces with .H and .K at the end can't be copied
+                except shutil.Error:
+                    pass
+                print(f'Finished Copying to {dst_dir}')
+            else:
+                print(f'{dst_dir} already exists')
+
+        return fsmri
 
     def remove_fsmri(self, remove_files):
         for fsmri in self.sel_fsmri:
@@ -392,8 +410,9 @@ class Project:
 
     def check_data(self):
 
-        missing_objects = [x for x in listdir(self.data_path) if
-                           x != 'grand_averages' and x not in self.all_meeg and x not in self.all_erm]
+        missing_objects = [x for x in listdir(self.data_path)
+                           if x != 'grand_averages' and x not in self.all_meeg
+                           and x not in self.all_erm]
 
         for obj in missing_objects:
             self.all_meeg.append(obj)

@@ -203,7 +203,7 @@ class ParamGuis(QWidget):
             self.parameters[current_gui] = value
             p_gui = self.gui_dict[current_gui]
             p_gui.read_param()
-            p_gui.set_param()
+            p_gui._set_param()
         except:
             print(traceback.format_exc())
 

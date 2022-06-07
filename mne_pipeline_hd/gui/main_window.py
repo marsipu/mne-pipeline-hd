@@ -47,7 +47,6 @@ from mne_pipeline_hd.gui.parameter_widgets import (BoolGui, IntGui,
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
-from mne_pipeline_hd.pipeline.loading import MEEG
 from mne_pipeline_hd.pipeline.pipeline_utils import restart_program
 
 
@@ -66,6 +65,7 @@ class MainWindow(QMainWindow):
 
         # Initiate attributes for Main-Window
         self.ct = controller
+        self.pr = controller.pr
         self.edu_tour = None
         self.bt_dict = dict()
         # For functions, which should or should not
@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         self.update_project_box()
         # Update Statusbar
         self.statusBar().showMessage(f'Home-Path: {self.ct.home_path}, '
-                                     f'Project: {self.ct.pr.name}')
+                                     f'Project: {self.pr.name}')
 
     def change_home_path(self):
         # First save the former projects-data
@@ -129,13 +129,13 @@ class MainWindow(QMainWindow):
                 if welcome_window is not None:
                     welcome_window.ct = new_controller
                 self.statusBar().showMessage(f'Home-Path: {self.ct.home_path},'
-                                             f' Project: {self.ct.pr.name}')
+                                             f' Project: {self.pr.name}')
 
                 self.update_project_ui()
 
     def add_project(self):
         # First save the former projects-data
-        WorkerDialog(self, self.ct.pr.save, blocking=True)
+        WorkerDialog(self, self.pr.save, blocking=True)
 
         new_project = get_user_input_string('Enter a name for a new project',
                                             'Add Project')
@@ -145,13 +145,13 @@ class MainWindow(QMainWindow):
 
     def remove_project(self):
         # First save the former projects-data
-        WorkerDialog(self, self.ct.pr.save, blocking=True)
+        WorkerDialog(self, self.pr.save, blocking=True)
 
         RemoveProjectsDlg(self, self.ct)
 
     def project_changed(self, idx):
         # First save the former projects-data
-        WorkerDialog(self, self.ct.pr.save, blocking=True)
+        WorkerDialog(self, self.pr.save, blocking=True)
 
         # Get selected Project
         project = self.project_box.itemText(idx)
@@ -162,12 +162,12 @@ class MainWindow(QMainWindow):
         self.update_project_ui()
 
     def pr_clean_fp(self):
-        WorkerDialog(self, self.ct.pr.clean_file_parameters, show_buttons=True,
+        WorkerDialog(self, self.pr.clean_file_parameters, show_buttons=True,
                      show_console=True, close_directly=False,
                      title='Cleaning File-Parameters')
 
     def pr_clean_pf(self):
-        WorkerDialog(self, self.ct.pr.clean_plot_files, show_buttons=True,
+        WorkerDialog(self, self.pr.clean_plot_files, show_buttons=True,
                      show_console=True, close_directly=False,
                      title='Cleaning Plot-Files')
 
@@ -177,8 +177,8 @@ class MainWindow(QMainWindow):
     def update_project_box(self):
         self.project_box.clear()
         self.project_box.addItems(self.ct.projects)
-        if self.ct.pr is not None:
-            self.project_box.setCurrentText(self.ct.pr.name)
+        if self.pr is not None:
+            self.project_box.setCurrentText(self.pr.name)
 
     def init_edu(self):
         if QS().value('education') and \
@@ -199,7 +199,7 @@ class MainWindow(QMainWindow):
         import_menu.addAction(aaddfiles)
 
         import_menu.addAction('Add Sample-Dataset', self.add_sample_dataset)
-
+        import_menu.addAction('Add Sample-Dataset', self.add_test_dataset)
         import_menu.addAction('Reload raw', partial(ReloadRaw, self))
 
         import_menu.addSeparator()
@@ -453,7 +453,7 @@ class MainWindow(QMainWindow):
                         pb = QPushButton(alias_name)
                         pb.setCheckable(True)
                         self.bt_dict[function] = pb
-                        if function in self.ct.pr.sel_functions:
+                        if function in self.pr.sel_functions:
                             pb.setChecked(True)
                         pb.clicked.connect(
                             partial(self.func_selected, function))
@@ -491,10 +491,10 @@ class MainWindow(QMainWindow):
 
     def _update_selected_functions(self, function, checked):
         if checked:
-            if function not in self.ct.pr.sel_functions:
-                self.ct.pr.sel_functions.append(function)
-        elif function in self.ct.pr.sel_functions:
-            self.ct.pr.sel_functions.remove(function)
+            if function not in self.pr.sel_functions:
+                self.pr.sel_functions.append(function)
+        elif function in self.pr.sel_functions:
+            self.pr.sel_functions.remove(function)
 
     def func_selected(self, function):
         self._update_selected_functions(function,
@@ -510,7 +510,7 @@ class MainWindow(QMainWindow):
     def update_selected_funcs(self):
         for function in self.bt_dict:
             self.bt_dict[function].setChecked(False)
-            if function in self.ct.pr.sel_functions:
+            if function in self.pr.sel_functions:
                 self.bt_dict[function].setChecked(True)
 
     def init_docks(self):
@@ -527,26 +527,35 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(self.parameters_dock.toggleViewAction())
 
     def add_sample_dataset(self):
-        if '_sample_' in self.ct.pr.all_meeg:
-            QMessageBox.information(self, 'sample exists!',
-                                    'The sample-dataset is already imported as _sample_!')
+        if '_sample_' in self.pr.all_meeg:
+            QMessageBox.information(self, '_sample_ exists!',
+                                    'The sample-dataset is already '
+                                    'imported as _sample_!')
         else:
-            WorkerDialog(self, partial(MEEG, '_sample_', self.ct),
+            WorkerDialog(self, partial(self.pr.add_meeg, '_sample_'),
+                         show_console=True,
+                         title='Loading Sample...', blocking=True)
+            self.file_dock.update_dock()
+
+    def add_test_dataset(self):
+        if '_test_' in self.pr.all_meeg:
+            QMessageBox.information(self, '_test_ exists!',
+                                    'The test-dataset is already '
+                                    'imported as _test_!')
+        else:
+            WorkerDialog(self, partial(self.pr.add_meeg, '_test_'),
                          show_console=True,
                          title='Loading Sample...', blocking=True)
             self.file_dock.update_dock()
 
     def add_fsaverage(self):
-        if 'fsaverage' in self.ct.pr.all_fsmri:
+        if 'fsaverage' in self.pr.all_fsmri:
             QMessageBox.information(self, 'fsaverage exists!',
                                     'fsaverage is already imported!')
         else:
-            WorkerDialog(self,
-                         partial(mne.datasets.fetch_fsaverage,
-                                 subjects_dir=self.ct.subjects_dir),
+            WorkerDialog(self, partial(self.pr.add_fsmri, 'fsaverage'),
                          show_console=True, title='Loading fsaverage...',
                          blocking=True)
-            self.ct.pr.all_fsmri.append('fsaverage')
             self.file_dock.update_dock()
 
     def full_screen(self):
@@ -558,7 +567,7 @@ class MainWindow(QMainWindow):
     def clear(self):
         for x in self.bt_dict:
             self.bt_dict[x].setChecked(False)
-        self.ct.pr.sel_functions.clear()
+        self.pr.sel_functions.clear()
 
     def start(self):
         if self.pipeline_running:

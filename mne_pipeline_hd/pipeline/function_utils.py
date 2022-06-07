@@ -285,7 +285,8 @@ class RunController:
         if len(self.all_steps) > 0:
             # Getting information as encoded in init_lists
             self.current_obj_name, self.current_func = self.all_steps.pop(0)
-
+            logging.debug(f'Running {self.current_func} for '
+                          f'{self.current_obj_name}')
             # Get current object
             self.get_object()
 
@@ -304,10 +305,12 @@ class RunController:
 
     def start(self):
         kwds = self.prepare_start()
-        if kwds:
+        if kwds is not None:
+            run_func(**kwds)
             # ToDo: MP
-            self.pool.apply_async(func=run_func, kwds=kwds,
-                                  callback=self.process_finished)
+            # self.pool.apply_async(func=run_func, kwds=kwds,
+            #                       callback=self.process_finished)
+            self.process_finished(None)
 
 
 class QRunController(RunController):
