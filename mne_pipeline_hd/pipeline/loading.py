@@ -1213,7 +1213,12 @@ class FSMRI(BaseLoading):
             name = 'None'
         elif name == 'fsaverage':
             logging.info('Downloading fsaverage...')
-            mne.datasets.fetch_fsaverage(subjects_dir=controller.subjects_dir)
+            try:
+                mne.datasets.fetch_fsaverage(
+                    subjects_dir=controller.subjects_dir)
+            except ValueError:
+                # ToDo: Somehow not working on macOS
+                logging.warning('fsaverage could not be downloaded!')
 
         super().__init__(name, controller)
 
