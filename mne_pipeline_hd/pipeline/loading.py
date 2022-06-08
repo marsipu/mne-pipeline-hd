@@ -1216,8 +1216,8 @@ class FSMRI(BaseLoading):
             try:
                 mne.datasets.fetch_fsaverage(
                     subjects_dir=controller.subjects_dir)
+            # Not working on macOS for mne<=0.24
             except ValueError:
-                # ToDo: Somehow not working on macOS
                 logging.warning('fsaverage could not be downloaded!')
 
         super().__init__(name, controller)
@@ -1230,8 +1230,6 @@ class FSMRI(BaseLoading):
     def init_paths(self):
         # Main Path
         self.save_dir = join(self.subjects_dir, self.name)
-        if not isdir(self.save_dir):
-            os.mkdir(self.save_dir)
 
         # Data-Paths
         self.src_path = join(

@@ -199,7 +199,7 @@ class MainWindow(QMainWindow):
         import_menu.addAction(aaddfiles)
 
         import_menu.addAction('Add Sample-Dataset', self.add_sample_dataset)
-        import_menu.addAction('Add Sample-Dataset', self.add_test_dataset)
+        import_menu.addAction('Add Test-Dataset', self.add_test_dataset)
         import_menu.addAction('Reload raw', partial(ReloadRaw, self))
 
         import_menu.addSeparator()
