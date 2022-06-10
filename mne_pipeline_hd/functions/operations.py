@@ -35,9 +35,9 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (check_kwargs,
 
 
 # Todo: Create docstrings for each function
-# ==============================================================================
+# =============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
-# ==============================================================================
+# =============================================================================
 def filter_data(meeg, filter_target, highpass, lowpass, filter_length,
                 l_trans_bandwidth,
                 h_trans_bandwidth, filter_method, iir_params, fir_phase,
@@ -47,7 +47,8 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length,
                 bad_interpolation):
     # Compare Parameters from last run
     filtered_path = meeg.io_dict[filter_target]['path']
-    results = compare_filep(meeg, filtered_path, ['highpass', 'lowpass', 'bad_interpolation'])
+    results = compare_filep(meeg, filtered_path,
+                            ['highpass', 'lowpass', 'bad_interpolation'])
 
     if any([results[key] != 'equal' for key in results]):
         # Load Data
@@ -89,11 +90,15 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length,
         gc.collect()
 
     else:
-        print(f'{meeg.name} already filtered with highpass={highpass} and lowpass={lowpass}')
+        print(
+            f'{meeg.name} already filtered with highpass={highpass} '
+            f'and lowpass={lowpass}')
 
     # Filter Empty-Room-Data too
     if meeg.erm:
-        erm_results = compare_filep(meeg, meeg.erm_processed_path, ['highpass', 'lowpass', 'bad_interpolation'])
+        erm_results = compare_filep(meeg, meeg.erm_processed_path,
+                                    ['highpass', 'lowpass',
+                                     'bad_interpolation'])
         if any([erm_results[key] != 'equal' for key in erm_results]):
             erm_raw = meeg.load_erm()
 
@@ -106,9 +111,12 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length,
                     tmax = erm_length - diff / 2
                     erm_raw.crop(tmin=tmin, tmax=tmax)
 
-            erm_raw.filter(highpass, lowpass, filter_length=filter_length, l_trans_bandwidth=l_trans_bandwidth,
-                           h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs, method=filter_method,
-                           iir_params=iir_params, phase=fir_phase, fir_window=fir_window, fir_design=fir_design,
+            erm_raw.filter(highpass, lowpass, filter_length=filter_length,
+                           l_trans_bandwidth=l_trans_bandwidth,
+                           h_trans_bandwidth=h_trans_bandwidth, n_jobs=n_jobs,
+                           method=filter_method,
+                           iir_params=iir_params, phase=fir_phase,
+                           fir_window=fir_window, fir_design=fir_design,
                            skip_by_annotation=skip_by_annotation, pad=fir_pad)
 
             if bad_interpolation == 'raw':
@@ -119,7 +127,9 @@ def filter_data(meeg, filter_target, highpass, lowpass, filter_length,
             meeg.save_erm_processed(erm_raw)
             print('ERM-Data filtered and saved')
         else:
-            print(f'{meeg.erm} already filtered with highpass={highpass} and lowpass={lowpass}')
+            print(
+                f'{meeg.erm} already filtered with highpass={highpass} '
+                f'and lowpass={lowpass}')
 
     else:
         print('no erm_file assigned')
@@ -137,21 +147,25 @@ def interpolate_bads(meeg, bad_interpolation):
     meeg.io_dict[bad_interpolation]['save'](data)
 
 
-def add_erm_ssp(meeg, erm_ssp_duration, erm_n_grad, erm_n_mag, erm_n_eeg, n_jobs, show_plots):
+def add_erm_ssp(meeg, erm_ssp_duration, erm_n_grad, erm_n_mag, erm_n_eeg,
+                n_jobs, show_plots):
     raw_filtered = meeg.load_filtered()
     erm_filtered = meeg.load_erm_processed()
 
-    # Only include channels from Empty-Room-Data, which are present in filtered-data
+    # Only include channels from Empty-Room-Data,
+    # which are present in filtered-data
     erm_filtered = erm_filtered.copy().pick_channels(
         [ch for ch in erm_filtered.ch_names if ch in raw_filtered.ch_names])
 
     erm_projs = mne.compute_proj_raw(erm_filtered, duration=erm_ssp_duration,
-                                     n_grad=erm_n_grad, n_mag=erm_n_mag, n_eeg=erm_n_eeg, n_jobs=n_jobs)
+                                     n_grad=erm_n_grad, n_mag=erm_n_mag,
+                                     n_eeg=erm_n_eeg, n_jobs=n_jobs)
 
     raw_filtered.add_proj(erm_projs, remove_existing=True)
     meeg.save_filtered(raw_filtered)
 
-    fig = mne.viz.plot_projs_topomap(erm_projs, erm_filtered.info, colorbar=True, show=show_plots)
+    fig = mne.viz.plot_projs_topomap(erm_projs, erm_filtered.info,
+                                     colorbar=True, show=show_plots)
     meeg.plot_save('ssp_erm', matplotlib_figure=fig)
 
 
@@ -168,14 +182,17 @@ def eeg_reference_raw(meeg, ref_channels):
     else:
         projection = False
 
-    raw_filtered.set_eeg_reference(ref_channels=ref_channels, projection=projection, forward=forward)
+    raw_filtered.set_eeg_reference(ref_channels=ref_channels,
+                                   projection=projection, forward=forward)
     meeg.save_filtered(raw_filtered)
 
 
-def find_events(meeg, stim_channels, min_duration, shortest_event, adjust_timeline_by_msec):
+def find_events(meeg, stim_channels, min_duration, shortest_event,
+                adjust_timeline_by_msec):
     raw = meeg.load_raw()  # No copy to consume less memory
 
-    events = mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+    events = mne.find_events(raw, min_duration=min_duration,
+                             shortest_event=shortest_event,
                              stim_channel=stim_channels)
 
     # apply latency correction
@@ -191,7 +208,8 @@ def find_events(meeg, stim_channels, min_duration, shortest_event, adjust_timeli
         print('No events found')
 
 
-def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_by_msec):
+def find_6ch_binary_events(meeg, min_duration, shortest_event,
+                           adjust_timeline_by_msec):
     raw = meeg.load_raw()  # No copy to consume less memory
 
     # Binary Coding of 6 Stim Channels in Biomagenetism Lab Heidelberg
@@ -201,25 +219,34 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
     evs_tol = list()
 
     # Find events for each stim channel, append sample values to list
-    evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+    evs.append(mne.find_events(raw, min_duration=min_duration,
+                               shortest_event=shortest_event,
                                stim_channel=['STI 001'])[:, 0])
-    evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+    evs.append(mne.find_events(raw, min_duration=min_duration,
+                               shortest_event=shortest_event,
                                stim_channel=['STI 002'])[:, 0])
-    evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+    evs.append(mne.find_events(raw, min_duration=min_duration,
+                               shortest_event=shortest_event,
                                stim_channel=['STI 003'])[:, 0])
-    evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+    evs.append(mne.find_events(raw, min_duration=min_duration,
+                               shortest_event=shortest_event,
                                stim_channel=['STI 004'])[:, 0])
-    evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+    evs.append(mne.find_events(raw, min_duration=min_duration,
+                               shortest_event=shortest_event,
                                stim_channel=['STI 005'])[:, 0])
-    evs.append(mne.find_events(raw, min_duration=min_duration, shortest_event=shortest_event,
+    evs.append(mne.find_events(raw, min_duration=min_duration,
+                               shortest_event=shortest_event,
                                stim_channel=['STI 006'])[:, 0])
 
     for i in evs:
 
-        # delete events in each channel, which are too close too each other (1ms)
+        # delete events in each channel,
+        # which are too close too each other (1ms)
         too_close = np.where(np.diff(i) <= 1)
         if np.size(too_close) >= 1:
-            print(f'Two close events (1ms) at samples {i[too_close] + raw.first_samp}, first deleted')
+            print(
+                f'Two close events (1ms) at samples '
+                f'{i[too_close] + raw.first_samp}, first deleted')
             i = np.delete(i, too_close, 0)
             evs[evs.index(i)] = i
 
@@ -242,7 +269,9 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
         equals -= 1  # correction, because of shift with deletion
 
     for q in equals:
-        if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
+        if q not in events[:, 0] \
+                and q not in events[:, 0] + 1 \
+                and q not in events[:, 0] - 1:
             events = np.append(events, [[q, 0, 63]], axis=0)
 
     for a, b, c, d, e in combinations(range(6), 5):
@@ -254,19 +283,27 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
             equals -= 1
 
         for q in equals:
-            if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                events = np.append(events, [[q, 0, int(2 ** a + 2 ** b + 2 ** c + 2 ** d + 2 ** e)]], axis=0)
+            if q not in events[:, 0] \
+                    and q not in events[:, 0] + 1 \
+                    and q not in events[:, 0] - 1:
+                events = np.append(events, [
+                    [q, 0, int(2 ** a + 2 ** b + 2 ** c + 2 ** d + 2 ** e)]],
+                                   axis=0)
 
     for a, b, c, d in combinations(range(6), 4):
-        equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c], evs_tol[d]))
+        equals = reduce(np.intersect1d,
+                        (evs_tol[a], evs_tol[b], evs_tol[c], evs_tol[d]))
         too_close = np.where(np.diff(equals) <= 1)
         if np.size(too_close) >= 1:
             equals = np.delete(equals, too_close, 0)
             equals -= 1
 
         for q in equals:
-            if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                events = np.append(events, [[q, 0, int(2 ** a + 2 ** b + 2 ** c + 2 ** d)]], axis=0)
+            if q not in events[:, 0] \
+                    and q not in events[:, 0] + 1 \
+                    and q not in events[:, 0] - 1:
+                events = np.append(events, [
+                    [q, 0, int(2 ** a + 2 ** b + 2 ** c + 2 ** d)]], axis=0)
 
     for a, b, c in combinations(range(6), 3):
         equals = reduce(np.intersect1d, (evs_tol[a], evs_tol[b], evs_tol[c]))
@@ -276,8 +313,12 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
             equals -= 1
 
         for q in equals:
-            if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                events = np.append(events, [[q, 0, int(2 ** a + 2 ** b + 2 ** c)]], axis=0)
+            if q not in events[:, 0] \
+                    and q not in events[:, 0] + 1 \
+                    and q not in events[:, 0] - 1:
+                events = np.append(events,
+                                   [[q, 0, int(2 ** a + 2 ** b + 2 ** c)]],
+                                   axis=0)
 
     for a, b in combinations(range(6), 2):
         equals = np.intersect1d(evs_tol[a], evs_tol[b])
@@ -287,13 +328,18 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
             equals -= 1
 
         for q in equals:
-            if q not in events[:, 0] and q not in events[:, 0] + 1 and q not in events[:, 0] - 1:
-                events = np.append(events, [[q, 0, int(2 ** a + 2 ** b)]], axis=0)
+            if q not in events[:, 0] \
+                    and q not in events[:, 0] + 1 \
+                    and q not in events[:, 0] - 1:
+                events = np.append(events, [[q, 0, int(2 ** a + 2 ** b)]],
+                                   axis=0)
 
     # Get single-channel events
     for i in range(6):
         for e in evs[i]:
-            if e not in events[:, 0] and e not in events[:, 0] + 1 and e not in events[:, 0] - 1:
+            if e not in events[:, 0] \
+                    and e not in events[:, 0] + 1 \
+                    and e not in events[:, 0] - 1:
                 events = np.append(events, [[e, 0, 2 ** i]], axis=0)
 
     # sort only along samples(column 0)
@@ -312,8 +358,10 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
         print('No events found')
 
 
-def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, flat, reject_by_annotation,
-              bad_interpolation, use_autoreject, consensus_percs, n_interpolates, overwrite_ar, decim, n_jobs):
+def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject,
+              flat, reject_by_annotation,
+              bad_interpolation, use_autoreject, consensus_percs,
+              n_interpolates, overwrite_ar, decim, n_jobs):
     raw_filtered = meeg.load_filtered()
     events = meeg.load_events()
 
@@ -324,24 +372,32 @@ def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, f
         raw_filtered.pick_channels(ch_names)
 
     if bad_interpolation is None:
-        # Exclude bad-channels if no Bad-Channel-Interpolation is intended after making the epochs or the Evokeds
+        # Exclude bad-channels if no Bad-Channel-Interpolation is intended
+        # after making the epochs or the Evokeds
         raw_filtered.pick('all', exclude='bads')
 
-    epochs = mne.Epochs(raw_filtered, events, meeg.event_id, t_epoch[0], t_epoch[1], baseline,
+    epochs = mne.Epochs(raw_filtered, events, meeg.event_id, t_epoch[0],
+                        t_epoch[1], baseline,
                         preload=True, proj=apply_proj, reject=None, flat=None,
-                        decim=decim, on_missing='ignore', reject_by_annotation=reject_by_annotation)
+                        decim=decim, on_missing='ignore',
+                        reject_by_annotation=reject_by_annotation)
 
-    if any([i is not None for i in [use_autoreject, reject, flat]]) and bad_interpolation == 'Evokeds':
-        raise RuntimeWarning('With bad_interpolation="Evokeds", the bad channels are still included and '
-                             'may heavily influence the outcome of dropping epochs with reject,'
-                             ' flat or autoreject!'
-                             '\n(to solve this you could uncheck autoreject, reject and flat or set bad_interpolation'
-                             'to another value)')
+    if any([i is not None for i in [use_autoreject, reject,
+                                    flat]]) and bad_interpolation == 'Evokeds':
+        raise RuntimeWarning(
+            'With bad_interpolation="Evokeds", '
+            'the bad channels are still included and '
+            'may heavily influence the outcome of dropping epochs with reject,'
+            ' flat or autoreject!'
+            '\n(to solve this you could uncheck autoreject, '
+            'reject and flat or set bad_interpolationto another value)')
 
-    existing_ch_types = epochs.get_channel_types(unique=True, only_data_chs=True)
+    existing_ch_types = epochs.get_channel_types(unique=True,
+                                                 only_data_chs=True)
 
     if use_autoreject == 'Interpolation':
-        ar_object = ar.AutoReject(n_interpolate=n_interpolates, consensus=consensus_percs, n_jobs=n_jobs)
+        ar_object = ar.AutoReject(n_interpolate=n_interpolates,
+                                  consensus=consensus_percs, n_jobs=n_jobs)
         epochs, reject_log = ar_object.fit_transform(epochs, return_log=True)
         meeg.save_reject_log(reject_log)
 
@@ -351,7 +407,8 @@ def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, f
             if reject is None or overwrite_ar:
                 reject = ar.get_rejection_threshold(epochs)
                 meeg.save_json('autoreject_threshold', reject)
-            print(f'Dropping bad epochs with autoreject rejection-thresholds: {reject}')
+            print(f'Dropping bad epochs with autoreject'
+                  f' rejection-thresholds: {reject}')
 
         else:
             # Remove entries from reject if not present in channels
@@ -360,7 +417,8 @@ def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, f
                 reject = reject.copy()
                 for key in [k for k in reject if k not in existing_ch_types]:
                     reject.pop(key)
-            print(f'Dropping bad epochs with chosen rejection-thresholds: {reject}')
+            print(f'Dropping bad epochs with chosen '
+                  f'rejection-thresholds: {reject}')
 
         epochs.drop_bad(reject=reject)
 
@@ -375,8 +433,10 @@ def epoch_raw(meeg, ch_types, ch_names, t_epoch, baseline, apply_proj, reject, f
     meeg.save_epochs(epochs)
 
 
-def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove_proj, ica_reject, ica_autoreject,
-            ch_types, ch_names, reject_by_annotation, ica_eog, eog_channel, ica_ecg, ecg_channel, **kwargs):
+def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov,
+            ica_remove_proj, ica_reject, ica_autoreject,
+            ch_types, ch_names, reject_by_annotation, ica_eog, eog_channel,
+            ica_ecg, ecg_channel, **kwargs):
     if ica_fitto == 'epochs':
         data = meeg.load_epochs()
         # Bad-Channels and Channel-Types are already picked in epoch_raw
@@ -428,28 +488,39 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
         filt_data.del_proj()
 
     fit_kwargs = check_kwargs(kwargs, ica.fit)
-    ica.fit(filt_data, reject=reject, reject_by_annotation=reject_by_annotation, **fit_kwargs)
+    ica.fit(filt_data, reject=reject,
+            reject_by_annotation=reject_by_annotation, **fit_kwargs)
 
-    # Load raw for EOG/ECG-Detection without picks (e.g. still containing EEG for EOG or EOG channels)
+    # Load raw for EOG/ECG-Detection without picks
+    # (e.g. still containing EEG for EOG or EOG channels)
     eog_ecg_raw = meeg.load_filtered()
     # Include EOG/ECG with all the data-channels
-    eog_ecg_raw.pick_types(meg=True, eeg=True, eog=True, ecg=True, seeg=True, ecog=True, fnirs=True, exclude='bads')
+    eog_ecg_raw.pick_types(meg=True, eeg=True, eog=True, ecg=True, seeg=True,
+                           ecog=True, fnirs=True, exclude='bads')
 
     if ica_eog:
 
-        create_eog_kwargs = check_kwargs(kwargs, mne.preprocessing.create_eog_epochs)
+        create_eog_kwargs = check_kwargs(kwargs,
+                                         mne.preprocessing.create_eog_epochs)
         find_eog_kwargs = check_kwargs(kwargs, ica.find_bads_eog)
 
         # Using an EOG channel to select components if possible
         if 'eog' in eog_ecg_raw.get_channel_types():
-            eog_epochs = mne.preprocessing.create_eog_epochs(eog_ecg_raw, **create_eog_kwargs)
-            eog_indices, eog_scores = ica.find_bads_eog(eog_ecg_raw, **find_eog_kwargs)
+            eog_epochs = mne.preprocessing.create_eog_epochs(
+                eog_ecg_raw, **create_eog_kwargs)
+            eog_indices, eog_scores = ica.find_bads_eog(
+                eog_ecg_raw, **find_eog_kwargs)
         elif eog_channel and eog_channel in eog_ecg_raw.ch_names:
-            eog_epochs = mne.preprocessing.create_eog_epochs(eog_ecg_raw, ch_name=eog_channel, **create_eog_kwargs)
-            eog_indices, eog_scores = ica.find_bads_eog(eog_ecg_raw, ch_name=eog_channel, **find_eog_kwargs)
+            eog_epochs = mne.preprocessing.create_eog_epochs(
+                eog_ecg_raw, ch_name=eog_channel, **create_eog_kwargs)
+            eog_indices, eog_scores = ica.find_bads_eog(eog_ecg_raw,
+                                                        ch_name=eog_channel,
+                                                        **find_eog_kwargs)
         else:
             eog_indices, eog_scores, eog_epochs = None, None, None
-            print('No EOG-Channel found or set, thus EOG can\'t be used for automatic Component-Selection')
+            print(
+                'No EOG-Channel found or set, '
+                'thus EOG can\'t be used for automatic Component-Selection')
 
         if eog_epochs:
             ica.exclude += eog_indices
@@ -458,21 +529,28 @@ def run_ica(meeg, ica_method, ica_fitto, n_components, ica_noise_cov, ica_remove
             meeg.save_json('eog_scores', eog_scores)
 
     if ica_ecg:
-        create_ecg_kwargs = check_kwargs(kwargs, mne.preprocessing.create_ecg_epochs)
+        create_ecg_kwargs = check_kwargs(kwargs,
+                                         mne.preprocessing.create_ecg_epochs)
         find_ecg_kwargs = check_kwargs(kwargs, ica.find_bads_ecg)
 
         # Using an ECG channel to select components
         if ecg_channel and ecg_channel in eog_ecg_raw.ch_names:
-            ecg_epochs = mne.preprocessing.create_ecg_epochs(eog_ecg_raw, ch_name=ecg_channel, **create_ecg_kwargs)
-            ecg_indices, ecg_scores = ica.find_bads_ecg(eog_ecg_raw, ch_name=ecg_channel, **find_ecg_kwargs)
-        elif any([ch_type in eog_ecg_raw.get_channel_types() for ch_type in ['mag', 'grad', 'meg']]):
+            ecg_epochs = mne.preprocessing.create_ecg_epochs(
+                eog_ecg_raw, ch_name=ecg_channel, **create_ecg_kwargs)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(
+                eog_ecg_raw, ch_name=ecg_channel, **find_ecg_kwargs)
+        elif any([ch_type in eog_ecg_raw.get_channel_types() for ch_type in
+                  ['mag', 'grad', 'meg']]):
             print('ECG-Signal reconstructed from MEG')
-            ecg_epochs = mne.preprocessing.create_ecg_epochs(eog_ecg_raw, **create_ecg_kwargs)
-            ecg_indices, ecg_scores = ica.find_bads_ecg(eog_ecg_raw, **find_ecg_kwargs)
+            ecg_epochs = mne.preprocessing.create_ecg_epochs(
+                eog_ecg_raw, **create_ecg_kwargs)
+            ecg_indices, ecg_scores = ica.find_bads_ecg(
+                eog_ecg_raw, **find_ecg_kwargs)
         else:
             ecg_indices, ecg_scores, ecg_epochs = None, None, None
-            print('No ECG-Channel found or set and no MEG-Channel for ECG-Detection present, '
-                  'thus ECG can\'t be used for automatic Component-Selection')
+            print('No ECG-Channel found or set and no MEG-Channel '
+                  'for ECG-Detection present, thus ECG can\'t be used for '
+                  'automatic Component-Selection.')
 
         if ecg_epochs:
             ica.exclude += ecg_indices
@@ -529,7 +607,8 @@ def plot_ica_components(meeg, show_plots):
 
 def plot_ica_sources(meeg, ica_source_data, show_plots):
     ica, data = _ica_plotto_helper(meeg, ica_source_data)
-    sources_fig = ica.plot_sources(data, stop=ica.n_components, title=meeg.name, show=show_plots)
+    sources_fig = ica.plot_sources(data, stop=ica.n_components,
+                                   title=meeg.name, show=show_plots)
     meeg.plot_save('ica', subfolder='sources', matplotlib_figure=sources_fig)
 
     return sources_fig, ica
@@ -541,7 +620,9 @@ def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
 
     if ica_overlay_data == 'Evokeds':
         for evoked in [e for e in data if e.comment in meeg.sel_trials]:
-            ovl_fig = ica.plot_overlay(evoked, title=f'{meeg.name}-{evoked.comment}', show=show_plots)
+            ovl_fig = ica.plot_overlay(evoked,
+                                       title=f'{meeg.name}-{evoked.comment}',
+                                       show=show_plots)
             overlay_figs.append(ovl_fig)
     else:
         ovl_fig = ica.plot_overlay(data, title=meeg.name, show=show_plots)
@@ -562,21 +643,25 @@ def plot_ica_properties(meeg, show_plots):
 
     if len(eog_indices) > 0:
         eog_epochs = meeg.load_eog_epochs()
-        eog_prop_figs = ica.plot_properties(eog_epochs, eog_indices, psd_args=psd_args,
+        eog_prop_figs = ica.plot_properties(eog_epochs, eog_indices,
+                                            psd_args=psd_args,
                                             show=show_plots)
         meeg.plot_save('ica', subfolder='properties', trial='eog',
                        matplotlib_figure=eog_prop_figs)
 
     if len(ecg_indices) > 0:
         ecg_epochs = meeg.load_ecg_epochs()
-        ecg_prop_figs = ica.plot_properties(ecg_epochs, ecg_indices, psd_args=psd_args,
+        ecg_prop_figs = ica.plot_properties(ecg_epochs, ecg_indices,
+                                            psd_args=psd_args,
                                             show=show_plots)
         meeg.plot_save('ica', subfolder='properties', trial='ecg',
                        matplotlib_figure=ecg_prop_figs)
 
-    remaining_indices = [ix for ix in ica.exclude if ix not in eog_indices + ecg_indices]
+    remaining_indices = [ix for ix in ica.exclude if
+                         ix not in eog_indices + ecg_indices]
     if len(remaining_indices) > 0:
-        prop_figs = ica.plot_properties(epochs, remaining_indices, psd_args=psd_args, show=show_plots)
+        prop_figs = ica.plot_properties(epochs, remaining_indices,
+                                        psd_args=psd_args, show=show_plots)
         meeg.plot_save('ica', subfolder='properties', trial='manually',
                        matplotlib_figure=prop_figs)
 
@@ -585,7 +670,8 @@ def plot_ica_scores(meeg, show_plots):
     eog_scores = meeg.load_json('eog_scores', default=list())
     if len(eog_scores) > 1:
         ica = meeg.load_ica()
-        eog_score_fig = ica.plot_scores(eog_scores, title=f'{meeg.name}: EOG', show=show_plots)
+        eog_score_fig = ica.plot_scores(eog_scores, title=f'{meeg.name}: EOG',
+                                        show=show_plots)
         meeg.plot_save('ica', subfolder='scores', trial='eog',
                        matplotlib_figure=eog_score_fig)
     else:
@@ -594,7 +680,8 @@ def plot_ica_scores(meeg, show_plots):
     ecg_scores = meeg.load_json('ecg_scores', default=list())
     if len(ecg_scores) > 1:
         ica = meeg.load_ica()
-        ecg_score_fig = ica.plot_scores(ecg_scores, title=f'{meeg.name}: ECG', show=show_plots)
+        ecg_score_fig = ica.plot_scores(ecg_scores, title=f'{meeg.name}: ECG',
+                                        show=show_plots)
         meeg.plot_save('ica', subfolder='scores', trial='ecg',
                        matplotlib_figure=ecg_score_fig)
     else:
@@ -604,13 +691,15 @@ def plot_ica_scores(meeg, show_plots):
 
 
 def apply_ica(meeg, n_pca_components):
-    # Check file-parameters to make sure, that ica is not applied twice in a row
+    # Check file-parameters to make sure,
+    # that ica is not applied twice in a row
     epochs_file = Path(meeg.epochs_path).name
-    if epochs_file in meeg.file_parameters and meeg.file_parameters[epochs_file]['FUNCTION'] == 'apply_ica':
+    if epochs_file in meeg.file_parameters and \
+            meeg.file_parameters[epochs_file]['FUNCTION'] == 'apply_ica':
         print(f'Not applying ICA because it was already applied to this file '
-              f'on {meeg.file_parameters[epochs_file]["TIME"]}. If you '
-              f'want to apply ICA again, delete the epochs-File in FileManagement '
-              f'and redo the epochs.')
+              f'on {meeg.file_parameters[epochs_file]["TIME"]}. '
+              f'If you want to apply ICA again, delete the epochs-File in '
+              'FileManagement and redo the epochs.')
     else:
         epochs = meeg.load_epochs()
         ica = meeg.load_ica()
@@ -631,7 +720,9 @@ def apply_ica(meeg, n_pca_components):
                 ica.apply(erm_data, n_pca_components)
             # Todo: Unmeddling ERM-SSP and ICA stuff
             except ValueError:
-                print('There is an unresolved issue with combining SSP from ERM and applying ICA on this ERM')
+                print(
+                    'There is an unresolved issue with combining SSP '
+                    'from ERM and applying ICA on this ERM')
             else:
                 meeg.save_erm_processed(erm_data)
 
@@ -686,39 +777,38 @@ def grand_avg_evokeds(group, ga_interpolate_bads, ga_drop_bads):
     group.save_ga_evokeds(ga_evokeds)
 
 
-def tfr(meeg, tfr_freqs, tfr_n_cycles, tfr_average, tfr_use_fft, tfr_baseline, tfr_baseline_mode,
+def tfr(meeg, tfr_freqs, tfr_n_cycles, tfr_average, tfr_use_fft, tfr_baseline,
+        tfr_baseline_mode,
         tfr_method, multitaper_bandwidth, stockwell_width, n_jobs, **kwargs):
     powers = list()
     itcs = list()
 
     epochs = meeg.load_epochs()
 
-    # Calculate Time-Frequency for each trial from epochs using the selected method
+    # Calculate Time-Frequency for each trial from epochs
+    # using the selected method
     for trial in meeg.sel_trials:
         if tfr_method == 'multitaper':
-            multitaper_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_multitaper)
-            tfr_result = mne.time_frequency.tfr_multitaper(epochs[trial],
-                                                           freqs=tfr_freqs,
-                                                           n_cycles=tfr_n_cycles,
-                                                           time_bandwidth=multitaper_bandwidth,
-                                                           n_jobs=n_jobs, use_fft=tfr_use_fft,
-                                                           return_itc=tfr_average, average=tfr_average,
-                                                           **multitaper_kwargs)
+            multitaper_kwargs = check_kwargs(kwargs,
+                                             mne.time_frequency.tfr_multitaper)
+            tfr_result = mne.time_frequency.tfr_multitaper(
+                epochs[trial], freqs=tfr_freqs, n_cycles=tfr_n_cycles,
+                time_bandwidth=multitaper_bandwidth, n_jobs=n_jobs,
+                use_fft=tfr_use_fft, return_itc=tfr_average,
+                average=tfr_average, **multitaper_kwargs)
         elif tfr_method == 'stockwell':
             fmin, fmax = tfr_freqs[[0, -1]]
-            stockwell_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_stockwell)
-            tfr_result = mne.time_frequency.tfr_stockwell(epochs[trial],
-                                                          fmin=fmin, fmax=fmax,
-                                                          width=stockwell_width,
-                                                          n_jobs=n_jobs, return_itc=True,
-                                                          **stockwell_kwargs)
+            stockwell_kwargs = check_kwargs(kwargs,
+                                            mne.time_frequency.tfr_stockwell)
+            tfr_result = mne.time_frequency.tfr_stockwell(
+                epochs[trial], fmin=fmin, fmax=fmax, width=stockwell_width,
+                n_jobs=n_jobs, return_itc=True, **stockwell_kwargs)
         else:
             morlet_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_morlet)
-            tfr_result = mne.time_frequency.tfr_morlet(epochs[trial],
-                                                       freqs=tfr_freqs,
-                                                       n_cycles=tfr_n_cycles,
-                                                       n_jobs=n_jobs, use_fft=tfr_use_fft,
-                                                       return_itc=tfr_average, average=tfr_average, **morlet_kwargs)
+            tfr_result = mne.time_frequency.tfr_morlet(
+                epochs[trial], freqs=tfr_freqs, n_cycles=tfr_n_cycles,
+                n_jobs=n_jobs, use_fft=tfr_use_fft, return_itc=tfr_average,
+                average=tfr_average, **morlet_kwargs)
 
         if isinstance(tfr_result, tuple):
             power = tfr_result[0]
@@ -802,33 +892,45 @@ def grand_avg_tfr(group):
 
 # local function used in the bash commands below
 def run_freesurfer_subprocess(command, subjects_dir, fs_path, mne_path=None):
-    # Several experiments with subprocess showed, that it seems impossible to run commands like "source" from
+    # Several experiments with subprocess showed,
+    # that it seems impossible to run commands like "source" from
     # a subprocess to get SetUpFreeSurfer.sh into the environment.
-    # Current workaround is adding the binaries to PATH manually, after the user set the path to FREESURFER_HOME
+    # Current workaround is adding the binaries to PATH manually,
+    # after the user set the path to FREESURFER_HOME
     if fs_path is None:
-        raise RuntimeError('Path to FREESURFER_HOME not set, can\'t run this function')
+        raise RuntimeError(
+            'Path to FREESURFER_HOME not set, can\'t run this function')
     environment = environ.copy()
     environment['FREESURFER_HOME'] = fs_path
     environment['SUBJECTS_DIR'] = subjects_dir
     if iswin:
         command.insert(0, 'wsl')
         if mne_path is None:
-            raise RuntimeError('Path to MNE-Environment in Windows-Subsytem for Linux(WSL) not set, '
-                               'can\'t run this function')
+            raise RuntimeError(
+                'Path to MNE-Environment in Windows-Subsytem for Linux(WSL)'
+                ' not set, can\'t run this function')
 
-        # Add Freesurfer-Path, MNE-Path and standard Ubuntu-Paths, which get lost when sharing the Path from Windows
+        # Add Freesurfer-Path, MNE-Path and standard Ubuntu-Paths,
+        # which get lost when sharing the Path from Windows
         # to WSL
         environment['PATH'] = f'{fs_path}/bin:{mne_path}/bin:' \
-                              f'/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+                              f'/usr/local/sbin:' \
+                              f'/usr/local/bin:' \
+                              f'/usr/sbin:' \
+                              f'/usr/bin:' \
+                              f'/sbin:' \
+                              f'/bin'
         environment['WSLENV'] = 'PATH/u:SUBJECTS_DIR/p:FREESURFER_HOME/u'
     else:
         # Add Freesurfer to Path
         environment['PATH'] = environment['PATH'] + f':{fs_path}/bin'
 
-    # Add Mac-specific Freesurfer-Paths (got them from FreeSurferEnv.sh in FREESURFER_HOME)
+    # Add Mac-specific Freesurfer-Paths
+    # (got them from FreeSurferEnv.sh in FREESURFER_HOME)
     if ismac:
         if isdir(join(fs_path, 'lib/misc/lib')):
-            environment['PATH'] = environment['PATH'] + f':{fs_path}/lib/misc/bin'
+            environment['PATH'] = environment[
+                                      'PATH'] + f':{fs_path}/lib/misc/bin'
             environment['MISC_LIB'] = join(fs_path, 'lib/misc/lib')
             environment['LD_LIBRARY_PATH'] = join(fs_path, 'lib/misc/lib')
             environment['DYLD_LIBRARY_PATH'] = join(fs_path, 'lib/misc/lib')
@@ -836,9 +938,11 @@ def run_freesurfer_subprocess(command, subjects_dir, fs_path, mne_path=None):
         if isdir(join(fs_path, 'lib/gcc/lib')):
             environment['DYLD_LIBRARY_PATH'] = join(fs_path, 'lib/gcc/lib')
 
-    # Popen is needed, run(which is supposed to be newer) somehow doesn't seem to support live-stream via PIPE?!
+    # Popen is needed, run(which is supposed to be newer)
+    # somehow doesn't seem to support live-stream via PIPE?!
     process = subprocess.Popen(command, env=environment,
-                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
                                text=True, universal_newlines=True)
 
     # write subprocess-output to main-tread streams
@@ -859,24 +963,27 @@ def apply_watershed(fsmri):
                '--subject', fsmri.name,
                '--overwrite']
 
-    run_freesurfer_subprocess(command, fsmri.subjects_dir, fsmri.fs_path, fsmri.mne_path)
+    run_freesurfer_subprocess(command, fsmri.subjects_dir, fsmri.fs_path,
+                              fsmri.mne_path)
 
     if iswin:
-        # Copy Watershed-Surfaces because the Links don't work under Windows when made in WSL
+        # Copy Watershed-Surfaces because the Links don't work
+        # under Windows when made in WSL
         surfaces = [(f'{fsmri.name}_inner_skull_surface', 'inner_skull.surf'),
                     (f'{fsmri.name}_outer_skin_surface', 'outer_skin.surf'),
                     (f'{fsmri.name}_outer_skull_surface', 'outer_skull.surf'),
                     (f'{fsmri.name}_brain_surface', 'brain.surf')]
-
-        for surface_tuple in surfaces:
+        bem_dir = join(fsmri.subjects_dir, fsmri.name, 'bem')
+        watershed_dir = join(bem_dir, 'watershed')
+        for src, dst in surfaces:
             # Remove faulty link
-            os.remove(join(fsmri.subjects_dir, fsmri.name, 'bem', surface_tuple[1]))
+            os.remove(join(bem_dir, dst))
             # Copy files
-            source = join(fsmri.subjects_dir, fsmri.name, 'bem', 'watershed', surface_tuple[0])
-            destination = join(fsmri.subjects_dir, fsmri.name, 'bem', surface_tuple[1])
+            source = join(watershed_dir, src)
+            destination = join(fsmri.subjects_dir, fsmri.name, 'bem', dst)
             shutil.copy2(source, destination)
 
-            print(f'{surface_tuple[1]} was created')
+            print(f'{dst} was created')
 
 
 def make_dense_scalp_surfaces(fsmri):
@@ -891,7 +998,8 @@ def make_dense_scalp_surfaces(fsmri):
                '--subject', fsmri.name,
                '--force']
 
-    run_freesurfer_subprocess(command, fsmri.subjects_dir, fsmri.fs_path, fsmri.mne_path)
+    run_freesurfer_subprocess(command, fsmri.subjects_dir, fsmri.fs_path,
+                              fsmri.mne_path)
 
 
 # ==============================================================================
@@ -899,9 +1007,10 @@ def make_dense_scalp_surfaces(fsmri):
 # ==============================================================================
 
 def setup_src(fsmri, src_spacing, surface, n_jobs):
-    src = mne.setup_src(fsmri.name, spacing=src_spacing,
-                        surface=surface, subjects_dir=fsmri.subjects_dir,
-                        add_dist=False, n_jobs=n_jobs)
+    src = mne.setup_source_space(fsmri.name, spacing=src_spacing,
+                                 surface=surface,
+                                 subjects_dir=fsmri.subjects_dir,
+                                 add_dist=False, n_jobs=n_jobs)
     fsmri.save_source_space(src)
 
 
@@ -920,7 +1029,8 @@ def compute_src_distances(fsmri, n_jobs):
 
 def prepare_bem(fsmri, bem_spacing, bem_conductivity):
     bem_model = mne.make_bem_model(fsmri.name, subjects_dir=fsmri.subjects_dir,
-                                   ico=bem_spacing, conductivity=bem_conductivity)
+                                   ico=bem_spacing,
+                                   conductivity=bem_conductivity)
     fsmri.save_bem_model(bem_model)
 
     bem_solution = mne.make_bem_solution(bem_model)
@@ -930,24 +1040,29 @@ def prepare_bem(fsmri, bem_spacing, bem_conductivity):
 def morph_fsmri(meeg, morph_to):
     if meeg.fsmri.name != morph_to:
         forward = meeg.load_forward()
-        morph = mne.compute_source_morph(forward['src'], subject_from=meeg.fsmri.name,
-                                         subject_to=morph_to, subjects_dir=meeg.subjects_dir)
+        morph = mne.compute_source_morph(forward['src'],
+                                         subject_from=meeg.fsmri.name,
+                                         subject_to=morph_to,
+                                         subjects_dir=meeg.subjects_dir)
         meeg.save_source_morph(morph)
     else:
-        logging.info(f'There is no need to morph the source-space for {meeg.name}, '
-                     f'because the morph-destination "{morph_to}" '
-                     f'is the same as the associated FSMRI.')
+        logging.info(
+            f'There is no need to morph the source-space for {meeg.name}, '
+            f'because the morph-destination "{morph_to}" '
+            f'is the same as the associated FSMRI.')
 
 
 def morph_labels_from_fsaverage(fsmri):
     parcellations = ['aparc_sub', 'HCPMMP1_combined', 'HCPMMP1']
     if not isfile(join(fsmri.subjects_dir, 'fsaverage/label',
                        'lh.' + parcellations[0] + '.annot')):
-        mne.datasets.fetch_hcp_mmp_parcellation(subjects_dir=fsmri.subjects_dir,
-                                                verbose=True)
+        mne.datasets.fetch_hcp_mmp_parcellation(
+            subjects_dir=fsmri.subjects_dir,
+            verbose=True)
 
-        mne.datasets.fetch_aparc_sub_parcellation(subjects_dir=fsmri.subjects_dir,
-                                                  verbose=True)
+        mne.datasets.fetch_aparc_sub_parcellation(
+            subjects_dir=fsmri.subjects_dir,
+            verbose=True)
     else:
         print('You\'ve already downloaded the parcellations, splendid!')
 
@@ -956,11 +1071,13 @@ def morph_labels_from_fsaverage(fsmri):
         for pc in parcellations:
             labels = mne.read_labels_from_annot('fsaverage', pc, hemi='both')
 
-            m_labels = mne.morph_labels(labels, fsmri.name, 'fsaverage', fsmri.subjects_dir,
+            m_labels = mne.morph_labels(labels, fsmri.name, 'fsaverage',
+                                        fsmri.subjects_dir,
                                         surf_name='pial')
 
             mne.write_labels_to_annot(m_labels, subject=fsmri.name, parc=pc,
-                                      subjects_dir=fsmri.subjects_dir, overwrite=True)
+                                      subjects_dir=fsmri.subjects_dir,
+                                      overwrite=True)
 
     else:
         print(f'{parcellations} already exist')
@@ -999,11 +1116,14 @@ def estimate_noise_covariance(meeg, baseline, n_jobs, noise_cov_mode,
     else:
         print('Noise Covariance on Empty-Room-Data')
         erm_filtered = meeg.load_erm_processed()
-        erm_filtered.pick([ch for ch in erm_filtered.ch_names if ch not in meeg.bad_channels])
+        erm_filtered.pick([ch for ch in erm_filtered.ch_names if
+                           ch not in meeg.bad_channels])
 
         kwargs = check_kwargs(kwargs, mne.compute_raw_covariance)
-        noise_covariance = mne.compute_raw_covariance(erm_filtered, n_jobs=n_jobs,
-                                                      method=noise_cov_method, **kwargs)
+        noise_covariance = mne.compute_raw_covariance(erm_filtered,
+                                                      n_jobs=n_jobs,
+                                                      method=noise_cov_method,
+                                                      **kwargs)
         meeg.save_noise_covariance(noise_covariance)
 
 
@@ -1012,7 +1132,8 @@ def create_inverse_operator(meeg):
     noise_covariance = meeg.load_noise_covariance()
     forward = meeg.load_forward()
 
-    inverse_operator = mne.minimum_norm.make_inverse_operator(info, forward, noise_covariance)
+    inverse_operator = mne.minimum_norm.make_inverse_operator(info, forward,
+                                                              noise_covariance)
     meeg.save_inverse_operator(inverse_operator)
 
 
@@ -1022,7 +1143,8 @@ def source_estimate(meeg, inverse_method, pick_ori, lambda2):
 
     stcs = {}
     for evoked in [ev for ev in evokeds if ev.comment in meeg.sel_trials]:
-        stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2, method=inverse_method,
+        stc = mne.minimum_norm.apply_inverse(evoked, inverse_operator, lambda2,
+                                             method=inverse_method,
                                              pick_ori=pick_ori)
         stcs.update({evoked.comment: stc})
 
@@ -1044,7 +1166,8 @@ def label_time_course(meeg, target_labels, parcellation, extract_mode):
         ltc_dict[trial] = {}
         times = stcs[trial].times
         for label in chosen_labels:
-            ltc = stcs[trial].extract_label_time_course(label, src, mode=extract_mode)[0]
+            ltc = stcs[trial].extract_label_time_course(label, src,
+                                                        mode=extract_mode)[0]
             ltc_dict[trial][label.name] = np.vstack((ltc, times))
 
     meeg.save_ltc(ltc_dict)
@@ -1067,7 +1190,9 @@ def mixed_norm_estimate(meeg, pick_ori, inverse_method):
         lambda2 = 1.0 / snr ** 2
         for evoked in evokeds:
             trial = evoked.comment
-            stcs[trial] = mne.minimum_norm.apply_inverse(evoked, inv_op, lambda2, method='dSPM')
+            stcs[trial] = mne.minimum_norm.apply_inverse(evoked, inv_op,
+                                                         lambda2,
+                                                         method='dSPM')
 
     mixn_dips = {}
     mixn_stcs = {}
@@ -1077,32 +1202,34 @@ def mixed_norm_estimate(meeg, pick_ori, inverse_method):
         n_mxne_iter = 10  # if > 1 use L0.5/L2 reweighted mixed norm solver
         # if n_mxne_iter > 1 dSPM weighting can be avoided.
         trial = evoked.comment
-        mixn_dipoles, dip_residual = mne.inverse_sparse.mixed_norm(evoked, forward, noise_cov, alpha,
-                                                                   maxit=3000, tol=1e-4, active_set_size=10,
-                                                                   debias=True, weights=stcs[trial],
-                                                                   n_mxne_iter=n_mxne_iter, return_residual=True,
-                                                                   return_as_dipoles=True)
+        mixn_dipoles, dip_residual = mne.inverse_sparse.mixed_norm(
+            evoked, forward, noise_cov, alpha, maxit=3000, tol=1e-4,
+            active_set_size=10, debias=True, weights=stcs[trial],
+            n_mxne_iter=n_mxne_iter, return_residual=True,
+            return_as_dipoles=True)
         mixn_dips[trial] = mixn_dipoles
 
-        mixn_stc, residual = mne.inverse_sparse.mixed_norm(evoked, forward, noise_cov, alpha,
-                                                           maxit=3000, tol=1e-4, active_set_size=10, debias=True,
-                                                           weights=stcs[trial], n_mxne_iter=n_mxne_iter,
-                                                           return_residual=True, return_as_dipoles=False,
-                                                           pick_ori=pick_ori)
+        mixn_stc, residual = mne.inverse_sparse.mixed_norm(
+            evoked, forward, noise_cov, alpha, maxit=3000, tol=1e-4,
+            active_set_size=10, debias=True, weights=stcs[trial],
+            n_mxne_iter=n_mxne_iter, return_residual=True,
+            return_as_dipoles=False, pick_ori=pick_ori)
         mixn_stcs[evoked.comment] = mixn_stc
 
     meeg.save_mixn_dipoles(mixn_dips)
     meeg.save_mixn_source_estimates(mixn_stcs)
 
 
-# Todo: Separate Plot-Functions (better responsivness of GUI during fit, when running in QThread)
+# Todo: Separate Plot-Functions
+#  (better responsivness of GUI during fit, when running in QThread)
 
 def ecd_fit(meeg, ecd_times, ecd_positions, ecd_orientations, t_epoch):
     try:
         ecd_time = ecd_times[meeg.name]
     except KeyError:
         ecd_time = {'Dip1': (0, t_epoch[1])}
-        print(f'No Dipole times assigned for {meeg.name}, Dipole-Times: 0-{t_epoch[1]}')
+        print(f'No Dipole times assigned for {meeg.name},'
+              f' Dipole-Times: 0-{t_epoch[1]}')
 
     evokeds = meeg.load_evokeds()
     noise_covariance = meeg.load_noise_covariance()
@@ -1124,14 +1251,21 @@ def ecd_fit(meeg, ecd_times, ecd_positions, ecd_orientations, t_epoch):
             except KeyError:
                 ecd_position = None
                 ecd_orientation = None
-                print(f'No Position&Orientation for Dipole for {meeg.name} assigned, '
-                      f'sequential fitting and free orientation used')
+                print(f'No Position&Orientation for Dipole for {meeg.name}'
+                      f' assigned, sequential fitting and free orientation '
+                      'used.')
 
             if ecd_position:
-                dipole, residual = mne.fit_dipole(copy_evoked, noise_covariance, bem, trans=trans,
-                                                  min_dist=3.0, n_jobs=4, pos=ecd_position, ori=ecd_orientation)
+                dipole, residual = mne.fit_dipole(copy_evoked,
+                                                  noise_covariance, bem,
+                                                  trans=trans,
+                                                  min_dist=3.0, n_jobs=4,
+                                                  pos=ecd_position,
+                                                  ori=ecd_orientation)
             else:
-                dipole, residual = mne.fit_dipole(copy_evoked, noise_covariance, bem, trans=trans, min_dist=3.0,
+                dipole, residual = mne.fit_dipole(copy_evoked,
+                                                  noise_covariance, bem,
+                                                  trans=trans, min_dist=3.0,
                                                   n_jobs=4)
 
             ecd_dips[trial][dip] = dipole
@@ -1149,7 +1283,9 @@ def apply_morph(meeg, morph_to):
             morphed_stcs[trial] = morph.apply(stcs[trial])
         meeg.save_morphed_source_estimates(morphed_stcs)
     else:
-        logging.info(f'{meeg.name} is already in source-space of {morph_to} and won\'t be morphed')
+        logging.info(
+            f'{meeg.name} is already in source-space of {morph_to} '
+            f'and won\'t be morphed')
 
 
 def src_connectivity(meeg, parcellation, target_labels, inverse_method,
@@ -1165,79 +1301,91 @@ def src_connectivity(meeg, parcellation, target_labels, inverse_method,
     for trial in [t for t in all_epochs.event_id if t]:
         con_dict[trial.split('/')[0]] = {}
         epochs = all_epochs[trial.split('/')[0]]
-        # Compute inverse solution and for each epoch. By using "return_generator=True"
-        # stcs will be a generator object instead of a list.
-        stcs = mne.minimum_norm.apply_inverse_epochs(epochs, inverse_operator, lambda2, inverse_method,
-                                                     pick_ori="normal", return_generator=True)
+        # Compute inverse solution and for each epoch.
+        # By using "return_generator=True" stcs will be a generator object
+        # instead of a list.
+        stcs = mne.minimum_norm.apply_inverse_epochs(
+            epochs, inverse_operator, lambda2, inverse_method,
+            pick_ori="normal", return_generator=True)
 
-        # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
         labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation,
                                             subjects_dir=meeg.subjects_dir)
 
         actual_labels = [lb for lb in labels if lb.name in target_labels]
-
-        # Average the source estimates within each label using sign-flips to reduce
-        # signal cancellations, also here we return a generator
-
         label_ts = mne.extract_label_time_course(stcs, actual_labels,
                                                  src, mode='mean_flip',
                                                  return_generator=True)
 
         sfreq = info['sfreq']  # the sampling frequency
-        con = mne_connectivity.spectral_connectivity(label_ts, method=con_methods, mode='multitaper',
-                                                     sfreq=sfreq, fmin=con_fmin, fmax=con_fmax,
-                                                     faverage=True, mt_adaptive=True, n_jobs=n_jobs)
+        con = mne_connectivity.spectral_connectivity(
+            label_ts, method=con_methods, mode='multitaper', sfreq=sfreq,
+            fmin=con_fmin, fmax=con_fmax, faverage=True, mt_adaptive=True,
+            n_jobs=n_jobs)
 
         if not isinstance(con, list):
             con = [con]
 
-        # con is a 3D array, get the connectivity for the first (and only) freq. band
-        # for each con_method
+        # con is a 3D array, get the connectivity for the first (and only)
+        # freq. band for each con_method
         for method, c in zip(con_methods, con):
-            con_dict[trial.split('/')[0]][method] = c.get_data(output='dense')[:, :, 0]
+            con_dict[trial.split('/')[0]][method] = \
+                c.get_data(output='dense')[:, :, 0]
 
     meeg.save_connectivity(con_dict)
 
     for trial in all_epochs.event_id:
         con_dict[trial.split('/')[1]] = {}
-       # epochs = all_epochs[trial.split('/')[1]][:2]
+        # epochs = all_epochs[trial.split('/')[1]][:2]
         epochs = all_epochs[trial.split('/')[1]]
-        # Compute inverse solution and for each epoch. By using "return_generator=True"
-        # stcs will be a generator object instead of a list.
-        stcs = mne.minimum_norm.apply_inverse_epochs(epochs, inverse_operator, lambda2, inverse_method,
-                                                     pick_ori="normal", return_generator=True)
+        # Compute inverse solution and for each epoch.
+        # By using "return_generator=True" stcs will be a generator object
+        # instead of a list.
+        stcs = mne.minimum_norm.apply_inverse_epochs(epochs, inverse_operator,
+                                                     lambda2, inverse_method,
+                                                     pick_ori="normal",
+                                                     return_generator=True)
 
-        # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
+        # Get labels for FreeSurfer 'aparc' cortical parcellation
+        # with 34 labels/hemi
         labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation,
                                             subjects_dir=meeg.subjects_dir)
 
         actual_labels = [lb for lb in labels if lb.name in target_labels]
 
-        # Average the source estimates within each label using sign-flips to reduce
-        # signal cancellations, also here we return a generator
+        # Average the source estimates within each label using
+        # sign-flips to reduce signal cancellations, also here we return a
+        # generator
 
         label_ts = mne.extract_label_time_course(stcs, actual_labels,
                                                  src, mode='mean_flip',
                                                  return_generator=True)
 
         sfreq = info['sfreq']  # the sampling frequency
-        con = mne_connectivity.spectral_connectivity(label_ts, method=con_methods, mode='multitaper',
-                                                     sfreq=sfreq, fmin=con_fmin, fmax=con_fmax,
-                                                     faverage=True, mt_adaptive=True, n_jobs=n_jobs)
+        con = mne_connectivity.spectral_connectivity(label_ts,
+                                                     method=con_methods,
+                                                     mode='multitaper',
+                                                     sfreq=sfreq,
+                                                     fmin=con_fmin,
+                                                     fmax=con_fmax,
+                                                     faverage=True,
+                                                     mt_adaptive=True,
+                                                     n_jobs=n_jobs)
 
         if not isinstance(con, list):
             con = [con]
 
-        # con is a 3D array, get the connectivity for the first (and only) freq. band
-        # for each con_method
+        # con is a 3D array, get the connectivity for the first
+        # (and only) freq. band for each con_method
         for method, c in zip(con_methods, con):
-            con_dict[trial.split('/')[1]][method] = c.get_data(output='dense')[:, :, 0]
+            con_dict[trial.split('/')[1]][method] = \
+                c.get_data(output='dense')[:, :, 0]
 
     meeg.save_connectivity(con_dict)
 
 
 def grand_avg_morphed(group, morph_to):
-    # for less memory only import data from stcs and add it to one fsaverage-stc in the end!!!
+    # for less memory only import data from stcs and add it to one
+    # stc in the end!!!
     n_chunks = 8
     # divide in chunks to save memory
     fusion_dict = {}
@@ -1267,7 +1415,8 @@ def grand_avg_morphed(group, morph_to):
                 n_subjects = len(sub_trial_dict[trial])
 
                 for trial_index in range(1, n_subjects):
-                    sub_trial_average.data += sub_trial_dict[trial][trial_index].data
+                    sub_trial_average.data += sub_trial_dict[trial][
+                        trial_index].data
 
                 sub_trial_average.data /= n_subjects
                 sub_trial_average.comment = trial
@@ -1305,11 +1454,14 @@ def grand_avg_ltc(group):
             if trial not in ltc_average_dict:
                 ltc_average_dict[trial] = {}
             for label in ltc_dict[trial]:
-                # First row of array is label-time-course-data, second row is time-array
+                # First row of array is label-time-course-data,
+                # second row is time-array
                 if label in ltc_average_dict[trial]:
-                    ltc_average_dict[trial][label].append(ltc_dict[trial][label][0])
+                    ltc_average_dict[trial][label].append(
+                        ltc_dict[trial][label][0])
                 else:
-                    ltc_average_dict[trial][label] = [ltc_dict[trial][label][0]]
+                    ltc_average_dict[trial][label] = [
+                        ltc_dict[trial][label][0]]
                 # Should be the same for each trial and label
                 times = ltc_dict[trial][label][1]
 
@@ -1346,9 +1498,11 @@ def grand_avg_connect(group):
                 con_average_dict[trial] = {}
             for con_method in con_dict[trial]:
                 if con_method in con_average_dict[trial]:
-                    con_average_dict[trial][con_method].append(con_dict[trial][con_method])
+                    con_average_dict[trial][con_method].append(
+                        con_dict[trial][con_method])
                 else:
-                    con_average_dict[trial][con_method] = [con_dict[trial][con_method]]
+                    con_average_dict[trial][con_method] = [
+                        con_dict[trial][con_method]]
 
     ga_con = {}
     for trial in con_average_dict:
