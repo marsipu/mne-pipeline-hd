@@ -8,6 +8,7 @@ License: GPL-3.0
 """
 
 import json
+import logging
 import os
 import shutil
 from ast import literal_eval
@@ -360,8 +361,11 @@ class Project:
 
     def remove_meeg(self, remove_files):
         for meeg in self.sel_meeg:
-            # Remove MEEG from Lists/Dictionaries
-            self.all_meeg.remove(meeg)
+            try:
+                # Remove MEEG from Lists/Dictionaries
+                self.all_meeg.remove(meeg)
+            except ValueError:
+                logging.warning(f'{meeg} already removed!')
             self.meeg_to_erm.pop(meeg, None)
             self.meeg_to_fsmri.pop(meeg, None)
             self.meeg_bad_channels.pop(meeg, None)
@@ -396,7 +400,10 @@ class Project:
 
     def remove_fsmri(self, remove_files):
         for fsmri in self.sel_fsmri:
-            self.all_fsmri.remove(fsmri)
+            try:
+                self.all_fsmri.remove(fsmri)
+            except ValueError:
+                logging.warning(f'{fsmri} already deleted!')
             if remove_files:
                 try:
                     shutil.rmtree(join(self.ct.subjects_dir, fsmri))
