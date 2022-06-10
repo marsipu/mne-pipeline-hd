@@ -25,7 +25,6 @@ from mne.viz import Brain
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
 
-from mne_pipeline_hd import QS, iswin
 from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
                                               SimpleList, SimpleDialog)
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
@@ -33,7 +32,8 @@ from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
                                            get_exception_tuple,
                                            get_user_input_string, center)
 from mne_pipeline_hd.pipeline.controller import Controller
-from mne_pipeline_hd.pipeline.pipeline_utils import (_get_available_parc)
+from mne_pipeline_hd.pipeline.pipeline_utils import (_get_available_parc, QS,
+                                                     iswin)
 
 
 class Param(QWidget):

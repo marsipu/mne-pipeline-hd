@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QFileDialog,
                              QScrollArea, QSizePolicy, QTabWidget,
                              QVBoxLayout, QWidget)
 
-from mne_pipeline_hd import QS, ismac, _object_refs
+from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.functions.plot import close_all
 from mne_pipeline_hd.gui.dialogs import (QuickGuide, RawInfo,
                                          RemoveProjectsDlg,
@@ -47,7 +47,7 @@ from mne_pipeline_hd.gui.parameter_widgets import (BoolGui, IntGui,
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
-from mne_pipeline_hd.pipeline.pipeline_utils import restart_program
+from mne_pipeline_hd.pipeline.pipeline_utils import restart_program, ismac, QS
 
 
 class MainWindow(QMainWindow):

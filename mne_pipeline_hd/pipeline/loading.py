@@ -26,13 +26,12 @@ import matplotlib.pyplot as plt
 import mne
 import numpy as np
 
-from mne_pipeline_hd import QS
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
 from mne_pipeline_hd.pipeline.pipeline_utils import (TypedJSONEncoder,
                                                      type_json_hook,
-                                                     _get_available_parc)
+                                                     _get_available_parc, QS)
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',
                 'raw_filtered': 'sample_audvis_filt-0-40_raw.fif',

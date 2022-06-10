@@ -21,11 +21,12 @@ from pathlib import Path
 import mne
 import pandas as pd
 
-from mne_pipeline_hd import functions, QS
+from mne_pipeline_hd import functions
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, \
     get_user_input_string
 from mne_pipeline_hd.pipeline.legacy import \
     transfer_file_params_to_single_subject
+from mne_pipeline_hd.pipeline.pipeline_utils import QS
 from mne_pipeline_hd.pipeline.project import Project
 
 home_dirs = ['custom_packages', 'freesurfer', 'projects']

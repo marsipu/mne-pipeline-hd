@@ -19,7 +19,8 @@ from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog,
                              QListView, QPushButton, QScrollArea, QSizePolicy,
                              QSpinBox, QTabWidget, QTableView, QTreeView,
                              QVBoxLayout, QWidget)
-from mne_pipeline_hd import QS, _object_refs
+
+from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.gui_utils import get_user_input_string
 from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel,
                                         BasePandasModel,
@@ -28,6 +29,7 @@ from mne_pipeline_hd.gui.models import (BaseDictModel, BaseListModel,
                                         EditDictModel, EditListModel,
                                         EditPandasModel,
                                         FileManagementModel, TreeModel)
+from mne_pipeline_hd.pipeline.pipeline_utils import QS
 
 
 class Base(QWidget):

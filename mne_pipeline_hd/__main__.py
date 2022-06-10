@@ -18,10 +18,10 @@ from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication
 from qdarkstyle import DarkPalette, LightPalette
 
-from mne_pipeline_hd import QS, ismac, islin
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.gui.welcome_window import show_welcome_window
 from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS
 
 
 def main():

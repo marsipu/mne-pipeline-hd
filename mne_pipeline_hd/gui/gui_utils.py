@@ -25,7 +25,9 @@ from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog,
                              QHBoxLayout,
                              QLabel, QMessageBox, QProgressBar, QPushButton,
                              QTextEdit, QVBoxLayout, QStyle, QInputDialog)
-from mne_pipeline_hd import QS, _object_refs
+
+from mne_pipeline_hd import _object_refs
+from mne_pipeline_hd.pipeline.pipeline_utils import QS
 
 
 def center(widget):
