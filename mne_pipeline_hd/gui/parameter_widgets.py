@@ -1804,8 +1804,10 @@ class SettingsDlg(QDialog):
                 'data_type': 'QSettings',
                 'gui_kwargs': {
                     'alias': 'Enable CUDA',
-                    'description': 'Enable for CUDA support (system has to be setup for cuda '
-                                   'as in https://mne.tools/stable/install/advanced.html#gpu-acceleration-with-cuda)',
+                    'description': 'Enable for CUDA support '
+                                   '(system has to be setup for cuda '
+                                   'as in https://mne.tools/stable/install/'
+                                   'advanced.html#gpu-acceleration-with-cuda)',
                     'return_integer': True
                 }
             },
@@ -1814,9 +1816,11 @@ class SettingsDlg(QDialog):
                 'data_type': 'QSettings',
                 'gui_kwargs': {
                     'alias': 'Save RAM',
-                    'description': 'Set to True on low RAM-Machines to avoid the process to be killed '
-                                   'by the OS due to low Memory (with leaving it off, the pipeline goes '
-                                   'a bit faster, because the data can be saved in memory).',
+                    'description': 'Set to True on low RAM-Machines to avoid'
+                                   ' the process to be killed by the OS due '
+                                   'to low Memory (with leaving it off, '
+                                   'the pipeline goes a bit faster, because '
+                                   'the data can be saved in memory).',
                     'return_integer': True
                 }
             },
@@ -1825,10 +1829,11 @@ class SettingsDlg(QDialog):
                 'data_type': 'QSettings',
                 'gui_kwargs': {
                     'alias': 'FREESURFER_HOME-Path',
-                    'description': 'Set the Path to the "freesurfer"-directory of your '
-                                   'Freesurfer-Installation '
-                                   '(for Windows to the LINUX-Path of the Freesurfer-Installation '
-                                   'in Windows-Subsystem for Linux(WSL))',
+                    'description': 'Set the Path to the "freesurfer"-directory'
+                                   ' of your Freesurfer-Installation '
+                                   '(for Windows to the LINUX-Path of the '
+                                   'Freesurfer-Installation in '
+                                   'Windows-Subsystem for Linux(WSL))',
                     'none_select': True
                 }
             },
@@ -1836,9 +1841,10 @@ class SettingsDlg(QDialog):
                 'gui_type': 'StringGui',
                 'data_type': 'QSettings',
                 'gui_kwargs': {
-                    'alias': 'MNE-Python-Path',
-                    'description': 'Set the LINUX-Path to the mne-environment (e.g '
-                                   '...anaconda3/envs/mne) in Windows-Subsystem for Linux(WSL))',
+                    'alias': 'MNE-WSL-Path',
+                    'description': 'Set the LINUX-Path to the mne-environment '
+                                   '(e.g ...anaconda3/envs/mne) in '
+                                   'Windows-Subsystem for Linux(WSL))',
                     'none_select': True
                 }
             }
