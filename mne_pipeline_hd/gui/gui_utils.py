@@ -242,7 +242,6 @@ class ConsoleWidget(QTextEdit):
         self.autoscroll = True
 
         self.buffer_time = 50
-        self.buffer_limit = 20
 
         # Buffer to avoid crash for too many inputs
         self.buffer = list()
@@ -257,12 +256,6 @@ class ConsoleWidget(QTextEdit):
 
     def write_buffer(self):
         if len(self.buffer) > 0:
-            # Apply buffer-limit
-            if len(self.buffer) > self.buffer_limit:
-                self.buffer = self.buffer[-self.buffer_limit:]
-                text, kind = self.buffer[0]
-                if not kind == 'progress':
-                    self._add_html('[...]')
             text, kind = self.buffer.pop(0)
             if kind == 'html':
                 self._add_html(text)
@@ -282,7 +275,8 @@ class ConsoleWidget(QTextEdit):
                 self._add_html(text)
 
             elif kind == 'stderr':
-                # weird characters in some progress are excluded (e.g. from autoreject)
+                # weird characters in some progress are excluded
+                # (e.g. from autoreject)
                 if '\x1b' not in text:
                     text = _html_compatible(text)
                     text = f'<font color="red">{text}</font>'
