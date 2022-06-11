@@ -76,6 +76,7 @@ stc_animation_span;;Inverse;(0,0.5);s;time-span for stc-animation[s];TupleGui;
 stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
 parcellation;;Inverse;aparc;;;StringGui;
 target_labels;;Inverse;[];;;LabelGui;
+label_colors;;
 extract_mode;Label-Extraction-Mode;Inverse;mean_flip;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['max', 'mean', 'mean_flip', 'pca_flip']}
 con_methods;;Connectivity;['coh'];;methods for connectivity plots;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}
 con_fmin;;Connectivity;30;;fmin for connectivity plot;IntGui;

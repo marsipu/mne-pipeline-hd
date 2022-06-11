@@ -13,15 +13,16 @@ from functools import partial
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import QSettings, Qt, pyqtSignal
-from PyQt5.QtGui import QFontDatabase, QFont
+from PyQt5.QtGui import QFontDatabase, QFont, QPixmap
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QSizePolicy, QSlider,
                              QSpinBox, QVBoxLayout, QWidget, QDockWidget,
                              QTabWidget, QScrollArea, QMessageBox,
-                             QStyleFactory)
+                             QStyleFactory, QColorDialog)
 from mne import read_labels_from_annot
 from mne.viz import Brain
+from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
 
@@ -185,38 +186,46 @@ class Param(QWidget):
             # Read from widget to get value e.g. inside min/max-bounds
             self._get_param()
 
-    def read_param(self):
+    def _read_data(self, name):
         # get data from dictionary
         if isinstance(self.data, dict):
-            if self.name in self.data:
-                self.param_value = self.data[self.name]
+            if name in self.data:
+                value = self.data[name]
             else:
-                self.param_value = self.default
+                value = self.default
 
         # get data from Parameters in Project in MainWindow
         # (depending on selected parameter-preset and selected Project)
         elif isinstance(self.data, Controller):
-            if self.name in self.data.pr.parameters[self.data.pr.p_preset]:
-                self.param_value = \
-                    self.data.pr.parameters[self.data.pr.p_preset][self.name]
+            if name in self.data.pr.parameters[self.data.pr.p_preset]:
+                value = \
+                    self.data.pr.parameters[self.data.pr.p_preset][name]
             else:
-                self.param_value = self.default
+                value = self.default
 
         # get data from QSettings
         elif isinstance(self.data, QS):
-            if self.name in self.data.childKeys():
-                self.param_value = self.data.value(self.name)
+            if name in self.data.childKeys():
+                value = self.data.value(name)
             else:
-                self.param_value = self.default
+                value = self.default
 
-    def save_param(self):
+        return value
+
+    def read_param(self):
+        self.param_value = self._read_data(self.name)
+
+    def _save_data(self, name, value):
         if isinstance(self.data, dict):
-            self.data[self.name] = self.param_value
+            self.data[name] = value
         elif isinstance(self.data, Controller):
             self.data.pr.parameters[self.data.pr.p_preset][
-                self.name] = self.param_value
+                name] = value
         elif isinstance(self.data, QS):
-            self.data.setValue(self.name, self.param_value)
+            self.data.setValue(name, value)
+
+    def save_param(self):
+        self._save_data(self.name, self.param_value)
 
 
 class IntGui(Param):
@@ -1445,6 +1454,83 @@ class LabelGui(Param):
             value = self.param_value
 
         return value
+
+
+class ColorGui(Param):
+    """A GUI to pick a color and returns a dictionary with HexRGBA-Strings."""
+
+    def __init__(self, keys, **kwargs):
+        """
+        Parameters
+        ----------
+        keys : dict | str | None
+            If you supply a dictionary with keys, you can set a color
+            for each key. If you supply the string name of another parameter
+            (which must return an iterable!), the values from there are taken.
+        **kwargs
+            All the parameters for :method:`Param.__init__` go here.
+        """
+
+        super().__init__(**kwargs)
+
+        if isinstance(keys, str):
+            self.keys = self._read_data(keys)
+        else:
+            self.keys = keys
+
+        self._cached_value = self.param_value
+
+        self.read_param()
+        self._init_layout()
+        self._set_param()
+        self.save_param()
+
+    def _init_layout(self):
+        layout = QHBoxLayout()
+        self.select_widget = QComboBox()
+        self.select_widget.addItems([str(k) for k in self.keys])
+        self.select_widget.activated.connect(self._change_display_color)
+        layout.addWidget(self.select_widget)
+        self.display_widget = QLabel()
+        self.display_widget.setSizePolicy(QSizePolicy.Maximum,
+                                          QSizePolicy.Preferred)
+        layout.addWidget(self.display_widget)
+        self.param_widget = QPushButton('Pick Color')
+        self.param_widget.clicked.connect(self._pick_color)
+        layout.addWidget(self.param_widget)
+        self.init_ui(layout)
+
+    def _change_display_color(self):
+        key = self.select_widget.currentText()
+        if key in self._cached_value:
+            color = _get_color(self._cached_value[key])
+            pixmap = QPixmap(20, 20)
+            pixmap.fill(color)
+            self.display_widget.setPixmap(pixmap)
+
+    def set_value(self, value):
+        self._cached_value = value
+        self.keys = value.keys()
+        self.select_widget.clear()
+        self.select_widget.addItems([str(k) for k in self.keys])
+        self._change_display_color()
+
+    def get_value(self):
+        return self._cached_value
+
+    def _pick_color(self):
+        key = self.select_widget.currentText()
+        if key in self._cached_value:
+            previous_color = _get_color(self._cached_value[key])
+        else:
+            previous_color = None
+        # blocking
+        color = QColorDialog.getColor(previous_color, self,
+                                      f'Pick a color for {self.name}')
+        self._cached_value[key] = color.name()
+        self._change_display_color()
+        self._set_param()
+        self._get_param()
 
 
 # Todo: Ordering Parameters in Tabs and add Find-Command

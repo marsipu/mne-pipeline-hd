@@ -1,3 +1,4 @@
+import inspect
 import sys
 import traceback
 from ast import literal_eval
@@ -6,145 +7,13 @@ from PyQt5.QtWidgets import *
 
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import SimpleDict
-
-
-class StandardWidgets(QWidget):
-
-    def __init__(self, parent=None):
-        super(StandardWidgets, self).__init__()
-
-        icons = [
-            'SP_ArrowBack',
-            'SP_ArrowDown',
-            'SP_ArrowForward',
-            'SP_ArrowLeft',
-            'SP_ArrowRight',
-            'SP_ArrowUp',
-            'SP_BrowserReload',
-            'SP_BrowserStop',
-            'SP_CommandLink',
-            'SP_ComputerIcon',
-            'SP_CustomBase',
-            'SP_DesktopIcon',
-            'SP_DialogApplyButton',
-            'SP_DialogCancelButton',
-            'SP_DialogCloseButton',
-            'SP_DialogDiscardButton',
-            'SP_DialogHelpButton',
-            'SP_DialogNoButton',
-            'SP_DialogOkButton',
-            'SP_DialogOpenButton',
-            'SP_DialogResetButton',
-            'SP_DialogSaveButton',
-            'SP_DialogYesButton',
-            'SP_DirClosedIcon',
-            'SP_DirHomeIcon',
-            'SP_DirIcon',
-            'SP_DirLinkIcon',
-            'SP_DirOpenIcon',
-            'SP_DockWidgetCloseButton',
-            'SP_DriveCDIcon',
-            'SP_DriveDVDIcon',
-            'SP_DriveFDIcon',
-            'SP_DriveHDIcon',
-            'SP_DriveNetIcon',
-            'SP_FileDialogBack',
-            'SP_FileDialogContentsView',
-            'SP_FileDialogDetailedView',
-            'SP_FileDialogEnd',
-            'SP_FileDialogInfoView',
-            'SP_FileDialogListView',
-            'SP_FileDialogNewFolder',
-            'SP_FileDialogStart',
-            'SP_FileDialogToParent',
-            'SP_FileIcon',
-            'SP_FileLinkIcon',
-            'SP_MediaPause',
-            'SP_MediaPlay',
-            'SP_MediaSeekBackward',
-            'SP_MediaSeekForward',
-            'SP_MediaSkipBackward',
-            'SP_MediaSkipForward',
-            'SP_MediaStop',
-            'SP_MediaVolume',
-            'SP_MediaVolumeMuted',
-            'SP_MessageBoxCritical',
-            'SP_MessageBoxInformation',
-            'SP_MessageBoxQuestion',
-            'SP_MessageBoxWarning',
-            'SP_TitleBarCloseButton',
-            'SP_TitleBarContextHelpButton',
-            'SP_TitleBarMaxButton',
-            'SP_TitleBarMenuButton',
-            'SP_TitleBarMinButton',
-            'SP_TitleBarNormalButton',
-            'SP_TitleBarShadeButton',
-            'SP_TitleBarUnshadeButton',
-            'SP_ToolBarHorizontalExtensionButton',
-            'SP_ToolBarVerticalExtensionButton',
-            'SP_TrashIcon',
-            'SP_VistaShield'
-        ]
-
-        colSize = 4
-
-        layout = QGridLayout()
-
-        count = 0
-        for i in icons:
-            btn = QPushButton(i)
-            btn.setIcon(self.style().standardIcon(getattr(QStyle, i)))
-
-            layout.addWidget(btn, int(count / colSize), int(count % colSize))
-            count += 1
-
-        self.setLayout(layout)
+from mne_pipeline_hd.gui.parameter_widgets import Param
+from mne_pipeline_hd.tests.test_param_guis import gui_kwargs, parameters
 
 
 class ParamGuis(QWidget):
     def __init__(self):
         super().__init__()
-        self.parameters = {'IntGui': 1,
-                           'FloatGui': 5.3,
-                           'StringGui': 'Havona',
-                           'MultiTypeGui': 42,
-                           'FuncGui': 5000,
-                           'BoolGui': True,
-                           'TupleGui': (45, 6),
-                           'ComboGui': 'a',
-                           'ListGui': [1, 454.33, 'post_central-lh', 5],
-                           'CheckListGui': ['bananaaa'],
-                           'DictGui': {'A': 'hubi', 'B': 58.144, 3: 'post_lh'},
-                           'SliderGui': 5}
-
-        self.keyword_args = {
-            'IntGui': {'min_val': -4,
-                       'max_val': 10,
-                       'param_unit': 't'},
-            'FloatGui': {'min_val': -18,
-                         'max_val': 64,
-                         'step': 0.4,
-                         'param_unit': 'flurbo'},
-            'StringGui': {'input_mask': 'ppAAA.AA;_',
-                          'param_unit': 'N'},
-            'MultiTypeGui': {'type_selection': True},
-            'FuncGui': {'param_unit': 'u'},
-            'BoolGui': {},
-            'TupleGui': {'min_val': -10,
-                         'max_val': 100,
-                         'step': 1,
-                         'param_unit': 'Nm'},
-            'ComboGui': {'options': {'a': 'A', 'b': 'B', 'c': 'C'},
-                         'param_unit': 'g'},
-            'ListGui': {'param_unit': 'mol'},
-            'CheckListGui': {'options': ['lemon', 'pineapple', 'bananaaa'],
-                             'param_unit': 'V'},
-            'DictGui': {'param_unit': '°C'},
-            'SliderGui': {'min_val': -10,
-                          'max_val': 10,
-                          'step': 0.01,
-                          'param_unit': 'Hz'}
-        }
 
         self.gui_dict = dict()
 
@@ -154,22 +23,17 @@ class ParamGuis(QWidget):
         test_layout = QVBoxLayout()
         grid_layout = QGridLayout()
         max_cols = 4
-        set_none_select = True
-        set_groupbox_layout = False
-        set_alias = False
 
-        for idx, gui_nm in enumerate(self.keyword_args):
-            kw_args = self.keyword_args[gui_nm]
-            kw_args['data'] = self.parameters
-            kw_args['name'] = gui_nm
-            kw_args['none_select'] = set_none_select
-            kw_args['groupbox_layout'] = set_groupbox_layout
-            if set_alias:
-                kw_args['alias'] = gui_nm + '-alias'
-            kw_args['description'] = gui_nm + '-description'
-            gui = getattr(parameter_widgets, gui_nm)(**kw_args)
+        param_names = list(parameters.keys())
+        for idx, gui_name in enumerate(param_names):
+            gui_class = getattr(parameter_widgets, gui_name)
+            gui_parameters = list(inspect.signature(gui_class).parameters) + \
+                             list(inspect.signature(Param).parameters)
+            kwargs = {key: value for key, value in gui_kwargs.items()
+                      if key in gui_parameters}
+            gui = gui_class(data=parameters, name=gui_name, **kwargs)
             grid_layout.addWidget(gui, idx // max_cols, idx % max_cols)
-            self.gui_dict[gui_nm] = gui
+            self.gui_dict[gui_name] = gui
 
         test_layout.addLayout(grid_layout)
 
@@ -200,7 +64,7 @@ class ParamGuis(QWidget):
                 value = literal_eval(self.set_le.text())
             except (SyntaxError, ValueError):
                 value = self.set_le.text()
-            self.parameters[current_gui] = value
+            parameters[current_gui] = value
             p_gui = self.gui_dict[current_gui]
             p_gui.read_param()
             p_gui._set_param()
@@ -210,15 +74,13 @@ class ParamGuis(QWidget):
     def show_parameters(self):
         dlg = QDialog(self)
         layout = QVBoxLayout()
-        layout.addWidget(SimpleDict(self.parameters))
+        layout.addWidget(SimpleDict(parameters))
         dlg.setLayout(layout)
         dlg.open()
 
 
 if __name__ == '__main__':
     app = QApplication.instance() or QApplication(sys.argv)
-    # standard_widgets = StandardWidgets()
-    # standard_widgets.show()
     test_widget = ParamGuis()
     test_widget.show()
     sys.exit(app.exec())

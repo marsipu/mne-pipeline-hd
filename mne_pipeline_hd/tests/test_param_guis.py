@@ -7,11 +7,17 @@ Pipeline-GUI for Analysis with MNE-Python
 License: GPL-3.0
 """
 import inspect
+import sys
+import traceback
+from ast import literal_eval
 
 import pytest
+from PyQt5.QtWidgets import QVBoxLayout, QGridLayout, QPushButton, QLineEdit, \
+    QDialog, QApplication, QWidget, QHBoxLayout, QComboBox
 from numpy.testing import assert_allclose
 
 from mne_pipeline_hd.gui import parameter_widgets
+from mne_pipeline_hd.gui.base_widgets import SimpleDict
 from mne_pipeline_hd.gui.parameter_widgets import Param, _eval_param
 
 parameters = {'IntGui': 1,
@@ -28,7 +34,9 @@ parameters = {'IntGui': 1,
                           'C': 58.144,
                           3: [1, 2, 3, 4],
                           'D': {'A': 1, 'B': 2}},
-              'SliderGui': 5}
+              'SliderGui': 5,
+              'ColorGui': {'C': '#98765432',
+                           '3': '#97867564'}}
 
 alternative_parameters = {'IntGui': 5,
                           'FloatGui': 8.45,
@@ -44,7 +52,9 @@ alternative_parameters = {'IntGui': 5,
                                       'e': 11.333,
                                       5: [65, 3, 11],
                                       'F': {'C': 1, 'D': 2}},
-                          'SliderGui': 2}
+                          'SliderGui': 2,
+                          'ColorGui': {'A': '#12345678',
+                                       'B': '#13243546'}}
 
 gui_kwargs = {'none_select': True,
               'min_val': -40,
@@ -52,7 +62,8 @@ gui_kwargs = {'none_select': True,
               'step': 0.5,
               'return_integer': False,
               'param_unit': 'ms',
-              'options': {'a': 'A', 'b': 'B', 'c': 'C'}}
+              'options': {'a': 'A', 'b': 'B', 'c': 'C'},
+              'keys': 'DictGui'}
 
 
 def _check_param(gui, gui_name, alternative=False):
@@ -145,3 +156,83 @@ def test_basic_param_guis(qtbot, gui_name):
             gui.set_param(parameters[gui_name])
             assert gui.get_value() == parameters[gui_name]
             assert type(gui.get_value()).__name__ == gui_type
+
+
+class ParamGuis(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.gui_dict = dict()
+
+        self.init_ui()
+
+    def init_ui(self):
+        test_layout = QVBoxLayout()
+        grid_layout = QGridLayout()
+        max_cols = 4
+        set_none_select = True
+        set_groupbox_layout = False
+        set_alias = False
+
+        for idx, gui_nm in enumerate(gui_kwargs):
+            kw_args = gui_kwargs[gui_nm]
+            kw_args['data'] = parameters
+            kw_args['name'] = gui_nm
+            kw_args['none_select'] = set_none_select
+            kw_args['groupbox_layout'] = set_groupbox_layout
+            if set_alias:
+                kw_args['alias'] = gui_nm + '-alias'
+            kw_args['description'] = gui_nm + '-description'
+            gui = getattr(parameter_widgets, gui_nm)(**kw_args)
+            grid_layout.addWidget(gui, idx // max_cols, idx % max_cols)
+            self.gui_dict[gui_nm] = gui
+
+        test_layout.addLayout(grid_layout)
+
+        set_layout = QHBoxLayout()
+        self.gui_cmbx = QComboBox()
+        self.gui_cmbx.addItems(self.gui_dict.keys())
+        set_layout.addWidget(self.gui_cmbx)
+
+        self.set_le = QLineEdit()
+        set_layout.addWidget(self.set_le)
+
+        set_bt = QPushButton('Set')
+        set_bt.clicked.connect(self.set_param)
+        set_layout.addWidget(set_bt)
+
+        show_bt = QPushButton('Show Parameters')
+        show_bt.clicked.connect(self.show_parameters)
+        set_layout.addWidget(show_bt)
+
+        test_layout.addLayout(set_layout)
+
+        self.setLayout(test_layout)
+
+    def set_param(self):
+        try:
+            current_gui = self.gui_cmbx.currentText()
+            try:
+                value = literal_eval(self.set_le.text())
+            except (SyntaxError, ValueError):
+                value = self.set_le.text()
+            parameters[current_gui] = value
+            p_gui = self.gui_dict[current_gui]
+            p_gui.read_param()
+            p_gui._set_param()
+        except:
+            print(traceback.format_exc())
+
+    def show_parameters(self):
+        dlg = QDialog(self)
+        layout = QVBoxLayout()
+        layout.addWidget(SimpleDict(parameters))
+        dlg.setLayout(layout)
+        dlg.open()
+
+
+def show_param_guis():
+    app = QApplication.instance() or QApplication(sys.argv)
+    test_widget = ParamGuis()
+    test_widget.show()
+    sys.exit(app.exec())
