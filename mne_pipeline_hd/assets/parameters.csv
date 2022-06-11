@@ -72,7 +72,7 @@ stc_background;;Inverse;'black';;Background for Source Estimate Plots;MultiTypeG
 stc_roll;;Inverse;0;;Roll for view in for Source Estimate Plots;IntGui;{'max_val': 360}
 stc_azimuth;;Inverse;0;;Azimuth for view for Source Estimate Plots;IntGui;{'max_val': 360}
 stc_elevation;;Inverse;0;;Elevation for view for Source Estimate Plots;IntGui;{'max_val': 360}
-stc_animation;;Inverse;(0,0.5);s;time-span for stc-animation[s];TupleGui;
+stc_animation_span;;Inverse;(0,0.5);s;time-span for stc-animation[s];TupleGui;
 stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
 parcellation;;Inverse;aparc;;;StringGui;
 target_labels;;Inverse;[];;;LabelGui;

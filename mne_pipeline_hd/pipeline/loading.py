@@ -374,7 +374,8 @@ class BaseLoading:
 
     # Todo: Type recognition
     def plot_save(self, plot_name, subfolder=None, trial=None, idx=None,
-                  matplotlib_figure=None, brain=None, dpi=None):
+                  matplotlib_figure=None, brain=None, brain_movie_kwargs=None,
+                  dpi=None, img_format=None):
         """
         Save a plot with this method either by letting the figure be detected
          by the backend (pyplot, mayavi) or by
@@ -397,10 +398,13 @@ class BaseLoading:
              the current-figure will be taken with plt.savefig()).
         brain : mne.viz.Brain | None
             Supply a Brain-instance here.
+        brain_movie_kwargs : dict
+            Supply keyword-arguments for brain.save_movie() here.
         dpi :
             Set the dpi-setting if you want another than specified
              in the MainWindow-Settings.
-
+        img_format : str | None
+            Set the image format if other then saved in settings.
         """
         # Take DPI from Settings if not defined by call
         if not dpi:
@@ -466,7 +470,13 @@ class BaseLoading:
                 else:
                     matplotlib_figure.savefig(save_path, dpi=dpi)
             elif brain:
-                brain.save_image(save_path)
+                if brain_movie_kwargs is not None:
+                    time_dilation = brain_movie_kwargs['stc_animation_dilat']
+                    tmin, tmax = brain_movie_kwargs['stc_animation_span']
+                    brain.save_movie(save_path, time_dilation=time_dilation,
+                                     tmin=tmin, tmax=tmax)
+                else:
+                    brain.save_image(save_path)
             else:
                 plt.savefig(save_path, dpi=dpi)
             print(f'figure: {save_path} has been saved')
@@ -600,7 +610,7 @@ class MEEG(BaseLoading):
             else:
                 self.fsmri = FSMRI(self.pr.meeg_to_fsmri[self.name], self.ct)
         else:
-            self.fsmri = FSMRI('None', self.ct)
+            self.fsmri = FSMRI(None, self.ct)
             if not self.suppress_warnings:
                 print(
                     f'No Freesurfer-MRI-Subject assigned for {self.name},'
@@ -1341,6 +1351,9 @@ class Group(BaseLoading):
                            gi in self.ct.pr.sel_event_id]:
             self.sel_trials = self.sel_trials | set(
                 self.ct.pr.sel_event_id[group_item])
+
+        # The fsmri where all group members are morphed to
+        self.fsmri = FSMRI(self.pa['morph_to'], self.ct)
 
     def init_paths(self):
         # Main Path

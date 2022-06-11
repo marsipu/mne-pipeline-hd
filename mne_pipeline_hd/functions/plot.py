@@ -22,7 +22,6 @@ import numpy as np
 from mne_pipeline_hd.pipeline.plot_utils import pipeline_plot
 
 try:
-    from mne.viz import Brain
     from nilearn.plotting import plot_anat
 except (ModuleNotFoundError, ValueError):
     pass
@@ -240,9 +239,9 @@ def plot_evoked_topo(meeg, show_plots):
 def plot_evoked_topomap(meeg, show_plots):
     evokeds = meeg.load_evokeds()
     for evoked in evokeds:
-        fig = mne.viz.plot_evoked_topomap(evoked, times='auto',
-                                          title=meeg.name + '-' + evoked.comment,
-                                          show=show_plots)
+        fig = mne.viz.plot_evoked_topomap(
+            evoked, times='auto', title=meeg.name + '-' + evoked.comment,
+            show=show_plots)
 
         meeg.plot_save('evokeds', subfolder='topomap', trial=evoked.comment,
                        matplotlib_figure=fig)
@@ -252,9 +251,9 @@ def plot_evoked_joint(meeg, show_plots):
     evokeds = meeg.load_evokeds()
 
     for evoked in evokeds:
-        fig = mne.viz.plot_evoked_joint(evoked, times='peaks',
-                                        title=meeg.name + ' - ' + evoked.comment,
-                                        show=show_plots)
+        fig = mne.viz.plot_evoked_joint(
+            evoked, times='peaks', title=meeg.name + ' - ' + evoked.comment,
+            show=show_plots)
 
         meeg.plot_save('evokeds', subfolder='joint', trial=evoked.comment,
                        matplotlib_figure=fig)
@@ -348,15 +347,12 @@ def plot_transformation(meeg):
                            surfaces=['head-dense', 'inner_skull', 'brain'],
                            show_axes=True, dig=True)
 
-    mlab.view(45, 90, distance=0.6, focalpoint=(0., 0., 0.025))
-
     meeg.plot_save('transformation', mayavi=True)
 
 
 def plot_src(fsmri):
     src = fsmri.load_source_space()
     src.plot()
-    mlab.view(-90, 7)
 
     fsmri.plot_save('src', mayavi=True)
 
@@ -404,135 +400,90 @@ def plot_noise_covariance(meeg, show_plots):
                    matplotlib_figure=fig2)
 
 
-def plot_stc(meeg, parcellation, target_labels,
-             stc_surface, stc_hemi, stc_views, stc_time, stc_background, stc_roll, stc_azimuth, stc_elevation):
-    stcs = meeg.load_source_estimates()
-    parc_labels = mne.read_labels_from_annot(meeg.fsmri.name,
-                                             parc=parcellation,
-                                             subjects_dir=meeg.subjects_dir)
+def _brain_plot(meeg, stcs, stc_surface, stc_hemi, stc_views,
+                stc_time, stc_background, target_labels, parcellation,
+                stc_roll, stc_azimuth, stc_elevation, interactive=False,
+                **brain_movie_kwargs):
     for trial, stc in stcs.items():
         title = f'{meeg.name}-{trial}'
         brain = stc.plot(subject=meeg.fsmri.name, surface=stc_surface,
                          subjects_dir=meeg.subjects_dir,
                          hemi=stc_hemi, views=stc_views,
                          initial_time=stc_time, background=stc_background,
-                         title=title, time_viewer=False)
-        for label_name in target_labels:
-            for label in parc_labels:
-                if label.name == label_name:
-                    brain.add_label(label, borders=True)
-        brain.show_view(None, roll=stc_roll, azimuth=stc_azimuth, elevation=stc_elevation)
+                         title=title, time_viewer=interactive)
+        brain.show_view(roll=stc_roll, azimuth=stc_azimuth,
+                        elevation=stc_elevation)
         brain.add_text(0, 0.9, title, 'title', font_size=14)
-        meeg.plot_save('source_estimates', trial=trial, brain=brain)
+        if not interactive:
+            parc_labels = mne.read_labels_from_annot(meeg.fsmri.name,
+                                                     parc=parcellation,
+                                                     subjects_dir=meeg.subjects_dir)
+            for label_name in target_labels:
+                for label in parc_labels:
+                    if label.name == label_name:
+                        brain.add_label(label, borders=True)
+            if brain_movie_kwargs is not None and 'stc_animation_dilat' in brain_movie_kwargs:
+                img_format = '.mp4'
+            else:
+                img_format = '.jpg'
+                brain_movie_kwargs = None
 
-        if not meeg.ct.settings['show_plots']:
-            brain.close()
+            meeg.plot_save('source_estimates', trial=trial, brain=brain,
+                           brain_movie_kwargs=brain_movie_kwargs,
+                           img_format=img_format)
+
+            if not meeg.ct.settings['show_plots']:
+                brain.close()
 
 
-def plot_stc_interactive(meeg, stc_surface, stc_hemi, stc_views, stc_time, stc_background,
-                         stc_roll, stc_azimuth, stc_elevation):
+def plot_stc(meeg, parcellation, target_labels,
+             stc_surface, stc_hemi, stc_views, stc_time, stc_background,
+             stc_roll, stc_azimuth, stc_elevation):
     stcs = meeg.load_source_estimates()
-    for trial, stc in stcs.items():
-        title = f'{meeg.name}-{trial}'
-        brain = stc.plot(subject=meeg.fsmri.name, surface=stc_surface,
-                         subjects_dir=meeg.subjects_dir,
-                         hemi=stc_hemi, views=stc_views, background=stc_background,
-                         initial_time=stc_time,
-                         title=title, time_viewer=True)
-        brain.show_view(None, roll=stc_roll, azimuth=stc_azimuth, elevation=stc_elevation)
-        brain.add_text(0, 0.9, title, 'title', font_size=14)
+    _brain_plot(meeg=meeg, stcs=stcs, stc_surface=stc_surface,
+                stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_background=stc_background, target_labels=target_labels,
+                parcellation=parcellation, stc_roll=stc_roll,
+                stc_azimuth=stc_azimuth, stc_elevation=stc_elevation)
+
+
+def plot_stc_interactive(meeg, stc_surface, stc_hemi, stc_views, stc_time,
+                         stc_background, stc_roll, stc_azimuth, stc_elevation):
+    stcs = meeg.load_source_estimates()
+    _brain_plot(meeg=meeg, stcs=stcs, stc_surface=stc_surface,
+                stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_background=stc_background, target_labels=None,
+                parcellation=None, stc_roll=stc_roll,
+                stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
+                interactive=True)
+
+
+def plot_animated_stc(meeg, parcellation, target_labels, stc_surface,
+                      stc_hemi, stc_views, stc_time, stc_background,
+                      stc_roll, stc_azimuth, stc_elevation, stc_animation_span,
+                      stc_animation_dilat):
+    stcs = meeg.load_source_estimates()
+    _brain_plot(meeg=meeg, stcs=stcs, stc_surface=stc_surface,
+                stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_background=stc_background, target_labels=target_labels,
+                parcellation=parcellation, stc_roll=stc_roll,
+                stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
+                stc_animation_span=stc_animation_span,
+                stc_animation_dilat=stc_animation_dilat)
 
 
 def plot_labels(fsmri, parcellation, target_labels,
                 stc_hemi, stc_surface, stc_views):
     Brain = mne.viz.get_brain_class()
-    brain = Brain(subject_id=fsmri.name, hemi=stc_hemi,
-                  surf=stc_surface, subjects_dir=fsmri.subjects_dir,
-                  views=stc_views)
-    parc_labels = mne.read_labels_from_annot(fsmri.name,
-                                             parc=parcellation,
+    brain = Brain(subject_id=fsmri.name, hemi=stc_hemi, surf=stc_surface,
+                  subjects_dir=fsmri.subjects_dir, views=stc_views)
+    parc_labels = mne.read_labels_from_annot(fsmri.name, parc=parcellation,
                                              subjects_dir=fsmri.subjects_dir)
     for label_name in target_labels:
         for label in parc_labels:
             if label.name == label_name:
                 brain.add_label(label, borders=False)
     fsmri.plot_save('labels', brain=brain)
-
-
-def plot_mixn(meeg, mne_evoked_time, parcellation):
-    trans = meeg.load_transformation()
-    dipole_dict = meeg.load_mixn_dipoles()
-    for trial in dipole_dict:
-        dipoles = dipole_dict[trial]
-        # Plot Dipole Amplitues (derived from Source Code with added legend)
-        colors = plt.cm.get_cmap(name='hsv', lut=len(dipoles) + 1)
-        fig1, ax = plt.subplots(1, 1)
-        xlim = [np.inf, -np.inf]
-        for i, dip in enumerate(dipoles):
-            ax.plot(dip.times, dip.amplitude * 1e9, color=colors(i),
-                    linewidth=1.5, label=f'dipole {i + 1}')
-            xlim[0] = min(xlim[0], dip.times[0])
-            xlim[1] = max(xlim[1], dip.times[-1])
-        ax.set(xlim=xlim, xlabel='Time (s)', ylabel='Amplitude (nAm)')
-        ax.legend()
-        fig1.suptitle(f'Dipoles Amplitudes', fontsize=16)
-        fig1.show(warn=False)
-
-        meeg.plot_save('mixed-norm-estimate', subfolder='dipoles', trial=trial,
-                       matplotlib_figure=fig1)
-
-        for idx, dipole in enumerate(dipoles):
-            # Assumption right in Head Coordinates?
-            if dipole.pos[0, 0] < 0:
-                side = 'left'
-                hemi = 'lh'
-            else:
-                side = 'right'
-                hemi = 'rh'
-            fig2 = mne.viz.plot_dipole_locations(dipole, trans=trans,
-                                                 subject=meeg.fsmri.name,
-                                                 subjects_dir=meeg.subjects_dir,
-                                                 coord_frame='mri')
-            fig2.suptitle(f'Dipole {idx + 1} {side}', fontsize=16)
-
-            meeg.plot_save('mixed-norm-estimate', subfolder='dipoles',
-                           trial=trial, idx=idx, matplotlib_figure=fig2)
-
-            brain = Brain(meeg.fsmri.name, hemi=hemi, surf='pial', views='lat')
-            dip_loc = mne.head_to_mri(dipole.pos, meeg.fsmri.name, trans,
-                                      subjects_dir=meeg.subjects_dir)
-            brain.add_foci(dip_loc[0])
-            brain.add_annotation(parcellation)
-            # Todo: Comparision with label
-            meeg.plot_save('mixed-norm-estimate', subfolder='dipoles',
-                           trial=trial, idx=idx, brain=brain)
-
-    stcs = meeg.load_mixn_source_estimates()
-    brain_plot(meeg, stcs, 'mixed-norm-estimate/stc', meeg.fsmri.name,
-               mne_evoked_time)
-
-
-def plot_animated_stc(meeg, stc_animation, stc_animation_dilat):
-    stcs = meeg.load_source_estimates()
-
-    for trial in stcs:
-        n_stc = stcs[trial]
-
-        save_path = join(meeg.figures_path, meeg.p_preset, 'stcs_movie', trial,
-                         f'{meeg.name}_{trial}_{meeg.p_preset}-stc_movie.mp4')
-
-        brain = mne.viz.plot_source_estimates(stc=n_stc,
-                                              subject=meeg.fsmri.name,
-                                              surface='inflated',
-                                              subjects_dir=meeg.subjects_dir,
-                                              size=(1600, 800),
-                                              hemi='split', views='lat',
-                                              title=meeg.name + '_movie')
-
-        print('Saving Video')
-        brain.save_movie(save_path, time_dilation=stc_animation_dilat,
-                         tmin=stc_animation[0], tmax=stc_animation[1],
-                         framerate=30)
 
 
 def plot_ecd(meeg):
@@ -589,6 +540,7 @@ def plot_snr(meeg, show_plots):
 
 
 def plot_annotation(fsmri, parcellation):
+    Brain = mne.viz.get_brain_class()
     brain = Brain(fsmri.name, hemi='lh', surf='inflated', views='lat')
     brain.add_annotation(parcellation)
 
@@ -666,7 +618,7 @@ def plot_src_connectivity(meeg, target_labels, parcellation, con_fmin,
                 con_dict[trial][con_method], label_names,
                 n_lines=100, node_angles=node_angles,
                 node_colors=label_colors,
-                title=f'{trial }: '
+                title=f'{trial}: '
                       f'{str(con_fmin)}-{str(con_fmax)}',
                 fontsize_names=8, show=show_plots)
 
@@ -711,65 +663,42 @@ def plot_grand_avg_tfr(group, show_plots):
                         matplotlib_figure=fig4)
 
 
-def plot_grand_avg_stc(group, morph_to, target_labels, parcellation, stc_surface, stc_hemi, stc_views,
-                       stc_time, stc_background, stc_roll, stc_azimuth, stc_elevation):
-    ga_stcs = group.load_ga_stc()
-    parc_labels = mne.read_labels_from_annot(morph_to,
-                                             parc=parcellation,
-                                             subjects_dir=group.subjects_dir)
-    for trial, stc in ga_stcs.items():
-        title = f'{group.name}-{trial}'
-        brain = stc.plot(subject=morph_to, surface=stc_surface,
-                         subjects_dir=group.subjects_dir,
-                         hemi=stc_hemi, views=stc_views, background=stc_background,
-                         initial_time=stc_time,
-                         title=title, time_viewer=False)
-        brain.show_view(None, roll=stc_roll, azimuth=stc_azimuth, elevation=stc_elevation)
-        for label_name in target_labels:
-            for label in parc_labels:
-                if label.name == label_name:
-                    brain.add_label(label, borders=True)
-        brain.add_text(0, 0.9, title, 'title', font_size=14)
-        group.plot_save('grand_average_source_estimates', trial=trial, brain=brain)
-
-        if not group.ct.settings['show_plots']:
-            brain.close()
-
-
-def plot_grand_average_stc_interactive(group, morph_to, stc_surface, stc_hemi, stc_views,
-                       stc_time, stc_background, stc_roll, stc_azimuth, stc_elevation):
-
+def plot_grand_avg_stc(group, target_labels, parcellation,
+                       stc_surface, stc_hemi, stc_views, stc_time,
+                       stc_background, stc_roll, stc_azimuth, stc_elevation):
     stcs = group.load_ga_stc()
-    for trial, stc in stcs.items():
-        title = f'{group.name}-{trial}'
-        brain = stc.plot(subject=morph_to, surface=stc_surface,
-                         subjects_dir=group.subjects_dir,
-                         hemi=stc_hemi, views=stc_views, background=stc_background,
-                         initial_time=stc_time, title=title, time_viewer=True)
-        brain.add_text(0, 0.9, title, 'title', font_size=14)
+    _brain_plot(meeg=group, stcs=stcs, stc_surface=stc_surface,
+                stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_background=stc_background, target_labels=target_labels,
+                parcellation=parcellation, stc_roll=stc_roll,
+                stc_azimuth=stc_azimuth, stc_elevation=stc_elevation)
 
 
-def plot_grand_avg_stc_anim(group, stc_animation, stc_animation_dilat,
-                            morph_to):
-    ga_dict = group.load_ga_stc()
+def plot_grand_average_stc_interactive(group, stc_surface, stc_hemi,
+                                       stc_views, stc_time, stc_background,
+                                       stc_roll, stc_azimuth, stc_elevation):
+    stcs = group.load_ga_stc()
+    _brain_plot(meeg=group, stcs=stcs, stc_surface=stc_surface,
+                stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_background=stc_background, target_labels=None,
+                parcellation=None, stc_roll=stc_roll,
+                stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
+                interactive=True)
 
-    for trial in ga_dict:
-        brain = ga_dict[trial].plot(subject=morph_to,
-                                    subjects_dir=group.subjects_dir,
-                                    size=(1600, 800),
-                                    title=f'{group.name}-{trial}',
-                                    hemi='split',
-                                    views='lat')
-        brain.title = f'{group.name}-{trial}'
 
-        print('Saving Video')
-        save_path = join(group.figures_path, group.p_preset,
-                         'grand_averages/src/stc_movie',
-                         f'{group.name}_{trial}_{group.pr.p_preset}-stc_movie.mp4')
-        brain.save_movie(save_path, time_dilation=stc_animation_dilat,
-                         tmin=stc_animation[0], tmax=stc_animation[1],
-                         framerate=30)
-        mlab.close()
+def plot_grand_avg_stc_anim(group, parcellation, target_labels, stc_surface,
+                            stc_hemi, stc_views, stc_time, stc_background,
+                            stc_roll, stc_azimuth, stc_elevation,
+                            stc_animation_span,
+                            stc_animation_dilat):
+    stcs = group.load_ga_stc()
+    _brain_plot(meeg=group, stcs=stcs, stc_surface=stc_surface,
+                stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_background=stc_background, target_labels=target_labels,
+                parcellation=parcellation, stc_roll=stc_roll,
+                stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
+                stc_animation_span=stc_animation_span,
+                stc_animation_dilat=stc_animation_dilat)
 
 
 def plot_grand_avg_ltc(group, show_plots):

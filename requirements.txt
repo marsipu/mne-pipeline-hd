@@ -6,4 +6,4 @@ mne_connectivity
 autoreject
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 qdarkstyle
-
+imageio[ffmpeg]
