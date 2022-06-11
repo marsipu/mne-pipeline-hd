@@ -1488,6 +1488,7 @@ class ColorGui(Param):
     def _init_layout(self):
         layout = QHBoxLayout()
         self.select_widget = QComboBox()
+        self.select_widget.setEditable(True)
         self.select_widget.addItems([str(k) for k in self.keys])
         self.select_widget.activated.connect(self._change_display_color)
         layout.addWidget(self.select_widget)
@@ -1507,12 +1508,12 @@ class ColorGui(Param):
             pixmap = QPixmap(20, 20)
             pixmap.fill(color)
             self.display_widget.setPixmap(pixmap)
+        else:
+            self.display_widget.setText('None')
 
     def set_value(self, value):
         self._cached_value = value
         self.keys = value.keys()
-        self.select_widget.clear()
-        self.select_widget.addItems([str(k) for k in self.keys])
         self._change_display_color()
 
     def get_value(self):
@@ -1522,11 +1523,13 @@ class ColorGui(Param):
         key = self.select_widget.currentText()
         if key in self._cached_value:
             previous_color = _get_color(self._cached_value[key])
+            color = QColorDialog.getColor(initial=previous_color,
+                                          parent=self,
+                                          title=f'Pick a color for {self.name}')
         else:
-            previous_color = None
-        # blocking
-        color = QColorDialog.getColor(previous_color, self,
-                                      f'Pick a color for {self.name}')
+            # blocking
+            color = QColorDialog.getColor(
+                parent=self, title=f'Pick a color for {self.name}')
         self._cached_value[key] = color.name()
         self._change_display_color()
         self._set_param()

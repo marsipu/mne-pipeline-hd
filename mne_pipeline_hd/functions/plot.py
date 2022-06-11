@@ -401,28 +401,32 @@ def plot_noise_covariance(meeg, show_plots):
 
 
 def _brain_plot(meeg, stcs, stc_surface, stc_hemi, stc_views,
-                stc_time, stc_background, target_labels, parcellation,
-                stc_roll, stc_azimuth, stc_elevation, interactive=False,
-                **brain_movie_kwargs):
+                stc_time, stc_clim, stc_background, target_labels,
+                label_colors,
+                parcellation, stc_roll, stc_azimuth, stc_elevation,
+                interactive=False, **brain_movie_kwargs):
     for trial, stc in stcs.items():
         title = f'{meeg.name}-{trial}'
         brain = stc.plot(subject=meeg.fsmri.name, surface=stc_surface,
                          subjects_dir=meeg.subjects_dir,
                          hemi=stc_hemi, views=stc_views,
+                         clim=stc_clim,
                          initial_time=stc_time, background=stc_background,
                          title=title, time_viewer=interactive)
         brain.show_view(roll=stc_roll, azimuth=stc_azimuth,
                         elevation=stc_elevation)
         brain.add_text(0, 0.9, title, 'title', font_size=14)
         if not interactive:
-            parc_labels = mne.read_labels_from_annot(meeg.fsmri.name,
-                                                     parc=parcellation,
-                                                     subjects_dir=meeg.subjects_dir)
+            parc_labels = mne.read_labels_from_annot(
+                meeg.fsmri.name, parc=parcellation,
+                subjects_dir=meeg.subjects_dir)
             for label_name in target_labels:
                 for label in parc_labels:
                     if label.name == label_name:
-                        brain.add_label(label, borders=True)
-            if brain_movie_kwargs is not None and 'stc_animation_dilat' in brain_movie_kwargs:
+                        color = label_colors.get(label_name)
+                        brain.add_label(label, borders=True, color=color)
+            if brain_movie_kwargs is not None and 'stc_animation_dilat' \
+                    in brain_movie_kwargs:
                 img_format = '.mp4'
             else:
                 img_format = '.jpg'
@@ -436,43 +440,50 @@ def _brain_plot(meeg, stcs, stc_surface, stc_hemi, stc_views,
                 brain.close()
 
 
-def plot_stc(meeg, parcellation, target_labels,
-             stc_surface, stc_hemi, stc_views, stc_time, stc_background,
+def plot_stc(meeg, parcellation, target_labels, label_colors,
+             stc_surface, stc_hemi, stc_views, stc_time, stc_clim,
+             stc_background,
              stc_roll, stc_azimuth, stc_elevation):
     stcs = meeg.load_source_estimates()
     _brain_plot(meeg=meeg, stcs=stcs, stc_surface=stc_surface,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=target_labels,
+                label_colors=label_colors,
                 parcellation=parcellation, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation)
 
 
 def plot_stc_interactive(meeg, stc_surface, stc_hemi, stc_views, stc_time,
+                         stc_clim,
                          stc_background, stc_roll, stc_azimuth, stc_elevation):
     stcs = meeg.load_source_estimates()
     _brain_plot(meeg=meeg, stcs=stcs, stc_surface=stc_surface,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=None,
                 parcellation=None, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
                 interactive=True)
 
 
-def plot_animated_stc(meeg, parcellation, target_labels, stc_surface,
-                      stc_hemi, stc_views, stc_time, stc_background,
-                      stc_roll, stc_azimuth, stc_elevation, stc_animation_span,
-                      stc_animation_dilat):
+def plot_animated_stc(meeg, parcellation, target_labels, label_colors,
+                      stc_surface, stc_hemi, stc_views, stc_time, stc_clim,
+                      stc_background, stc_roll, stc_azimuth,
+                      stc_elevation, stc_animation_span, stc_animation_dilat):
     stcs = meeg.load_source_estimates()
     _brain_plot(meeg=meeg, stcs=stcs, stc_surface=stc_surface,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=target_labels,
+                label_colors=label_colors,
                 parcellation=parcellation, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
                 stc_animation_span=stc_animation_span,
                 stc_animation_dilat=stc_animation_dilat)
 
 
-def plot_labels(fsmri, parcellation, target_labels,
+def plot_labels(fsmri, parcellation, target_labels, label_colors,
                 stc_hemi, stc_surface, stc_views):
     Brain = mne.viz.get_brain_class()
     brain = Brain(subject_id=fsmri.name, hemi=stc_hemi, surf=stc_surface,
@@ -482,7 +493,8 @@ def plot_labels(fsmri, parcellation, target_labels,
     for label_name in target_labels:
         for label in parc_labels:
             if label.name == label_name:
-                brain.add_label(label, borders=False)
+                color = label_colors.get(label_name)
+                brain.add_label(label, borders=False, color=color)
     fsmri.plot_save('labels', brain=brain)
 
 
@@ -505,7 +517,8 @@ def plot_ecd(meeg):
             best_time = dipole.times[best_idx]
 
             print(
-                f'Highest GOF {dipole.gof[best_idx]:.2f}% at t={best_time * 1000:.1f} ms with confidence volume'
+                f'Highest GOF {dipole.gof[best_idx]:.2f}% at '
+                f't={best_time * 1000:.1f} ms with confidence volume'
                 f'{dipole.conf["vol"][best_idx] * 100 ** 3} cm^3')
 
             mri_pos = mne.head_to_mri(dipole.pos, meeg.fsmri.name, trans,
@@ -513,7 +526,8 @@ def plot_ecd(meeg):
 
             save_path_anat = join(meeg.obj.figures_path, meeg.p_preset, 'ECD',
                                   dipole, trial,
-                                  f'{meeg.name}-{trial}_{meeg.pr.p_preset}_ECD-{dipole}{meeg.img_format}')
+                                  f'{meeg.name}-{trial}_{meeg.pr.p_preset}_'
+                                  f'ECD-{dipole}{meeg.img_format}')
             t1_path = join(meeg.subjects_dir, meeg.fsmri.name, 'mri', 'T1.mgz')
             plot_anat(t1_path, cut_coords=mri_pos[best_idx],
                       output_file=save_path_anat,
@@ -605,13 +619,12 @@ def plot_src_connectivity(meeg, target_labels, parcellation, con_fmin,
     node_order.extend(lh_labels[::-1])  # reverse the order
     node_order.extend(rh_labels)
 
-    node_angles = mne_connectivity.viz.circular_layout(label_names, node_order,
-                                                       start_pos=90,
-                                                       group_boundaries=[0,
-                                                                         len(label_names) / 2])
+    node_angles = mne_connectivity.viz.circular_layout(
+        label_names, node_order, start_pos=90,
+        group_boundaries=[0, len(label_names) / 2])
 
-    # Plot the graph using node colors from the FreeSurfer parcellation. We only
-    # show the 300 strongest connections.
+    # Plot the graph using node colors from the FreeSurfer parcellation.
+    # We only show the 300 strongest connections.
     for trial in con_dict:
         for con_method in con_dict[trial]:
             fig, axes = mne_connectivity.viz.plot_connectivity_circle(
@@ -663,38 +676,46 @@ def plot_grand_avg_tfr(group, show_plots):
                         matplotlib_figure=fig4)
 
 
-def plot_grand_avg_stc(group, target_labels, parcellation,
-                       stc_surface, stc_hemi, stc_views, stc_time,
+def plot_grand_avg_stc(group, target_labels, label_colors, parcellation,
+                       stc_surface, stc_hemi, stc_views, stc_time, stc_clim,
                        stc_background, stc_roll, stc_azimuth, stc_elevation):
     stcs = group.load_ga_stc()
     _brain_plot(meeg=group, stcs=stcs, stc_surface=stc_surface,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=target_labels,
+                label_colors=label_colors,
                 parcellation=parcellation, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation)
 
 
 def plot_grand_average_stc_interactive(group, stc_surface, stc_hemi,
-                                       stc_views, stc_time, stc_background,
+                                       stc_views, stc_time, stc_clim,
+                                       stc_background,
                                        stc_roll, stc_azimuth, stc_elevation):
     stcs = group.load_ga_stc()
     _brain_plot(meeg=group, stcs=stcs, stc_surface=stc_surface,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=None,
                 parcellation=None, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
                 interactive=True)
 
 
-def plot_grand_avg_stc_anim(group, parcellation, target_labels, stc_surface,
-                            stc_hemi, stc_views, stc_time, stc_background,
+def plot_grand_avg_stc_anim(group, parcellation, target_labels, label_colors,
+                            stc_surface,
+                            stc_hemi, stc_views, stc_time, stc_clim,
+                            stc_background,
                             stc_roll, stc_azimuth, stc_elevation,
                             stc_animation_span,
                             stc_animation_dilat):
     stcs = group.load_ga_stc()
     _brain_plot(meeg=group, stcs=stcs, stc_surface=stc_surface,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
+                stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=target_labels,
+                label_colors=label_colors,
                 parcellation=parcellation, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
                 stc_animation_span=stc_animation_span,
@@ -722,7 +743,8 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation,
                            target_labels, morph_to, show_plots):
     ga_dict = group.load_ga_con()
 
-    # Get labels for FreeSurfer 'aparc' cortical parcellation with 34 labels/hemi
+    # Get labels for FreeSurfer 'aparc' cortical parcellation
+    # with 34 labels/hemi
     labels_parc = mne.read_labels_from_annot(morph_to, parc=parcellation,
                                              subjects_dir=group.subjects_dir)
 
@@ -766,10 +788,9 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation,
     node_order.extend(lh_labels[::-1])  # reverse the order
     node_order.extend(rh_labels)
 
-    node_angles = mne.viz.circular_layout(label_names, node_order,
-                                          start_pos=90,
-                                          group_boundaries=[0,
-                                                            len(label_names) / 2])
+    node_angles = mne.viz.circular_layout(
+        label_names, node_order, start_pos=90,
+        group_boundaries=[0, len(label_names) / 2])
 
     for trial in ga_dict:
         for method in ga_dict[trial]:
