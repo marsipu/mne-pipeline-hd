@@ -9,9 +9,10 @@ License: GPL-3.0
 import inspect
 
 import pytest
+from numpy.testing import assert_allclose
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.parameter_widgets import Param
+from mne_pipeline_hd.gui.parameter_widgets import Param, _eval_param
 
 parameters = {'IntGui': 1,
               'FloatGui': 5.3,
@@ -46,12 +47,25 @@ alternative_parameters = {'IntGui': 5,
                           'SliderGui': 2}
 
 gui_kwargs = {'none_select': True,
-              'min_val': -4,
-              'max_val': 10,
+              'min_val': -40,
+              'max_val': 100,
               'step': 0.5,
-              'type_selection': True,
+              'return_integer': False,
               'param_unit': 'ms',
               'options': {'a': 'A', 'b': 'B', 'c': 'C'}}
+
+
+def _check_param(gui, gui_name, alternative=False):
+    if alternative:
+        value = alternative_parameters[gui_name]
+    else:
+        value = parameters[gui_name]
+
+    if gui_name == 'FuncGui':
+        value = _eval_param(value)
+        assert_allclose(gui.get_value(), value)
+    else:
+        assert gui.get_value() == value
 
 
 @pytest.mark.parametrize('gui_name', list(parameters.keys()))
@@ -65,27 +79,69 @@ def test_basic_param_guis(qtbot, gui_name):
     qtbot.addWidget(gui)
 
     # Check if value is correct
-    assert gui.get_value() == parameters[gui_name]
+    _check_param(gui, gui_name)
 
     # Check if value changes correctly
     new_param = alternative_parameters[gui_name]
     gui.set_param(new_param)
-    assert gui.get_value() == new_param
-    assert parameters[gui_name] == new_param
+    _check_param(gui, gui_name, alternative=True)
 
     # Set value to None
-    value_pre_none = gui.get_value()
     gui.set_param(None)
     assert parameters[gui_name] is None
     assert not gui.group_box.isChecked()
 
     # Uncheck groupbox
     gui.group_box.setChecked(True)
-    assert parameters[gui_name] == value_pre_none
+    parameters[gui_name] = new_param
+    _check_param(gui, gui_name, alternative=True)
 
     if 'max_val' in gui_parameters:
-        gui.set_param(1000)
-        assert parameters[gui_name] == kwargs['max_val']
+        if gui_name == 'TupleGui':
+            value = (1000, 1000)
+            neg_value = (-1000, -1000)
+            max_val = (kwargs['max_val'], kwargs['max_val'])
+            min_val = (kwargs['min_val'], kwargs['min_val'])
+        else:
+            value = 1000
+            neg_value = -1000
+            max_val = kwargs['max_val']
+            min_val = kwargs['min_val']
+        gui.set_param(value)
+        assert parameters[gui_name] == max_val
         # less than min
-        gui.param_widget.setValue(-1000)
-        assert parameters[gui_name] == kwargs['min_val']
+        gui.set_param(neg_value)
+        assert parameters[gui_name] == min_val
+
+    if 'return_integer' in gui_parameters:
+        gui.return_integer = True
+        gui.set_param(True)
+        assert gui.get_value() == 1
+
+    if gui_name == 'ComboGui':
+        # Don't set values which are not in options
+        with pytest.raises(KeyError):
+            gui.set_param('d')
+
+    if gui_name == 'MultiTypeGui':
+        for gui_type, gui_name in gui.gui_types.items():
+            gui.set_param(parameters[gui_name])
+            assert gui.get_value() == parameters[gui_name]
+            assert type(gui.get_value()).__name__ == gui_type
+        kwargs['type_selection'] = True
+        kwargs['type_kwargs'] = dict()
+        for gui_name in gui.gui_types.values():
+            type_class = getattr(parameter_widgets, gui_name)
+            gui_parameters = \
+                list(inspect.signature(type_class).parameters) + \
+                list(inspect.signature(Param).parameters)
+            t_kwargs = {key: value for key, value in gui_kwargs.items()
+                        if key in gui_parameters}
+            kwargs['type_kwargs'][gui_name] = t_kwargs
+        gui = gui_class(data=parameters, name=gui_name, **kwargs)
+        for gui_type, gui_name in gui.gui_types.items():
+            type_idx = gui.types.index(gui_type)
+            gui.change_type(type_idx)
+            gui.set_param(parameters[gui_name])
+            assert gui.get_value() == parameters[gui_name]
+            assert type(gui.get_value()).__name__ == gui_type
