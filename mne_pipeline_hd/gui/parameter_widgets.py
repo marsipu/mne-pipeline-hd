@@ -6,9 +6,11 @@ Pipeline-GUI for Analysis with MNE-Python
 @github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
-
+import logging
 from ast import literal_eval
 from functools import partial
+from os import listdir
+from os.path import join
 
 import numpy as np
 import pandas as pd
@@ -20,7 +22,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QSpinBox, QVBoxLayout, QWidget, QDockWidget,
                              QTabWidget, QScrollArea, QMessageBox,
                              QStyleFactory, QColorDialog)
-from mne import read_labels_from_annot
+from mne import read_labels_from_annot, read_label
 from mne.viz import Brain
 from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
@@ -1325,6 +1327,25 @@ class LabelDialog(SimpleDialog):
 
     def _subject_changed(self):
         self._fsmri = self.fsmri_cmbx.currentText()
+        self._all_label_names.clear()
+        self._selected_labels.clear()
+        self.label_list.content_changed()
+        self._all_labels.clear()
+        try:
+            # Load labels from <fs-segmentation>/label
+            label_names = [lp for lp in listdir(join(self.ct.subjects_dir,
+                                                     self._fsmri, 'label'))
+                           if lp[-6:] == '.label']
+            for label_name in label_names:
+                label_path = join(self.ct.subjects_dir, self._fsmri, 'label',
+                                  label_name)
+                label = read_label(label_path, self._fsmri)
+                self._all_label_names.append(label_name[:-6])
+                self._all_labels.append(label)
+        except FileNotFoundError:
+            logging.warning(f'No extra labels for {self._fsmri} found!')
+        self._selected_labels += [lb for lb in self.paramw.param_value
+                                  if lb in self._all_label_names]
         parcellations = _get_available_parc(self.ct, self._fsmri)
         self.parcellation_cmbx.clear()
         self.parcellation_cmbx.addItems(parcellations)
@@ -1335,14 +1356,13 @@ class LabelDialog(SimpleDialog):
 
     def _parc_changed(self):
         self._parcellation = self.parcellation_cmbx.currentText()
-        self._all_labels = read_labels_from_annot(
+        self._all_labels += read_labels_from_annot(
             self._fsmri, parc=self._parcellation,
             subjects_dir=self.ct.subjects_dir)
-        self._all_label_names = [lb.name for lb in self._all_labels]
-        self.label_list.replace_data(self._all_label_names)
-        self._selected_labels = [lb for lb in self.paramw.param_value
-                                 if lb in self._all_label_names]
-        self.label_list.replace_checked(self._selected_labels)
+        self._all_label_names += [lb.name for lb in self._all_labels]
+        self._selected_labels += [lb for lb in self.paramw.param_value
+                                  if lb in self._all_label_names]
+        self.label_list.content_changed()
 
         if self._label_picker is not None:
             self._label_picker._set_annotations()
