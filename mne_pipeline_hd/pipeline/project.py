@@ -66,7 +66,7 @@ class Project:
         for path in self.main_paths:
             if not exists(path):
                 makedirs(path)
-                print(f'{path} created')
+                logging.debug(f'{path} created')
 
     def init_attributes(self):
         # Stores the names of all MEG/EEG-Files

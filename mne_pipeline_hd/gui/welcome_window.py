@@ -32,7 +32,6 @@ class WelcomeWindow(QWidget):
 
         self.ct = controller
         self.main_window = None
-        self.education_programs = list()
 
         self.init_ui()
         self.check_controller()
@@ -77,7 +76,7 @@ class WelcomeWindow(QWidget):
         self.edu_groupbox.toggled.connect(self.edu_toggled)
 
         edu_layout = QVBoxLayout()
-        self.edu_selection = SimpleList(self.education_programs, title='Education')
+        self.edu_selection = SimpleList(title='Education')
         edu_layout.addWidget(self.edu_selection)
         self.edu_groupbox.setLayout(edu_layout)
         layout.addWidget(self.edu_groupbox)
@@ -100,77 +99,55 @@ class WelcomeWindow(QWidget):
     def edu_toggled(self, value):
         QS().setValue('education', value)
 
-    def check_controller(self):
-        self.start_bt.setEnabled(False)
-        self.project_cmbx.setEnabled(False)
-        self.add_pr_bt.setEnabled(False)
-
-        # Check for Home-Path-Problems
-        if 'home_path' in self.ct.errors:
-            ht = f'{self.ct.errors["home_path"]}\n' \
-                 f'Select a folder as Home-Path!'
-            self.home_path_label.setText(ht)
-        else:
-            self.home_path_label.setText(f'{self.ct.home_path} selected.')
-            self.project_cmbx.setEnabled(True)
-            self.update_project_cmbx()
-            self.add_pr_bt.setEnabled(True)
-
-            # Add education-programs if there are any
-            self.education_programs.clear()
-            edu_path = join(self.ct.home_path, 'edu_programs')
-            if isdir(edu_path):
-                for file in [f for f in listdir(edu_path) if f[-9:] == '-edu.json']:
-                    self.education_programs.append(file)
-
-            self.edu_selection.content_changed()
-
-            # Check for Project-Problems
-            if 'project' in self.ct.errors:
-                pt = f'{self.ct.errors["project"]}\n' \
-                     f'Select or add a project!'
-                self.project_label.setText(pt)
-            else:
-                self.project_label.setText(f'{self.ct.pr.name} selected.')
-                self.start_bt.setEnabled(True)
-
-                # Check for Problems with Custom-Modules
-                if 'custom_modules' in self.ct.errors:
-                    for name in self.ct.errors['custom_modules']:
-                        error_msg = self.ct.errors['custom_modules'][name]
-                        if isinstance(error_msg, tuple):
-                            ErrorDialog(error_msg, self,
-                                        title=f'Error in import of custom-module: {name}')
-                        elif isinstance(error_msg, str):
-                            QMessageBox.warning(self, 'Import-Problem', error_msg)
-
-    def set_home_path(self):
-        loaded_home_path = QFileDialog.getExistingDirectory(self, f'{self.ct.home_path}'
-                                                                  f'Select a folder as Home-Path')
-        if loaded_home_path != '':
-            self.ct = Controller(str(loaded_home_path))
-            self.check_controller()
-
-    def project_changed(self, project_idx):
-        project = self.project_cmbx.itemText(project_idx)
-        self.ct.change_project(project)
-        self.update_project_cmbx()
-        self.start_bt.setEnabled(True)
-
-    def update_project_cmbx(self):
+    def _update_widgets(self):
+        self.home_path_label.setText(f'{self.ct.home_path} selected.')
+        self.add_pr_bt.setEnabled(True)
         if hasattr(self.ct, 'projects'):
+            self.project_cmbx.setEnabled(True)
             self.project_cmbx.clear()
             self.project_cmbx.addItems(self.ct.projects)
         if self.ct.pr is not None:
             self.project_label.setText(f'{self.ct.pr.name} selected.')
             self.project_cmbx.setCurrentText(self.ct.pr.name)
 
+        self.update_education_list()
+        if self.ct.pr is not None:
+            self.start_bt.setEnabled(True)
+
+    def set_home_path(self):
+        loaded_home_path = QFileDialog.getExistingDirectory(
+            self, 'Select a folder as Home-Path')
+        if loaded_home_path != '':
+            try:
+                self.ct = Controller(str(loaded_home_path))
+            except RuntimeError as err:
+                self.home_path_label.setText(str(err))
+                self.start_bt.setEnabled(False)
+                self.project_cmbx.setEnabled(False)
+                self.add_pr_bt.setEnabled(False)
+                self.project_cmbx.clear()
+                self.project_label.clear()
+                self.ct = None
+            else:
+                self._update_widgets()
+
+    def project_changed(self, project_idx):
+        project = self.project_cmbx.itemText(project_idx)
+        self.ct.change_project(project)
+        self._update_widgets()
+
+    def update_education_list(self):
+        edu_path = join(self.ct.home_path, 'edu_programs')
+        if isdir(edu_path):
+            self.edu_selection.replace_data(
+                [f for f in listdir(edu_path) if f[-9:] == '-edu.json'])
+
     def add_project(self):
-        new_project = get_user_input_string('Please enter the name of a project!', 'Add Project')
+        new_project = get_user_input_string(
+            'Please enter the name of a project!', 'Add Project')
         if new_project is not None:
             self.ct.change_project(new_project)
-            self.update_project_cmbx()
-            self.start_bt.setEnabled(True)
+            self._update_widgets()
 
     def init_main_window(self):
         edu_on = QS().value('education')

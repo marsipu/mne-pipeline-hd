@@ -22,6 +22,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mne.viz import Brain
+
 try:
     from mne.viz import Figure3D
 except ImportError:
@@ -258,7 +259,7 @@ class PlotViewSelection(QDialog):
                     # Replace Parameter-Preset for the loaded object and reload load/save-paths
                     if p_preset != obj.p_preset:
                         obj.p_preset = p_preset
-                        obj.init_p_preset_deps()
+                        obj.init_parameters()
                         obj.init_paths()
 
                     # Load Matplotlib-Plots

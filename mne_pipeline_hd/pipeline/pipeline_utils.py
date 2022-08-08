@@ -305,3 +305,12 @@ except ImportError:
     class QS(QSettingsDummy):
         def __init__(self):
             super().__init__()
+
+
+def _set_test_run():
+    os.environ['TEST_RUN'] = 'True'
+
+
+def _test_run():
+    if 'TEST_RUN' in os.environ:
+        return True

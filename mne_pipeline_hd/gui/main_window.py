@@ -110,18 +110,17 @@ class MainWindow(QMainWindow):
         new_home_path = QFileDialog.getExistingDirectory(
             self, 'Change your Home-Path (top-level folder of Pipeline-Data)')
         if new_home_path != '':
-            new_controller = Controller(new_home_path)
-
-            if 'home_path' in new_controller.errors:
+            try:
+                new_controller = Controller(new_home_path)
+            except RuntimeError as err:
                 QMessageBox.critical(self, 'Error with selected Home-Path',
-                                     new_controller.errors['home_path'])
+                                     str(err))
             else:
-                if 'project' in new_controller.errors:
+                if new_controller.pr is None:
                     new_project = get_user_input_string(
                         'There is no project in this Home-Path,'
                         ' please enter a name for a new project:',
                         'Add Project!', force=True)
-
                     new_controller.change_project(new_project)
 
                 self.ct = new_controller
@@ -130,7 +129,6 @@ class MainWindow(QMainWindow):
                     welcome_window.ct = new_controller
                 self.statusBar().showMessage(f'Home-Path: {self.ct.home_path},'
                                              f' Project: {self.pr.name}')
-
                 self.update_project_ui()
 
     def add_project(self):
@@ -640,7 +638,7 @@ class MainWindow(QMainWindow):
 
             if welcome_window is not None:
                 if answer == QMessageBox.Yes:
-                    welcome_window.check_controller()
+                    welcome_window._update_widgets()
                     welcome_window.show()
 
                 elif answer == QMessageBox.No:

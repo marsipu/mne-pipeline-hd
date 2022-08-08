@@ -8,5 +8,9 @@ License: GPL-3.0
 """
 
 
-def test_rename():
-    pass
+def test_meeg(controller):
+    controller.pr.add_meeg('__sample__')
+
+
+def test_fsmri(controller):
+    controller.pr.add_fsmri('fsaverage')

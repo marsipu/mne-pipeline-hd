@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import sys
+import traceback
 from importlib import reload, resources, import_module
 from os import listdir
 from os.path import isdir, join
@@ -22,8 +23,7 @@ import mne
 import pandas as pd
 
 from mne_pipeline_hd import functions
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, \
-    get_user_input_string
+from mne_pipeline_hd.gui.gui_utils import get_user_input_string
 from mne_pipeline_hd.pipeline.legacy import \
     transfer_file_params_to_single_subject
 from mne_pipeline_hd.pipeline.pipeline_utils import QS
@@ -38,92 +38,89 @@ class Controller:
     def __init__(self, home_path=None, selected_project=None,
                  edu_program_name=None):
         # Check Home-Path
-        self.errors = dict()
         self.pr = None
         # Try to load home_path from QSettings
         self.home_path = home_path or QS().value('home_path', defaultValue=None)
         self.settings = dict()
         if self.home_path is None:
-            self.errors['home_path'] = f'No Home-Path found!'
+            raise RuntimeError('No Home-Path found!')
 
         # Check if path exists
         elif not isdir(self.home_path):
-            self.errors['home_path'] = f'{self.home_path} not found!'
+            raise RuntimeError(f'{self.home_path} not found!')
 
         # Check, if path is writable
         elif not os.access(self.home_path, os.W_OK):
-            self.errors['home_path'] = f'{self.home_path} not writable!'
+            raise RuntimeError(f'{self.home_path} not writable!')
 
-        else:
-            # Initialize log-file
-            self.logging_path = join(self.home_path, '_pipeline.log')
-            file_handler = logging.FileHandler(self.logging_path, 'w')
-            logging.getLogger().addHandler(file_handler)
+        # Initialize log-file
+        self.logging_path = join(self.home_path, '_pipeline.log')
+        file_handler = logging.FileHandler(self.logging_path, 'w')
+        logging.getLogger().addHandler(file_handler)
 
-            logging.info(f'Home-Path: {self.home_path}')
-            QS().setValue('home_path', self.home_path)
-            # Create subdirectories if not existing for a valid home_path
-            for subdir in [d for d in home_dirs if not isdir(join(self.home_path, d))]:
-                os.mkdir(join(self.home_path, subdir))
+        logging.info(f'Home-Path: {self.home_path}')
+        QS().setValue('home_path', self.home_path)
+        # Create subdirectories if not existing for a valid home_path
+        for subdir in [d for d in home_dirs if
+                       not isdir(join(self.home_path, d))]:
+            os.mkdir(join(self.home_path, subdir))
 
-            # Get Project-Folders (recognized by distinct sub-folders)
-            self.projects_path = join(self.home_path, 'projects')
-            self.projects = [p for p in listdir(self.projects_path)
-                             if all([isdir(join(self.projects_path, p, d))
-                                     for d in project_dirs])]
+        # Get Project-Folders (recognized by distinct sub-folders)
+        self.projects_path = join(self.home_path, 'projects')
+        self.projects = [p for p in listdir(self.projects_path)
+                         if all([isdir(join(self.projects_path, p, d))
+                                 for d in project_dirs])]
 
-            # Initialize Subjects-Dir
-            self.subjects_dir = join(self.home_path, 'freesurfer')
-            mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
+        # Initialize Subjects-Dir
+        self.subjects_dir = join(self.home_path, 'freesurfer')
+        mne.utils.set_config("SUBJECTS_DIR", self.subjects_dir, set_env=True)
 
-            # Initialize folder for custom packages
-            self.custom_pkg_path = join(self.home_path, 'custom_packages')
+        # Initialize folder for custom packages
+        self.custom_pkg_path = join(self.home_path, 'custom_packages')
 
-            # Initialize educational programs
-            self.edu_program_name = edu_program_name
-            self.edu_program = None
+        # Initialize educational programs
+        self.edu_program_name = edu_program_name
+        self.edu_program = None
 
-            # Load default settings
-            with resources.open_text('mne_pipeline_hd.assets',
-                                     'default_settings.json') as file:
-                self.default_settings = json.load(file)
+        # Load default settings
+        with resources.open_text('mne_pipeline_hd.assets',
+                                 'default_settings.json') as file:
+            self.default_settings = json.load(file)
 
-            # Load settings (which are stored as .json-file in home_path)
-            # settings=<everything, that's OS-independent>
-            self.load_settings()
+        # Load settings (which are stored as .json-file in home_path)
+        # settings=<everything, that's OS-independent>
+        self.load_settings()
 
-            self.all_modules = dict()
-            self.all_pd_funcs = None
+        self.all_modules = dict()
+        self.all_pd_funcs = None
 
-            # Pandas-DataFrame for contextual data of basic functions (included with program)
-            with resources.path('mne_pipeline_hd.assets',
-                                'functions.csv') as pd_funcs_path:
-                self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';',
-                                            index_col=0)
+        # Pandas-DataFrame for contextual data of basic functions (included with program)
+        with resources.path('mne_pipeline_hd.assets',
+                            'functions.csv') as pd_funcs_path:
+            self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';',
+                                        index_col=0)
 
-            # Pandas-DataFrame for contextual data of parameters
-            # for basic functions (included with program)
-            with resources.path('mne_pipeline_hd.assets',
-                                'parameters.csv') as pd_params_path:
-                self.pd_params = pd.read_csv(str(pd_params_path), sep=';',
-                                             index_col=0)
+        # Pandas-DataFrame for contextual data of parameters
+        # for basic functions (included with program)
+        with resources.path('mne_pipeline_hd.assets',
+                            'parameters.csv') as pd_params_path:
+            self.pd_params = pd.read_csv(str(pd_params_path), sep=';',
+                                         index_col=0)
 
-            # Import the basic- and custom-function-modules
-            self.import_custom_modules()
+        # Import the basic- and custom-function-modules
+        self.import_custom_modules()
 
-            # Check Project
-            if selected_project is None:
-                selected_project = self.settings['selected_project']
+        # Check Project
+        if selected_project is None:
+            selected_project = self.settings['selected_project']
 
-            if selected_project is None:
-                if len(self.projects) == 0:
-                    self.errors['project'] = 'No projects!'
-                else:
-                    selected_project = self.projects[0]
+        if selected_project is None:
+            if len(self.projects) > 0:
+                selected_project = self.projects[0]
 
-            # Initialize Project
-            if selected_project is not None:
-                self.change_project(selected_project)
+        # Initialize Project
+        if selected_project is not None:
+            self.change_project(selected_project)
 
     def load_settings(self):
         try:
@@ -254,8 +251,6 @@ class Controller:
         Load all modules in functions and custom_functions
         """
 
-        self.errors['custom_modules'] = dict()
-
         # Load basic-modules
         # Add functions to sys.path
         sys.path.insert(0, str(Path(functions.__file__).parent))
@@ -297,8 +292,7 @@ class Controller:
                     try:
                         import_module(module_name)
                     except:
-                        exc_tuple = get_exception_tuple()
-                        self.errors['custom_modules'][module_name] = exc_tuple
+                        traceback.print_exc()
                     else:
                         correct_count += 1
                         # Add Module to dictionary
@@ -311,8 +305,7 @@ class Controller:
                         read_pd_funcs = pd.read_csv(functions_path, sep=';', index_col=0)
                         read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
                     except:
-                        exc_tuple = get_exception_tuple()
-                        self.errors['custom_modules'][pkg_name] = exc_tuple
+                        traceback.print_exc()
                     else:
                         # Add pkg_name here (would be redundant in read_pd_funcs of each custom-package)
                         read_pd_funcs['pkg_name'] = pkg_name
@@ -326,9 +319,10 @@ class Controller:
                         self.pd_params = pd.concat([self.pd_params, pd_params_to_append])
 
             else:
-                error_text = f'Files for import of {pkg_name} are missing: ' \
-                             f'{[key for key in file_dict if file_dict[key] is None]}'
-                self.errors['custom_modules'][pkg_name] = error_text
+                missing_files = [key for key in file_dict
+                                 if file_dict[key] is None]
+                logging.warning(f'Files for import of {pkg_name} '
+                                f'are missing: {missing_files}')
 
     def reload_modules(self):
         for pkg_name in self.all_modules:
