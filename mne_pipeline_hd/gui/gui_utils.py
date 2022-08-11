@@ -422,6 +422,7 @@ class Worker(QRunnable):
         self.signals.was_canceled = True
 
 
+# ToDo: Make PyQt-independent with tqdm
 class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
     thread_finished = pyqtSignal(object)

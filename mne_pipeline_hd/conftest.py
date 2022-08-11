@@ -6,6 +6,7 @@ Pipeline-GUI for Analysis with MNE-Python
 @github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
+from os import mkdir
 
 import pytest
 
@@ -16,8 +17,13 @@ from mne_pipeline_hd.pipeline.pipeline_utils import _set_test_run
 
 @pytest.fixture
 def controller(tmpdir):
+    # Initialize testing-environment
     _set_test_run()
-    ct = Controller(tmpdir, 'test')
+    # Create home-path
+    home_path = tmpdir.join('TestHome')
+    mkdir(home_path)
+    # Create Controller
+    ct = Controller(home_path, 'test')
 
     return ct
 

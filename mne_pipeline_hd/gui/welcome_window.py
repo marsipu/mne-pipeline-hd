@@ -54,9 +54,9 @@ class WelcomeWindow(QWidget):
         home_layout = QHBoxLayout()
         self.home_path_label = QLabel()
         home_layout.addWidget(self.home_path_label, stretch=4)
-        home_path_bt = QPushButton('Set Home-Folder')
-        home_path_bt.clicked.connect(self.set_home_path)
-        home_layout.addWidget(home_path_bt, alignment=Qt.AlignRight)
+        self.home_path_bt = QPushButton('Set Home-Folder')
+        self.home_path_bt.clicked.connect(self.set_home_path)
+        home_layout.addWidget(self.home_path_bt, alignment=Qt.AlignRight)
         layout.addLayout(home_layout)
 
         project_layout = QHBoxLayout()
@@ -115,6 +115,7 @@ class WelcomeWindow(QWidget):
             self.start_bt.setEnabled(True)
 
     def set_home_path(self):
+        self.ct.save()
         loaded_home_path = QFileDialog.getExistingDirectory(
             self, 'Select a folder as Home-Path')
         if loaded_home_path != '':
