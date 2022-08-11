@@ -27,10 +27,17 @@ from mne_pipeline_hd.pipeline.project import Project
 class CheckListDlg(QDialog):
     def __init__(self, parent, data, checked):
         """
-        BaseClass for A Dialog with a Check-List, open() has to be called in SubClass or directly
-        :param parent: parent-Widget
-        :param data: Data for the Check-List
-        :param checked: List, where Checked Data-Items are stored
+        BaseClass for A Dialog with a Check-List,
+         open() has to be called in SubClass or directly.
+
+        Parameters
+        ----------
+        parent: QWidget or None
+            parent-Widget.
+        data: list or None
+            Data for the Check-List.
+        checked: list or None
+            List, where Checked Data-Items are stored.
         """
         super().__init__(parent)
         self.data = data
@@ -106,12 +113,15 @@ class QuickGuide(QDialog):
         layout = QVBoxLayout()
 
         text = '<b>Quick-Guide</b><br>' \
-               '1. Use the Subject-Wizard to add Subjects and the Subject-Dicts<br>' \
+               '1. Use the Subject-Wizard to add Subjects ' \
+               'and the Subject-Dicts<br>' \
                '2. Select the files you want to execute<br>' \
                '3. Select the functions to execute<br>' \
                '4. If you want to show plots, check Show Plots<br>' \
-               '5. For Source-Space-Operations, you need to run MRI-Coregistration from the Input-Menu<br>' \
-               '6. For Grand-Averages add a group and add the files, to which you want apply the grand-average'
+               '5. For Source-Space-Operations, you need to run ' \
+               'MRI-Coregistration from the Input-Menu<br>' \
+               '6. For Grand-Averages add a group and add the files, ' \
+               'to which you want apply the grand-average'
 
         self.label = QLabel(text)
         layout.addWidget(self.label)
@@ -144,7 +154,8 @@ class RawInfo(QDialog):
 
         self.info_label = QTextEdit()
         self.info_label.setReadOnly(True)
-        self.info_label.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.info_label.setSizePolicy(QSizePolicy.MinimumExpanding,
+                                      QSizePolicy.MinimumExpanding)
         layout.addWidget(self.info_label, 0, 1)
 
         close_bt = QPushButton('Close')
@@ -178,7 +189,8 @@ class RawInfo(QDialog):
             size_unit = 'MB'
 
         ch_type_counter = Counter(
-            [mne.io.pick.channel_type(info, idx) for idx in range(len(info['chs']))])
+            [mne.io.pick.channel_type(info, idx)
+             for idx in range(len(info['chs']))])
         other_infos['ch_types'] = ', '.join(
             [f'{key}: {value}' for key, value in ch_type_counter.items()])
 
@@ -210,7 +222,8 @@ class RawInfo(QDialog):
             if len(key_tuple) == 2:
                 self.info_string += f'<b>{key_tuple[1]}:</b> {value}<br>'
             else:
-                self.info_string += f'<b>{key_tuple[1]}:</b> {value} <i>{key_tuple[2]}</i><br>'
+                self.info_string += f'<b>{key_tuple[1]}:</b> {value}' \
+                                    f' <i>{key_tuple[2]}</i><br>'
 
         self.info_label.setHtml(self.info_string)
 
@@ -248,7 +261,8 @@ class CopyParamsDialog(SimpleDialog):
         layout.addWidget(close_bt, 4, 1)
 
         widget.setLayout(layout)
-        super().__init__(widget, parent=main_win, title='Copy Parameters between Projects',
+        super().__init__(widget, parent=main_win,
+                         title='Copy Parameters between Projects',
                          window_title='Copy Parameters', show_close_bt=False)
 
     def _get_p_presets(self, pr_name):
@@ -263,7 +277,8 @@ class CopyParamsDialog(SimpleDialog):
         if from_name:
             self.to_cmbx.setEnabled(True)
             self.to_cmbx.clear()
-            self.to_cmbx.addItems([p for p in self.ct.projects if p != from_name])
+            self.to_cmbx.addItems([p for p in self.ct.projects
+                                   if p != from_name])
 
             self.from_pp_cmbx.clear()
             self.from_pp_cmbx.addItems(self._get_p_presets(from_name))
@@ -279,11 +294,13 @@ class CopyParamsDialog(SimpleDialog):
         to_name = self.to_cmbx.currentText()
         to_pp = self.to_pp_cmbx.currentText()
         if from_name and to_name:
-            self.ct.copy_parameters_between_projects(from_name, from_pp, to_name, to_pp)
+            self.ct.copy_parameters_between_projects(from_name, from_pp,
+                                                     to_name, to_pp)
         if to_name == self.ct.pr.name:
             self.main_win.parameters_dock.redraw_param_widgets()
         QMessageBox().information(self, 'Finished',
-                                  f'Parameters copied from {from_name} to {to_name}!')
+                                  f'Parameters copied from {from_name} '
+                                  f'to {to_name}!')
 
 
 class AboutDialog(QDialog):
@@ -298,18 +315,24 @@ class AboutDialog(QDialog):
                '<b>A Pipeline-GUI for MNE-Python</b><br>' \
                '(originally developed for MEG-Lab Heidelberg)<br>' \
                '<i>Development was initially inspired by: ' \
-               '<a href=https://doi.org/10.3389/fnins.2018.00006>Andersen L.M. 2018</a></i><br>' \
+               '<a href=https://doi.org/10.3389/fnins.2018.00006>Andersen ' \
+               'L.M. 2018</a></i><br>' \
                '<br>' \
-               'As for now, this program is still in alpha-state, so some features may not work as expected. ' \
-               'Be sure to check all the parameters for each step to be correctly adjusted to your needs.<br>' \
+               'As for now, this program is still in alpha-state, ' \
+               'so some features may not work as expected. ' \
+               'Be sure to check all the parameters for each step ' \
+               'to be correctly adjusted to your needs.<br>' \
                '<br>' \
                '<b>Developed by:</b><br>' \
                'Martin Schulz (medical student, Heidelberg)<br>' \
                '<br>' \
                '<b>Dependencies:</b><br>' \
-               'MNE-Python: <a href=https://github.com/mne-tools/mne-python>Website</a>' \
-               '<a href=https://github.com/mne-tools/mne-python>GitHub</a><br>' \
-               '<a href=https://github.com/ColinDuquesnoy/QDarkStyleSheet>qdarkstyle</a><br>' \
+               'MNE-Python: <a href=https://github.com/mne-tools/' \
+               'mne-python>Website</a>' \
+               '<a href=https://github.com/mne-tools/mne-python>' \
+               'GitHub</a><br>' \
+               '<a href=https://github.com/ColinDuquesnoy/' \
+               'QDarkStyleSheet>qdarkstyle</a><br>' \
                '<br>' \
                '<b>Licensed under:</b><br>' \
                + license_text

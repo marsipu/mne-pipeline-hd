@@ -3,7 +3,9 @@ import sys
 import traceback
 from ast import literal_eval
 
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QGridLayout, QComboBox,
+                             QHBoxLayout, QLineEdit, QPushButton, QDialog,
+                             QApplication)
 
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import SimpleDict

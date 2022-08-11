@@ -76,7 +76,8 @@ class EducationEditor(QMainWindow):
         self.edu['groups'] = self.ct.pr.sel_groups.copy()
         self.edu['functions'] = [f for f in self.ct.pr.sel_functions if
                                  f in self.ct.pr.sel_functions]
-        self.edu['dock_kwargs'] = {'meeg_view': False, 'fsmri_view': False, 'group_view': False}
+        self.edu['dock_kwargs'] = {'meeg_view': False, 'fsmri_view': False,
+                                   'group_view': False}
         self.edu['format'] = 'PlainText'
         self.edu['tour_list'] = list()
         self.edu['tour'] = dict()
@@ -107,18 +108,22 @@ class EducationEditor(QMainWindow):
         layout.addWidget(self.name_ledit)
 
         select_layout = QHBoxLayout()
-        self.meeg_check_list = CheckList(self.ct.pr.all_meeg, self.edu['meeg'], title='Select MEEG')
+        self.meeg_check_list = CheckList(self.ct.pr.all_meeg, self.edu['meeg'],
+                                         title='Select MEEG')
         select_layout.addWidget(self.meeg_check_list)
 
-        self.fsmri_check_list = CheckList(self.ct.pr.all_fsmri, self.edu['fsmri'],
+        self.fsmri_check_list = CheckList(self.ct.pr.all_fsmri,
+                                          self.edu['fsmri'],
                                           title='Select FSMRI')
         select_layout.addWidget(self.fsmri_check_list)
 
-        self.group_check_list = CheckList(list(self.ct.pr.all_groups.keys()), self.edu['groups'],
+        self.group_check_list = CheckList(list(self.ct.pr.all_groups.keys()),
+                                          self.edu['groups'],
                                           title='Select Groups')
         select_layout.addWidget(self.group_check_list)
 
-        self.func_check_list = CheckList(self.ct.pd_funcs.index, self.edu['functions'],
+        self.func_check_list = CheckList(self.ct.pd_funcs.index,
+                                         self.edu['functions'],
                                          title='Select Functions')
         select_layout.addWidget(self.func_check_list)
 
@@ -132,7 +137,8 @@ class EducationEditor(QMainWindow):
         self.format_cmbx.setCurrentText('PlainText')
         layout.addWidget(self.format_cmbx)
 
-        self.page_list = CheckDictEditList(self.edu['tour_list'], self.edu['tour'], show_index=True)
+        self.page_list = CheckDictEditList(self.edu['tour_list'],
+                                           self.edu['tour'], show_index=True)
         self.page_list.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.page_list.currentChanged.connect(self.page_changed)
         self.page_list.dataChanged.connect(self.page_edited)
@@ -203,7 +209,8 @@ class EducationEditor(QMainWindow):
         except IndexError:
             old_page_name = new_page_name
         if old_page_name in self.edu['tour']:
-            self.edu['tour'][new_page_name] = self.edu['tour'].pop(old_page_name)
+            self.edu['tour'][new_page_name] = \
+                self.edu['tour'].pop(old_page_name)
         else:
             self.edu['tour'][new_page_name] = ''
 
@@ -215,7 +222,8 @@ class EducationEditor(QMainWindow):
             self.edu['tour'][current_page] = text
 
     def load_edu_file(self):
-        file_path = QFileDialog().getOpenFileName(self, directory=self.edu_folder)[0]
+        file_path = QFileDialog().getOpenFileName(self,
+                                                  directory=self.edu_folder)[0]
         if file_path != '':
             with open(file_path, 'r') as file:
                 self.edu = json.load(file)
@@ -237,6 +245,8 @@ class EducationEditor(QMainWindow):
         with open(edu_path, 'w') as file:
             json.dump(self.edu, file, indent=4)
 
-        new_pscripts_path = join(self.ct.pr.project_path, f'_pipeline_scripts{self.edu["name"]}')
+        new_pscripts_path = join(self.ct.pr.project_path,
+                                 f'_pipeline_scripts{self.edu["name"]}')
         # Copy Pipeline-Scripts
-        copytree(self.ct.pr.pscripts_path, new_pscripts_path, dirs_exist_ok=True)
+        copytree(self.ct.pr.pscripts_path, new_pscripts_path,
+                 dirs_exist_ok=True)
