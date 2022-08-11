@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
                         'There is no project in this Home-Path,'
                         ' please enter a name for a new project:',
                         'Add Project!', force=True)
-                    new_controller.change_project(new_project)
+                    self.pr = new_controller.change_project(new_project)
 
                 self.ct = new_controller
                 welcome_window = _object_refs['welcome_window']
@@ -138,7 +138,7 @@ class MainWindow(QMainWindow):
         new_project = get_user_input_string('Enter a name for a new project',
                                             'Add Project')
         if new_project is not None:
-            self.ct.change_project(new_project)
+            self.pr = self.ct.change_project(new_project)
             self.update_project_ui()
 
     def remove_project(self):
@@ -155,7 +155,7 @@ class MainWindow(QMainWindow):
         project = self.project_box.itemText(idx)
 
         # Change project
-        self.ct.change_project(project)
+        self.pr = self.ct.change_project(project)
 
         self.update_project_ui()
 

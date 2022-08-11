@@ -182,6 +182,8 @@ class Controller:
         # Legacy
         transfer_file_params_to_single_subject(self)
 
+        return self.pr
+
     def remove_project(self, project):
         self.projects.remove(project)
         if self.pr.name == project:
