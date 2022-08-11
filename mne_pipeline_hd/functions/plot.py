@@ -462,6 +462,7 @@ def plot_stc_interactive(meeg, stc_surface, stc_hemi, stc_views, stc_time,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
                 stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=None,
+                label_colors=None,
                 parcellation=None, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
                 interactive=True)
