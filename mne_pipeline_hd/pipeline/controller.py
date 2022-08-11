@@ -243,7 +243,8 @@ class Controller:
             self.pd_funcs = self.pd_funcs.loc[
                 self.pd_funcs.index.isin(self.edu_program['functions'])]
 
-            # Change the Project-Scripts-Path to a new folder to store the Education-Project-Scripts separately
+            # Change the Project-Scripts-Path to a new folder
+            # to store the Education-Project-Scripts separately
             self.pr.pscripts_path = \
                 join(self.pr.project_path,
                      f'_pipeline_scripts{self.edu_program["name"]}')
@@ -314,7 +315,7 @@ class Controller:
                     sys.path.insert(0, pkg_path)
                     try:
                         import_module(module_name)
-                    except:
+                    except:  # noqa: E722
                         traceback.print_exc()
                     else:
                         correct_count += 1
@@ -330,7 +331,7 @@ class Controller:
                                                     sep=';', index_col=0)
                         read_pd_params = pd.read_csv(parameters_path,
                                                      sep=';', index_col=0)
-                    except:
+                    except:  # noqa: E722
                         traceback.print_exc()
                     else:
                         # Add pkg_name here (would be redundant

@@ -85,20 +85,20 @@ class PlotManager(QMainWindow):
             self.func_list.model._data.append(func_name)
             self.func_list.content_changed()
 
-        for plt in plot:
-            if isinstance(plt, Figure):
-                plot_widget = FigureCanvasQTAgg(plt)
+        for subplot in plot:
+            if isinstance(subplot, Figure):
+                plot_widget = FigureCanvasQTAgg(subplot)
                 plot_widget.setFocusPolicy(Qt.FocusPolicy(Qt.StrongFocus |
                                                           Qt.WheelFocus))
                 plot_widget.setFocus()
-            elif isinstance(plt, MNEQtBrowser):
-                plot_widget = plt
-            elif isinstance(plt, Brain):
-                plot_widget = plt
-            elif isinstance(plt, Figure3D):
-                plot_widget = plt
+            elif isinstance(subplot, MNEQtBrowser):
+                plot_widget = subplot
+            elif isinstance(subplot, Brain):
+                plot_widget = subplot
+            elif isinstance(subplot, Figure3D):
+                plot_widget = subplot
             else:
-                logging.error(f'Unrecognized type "{type(plt)}" '
+                logging.error(f'Unrecognized type "{type(subplot)}" '
                               f'for "{func_name}"')
                 plot_widget = QWidget()
 
@@ -151,9 +151,9 @@ class PlotViewSelection(QDialog):
         layout = QVBoxLayout()
         list_layout = QHBoxLayout()
 
-        func_list = self.ct.pd_funcs[(self.ct.pd_funcs['matplotlib'] == True) |
-                                     (self.ct.pd_funcs[
-                                          'mayavi'] == True)].index
+        func_list = \
+            self.ct.pd_funcs[self.ct.pd_funcs['matplotlib']
+                             | self.ct.pd_funcs['mayavi']].index
         func_select = SimpleList(func_list, title='Select Plot-Function')
         func_select.currentChanged.connect(self.func_selected)
         list_layout.addWidget(func_select)
@@ -284,20 +284,25 @@ class PlotViewSelection(QDialog):
 
                         # Create Thread for Plot-Function
                         worker = Worker(plot_func, **keyword_arguments)
+
                         # Pass Object-Name into the plot_finished-Slot
                         # (needs to be set as default
                         # in lambda-function to survive loop)
-                        worker.signals.finished.connect(
-                            lambda val, o_name=obj_name, ppreset=p_preset:
-                            self.plot_finished(val, o_name, ppreset))
-                        worker.signals.error.connect(
-                            lambda err_tuple, o_name=obj_name,
-                                   ppreset=p_preset:
+
+                        def finished_func(val, o_name=obj_name,
+                                          ppreset=p_preset):
+                            self.plot_finished(val, o_name, ppreset)
+
+                        worker.signals.finished.connect(finished_func)
+
+                        def error_func(err_tuple, o_name=obj_name,
+                                       ppreset=p_preset):
                             self.thread_error(err_tuple, o_name, ppreset,
-                                              'plot'))
-                        print(
-                            f'Starting Thread for Object= {obj_name} '
-                            f'and Parameter-Preset= {p_preset}')
+                                              'plot')
+
+                        worker.signals.error.connect(error_func)
+                        print(f'Starting Thread for Object= {obj_name} '
+                              f'and Parameter-Preset= {p_preset}')
                         QThreadPool.globalInstance().start(worker)
 
                     # Load Plot-Images

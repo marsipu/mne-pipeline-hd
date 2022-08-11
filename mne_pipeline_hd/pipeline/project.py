@@ -260,10 +260,11 @@ class Project:
                         except (ValueError, SyntaxError, NameError):
                             # Allow parameters to be defined by functions
                             # e.g. by numpy, etc.
-                            if self.ct.pd_params.loc[
-                                param, 'gui_type'] == 'FuncGui':
-                                default_string = self.ct.pd_params.loc[
-                                    param, 'default']
+                            is_func_gui = self.ct.pd_params.loc[
+                                              param, 'gui_type'] == 'FuncGui'
+                            if is_func_gui:
+                                default_string = \
+                                    self.ct.pd_params.loc[param, 'default']
                                 eval_param = eval(default_string, {'np': np})
                                 exp_name = param + '_exp'
                                 loaded_parameters[p_preset].update(

@@ -1032,8 +1032,8 @@ class CopyBadsDialog(QDialog):
     def copy_bads(self):
         # Check, that at least one item is selected in each list
         # and that the copy_from-item is in meeg_bad_channels
-        if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[
-            0] in self.bad_channels_dict:
+        if len(self.copy_from) * len(self.copy_tos) > 0 \
+                and self.copy_from[0] in self.bad_channels_dict:
             for copy_to in self.copy_tos:
                 copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
                 copy_to_info = MEEG(copy_to, self.parent_w.mw.ct).load_info()
@@ -1887,7 +1887,7 @@ class FileManagment(QDialog):
         worker_signals.pgbar_max.emit(len(selected_files))
         for idx, (_, obj_name, path_type) in enumerate(selected_files):
             if worker_signals.was_canceled:
-                worker_signals.pgbar_text.emit(f'Removing canceled')
+                worker_signals.pgbar_text.emit('Removing canceled')
                 break
             if kind == 'MEEG':
                 obj = MEEG(obj_name, self.ct)
@@ -2143,7 +2143,7 @@ class ICASelect(QDialog):
                                            partial(
                                                self.get_selected_components,
                                                ica))
-            except:
+            except:  # noqa: E722
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
                                      f'{err_tuple[0]}: {err_tuple[1]}\n'
@@ -2172,7 +2172,7 @@ class ICASelect(QDialog):
                                            partial(
                                                self.get_selected_components,
                                                ica))
-            except:
+            except:  # noqa: E722
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
                                      f'{err_tuple[0]}: {err_tuple[1]}\n'
@@ -2194,7 +2194,7 @@ class ICASelect(QDialog):
                                  ica_overlay_data=self.parameters[
                                      'ica_overlay_data'],
                                  show_plots=True)
-            except:
+            except:  # noqa: E722
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
                                      f'{err_tuple[0]}: {err_tuple[1]}\n'
@@ -2214,7 +2214,7 @@ class ICASelect(QDialog):
             try:
                 plot_ica_properties(meeg=self.current_obj,
                                     show_plots=True)
-            except:
+            except:  # noqa: E722
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
                                      f'{err_tuple[0]}: {err_tuple[1]}\n'

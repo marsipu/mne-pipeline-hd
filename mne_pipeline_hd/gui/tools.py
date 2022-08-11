@@ -174,7 +174,7 @@ class DataTerminal(QDialog):
         name = self.sub_cmbx.itemText(index)
         try:
             self.obj = MEEG(name, self.ct)
-        except:
+        except:  # noqa: E722
             get_exception_tuple()
             # Return ComboBox to previous state
             if self.obj is None:
@@ -229,12 +229,11 @@ class DataTerminal(QDialog):
         except SyntaxError:
             try:
                 exec(command, self.t_globals)
-            except:
+            except:  # noqa: E722
                 get_exception_tuple()
             else:
                 self.inputw.clear()
-        except:
+        except:  # noqa: E722
             get_exception_tuple()
         else:
             self.inputw.clear()
-

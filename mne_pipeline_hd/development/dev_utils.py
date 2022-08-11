@@ -29,8 +29,9 @@ class ParamGuis(QWidget):
         param_names = list(parameters.keys())
         for idx, gui_name in enumerate(param_names):
             gui_class = getattr(parameter_widgets, gui_name)
-            gui_parameters = list(inspect.signature(gui_class).parameters) + \
-                             list(inspect.signature(Param).parameters)
+            gui_parameters = \
+                list(inspect.signature(gui_class).parameters) + \
+                list(inspect.signature(Param).parameters)
             kwargs = {key: value for key, value in gui_kwargs.items()
                       if key in gui_parameters}
             gui = gui_class(data=parameters, name=gui_name, **kwargs)
@@ -60,18 +61,16 @@ class ParamGuis(QWidget):
         self.setLayout(test_layout)
 
     def set_param(self):
+        current_gui = self.gui_cmbx.currentText()
         try:
-            current_gui = self.gui_cmbx.currentText()
-            try:
-                value = literal_eval(self.set_le.text())
-            except (SyntaxError, ValueError):
-                value = self.set_le.text()
-            parameters[current_gui] = value
-            p_gui = self.gui_dict[current_gui]
-            p_gui.read_param()
-            p_gui._set_param()
-        except:
-            print(traceback.format_exc())
+            value = literal_eval(self.set_le.text())
+        except (SyntaxError, ValueError):
+            value = self.set_le.text()
+        parameters[current_gui] = value
+        p_gui = self.gui_dict[current_gui]
+        p_gui.read_param()
+        p_gui._set_param()
+        print(traceback.format_exc())
 
     def show_parameters(self):
         dlg = QDialog(self)

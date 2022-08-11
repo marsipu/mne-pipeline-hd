@@ -21,7 +21,7 @@ package_parent = str(
 )
 sys.path.insert(0, package_parent)
 
-from mne_pipeline_hd import functions
+from mne_pipeline_hd import functions  # noqa: E402
 
 # Check, if the function-arguments saved in functions.csv are the same
 # as in the signature of the actual function

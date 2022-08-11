@@ -328,15 +328,13 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(remove_action)
         self.toolbar.addSeparator()
 
-        self.toolbar.addWidget(IntGui(data=QS(), name='n_jobs',
-                                      min_val=-1,
-                                      special_value_text='Auto',
-                                      description='Set to the amount of '
-                                                  '(virtual) cores of '
-                                                  'your machine you want'
-                                                  ' to use for ' \
-                                                  'multiprocessing.',
-                                      default=-1, groupbox_layout=False))
+        self.toolbar.addWidget(
+            IntGui(data=QS(), name='n_jobs', min_val=-1,
+                   special_value_text='Auto',
+                   description='Set to the amount of (virtual) cores '
+                               'of your machine you want '
+                               'to use for multiprocessing.',
+                   default=-1, groupbox_layout=False))
         # self.toolbar.addWidget(
         #     IntGui(data=QS(), name='n_parallel', min_val=1,
         #            description='Set to the amount of threads you want '
@@ -660,4 +658,3 @@ class MainWindow(QMainWindow):
 
                 elif answer == QMessageBox.No:
                     welcome_window.close()
-

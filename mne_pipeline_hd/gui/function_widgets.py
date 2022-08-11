@@ -206,7 +206,8 @@ class EditGuiArgsDlg(QDialog):
         if self.cf.current_parameter:
             covered_params = ['data', 'name', 'alias', 'default', 'param_unit',
                               'description']
-            # Get possible default GUI-Args additional to those covered by the Main-GUI
+            # Get possible default GUI-Args additional to those
+            # covered by the Main-GUI
             gui_type = self.cf.add_pd_params.loc[
                 self.cf.current_parameter, 'gui_type']
             if pd.notna(gui_type):
@@ -686,9 +687,9 @@ class CustomFunctionImport(QDialog):
     def update_exst_param_label(self):
         if self.current_function:
             if len(self.param_exst_dict[self.current_function]) > 0:
-                self.exstparam_l.setText \
-                    (f'Already existing Parameters: '
-                     f'{self.param_exst_dict[self.current_function]}')
+                self.exstparam_l.setText(
+                    f'Already existing Parameters: '
+                    f'{self.param_exst_dict[self.current_function]}')
                 self.exstparam_l.show()
             else:
                 self.exstparam_l.hide()
@@ -821,8 +822,8 @@ class CustomFunctionImport(QDialog):
     def populate_group_cmbx(self):
         self.group_cmbx.clear()
         tab_set = set(self.ct.pd_funcs['group'])
-        tat_set2 = set(self.add_pd_funcs.loc[
-                           pd.notna(self.add_pd_funcs['group']), 'group'])
+        tab_set2 = set(self.add_pd_funcs.loc[pd.notna(
+            self.add_pd_funcs['group']), 'group'])
         self.group_cmbx.insertItems(0, tab_set | tab_set2)
 
     def populate_guitype_cmbx(self):
@@ -1018,7 +1019,7 @@ class CustomFunctionImport(QDialog):
             result = e
             QMessageBox.warning(self, 'Error in ParamGui',
                                 f'The execution of {gui_type} with '
-                                f'{default_string} as default and ' \
+                                f'{default_string} as default and '
                                 '{gui_args} as additional parameters raises'
                                 ' the following error:\n'
                                 f'{result}')
@@ -1112,7 +1113,7 @@ class ImportFuncs(QDialog):
                                                 self.cf.file_path)
             self.module = util.module_from_spec(spec)
             spec.loader.exec_module(self.module)
-        except:
+        except:  # noqa: E722
             err = get_exception_tuple()
             ErrorDialog(err, self)
         else:
@@ -1395,10 +1396,12 @@ class SavePkgDialog(QDialog):
                 # Update and overwrite existing settings for funcs and params
                 self.pkg_path = join(self.cf_dialog.ct.custom_pkg_path,
                                      self.cf_dialog.pkg_name)
-                pd_funcs_path = join(self.pkg_path,
-                                     f'{self.cf_dialog.pkg_name}_functions.csv')
-                pd_params_path = join(self.pkg_path,
-                                      f'{self.cf_dialog.pkg_name}_parameters.csv')
+                pd_funcs_path = \
+                    join(self.pkg_path,
+                         f'{self.cf_dialog.pkg_name}_functions.csv')
+                pd_params_path = \
+                    join(self.pkg_path,
+                         f'{self.cf_dialog.pkg_name}_parameters.csv')
                 if isfile(pd_funcs_path):
                     read_pd_funcs = pd.read_csv(pd_funcs_path, sep=';',
                                                 index_col=0)

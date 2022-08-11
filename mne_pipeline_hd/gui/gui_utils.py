@@ -127,8 +127,9 @@ class ErrorDialog(QDialog):
 
 
 def show_error_dialog(exc_str):
-    """Checks if a QApplication instance is available and shows the Error-Dialog.
-    If unavailable (non-console application), log an additional notice.
+    """Checks if a QApplication instance is available
+    and shows the Error-Dialog.
+     If unavailable (non-console application), log an additional notice.
     """
     if QApplication.instance() is not None:
         ErrorDialog(exc_str, title='A unexpected error occurred')
@@ -364,7 +365,7 @@ class Worker(QRunnable):
         # Retrieve args/kwargs here; and fire processing using them
         try:
             return_value = self.function(*self.args, **self.kwargs)
-        except:
+        except:  # noqa: E722
             exc_tuple = get_exception_tuple()
             self.signals.error.emit(exc_tuple)
         else:
