@@ -3,11 +3,9 @@ from os import mkdir
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFileDialog, QInputDialog
 
-from mne_pipeline_hd.gui.welcome_window import show_welcome_window
-
 
 def test_welcome_window(controller, tmpdir, qtbot, monkeypatch):
-    welcome_window = show_welcome_window(controller)
+    welcome_window = WelcomeWindow(controller)
     qtbot.addWidget(welcome_window)
 
     # add new project

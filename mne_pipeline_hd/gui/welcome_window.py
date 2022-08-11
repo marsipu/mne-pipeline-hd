@@ -21,17 +21,22 @@ from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import (center, WorkerDialog,
                                            get_user_input_string)
-from mne_pipeline_hd.gui.main_window import show_main_window
+from mne_pipeline_hd.gui.main_window import MainWindow
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.pipeline_utils import QS
 
 
 class WelcomeWindow(QWidget):
-    def __init__(self, controller):
+    def __init__(self, controller=None):
         super().__init__()
-
-        self.ct = controller
-        self.main_window = None
+        _object_refs['welcome_window'] = self
+        if controller is None:
+            try:
+                self.ct = controller
+            except RuntimeError:
+                self.ct = None
+        else:
+            self.ct = controller
 
         self.init_ui()
         self.update_widgets()
@@ -64,6 +69,7 @@ class WelcomeWindow(QWidget):
         project_layout.addWidget(self.project_label)
         self.project_cmbx = QComboBox()
         self.project_cmbx.activated.connect(self.project_changed)
+
         project_layout.addWidget(self.project_cmbx)
         self.add_pr_bt = QPushButton('Add Project')
         self.add_pr_bt.clicked.connect(self.add_project)
@@ -72,7 +78,8 @@ class WelcomeWindow(QWidget):
 
         self.edu_groupbox = QGroupBox('Education')
         self.edu_groupbox.setCheckable(True)
-        self.edu_groupbox.setChecked(QS().value('education', defaultValue=False))
+        self.edu_groupbox.setChecked(QS().value('education',
+                                                defaultValue=False))
         self.edu_groupbox.toggled.connect(self.edu_toggled)
 
         edu_layout = QVBoxLayout()
@@ -84,7 +91,6 @@ class WelcomeWindow(QWidget):
         bt_layout = QHBoxLayout()
         self.start_bt = QPushButton('Start')
         self.start_bt.setFont(QFont(QS().value('app_font'), 20))
-        self.start_bt.setEnabled(False)
         self.start_bt.clicked.connect(self.init_main_window)
         bt_layout.addWidget(self.start_bt)
 
@@ -100,22 +106,29 @@ class WelcomeWindow(QWidget):
         QS().setValue('education', value)
 
     def update_widgets(self):
-        self.home_path_label.setText(f'{self.ct.home_path} selected.')
-        self.add_pr_bt.setEnabled(True)
-        if hasattr(self.ct, 'projects'):
-            self.project_cmbx.setEnabled(True)
-            self.project_cmbx.clear()
-            self.project_cmbx.addItems(self.ct.projects)
-        if self.ct.pr is not None:
-            self.project_label.setText(f'{self.ct.pr.name} selected.')
-            self.project_cmbx.setCurrentText(self.ct.pr.name)
+        if self.ct is not None:
+            self.home_path_label.setText(f'{self.ct.home_path} selected.')
+            self.add_pr_bt.setEnabled(True)
+            if hasattr(self.ct, 'projects'):
+                self.project_cmbx.setEnabled(True)
+                self.project_cmbx.clear()
+                self.project_cmbx.addItems(self.ct.projects)
+            if self.ct.pr is not None:
+                self.project_label.setText(f'{self.ct.pr.name} selected.')
+                self.project_cmbx.setCurrentText(self.ct.pr.name)
 
-        self.update_education_list()
-        if self.ct.pr is not None:
-            self.start_bt.setEnabled(True)
+            self.update_education_list()
+            if self.ct.pr is not None:
+                self.start_bt.setEnabled(True)
+        else:
+            self.project_cmbx.setEnabled(False)
+            self.add_pr_bt.setEnabled(False)
+            self.start_bt.setEnabled(False)
+            self.home_path_label.setText('No Home-Path selected')
 
     def set_home_path(self):
-        self.ct.save()
+        if self.ct is not None:
+            self.ct.save()
         loaded_home_path = QFileDialog.getExistingDirectory(
             self, 'Select a folder as Home-Path')
         if loaded_home_path != '':
@@ -133,45 +146,43 @@ class WelcomeWindow(QWidget):
                 self.update_widgets()
 
     def project_changed(self, project_idx):
-        project = self.project_cmbx.itemText(project_idx)
-        self.ct.change_project(project)
-        self.update_widgets()
-
-    def update_education_list(self):
-        edu_path = join(self.ct.home_path, 'edu_programs')
-        if isdir(edu_path):
-            self.edu_selection.replace_data(
-                [f for f in listdir(edu_path) if f[-9:] == '-edu.json'])
-
-    def add_project(self):
-        new_project = get_user_input_string(
-            'Please enter the name of a project!', 'Add Project')
-        if new_project is not None:
-            self.ct.change_project(new_project)
+        if self.ct is not None:
+            project = self.project_cmbx.itemText(project_idx)
+            self.ct.change_project(project)
             self.update_widgets()
 
-    def init_main_window(self):
-        edu_on = QS().value('education')
-        if edu_on:
-            self.ct.edu_program_name = self.edu_selection.get_current()
-            self.ct.load_edu()
+    def update_education_list(self):
+        if self.ct is not None:
+            edu_path = join(self.ct.home_path, 'edu_programs')
+            if isdir(edu_path):
+                self.edu_selection.replace_data(
+                    [f for f in listdir(edu_path) if f[-9:] == '-edu.json'])
 
-        self.hide()
-        show_main_window(self.ct)
+    def add_project(self):
+        if self.ct is not None:
+            new_project = get_user_input_string(
+                'Please enter the name of a project!', 'Add Project')
+            if new_project is not None:
+                self.ct.change_project(new_project)
+                self.update_widgets()
+
+    def init_main_window(self):
+        if self.ct is not None:
+            edu_on = QS().value('education')
+            if edu_on:
+                self.ct.edu_program_name = self.edu_selection.get_current()
+                self.ct.load_edu()
+
+            self.hide()
+            MainWindow(self.ct)
 
     def closeEvent(self, event):
-        WorkerDialog(self, self.ct.save, blocking=True, title='Saving Project!')
+        if self.ct is not None:
+            WorkerDialog(self, self.ct.save, blocking=True,
+                         title='Saving Project!')
         if self.edu_groupbox.isChecked():
             QS().setValue('education', 1)
         else:
             QS().setValue('education', 0)
-        event.accept()
         _object_refs['welcom_window'] = None
-
-
-def show_welcome_window(controller):
-    if _object_refs['welcome_window'] is None:
-        welcome_window = WelcomeWindow(controller)
-        _object_refs['welcome_window'] = welcome_window
-
-    return _object_refs['welcome_window']
+        event.accept()

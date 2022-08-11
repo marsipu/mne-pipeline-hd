@@ -58,6 +58,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, controller):
         super().__init__()
+        _object_refs['main_window'] = self
         self.setWindowTitle('MNE-Pipeline HD')
 
         # Set QThread as default (ToDo: MP)
@@ -583,8 +584,8 @@ class MainWindow(QMainWindow):
         restart_program()
 
     def update_pipeline(self):
-        command = 'pip install --upgrade --force-reinstall --no-deps ' \
-                  'git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd'
+
+        command = 'pip install --upgrade mne_pipeline_hd'
         QProcessDialog(self, command, show_buttons=True, show_console=True,
                        close_directly=True, title='Updating Pipeline...',
                        blocking=True)
@@ -644,9 +645,3 @@ class MainWindow(QMainWindow):
                 elif answer == QMessageBox.No:
                     welcome_window.close()
 
-
-def show_main_window(controller):
-    main_window = MainWindow(controller)
-    _object_refs['main_window'] = main_window
-
-    return main_window

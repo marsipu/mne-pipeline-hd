@@ -19,8 +19,7 @@ from PyQt5.QtWidgets import QApplication
 from qdarkstyle import DarkPalette, LightPalette
 
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
-from mne_pipeline_hd.gui.welcome_window import show_welcome_window
-from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS
 
 
@@ -100,8 +99,7 @@ def main():
     app.setWindowIcon(app_icon)
 
     # Initiate WelcomeWindow
-    controller = Controller()
-    show_welcome_window(controller)
+    WelcomeWindow()
 
     # Redirect stdout to capture it later in GUI
     sys.stdout = StdoutStderrStream('stdout')

@@ -314,3 +314,10 @@ def _set_test_run():
 def _test_run():
     if 'TEST_RUN' in os.environ:
         return True
+
+
+def _run_from_script():
+    if '__main__.py' in sys.argv[0]:
+        return True
+    else:
+        return False
