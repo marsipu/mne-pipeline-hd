@@ -527,6 +527,7 @@ class WorkerDialog(QDialog):
                                 'You can\'t close this Dialog before this Thread finished!')
 
 
+# ToDo: WIP
 class QProcessWorker(QObject):
     """A worker for QProcess."""
     # Send stdout from current process.
