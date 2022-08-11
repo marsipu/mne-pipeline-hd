@@ -32,7 +32,7 @@ class WelcomeWindow(QWidget):
         _object_refs['welcome_window'] = self
         if controller is None:
             try:
-                self.ct = controller
+                self.ct = Controller()
             except RuntimeError:
                 self.ct = None
         else:
