@@ -95,7 +95,7 @@ def main():
         else:
             app.setStyle(app_style)
 
-    with resources.path('mne_pipeline_hd.assets', icon_name) as icon_path:
+    with resources.path('mne_pipeline_hd.resource', icon_name) as icon_path:
         app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
 

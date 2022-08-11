@@ -14,12 +14,12 @@ from os.path import isdir, join
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QComboBox, QFileDialog, QGroupBox, QHBoxLayout,
-                             QLabel, QMessageBox, QPushButton, QVBoxLayout,
+                             QLabel, QPushButton, QVBoxLayout,
                              QWidget)
 
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import (ErrorDialog, center, WorkerDialog,
+from mne_pipeline_hd.gui.gui_utils import (center, WorkerDialog,
                                            get_user_input_string)
 from mne_pipeline_hd.gui.main_window import show_main_window
 from mne_pipeline_hd.pipeline.controller import Controller
@@ -34,7 +34,7 @@ class WelcomeWindow(QWidget):
         self.main_window = None
 
         self.init_ui()
-        self.check_controller()
+        self.update_widgets()
 
         self.show()
         center(self)
@@ -46,7 +46,7 @@ class WelcomeWindow(QWidget):
         layout.addWidget(title_label)
 
         image_label = QLabel()
-        with resources.path('mne_pipeline_hd.assets',
+        with resources.path('mne_pipeline_hd.resource',
                             'mne_pipeline_logo_evee_smaller.jpg') as img_path:
             image_label.setPixmap(QPixmap(str(img_path)))
         layout.addWidget(image_label)
@@ -99,7 +99,7 @@ class WelcomeWindow(QWidget):
     def edu_toggled(self, value):
         QS().setValue('education', value)
 
-    def _update_widgets(self):
+    def update_widgets(self):
         self.home_path_label.setText(f'{self.ct.home_path} selected.')
         self.add_pr_bt.setEnabled(True)
         if hasattr(self.ct, 'projects'):
@@ -129,12 +129,12 @@ class WelcomeWindow(QWidget):
                 self.project_label.clear()
                 self.ct = None
             else:
-                self._update_widgets()
+                self.update_widgets()
 
     def project_changed(self, project_idx):
         project = self.project_cmbx.itemText(project_idx)
         self.ct.change_project(project)
-        self._update_widgets()
+        self.update_widgets()
 
     def update_education_list(self):
         edu_path = join(self.ct.home_path, 'edu_programs')
@@ -147,7 +147,7 @@ class WelcomeWindow(QWidget):
             'Please enter the name of a project!', 'Add Project')
         if new_project is not None:
             self.ct.change_project(new_project)
-            self._update_widgets()
+            self.update_widgets()
 
     def init_main_window(self):
         edu_on = QS().value('education')

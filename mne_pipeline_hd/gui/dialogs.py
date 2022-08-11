@@ -290,7 +290,7 @@ class AboutDialog(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
-        with resources.open_text('mne_pipeline_hd.assets',
+        with resources.open_text('mne_pipeline_hd.resource',
                                  'license.txt') as file:
             license_text = file.read()
         license_text = license_text.replace('\n', '<br>')

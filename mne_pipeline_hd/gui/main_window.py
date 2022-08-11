@@ -638,7 +638,7 @@ class MainWindow(QMainWindow):
 
             if welcome_window is not None:
                 if answer == QMessageBox.Yes:
-                    welcome_window._update_widgets()
+                    welcome_window.update_widgets()
                     welcome_window.show()
 
                 elif answer == QMessageBox.No:

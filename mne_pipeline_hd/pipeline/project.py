@@ -242,7 +242,7 @@ class Project:
                         if '_exp' not in param:
                             loaded_parameters[p_preset].pop(param)
 
-                    # Add parameters, which exist in assets/parameters.csv,
+                    # Add parameters, which exist in resource/parameters.csv,
                     # but not in loaded-parameters (e.g. added with custom-module)
                     for param in [p for p in self.ct.pd_params.index if
                                   p not in loaded_parameters[p_preset]]:

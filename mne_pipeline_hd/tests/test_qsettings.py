@@ -22,7 +22,7 @@ def test_qsettings_types():
         app = QApplication(sys.argv)
     app.setApplicationName('test')
 
-    with resources.open_text('mne_pipeline_hd.assets',
+    with resources.open_text('mne_pipeline_hd.resource',
                              'default_settings.json') as file:
         default_qsettings = json.load(file)['qsettings']
 

@@ -2,7 +2,7 @@
 ### A [MNE-Python](https://mne.tools/stable/index.html) Pipeline-GUI for MEG-Lab Heidelberg
 ###### inspired by: [Andersen L.M. 2018](https://doi.org/10.3389/fnins.2018.00006)
 
-![mne-pipeline-hd Logo](mne_pipeline_hd/assets/mne_pipeline_logo_evee_smaller.jpg)
+![mne-pipeline-hd Logo](mne_pipeline_hd/resource/mne_pipeline_logo_evee_smaller.jpg)
 
 ## Installation
 1. Install MNE-python as instructed on the [website](https://www.martinos.org/mne/stable/install_mne_python.html),

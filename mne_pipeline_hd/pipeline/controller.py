@@ -83,7 +83,7 @@ class Controller:
         self.edu_program = None
 
         # Load default settings
-        with resources.open_text('mne_pipeline_hd.assets',
+        with resources.open_text('mne_pipeline_hd.resource',
                                  'default_settings.json') as file:
             self.default_settings = json.load(file)
 
@@ -95,14 +95,14 @@ class Controller:
         self.all_pd_funcs = None
 
         # Pandas-DataFrame for contextual data of basic functions (included with program)
-        with resources.path('mne_pipeline_hd.assets',
+        with resources.path('mne_pipeline_hd.resource',
                             'functions.csv') as pd_funcs_path:
             self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';',
                                         index_col=0)
 
         # Pandas-DataFrame for contextual data of parameters
         # for basic functions (included with program)
-        with resources.path('mne_pipeline_hd.assets',
+        with resources.path('mne_pipeline_hd.resource',
                             'parameters.csv') as pd_params_path:
             self.pd_params = pd.read_csv(str(pd_params_path), sep=';',
                                          index_col=0)
