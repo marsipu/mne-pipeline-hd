@@ -10,12 +10,8 @@ License: GPL-3.0
 import io
 import logging
 import multiprocessing
-import smtplib
-import ssl
 import sys
 import traceback
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from inspect import signature
 
 from PyQt5.QtCore import (QObject, QProcess, QRunnable, QThreadPool,
@@ -51,7 +47,8 @@ def set_ratio_geometry(size_ratio, widget=None):
 
 
 def get_std_icon(icon_name):
-    return QApplication.instance().style().standardIcon(getattr(QStyle, icon_name))
+    return QApplication.instance().style().standardIcon(
+        getattr(QStyle, icon_name))
 
 
 class ExceptionTuple(object):
@@ -83,7 +80,6 @@ def get_exception_tuple(is_mp=False):
     return exc_tuple
 
 
-# Todo: Rework how to send Issues (E-Mail, GitHub?)
 class ErrorDialog(QDialog):
     def __init__(self, exception_tuple, parent=None, title=None):
         if parent:
@@ -121,59 +117,13 @@ class ErrorDialog(QDialog):
             self.html_text = f'<h1>{self.err[1]}</h1>' \
                              f'{self.formated_tb_text}'
         self.display.setHtml(self.html_text)
-
-        # layout.addWidget(scroll_area, 0, 0, 1, 2)
         layout.addWidget(self.display)
-
-        # self.name_le = QLineEdit()
-        # self.name_le.setPlaceholderText('Enter your Name (optional)')
-        # layout.addWidget(self.name_le, 1, 0)
-        #
-        # self.email_le = QLineEdit()
-        # self.email_le.setPlaceholderText('Enter your E-Mail-Adress (optional)')
-        # layout.addWidget(self.email_le, 1, 1)
-        #
-        # self.send_bt = QPushButton('Send Error-Report')
-        # self.send_bt.clicked.connect(self.send_report)
-        # layout.addWidget(self.send_bt, 2, 0)
 
         self.close_bt = QPushButton('Close')
         self.close_bt.clicked.connect(self.close)
         layout.addWidget(self.close_bt)
 
         self.setLayout(layout)
-
-    # Todo: Rework without having to show the password
-    def send_report(self):
-        msg_box = QMessageBox.question(self, 'Send an E-Mail-Bug-Report?',
-                                       'Do you really want to send an E-Mail-Report?',
-                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if msg_box == QMessageBox.Yes:
-            port = 465
-            adress = 'mne.pipeline@gmail.com'
-            password = '24DecodetheBrain7!'
-
-            context = ssl.create_default_context()
-
-            message = MIMEMultipart("alternative")
-            message['Subject'] = str(self.err[1])
-            message['From'] = adress
-            message["To"] = adress
-
-            message_body = MIMEText(f'<b><big>{self.name_le.text()}</b></big><br>'
-                                    f'<i>{self.email_le.text()}</i><br><br>'
-                                    f'<b>{sys.platform}</b><br>{self.formated_tb_text}', 'html')
-            message.attach(message_body)
-            try:
-                with smtplib.SMTP_SSL('smtp.gmail.com', port, context=context) as server:
-                    server.login('mne.pipeline@gmail.com', password)
-                    server.sendmail(adress, adress, message.as_string())
-                QMessageBox.information(self, 'E-Mail sent',
-                                        'An E-Mail was sent to mne.pipeline@gmail.com\n'
-                                        'Thank you for the Report!')
-            except OSError:
-                QMessageBox.information(self, 'E-Mail not sent',
-                                        'Sending an E-Mail is not possible on your OS')
 
 
 def show_error_dialog(exc_str):
@@ -188,13 +138,15 @@ def show_error_dialog(exc_str):
 
 # ToDo: Test
 class UncaughtHook(QObject):
-    """This class is a modified version of https://timlehr.com/python-exception-hooks-with-qt-message-box/"""
+    """This class is a modified version
+    of https://timlehr.com/python-exception-hooks-with-qt-message-box/"""
     _exception_caught = pyqtSignal(object)
 
     def __init__(self, *args, **kwargs):
         super(UncaughtHook, self).__init__(*args, **kwargs)
 
-        # connect signal to execute the message box function always on main thread
+        # connect signal to execute the message box function
+        # always on main thread
         self._exception_caught.connect(show_error_dialog)
 
     def exception_hook(self, exc_type, exc_value, exc_traceback):
@@ -208,7 +160,8 @@ class UncaughtHook(QObject):
             # Print Error to Console
             traceback.print_exception(exc_type, exc_value, exc_traceback)
             exc_info = (exc_type, exc_value, exc_traceback)
-            exc_str = (exc_type.__name__, exc_value, ''.join(traceback.format_tb(exc_traceback)))
+            exc_str = (exc_type.__name__, exc_value,
+                       ''.join(traceback.format_tb(exc_traceback)))
             logging.critical(f'Uncaught exception:\n'
                              f'{exc_str[0]}: {exc_str[1]}\n'
                              f'{exc_str[2]}',
@@ -306,7 +259,8 @@ class ConsoleWidget(QTextEdit):
 
 
 class MainConsoleWidget(ConsoleWidget):
-    """A subclass of ConsoleWidget which is linked to stdout/stderr of the main process"""
+    """A subclass of ConsoleWidget which is linked to stdout/stderr
+     of the main process"""
 
     def __init__(self):
         super().__init__()
@@ -324,7 +278,8 @@ class StreamSignals(QObject):
     text_written = pyqtSignal(str)
 
 
-# ToDo: Buffering and halting signal-emission (continue writing to sys.__stdout__/__stderr__)
+# ToDo: Buffering and halting signal-emission
+#  (continue writing to sys.__stdout__/__stderr__)
 #  when no accepted/printed-signal is coming back from receiving Widget
 class StdoutStderrStream(io.TextIOBase):
 
@@ -427,8 +382,8 @@ class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
     thread_finished = pyqtSignal(object)
 
-    def __init__(self, parent, function, show_buttons=False, show_console=False,
-                 close_directly=True, blocking=False,
+    def __init__(self, parent, function, show_buttons=False,
+                 show_console=False, close_directly=True, blocking=False,
                  title=None, **kwargs):
         super().__init__(parent)
 
@@ -523,8 +478,9 @@ class WorkerDialog(QDialog):
             self.deleteLater()
             event.accept()
         else:
-            QMessageBox.warning(self, 'Closing not possible!',
-                                'You can\'t close this Dialog before this Thread finished!')
+            QMessageBox.warning(
+                self, 'Closing not possible!',
+                'You can\'t close this Dialog before this Thread finished!')
 
 
 # ToDo: WIP
@@ -569,7 +525,8 @@ class QProcessWorker(QObject):
             sys.stderr.write(text)
 
     def error_occurred(self):
-        text = f'An error occured with \"{self.process.program()} {" ".join(self.process.arguments())}\":\n' \
+        text = f'An error occured with \"{self.process.program()} ' \
+               f'{" ".join(self.process.arguments())}\":\n' \
                f'{self.process.errorString()}\n'
         self.stderrSignal.emit(text)
         if self.printtostd:
@@ -578,7 +535,8 @@ class QProcessWorker(QObject):
 
     def process_finished(self):
         if self.process.exitCode() == 1:
-            text = f'\"{self.process.program()} {" ".join(self.process.arguments())}\" has crashed\n'
+            text = f'\"{self.process.program()} ' \
+                   f'{" ".join(self.process.arguments())}\" has crashed\n'
             self.stderrSignal.emit(text)
             if self.printtostd:
                 sys.stderr.write(text)
@@ -606,7 +564,8 @@ class QProcessWorker(QObject):
 
 class QProcessDialog(QDialog):
     def __init__(self, parent, commands, show_buttons=True,
-                 show_console=True, close_directly=False, title=None, blocking=True):
+                 show_console=True, close_directly=False,
+                 title=None, blocking=True):
         super().__init__(parent)
         self.commands = commands
         self.show_buttons = show_buttons
@@ -668,8 +627,10 @@ class QProcessDialog(QDialog):
     def start_process(self):
         self.process_worker = QProcessWorker(self.commands)
         if self.show_console:
-            self.process_worker.stdoutSignal.connect(self.console_output.write_stdout)
-            self.process_worker.stderrSignal.connect(self.console_output.write_stderr)
+            self.process_worker.stdoutSignal.connect(
+                self.console_output.write_stdout)
+            self.process_worker.stderrSignal.connect(
+                self.console_output.write_stderr)
         self.process_worker.finished.connect(self.process_finished)
         self.process_worker.start()
 
@@ -679,13 +640,15 @@ class QProcessDialog(QDialog):
             event.accept()
         else:
             event.ignore()
-            QMessageBox.warning(self, 'Closing not possible!',
-                                'You can\'t close the Dialog before this Process finished!')
+            QMessageBox.warning(
+                self, 'Closing not possible!',
+                'You can\'t close the Dialog before this Process finished!')
 
 
 def get_user_input_string(prompt, title='Input required!', force=False):
     # Determine GUI or non-GUI-mode
-    if QS().value('gui') and any([obj is not None for obj in _object_refs.values()]):
+    if QS().value('gui') and any([obj is not None
+                                  for obj in _object_refs.values()]):
         parent = _object_refs['main_window'] or _object_refs['welcome_window']
     else:
         parent = None
@@ -699,11 +662,13 @@ def get_user_input_string(prompt, title='Input required!', force=False):
     if not user_input or not ok:
         if force:
             if parent:
-                QMessageBox().warning(parent, 'Input required!',
-                                      'You need to provide an appropriate input to proceed!')
+                QMessageBox().warning(
+                    parent, 'Input required!',
+                    'You need to provide an appropriate input to proceed!')
             else:
                 print(
-                    'Warning: Input required! You need to provide an appropriate input to proceed!')
+                    'Warning: Input required! '
+                    'You need to provide an appropriate input to proceed!')
             user_input = get_user_input_string(prompt, title, force)
         else:
             user_input = None

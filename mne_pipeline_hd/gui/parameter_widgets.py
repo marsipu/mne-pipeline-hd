@@ -1543,9 +1543,9 @@ class ColorGui(Param):
         key = self.select_widget.currentText()
         if key in self._cached_value:
             previous_color = _get_color(self._cached_value[key])
-            color = QColorDialog.getColor(initial=previous_color,
-                                          parent=self,
-                                          title=f'Pick a color for {self.name}')
+            color = QColorDialog.getColor(
+                initial=previous_color, parent=self,
+                title=f'Pick a color for {self.name}')
         else:
             # blocking
             color = QColorDialog.getColor(

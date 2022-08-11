@@ -135,24 +135,28 @@ class DataTerminal(QDialog):
 
         self.sub_layout = QGridLayout()
         self.inputw = CodeEditor()
-        self.inputw.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum))
+        self.inputw.setSizePolicy(QSizePolicy(QSizePolicy.Preferred,
+                                              QSizePolicy.Maximum))
         self.sub_layout.addWidget(self.inputw, 0, 0, 3, 1)
 
         self.start_bt = QPushButton('Start')
         self.start_bt.setFont(QFont(QS().value('app_font'), 16))
-        self.start_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
+        self.start_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum,
+                                                QSizePolicy.Preferred))
         self.start_bt.clicked.connect(self.start_execution)
         self.sub_layout.addWidget(self.start_bt, 0, 1)
 
         self.history_bt = QPushButton('History')
         self.history_bt.setFont(QFont(QS().value('app_font'), 16))
-        self.history_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
+        self.history_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum,
+                                                  QSizePolicy.Preferred))
         self.history_bt.clicked.connect(partial(HistoryDlg, self))
         self.sub_layout.addWidget(self.history_bt, 1, 1)
 
         self.quit_bt = QPushButton('Close')
         self.quit_bt.setFont(QFont(QS().value('app_font'), 16))
-        self.quit_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
+        self.quit_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum,
+                                               QSizePolicy.Preferred))
         self.quit_bt.clicked.connect(self.close)
         self.sub_layout.addWidget(self.quit_bt, 2, 1)
 
@@ -161,7 +165,8 @@ class DataTerminal(QDialog):
         self.setLayout(self.layout)
 
     def sub_selected(self, index):
-        # Enable all Buttons for the first time, if no obj was given to call at the beginning
+        # Enable all Buttons for the first time,
+        # if no obj was given to call at the beginning
         if self.obj is None:
             for bt_name in self.bt_dict:
                 self.bt_dict[bt_name].setEnabled(True)
@@ -178,15 +183,18 @@ class DataTerminal(QDialog):
                 self.sub_cmbx.setCurrentText(self.obj.name)
         else:
             # Reset globals to default
-            for key in [k for k in self.t_globals.keys() if k not in self.default_t_globals]:
+            for key in [k for k in self.t_globals.keys()
+                        if k not in self.default_t_globals]:
                 self.t_globals.pop(key)
             self.t_globals['obj'] = self.obj
-            self.displayw.insertHtml(f'<b>Subject: {self.obj.name} loaded</b><br>')
+            self.displayw.insertHtml(
+                f'<b>Subject: {self.obj.name} loaded</b><br>')
             self.displayw.ensureCursorVisible()
 
     def load_bt_pressed(self, bt_name):
-        worker_dialog = WorkerDialog(self, self.start_load,
-                                     title=f'Loading {bt_name}...', bt_name=bt_name)
+        worker_dialog = WorkerDialog(
+            self, self.start_load, title=f'Loading {bt_name}...',
+            bt_name=bt_name)
         worker_dialog.thread_finished.connect(self.finished_handling)
 
     def finished_handling(self, result_msg):
@@ -199,16 +207,20 @@ class DataTerminal(QDialog):
             load_fn = getattr(self.obj, self.load_mapping[bt_name])
             self.t_globals[bt_name] = load_fn()
         except (FileNotFoundError, OSError):
-            result_msg = f'<b><center>No file found for {bt_name}</center></b><br>'
+            result_msg = \
+                f'<b><center>No file found for {bt_name}</center></b><br>'
         else:
-            result_msg = f'<b><big><center>{bt_name} loaded (namespace = {bt_name})</center></big></b><br>'
+            result_msg = \
+                f'<b><big><center>{bt_name} loaded ' \
+                f'(namespace = {bt_name})</center></big></b><br>'
 
         return result_msg
 
     def start_execution(self):
         command = self.inputw.toPlainText()
         command_html = command.replace('\n', '<br>')
-        self.displayw.insertHtml(f'<font color="blue"><b><i>{command_html}</i></b></font><br>')
+        self.displayw.insertHtml(
+            f'<font color="blue"><b><i>{command_html}</i></b></font><br>')
         self.displayw.ensureCursorVisible()
         self.history.insert(0, command)
 

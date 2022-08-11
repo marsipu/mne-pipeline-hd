@@ -22,6 +22,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mne.viz import Brain
+from mne_qt_browser._pg_figure import MNEQtBrowser
 
 try:
     from mne.viz import Figure3D
@@ -121,7 +122,8 @@ def show_plot_manager():
 
 
 class PlotViewSelection(QDialog):
-    """The user selects the plot-function and the objects to show for this plot_function
+    """The user selects the plot-function and the objects
+     to show for this plot_function
     """
 
     def __init__(self, main_win):
@@ -138,7 +140,8 @@ class PlotViewSelection(QDialog):
 
         # Stores the widgets for parameter-presets/objects
         self.all_figs = dict()
-        # Stores all widget-items (including single widgets for plot_functions with multiple plots as output)
+        # Stores all widget-items (including single widgets
+        # for plot_functions with multiple plots as output)
         self.all_images = dict()
 
         self.init_ui()
@@ -169,7 +172,8 @@ class PlotViewSelection(QDialog):
         layout.addLayout(list_layout)
 
         bt_layout = QHBoxLayout()
-        # Interactive not useful at the moment because the plots loose interactivity when coming from the thread
+        # Interactive not useful at the moment
+        # because the plots loose interactivity when coming from the thread
         self.interactive_chkbx = QCheckBox('Interactive Plots?')
         self.interactive_chkbx.toggled.connect(self.interactive_toggled)
         # bt_layout.addWidget(self.interactive_chkbx)
@@ -198,7 +202,8 @@ class PlotViewSelection(QDialog):
             else:
                 target_objects = list()
 
-            # If non-interactive only list objects where a plot-image already was saved
+            # If non-interactive only list objects
+            # where a plot-image already was saved
             if not self.interactive:
                 for ob in target_objects:
                     if ob in self.ct.pr.plot_files:
@@ -214,7 +219,8 @@ class PlotViewSelection(QDialog):
         self.obj_select.replace_data(self.objects)
 
     def func_selected(self, func):
-        """Get selected function and adjust contents of Object-Selection to target"""
+        """Get selected function and adjust contents
+        of Object-Selection to target"""
         self.selected_func = func
         self.target = self.ct.pd_funcs.loc[func, 'target']
         self.update_objects()
@@ -256,7 +262,8 @@ class PlotViewSelection(QDialog):
                     else:
                         break
 
-                    # Replace Parameter-Preset for the loaded object and reload load/save-paths
+                    # Replace Parameter-Preset for the loaded object
+                    # and reload load/save-paths
                     if p_preset != obj.p_preset:
                         obj.p_preset = p_preset
                         obj.init_parameters()
@@ -278,7 +285,8 @@ class PlotViewSelection(QDialog):
                         # Create Thread for Plot-Function
                         worker = Worker(plot_func, **keyword_arguments)
                         # Pass Object-Name into the plot_finished-Slot
-                        # (needs to be set as default in lambda-function to survive loop)
+                        # (needs to be set as default
+                        # in lambda-function to survive loop)
                         worker.signals.finished.connect(
                             lambda val, o_name=obj_name, ppreset=p_preset:
                             self.plot_finished(val, o_name, ppreset))
@@ -288,7 +296,8 @@ class PlotViewSelection(QDialog):
                             self.thread_error(err_tuple, o_name, ppreset,
                                               'plot'))
                         print(
-                            f'Starting Thread for Object= {obj_name} and Parameter-Preset= {p_preset}')
+                            f'Starting Thread for Object= {obj_name} '
+                            f'and Parameter-Preset= {p_preset}')
                         QThreadPool.globalInstance().start(worker)
 
                     # Load Plot-Images
@@ -430,7 +439,8 @@ class PlotViewer(QMainWindow):
                         else:
                             obj_layout.addWidget(name_label,
                                                  alignment=Qt.AlignHCenter)
-                            # Add view-widget if not enough items for Tab-Widget
+                            # Add view-widget if not enough items
+                            # for Tab-Widget
                             obj_layout.addWidget(view_widget)
                             scroll_layout.addLayout(obj_layout, row, col)
 
@@ -496,11 +506,12 @@ class PlotViewer(QMainWindow):
 
     def tab_selected(self, idx):
         # A frankly very long call to get the tab_widgets
-        # (when setCentralWidget in QMainWindow, the previous reference to widgets inside are deleted,
-        # so I found no way to store the reference to the TabWidget beforehand)
+        # (when setCentralWidget in QMainWindow, the previous reference
+        # to widgets inside are deleted, so I found no way to store the
+        # reference to the TabWidget beforehand).
         viewer_layout = self.centralWidget().layout().itemAt(0)
-        for n in range(
-                viewer_layout.count()):  # Get GridLayouts in scroll_areas for Parameter-Presets
+        # Get GridLayouts in scroll_areas for Parameter-Presets
+        for n in range(viewer_layout.count()):
             scroll_area = viewer_layout.itemAt(n).itemAt(1).widget()
             grid_layout = scroll_area.widget().layout()
             for c in range(grid_layout.count()):
@@ -558,7 +569,8 @@ class PlotViewer(QMainWindow):
         self.update_layout()
 
     def show_single_items(self, p_preset, obj_name):
-        # Create dictionary similar to what you get from loading to open a new viewer with just the selected items
+        # Create dictionary similar to what you get from loading
+        # to open a new viewer with just the selected items
         obj_items = [item.copy() for item in self.items[p_preset][obj_name]]
         item_dict = {
             'Default': {idx: [value] for idx, value in enumerate(obj_items)}}

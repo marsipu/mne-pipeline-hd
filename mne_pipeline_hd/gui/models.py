@@ -14,6 +14,7 @@ import pandas as pd
 from PyQt5.QtCore import (QAbstractItemModel, QAbstractListModel,
                           QAbstractTableModel, QModelIndex, Qt)
 from PyQt5.QtGui import QBrush, QFont
+
 from mne_pipeline_hd.gui.gui_utils import get_std_icon
 
 
@@ -77,7 +78,8 @@ class BaseListModel(QAbstractListModel):
         default_flags = QAbstractListModel.flags(self, index)
         if self.drag_drop:
             if index.isValid():
-                return default_flags | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+                return default_flags | Qt.ItemIsDragEnabled \
+                       | Qt.ItemIsDropEnabled
             else:
                 return default_flags | Qt.ItemIsDropEnabled
         else:
@@ -139,7 +141,8 @@ class CheckListModel(BaseListModel):
 
     """
 
-    def __init__(self, data, checked, one_check=False, show_index=False, drag_drop=False, **kwargs):
+    def __init__(self, data, checked, one_check=False, show_index=False,
+                 drag_drop=False, **kwargs):
         super().__init__(data, show_index, drag_drop, **kwargs)
         self.one_check = one_check
 
@@ -201,9 +204,11 @@ class CheckDictModel(BaseListModel):
     drag_drop: bool
         Set True to enable Drag&Drop.
     yes_bt: str
-        Supply the name for a qt-standard-icon to mark the items existing in check_dict
+        Supply the name for a qt-standard-icon to mark the items
+        existing in check_dict
     no_bt: str
-        Supply the name for a qt-standard-icon to mark the items not existing in check_dict
+        Supply the name for a qt-standard-icon to mark the items
+        not existing in check_dict
 
     Notes
     -----
@@ -249,9 +254,11 @@ class CheckDictEditModel(CheckDictModel, EditListModel):
     drag_drop: bool
         Set True to enable Drag&Drop.
     yes_bt: str
-        Supply the name for a qt-standard-icon to mark the items existing in check_dict
+        Supply the name for a qt-standard-icon to mark the items
+         existing in check_dict
     no_bt: str
-        Supply the name for a qt-standard-icon to mark the items not existing in check_dict
+        Supply the name for a qt-standard-icon to mark the items
+        not existing in check_dict
 
     Notes
     -----
@@ -261,9 +268,12 @@ class CheckDictEditModel(CheckDictModel, EditListModel):
 
     def __init__(self, data, check_dict, show_index=False, drag_drop=False,
                  yes_bt=None, no_bt=None):
-        super().__init__(data, check_dict, show_index, drag_drop, yes_bt, no_bt)
-        # EditListModel doesn't have to be initialized because in __init__ of EditListModel
-        # only BaseListModel is initialized which is already done in __init__ of CheckDictModel
+        super().__init__(data, check_dict, show_index, drag_drop, yes_bt,
+                         no_bt)
+        # EditListModel doesn't have to be initialized
+        # because in __init__ of EditListModel
+        # only BaseListModel is initialized which is already done
+        # in __init__ of CheckDictModel
 
 
 class BaseDictModel(QAbstractTableModel):
@@ -272,11 +282,13 @@ class BaseDictModel(QAbstractTableModel):
     Parameters
     ----------
     data : dict | OrderedDict | None
-        Dictionary with keys and values to be displayed, default to empty Dictionary
+        Dictionary with keys and values to be displayed,
+         default to empty Dictionary
 
     Notes
     -----
-    Python 3.7 is required to ensure order in dictionary when inserting a normal dict (or use OrderedDict)
+    Python 3.7 is required to ensure order in dictionary
+     when inserting a normal dict (or use OrderedDict)
     """
 
     def __init__(self, data=None, **kwargs):
@@ -324,14 +336,16 @@ class EditDictModel(BaseDictModel):
     Parameters
     ----------
     data : dict | OrderedDict | None
-        Dictionary with keys and values to be displayed, default to empty Dictionary
+        Dictionary with keys and values to be displayed,
+         default to empty Dictionary
 
     only_edit : 'keys' | 'values' | None
         Makes only keys or only values editable. Both are editable if None.
 
     Notes
     -----
-    Python 3.7 is required to ensure order in dictionary when inserting a normal dict (or use OrderedDict)
+    Python 3.7 is required to ensure order in dictionary
+     when inserting a normal dict (or use OrderedDict)
     """
 
     def __init__(self, data=None, only_edit=None, **kwargs):
@@ -345,7 +359,8 @@ class EditDictModel(BaseDictModel):
             except (SyntaxError, ValueError):
                 pass
             if index.column() == 0:
-                self._data[value] = self._data.pop(list(self._data.keys())[index.row()])
+                self._data[value] = self._data.pop(
+                    list(self._data.keys())[index.row()])
             elif index.column() == 1:
                 self._data[list(self._data.keys())[index.row()]] = value
             else:
@@ -393,7 +408,8 @@ class BasePandasModel(QAbstractTableModel):
     Parameters
     ----------
     data : pandas.DataFrame | None
-        pandas DataFrame with contents to be displayed, defaults to empty DataFrame
+        pandas DataFrame with contents to be displayed,
+        defaults to empty DataFrame
     """
 
     def __init__(self, data=None, **kwargs):
@@ -429,11 +445,13 @@ class EditPandasModel(BasePandasModel):
     Parameters
     ----------
     data : pandas.DataFrame | None
-        pandas DataFrame with contents to be displayed, defaults to empty DataFrame
+        pandas DataFrame with contents to be displayed,
+         defaults to empty DataFrame
 
     Notes
     -----
-    The reference of the original input-DataFrame is lost when edited by this Model,
+    The reference of the original input-DataFrame is lost
+     when edited by this Model,
     you need to retrieve it directly from the model after editing
     """
 
@@ -458,8 +476,8 @@ class EditPandasModel(BasePandasModel):
     def setHeaderData(self, index, orientation, value, role=Qt.EditRole):
         if role == Qt.EditRole:
             if orientation == Qt.Vertical:
-                # DataFrame.rename does rename all duplicate indices if existent,
-                # that's why the index is reassigned directly
+                # DataFrame.rename does rename all duplicate indices
+                # if existent, that's why the index is reassigned directly
                 new_index = list(self._data.index)
                 new_index[index] = value
                 self._data.index = new_index
@@ -467,8 +485,8 @@ class EditPandasModel(BasePandasModel):
                 return True
 
             elif orientation == Qt.Horizontal:
-                # DataFrame.rename does rename all duplicate columns if existent,
-                # that's why the columns are reassigned directly
+                # DataFrame.rename does rename all duplicate columns
+                # if existent, that's why the columns are reassigned directly
                 new_columns = list(self._data.columns)
                 new_columns[index] = value
                 self._data.columns = new_columns
@@ -482,61 +500,70 @@ class EditPandasModel(BasePandasModel):
 
     def insertRows(self, row, count, index=QModelIndex()):
         self.beginInsertRows(index, row, row + count - 1)
-        add_data = pd.DataFrame(columns=self._data.columns, index=[r for r in range(count)])
+        add_data = pd.DataFrame(columns=self._data.columns,
+                                index=[r for r in range(count)])
         if row == 0:
             self._data = pd.concat([add_data, self._data])
         elif row == len(self._data.index):
             self._data = self._data.append(add_data)
         else:
-            self._data = pd.concat([self._data.iloc[:row], add_data, self._data.iloc[row:]])
+            self._data = pd.concat([self._data.iloc[:row], add_data,
+                                    self._data.iloc[row:]])
         self.endInsertRows()
 
         return True
 
     def insertColumns(self, column, count, index=QModelIndex()):
         self.beginInsertColumns(index, column, column + count - 1)
-        add_data = pd.DataFrame(index=self._data.index, columns=[c for c in range(count)])
+        add_data = pd.DataFrame(index=self._data.index,
+                                columns=[c for c in range(count)])
         if column == 0:
             self._data = pd.concat([add_data, self._data], axis=1)
         elif column == len(self._data.columns):
             self._data = pd.concat([self._data, add_data], axis=1)
         else:
             self._data = pd.concat(
-                [self._data.iloc[:, :column], add_data, self._data.iloc[:, column:]], axis=1)
+                [self._data.iloc[:, :column], add_data,
+                 self._data.iloc[:, column:]], axis=1)
         self.endInsertColumns()
 
         return True
 
     def removeRows(self, row, count, index=QModelIndex()):
         self.beginRemoveRows(index, row, row + count - 1)
-        # Can't use DataFrame.drop() here, because there could be rows with similar index-labels
+        # Can't use DataFrame.drop() here,
+        # because there could be rows with similar index-labels
         if row == 0:
             self._data = self._data.iloc[row + count:]
         elif row + count >= len(self._data.index):
             self._data = self._data.iloc[:row]
         else:
-            self._data = pd.concat([self._data.iloc[:row], self._data.iloc[row + count:]])
+            self._data = pd.concat([self._data.iloc[:row],
+                                    self._data.iloc[row + count:]])
         self.endRemoveRows()
 
         return True
 
     def removeColumns(self, column, count, index=QModelIndex()):
         self.beginRemoveColumns(index, column, column + count - 1)
-        # Can't use DataFrame.drop() here, because there could be columns with similar column-labels
+        # Can't use DataFrame.drop() here,
+        # because there could be columns with similar column-labels
         if column == 0:
             self._data = self._data.iloc[:, column + count:]
         elif column + count >= len(self._data.columns):
             self._data = self._data.iloc[:, :column]
         else:
             self._data = pd.concat(
-                [self._data.iloc[:, :column], self._data.iloc[:, column + count:]], axis=1)
+                [self._data.iloc[:, :column],
+                 self._data.iloc[:, column + count:]], axis=1)
         self.endRemoveColumns()
 
         return True
 
 
 class TreeItem:
-    """TreeItem as in https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
+    """TreeItem as in
+    https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
 
     def __init__(self, data, parent=None):
         self._data = data
@@ -570,7 +597,8 @@ class TreeItem:
 
     def insertChild(self, position):
         if 0 <= position < len(self._children):
-            self._children.insert(position, TreeItem([f'__new__{len(self._children)}'], self))
+            self._children.insert(
+                position, TreeItem([f'__new__{len(self._children)}'], self))
             return True
         return False
 
@@ -598,7 +626,8 @@ class TreeItem:
 
 
 class TreeModel(QAbstractItemModel):
-    """Tree-Model as in https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
+    """Tree-Model as in
+     https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
 
     def __init__(self, data, n_columns=1, headers=None, parent=None):
         super().__init__(parent)
@@ -639,7 +668,8 @@ class TreeModel(QAbstractItemModel):
         if role == Qt.DisplayRole:
             return self.getData(index)
 
-    def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex:
+    def index(self, row: int, column: int, parent: QModelIndex = ...) \
+            -> QModelIndex:
         if self.hasIndex(row, column, parent):
             if parent.isValid():
                 parentItem = parent.internalPointer()
@@ -681,7 +711,8 @@ class TreeModel(QAbstractItemModel):
             return QAbstractItemModel.flags(self, index)
         return Qt.NoItemFlags
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...) -> object:
+    def headerData(self, section: int,
+                   orientation: Qt.Orientation, role: int = ...) -> object:
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             self.root_item.data(section)
 
@@ -707,7 +738,8 @@ class AddFilesModel(BasePandasModel):
                     return Qt.Unchecked
 
     def setData(self, index, value, role=None):
-        if role == Qt.CheckStateRole and self._data.columns[index.column()] == 'Empty-Room?':
+        if role == Qt.CheckStateRole \
+                and self._data.columns[index.column()] == 'Empty-Room?':
             if value == Qt.Checked:
                 self._data.iloc[index.row(), index.column()] = 1
             else:
@@ -719,26 +751,30 @@ class AddFilesModel(BasePandasModel):
 
     def flags(self, index=QModelIndex()):
         if self._data.columns[index.column()] == 'Empty-Room?':
-            return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
+            return QAbstractItemModel.flags(self, index) \
+                   | Qt.ItemIsUserCheckable
 
         return QAbstractItemModel.flags(self, index)
 
     def removeRows(self, row, count, index=QModelIndex()):
         self.beginRemoveRows(index, row, row + count - 1)
-        # Can't use DataFrame.drop() here, because there could be rows with similar index-labels
+        # Can't use DataFrame.drop() here,
+        # because there could be rows with similar index-labels
         if row == 0:
             self._data = self._data.iloc[row + count:]
         elif row + count >= len(self._data.index):
             self._data = self._data.iloc[:row]
         else:
-            self._data = pd.concat([self._data.iloc[:row], self._data.iloc[row + count:]])
+            self._data = pd.concat([self._data.iloc[:row],
+                                    self._data.iloc[row + count:]])
         self.endRemoveRows()
 
         return True
 
 
 class FileManagementModel(BasePandasModel):
-    """A model for the Pandas-DataFrames containing information about the existing files"""
+    """A model for the Pandas-DataFrames containing information
+    about the existing files"""
 
     def __init__(self, data, **kwargs):
         super().__init__(data, **kwargs)
@@ -746,7 +782,8 @@ class FileManagementModel(BasePandasModel):
     def data(self, index, role=None):
         value = self.getData(index)
         if role == Qt.DisplayRole:
-            if pd.isna(value) or value in ['existst', 'possible_conflict', 'critical_conflict']:
+            if pd.isna(value) or value in ['existst', 'possible_conflict',
+                                           'critical_conflict']:
                 pass
             elif isinstance(value, datetime):
                 return value.strftime('%d.%m.%y %H:%M')
@@ -780,8 +817,9 @@ class FileManagementModel(BasePandasModel):
 
 
 class CustomFunctionModel(QAbstractListModel):
-    """A Model for the Pandas-DataFrames containing information about new custom functions/their paramers
-     to display only their name and if they are ready
+    """A Model for the Pandas-DataFrames containing information about
+     new custom functions/their paramers to display only their name
+     and if they are ready.
 
     Parameters
     ----------
@@ -857,7 +895,8 @@ class RunModel(QAbstractListModel):
             if self.getValue(index) == 2:
                 return QBrush(Qt.darkGreen)
 
-        # Mark objects/functions if they are already done, mark objects according to their type (color-code)
+        # Mark objects/functions if they are already done,
+        # mark objects according to their type (color-code)
         elif role == Qt.DecorationRole:
             if self.getValue(index) == 0:
                 return get_std_icon('SP_DialogApplyButton')

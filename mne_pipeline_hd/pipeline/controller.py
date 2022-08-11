@@ -40,7 +40,8 @@ class Controller:
         # Check Home-Path
         self.pr = None
         # Try to load home_path from QSettings
-        self.home_path = home_path or QS().value('home_path', defaultValue=None)
+        self.home_path = home_path or QS().value('home_path',
+                                                 defaultValue=None)
         self.settings = dict()
         if self.home_path is None:
             raise RuntimeError('No Home-Path found!')
@@ -94,7 +95,8 @@ class Controller:
         self.all_modules = dict()
         self.all_pd_funcs = None
 
-        # Pandas-DataFrame for contextual data of basic functions (included with program)
+        # Pandas-DataFrame for contextual data of basic functions
+        # (included with program)
         with resources.path('mne_pipeline_hd.resource',
                             'functions.csv') as pd_funcs_path:
             self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';',
@@ -127,10 +129,12 @@ class Controller:
             with open(join(self.home_path,
                            'mne_pipeline_hd-settings.json'), 'r') as file:
                 self.settings = json.load(file)
-            # Account for settings, which were not saved but exist in default_settings
+            # Account for settings, which were not saved
+            # but exist in default_settings
             for setting in [s for s in self.default_settings['settings']
                             if s not in self.settings]:
-                self.settings[setting] = self.default_settings['settings'][setting]
+                self.settings[setting] = \
+                    self.default_settings['settings'][setting]
         except FileNotFoundError:
             self.settings = self.default_settings['settings']
         else:
@@ -140,9 +144,11 @@ class Controller:
             # Remove additional (old) keys not appearing in default-settings
             for setting in s_keys - default_keys:
                 self.settings.pop(setting)
-            # Add new keys from default-settings which are not present in settings
+            # Add new keys from default-settings
+            # which are not present in settings
             for setting in default_keys - s_keys:
-                self.settings[setting] = self.default_settings['settings'][setting]
+                self.settings[setting] = \
+                    self.default_settings['settings'][setting]
 
         # Check integrity of QSettings-Keys
         QS().sync()
@@ -153,11 +159,13 @@ class Controller:
             QS().remove(qsetting)
         # Add new keys from default-settings which are not present in QSettings
         for qsetting in qdefault_keys - qs_keys:
-            QS().setValue(qsetting, self.default_settings['qsettings'][qsetting])
+            QS().setValue(qsetting,
+                          self.default_settings['qsettings'][qsetting])
 
     def save_settings(self):
         try:
-            with open(join(self.home_path, 'mne_pipeline_hd-settings.json'), 'w') as file:
+            with open(join(self.home_path,
+                           'mne_pipeline_hd-settings.json'), 'w') as file:
                 json.dump(self.settings, file, indent=4)
         except FileNotFoundError:
             print('Settings could not be saved!')
@@ -190,8 +198,9 @@ class Controller:
             if len(self.projects) > 0:
                 new_project = self.projects[0]
             else:
-                new_project = get_user_input_string('Please enter the name of a new project!',
-                                                    'Add Project', force=True)
+                new_project = get_user_input_string(
+                    'Please enter the name of a new project!',
+                    'Add Project', force=True)
             self.change_project(new_project)
 
         # Remove Project-Folder
@@ -200,7 +209,8 @@ class Controller:
         except OSError as error:
             print(error)
             logging.warning(
-                f'The folder of {project} can\'t be deleted and has to be deleted manually!')
+                f'The folder of {project} can\'t be deleted '
+                f'and has to be deleted manually!')
 
     def copy_parameters_between_projects(self, from_name, from_p_preset,
                                          to_name, to_p_preset):
@@ -209,7 +219,8 @@ class Controller:
             to_project = self.pr
         else:
             to_project = Project(self, to_name)
-        to_project.parameters[to_p_preset] = from_project.parameters[from_p_preset]
+        to_project.parameters[to_p_preset] = \
+            from_project.parameters[from_p_preset]
         to_project.save()
 
     def save(self, worker_signals=None):
@@ -222,7 +233,8 @@ class Controller:
 
     def load_edu(self):
         if self.edu_program_name is not None:
-            edu_path = join(self.home_path, 'edu_programs', self.edu_program_name)
+            edu_path = join(self.home_path, 'edu_programs',
+                            self.edu_program_name)
             with open(edu_path, 'r') as file:
                 self.edu_program = json.load(file)
 
@@ -232,8 +244,9 @@ class Controller:
                 self.pd_funcs.index.isin(self.edu_program['functions'])]
 
             # Change the Project-Scripts-Path to a new folder to store the Education-Project-Scripts separately
-            self.pr.pscripts_path = join(self.pr.project_path,
-                                         f'_pipeline_scripts{self.edu_program["name"]}')
+            self.pr.pscripts_path = \
+                join(self.pr.project_path,
+                     f'_pipeline_scripts{self.edu_program["name"]}')
             if not isdir(self.pr.pscripts_path):
                 os.mkdir(self.pr.pscripts_path)
             self.pr.init_pipeline_scripts()
@@ -269,20 +282,28 @@ class Controller:
                           not d.name.startswith('.')]:
             pkg_name = directory.name
             pkg_path = directory.path
-            file_dict = {'functions': None, 'parameters': None, 'modules': list()}
-            for file_name in [f for f in listdir(pkg_path) if not f.startswith(('.', '_'))]:
-                functions_match = re.match(pd_functions_pattern, file_name)
-                parameters_match = re.match(pd_parameters_pattern, file_name)
-                custom_module_match = re.match(custom_module_pattern, file_name)
+            file_dict = {'functions': None, 'parameters': None,
+                         'modules': list()}
+            for file_name in [f for f in listdir(pkg_path)
+                              if not f.startswith(('.', '_'))]:
+                functions_match = \
+                    re.match(pd_functions_pattern, file_name)
+                parameters_match = \
+                    re.match(pd_parameters_pattern, file_name)
+                custom_module_match = \
+                    re.match(custom_module_pattern, file_name)
                 if functions_match:
                     file_dict['functions'] = join(pkg_path, file_name)
                 elif parameters_match:
                     file_dict['parameters'] = join(pkg_path, file_name)
-                elif custom_module_match and custom_module_match.group(1) != '__init__':
+                elif custom_module_match \
+                        and custom_module_match.group(1) != '__init__':
                     file_dict['modules'].append(custom_module_match)
 
-            # Check, that there is a whole set for a custom-module (module-file, functions, parameters)
-            if all([value is not None or value != [] for value in file_dict.values()]):
+            # Check, that there is a whole set for a custom-module
+            # (module-file, functions, parameters)
+            if all([value is not None or value != []
+                    for value in file_dict.values()]):
                 self.all_modules[pkg_name] = list()
                 functions_path = file_dict['functions']
                 parameters_path = file_dict['parameters']
@@ -300,25 +321,31 @@ class Controller:
                         # Add Module to dictionary
                         self.all_modules[pkg_name].append(module_name)
 
-                # Make sure, that every module in modules is imported without error
+                # Make sure, that every module in modules
+                # is imported without error
                 # (otherwise don't append to pd_funcs and pd_params)
                 if len(file_dict['modules']) == correct_count:
                     try:
-                        read_pd_funcs = pd.read_csv(functions_path, sep=';', index_col=0)
-                        read_pd_params = pd.read_csv(parameters_path, sep=';', index_col=0)
+                        read_pd_funcs = pd.read_csv(functions_path,
+                                                    sep=';', index_col=0)
+                        read_pd_params = pd.read_csv(parameters_path,
+                                                     sep=';', index_col=0)
                     except:
                         traceback.print_exc()
                     else:
-                        # Add pkg_name here (would be redundant in read_pd_funcs of each custom-package)
+                        # Add pkg_name here (would be redundant
+                        # in read_pd_funcs of each custom-package)
                         read_pd_funcs['pkg_name'] = pkg_name
 
                         # Check, that there are no duplicates
                         pd_funcs_to_append = read_pd_funcs.loc[
                             ~read_pd_funcs.index.isin(self.pd_funcs.index)]
-                        self.pd_funcs = pd.concat([self.pd_funcs, pd_funcs_to_append])
+                        self.pd_funcs = pd.concat([self.pd_funcs,
+                                                   pd_funcs_to_append])
                         pd_params_to_append = read_pd_params.loc[
                             ~read_pd_params.index.isin(self.pd_params.index)]
-                        self.pd_params = pd.concat([self.pd_params, pd_params_to_append])
+                        self.pd_params = pd.concat([self.pd_params,
+                                                    pd_params_to_append])
 
             else:
                 missing_files = [key for key in file_dict
@@ -332,10 +359,12 @@ class Controller:
                 module = import_module(module_name)
                 try:
                     reload(module)
-                # Custom-Modules somehow can't be reloaded because spec is not found
+                # Custom-Modules somehow can't be reloaded
+                # because spec is not found
                 except ModuleNotFoundError:
                     spec = None
                     if spec:
-                        # All errors occuring here will be caught by the UncaughtHook
+                        # All errors occuring here will
+                        # be caught by the UncaughtHook
                         spec.loader.exec_module(module)
                         sys.modules[module_name] = module

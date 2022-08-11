@@ -47,8 +47,9 @@ from mne_pipeline_hd.gui.parameter_widgets import (BoolGui, IntGui,
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
-from mne_pipeline_hd.pipeline.pipeline_utils import restart_program, ismac, QS, \
-    _run_from_script, iswin
+from mne_pipeline_hd.pipeline.pipeline_utils import (restart_program, ismac,
+                                                     QS, _run_from_script,
+                                                     iswin)
 
 
 class MainWindow(QMainWindow):
@@ -336,22 +337,20 @@ class MainWindow(QMainWindow):
                                                   ' to use for ' \
                                                   'multiprocessing.',
                                       default=-1, groupbox_layout=False))
-        # self.toolbar.addWidget(IntGui(data=QS(), name='n_parallel', min_val=1,
-        #                               description='Set to the amount of'
-        #                                           ' threads you want to run '
-        #                                           'simultaneously in the '\
-        #                                           'pipeline', default=1,
-        #                               groupbox_layout=False))
-        # self.toolbar.addWidget(BoolGui(data=QS(), name='use_qthread',
-        #                                alias='Use QThreads',
-        #                                description='Check to use QThreads for '
-        #                                            'running the pipeline.\n'
-        #                                            'This is faster than the'
-        #                                            ' default with separate '
-        #                                            'processes,'
-        #                                            'but has a few limitations',
-        #                                default=0, return_integer=True,
-        #                                changed_slot=self.init_mp_pool))
+        # self.toolbar.addWidget(
+        #     IntGui(data=QS(), name='n_parallel', min_val=1,
+        #            description='Set to the amount of threads you want '
+        #                        'to run simultaneously in the pipeline',
+        #            default=1, groupbox_layout=False))
+        # self.toolbar.addWidget(
+        #     BoolGui(data=QS(), name='use_qthread', alias='Use QThreads',
+        #             description='Check to use QThreads for running '
+        #                         'the pipeline.\n'
+        #                         'This is faster than the default'
+        #                         ' with separate processes, '
+        #                         'but has a few limitations',
+        #             default=0, return_integer=True,
+        #             changed_slot=self.init_mp_pool))
         self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='overwrite',
                                        alias='Overwrite',
                                        description='Check to overwrite files'
@@ -426,7 +425,8 @@ class MainWindow(QMainWindow):
         # Horizontal Border for Function-Groups
         max_h_size = self.tab_func_widget.geometry().width()
 
-        # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
+        # Assert, that cleaned_pd_funcs is not empty
+        # (possible, when deselecting all modules)
         if len(cleaned_pd_funcs) != 0:
             tabs_grouped = cleaned_pd_funcs.groupby('tab')
             # Add tabs
@@ -468,8 +468,8 @@ class MainWindow(QMainWindow):
                         tab_v_layout.addLayout(tab_h_layout)
                         h_size = group_box.sizeHint().width()
                         tab_h_layout = QHBoxLayout()
-                    tab_h_layout.addWidget(group_box,
-                                           alignment=Qt.AlignLeft | Qt.AlignTop)
+                    tab_h_layout.addWidget(
+                        group_box, alignment=Qt.AlignLeft | Qt.AlignTop)
 
                 if tab_h_layout.count() > 0:
                     tab_v_layout.addLayout(tab_h_layout)
@@ -640,10 +640,11 @@ class MainWindow(QMainWindow):
         if self.restarting or welcome_window is None:
             answer = QMessageBox.No
         else:
-            answer = QMessageBox.question(self, 'Closing MNE-Pipeline',
-                                          'Do you want to return to the Welcome-Window?',
-                                          buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                                          defaultButton=QMessageBox.Yes)
+            answer = QMessageBox.question(
+                self, 'Closing MNE-Pipeline',
+                'Do you want to return to the Welcome-Window?',
+                buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                defaultButton=QMessageBox.Yes)
         if answer not in [QMessageBox.Yes, QMessageBox.No]:
             event.ignore()
         else:
