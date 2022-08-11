@@ -47,7 +47,8 @@ from mne_pipeline_hd.gui.parameter_widgets import (BoolGui, IntGui,
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
-from mne_pipeline_hd.pipeline.pipeline_utils import restart_program, ismac, QS
+from mne_pipeline_hd.pipeline.pipeline_utils import restart_program, ismac, QS, \
+    _run_from_script, iswin
 
 
 class MainWindow(QMainWindow):
@@ -287,7 +288,10 @@ class MainWindow(QMainWindow):
                                 partial(SettingsDlg, self, self.ct))
         settings_menu.addAction('&Change Home-Path', self.change_home_path)
         settings_menu.addSeparator()
-        settings_menu.addAction('&Update Pipeline', self.update_pipeline)
+        settings_menu.addAction('&Update Pipeline (stable)',
+                                partial(self.update_pipeline, 'stable'))
+        settings_menu.addAction('&Update Pipeline (dev)',
+                                partial(self.update_pipeline, 'dev'))
         settings_menu.addAction('&Update MNE-Python', self.update_mne)
         settings_menu.addAction('&Restart', self.restart)
 
@@ -583,19 +587,29 @@ class MainWindow(QMainWindow):
         self.close()
         restart_program()
 
-    def update_pipeline(self):
+    def update_pipeline(self, version):
+        if version == 'stable':
+            command = 'pip install --upgrade mne_pipeline_hd'
+        else:
+            command = 'pip install ' \
+                      'https://github.com/marsipu/mne-pipeline-hd/zipball/main'
+        if iswin and not _run_from_script():
+            QMessageBox.information(
+                self, 'Manual install required!',
+                f'To update you need to exit the program '
+                f'and type "{command}" into the terminal!')
+        else:
+            QProcessDialog(self, command, show_buttons=True, show_console=True,
+                           close_directly=True, title='Updating Pipeline...',
+                           blocking=True)
 
-        command = 'pip install --upgrade mne_pipeline_hd'
-        QProcessDialog(self, command, show_buttons=True, show_console=True,
-                       close_directly=True, title='Updating Pipeline...',
-                       blocking=True)
+            answer = QMessageBox.question(
+                self, 'Do you want to restart?',
+                'Please restart the Pipeline-Program '
+                'to apply the changes from the Update!')
 
-        answer = QMessageBox.question(self, 'Do you want to restart?',
-                                      'Please restart the Pipeline-Program'
-                                      'to apply the changes from the Update!')
-
-        if answer == QMessageBox.Yes:
-            self.restart()
+            if answer == QMessageBox.Yes:
+                self.restart()
 
     def update_mne(self):
         command = 'pip install --upgrade mne'
@@ -603,9 +617,10 @@ class MainWindow(QMainWindow):
                        close_directly=True, title='Updating MNE-Python...',
                        blocking=True)
 
-        answer = QMessageBox.question(self, 'Do you want to restart?',
-                                      'Please restart the Pipeline-Program'
-                                      'to apply the changes from the Update!')
+        answer = QMessageBox.question(
+            self, 'Do you want to restart?',
+            'Please restart the Pipeline-Program '
+            'to apply the changes from the Update!')
 
         if answer == QMessageBox.Yes:
             self.restart()

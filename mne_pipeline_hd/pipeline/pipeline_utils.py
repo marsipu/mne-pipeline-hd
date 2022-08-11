@@ -30,7 +30,8 @@ islin = not ismac and not iswin
 
 
 def encode_tuples(input_dict):
-    """Encode tuples in a dictionary, because JSON does not recognize them (CAVE: input_dict is changed in place)"""
+    """Encode tuples in a dictionary, because JSON does not recognize them
+    (CAVE: input_dict is changed in place)"""
     for key, value in input_dict.items():
         if isinstance(value, dict):
             encode_tuples(value)
@@ -73,7 +74,8 @@ def type_json_hook(obj):
 
 
 def compare_filep(obj, path, target_parameters=None, verbose=True):
-    """Compare the parameters of the previous run to the current parameters for the given path
+    """Compare the parameters of the previous run to the current
+    parameters for the given path
 
     Parameters
     ----------
@@ -89,7 +91,8 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
     Returns
     -------
     result_dict : dict
-        A dictionary with every parameter from target_parameters with a value as result:
+        A dictionary with every parameter from target_parameters
+        with a value as result:
             None, if nothing changed |
             tuple (previous_value, current_value, critical) |
             'missing', if path hasn't been saved yet
@@ -97,7 +100,8 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
 
     result_dict = dict()
     file_name = Path(path).name
-    # Try to get the parameters relevant for the last function, which altered the data at path
+    # Try to get the parameters relevant for the last function,
+    # which altered the data at path
     try:
         # The last entry in FUNCTION should be the most recent
         function = obj.file_parameters[file_name]['FUNCTION']
@@ -128,13 +132,15 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
                     result_dict[param] = (previous_value, current_value, True)
                     if verbose:
                         print(
-                            f'{param} changed from {previous_value} to {current_value} for {file_name} '
+                            f'{param} changed from {previous_value} to '
+                            f'{current_value} for {file_name} '
                             f'and is probably crucial for {function}')
                 else:
                     result_dict[param] = (previous_value, current_value, False)
                     if verbose:
                         print(
-                            f'{param} changed from {previous_value} to {current_value} for {file_name}')
+                            f'{param} changed from {previous_value} to '
+                            f'{current_value} for {file_name}')
         except KeyError:
             result_dict[param] = 'missing'
             if verbose:
@@ -317,7 +323,4 @@ def _test_run():
 
 
 def _run_from_script():
-    if '__main__.py' in sys.argv[0]:
-        return True
-    else:
-        return False
+    return '__main__.py' in sys.argv[0]
