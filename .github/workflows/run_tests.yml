@@ -1,6 +1,7 @@
 name: CIs
 on:
   pull_request:
+  push:
     branches:
       - main
 
@@ -38,9 +39,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
-      - name: Install dependencies
-        run: |  # use MNE main to ensure test files are available
-          python -m pip install -ve . -r requirements.txt -r requirements_dev.txt
+      - name: Installation with dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -ve .
+          python -m pip install -r requirements_dev.txt
       - uses: actions/cache@v2
         with:
           key: sample-data
