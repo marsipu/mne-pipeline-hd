@@ -46,11 +46,9 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Installation with dependencies
         run: |
-          curl -o ./mne_requirements.txt https://raw.githubusercontent.com/mne-tools/mne-python/main/requirements.txt
           python -m pip install --upgrade pip
           python -m pip install -ve .
           python -m pip install -r requirements_dev.txt
-          python -m pip install -r mne_requirements.txt
       - uses: actions/cache@v3
         with:
           key: sample-data
