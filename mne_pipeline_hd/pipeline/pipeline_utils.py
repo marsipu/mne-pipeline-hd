@@ -280,7 +280,6 @@ class QSettingsDummy(BaseSettings):
 try:
     from PyQt5.QtCore import QSettings
 
-
     class ModQSettings(QSettings, BaseSettings):
         def __init__(self):
             super(QSettings, self).__init__()
@@ -302,7 +301,6 @@ try:
                     return defaultValue
             else:
                 return loaded_value
-
 
     class QS(ModQSettings):
         def __init__(self):
