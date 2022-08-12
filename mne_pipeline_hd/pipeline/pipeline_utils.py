@@ -21,6 +21,8 @@ from pathlib import Path
 
 import numpy as np
 import psutil
+import pytest
+import pytestqt
 
 datetime_format = '%d.%m.%Y %H:%M:%S'
 
@@ -278,6 +280,7 @@ class QSettingsDummy(BaseSettings):
 try:
     from PyQt5.QtCore import QSettings
 
+
     class ModQSettings(QSettings, BaseSettings):
         def __init__(self):
             super(QSettings, self).__init__()
@@ -299,6 +302,7 @@ try:
                     return defaultValue
             else:
                 return loaded_value
+
 
     class QS(ModQSettings):
         def __init__(self):
@@ -322,3 +326,8 @@ def _test_run():
 
 def _run_from_script():
     return '__main__.py' in sys.argv[0]
+
+
+def _test_wait(qtbot, timeout):
+    with pytest.raises(pytestqt.exceptions.TimeoutError):
+        qtbot.waitUntil(lambda: False, timeout=timeout)
