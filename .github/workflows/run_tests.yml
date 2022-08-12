@@ -30,6 +30,8 @@ jobs:
         name: [ matrix ]
     name: pytest ${{ matrix.os }} / ${{matrix.python}}
     runs-on: ${{ matrix.os }}-latest
+    env:
+      DISPLAY: ':99.0'
     defaults:
       run:
         shell: bash
