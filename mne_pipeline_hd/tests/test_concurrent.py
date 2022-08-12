@@ -7,23 +7,18 @@ Pipeline-GUI for Analysis with MNE-Python
 License: GPL-3.0
 """
 
-import time
-
-from mne_pipeline_hd.gui.gui_utils import WorkerDialog
-
-
-def test_blocking_worker_dialog(qtbot):
-    def _test_func():
-        time.sleep(2)
-        print('Finished Test-Func')
-
-    time1 = time.time()
-    dlg = WorkerDialog(None, _test_func, blocking=True)
-    qtbot.addWidget(dlg)
-    time2 = time.time()
-
-    print(f'Worker-Dialog took {round(time2 - time1, 2)} s')
-    assert time2 - time1 >= 2
+# def test_blocking_worker_dialog(qtbot):
+#     def _test_func():
+#         time.sleep(2)
+#         print('Finished Test-Func')
+#
+#     time1 = time.time()
+#     dlg = WorkerDialog(None, _test_func, blocking=True)
+#     qtbot.addWidget(dlg)
+#     time2 = time.time()
+#
+#     print(f'Worker-Dialog took {round(time2 - time1, 2)} s')
+#     assert time2 - time1 >= 2
 
 # def test_qprocess_worker(qtbot):
 #     commands = ['conda', 'quatsch']

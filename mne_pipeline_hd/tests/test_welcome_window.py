@@ -3,6 +3,8 @@ from os import mkdir
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFileDialog, QInputDialog
 
+from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
+
 
 def test_welcome_window(controller, tmpdir, qtbot, monkeypatch):
     welcome_window = WelcomeWindow(controller)

@@ -66,7 +66,8 @@ def main():
     # Initialize Logger (root)
     logger = logging.getLogger()
     logger.setLevel(QS().value('log_level', defaultValue=logging.INFO))
-    formatter = logging.Formatter('%(asctime)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s: %(message)s',
+                                  datefmt='%Y/%m/%d %H:%M:%S')
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
@@ -74,7 +75,8 @@ def main():
 
     # Initialize Exception-Hook
     qt_exception_hook = UncaughtHook()
-    # this registers the exception_hook() function as hook with the Python interpreter
+    # this registers the exception_hook() function
+    # as hook with the Python interpreter
     sys.excepthook = qt_exception_hook.exception_hook
 
     # Initialize Layout

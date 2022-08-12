@@ -11,8 +11,6 @@ import logging
 import os
 from os.path import isdir, join, isfile
 
-import pandas as pd
-
 from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
 from mne_pipeline_hd.pipeline.pipeline_utils import type_json_hook
 
@@ -80,12 +78,3 @@ def transfer_file_params_to_single_subject(ct):
                     obj.clean_file_parameters()
         os.remove(old_fp_path)
         logging.info('Done!')
-
-
-def convert_package_format(package_path, package_name):
-    pd_funcs = pd.read_csv(join(package_path,
-                                f'{package_name}_functions.csv'),
-                           sep=';', index_col=0)
-    pd_funcs = pd.read_csv(join(package_path,
-                                f'{package_name}_parameters.csv'),
-                           sep=';', index_col=0)

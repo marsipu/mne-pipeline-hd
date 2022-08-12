@@ -5,8 +5,13 @@ pyobjc-framework-Cocoa; sys_platform == "darwin"
 darkdetect
 qdarkstyle
 
-# Other than MNE-Python-Requirements
+# MNE-related
 mne
-mne_connectivity
+mne-connectivity
+mne-qt-browser
 autoreject
+h5io
+vtk
 
+# Pipeline-related
+psutil

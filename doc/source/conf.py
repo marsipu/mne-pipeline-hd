@@ -18,7 +18,7 @@ curdir = dirname(__file__)
 sys.path.append(abspath(join(curdir, '..', '..', 'mne_pipeline_hd')))
 
 # -- Project information -----------------------------------------------------
-import mne_pipeline_hd
+import mne_pipeline_hd  # noqa: E402
 
 project = 'mne-pipeline-hd'
 author = 'Martin Schulz'

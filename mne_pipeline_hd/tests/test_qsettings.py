@@ -19,9 +19,8 @@ def test_qsettings_types(qtbot):
                              'default_settings.json') as file:
         default_qsettings = json.load(file)['qsettings']
 
-    if len(QSettings().childKeys()) == 0:
-        for v in default_qsettings:
-            QSettings().setValue(v, default_qsettings[v])
+    for v in default_qsettings:
+        QSettings().setValue(v, default_qsettings[v])
 
     for v in default_qsettings:
         value = QSettings().value(v)

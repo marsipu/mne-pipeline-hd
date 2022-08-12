@@ -8,7 +8,6 @@ License: GPL-3.0
 """
 import inspect
 import sys
-import traceback
 from ast import literal_eval
 
 import pytest
@@ -82,8 +81,9 @@ def _check_param(gui, gui_name, alternative=False):
 @pytest.mark.parametrize('gui_name', list(parameters.keys()))
 def test_basic_param_guis(qtbot, gui_name):
     gui_class = getattr(parameter_widgets, gui_name)
-    gui_parameters = list(inspect.signature(gui_class).parameters) + \
-                     list(inspect.signature(Param).parameters)
+    gui_parameters = \
+        list(inspect.signature(gui_class).parameters) + \
+        list(inspect.signature(Param).parameters)
     kwargs = {key: value for key, value in gui_kwargs.items()
               if key in gui_parameters}
     gui = gui_class(data=parameters, name=gui_name, **kwargs)
@@ -210,18 +210,15 @@ class ParamGuis(QWidget):
         self.setLayout(test_layout)
 
     def set_param(self):
+        current_gui = self.gui_cmbx.currentText()
         try:
-            current_gui = self.gui_cmbx.currentText()
-            try:
-                value = literal_eval(self.set_le.text())
-            except (SyntaxError, ValueError):
-                value = self.set_le.text()
-            parameters[current_gui] = value
-            p_gui = self.gui_dict[current_gui]
-            p_gui.read_param()
-            p_gui._set_param()
-        except:
-            print(traceback.format_exc())
+            value = literal_eval(self.set_le.text())
+        except (SyntaxError, ValueError):
+            value = self.set_le.text()
+        parameters[current_gui] = value
+        p_gui = self.gui_dict[current_gui]
+        p_gui.read_param()
+        p_gui._set_param()
 
     def show_parameters(self):
         dlg = QDialog(self)

@@ -14,7 +14,7 @@ from os.path import join
 
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import QSettings, Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QGridLayout, QGroupBox, QHBoxLayout, QLabel,
@@ -860,7 +860,7 @@ class DictGui(Param):
 
     def __init__(self, value_string_length=30, **kwargs):
         """
-        
+
         Parameters
         ----------
         value_string_length : int | None
@@ -1425,8 +1425,8 @@ class LabelGui(Param):
         super().__init__(**kwargs)
         self.value_string_length = value_string_length
         if not isinstance(self.data, Controller):
-            raise RuntimeError(f'LabelGui can only used with an instance of '
-                               f'Controller passed as data.')
+            raise RuntimeError('LabelGui can only used with an instance of '
+                               'Controller passed as data.')
         self.read_param()
         self._init_layout()
         self._set_param()
@@ -1543,9 +1543,9 @@ class ColorGui(Param):
         key = self.select_widget.currentText()
         if key in self._cached_value:
             previous_color = _get_color(self._cached_value[key])
-            color = QColorDialog.getColor(initial=previous_color,
-                                          parent=self,
-                                          title=f'Pick a color for {self.name}')
+            color = QColorDialog.getColor(
+                initial=previous_color, parent=self,
+                title=f'Pick a color for {self.name}')
         else:
             # blocking
             color = QColorDialog.getColor(
@@ -1822,7 +1822,7 @@ class ParametersDock(QDockWidget):
                         description=description,
                         param_unit=unit,
                         **gui_args)
-                except:
+                except:  # noqa: E722
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
                         f'Initiliazation of Parameter-Widget "{idx}" failed:\n'
