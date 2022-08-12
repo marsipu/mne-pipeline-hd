@@ -53,7 +53,7 @@ jobs:
           python -m pip install -r requirements_dev.txt
       - uses: actions/cache@v3
         with:
-          key: sample-data
+          key: ${{ runner.os }}-sample-data
           path: ~/mne_data
         name: 'Cache testing data'
       - run: python -c 'import mne; print(mne.datasets.testing.data_path(verbose=True))'
