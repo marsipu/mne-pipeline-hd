@@ -221,6 +221,17 @@ def _get_available_parc(ct, name):
     return annotations
 
 
+def _get_available_labels(ct, name):
+    label_dir = join(ct.subjects_dir, name, 'label')
+    try:
+        files = os.listdir(label_dir)
+        labels = {lp[-6:]: lp for lp in files if lp[-6:] == '.label'}
+    except FileNotFoundError:
+        labels = dict()
+
+    return labels
+
+
 def _get_func_param_kwargs(func, params):
     kwargs = {kwarg: params[kwarg] if kwarg in params else None
               for kwarg in inspect.signature(func).parameters}
