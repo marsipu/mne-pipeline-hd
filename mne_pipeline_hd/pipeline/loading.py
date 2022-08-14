@@ -1255,7 +1255,6 @@ class FSMRI(BaseLoading):
                     [str(lp) for lp in files if lp[-6:] == '.label'],
                     desc='Loading labels...',
                     ascii=True):
-                label_name = label_path[-6:]
                 label = mne.read_label(join(label_dir, label_path),
                                        self.name)
                 labels['Other'].append(label)
