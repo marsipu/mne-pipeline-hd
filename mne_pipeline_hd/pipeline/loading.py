@@ -25,12 +25,13 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
+from tqdm import tqdm
+
 from mne_pipeline_hd.pipeline.pipeline_utils import (
-    TypedJSONEncoder, type_json_hook, _get_available_parc, QS, _test_run)
+    TypedJSONEncoder, type_json_hook, QS, _test_run)
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',
                 'erm': 'ernoise_raw.fif',
@@ -1159,17 +1160,14 @@ class MEEG(BaseLoading):
 
 
 class FSMRI(BaseLoading):
-    # Todo: Store available parcellations, surfaces, etc.
-    #  (maybe already loaded with import?)
     def __init__(self, name, controller):
-        super().__init__(name, controller)
-
         if name == 'fsaverage':
             if _test_run():
                 test_data_folder = join(mne.datasets.sample.data_path(),
                                         'subjects',
                                         'fsaverage')
-                shutil.copytree(test_data_folder, self.save_dir)
+                shutil.copytree(test_data_folder,
+                                join(controller.subjects_dir, name))
             else:
                 try:
                     logging.info('Downloading fsaverage...')
@@ -1179,13 +1177,16 @@ class FSMRI(BaseLoading):
                 except ValueError:
                     logging.warning('fsaverage could not be downloaded!')
 
+        super().__init__(name, controller)
+
     def init_attributes(self):
         """Initialize additional attributes for FSMRI"""
         self.fs_path = QS().value('fs_path')
         self.mne_path = QS().value('mne_path')
 
-        # Initialize Parcellations
-        self.parcellations = _get_available_parc(self.ct, self.name)
+        # Initialize Parcellations and Labels
+        self.parcellations = self._get_available_parc()
+        self.labels = self._get_available_labels()
 
     def init_paths(self):
         # Main Path
@@ -1232,6 +1233,52 @@ class FSMRI(BaseLoading):
             'volume_src': join(self.save_dir, 'bem',
                                f'{self.name}-vol-src.fif')
         }
+
+    def _get_available_parc(self):
+        annot_dir = join(self.subjects_dir, self.name, 'label')
+        try:
+            files = os.listdir(annot_dir)
+            annotations = [file[3:-6] for file in files
+                           if file[-6:] == '.annot']
+        except FileNotFoundError:
+            annotations = list()
+
+        return annotations
+
+    def _get_available_labels(self):
+        labels = dict()
+        label_dir = join(self.subjects_dir, self.name, 'label')
+        try:
+            files = os.listdir(label_dir)
+            labels['Other'] = list()
+            for label_path in tqdm(
+                    [str(lp) for lp in files if lp[-6:] == '.label'],
+                    desc='Loading labels...',
+                    ascii=True):
+                label_name = label_path[-6:]
+                label = mne.read_label(join(label_dir, label_path),
+                                       self.name)
+                labels['Other'].append(label)
+        except FileNotFoundError:
+            logging.warning(f'No label directory found for {self.name}!')
+
+        for parcellation in tqdm(self.parcellations,
+                                 desc='Loading parcellations...',
+                                 ascii=True):
+            labels[parcellation] = mne.read_labels_from_annot(
+                self.name, parcellation, subjects_dir=self.subjects_dir,
+                verbose='warning'
+            )
+
+        return labels
+
+    def get_labels(self, target_labels):
+        labels = list()
+        if hasattr(self, 'labels'):
+            for label_list in self.labels.values():
+                labels += [lb for lb in label_list if lb.name in target_labels]
+
+        return labels
 
     ###########################################################################
     # Load- & Save-Methods

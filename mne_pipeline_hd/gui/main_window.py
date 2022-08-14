@@ -347,8 +347,7 @@ class MainWindow(QMainWindow):
         #                         'This is faster than the default'
         #                         ' with separate processes, '
         #                         'but has a few limitations',
-        #             default=0, return_integer=True,
-        #             changed_slot=self.init_mp_pool))
+        #             default=0, return_integer=True))
         self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='overwrite',
                                        alias='Overwrite',
                                        description='Check to overwrite files'
