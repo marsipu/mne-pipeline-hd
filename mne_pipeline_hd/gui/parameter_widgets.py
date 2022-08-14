@@ -6,11 +6,8 @@ Pipeline-GUI for Analysis with MNE-Python
 @github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
-import logging
 from ast import literal_eval
 from functools import partial
-from os import listdir
-from os.path import join
 
 import numpy as np
 import pandas as pd
@@ -22,12 +19,12 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QSpinBox, QVBoxLayout, QWidget, QDockWidget,
                              QTabWidget, QScrollArea, QMessageBox,
                              QStyleFactory, QColorDialog)
-from mne import read_labels_from_annot, read_label
 from mne.viz import Brain
 from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
 
+from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
                                               SimpleList, SimpleDialog)
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
@@ -35,7 +32,8 @@ from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
                                            get_exception_tuple,
                                            get_user_input_string, center)
 from mne_pipeline_hd.pipeline.controller import Controller
-from mne_pipeline_hd.pipeline.pipeline_utils import (_get_available_parc, QS,
+from mne_pipeline_hd.pipeline.loading import FSMRI
+from mne_pipeline_hd.pipeline.pipeline_utils import (QS,
                                                      iswin)
 
 
@@ -54,7 +52,7 @@ class Param(QWidget):
 
     def __init__(self, data, name, alias=None, default=None,
                  param_unit=None, groupbox_layout=True,
-                 none_select=False, description=None, changed_slot=None):
+                 none_select=False, description=None, depending_on=None):
         """
         Parameters
         ----------
@@ -83,8 +81,9 @@ class Param(QWidget):
             Supply an optional description for the parameter,
             which will displayed as a Tool-Tip when the mouse
             is hovered over the Widget.
-        changed_slot : function
-            Supply a function as a slot if this parameter gets changed.
+        depending_on : str | None
+            Supply the name of another Paramter here and connect it
+             to this widget.
         """
 
         super().__init__()
@@ -108,10 +107,14 @@ class Param(QWidget):
         if self.none_select:
             self.groupbox_layout = True
 
-        # Connect paramChanged to the changed_slot if given
-        self.changed_slot = changed_slot
-        if self.changed_slot:
-            self.paramChanged.connect(self.changed_slot)
+        # Connect widget on which this widget depends on
+        dep_widget = _object_refs['parameter_widgets'].get(depending_on,
+                                                           None)
+        if dep_widget is not None:
+            dep_widget.paramChanged.connect(self.set_param)
+
+        # Add to object-reference
+        _object_refs['parameter_widgets'][self.name] = self
 
     def init_ui(self, layout=None):
         """Base layout initialization, which adds the given layout to a
@@ -167,6 +170,10 @@ class Param(QWidget):
                 self.group_box.setChecked(True)
                 self.param_value = saved_value
                 self.save_param()
+
+    def get_value(self):
+        """This should be implemented for each widget"""
+        pass
 
     def _get_param(self):
         """Get current parameter value from gui."""
@@ -1190,15 +1197,18 @@ class LabelPicker(Brain):
         self.remove_labels()
         self.remove_annotations()
         self.add_annotation(parcellation, color='w', alpha=0.75)
-        for hemi in self._hemis:
-            labels = read_labels_from_annot(
-                subject=fsmri, parc=parcellation, hemi=hemi,
-                subjects_dir=self.paramdlg.ct.subjects_dir)
-            self._vertex_to_label_id[hemi] = np.full(
-                self.geo[hemi].coords.shape[0], -1)
-            self._annotation_labels[hemi] = labels
-            for idx, label in enumerate(labels):
-                self._vertex_to_label_id[hemi][label.vertices] = idx
+
+        for parc in [parcellation, 'Other']:
+            labels = fsmri.labels.get(parc)
+            if labels is not None:
+                for hemi in self._hemis:
+                    hemi_labels = [lb for lb in labels.values()
+                                   if lb.hemi == hemi]
+                    self._vertex_to_label_id[hemi] = np.full(
+                        self.geo[hemi].coords.shape[0], -1)
+                    self._annotation_labels[hemi] = hemi_labels
+                    for idx, label in enumerate(hemi_labels):
+                        self._vertex_to_label_id[hemi][label.vertices] = idx
 
     def _init_picking(self):
         self._mouse_no_mvt = -1
@@ -1270,7 +1280,6 @@ class LabelDialog(SimpleDialog):
         self._label_picker = None
         self._fsmri = None
         self._parcellation = None
-        self._all_labels = list()
         self._all_label_names = list()
         self._selected_labels = list()
 
@@ -1326,40 +1335,30 @@ class LabelDialog(SimpleDialog):
         self._parc_changed()
 
     def _subject_changed(self):
-        self._fsmri = self.fsmri_cmbx.currentText()
-        self._all_label_names.clear()
-        self._selected_labels.clear()
-        self.label_list.content_changed()
-        self._all_labels.clear()
-        try:
-            # Load labels from <fs-segmentation>/label
-            label_names = [lp for lp in listdir(join(self.ct.subjects_dir,
-                                                     self._fsmri, 'label'))
-                           if lp[-6:] == '.label']
-            for label_name in label_names:
-                label_path = join(self.ct.subjects_dir, self._fsmri, 'label',
-                                  label_name)
-                label = read_label(label_path, self._fsmri)
-                self._all_label_names.append(label_name[:-6])
-                self._all_labels.append(label)
-        except FileNotFoundError:
-            logging.warning(f'No extra labels for {self._fsmri} found!')
-        self._selected_labels += [lb for lb in self.paramw.param_value
-                                  if lb in self._all_label_names]
-        parcellations = _get_available_parc(self.ct, self._fsmri)
+        self._fsmri = FSMRI(self.fsmri_cmbx.currentText(), self.ct)
+
         self.parcellation_cmbx.clear()
-        self.parcellation_cmbx.addItems(parcellations)
+        self.parcellation_cmbx.addItems(self._fsmri.parcellations)
         param_parc = self.ct.pr.parameters[self.ct.pr.p_preset]['parcellation']
-        if param_parc in parcellations:
+        if param_parc in self._fsmri.parcellations:
             self.parcellation_cmbx.setCurrentText(param_parc)
         self._parc_changed()
 
     def _parc_changed(self):
+        # Keep reference for inplace change
+        self._all_label_names.clear()
+        self._selected_labels.clear()
+
+        # Add single labels
+        self._all_label_names += list(self._fsmri.labels['Other'].keys())
+
+        # Add parcellation labels
         self._parcellation = self.parcellation_cmbx.currentText()
-        self._all_labels += read_labels_from_annot(
-            self._fsmri, parc=self._parcellation,
-            subjects_dir=self.ct.subjects_dir)
-        self._all_label_names += [lb.name for lb in self._all_labels]
+        parc_labels = self._fsmri.labels.get(self._parcellation)
+        if parc_labels is not None:
+            self._all_label_names += list(parc_labels.keys())
+
+        # get selected
         self._selected_labels += [lb for lb in self.paramw.param_value
                                   if lb in self._all_label_names]
         self.label_list.content_changed()
@@ -1391,7 +1390,7 @@ class LabelDialog(SimpleDialog):
         background = self.params['stc_background']
 
         self._label_picker = LabelPicker(
-            self, self._fsmri, hemi='split', views=['lat', 'med'],
+            self, self._fsmri.name, hemi='split', views=['lat', 'med'],
             surf='inflated', title='Pick labels',
             subjects_dir=self.ct.subjects_dir, block=False,
             background=background)

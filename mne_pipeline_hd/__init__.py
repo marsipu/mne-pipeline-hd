@@ -11,6 +11,7 @@ License: GPL-3.0
 _object_refs = {'welcome_window': None,
                 'main_window': None,
                 'plot_manager': None,
-                'dialogs': dict()}
+                'dialogs': dict(),
+                'parameter_widgets': dict()}
 
 from mne_pipeline_hd._version import __version__  # noqa

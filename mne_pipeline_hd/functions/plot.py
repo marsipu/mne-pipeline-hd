@@ -19,6 +19,7 @@ import mne_connectivity
 import numpy as np
 
 # Make use of program also possible with sensor-space installation of mne
+from mne_pipeline_hd.pipeline.loading import FSMRI
 from mne_pipeline_hd.pipeline.plot_utils import pipeline_plot
 
 try:
@@ -402,9 +403,9 @@ def plot_noise_covariance(meeg, show_plots):
 
 def _brain_plot(meeg, stcs, stc_surface, stc_hemi, stc_views,
                 stc_time, stc_clim, stc_background, target_labels,
-                label_colors,
-                parcellation, stc_roll, stc_azimuth, stc_elevation,
+                label_colors, stc_roll, stc_azimuth, stc_elevation,
                 interactive=False, **brain_movie_kwargs):
+    labels = meeg.fsmri.get_labels(target_labels)
     for trial, stc in stcs.items():
         title = f'{meeg.name}-{trial}'
         brain = stc.plot(subject=meeg.fsmri.name, surface=stc_surface,
@@ -417,14 +418,9 @@ def _brain_plot(meeg, stcs, stc_surface, stc_hemi, stc_views,
                         elevation=stc_elevation)
         brain.add_text(0, 0.9, title, 'title', font_size=14)
         if not interactive:
-            parc_labels = mne.read_labels_from_annot(
-                meeg.fsmri.name, parc=parcellation,
-                subjects_dir=meeg.subjects_dir)
-            for label_name in target_labels:
-                for label in parc_labels:
-                    if label.name == label_name:
-                        color = label_colors.get(label_name)
-                        brain.add_label(label, borders=True, color=color)
+            for label in labels:
+                color = label_colors.get(label.name)
+                brain.add_label(label, borders=True, color=color)
             if brain_movie_kwargs is not None and 'stc_animation_dilat' \
                     in brain_movie_kwargs:
                 img_format = '.mp4'
@@ -440,7 +436,7 @@ def _brain_plot(meeg, stcs, stc_surface, stc_hemi, stc_views,
                 brain.close()
 
 
-def plot_stc(meeg, parcellation, target_labels, label_colors,
+def plot_stc(meeg, target_labels, label_colors,
              stc_surface, stc_hemi, stc_views, stc_time, stc_clim,
              stc_background,
              stc_roll, stc_azimuth, stc_elevation):
@@ -449,8 +445,7 @@ def plot_stc(meeg, parcellation, target_labels, label_colors,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
                 stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=target_labels,
-                label_colors=label_colors,
-                parcellation=parcellation, stc_roll=stc_roll,
+                label_colors=label_colors, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation)
 
 
@@ -462,13 +457,12 @@ def plot_stc_interactive(meeg, stc_surface, stc_hemi, stc_views, stc_time,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
                 stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=None,
-                label_colors=None,
-                parcellation=None, stc_roll=stc_roll,
+                label_colors=None, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
                 interactive=True)
 
 
-def plot_animated_stc(meeg, parcellation, target_labels, label_colors,
+def plot_animated_stc(meeg, target_labels, label_colors,
                       stc_surface, stc_hemi, stc_views, stc_time, stc_clim,
                       stc_background, stc_roll, stc_azimuth,
                       stc_elevation, stc_animation_span, stc_animation_dilat):
@@ -477,25 +471,22 @@ def plot_animated_stc(meeg, parcellation, target_labels, label_colors,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
                 stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=target_labels,
-                label_colors=label_colors,
-                parcellation=parcellation, stc_roll=stc_roll,
+                label_colors=label_colors, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
                 stc_animation_span=stc_animation_span,
                 stc_animation_dilat=stc_animation_dilat)
 
 
-def plot_labels(fsmri, parcellation, target_labels, label_colors,
+def plot_labels(fsmri, target_labels, label_colors,
                 stc_hemi, stc_surface, stc_views):
     Brain = mne.viz.get_brain_class()
     brain = Brain(subject_id=fsmri.name, hemi=stc_hemi, surf=stc_surface,
                   subjects_dir=fsmri.subjects_dir, views=stc_views)
-    parc_labels = mne.read_labels_from_annot(fsmri.name, parc=parcellation,
-                                             subjects_dir=fsmri.subjects_dir)
-    for label_name in target_labels:
-        for label in parc_labels:
-            if label.name == label_name:
-                color = label_colors.get(label_name)
-                brain.add_label(label, borders=False, color=color)
+
+    labels = fsmri.get_labels(target_labels)
+    for label in labels:
+        color = label_colors.get(label.name)
+        brain.add_label(label, borders=False, color=color)
     fsmri.plot_save('labels', brain=brain)
 
 
@@ -554,14 +545,6 @@ def plot_snr(meeg, show_plots):
         meeg.plot_save('snr', trial=trial, matplotlib_figure=fig)
 
 
-def plot_annotation(fsmri, parcellation):
-    Brain = mne.viz.get_brain_class()
-    brain = Brain(fsmri.name, hemi='lh', surf='inflated', views='lat')
-    brain.add_annotation(parcellation)
-
-    fsmri.plot_save('Labels', brain=brain)
-
-
 def plot_label_time_course(meeg, show_plots):
     ltcs = meeg.load_ltc()
     for trial in ltcs:
@@ -578,42 +561,28 @@ def plot_label_time_course(meeg, show_plots):
             meeg.plot_save('label-time-course', subfolder=label, trial=trial)
 
 
-def plot_src_connectivity(meeg, target_labels, parcellation, con_fmin,
+def plot_src_connectivity(meeg, target_labels, con_fmin,
                           con_fmax, show_plots):
     con_dict = meeg.load_connectivity()
-    labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation,
-                                        subjects_dir=meeg.subjects_dir)
-
-    actual_labels = [lb for lb in labels if lb.name in target_labels]
-
-    label_colors = [label.color for label in actual_labels]
-
-    # First, we reorder the labels based on their location in the left hemi
-    label_names = [label.name for label in actual_labels]
-
-    lh_label_names = [l_name for l_name in label_names if
-                      l_name.endswith('lh')]
-    rh_label_names = [l_name for l_name in label_names if
-                      l_name.endswith('rh')]
+    labels = meeg.fsmri.get_labels(target_labels)
+    if 'unknown-lh' in labels:
+        labels.pop('unknown-lh')
+    label_colors = [label.color for label in labels]
+    label_names = [label.name for label in labels]
+    lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
+    rh_labels = [l_name for l_name in label_names if l_name.endswith('rh')]
 
     # Get the y-location of the label
-    lh_label_ypos = list()
-    for l_name in lh_label_names:
-        idx = label_names.index(l_name)
-        ypos = np.mean(actual_labels[idx].pos[:, 1])
-        lh_label_ypos.append(ypos)
-
-    rh_label_ypos = list()
-    for l_name in rh_label_names:
-        idx = label_names.index(l_name)
-        ypos = np.mean(actual_labels[idx].pos[:, 1])
-        rh_label_ypos.append(ypos)
+    lh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels
+                     if lb.name in lh_labels]
+    rh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels
+                     if lb.name in rh_labels]
 
     # Reorder the labels based on their location
     lh_labels = [label for (yp, label) in
-                 sorted(zip(lh_label_ypos, lh_label_names))]
+                 sorted(zip(lh_label_ypos, lh_labels))]
     rh_labels = [label for (yp, label) in
-                 sorted(zip(rh_label_ypos, rh_label_names))]
+                 sorted(zip(rh_label_ypos, rh_labels))]
 
     # Save the plot order and create a circular layout
     node_order = list()
@@ -677,7 +646,7 @@ def plot_grand_avg_tfr(group, show_plots):
                         matplotlib_figure=fig4)
 
 
-def plot_grand_avg_stc(group, target_labels, label_colors, parcellation,
+def plot_grand_avg_stc(group, target_labels, label_colors,
                        stc_surface, stc_hemi, stc_views, stc_time, stc_clim,
                        stc_background, stc_roll, stc_azimuth, stc_elevation):
     stcs = group.load_ga_stc()
@@ -685,8 +654,7 @@ def plot_grand_avg_stc(group, target_labels, label_colors, parcellation,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
                 stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=target_labels,
-                label_colors=label_colors,
-                parcellation=parcellation, stc_roll=stc_roll,
+                label_colors=label_colors, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation)
 
 
@@ -699,15 +667,13 @@ def plot_grand_average_stc_interactive(group, stc_surface, stc_hemi,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
                 stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=None,
-                parcellation=None, stc_roll=stc_roll,
-                stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
-                interactive=True)
+                stc_roll=stc_roll, stc_azimuth=stc_azimuth,
+                stc_elevation=stc_elevation, interactive=True)
 
 
-def plot_grand_avg_stc_anim(group, parcellation, target_labels, label_colors,
-                            stc_surface,
-                            stc_hemi, stc_views, stc_time, stc_clim,
-                            stc_background,
+def plot_grand_avg_stc_anim(group, target_labels, label_colors,
+                            stc_surface, stc_hemi, stc_views, stc_time,
+                            stc_clim, stc_background,
                             stc_roll, stc_azimuth, stc_elevation,
                             stc_animation_span,
                             stc_animation_dilat):
@@ -716,8 +682,7 @@ def plot_grand_avg_stc_anim(group, parcellation, target_labels, label_colors,
                 stc_hemi=stc_hemi, stc_views=stc_views, stc_time=stc_time,
                 stc_clim=stc_clim,
                 stc_background=stc_background, target_labels=target_labels,
-                label_colors=label_colors,
-                parcellation=parcellation, stc_roll=stc_roll,
+                label_colors=label_colors, stc_roll=stc_roll,
                 stc_azimuth=stc_azimuth, stc_elevation=stc_elevation,
                 stc_animation_span=stc_animation_span,
                 stc_animation_dilat=stc_animation_dilat)
@@ -740,49 +705,34 @@ def plot_grand_avg_ltc(group, show_plots):
                             trial=trial)
 
 
-def plot_grand_avg_connect(group, con_fmin, con_fmax, parcellation,
-                           target_labels, morph_to, show_plots):
+def plot_grand_avg_connect(group, con_fmin, con_fmax, target_labels,
+                           morph_to, show_plots):
     ga_dict = group.load_ga_con()
 
     # Get labels for FreeSurfer 'aparc' cortical parcellation
     # with 34 labels/hemi
-    labels_parc = mne.read_labels_from_annot(morph_to, parc=parcellation,
-                                             subjects_dir=group.subjects_dir)
+    fsmri = FSMRI(morph_to, group.ct)
+    labels = fsmri.get_labels(target_labels)
+    if 'unknown-lh' in labels:
+        labels.pop('unknown-lh')
 
-    labels = [labl for labl in labels_parc if labl.name in target_labels]
+    label_colors = [label.color for label in labels.values()]
 
-    label_colors = [label.color for label in labels]
-    for labl in labels:
-        if labl.name == 'unknown-lh':
-            del labels[labels.index(labl)]
-            print('unknown-lh removed')
-
-    label_names = [label.name for label in labels]
-
+    label_names = list(labels.keys())
     lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
     rh_labels = [l_name for l_name in label_names if l_name.endswith('rh')]
 
     # Get the y-location of the label
-    lh_label_ypos = list()
-    for l_name in lh_labels:
-        idx = label_names.index(l_name)
-        ypos = np.mean(labels[idx].pos[:, 1])
-        lh_label_ypos.append(ypos)
-
-    rh_label_ypos = list()
-    for l_name in lh_labels:
-        idx = label_names.index(l_name)
-        ypos = np.mean(labels[idx].pos[:, 1])
-        rh_label_ypos.append(ypos)
+    lh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels.values()
+                     if lb.name in lh_labels]
+    rh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels.values()
+                     if lb.name in rh_labels]
 
     # Reorder the labels based on their location
     lh_labels = [label for (yp, label) in
                  sorted(zip(lh_label_ypos, lh_labels))]
     rh_labels = [label for (yp, label) in
                  sorted(zip(rh_label_ypos, rh_labels))]
-
-    # For the right hemi
-    # rh_labels = [label[:-2] + 'rh' for label in lh_labels]
 
     # Save the plot order and create a circular layout
     node_order = list()

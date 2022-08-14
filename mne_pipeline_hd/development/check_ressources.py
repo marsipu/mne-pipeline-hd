@@ -8,20 +8,11 @@ License: GPL-3.0
 """
 
 import inspect
-import sys
 from importlib import resources
-from inspect import getsourcefile
-from os.path import abspath
-from pathlib import Path
 
 import pandas as pd
 
-package_parent = str(
-    Path(abspath(getsourcefile(lambda: 0))).parent.parent.parent
-)
-sys.path.insert(0, package_parent)
-
-from mne_pipeline_hd import functions  # noqa: E402
+from mne_pipeline_hd.functions import operations, plot
 
 # Check, if the function-arguments saved in functions.csv are the same
 # as in the signature of the actual function
@@ -32,9 +23,13 @@ with resources.path('mne_pipeline_hd.resource',
     pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';', index_col=0)
 
 for func_name in pd_funcs.index:
-    module = pd_funcs.loc[func_name, 'module']
+    module_name = pd_funcs.loc[func_name, 'module']
+    if module_name == 'operations':
+        module = operations
+    else:
+        module = plot
     try:
-        func = getattr(getattr(functions, module), func_name)
+        func = getattr(module, func_name)
         real_func_args_list = list(inspect.signature(func).parameters)
         if 'kwargs' in real_func_args_list:
             real_func_args_list.remove('kwargs')

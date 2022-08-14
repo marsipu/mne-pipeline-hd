@@ -1151,21 +1151,17 @@ def source_estimate(meeg, inverse_method, pick_ori, lambda2):
     meeg.save_source_estimates(stcs)
 
 
-def label_time_course(meeg, target_labels, parcellation, extract_mode):
+def label_time_course(meeg, target_labels, extract_mode):
     stcs = meeg.load_source_estimates()
     src = meeg.fsmri.load_source_space()
-
-    labels = mne.read_labels_from_annot(meeg.fsmri.name,
-                                        subjects_dir=meeg.subjects_dir,
-                                        parc=parcellation)
-    chosen_labels = [label for label in labels if label.name in target_labels]
+    labels = meeg.fsmri.get_labels(target_labels)
 
     ltc_dict = {}
 
     for trial in stcs:
         ltc_dict[trial] = {}
         times = stcs[trial].times
-        for label in chosen_labels:
+        for label in labels:
             ltc = stcs[trial].extract_label_time_course(label, src,
                                                         mode=extract_mode)[0]
             ltc_dict[trial][label.name] = np.vstack((ltc, times))
@@ -1288,13 +1284,14 @@ def apply_morph(meeg, morph_to):
             f'and won\'t be morphed')
 
 
-def src_connectivity(meeg, parcellation, target_labels, inverse_method,
+def src_connectivity(meeg, target_labels, inverse_method,
                      lambda2, con_methods,
                      con_fmin, con_fmax, n_jobs):
     info = meeg.load_info()
     all_epochs = meeg.load_epochs()
     inverse_operator = meeg.load_inverse_operator()
     src = inverse_operator['src']
+    labels = meeg.fsmri.get_labels(target_labels)
 
     con_dict = {}
 
@@ -1308,11 +1305,7 @@ def src_connectivity(meeg, parcellation, target_labels, inverse_method,
             epochs, inverse_operator, lambda2, inverse_method,
             pick_ori="normal", return_generator=True)
 
-        labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation,
-                                            subjects_dir=meeg.subjects_dir)
-
-        actual_labels = [lb for lb in labels if lb.name in target_labels]
-        label_ts = mne.extract_label_time_course(stcs, actual_labels,
+        label_ts = mne.extract_label_time_course(stcs, labels,
                                                  src, mode='mean_flip',
                                                  return_generator=True)
 
@@ -1345,18 +1338,11 @@ def src_connectivity(meeg, parcellation, target_labels, inverse_method,
                                                      pick_ori="normal",
                                                      return_generator=True)
 
-        # Get labels for FreeSurfer 'aparc' cortical parcellation
-        # with 34 labels/hemi
-        labels = mne.read_labels_from_annot(meeg.fsmri.name, parc=parcellation,
-                                            subjects_dir=meeg.subjects_dir)
-
-        actual_labels = [lb for lb in labels if lb.name in target_labels]
-
         # Average the source estimates within each label using
         # sign-flips to reduce signal cancellations, also here we return a
         # generator
 
-        label_ts = mne.extract_label_time_course(stcs, actual_labels,
+        label_ts = mne.extract_label_time_course(stcs, labels,
                                                  src, mode='mean_flip',
                                                  return_generator=True)
 
