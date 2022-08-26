@@ -322,4 +322,3 @@ def _test_run():
 
 def _run_from_script():
     return '__main__.py' in sys.argv[0]
-
