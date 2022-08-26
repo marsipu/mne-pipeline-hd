@@ -21,8 +21,6 @@ from pathlib import Path
 
 import numpy as np
 import psutil
-import pytest
-import pytestqt
 
 datetime_format = '%d.%m.%Y %H:%M:%S'
 
@@ -325,7 +323,3 @@ def _test_run():
 def _run_from_script():
     return '__main__.py' in sys.argv[0]
 
-
-def _test_wait(qtbot, timeout):
-    with pytest.raises(pytestqt.exceptions.TimeoutError):
-        qtbot.waitUntil(lambda: False, timeout=timeout)

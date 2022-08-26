@@ -7,8 +7,7 @@ Pipeline-GUI for Analysis with MNE-Python
 License: GPL-3.0
 """
 from mne_pipeline_hd import _object_refs
-
-from mne_pipeline_hd.pipeline.pipeline_utils import _test_wait
+from mne_pipeline_hd.tests._test_utils import _test_wait
 
 
 def test_init(main_window, qtbot):
