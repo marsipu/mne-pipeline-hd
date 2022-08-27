@@ -1273,9 +1273,11 @@ class FSMRI(BaseLoading):
 
     def get_labels(self, target_labels):
         labels = list()
-        if hasattr(self, 'labels'):
-            for label_list in self.labels.values():
-                labels += [lb for lb in label_list if lb.name in target_labels]
+        if target_labels is not None:
+            if hasattr(self, 'labels'):
+                for label_list in self.labels.values():
+                    labels += [lb for lb in label_list
+                               if lb.name in target_labels]
 
         return labels
 
