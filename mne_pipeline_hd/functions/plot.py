@@ -30,9 +30,9 @@ except (ModuleNotFoundError, ValueError):
 from mne_pipeline_hd.functions import operations as op
 
 
-# =============================================================================
+# ==============================================================================
 # PLOTTING FUNCTIONS
-# =============================================================================
+# ==============================================================================
 
 def plot_raw(meeg, show_plots):
     raw = meeg.load_raw()
@@ -589,7 +589,7 @@ def plot_src_connectivity(meeg, target_labels, con_fmin,
     node_order.extend(lh_labels[::-1])  # reverse the order
     node_order.extend(rh_labels)
 
-    node_angles = mne_connectivity.viz.circular_layout(
+    node_angles = mne.viz.circular_layout(
         label_names, node_order, start_pos=90,
         group_boundaries=[0, len(label_names) / 2])
 
@@ -745,12 +745,14 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, target_labels,
 
     for trial in ga_dict:
         for method in ga_dict[trial]:
-            fig, axes = mne.viz.plot_connectivity_circle(
+            fig, axes = mne_connectivity.viz.plot_connectivity_circle(
                 ga_dict[trial][method],
                 label_names, n_lines=300,
                 node_angles=node_angles,
                 node_colors=label_colors,
                 title=f'{method}: {str(con_fmin)}-{str(con_fmax)}',
+                vmin=0.12,
+                vmax=0.2,
                 fontsize_names=16, show=show_plots)
 
             group.plot_save('ga_connectivity', subfolder=method, trial=trial,
