@@ -33,7 +33,7 @@ reject;;epochs;{'mag':3000e-15, 'grad':3000e-13, 'eeg':100e-6, 'eog':200e-6};;Ch
 flat;;epochs;{'mag': 1e-15, 'grad':1e-13, 'eeg': 1e-6};;Chose flat-thresholds;DictGui;{'none_select': True}
 decim;;epochs;1;;Downsampling-Factor for epochs;IntGui;
 ica_method;ICA-Method;ICA;fastica;;The method for calculating ICA;ComboGui;{'options': ['fastica', 'infomax', 'picard']}
-ica_fitto;Fit ICA to: ;ICA;'raw_filtered';;The data to fit the ICA to;ComboGui;{'options': ['raw', 'raw_filtered', 'epochs']}
+ica_fitto;Fit ICA to:;ICA;'raw_filtered';;The data to fit the ICA to;ComboGui;{'options': ['raw', 'raw_filtered', 'epochs']}
 n_components;;ICA;25;;The number of components for ICA;IntGui;
 max_pca_components;;ICA;None;;;IntGui;{'none_select': True}
 n_pca_components;;ICA;None;;;IntGui;{'none_select': True}
@@ -45,7 +45,7 @@ ica_eog;Use EOG;ICA;False;;If to use EOG-Channels for automatic selection of com
 eog_channel;;ICA;None;;Set Vertical EOG-Channel;StringGui;
 ica_ecg;Use ECG;ICA;False;;If to use automatic ECG-detection either by ECG-Channel (if provided) or by an artificial ECG-Channel;BoolGui;
 ecg_channel;;ICA;None;;Set ECG-Channel;StringGui;{'none_select': True}
-tfr_freqs;;Time-Frequency;np.arange(7,40,3) ;Hz;Select the frequencies of interest (Array/List);FuncGui;
+tfr_freqs;;Time-Frequency;np.arange(7,40,3);Hz;Select the frequencies of interest (Array/List);FuncGui;
 tfr_method;;Time-Frequency;morlet;;Choose the method to calculate Time-Frequency-Data;ComboGui;{'options': ['morlet', 'multitaper', 'stockwell']}
 tfr_n_cycles;n_cycles;Time-Frequency;np.arange(7,40,3) / 2;;Select the number of cycles for each frequency;FuncGui;
 tfr_average;;Time-Frequency;True;;If to take the average of the Time-Frequency across observations;BoolGui;
@@ -94,3 +94,5 @@ erm_n_mag;;Preprocessing;2;;The number of projections for Magnetometer;IntGui;
 erm_n_eeg;;Preprocessing;0;;The number of projections for EEG;IntGui;
 ga_interpolate_bads;;Grand-Average;True;;If to interpolate bad channels for the Grand-Average;BoolGui;
 ga_drop_bads;;Grand-Average;True;;If to drop bad channels for the Grand-Average;BoolGui;
+connectivity_vmin;;Connectivity;None;;Minimum value for colormap;FloatGui;{'step': 0.01, 'none_select':True}
+connectivity_vmax;;Connectivity;None;;Maximum value for colormap;FloatGui;{'step': 0.01, 'none_select':True}

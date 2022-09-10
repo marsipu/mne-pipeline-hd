@@ -1264,10 +1264,13 @@ class FSMRI(BaseLoading):
         for parcellation in tqdm(self.parcellations,
                                  desc='Loading parcellations...',
                                  ascii=True):
-            labels[parcellation] = mne.read_labels_from_annot(
-                self.name, parcellation, subjects_dir=self.subjects_dir,
-                verbose='warning'
-            )
+            try:
+                labels[parcellation] = mne.read_labels_from_annot(
+                    self.name, parcellation, subjects_dir=self.subjects_dir,
+                    verbose='warning'
+                )
+            except RuntimeError:
+                print(f'Parcellation {parcellation} could not be loaded!')
 
         return labels
 
