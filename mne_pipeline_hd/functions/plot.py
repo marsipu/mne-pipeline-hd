@@ -706,7 +706,8 @@ def plot_grand_avg_ltc(group, show_plots):
 
 
 def plot_grand_avg_connect(group, con_fmin, con_fmax, target_labels,
-                           morph_to, show_plots, connectivity_vmin, connectivity_vmax):
+                           morph_to, show_plots, connectivity_vmin,
+                           connectivity_vmax):
     ga_dict = group.load_ga_con()
 
     # Get labels for FreeSurfer 'aparc' cortical parcellation
@@ -717,7 +718,7 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, target_labels,
         labels.remove('unknown-lh')
 
     label_colors = [label.color for label in labels]
-    label_names = [l.name for l in labels]
+    label_names = [lb.name for lb in labels]
 
     lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
     rh_labels = [l_name for l_name in label_names if l_name.endswith('rh')]
