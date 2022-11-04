@@ -1890,7 +1890,7 @@ class FileManagment(QDialog):
                 worker_signals.pgbar_text.emit('Removing canceled')
                 break
             if kind == 'MEEG':
-                obj = MEEG(obj_name, self.ctm, preload=False)
+                obj = MEEG(obj_name, self.ct, preload=False)
                 obj_pd = self.pd_meeg
                 obj_pd_time = self.pd_meeg_time
                 obj_pd_size = self.pd_meeg_size
