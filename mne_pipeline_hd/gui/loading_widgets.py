@@ -1650,11 +1650,11 @@ class FileManagment(QDialog):
 
         for obj_name in obj_list:
             if kind == 'MEEG':
-                obj = MEEG(obj_name, self.ct)
+                obj = MEEG(obj_name, self.ct, preload=False)
             elif kind == 'FSMRI':
-                obj = FSMRI(obj_name, self.ct)
+                obj = FSMRI(obj_name, self.ct, preload=False)
             else:
-                obj = Group(obj_name, self.ct)
+                obj = Group(obj_name, self.ct, preload=False)
 
             obj.get_existing_paths()
             self.param_results[obj_name] = dict()
@@ -1895,7 +1895,7 @@ class FileManagment(QDialog):
                 obj_pd_time = self.pd_meeg_time
                 obj_pd_size = self.pd_meeg_size
             elif kind == 'FSMRI':
-                obj = FSMRI(obj_name, self.ct)
+                obj = FSMRI(obj_name, self.ct, preload=False)
                 obj_pd = self.pd_fsmri
                 obj_pd_time = self.pd_fsmri_time
                 obj_pd_size = self.pd_fsmri_size
