@@ -25,13 +25,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
+from mne_pipeline_hd.pipeline.pipeline_utils import (
+    TypedJSONEncoder, type_json_hook, QS, _test_run)
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
 from tqdm import tqdm
-
-from mne_pipeline_hd.pipeline.pipeline_utils import (
-    TypedJSONEncoder, type_json_hook, QS, _test_run)
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',
                 'erm': 'ernoise_raw.fif',
@@ -1276,7 +1275,7 @@ class FSMRI(BaseLoading):
                     self.name, parcellation, subjects_dir=self.subjects_dir,
                     verbose='warning'
                 )
-            except RuntimeError:
+            except (RuntimeError, OSError):
                 print(f'Parcellation {parcellation} could not be loaded!')
 
         return labels
