@@ -385,12 +385,13 @@ class WorkerDialog(QDialog):
 
     def __init__(self, parent, function, show_buttons=False,
                  show_console=False, close_directly=True, blocking=False,
-                 title=None, **kwargs):
+                 return_exception=False, title=None, **kwargs):
         super().__init__(parent)
 
         self.show_buttons = show_buttons
         self.show_console = show_console
         self.close_directly = close_directly
+        self.return_exception = return_exception
         self.title = title
         self.is_finished = False
         self.return_value = None
@@ -451,6 +452,8 @@ class WorkerDialog(QDialog):
 
     def on_thread_finished(self, return_value):
         # Store return value to send it when user closes the dialog
+        if type(return_value) == ExceptionTuple and not self.return_exception:
+            return_value = None
         self.return_value = return_value
         self.is_finished = True
         if self.show_buttons:
@@ -482,6 +485,7 @@ class WorkerDialog(QDialog):
             QMessageBox.warning(
                 self, 'Closing not possible!',
                 'You can\'t close this Dialog before this Thread finished!')
+            event.ignore()
 
 
 # ToDo: WIP
