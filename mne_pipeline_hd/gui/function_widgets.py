@@ -228,6 +228,7 @@ class EditGuiArgsDlg(QDialog):
                 "alias",
                 "default",
                 "param_unit",
+                "none_select",
                 "description",
             ]
             # Get possible default GUI-Args additional to those
