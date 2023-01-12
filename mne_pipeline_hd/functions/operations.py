@@ -1006,6 +1006,7 @@ def make_dense_scalp_surfaces(fsmri):
 # MNE SOURCE RECONSTRUCTIONS
 # ==============================================================================
 
+
 def setup_src(fsmri, src_spacing, surface, n_jobs):
     src = mne.setup_source_space(fsmri.name, spacing=src_spacing,
                                  surface=surface,
@@ -1016,14 +1017,14 @@ def setup_src(fsmri, src_spacing, surface, n_jobs):
 
 def setup_vol_src(fsmri, vol_src_spacing):
     bem = fsmri.load_bem_solution()
-    vol_src = mne.setup_volume_src(fsmri.name, pos=vol_src_spacing, bem=bem,
+    vol_src = mne.setup_volume_source_space(fsmri.name, pos=vol_src_spacing, bem=bem,
                                    subjects_dir=fsmri.subjects_dir)
     fsmri.save_volume_source_space(vol_src)
 
 
 def compute_src_distances(fsmri, n_jobs):
     src = fsmri.load_source_space()
-    src_computed = mne.add_src_distances(src, n_jobs=n_jobs)
+    src_computed = mne.add_source_space_distances(src, n_jobs=n_jobs)
     fsmri.save_source_space(src_computed)
 
 
@@ -1310,7 +1311,7 @@ def src_connectivity(meeg, target_labels, inverse_method,
                                                  return_generator=True)
 
         sfreq = info['sfreq']  # the sampling frequency
-        con = mne_connectivity.spectral_connectivity(
+        con = mne_connectivity.spectral_connectivity_epochs(
             label_ts, method=con_methods, mode='multitaper', sfreq=sfreq,
             fmin=con_fmin, fmax=con_fmax, faverage=True, mt_adaptive=True,
             n_jobs=n_jobs)
