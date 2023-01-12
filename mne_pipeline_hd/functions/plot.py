@@ -30,9 +30,9 @@ except (ModuleNotFoundError, ValueError):
 from mne_pipeline_hd.functions import operations as op
 
 
-# =============================================================================
+# ==============================================================================
 # PLOTTING FUNCTIONS
-# =============================================================================
+# ==============================================================================
 
 def plot_raw(meeg, show_plots):
     raw = meeg.load_raw()
@@ -589,7 +589,7 @@ def plot_src_connectivity(meeg, target_labels, con_fmin,
     node_order.extend(lh_labels[::-1])  # reverse the order
     node_order.extend(rh_labels)
 
-    node_angles = mne_connectivity.viz.circular_layout(
+    node_angles = mne.viz.circular_layout(
         label_names, node_order, start_pos=90,
         group_boundaries=[0, len(label_names) / 2])
 
@@ -706,7 +706,8 @@ def plot_grand_avg_ltc(group, show_plots):
 
 
 def plot_grand_avg_connect(group, con_fmin, con_fmax, target_labels,
-                           morph_to, show_plots):
+                           morph_to, show_plots, connectivity_vmin,
+                           connectivity_vmax):
     ga_dict = group.load_ga_con()
 
     # Get labels for FreeSurfer 'aparc' cortical parcellation
@@ -714,18 +715,18 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, target_labels,
     fsmri = FSMRI(morph_to, group.ct)
     labels = fsmri.get_labels(target_labels)
     if 'unknown-lh' in labels:
-        labels.pop('unknown-lh')
+        labels.remove('unknown-lh')
 
-    label_colors = [label.color for label in labels.values()]
+    label_colors = [label.color for label in labels]
+    label_names = [lb.name for lb in labels]
 
-    label_names = list(labels.keys())
     lh_labels = [l_name for l_name in label_names if l_name.endswith('lh')]
     rh_labels = [l_name for l_name in label_names if l_name.endswith('rh')]
 
     # Get the y-location of the label
-    lh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels.values()
+    lh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels
                      if lb.name in lh_labels]
-    rh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels.values()
+    rh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels
                      if lb.name in rh_labels]
 
     # Reorder the labels based on their location
@@ -745,12 +746,14 @@ def plot_grand_avg_connect(group, con_fmin, con_fmax, target_labels,
 
     for trial in ga_dict:
         for method in ga_dict[trial]:
-            fig, axes = mne.viz.plot_connectivity_circle(
+            fig, axes = mne_connectivity.viz.plot_connectivity_circle(
                 ga_dict[trial][method],
                 label_names, n_lines=300,
                 node_angles=node_angles,
                 node_colors=label_colors,
                 title=f'{method}: {str(con_fmin)}-{str(con_fmax)}',
+                vmin=connectivity_vmin,
+                vmax=connectivity_vmax,
                 fontsize_names=16, show=show_plots)
 
             group.plot_save('ga_connectivity', subfolder=method, trial=trial,

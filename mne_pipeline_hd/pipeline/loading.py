@@ -147,11 +147,12 @@ class BaseLoading:
     """ Base-Class for Sub (The current File/MRI-File/Grand-Average-Group,
      which is executed)"""
 
-    def __init__(self, name, controller):
+    def __init__(self, name, controller, preload):
         # Basic Attributes (partly taking parameters or main-win-attributes
         # for easier access)
         self.name = name
         self.ct = controller
+        self.preload = preload
         self.pr = controller.pr
         self.p_preset = self.pr.p_preset
         self.subjects_dir = self.ct.subjects_dir
@@ -521,10 +522,11 @@ class BaseLoading:
 class MEEG(BaseLoading):
     """ Class for File-Data in File-Loop"""
 
-    def __init__(self, name, controller, fsmri=None, suppress_warnings=True):
+    def __init__(self, name, controller, preload=True, fsmri=None,
+                 suppress_warnings=True):
         self.fsmri = fsmri
         self.suppress_warnings = suppress_warnings
-        super().__init__(name, controller)
+        super().__init__(name, controller, preload)
 
         if name == '_sample_':
             self.init_sample()
@@ -551,9 +553,10 @@ class MEEG(BaseLoading):
                     and self.fsmri.name == self.pr.meeg_to_fsmri[self.name]:
                 pass
             else:
-                self.fsmri = FSMRI(self.pr.meeg_to_fsmri[self.name], self.ct)
+                self.fsmri = FSMRI(self.pr.meeg_to_fsmri[self.name], self.ct,
+                                   self.preload)
         else:
-            self.fsmri = FSMRI(None, self.ct)
+            self.fsmri = FSMRI(None, self.ct, self.preload)
             if not self.suppress_warnings:
                 print(
                     f'No Freesurfer-MRI-Subject assigned for {self.name},'
@@ -1157,8 +1160,9 @@ class MEEG(BaseLoading):
 
 
 class FSMRI(BaseLoading):
-    def __init__(self, name, controller):
-        if name == 'fsaverage':
+    def __init__(self, name, controller, preload=True):
+        if name == 'fsaverage' and not isfile(
+                join(controller.subjects_dir, 'fsaverage/mri/T1.mgz')):
             if _test_run():
                 test_data_folder = join(mne.datasets.sample.data_path(),
                                         'subjects',
@@ -1174,7 +1178,7 @@ class FSMRI(BaseLoading):
                 except ValueError:
                     logging.warning('fsaverage could not be downloaded!')
 
-        super().__init__(name, controller)
+        super().__init__(name, controller, preload)
 
     def init_attributes(self):
         """Initialize additional attributes for FSMRI"""
@@ -1182,8 +1186,12 @@ class FSMRI(BaseLoading):
         self.mne_path = QS().value('mne_path')
 
         # Initialize Parcellations and Labels
-        self.parcellations = self._get_available_parc()
-        self.labels = self._get_available_labels()
+        if self.preload:
+            self.parcellations = self._get_available_parc()
+            self.labels = self._get_available_labels()
+        else:
+            self.parcellations = list()
+            self.labels = list()
 
     def init_paths(self):
         # Main Path
@@ -1261,18 +1269,23 @@ class FSMRI(BaseLoading):
         for parcellation in tqdm(self.parcellations,
                                  desc='Loading parcellations...',
                                  ascii=True):
-            labels[parcellation] = mne.read_labels_from_annot(
-                self.name, parcellation, subjects_dir=self.subjects_dir,
-                verbose='warning'
-            )
+            try:
+                labels[parcellation] = mne.read_labels_from_annot(
+                    self.name, parcellation, subjects_dir=self.subjects_dir,
+                    verbose='warning'
+                )
+            except RuntimeError:
+                print(f'Parcellation {parcellation} could not be loaded!')
 
         return labels
 
     def get_labels(self, target_labels):
         labels = list()
-        if hasattr(self, 'labels'):
-            for label_list in self.labels.values():
-                labels += [lb for lb in label_list if lb.name in target_labels]
+        if target_labels is not None:
+            if hasattr(self, 'labels'):
+                for label_list in self.labels.values():
+                    labels += [lb for lb in label_list
+                               if lb.name in target_labels]
 
         return labels
 
@@ -1314,9 +1327,9 @@ class FSMRI(BaseLoading):
 
 
 class Group(BaseLoading):
-    def __init__(self, name, controller, suppress_warnings=True):
+    def __init__(self, name, controller, preload=True, suppress_warnings=True):
         self.suppress_warnings = suppress_warnings
-        super().__init__(name, controller)
+        super().__init__(name, controller, preload)
 
     def init_attributes(self):
         """Initialize additional attributes for Group"""
@@ -1344,7 +1357,7 @@ class Group(BaseLoading):
                 self.ct.pr.sel_event_id[group_item])
 
         # The fsmri where all group members are morphed to
-        self.fsmri = FSMRI(self.pa['morph_to'], self.ct)
+        self.fsmri = FSMRI(self.pa['morph_to'], self.ct, self.preload)
 
     def init_paths(self):
         # Main Path
