@@ -551,9 +551,10 @@ class AddFilesWidget(QWidget):
 
         self.view.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeToContents)
-        self.view.setToolTip('These .fif-Files can be imported \n'
-                             '(the Empty-Room-Measurements should appear here '
-                             'too and will be sorted according to the ERM-Keywords)')
+        self.view.setToolTip(
+            'These .fif-Files can be imported \n'
+            '(the Empty-Room-Measurements should appear here '
+            'too and will be sorted according to the ERM-Keywords)')
         self.layout.addWidget(self.view)
 
         self.main_bt_layout = QHBoxLayout()
@@ -840,13 +841,14 @@ class AddMRIWidget(QWidget):
             self.paths[new_name] = self.paths[old_name]
 
     def import_mri_subject(self):
-        folder_path = QFileDialog.getExistingDirectory(self,
-                                                       'Choose a folder with a subject\'s Freesurfe-Segmentation')
+        folder_path = QFileDialog.getExistingDirectory(
+            self, 'Choose a folder with a subject\'s Freesurfe-Segmentation')
 
         if folder_path != '':
             if exists(join(folder_path, 'surf')):
                 fsmri = Path(folder_path).name
-                if fsmri not in self.pr.all_fsmri and fsmri not in self.folders:
+                if fsmri not in self.pr.all_fsmri \
+                        and fsmri not in self.folders:
                     self.folders.append(fsmri)
                     self.paths.update({fsmri: folder_path})
                     self.populate_list_widget()
@@ -855,12 +857,13 @@ class AddMRIWidget(QWidget):
                         f'{fsmri} already existing in {self.ct.subjects_dir}')
             else:
                 print(
-                    'Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
+                    'Selected Folder doesn\'t seem to '
+                    'be a Freesurfer-Segmentation')
 
     def import_mri_subjects(self):
-        parent_folder = QFileDialog.getExistingDirectory(self,
-                                                         'Choose a folder containting several '
-                                                         'Freesurfer-Segmentations')
+        parent_folder = QFileDialog.getExistingDirectory(
+            self, 'Choose a folder containting several '
+                  'Freesurfer-Segmentations')
         folder_list = sorted(
             [f for f in os.listdir(parent_folder) if not f.startswith('.')],
             key=str.lower)
@@ -868,7 +871,8 @@ class AddMRIWidget(QWidget):
         for fsmri in folder_list:
             folder_path = join(parent_folder, fsmri)
             if exists(join(folder_path, 'surf')):
-                if fsmri not in self.pr.all_fsmri and fsmri not in self.folders:
+                if fsmri not in self.pr.all_fsmri \
+                        and fsmri not in self.folders:
                     self.folders.append(fsmri)
                     self.paths.update({fsmri: folder_path})
                 else:
@@ -876,7 +880,8 @@ class AddMRIWidget(QWidget):
                         f'{fsmri} already existing in {self.ct.subjects_dir}')
             else:
                 print(
-                    'Selected Folder doesn\'t seem to be a Freesurfer-Segmentation')
+                    'Selected Folder doesn\'t seem to be '
+                    'a Freesurfer-Segmentation')
         self.populate_list_widget()
 
     def add_mri_subjects(self, worker_signals):
@@ -1003,8 +1008,8 @@ class CopyBadsDialog(QDialog):
         to_l = QLabel('Copy to:')
         layout.addWidget(to_l, 0, 1)
 
-        self.copy_from = [
-            self.parent_w.current_obj.name]  # Preselect the current selected MEEG
+        # Preselect the current selected MEEG
+        self.copy_from = [self.parent_w.current_obj.name]
         self.copy_tos = list()
 
         self.listw1 = CheckList(self.all_files, self.copy_from,
@@ -1025,13 +1030,15 @@ class CopyBadsDialog(QDialog):
         self.setLayout(layout)
 
     def copy_bads(self):
-        # Check, that at least one item is selected in each list and that the copy_from-item is in meeg_bad_channels
-        if len(self.copy_from) * len(self.copy_tos) > 0 and self.copy_from[
-            0] in self.bad_channels_dict:
+        # Check, that at least one item is selected in each list
+        # and that the copy_from-item is in meeg_bad_channels
+        if len(self.copy_from) * len(self.copy_tos) > 0 \
+                and self.copy_from[0] in self.bad_channels_dict:
             for copy_to in self.copy_tos:
                 copy_bad_chs = self.bad_channels_dict[self.copy_from[0]].copy()
                 copy_to_info = MEEG(copy_to, self.parent_w.mw.ct).load_info()
-                # Make sure, that only channels which exist too in copy_to are copied
+                # Make sure, that only channels which exist too
+                # in copy_to are copied
                 for rm_ch in [r for r in copy_bad_chs if
                               r not in copy_to_info['ch_names']]:
                     copy_bad_chs.remove(rm_ch)
@@ -1095,13 +1102,15 @@ class SubBadsWidget(QWidget):
         for bt in self.bad_chkbts:
             self.bad_chkbts[bt].setChecked(False)
 
-        # Catch Channels, which are present in meeg_bad_channels, but not in bad_chkbts
+        # Catch Channels, which are present in meeg_bad_channels,
+        # but not in bad_chkbts
         # Then load existing bads for choice
         for bad in self.current_obj.bad_channels:
             if bad in self.bad_chkbts:
                 self.bad_chkbts[bad].setChecked(True)
             else:
-                # Remove bad channel from bad_channels if not existing in bad_chkbts (and thus not in ch_names)
+                # Remove bad channel from bad_channels if not existing
+                # in bad_chkbts (and thus not in ch_names)
                 self.current_obj.bad_channels.remove(bad)
 
     def _make_bad_chbxs(self, info):
@@ -1167,7 +1176,8 @@ class SubBadsWidget(QWidget):
         self.make_bad_chbxs()
 
     def _assign_bad_channels(self, bad_channels):
-        # Directly replace value in bad_channels_dict (needed for first-time assignment)
+        # Directly replace value in bad_channels_dict
+        # (needed for first-time assignment)
         self.current_obj.pr.meeg_bad_channels[
             self.current_obj.name] = bad_channels
         # Restore/Establish reference to direct object-attribute
@@ -1184,7 +1194,8 @@ class SubBadsWidget(QWidget):
             self.bad_chkbts[chkbx].setEnabled(enable)
 
     def get_selected_bads(self, _):
-        # In-Place-Operations to maintain reference from current_obj to meeg_bad_channels
+        # In-Place-Operations to maintain reference
+        # from current_obj to meeg_bad_channels
         bad_channels = self.raw.info['bads']
         self._assign_bad_channels(bad_channels)
         self.update_selection()
@@ -1198,7 +1209,8 @@ class SubBadsWidget(QWidget):
         self.raw_fig = None
 
     def plot_raw_bad(self):
-        # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+        # Disable CheckBoxes to avoid confusion
+        # (Bad-Selection only goes unidirectional from Plot>GUI)
         self.set_chkbx_enable(False)
 
         plot_dialog = QDialog(self)
@@ -1213,7 +1225,8 @@ class SubBadsWidget(QWidget):
                                      bad_color='red',
                                      title=self.current_obj.name)
         if hasattr(self.raw_fig, 'canvas'):
-            # Connect Closing of Matplotlib-Figure to assignment of bad-channels
+            # Connect Closing of Matplotlib-Figure
+            # to assignment of bad-channels
             self.raw_fig.canvas.mpl_connect('close_event',
                                             self.get_selected_bads)
         else:
@@ -1490,7 +1503,8 @@ class EvIDApply(QDialog):
 
     def apply_evid(self):
         for file in self.apply_to:
-            # Avoid with copy that CheckList-Model changes selected for all afterwards (same reference)
+            # Avoid with copy that CheckList-Model changes selected
+            # for all afterwards (same reference)
             self.p.pr.meeg_event_id[file] = self.p.event_id.copy()
             self.p.pr.sel_event_id[file] = self.p.checked_labels.copy()
 
@@ -1667,15 +1681,16 @@ class FileManagment(QDialog):
                         # Store parameter-conflicts for later retrieval
                         self.param_results[obj_name][path_type] = result_dict
 
-                        # Change status of path_type from object if there are conflicts
+                        # Change status of path_type
+                        # from object if there are conflicts
                         for parameter in result_dict:
                             if isinstance(result_dict[parameter], tuple):
                                 if result_dict[parameter][2]:
-                                    obj_pd.loc[
-                                        obj_name, path_type] = 'critical_conflict'
+                                    obj_pd.loc[obj_name, path_type] = \
+                                        'critical_conflict'
                                 else:
-                                    obj_pd.loc[
-                                        obj_name, path_type] = 'possible_conflict'
+                                    obj_pd.loc[obj_name, path_type] = \
+                                        'possible_conflict'
 
     def open_prog_dlg(self):
         # Create Progress-Dialog
@@ -1847,7 +1862,9 @@ class FileManagment(QDialog):
 
         obj_name, path_type = self._get_current(kind)
 
-        if obj_name and path_type and obj_name in self.param_results and path_type in \
+        if obj_name and path_type \
+                and obj_name in self.param_results \
+                and path_type in \
                 self.param_results[obj_name]:
             result_dict = self.param_results[obj_name][path_type]
 
@@ -1857,22 +1874,20 @@ class FileManagment(QDialog):
 
             if len(compare_pd.index) > 0:
                 # Show changed parameters
-                SimpleDialog(widget=SimplePandasTable(compare_pd,
-                                                      title='Changed Parameters',
-                                                      resize_rows=True,
-                                                      resize_columns=True),
-                             parent=self,
-                             scroll=False)
+                SimpleDialog(widget=SimplePandasTable(
+                    compare_pd, title='Changed Parameters', resize_rows=True,
+                    resize_columns=True), parent=self, scroll=False)
 
             else:
-                QMessageBox.information(self, 'All parameters equal!',
-                                        'For the selected file all parameters are equal!')
+                QMessageBox.information(
+                    self, 'All parameters equal!',
+                    'For the selected file all parameters are equal!')
 
     def _file_remover(self, selected_files, kind, worker_signals):
         worker_signals.pgbar_max.emit(len(selected_files))
         for idx, (_, obj_name, path_type) in enumerate(selected_files):
             if worker_signals.was_canceled:
-                worker_signals.pgbar_text.emit(f'Removing canceled')
+                worker_signals.pgbar_text.emit('Removing canceled')
                 break
             if kind == 'MEEG':
                 obj = MEEG(obj_name, self.ct)
@@ -1919,8 +1934,9 @@ class FileManagment(QDialog):
 
         """
 
-        msgbx = QMessageBox.question(self, 'Remove files?',
-                                     'Do you really want to remove the selected Files?')
+        msgbx = QMessageBox.question(
+            self, 'Remove files?',
+            'Do you really want to remove the selected Files?')
 
         if msgbx == QMessageBox.Yes:
             if kind == 'MEEG':
@@ -1983,7 +1999,8 @@ class ICASelect(QDialog):
         list_layout.addWidget(comp_scroll)
 
         # Todo: Fix Offline-Plots Layout
-        # offline_plot_list = CheckList(self.offline_plots, self.selected_offline_plots,
+        # offline_plot_list = CheckList(self.offline_plots,
+        #                               self.selected_offline_plots,
         #                               title='Offline-Plots to select')
         # list_layout.addWidget(offline_plot_list)
 
@@ -1993,7 +2010,8 @@ class ICASelect(QDialog):
         plot_comp_bt.clicked.connect(self.plot_components)
         bt_layout.addWidget(plot_comp_bt)
 
-        # Create Parameter-GUI which stores parameter in dictionary (not the same as project.parameters)
+        # Create Parameter-GUI which stores parameter in dictionary
+        # (not the same as project.parameters)
         ica_source_data_param = ComboGui(self.parameters, 'ica_source_data',
                                          options=['raw', 'raw_filtered',
                                                   'epochs', 'epochs_eog',
@@ -2080,7 +2098,6 @@ class ICASelect(QDialog):
                     pixmap = QPixmap(plot_path)
                     label = QLabel()
                     label.setScaledContents(True)
-                    # label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
                     label.setPixmap(pixmap)
                     sub_plot_layout.addWidget(label)
             plot_layout.addLayout(sub_plot_layout)
@@ -2094,10 +2111,8 @@ class ICASelect(QDialog):
 
     def component_selected(self):
         if self.current_obj:
-            self.pr.ica_exclude[self.current_obj.name] = [idx for idx in
-                                                          self.chkbxs if
-                                                          self.chkbxs[
-                                                              idx].isChecked()]
+            self.pr.ica_exclude[self.current_obj.name] = \
+                [idx for idx in self.chkbxs if self.chkbxs[idx].isChecked()]
         self.file_list.content_changed()
 
     def set_chkbx_enable(self, enable):
@@ -2112,7 +2127,8 @@ class ICASelect(QDialog):
 
     def plot_components(self):
         if self.current_obj:
-            # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+            # Disable CheckBoxes to avoid confusion
+            # (Bad-Selection only goes unidirectional from Plot>GUI)
             self.set_chkbx_enable(False)
             dialog = QDialog(self)
             dialog.setWindowTitle('Opening...')
@@ -2127,7 +2143,7 @@ class ICASelect(QDialog):
                                            partial(
                                                self.get_selected_components,
                                                ica))
-            except:
+            except:  # noqa: E722
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
                                      f'{err_tuple[0]}: {err_tuple[1]}\n'
@@ -2138,7 +2154,8 @@ class ICASelect(QDialog):
 
     def plot_sources(self):
         if self.current_obj:
-            # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+            # Disable CheckBoxes to avoid confusion
+            # (Bad-Selection only goes unidirectional from Plot>GUI)
             self.set_chkbx_enable(False)
             dialog = QDialog(self)
             dialog.setWindowTitle('Opening...')
@@ -2155,7 +2172,7 @@ class ICASelect(QDialog):
                                            partial(
                                                self.get_selected_components,
                                                ica))
-            except:
+            except:  # noqa: E722
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
                                      f'{err_tuple[0]}: {err_tuple[1]}\n'
@@ -2166,7 +2183,8 @@ class ICASelect(QDialog):
 
     def plot_overlay(self):
         if self.current_obj:
-            # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+            # Disable CheckBoxes to avoid confusion
+            # (Bad-Selection only goes unidirectional from Plot>GUI)
             self.set_chkbx_enable(False)
             dialog = QDialog(self)
             dialog.setWindowTitle('Opening...')
@@ -2176,7 +2194,7 @@ class ICASelect(QDialog):
                                  ica_overlay_data=self.parameters[
                                      'ica_overlay_data'],
                                  show_plots=True)
-            except:
+            except:  # noqa: E722
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
                                      f'{err_tuple[0]}: {err_tuple[1]}\n'
@@ -2187,7 +2205,8 @@ class ICASelect(QDialog):
 
     def plot_properties(self):
         if self.current_obj:
-            # Disable CheckBoxes to avoid confusion (Bad-Selection only goes unidirectional from Plot>GUI)
+            # Disable CheckBoxes to avoid confusion
+            # (Bad-Selection only goes unidirectional from Plot>GUI)
             self.set_chkbx_enable(False)
             dialog = QDialog(self)
             dialog.setWindowTitle('Opening...')
@@ -2195,7 +2214,7 @@ class ICASelect(QDialog):
             try:
                 plot_ica_properties(meeg=self.current_obj,
                                     show_plots=True)
-            except:
+            except:  # noqa: E722
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(self, 'An Error ocurred!',
                                      f'{err_tuple[0]}: {err_tuple[1]}\n'
@@ -2239,7 +2258,8 @@ class ReloadRaw(QDialog):
         print(f'Reloaded raw for {selected_raw}')
 
     def start_reload(self):
-        # Not with partial because otherwise the clicked-arg from clicked goes into *args
+        # Not with partial because otherwise the clicked-arg
+        # from clicked goes into *args
         selected_raw = self.raw_list.get_current()
         raw_path = QFileDialog.getOpenFileName(self, 'Select raw for Reload')[
             0]
@@ -2277,8 +2297,8 @@ class ExportDialog(QDialog):
 
     def _get_destination(self):
         dest = \
-            QFileDialog.getExistingDirectory(self,
-                                             'Select Destination-Folder')[0]
+            QFileDialog.getExistingDirectory(
+                self, 'Select Destination-Folder')[0]
         if dest:
             self.dest_path = dest
 
@@ -2291,7 +2311,8 @@ class ExportDialog(QDialog):
         layout.addWidget(dest_bt)
         layout.addWidget(QLabel())
         layout.addWidget(SimpleList(self.ct.pr.sel_meeg,
-                                    title='Export selected data for the following MEEG-Files:'))
+                                    title='Export selected data for the '
+                                          'following MEEG-Files:'))
         layout.addWidget(
             CheckList(list(self.common_types), self.selected_types,
                       title='Selected Data-Types'))

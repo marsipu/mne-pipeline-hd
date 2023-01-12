@@ -29,7 +29,8 @@ from mne_pipeline_hd.pipeline.pipeline_utils import TypedJSONEncoder, \
 
 class Project:
     """
-    A class with attributes for all the paths, file-lists/dicts and parameters of the selected project
+    A class with attributes for all the paths, file-lists/dicts
+    and parameters of the selected project
     """
 
     def __init__(self, controller, name):
@@ -50,7 +51,8 @@ class Project:
         self.project_path = join(self.ct.projects_path, self.name)
         # Folder to store the data
         self.data_path = join(self.project_path, 'data')
-        # Folder to store the figures (with an additional subfolder for each parameter-preset)
+        # Folder to store the figures (with an additional subfolder
+        # for each parameter-preset)
         self.figures_path = join(self.project_path, 'figures')
         # A dedicated folder to store grand-average data
         self.save_dir_averages = join(self.data_path, 'grand_averages')
@@ -66,7 +68,7 @@ class Project:
         for path in self.main_paths:
             if not exists(path):
                 makedirs(path)
-                print(f'{path} created')
+                logging.debug(f'{path} created')
 
     def init_attributes(self):
         # Stores the names of all MEG/EEG-Files
@@ -83,7 +85,8 @@ class Project:
         self.all_erm = list()
         # Maps each MEG/EEG-File to a Empty-Room-File or None
         self.meeg_to_erm = dict()
-        # Stores the names of all Freesurfer-Segmentation-Folders in Subjects-Dir
+        # Stores the names of all Freesurfer-Segmentation-Folders
+        # in Subjects-Dir
         self.all_fsmri = list()
         # Stores selected Freesurfer-Segmentations
         self.sel_fsmri = list()
@@ -115,8 +118,8 @@ class Project:
                                   f'all_meeg_{self.name}.json')
         self.sel_meeg_path = join(self.pscripts_path,
                                   f'selected_meeg_{self.name}.json')
-        self.meeg_bad_channels_path = join(self.pscripts_path,
-                                           f'meeg_bad_channels_{self.name}.json')
+        self.meeg_bad_channels_path = join(
+            self.pscripts_path, f'meeg_bad_channels_{self.name}.json')
         self.meeg_event_id_path = join(self.pscripts_path,
                                        f'meeg_event_id_{self.name}.json')
         self.sel_event_id_path = join(self.pscripts_path,
@@ -149,24 +152,25 @@ class Project:
                                       f'sel_p_preset_{self.name}.json')
 
         # Map the paths to their attribute in the Project-Class
-        self.path_to_attribute = {self.all_meeg_path: 'all_meeg',
-                                  self.sel_meeg_path: 'sel_meeg',
-                                  self.meeg_bad_channels_path: 'meeg_bad_channels',
-                                  self.meeg_event_id_path: 'meeg_event_id',
-                                  self.sel_event_id_path: 'sel_event_id',
-                                  self.all_erm_path: 'all_erm',
-                                  self.meeg_to_erm_path: 'meeg_to_erm',
-                                  self.all_fsmri_path: 'all_fsmri',
-                                  self.sel_fsmri_path: 'sel_fsmri',
-                                  self.meeg_to_fsmri_path: 'meeg_to_fsmri',
-                                  self.ica_exclude_path: 'ica_exclude',
-                                  self.all_groups_path: 'all_groups',
-                                  self.sel_groups_path: 'sel_groups',
-                                  self.plot_files_path: 'plot_files',
-                                  self.sel_functions_path: 'sel_functions',
-                                  self.add_kwargs_path: 'add_kwargs',
-                                  self.parameters_path: 'parameters',
-                                  self.sel_p_preset_path: 'p_preset'}
+        self.path_to_attribute = {
+            self.all_meeg_path: 'all_meeg',
+            self.sel_meeg_path: 'sel_meeg',
+            self.meeg_bad_channels_path: 'meeg_bad_channels',
+            self.meeg_event_id_path: 'meeg_event_id',
+            self.sel_event_id_path: 'sel_event_id',
+            self.all_erm_path: 'all_erm',
+            self.meeg_to_erm_path: 'meeg_to_erm',
+            self.all_fsmri_path: 'all_fsmri',
+            self.sel_fsmri_path: 'sel_fsmri',
+            self.meeg_to_fsmri_path: 'meeg_to_fsmri',
+            self.ica_exclude_path: 'ica_exclude',
+            self.all_groups_path: 'all_groups',
+            self.sel_groups_path: 'sel_groups',
+            self.plot_files_path: 'plot_files',
+            self.sel_functions_path: 'sel_functions',
+            self.add_kwargs_path: 'add_kwargs',
+            self.parameters_path: 'parameters',
+            self.sel_p_preset_path: 'p_preset'}
 
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
@@ -193,19 +197,20 @@ class Project:
                                        'selected_funcs.json')
 
         # Old Paths to allow transition (22.11.2020)
-        self.old_paths = {self.all_meeg_path: self.old_all_meeg_path,
-                          self.sel_meeg_path: self.old_sel_meeg_path,
-                          self.meeg_bad_channels_path: self.old_meeg_bad_channels_path,
-                          self.meeg_event_id_path: self.old_meeg_event_id_path,
-                          self.sel_event_id_path: self.old_sel_event_id_path,
-                          self.all_erm_path: self.old_all_erm_path,
-                          self.meeg_to_erm_path: self.old_meeg_to_erm_path,
-                          self.all_fsmri_path: self.old_all_fsmri_path,
-                          self.sel_fsmri_path: self.old_sel_fsmri_path,
-                          self.meeg_to_fsmri_path: self.old_meeg_to_fsmri_path,
-                          self.all_groups_path: self.old_all_groups_path,
-                          self.sel_groups_path: self.old_sel_groups_path,
-                          self.sel_functions_path: self.old_sel_funcs_path}
+        self.old_paths = {
+            self.all_meeg_path: self.old_all_meeg_path,
+            self.sel_meeg_path: self.old_sel_meeg_path,
+            self.meeg_bad_channels_path: self.old_meeg_bad_channels_path,
+            self.meeg_event_id_path: self.old_meeg_event_id_path,
+            self.sel_event_id_path: self.old_sel_event_id_path,
+            self.all_erm_path: self.old_all_erm_path,
+            self.meeg_to_erm_path: self.old_meeg_to_erm_path,
+            self.all_fsmri_path: self.old_all_fsmri_path,
+            self.sel_fsmri_path: self.old_sel_fsmri_path,
+            self.meeg_to_fsmri_path: self.old_meeg_to_fsmri_path,
+            self.all_groups_path: self.old_all_groups_path,
+            self.sel_groups_path: self.old_sel_groups_path,
+            self.sel_functions_path: self.old_sel_funcs_path}
 
         for path in [p for p in self.path_to_attribute if
                      self.path_to_attribute[p] not in self.special_loads]:
@@ -214,7 +219,8 @@ class Project:
                 with open(path, 'r') as file:
                     loaded_attribute = json.load(file,
                                                  object_hook=type_json_hook)
-                    # Make sure, that loaded object has same type as default from __init__
+                    # Make sure, that loaded object has same type
+                    # as default from __init__
                     if isinstance(loaded_attribute,
                                   type(getattr(self, attribute_name))):
                         setattr(self, attribute_name, loaded_attribute)
@@ -236,25 +242,29 @@ class Project:
                                               object_hook=type_json_hook)
 
                 for p_preset in loaded_parameters:
-                    # Make sure, that only parameters, which exist in pd_params are loaded
+                    # Make sure, that only parameters,
+                    # which exist in pd_params are loaded
                     for param in [p for p in loaded_parameters[p_preset] if
                                   p not in self.ct.pd_params.index]:
                         if '_exp' not in param:
                             loaded_parameters[p_preset].pop(param)
 
-                    # Add parameters, which exist in assets/parameters.csv,
-                    # but not in loaded-parameters (e.g. added with custom-module)
+                    # Add parameters, which exist in resource/parameters.csv,
+                    # but not in loaded-parameters
+                    # (e.g. added with custom-module)
                     for param in [p for p in self.ct.pd_params.index if
                                   p not in loaded_parameters[p_preset]]:
                         try:
                             eval_param = literal_eval(
                                 self.ct.pd_params.loc[param, 'default'])
                         except (ValueError, SyntaxError, NameError):
-                            # Allow parameters to be defined by functions e.g. by numpy, etc.
-                            if self.ct.pd_params.loc[
-                                param, 'gui_type'] == 'FuncGui':
-                                default_string = self.ct.pd_params.loc[
-                                    param, 'default']
+                            # Allow parameters to be defined by functions
+                            # e.g. by numpy, etc.
+                            is_func_gui = self.ct.pd_params.loc[
+                                              param, 'gui_type'] == 'FuncGui'
+                            if is_func_gui:
+                                default_string = \
+                                    self.ct.pd_params.loc[param, 'default']
                                 eval_param = eval(default_string, {'np': np})
                                 exp_name = param + '_exp'
                                 loaded_parameters[p_preset].update(
@@ -282,8 +292,8 @@ class Project:
         except (ValueError, SyntaxError):
             # Allow parameters to be defined by functions e.g. by numpy, etc.
             if self.ct.pd_params.loc[param_name, 'gui_type'] == 'FuncGui':
-                self.parameters[self.p_preset][param_name] = eval(string_param,
-                                                                  {'np': np})
+                self.parameters[self.p_preset][param_name] = \
+                    eval(string_param, {'np': np})
                 exp_name = param_name + '_exp'
                 self.parameters[self.p_preset][exp_name] = string_param
             else:
@@ -299,7 +309,8 @@ class Project:
         try:
             with open(self.sel_p_preset_path, 'r') as read_file:
                 self.p_preset = json.load(read_file)
-                # If parameter-preset not in Parameters, load first Parameter-Key(=Parameter-Preset)
+                # If parameter-preset not in Parameters,
+                # load first Parameter-Key(=Parameter-Preset)
                 if self.p_preset not in self.parameters:
                     self.p_preset = list(self.parameters.keys())[0]
         except (FileNotFoundError, json.decoder.JSONDecodeError):
@@ -426,7 +437,8 @@ class Project:
         for obj in missing_objects:
             self.all_meeg.append(obj)
 
-        # Get Freesurfer-folders (with 'surf'-folder) from subjects_dir (excluding .files for Mac)
+        # Get Freesurfer-folders (with 'surf'-folder)
+        # from subjects_dir (excluding .files for Mac)
         read_dir = sorted([f for f in os.listdir(self.ct.subjects_dir) if
                            not f.startswith('.')],
                           key=str.lower)
@@ -495,8 +507,8 @@ class Project:
             if worker_signals is not None:
                 worker_signals.pgbar_n.emit(key_count)
 
-            if obj_key not in self.all_meeg + self.all_erm + self.all_fsmri + list(
-                    self.all_groups.keys()):
+            if obj_key not in self.all_meeg + self.all_erm + \
+                    self.all_fsmri + list(self.all_groups.keys()):
                 remove_obj.append(obj_key)
             else:
                 # Remove Parameter-Presets which no longer exist
@@ -513,7 +525,8 @@ class Project:
 
                         remove_p_preset.append(p_preset)
                     else:
-                        # Remove funcs which no longer exist or got no paths left
+                        # Remove funcs which no longer exist
+                        # or got no paths left
                         remove_funcs = list()
                         for func in self.plot_files[obj_key][p_preset]:
                             key_count += 1
@@ -521,7 +534,8 @@ class Project:
                                 worker_signals.pgbar_n.emit(key_count)
 
                             # Cancel if canceled
-                            if worker_signals is not None and worker_signals.was_canceled:
+                            if worker_signals is not None \
+                                    and worker_signals.was_canceled:
                                 print('Cleaning was canceled by user')
                                 return
 
@@ -535,7 +549,8 @@ class Project:
                                     image_path = Path(join(self.figures_path,
                                                            rel_image_path))
                                     if not isfile(
-                                            image_path) or self.figures_path in rel_image_path:
+                                            image_path) or self.figures_path \
+                                            in rel_image_path:
                                         self.plot_files[obj_key][p_preset][
                                             func].remove(
                                             rel_image_path)
@@ -543,7 +558,8 @@ class Project:
                                         all_image_paths.append(str(image_path))
                                 if len(self.plot_files[obj_key][p_preset][
                                            func]) == 0:
-                                    # Keys can't be dropped from dictionary during iteration
+                                    # Keys can't be dropped from dictionary
+                                    # during iteration
                                     remove_funcs.append(func)
 
                         for remove_func_key in remove_funcs:
@@ -556,7 +572,8 @@ class Project:
                 n_remove_ppreset += len(remove_p_preset)
 
             print(
-                f'Removed {n_remove_ppreset} Parameter-Presets and {n_remove_funcs} from {obj_key}')
+                f'Removed {n_remove_ppreset} Parameter-Presets and '
+                f'{n_remove_funcs} from {obj_key}')
 
         for remove_key in remove_obj:
             self.plot_files.pop(remove_key)
@@ -579,7 +596,8 @@ class Project:
         print('Removing empty folders...')
         n_removed_folders = 0
         folder_loop = True
-        # Redo the file-walk because folders can get empty by deleting folders inside
+        # Redo the file-walk because folders can get empty
+        # by deleting folders inside
         while folder_loop:
             folder_loop = False
             for root, folders, _ in os.walk(self.figures_path):

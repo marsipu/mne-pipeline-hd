@@ -19,77 +19,24 @@ import pickle
 import shutil
 from datetime import datetime
 from os import listdir, makedirs, remove
-from os.path import exists, getsize, isdir, isfile, join, dirname
+from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
-from mne_pipeline_hd.pipeline.pipeline_utils import (TypedJSONEncoder,
-                                                     type_json_hook,
-                                                     _get_available_parc, QS)
+from tqdm import tqdm
+
+from mne_pipeline_hd.pipeline.pipeline_utils import (
+    TypedJSONEncoder, type_json_hook, QS, _test_run)
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',
-                'raw_filtered': 'sample_audvis_filt-0-40_raw.fif',
                 'erm': 'ernoise_raw.fif',
                 'events': 'sample_audvis_raw-eve.fif',
-                'ica': 'sample_audvis_ica.fif',
-                'evoked': 'sample_audvis-ave.fif',
-                'trans': 'sample_audvis_raw-trans.fif',
-                'noise_cov': 'sample_audvis-cov.fif',
-                'inverse': 'sample_audvis-meg-oct-6-meg-inv.fif'}
-
-test_data_paths = {'raw': 'test_raw.fif',
-                   'events': 'test-eve.fif',
-                   'evoked': 'test-ave.fif',
-                   'noise_cov': 'test-cov.fif'}
-
-fsaverage_paths = {'src': 'fsaverage-ico-5-src.fif',
-                   'bem_model': 'fsaverage-5120-5120-5120-bem.fif',
-                   'bem_solution': 'fsaverage-5120-5120-5120-bem-sol.fif',
-                   'volume_src': 'fsaverage-vol-5-src.fif'}
-
-
-def _copy_test_file(data_type, self, source):
-    if source == '_sample_':
-        test_data_folder = join(mne.datasets.sample.data_path(), 'MEG',
-                                'sample')
-        test_file_dict = sample_paths
-    elif source == '_test_':
-        test_data_folder = join(dirname(mne.__file__), 'io', 'tests', 'data')
-        test_file_dict = test_data_paths
-    elif source == 'fsaverage':
-        test_data_folder = join(self.subjects_dir, self.name)
-        test_file_dict = fsaverage_paths
-    else:
-        logging.warning(f'No test-file from "{source}" for "{data_type}"!')
-        return
-    if data_type in test_file_dict:
-        test_file_name = test_file_dict[data_type]
-        test_file_path = join(test_data_folder, test_file_name)
-        file_path = self.io_dict[data_type]['path']
-
-        if isfile(test_file_path) and not isfile(file_path):
-            print(f'Copying {data_type} from sample-dataset...')
-            folder = Path(file_path).parent
-            if not isdir(folder):
-                os.mkdir(folder)
-            shutil.copy2(test_file_path, file_path)
-            print('Done!')
-        else:
-            logging.warning(f'File for {data_type} could not be '
-                            f'copied for {source}')
-    else:
-        if data_type == 'erm' and not isfile(self.erm_path):
-            shutil.copy2(self.raw_path, self.erm_path)
-        elif data_type == 'trans' and not isfile(self.trans_path):
-            trans_file = join(dirname(mne.__file__), 'data', 'fsaverage',
-                              'fsaverage-trans.fif')
-            shutil.copy2(trans_file, self.trans_path)
+                'trans': 'sample_audvis_raw-trans.fif'}
 
 
 def _get_data_type_from_func(self, func, method):
@@ -114,9 +61,6 @@ def load_decorator(load_func):
         # Get matching data-type from IO-Dict
         data_type = _get_data_type_from_func(self, load_func, 'load')
         print(f'Loading {data_type} for {self.name}')
-
-        if self.name in ['_sample_', '_test_', 'fsaverage']:
-            _copy_test_file(data_type, self, source=self.name)
 
         if data_type in self.data_dict:
             data = self.data_dict[data_type]
@@ -219,12 +163,13 @@ class BaseLoading:
         self.data_dict = dict()
         self.existing_paths = dict()
 
-        self.init_p_preset_deps()
-        self.init_attributes()
-        self.init_paths()
-        self.load_file_parameter_file()
+        if name is not None:
+            self.init_parameters()
+            self.init_attributes()
+            self.init_paths()
+            self.load_file_parameter_file()
 
-    def init_p_preset_deps(self):
+    def init_parameters(self):
         self.pa = self.pr.parameters[self.p_preset]
 
         # Prepare plot-files-dictionary for Loading-Object
@@ -583,8 +528,6 @@ class MEEG(BaseLoading):
 
         if name == '_sample_':
             self.init_sample()
-        elif name == '_test_':
-            self.init_test_data()
 
     def init_attributes(self):
         """Initialize additional attributes for MEEG"""
@@ -835,15 +778,25 @@ class MEEG(BaseLoading):
         self.erm = 'ernoise'
         self.pr.meeg_to_erm[self.name] = self.erm
         self.init_paths()
-        for data_type in sample_paths:
-            _copy_test_file(data_type, self, '_sample_')
-        self.bad_channels = self.load_info()['bads']
-        self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
-    def init_test_data(self):
-        # Init paths for dataset in mne.io.tests.data
-        for data_type in test_data_paths:
-            _copy_test_file(data_type, self, '_test_')
+        # Load sample
+        test_data_folder = join(mne.datasets.sample.data_path(), 'MEG',
+                                'sample')
+        test_file_dict = sample_paths
+
+        for data_type in test_file_dict:
+            test_file_name = test_file_dict[data_type]
+            test_file_path = join(test_data_folder, test_file_name)
+            file_path = self.io_dict[data_type]['path']
+
+            if isfile(test_file_path) and not isfile(file_path):
+                print(f'Copying {data_type} from sample-dataset...')
+                folder = Path(file_path).parent
+                if not isdir(folder):
+                    os.mkdir(folder)
+                shutil.copy2(test_file_path, file_path)
+                print('Done!')
+
         self.bad_channels = self.load_info()['bads']
         self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
@@ -1204,19 +1157,22 @@ class MEEG(BaseLoading):
 
 
 class FSMRI(BaseLoading):
-    # Todo: Store available parcellations, surfaces, etc.
-    #  (maybe already loaded with import?)
     def __init__(self, name, controller):
-        if name is None:
-            name = 'None'
-        elif name == 'fsaverage':
-            logging.info('Downloading fsaverage...')
-            try:
-                mne.datasets.fetch_fsaverage(
-                    subjects_dir=controller.subjects_dir)
-            # Not working on macOS for mne<=0.24
-            except ValueError:
-                logging.warning('fsaverage could not be downloaded!')
+        if name == 'fsaverage':
+            if _test_run():
+                test_data_folder = join(mne.datasets.sample.data_path(),
+                                        'subjects',
+                                        'fsaverage')
+                shutil.copytree(test_data_folder,
+                                join(controller.subjects_dir, name))
+            else:
+                try:
+                    logging.info('Downloading fsaverage...')
+                    mne.datasets.fetch_fsaverage(
+                        subjects_dir=controller.subjects_dir)
+                # Not working on macOS for mne<=0.24
+                except ValueError:
+                    logging.warning('fsaverage could not be downloaded!')
 
         super().__init__(name, controller)
 
@@ -1224,6 +1180,10 @@ class FSMRI(BaseLoading):
         """Initialize additional attributes for FSMRI"""
         self.fs_path = QS().value('fs_path')
         self.mne_path = QS().value('mne_path')
+
+        # Initialize Parcellations and Labels
+        self.parcellations = self._get_available_parc()
+        self.labels = self._get_available_labels()
 
     def init_paths(self):
         # Main Path
@@ -1270,9 +1230,51 @@ class FSMRI(BaseLoading):
             'volume_src': join(self.save_dir, 'bem',
                                f'{self.name}-vol-src.fif')
         }
-        # Initialize Parcellations
-        if self.name != 'None':
-            self.parcellations = _get_available_parc(self.ct, self.name)
+
+    def _get_available_parc(self):
+        annot_dir = join(self.subjects_dir, self.name, 'label')
+        try:
+            files = os.listdir(annot_dir)
+            annotations = [file[3:-6] for file in files
+                           if file[-6:] == '.annot']
+        except FileNotFoundError:
+            annotations = list()
+
+        return annotations
+
+    def _get_available_labels(self):
+        labels = dict()
+        label_dir = join(self.subjects_dir, self.name, 'label')
+        try:
+            files = os.listdir(label_dir)
+            labels['Other'] = list()
+            for label_path in tqdm(
+                    [str(lp) for lp in files if lp[-6:] == '.label'],
+                    desc='Loading labels...',
+                    ascii=True):
+                label = mne.read_label(join(label_dir, label_path),
+                                       self.name)
+                labels['Other'].append(label)
+        except FileNotFoundError:
+            logging.warning(f'No label directory found for {self.name}!')
+
+        for parcellation in tqdm(self.parcellations,
+                                 desc='Loading parcellations...',
+                                 ascii=True):
+            labels[parcellation] = mne.read_labels_from_annot(
+                self.name, parcellation, subjects_dir=self.subjects_dir,
+                verbose='warning'
+            )
+
+        return labels
+
+    def get_labels(self, target_labels):
+        labels = list()
+        if hasattr(self, 'labels'):
+            for label_list in self.labels.values():
+                labels += [lb for lb in label_list if lb.name in target_labels]
+
+        return labels
 
     ###########################################################################
     # Load- & Save-Methods

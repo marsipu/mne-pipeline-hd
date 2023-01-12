@@ -19,8 +19,7 @@ from PyQt5.QtWidgets import QApplication
 from qdarkstyle import DarkPalette, LightPalette
 
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
-from mne_pipeline_hd.gui.welcome_window import show_welcome_window
-from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS
 
 
@@ -67,7 +66,8 @@ def main():
     # Initialize Logger (root)
     logger = logging.getLogger()
     logger.setLevel(QS().value('log_level', defaultValue=logging.INFO))
-    formatter = logging.Formatter('%(asctime)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s: %(message)s',
+                                  datefmt='%Y/%m/%d %H:%M:%S')
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
@@ -75,7 +75,8 @@ def main():
 
     # Initialize Exception-Hook
     qt_exception_hook = UncaughtHook()
-    # this registers the exception_hook() function as hook with the Python interpreter
+    # this registers the exception_hook() function
+    # as hook with the Python interpreter
     sys.excepthook = qt_exception_hook.exception_hook
 
     # Initialize Layout
@@ -95,13 +96,12 @@ def main():
         else:
             app.setStyle(app_style)
 
-    with resources.path('mne_pipeline_hd.assets', icon_name) as icon_path:
+    with resources.path('mne_pipeline_hd.resource', icon_name) as icon_path:
         app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
 
     # Initiate WelcomeWindow
-    controller = Controller()
-    show_welcome_window(controller)
+    WelcomeWindow()
 
     # Redirect stdout to capture it later in GUI
     sys.stdout = StdoutStderrStream('stdout')

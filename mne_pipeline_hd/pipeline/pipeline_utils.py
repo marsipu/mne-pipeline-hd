@@ -21,6 +21,8 @@ from pathlib import Path
 
 import numpy as np
 import psutil
+import pytest
+import pytestqt
 
 datetime_format = '%d.%m.%Y %H:%M:%S'
 
@@ -30,7 +32,8 @@ islin = not ismac and not iswin
 
 
 def encode_tuples(input_dict):
-    """Encode tuples in a dictionary, because JSON does not recognize them (CAVE: input_dict is changed in place)"""
+    """Encode tuples in a dictionary, because JSON does not recognize them
+    (CAVE: input_dict is changed in place)"""
     for key, value in input_dict.items():
         if isinstance(value, dict):
             encode_tuples(value)
@@ -73,7 +76,8 @@ def type_json_hook(obj):
 
 
 def compare_filep(obj, path, target_parameters=None, verbose=True):
-    """Compare the parameters of the previous run to the current parameters for the given path
+    """Compare the parameters of the previous run to the current
+    parameters for the given path
 
     Parameters
     ----------
@@ -89,7 +93,8 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
     Returns
     -------
     result_dict : dict
-        A dictionary with every parameter from target_parameters with a value as result:
+        A dictionary with every parameter from target_parameters
+        with a value as result:
             None, if nothing changed |
             tuple (previous_value, current_value, critical) |
             'missing', if path hasn't been saved yet
@@ -97,7 +102,8 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
 
     result_dict = dict()
     file_name = Path(path).name
-    # Try to get the parameters relevant for the last function, which altered the data at path
+    # Try to get the parameters relevant for the last function,
+    # which altered the data at path
     try:
         # The last entry in FUNCTION should be the most recent
         function = obj.file_parameters[file_name]['FUNCTION']
@@ -128,13 +134,15 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
                     result_dict[param] = (previous_value, current_value, True)
                     if verbose:
                         print(
-                            f'{param} changed from {previous_value} to {current_value} for {file_name} '
+                            f'{param} changed from {previous_value} to '
+                            f'{current_value} for {file_name} '
                             f'and is probably crucial for {function}')
                 else:
                     result_dict[param] = (previous_value, current_value, False)
                     if verbose:
                         print(
-                            f'{param} changed from {previous_value} to {current_value} for {file_name}')
+                            f'{param} changed from {previous_value} to '
+                            f'{current_value} for {file_name}')
         except KeyError:
             result_dict[param] = 'missing'
             if verbose:
@@ -201,18 +209,6 @@ def restart_program():
     os.execl(python, python, *sys.argv)
 
 
-def _get_available_parc(ct, name):
-    annot_dir = join(ct.subjects_dir, name, 'label')
-    try:
-        files = os.listdir(annot_dir)
-        annotations = list(
-            set([file[3:-6] for file in files if file[-6:] == '.annot']))
-    except FileNotFoundError:
-        annotations = list()
-
-    return annotations
-
-
 def _get_func_param_kwargs(func, params):
     kwargs = {kwarg: params[kwarg] if kwarg in params else None
               for kwarg in inspect.signature(func).parameters}
@@ -223,7 +219,7 @@ def _get_func_param_kwargs(func, params):
 class BaseSettings:
     def __init__(self):
         # Load default settings
-        with resources.open_text('mne_pipeline_hd.assets',
+        with resources.open_text('mne_pipeline_hd.resource',
                                  'default_settings.json') as file:
             self.default_qsettings = json.load(file)['qsettings']
 
@@ -272,7 +268,6 @@ class QSettingsDummy(BaseSettings):
 try:
     from PyQt5.QtCore import QSettings
 
-
     class ModQSettings(QSettings, BaseSettings):
         def __init__(self):
             super(QSettings, self).__init__()
@@ -295,7 +290,6 @@ try:
             else:
                 return loaded_value
 
-
     class QS(ModQSettings):
         def __init__(self):
             super().__init__()
@@ -305,3 +299,21 @@ except ImportError:
     class QS(QSettingsDummy):
         def __init__(self):
             super().__init__()
+
+
+def _set_test_run():
+    os.environ['TEST_RUN'] = 'True'
+
+
+def _test_run():
+    if 'TEST_RUN' in os.environ:
+        return True
+
+
+def _run_from_script():
+    return '__main__.py' in sys.argv[0]
+
+
+def _test_wait(qtbot, timeout):
+    with pytest.raises(pytestqt.exceptions.TimeoutError):
+        qtbot.waitUntil(lambda: False, timeout=timeout)

@@ -47,7 +47,9 @@ from mne_pipeline_hd.gui.parameter_widgets import (BoolGui, IntGui,
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
-from mne_pipeline_hd.pipeline.pipeline_utils import restart_program, ismac, QS
+from mne_pipeline_hd.pipeline.pipeline_utils import (restart_program, ismac,
+                                                     QS, _run_from_script,
+                                                     iswin)
 
 
 class MainWindow(QMainWindow):
@@ -58,6 +60,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, controller):
         super().__init__()
+        _object_refs['main_window'] = self
         self.setWindowTitle('MNE-Pipeline HD')
 
         # Set QThread as default (ToDo: MP)
@@ -110,19 +113,18 @@ class MainWindow(QMainWindow):
         new_home_path = QFileDialog.getExistingDirectory(
             self, 'Change your Home-Path (top-level folder of Pipeline-Data)')
         if new_home_path != '':
-            new_controller = Controller(new_home_path)
-
-            if 'home_path' in new_controller.errors:
+            try:
+                new_controller = Controller(new_home_path)
+            except RuntimeError as err:
                 QMessageBox.critical(self, 'Error with selected Home-Path',
-                                     new_controller.errors['home_path'])
+                                     str(err))
             else:
-                if 'project' in new_controller.errors:
+                if new_controller.pr is None:
                     new_project = get_user_input_string(
                         'There is no project in this Home-Path,'
                         ' please enter a name for a new project:',
                         'Add Project!', force=True)
-
-                    new_controller.change_project(new_project)
+                    self.pr = new_controller.change_project(new_project)
 
                 self.ct = new_controller
                 welcome_window = _object_refs['welcome_window']
@@ -130,7 +132,6 @@ class MainWindow(QMainWindow):
                     welcome_window.ct = new_controller
                 self.statusBar().showMessage(f'Home-Path: {self.ct.home_path},'
                                              f' Project: {self.pr.name}')
-
                 self.update_project_ui()
 
     def add_project(self):
@@ -140,7 +141,7 @@ class MainWindow(QMainWindow):
         new_project = get_user_input_string('Enter a name for a new project',
                                             'Add Project')
         if new_project is not None:
-            self.ct.change_project(new_project)
+            self.pr = self.ct.change_project(new_project)
             self.update_project_ui()
 
     def remove_project(self):
@@ -157,7 +158,7 @@ class MainWindow(QMainWindow):
         project = self.project_box.itemText(idx)
 
         # Change project
-        self.ct.change_project(project)
+        self.pr = self.ct.change_project(project)
 
         self.update_project_ui()
 
@@ -288,7 +289,10 @@ class MainWindow(QMainWindow):
                                 partial(SettingsDlg, self, self.ct))
         settings_menu.addAction('&Change Home-Path', self.change_home_path)
         settings_menu.addSeparator()
-        settings_menu.addAction('&Update Pipeline', self.update_pipeline)
+        settings_menu.addAction('&Update Pipeline (stable)',
+                                partial(self.update_pipeline, 'stable'))
+        settings_menu.addAction('&Update Pipeline (dev)',
+                                partial(self.update_pipeline, 'dev'))
         settings_menu.addAction('&Update MNE-Python', self.update_mne)
         settings_menu.addAction('&Restart', self.restart)
 
@@ -324,31 +328,26 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(remove_action)
         self.toolbar.addSeparator()
 
-        self.toolbar.addWidget(IntGui(data=QS(), name='n_jobs',
-                                      min_val=-1,
-                                      special_value_text='Auto',
-                                      description='Set to the amount of '
-                                                  '(virtual) cores of '
-                                                  'your machine you want'
-                                                  ' to use for ' \
-                                                  'multiprocessing.',
-                                      default=-1, groupbox_layout=False))
-        # self.toolbar.addWidget(IntGui(data=QS(), name='n_parallel', min_val=1,
-        #                               description='Set to the amount of'
-        #                                           ' threads you want to run '
-        #                                           'simultaneously in the '\
-        #                                           'pipeline', default=1,
-        #                               groupbox_layout=False))
-        # self.toolbar.addWidget(BoolGui(data=QS(), name='use_qthread',
-        #                                alias='Use QThreads',
-        #                                description='Check to use QThreads for '
-        #                                            'running the pipeline.\n'
-        #                                            'This is faster than the'
-        #                                            ' default with separate '
-        #                                            'processes,'
-        #                                            'but has a few limitations',
-        #                                default=0, return_integer=True,
-        #                                changed_slot=self.init_mp_pool))
+        self.toolbar.addWidget(
+            IntGui(data=QS(), name='n_jobs', min_val=-1,
+                   special_value_text='Auto',
+                   description='Set to the amount of (virtual) cores '
+                               'of your machine you want '
+                               'to use for multiprocessing.',
+                   default=-1, groupbox_layout=False))
+        # self.toolbar.addWidget(
+        #     IntGui(data=QS(), name='n_parallel', min_val=1,
+        #            description='Set to the amount of threads you want '
+        #                        'to run simultaneously in the pipeline',
+        #            default=1, groupbox_layout=False))
+        # self.toolbar.addWidget(
+        #     BoolGui(data=QS(), name='use_qthread', alias='Use QThreads',
+        #             description='Check to use QThreads for running '
+        #                         'the pipeline.\n'
+        #                         'This is faster than the default'
+        #                         ' with separate processes, '
+        #                         'but has a few limitations',
+        #             default=0, return_integer=True))
         self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='overwrite',
                                        alias='Overwrite',
                                        description='Check to overwrite files'
@@ -423,7 +422,8 @@ class MainWindow(QMainWindow):
         # Horizontal Border for Function-Groups
         max_h_size = self.tab_func_widget.geometry().width()
 
-        # Assert, that cleaned_pd_funcs is not empty (possible, when deselecting all modules)
+        # Assert, that cleaned_pd_funcs is not empty
+        # (possible, when deselecting all modules)
         if len(cleaned_pd_funcs) != 0:
             tabs_grouped = cleaned_pd_funcs.groupby('tab')
             # Add tabs
@@ -465,8 +465,8 @@ class MainWindow(QMainWindow):
                         tab_v_layout.addLayout(tab_h_layout)
                         h_size = group_box.sizeHint().width()
                         tab_h_layout = QHBoxLayout()
-                    tab_h_layout.addWidget(group_box,
-                                           alignment=Qt.AlignLeft | Qt.AlignTop)
+                    tab_h_layout.addWidget(
+                        group_box, alignment=Qt.AlignLeft | Qt.AlignTop)
 
                 if tab_h_layout.count() > 0:
                     tab_v_layout.addLayout(tab_h_layout)
@@ -584,19 +584,29 @@ class MainWindow(QMainWindow):
         self.close()
         restart_program()
 
-    def update_pipeline(self):
-        command = 'pip install --upgrade --force-reinstall --no-deps ' \
-                  'git+https://github.com/marsipu/mne_pipeline_hd.git#egg=mne-pipeline-hd'
-        QProcessDialog(self, command, show_buttons=True, show_console=True,
-                       close_directly=True, title='Updating Pipeline...',
-                       blocking=True)
+    def update_pipeline(self, version):
+        if version == 'stable':
+            command = 'pip install --upgrade mne_pipeline_hd'
+        else:
+            command = 'pip install ' \
+                      'https://github.com/marsipu/mne-pipeline-hd/zipball/main'
+        if iswin and not _run_from_script():
+            QMessageBox.information(
+                self, 'Manual install required!',
+                f'To update you need to exit the program '
+                f'and type "{command}" into the terminal!')
+        else:
+            QProcessDialog(self, command, show_buttons=True, show_console=True,
+                           close_directly=True, title='Updating Pipeline...',
+                           blocking=True)
 
-        answer = QMessageBox.question(self, 'Do you want to restart?',
-                                      'Please restart the Pipeline-Program'
-                                      'to apply the changes from the Update!')
+            answer = QMessageBox.question(
+                self, 'Do you want to restart?',
+                'Please restart the Pipeline-Program '
+                'to apply the changes from the Update!')
 
-        if answer == QMessageBox.Yes:
-            self.restart()
+            if answer == QMessageBox.Yes:
+                self.restart()
 
     def update_mne(self):
         command = 'pip install --upgrade mne'
@@ -604,9 +614,10 @@ class MainWindow(QMainWindow):
                        close_directly=True, title='Updating MNE-Python...',
                        blocking=True)
 
-        answer = QMessageBox.question(self, 'Do you want to restart?',
-                                      'Please restart the Pipeline-Program'
-                                      'to apply the changes from the Update!')
+        answer = QMessageBox.question(
+            self, 'Do you want to restart?',
+            'Please restart the Pipeline-Program '
+            'to apply the changes from the Update!')
 
         if answer == QMessageBox.Yes:
             self.restart()
@@ -626,10 +637,11 @@ class MainWindow(QMainWindow):
         if self.restarting or welcome_window is None:
             answer = QMessageBox.No
         else:
-            answer = QMessageBox.question(self, 'Closing MNE-Pipeline',
-                                          'Do you want to return to the Welcome-Window?',
-                                          buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                                          defaultButton=QMessageBox.Yes)
+            answer = QMessageBox.question(
+                self, 'Closing MNE-Pipeline',
+                'Do you want to return to the Welcome-Window?',
+                buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                defaultButton=QMessageBox.Yes)
         if answer not in [QMessageBox.Yes, QMessageBox.No]:
             event.ignore()
         else:
@@ -640,15 +652,8 @@ class MainWindow(QMainWindow):
 
             if welcome_window is not None:
                 if answer == QMessageBox.Yes:
-                    welcome_window.check_controller()
+                    welcome_window.update_widgets()
                     welcome_window.show()
 
                 elif answer == QMessageBox.No:
                     welcome_window.close()
-
-
-def show_main_window(controller):
-    main_window = MainWindow(controller)
-    _object_refs['main_window'] = main_window
-
-    return main_window

@@ -1,10 +1,17 @@
-# MNE-Python-Requirements
-mne
-mne_connectivity
-mne_qt_browser
-
-# Special Pipeline-Requirements
-autoreject
+# PyQt
+PyQt5
+qtpy
 pyobjc-framework-Cocoa; sys_platform == "darwin"
+darkdetect
 qdarkstyle
-imageio[ffmpeg]
+
+# MNE-related
+mne
+mne-connectivity
+mne-qt-browser
+autoreject
+h5io
+vtk
+
+# Pipeline-related
+psutil
