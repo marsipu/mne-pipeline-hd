@@ -289,11 +289,12 @@ class MainWindow(QMainWindow):
                                 partial(SettingsDlg, self, self.ct))
         settings_menu.addAction('&Change Home-Path', self.change_home_path)
         settings_menu.addSeparator()
-        settings_menu.addAction('&Update Pipeline (stable)',
-                                partial(self.update_pipeline, 'stable'))
-        settings_menu.addAction('&Update Pipeline (dev)',
-                                partial(self.update_pipeline, 'dev'))
-        settings_menu.addAction('&Update MNE-Python', self.update_mne)
+        # ToDo: Needs to be thoroughly tested on all OS
+        # settings_menu.addAction('&Update Pipeline (stable)',
+        #                         partial(self.update_pipeline, 'stable'))
+        # settings_menu.addAction('&Update Pipeline (dev)',
+        #                         partial(self.update_pipeline, 'dev'))
+        # settings_menu.addAction('&Update MNE-Python', self.update_mne)
         settings_menu.addAction('&Restart', self.restart)
 
         # About
