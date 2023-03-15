@@ -13,9 +13,9 @@ I would recommend to install in a separate conda environment with:
 
 ## Update
 
-Just
-run `pip install --upgrade --no-deps --force-reinstall https://github.com/marsipu/mne-pipeline-hd/zipball/main`
-again or use the update-funtion from within the programm (in Settings-Menu).
+Run `pip install --upgrade --no-deps --force-reinstall https://github.com/marsipu/mne-pipeline-hd/zipball/main`
+for an update to the development version
+or `pip install --upgrade mne-pipeline-hd` for the latest release.
 
 ## Start
 Run `mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_p`)
