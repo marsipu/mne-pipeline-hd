@@ -25,13 +25,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
+from mne_pipeline_hd.pipeline.pipeline_utils import (
+    TypedJSONEncoder, type_json_hook, QS, _test_run)
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
 from tqdm import tqdm
-
-from mne_pipeline_hd.pipeline.pipeline_utils import (
-    TypedJSONEncoder, type_json_hook, QS, _test_run)
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',
                 'erm': 'ernoise_raw.fif',
@@ -893,7 +892,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_events(self, events):
-        mne.event.write_events(self.events_path, events)
+        mne.write_events(self.events_path, events, overwrite=True)
 
     @load_decorator
     def load_epochs(self):
