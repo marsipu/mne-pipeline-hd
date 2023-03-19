@@ -25,12 +25,13 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from mne_pipeline_hd.pipeline.pipeline_utils import (
-    TypedJSONEncoder, type_json_hook, QS, _test_run)
 # ==============================================================================
 # LOADING FUNCTIONS
 # ==============================================================================
 from tqdm import tqdm
+
+from mne_pipeline_hd.pipeline.pipeline_utils import (
+    TypedJSONEncoder, type_json_hook, QS, _test_run)
 
 sample_paths = {'raw': 'sample_audvis_raw.fif',
                 'erm': 'ernoise_raw.fif',
@@ -948,7 +949,7 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_evokeds(self, evokeds):
-        mne.evoked.write_evokeds(self.evokeds_path, evokeds)
+        mne.evoked.write_evokeds(self.evokeds_path, evokeds, overwrite=True)
 
     @load_decorator
     def load_power_tfr_epochs(self):
@@ -1012,7 +1013,8 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_noise_covariance(self, noise_cov):
-        mne.cov.write_cov(self.noise_covariance_path, noise_cov)
+        mne.cov.write_cov(self.noise_covariance_path, noise_cov,
+                          overwrite=True)
 
     @load_decorator
     def load_inverse_operator(self):
@@ -1035,7 +1037,7 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_source_estimates(self, stcs):
         for trial in stcs:
-            stcs[trial].save(self.stc_paths[trial])
+            stcs[trial].save(self.stc_paths[trial], overwrite=True)
 
     @load_decorator
     def load_morphed_source_estimates(self):
@@ -1049,7 +1051,8 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_morphed_source_estimates(self, morphed_stcs):
         for trial in morphed_stcs:
-            morphed_stcs[trial].save(self.morphed_stc_paths[trial])
+            morphed_stcs[trial].save(self.morphed_stc_paths[trial],
+                                     overwrite=True)
 
     def load_mixn_dipoles(self):
         mixn_dips = dict()
@@ -1097,7 +1100,7 @@ class MEEG(BaseLoading):
         for trial in stcs:
             stc_path = join(self.save_dir,
                             f'{self.name}_{trial}_{self.p_preset}-mixn')
-            stcs[trial].save(stc_path)
+            stcs[trial].save(stc_path, overwrite=True)
 
     @load_decorator
     def load_ecd(self):
@@ -1445,7 +1448,7 @@ class Group(BaseLoading):
     def save_ga_evokeds(self, ga_evokeds):
         for trial in ga_evokeds:
             mne.evoked.write_evokeds(self.ga_evokeds_paths[trial],
-                                     ga_evokeds[trial])
+                                     ga_evokeds[trial], overwrite=True)
 
     @load_decorator
     def load_ga_tfr(self):
@@ -1472,7 +1475,7 @@ class Group(BaseLoading):
     @save_decorator
     def save_ga_stc(self, ga_stcs):
         for trial in ga_stcs:
-            ga_stcs[trial].save(self.ga_stc_paths[trial])
+            ga_stcs[trial].save(self.ga_stc_paths[trial], overwrite=True)
 
     @load_decorator
     def load_ga_ltc(self):
