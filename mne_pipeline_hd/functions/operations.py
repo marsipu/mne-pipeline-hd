@@ -1103,6 +1103,7 @@ def create_forward_solution(meeg, n_jobs, ch_types):
 
 def estimate_noise_covariance(meeg, baseline, n_jobs, noise_cov_mode,
                               noise_cov_method, **kwargs):
+    # ToDo: method='factor_analysis' can only be used with rank='full'
     if noise_cov_mode == 'epochs' or meeg.erm is None:
         print('Noise Covariance on epochs-Baseline')
         epochs = meeg.load_epochs()
