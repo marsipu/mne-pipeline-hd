@@ -1824,7 +1824,9 @@ class ParametersDock(QDockWidget):
                 except:  # noqa: E722
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
-                        f'Initialization of Parameter-Widget "{idx}" failed:\n'
+                        f'Initialization of Parameter-Widget "{idx}" '
+                        f'with value {self.param_guis[idx].param_value} '
+                        f'failed:\n'
                         f'{err_tuple[1]}')
 
                 layout.addWidget(self.param_guis[idx])
