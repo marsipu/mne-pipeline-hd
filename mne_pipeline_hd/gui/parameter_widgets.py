@@ -904,12 +904,10 @@ class DictGui(Param):
         self.init_ui(dict_layout)
 
     def set_value(self, value):
-        # In CI tests, apparently None is read as NaN from .csv, can be
-        # reversed to specific None check when moving away from .csv and pandas
-        if pd.notna(value):
+        if value is not None:
             self.cached_value = value
         self.check_groupbox_state()
-        if pd.notna(value):
+        if value is not None:
             if self.param_unit:
                 val_str = ', '.join(
                     [f'{k} {self.param_unit}: {v} {self.param_unit}'

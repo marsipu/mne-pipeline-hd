@@ -1099,9 +1099,13 @@ class ImportFuncs(QDialog):
                 pd_params_path = join(self.cf.file_path.parent,
                                       f'{self.cf.pkg_name}_parameters.csv')
                 self.cf.add_pd_funcs = pd.read_csv(pd_funcs_path,
-                                                   sep=';', index_col=0)
+                                                   sep=';', index_col=0,
+                                                   na_values=[''],
+                                                   keep_default_na=False)
                 self.cf.add_pd_params = pd.read_csv(pd_params_path,
-                                                    sep=';', index_col=0)
+                                                    sep=';', index_col=0,
+                                                    na_values=[''],
+                                                    keep_default_na=False)
 
                 # Can be removed soon, when nobody uses
                 # old packages anymore (10.11.2020)
@@ -1404,7 +1408,8 @@ class SavePkgDialog(QDialog):
                          f'{self.cf_dialog.pkg_name}_parameters.csv')
                 if isfile(pd_funcs_path):
                     read_pd_funcs = pd.read_csv(pd_funcs_path, sep=';',
-                                                index_col=0)
+                                                index_col=0, na_values=[''],
+                                                keep_default_na=False)
                     # Replace indexes from file with same name
                     drop_funcs = [f for f in read_pd_funcs.index
                                   if f in final_add_pd_funcs.index]
@@ -1413,7 +1418,8 @@ class SavePkgDialog(QDialog):
                         read_pd_funcs.append(final_add_pd_funcs)
                 if isfile(pd_params_path):
                     read_pd_params = pd.read_csv(pd_params_path, sep=';',
-                                                 index_col=0)
+                                                 index_col=0, na_values=[''],
+                                                 keep_default_na=False)
                     # Replace indexes from file with same name
                     drop_params = [p for p in read_pd_params.index if
                                    p in final_add_pd_params.index]
