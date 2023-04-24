@@ -1017,8 +1017,9 @@ def setup_src(fsmri, src_spacing, surface, n_jobs):
 
 def setup_vol_src(fsmri, vol_src_spacing):
     bem = fsmri.load_bem_solution()
-    vol_src = mne.setup_volume_source_space(fsmri.name, pos=vol_src_spacing, bem=bem,
-                                   subjects_dir=fsmri.subjects_dir)
+    vol_src = mne.setup_volume_source_space(
+        fsmri.name, pos=vol_src_spacing, bem=bem,
+        subjects_dir=fsmri.subjects_dir)
     fsmri.save_volume_source_space(vol_src)
 
 
