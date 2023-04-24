@@ -26,7 +26,8 @@ from vtkmodules.vtkRenderingCore import vtkCellPicker
 
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
-                                              SimpleList, SimpleDialog)
+                                              SimpleList, SimpleDialog,
+                                              ComboBox)
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
 from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
                                            get_exception_tuple,
@@ -601,7 +602,7 @@ class ComboGui(Param):
         """
         super().__init__(**kwargs)
         self.options = options
-        self.param_widget = QComboBox()
+        self.param_widget = ComboBox(scrollable=False)
         self.param_widget.activated.connect(self._get_param)
         for option in self.options:
             if isinstance(self.options, dict):
@@ -909,11 +910,10 @@ class DictGui(Param):
         if value is not None:
             if self.param_unit:
                 val_str = ', '.join(
-                    [f'{key} {self.param_unit}: {value} {self.param_unit}'
-                     for key, value in value.items()])
+                    [f'{k} {self.param_unit}: {v} {self.param_unit}'
+                     for k, v in value.items()])
             else:
-                val_str = ', '.join([f'{key}: {value}' for key, value in
-                                     value.items()])
+                val_str = ', '.join([f'{k}: {v}' for k, v in value.items()])
             if len(val_str) > self.value_string_length:
                 self.value_label.setText(
                     f'{val_str[:self.value_string_length]} ...')
@@ -1824,7 +1824,9 @@ class ParametersDock(QDockWidget):
                 except:  # noqa: E722
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
-                        f'Initiliazation of Parameter-Widget "{idx}" failed:\n'
+                        f'Initialization of Parameter-Widget "{idx}" '
+                        f'with value={default} '
+                        f'failed:\n'
                         f'{err_tuple[1]}')
 
                 layout.addWidget(self.param_guis[idx])

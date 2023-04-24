@@ -20,7 +20,8 @@ from mne_pipeline_hd.functions import operations, plot
 # changing func_args in functions.csv)
 with resources.path('mne_pipeline_hd.resource',
                     'functions.csv') as pd_funcs_path:
-    pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';', index_col=0)
+    pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';', index_col=0,
+                           na_values=[''], keep_default_na=False)
 
 for func_name in pd_funcs.index:
     module_name = pd_funcs.loc[func_name, 'module']

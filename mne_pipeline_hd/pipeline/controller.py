@@ -100,14 +100,16 @@ class Controller:
         with resources.path('mne_pipeline_hd.resource',
                             'functions.csv') as pd_funcs_path:
             self.pd_funcs = pd.read_csv(str(pd_funcs_path), sep=';',
-                                        index_col=0)
+                                        index_col=0, na_values=[''],
+                                        keep_default_na=False)
 
         # Pandas-DataFrame for contextual data of parameters
         # for basic functions (included with program)
         with resources.path('mne_pipeline_hd.resource',
                             'parameters.csv') as pd_params_path:
             self.pd_params = pd.read_csv(str(pd_params_path), sep=';',
-                                         index_col=0)
+                                         index_col=0, na_values=[''],
+                                         keep_default_na=False)
 
         # Import the basic- and custom-function-modules
         self.import_custom_modules()
@@ -328,9 +330,13 @@ class Controller:
                 if len(file_dict['modules']) == correct_count:
                     try:
                         read_pd_funcs = pd.read_csv(functions_path,
-                                                    sep=';', index_col=0)
+                                                    sep=';', index_col=0,
+                                                    na_values=[''],
+                                                    keep_default_na=False)
                         read_pd_params = pd.read_csv(parameters_path,
-                                                     sep=';', index_col=0)
+                                                     sep=';', index_col=0,
+                                                     na_values=[''],
+                                                     keep_default_na=False)
                     except:  # noqa: E722
                         traceback.print_exc()
                     else:
