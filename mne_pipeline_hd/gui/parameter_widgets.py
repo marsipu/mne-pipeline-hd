@@ -910,11 +910,10 @@ class DictGui(Param):
         if value is not None:
             if self.param_unit:
                 val_str = ', '.join(
-                    [f'{key} {self.param_unit}: {value} {self.param_unit}'
-                     for key, value in value.items()])
+                    [f'{k} {self.param_unit}: {v} {self.param_unit}'
+                     for k, v in value.items()])
             else:
-                val_str = ', '.join([f'{key}: {value}' for key, value in
-                                     value.items()])
+                val_str = ', '.join([f'{k}: {v}' for k, v in value.items()])
             if len(val_str) > self.value_string_length:
                 self.value_label.setText(
                     f'{val_str[:self.value_string_length]} ...')
@@ -1825,7 +1824,7 @@ class ParametersDock(QDockWidget):
                 except:  # noqa: E722
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
-                        f'Initiliazation of Parameter-Widget "{idx}" failed:\n'
+                        f'Initialization of Parameter-Widget "{idx}" failed:\n'
                         f'{err_tuple[1]}')
 
                 layout.addWidget(self.param_guis[idx])
