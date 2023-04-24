@@ -904,10 +904,12 @@ class DictGui(Param):
         self.init_ui(dict_layout)
 
     def set_value(self, value):
-        if value is not None:
+        # In CI tests, apparently None is read as NaN from .csv, can be
+        # reversed to specific None check when moving away from .csv and pandas
+        if pd.notna(value):
             self.cached_value = value
         self.check_groupbox_state()
-        if value is not None:
+        if pd.notna(value):
             if self.param_unit:
                 val_str = ', '.join(
                     [f'{k} {self.param_unit}: {v} {self.param_unit}'
@@ -1825,7 +1827,7 @@ class ParametersDock(QDockWidget):
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
                         f'Initialization of Parameter-Widget "{idx}" '
-                        f'with value {default} '
+                        f'with value={default} '
                         f'failed:\n'
                         f'{err_tuple[1]}')
 
