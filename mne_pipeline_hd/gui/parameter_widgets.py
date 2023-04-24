@@ -26,7 +26,8 @@ from vtkmodules.vtkRenderingCore import vtkCellPicker
 
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
-                                              SimpleList, SimpleDialog)
+                                              SimpleList, SimpleDialog,
+                                              ComboBox)
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
 from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
                                            get_exception_tuple,
@@ -601,7 +602,7 @@ class ComboGui(Param):
         """
         super().__init__(**kwargs)
         self.options = options
-        self.param_widget = QComboBox()
+        self.param_widget = ComboBox(scrollable=False)
         self.param_widget.activated.connect(self._get_param)
         for option in self.options:
             if isinstance(self.options, dict):

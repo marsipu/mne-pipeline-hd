@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QDialog,
                              QHBoxLayout, QLabel,
                              QListView, QPushButton, QScrollArea, QSizePolicy,
                              QSpinBox, QTabWidget, QTableView, QTreeView,
-                             QVBoxLayout, QWidget)
+                             QVBoxLayout, QWidget, QComboBox)
 
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.gui_utils import get_user_input_string
@@ -1157,6 +1157,16 @@ class DictTree(Base):
                          drag_drop=drag_drop,
                          parent=parent,
                          title=title, verbose=verbose)
+
+
+class ComboBox(QComboBox):
+    def __init__(self, scrollable=False, **kwargs):
+        self.scrollable = scrollable
+        super().__init__(**kwargs)
+
+    def wheelEvent(self, event):
+        if self.scrollable:
+            super().wheelEvent(event)
 
 
 class SimpleDialog(QDialog):
