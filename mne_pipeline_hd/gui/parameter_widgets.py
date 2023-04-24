@@ -1825,7 +1825,7 @@ class ParametersDock(QDockWidget):
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
                         f'Initialization of Parameter-Widget "{idx}" '
-                        f'with value {self.param_guis[idx].param_value} '
+                        f'with value {default} '
                         f'failed:\n'
                         f'{err_tuple[1]}')
 
