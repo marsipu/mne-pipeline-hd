@@ -1023,7 +1023,8 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_inverse_operator(self, inverse):
-        mne.minimum_norm.write_inverse_operator(self.inverse_path, inverse)
+        mne.minimum_norm.write_inverse_operator(self.inverse_path, inverse,
+                                                overwrite=True)
 
     @load_decorator
     def load_source_estimates(self):
