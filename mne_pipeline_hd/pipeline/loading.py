@@ -1255,10 +1255,10 @@ class FSMRI(BaseLoading):
 
     def _get_available_labels(self):
         labels = dict()
+        labels['Other'] = list()
         label_dir = join(self.subjects_dir, self.name, 'label')
         try:
             files = os.listdir(label_dir)
-            labels['Other'] = list()
             for label_path in tqdm(
                     [str(lp) for lp in files if lp[-6:] == '.label'],
                     desc='Loading labels...',
