@@ -707,7 +707,7 @@ class ListGui(Param):
         if value is not None:
             self.cached_value = value
         self.check_groupbox_state()
-        if value is not None:
+        if isinstance(value, list):
             if self.param_unit:
                 val_str = ', '.join(
                     [f'{item} {self.param_unit}' for item in value])
@@ -814,7 +814,7 @@ class CheckListGui(Param):
         if value is not None:
             self.cached_value = value
         self.check_groupbox_state()
-        if value is not None:
+        if isinstance(value, list):
             if self.param_unit:
                 val_str = ', '.join(
                     [f'{item} {self.param_unit}' for item in value])
@@ -903,11 +903,13 @@ class DictGui(Param):
 
         self.init_ui(dict_layout)
 
+    # ToDo: improve None-handling, maybe generalize
+    #  (sometimes error when value=float, probably nan)
     def set_value(self, value):
         if value is not None:
             self.cached_value = value
         self.check_groupbox_state()
-        if value is not None:
+        if isinstance(value, dict):
             if self.param_unit:
                 val_str = ', '.join(
                     [f'{k} {self.param_unit}: {v} {self.param_unit}'
@@ -1447,7 +1449,7 @@ class LabelGui(Param):
         if value is not None:
             self.cached_value = value
         self.check_groupbox_state()
-        if value is not None:
+        if isinstance(value, list):
             if self.param_unit:
                 val_str = ', '.join([f'{item}' for item in value])
             else:
