@@ -2,8 +2,7 @@
 PyQt5
 qtpy
 pyobjc-framework-Cocoa; sys_platform == "darwin"
-darkdetect
-qdarkstyle
+pyqtdarktheme
 
 # MNE-related
 mne

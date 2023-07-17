@@ -12,11 +12,10 @@ import os
 import sys
 from importlib import resources
 
-import qdarkstyle
+import qdarktheme
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication
-from qdarkstyle import DarkPalette, LightPalette
 
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
@@ -27,6 +26,8 @@ def main():
     app_name = 'mne-pipeline-hd'
     organization_name = 'marsipu'
     domain_name = 'https://github.com/marsipu/mne-pipeline-hd'
+
+    qdarktheme.enable_hi_dpi()
 
     app = QApplication.instance()
     if not app:
@@ -86,15 +87,24 @@ def main():
 
     # Set Style and Window-Icon
     app_style = QS().value('app_style')
+
+    # Legacy 20230717
+    if app_style not in ['dark', 'light', 'auto']:
+        app_style = 'auto'
+
     if app_style == 'dark':
-        app.setStyleSheet(qdarkstyle.load_stylesheet(palette=DarkPalette))
+        qdarktheme.setup_theme('dark')
         icon_name = 'mne_pipeline_icon_dark.png'
-    else:
+    elif app_style == 'light':
+        qdarktheme.setup_theme('light')
         icon_name = 'mne_pipeline_icon_light.png'
-        if app_style == 'light':
-            app.setStyleSheet(qdarkstyle.load_stylesheet(palette=LightPalette))
+    else:
+        qdarktheme.setup_theme('auto')
+        st = qdarktheme.load_stylesheet('auto')
+        if 'background:rgba(32, 33, 36, 1.000)' in st:
+            icon_name = 'mne_pipeline_icon_dark.png'
         else:
-            app.setStyle(app_style)
+            icon_name = 'mne_pipeline_icon_light.png'
 
     with resources.path('mne_pipeline_hd.resource', icon_name) as icon_path:
         app_icon = QIcon(str(icon_path))

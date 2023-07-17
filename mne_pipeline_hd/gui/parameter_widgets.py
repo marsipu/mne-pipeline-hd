@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                              QLineEdit, QPushButton, QSizePolicy, QSlider,
                              QSpinBox, QVBoxLayout, QWidget, QDockWidget,
                              QTabWidget, QScrollArea, QMessageBox,
-                             QStyleFactory, QColorDialog)
+                             QColorDialog)
 from mne.viz import Brain
 from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
@@ -1901,7 +1901,7 @@ class SettingsDlg(QDialog):
                     'alias': 'Application Style',
                     'description': 'Changes the application style '
                                    '(Restart required).',
-                    'options': ['light', 'dark'] + QStyleFactory().keys(),
+                    'options': ['light', 'dark', 'auto'],
                 }
             },
             'app_font': {
