@@ -1072,7 +1072,7 @@ class SubBadsWidget(QWidget):
     def init_ui(self):
         self.layout = QGridLayout()
 
-        file_list = self.pr.all_meeg + self.pr.all_erm
+        file_list = self.pr.all_meeg
         self.files_widget = CheckDictList(file_list, self.pr.meeg_bad_channels,
                                           title='Files')
         self.files_widget.currentChanged.connect(self.bad_dict_selected)

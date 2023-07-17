@@ -870,8 +870,6 @@ class MEEG(BaseLoading):
     @load_decorator
     def load_erm(self):
         erm_raw = mne.io.read_raw_fif(self.erm_path, preload=True)
-        if self.erm in self.pr.meeg_bad_channels:
-            erm_raw.info['bads'] = self.pr.meeg_bad_channels[self.erm]
         return erm_raw
 
     @load_decorator
