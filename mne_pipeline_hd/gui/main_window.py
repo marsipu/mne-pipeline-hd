@@ -349,12 +349,12 @@ class MainWindow(QMainWindow):
         #                         ' with separate processes, '
         #                         'but has a few limitations',
         #             default=0, return_integer=True))
-        self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='overwrite',
-                                       alias='Overwrite',
-                                       description='Check to overwrite files'
-                                                   ' even if their parameters '
-                                                   'where unchanged.',
-                                       groupbox_layout=False))
+        # self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='overwrite',
+        #                                alias='Overwrite',
+        #                                description='Check to overwrite files'
+        #                                            ' even if their parameters '
+        #                                            'where unchanged.',
+        #                                groupbox_layout=False))
         self.toolbar.addWidget(BoolGui(data=self.ct.settings,
                                        name='show_plots', alias='Show Plots',
                                        description='Do you want to show'
