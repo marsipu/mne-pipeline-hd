@@ -17,7 +17,7 @@ skip_by_annotation;;Filtering;['edge', 'bad_acq_skip'];;;ListGui;
 fir_pad;;Filtering;reflect_limited;;;StringGui;
 erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'none_select': True, 'min_val':0, 'max_val': 10000}
 stim_channels;Stimulation-Channels;events;['STI 001'];;Stimulation Channel(s);ListGui;
-min_duration;Minimum Duration;events;0.002;s;Minimum-Duration for events;FloatGui;{'min_val': 0, 'step': 0.001}
+min_duration;Minimum Duration;events;0.002;s;Minimum-Duration for events;FloatGui;{'min_val': 0, 'step': 0.001, 'decimals': 3}
 shortest_event;Shortest Event;events;2;sample;Shortest possible Event;IntGui;{'min_val': 0}
 adjust_timeline_by_msec;Adjust Time;events;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;Epoch-Timeframe;epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
