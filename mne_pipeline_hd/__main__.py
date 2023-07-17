@@ -87,6 +87,11 @@ def main():
 
     # Set Style and Window-Icon
     app_style = QS().value('app_style')
+
+    # Legacy 20230717
+    if app_style not in ['dark', 'light', 'auto']:
+        app_style = 'auto'
+
     if app_style == 'dark':
         qdarktheme.setup_theme('dark')
         icon_name = 'mne_pipeline_icon_dark.png'
