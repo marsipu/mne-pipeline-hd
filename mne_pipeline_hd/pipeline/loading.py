@@ -1435,7 +1435,7 @@ class Group(BaseLoading):
                 yield obj
             elif data_type in obj.io_dict:
                 data = obj.io_dict[data_type]['load']()
-                yield data
+                yield data, obj
             else:
                 logging.error(f'{data_type} is not valid for {obj_type}')
 
