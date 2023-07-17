@@ -29,6 +29,6 @@
         "mne_path": "",
         "app_font": "AnyStyle",
         "app_font_size": 10,
-        "app_style": "Fusion"
+        "app_style": "auto"
     }
 }

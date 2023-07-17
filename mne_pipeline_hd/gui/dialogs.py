@@ -331,8 +331,8 @@ class AboutDialog(QDialog):
                'mne-python>Website</a>' \
                '<a href=https://github.com/mne-tools/mne-python>' \
                'GitHub</a><br>' \
-               '<a href=https://github.com/ColinDuquesnoy/' \
-               'QDarkStyleSheet>qdarkstyle</a><br>' \
+               '<a href=https://github.com/5yutan5/PyQtDarkTheme>' \
+               'pyqtdarktheme</a><br>' \
                '<br>' \
                '<b>Licensed under:</b><br>' \
                + license_text
