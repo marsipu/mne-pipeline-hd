@@ -9,6 +9,8 @@ License: GPL-3.0
 import json
 import logging
 import os
+import subprocess
+import sys
 from os.path import isdir, join, isfile
 
 from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
@@ -52,6 +54,42 @@ renamed_parameters = {
         'Evokeds (ECG)': 'evoked (ECG)'
     }
 }
+
+new_packages = {
+    'qdarktheme': {
+        'install_alias': 'pyqtdarktheme',
+        'replaced': ['qdarkstyle', 'darkdetect']
+    }
+}
+
+
+def install_package(package_name):
+    print(f'Installing {package_name}...')
+    print(subprocess.check_output([sys.executable,
+                                   '-m', 'pip', 'install', package_name],
+                                  text=True))
+
+
+def legacy_import_check():
+    for new, old in new_packages.items():
+        try:
+            __import__(new)
+        except ImportError:
+            msg = f'The package(s) {old["replaced"]} has been ' \
+                  f'replaced with {new}.\n' \
+                  'Do you want to install the new package now? [y/n]'
+            ans = input(msg).lower()
+            if ans == 'y':
+                try:
+                    install_name = old.get('install_alias', new)
+                    install_package(install_name)
+                except subprocess.CalledProcessError:
+                    print('Installation failed!')
+                else:
+                    return
+            print(f'Please install the new package {new} manually with:\n\n'
+                  f'> pip install {new}')
+            sys.exit(1)
 
 
 def transfer_file_params_to_single_subject(ct):

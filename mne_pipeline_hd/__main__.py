@@ -12,6 +12,11 @@ import os
 import sys
 from importlib import resources
 
+# Check for changes in required packages
+from mne_pipeline_hd.pipeline.legacy import legacy_import_check
+
+legacy_import_check()
+
 import qdarktheme
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QFont
