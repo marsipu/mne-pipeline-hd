@@ -11,6 +11,7 @@ mne-qt-browser
 autoreject
 h5io
 vtk
+nibabel
 
 # Pipeline-related
 psutil

@@ -6,20 +6,28 @@ Pipeline-GUI for Analysis with MNE-Python
 @github: https://github.com/marsipu/mne-pipeline-hd
 License: GPL-3.0
 """
+# flake: noqa E402
 
 import logging
 import os
 import sys
 from importlib import resources
 
-import qdarktheme
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtWidgets import QApplication
+# Check for changes in required packages
+from mne_pipeline_hd.pipeline.legacy import legacy_import_check
 
-from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
-from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
-from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS
+legacy_import_check()
+
+import qdarktheme  # noqa: E402
+from PyQt5.QtCore import QTimer, Qt  # noqa: E402
+from PyQt5.QtGui import QIcon, QFont  # noqa: E402
+from PyQt5.QtWidgets import QApplication  # noqa: E402
+
+from mne_pipeline_hd.gui.gui_utils import \
+    (StdoutStderrStream, UncaughtHook)  # noqa: E402
+from mne_pipeline_hd.gui.welcome_window import WelcomeWindow  # noqa: E402
+from mne_pipeline_hd.pipeline.pipeline_utils import \
+    (ismac, islin, QS)  # noqa: E402
 
 
 def main():

@@ -9,6 +9,8 @@ License: GPL-3.0
 import json
 import logging
 import os
+import subprocess
+import sys
 from os.path import isdir, join, isfile
 
 from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
@@ -52,6 +54,62 @@ renamed_parameters = {
         'Evokeds (ECG)': 'evoked (ECG)'
     }
 }
+
+new_packages = {
+    'qdarktheme': {
+        'install_alias': 'pyqtdarktheme',
+        'replaced': ['qdarkstyle']
+    }
+}
+
+
+def install_package(package_name):
+    print(f'Installing {package_name}...')
+    print(subprocess.check_output([sys.executable, '-m', 'pip', 'install',
+                                   package_name], text=True))
+
+
+def uninstall_package(package_name):
+    print(f'Uninstalling {package_name}...')
+    print(subprocess.check_output([sys.executable, '-m', 'pip', 'uninstall',
+                                   '-y', package_name], text=True))
+
+
+def legacy_import_check(test_package=None):
+    """
+    This function checks for recent package changes
+    and offers installation or manual installation instructions.
+    """
+    # For testing purposes
+    if test_package is not None:
+        new_packages[test_package] = {}
+
+    for new, old in new_packages.items():
+        replaced = old.get('replaced', None)
+        try:
+            __import__(new)
+        except ImportError:
+            if replaced is None:
+                print(f'The package {new} is required for this application.\n')
+            else:
+                print(f'The package(s) {old["replaced"]} '
+                      f'has been replaced with {new}.\n')
+            ans = input('Do you want to install the '
+                        'new package now? [y/n]').lower()
+            if ans == 'y':
+                try:
+                    install_name = old.get('install_alias', new)
+                    install_package(install_name)
+                    if replaced is not None:
+                        for old_package in replaced:
+                            uninstall_package(old_package)
+                except subprocess.CalledProcessError:
+                    print('Installation failed!')
+                else:
+                    return
+            print(f'Please install the new package {new} manually with:\n\n'
+                  f'> pip install {new}')
+            sys.exit(1)
 
 
 def transfer_file_params_to_single_subject(ct):
