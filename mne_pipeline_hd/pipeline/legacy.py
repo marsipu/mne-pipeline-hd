@@ -86,8 +86,8 @@ def legacy_import_check(test_package=None):
         try:
             __import__(import_name)
         except ImportError:
-            print(
-                f'The package {import_name} is required for this application.\n')
+            print(f'The package {import_name} '
+                  f'is required for this application.\n')
             ans = input('Do you want to install the '
                         'new package now? [y/n]').lower()
             if ans == 'y':
