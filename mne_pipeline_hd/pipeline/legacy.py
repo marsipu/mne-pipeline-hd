@@ -55,11 +55,9 @@ renamed_parameters = {
     }
 }
 
+# New packages with {import_name: install_name} (can be the same)
 new_packages = {
-    'qdarktheme': {
-        'install_alias': 'pyqtdarktheme',
-        'replaced': ['qdarkstyle']
-    }
+    'qdarktheme': 'pyqtdarktheme'
 }
 
 
@@ -82,33 +80,26 @@ def legacy_import_check(test_package=None):
     """
     # For testing purposes
     if test_package is not None:
-        new_packages[test_package] = {}
+        new_packages[test_package] = test_package
 
-    for new, old in new_packages.items():
-        replaced = old.get('replaced', None)
+    for import_name, install_name in new_packages.items():
         try:
-            __import__(new)
+            __import__(import_name)
         except ImportError:
-            if replaced is None:
-                print(f'The package {new} is required for this application.\n')
-            else:
-                print(f'The package(s) {old["replaced"]} '
-                      f'has been replaced with {new}.\n')
+            print(f'The package {import_name} '
+                  f'is required for this application.\n')
             ans = input('Do you want to install the '
                         'new package now? [y/n]').lower()
             if ans == 'y':
                 try:
-                    install_name = old.get('install_alias', new)
                     install_package(install_name)
-                    if replaced is not None:
-                        for old_package in replaced:
-                            uninstall_package(old_package)
                 except subprocess.CalledProcessError:
                     print('Installation failed!')
                 else:
                     return
-            print(f'Please install the new package {new} manually with:\n\n'
-                  f'> pip install {new}')
+            print(f'Please install the new package {import_name} '
+                  f'manually with:\n\n'
+                  f'> pip install {install_name}')
             sys.exit(1)
 
 
