@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Pipeline-GUI for Analysis with MNE-Python
-@author: Martin Schulz
-@email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne-pipeline-hd
-License: GPL-3.0
+Authors: Martin Schulz <dev@mgschulz.de>
+License: BSD 3-Clause
+Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 from ast import literal_eval
@@ -79,7 +77,7 @@ class BaseListModel(QAbstractListModel):
         if self.drag_drop:
             if index.isValid():
                 return default_flags | Qt.ItemIsDragEnabled \
-                       | Qt.ItemIsDropEnabled
+                    | Qt.ItemIsDropEnabled
             else:
                 return default_flags | Qt.ItemIsDropEnabled
         else:
@@ -752,7 +750,7 @@ class AddFilesModel(BasePandasModel):
     def flags(self, index=QModelIndex()):
         if self._data.columns[index.column()] == 'Empty-Room?':
             return QAbstractItemModel.flags(self, index) \
-                   | Qt.ItemIsUserCheckable
+                | Qt.ItemIsUserCheckable
 
         return QAbstractItemModel.flags(self, index)
 

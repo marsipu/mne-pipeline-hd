@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Pipeline-GUI for Analysis with MNE-Python
-@author: Martin Schulz
-@email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne-pipeline-hd
-License: GPL-3.0
+Authors: Martin Schulz <dev@mgschulz.de>
+License: BSD 3-Clause
+Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import inspect
@@ -738,7 +736,7 @@ class CustomFunctionImport(QDialog):
                  for x in self.add_pd_params['functions']]]
             if pd.notna(
                     self.add_pd_params.loc[function_params.index,
-                                           self.oblig_params]).all().all():
+                    self.oblig_params]).all().all():
                 self.func_chkl.setPixmap(self.yes_icon.pixmap(16, 16))
                 self.add_pd_funcs.loc[self.current_function, 'ready'] = 1
             else:
@@ -807,7 +805,7 @@ class CustomFunctionImport(QDialog):
     def pdescription_changed(self, text):
         if self.current_parameter:
             self.add_pd_params.loc[self.current_parameter,
-                                   'description'] = text
+            'description'] = text
 
     def populate_target_cmbx(self):
         self.target_cmbx.insertItems(0, ['MEEG', 'FSMRI', 'Group', 'Other'])
@@ -832,7 +830,7 @@ class CustomFunctionImport(QDialog):
     def target_cmbx_changed(self, idx):
         if self.current_function:
             self.add_pd_funcs.loc[self.current_function,
-                                  'target'] = self.target_cmbx.itemText(idx)
+            'target'] = self.target_cmbx.itemText(idx)
             self.target_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
@@ -842,7 +840,7 @@ class CustomFunctionImport(QDialog):
         self.tab_cmbx.setCurrentIndex(idx)
         if self.current_function:
             self.add_pd_funcs.loc[self.current_function,
-                                  'tab'] = self.tab_cmbx.itemText(idx)
+            'tab'] = self.tab_cmbx.itemText(idx)
             self.tab_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
@@ -893,11 +891,11 @@ class CustomFunctionImport(QDialog):
                 # Save the gui_args in add_pd_params
                 gui_args['options'] = options
                 self.add_pd_params.loc[self.current_parameter,
-                                       'gui_args'] = str(gui_args)
+                'gui_args'] = str(gui_args)
 
             # Check, if default_value and gui_type match
             if pd.notna(self.add_pd_params.loc[self.current_parameter,
-                                               'default']):
+            'default']):
                 result, _ = self.test_param_gui(
                     default_string=self.add_pd_params.loc[
                         self.current_parameter, 'default'],
@@ -907,7 +905,7 @@ class CustomFunctionImport(QDialog):
 
             if not result:
                 self.add_pd_params.loc[self.current_parameter,
-                                       'gui_type'] = text
+                'gui_type'] = text
                 self.guitype_chkl.setPixmap(
                     self.yes_icon.pixmap(QSize(16, 16)))
                 self.check_param_setup()
@@ -915,7 +913,7 @@ class CustomFunctionImport(QDialog):
             else:
                 self.guitype_cmbx.setCurrentIndex(-1)
                 self.add_pd_params.loc[self.current_parameter,
-                                       'gui_type'] = None
+                'gui_type'] = None
                 self.check_param_setup()
                 self.check_func_setup()
 
@@ -924,7 +922,7 @@ class CustomFunctionImport(QDialog):
             # Check, if default_value and gui_type match
             if pd.notna(
                     self.add_pd_params.loc[self.current_parameter,
-                                           ['default', 'gui_type']]).all():
+                    ['default', 'gui_type']]).all():
                 result, _ = self.test_param_gui(
                     default_string=self.add_pd_params.loc[
                         self.current_parameter, 'default'],
@@ -936,10 +934,10 @@ class CustomFunctionImport(QDialog):
 
             if not result:
                 self.add_pd_params.loc[self.current_parameter,
-                                       'gui_args'] = str(gui_args)
+                'gui_args'] = str(gui_args)
             else:
                 self.add_pd_params.loc[self.current_parameter,
-                                       'gui_args'] = None
+                'gui_args'] = None
 
     def get_functions(self):
         # Clear Function- and Parameter-DataFrame
@@ -991,9 +989,9 @@ class CustomFunctionImport(QDialog):
         else:
             alias = self.current_parameter
         if pd.notna(self.add_pd_params.loc[self.current_parameter,
-                                           'description']):
+        'description']):
             description = self.add_pd_params.loc[self.current_parameter,
-                                                 'description']
+            'description']
         else:
             description = None
         if pd.notna(self.add_pd_params.loc[self.current_parameter, 'unit']):
@@ -1242,10 +1240,10 @@ class SelectDependencies(QDialog):
         super().__init__(cf_dialog)
         self.cf_dialog = cf_dialog
         if pd.notna(cf_dialog.add_pd_funcs.loc[cf_dialog.current_function,
-                                               'dependencies']):
+        'dependencies']):
             self.dpd_list = literal_eval(
                 cf_dialog.add_pd_funcs.loc[cf_dialog.current_function,
-                                           'dependencies'])
+                'dependencies'])
         else:
             self.dpd_list = []
 
@@ -1280,7 +1278,7 @@ class SelectDependencies(QDialog):
 
     def close_dlg(self):
         self.cf_dialog.add_pd_funcs.loc[self.cf_dialog.current_function,
-                                        'dependencies'] = str(
+        'dependencies'] = str(
             self.dpd_list)
         self.close()
 
@@ -1293,13 +1291,13 @@ class TestParamGui(QDialog):
         self.test_parameters = dict()
 
         default_string = self.cf.add_pd_params.loc[self.cf.current_parameter,
-                                                   'default']
+        'default']
         gui_type = self.cf.add_pd_params.loc[self.cf.current_parameter,
-                                             'gui_type']
+        'gui_type']
         try:
             gui_args = literal_eval(
                 self.cf.add_pd_params.loc[self.cf.current_parameter,
-                                          'gui_args'])
+                'gui_args'])
         except (SyntaxError, ValueError):
             gui_args = {}
 
@@ -1315,7 +1313,7 @@ class TestParamGui(QDialog):
 
         # Allow Enter-Press without closing the dialog
         if self.cf.add_pd_params.loc[self.cf.current_parameter,
-                                     'gui_type'] == 'FuncGui':
+        'gui_type'] == 'FuncGui':
             void_bt = QPushButton()
             void_bt.setDefault(True)
             layout.addWidget(void_bt)
