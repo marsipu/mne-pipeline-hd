@@ -9,15 +9,20 @@ from ast import literal_eval
 from datetime import datetime
 
 import pandas as pd
-from PyQt5.QtCore import (QAbstractItemModel, QAbstractListModel,
-                          QAbstractTableModel, QModelIndex, Qt)
+from PyQt5.QtCore import (
+    QAbstractItemModel,
+    QAbstractListModel,
+    QAbstractTableModel,
+    QModelIndex,
+    Qt,
+)
 from PyQt5.QtGui import QBrush, QFont
 
 from mne_pipeline_hd.gui.gui_utils import get_std_icon
 
 
 class BaseListModel(QAbstractListModel):
-    """ A basic List-Model
+    """A basic List-Model
 
     Parameters
     ----------
@@ -44,29 +49,29 @@ class BaseListModel(QAbstractListModel):
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
             if self.show_index:
-                return f'{index.row()}: {self.getData(index)}'
+                return f"{index.row()}: {self.getData(index)}"
             else:
                 return str(self.getData(index))
         elif role == Qt.EditRole:
             return str(self.getData(index))
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self, *args, **kwargs):
         return len(self._data)
 
-    def insertRows(self, row, count, index=QModelIndex()):
-        self.beginInsertRows(index, row, row + count - 1)
+    def insertRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginInsertRows(parent, row, row + count - 1)
         n = 0
         for pos in range(row, row + count):
-            item_name = f'__new{n}__'
+            item_name = f"__new{n}__"
             while item_name in self._data:
                 n += 1
-                item_name = f'__new{n}__'
+                item_name = f"__new{n}__"
             self._data.insert(pos, item_name)
         self.endInsertRows()
         return True
 
-    def removeRows(self, row, count, index=QModelIndex()):
-        self.beginRemoveRows(index, row, row + count - 1)
+    def removeRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, row, row + count - 1)
         for item in [self._data[i] for i in range(row, row + count)]:
             self._data.remove(item)
         self.endRemoveRows()
@@ -76,8 +81,7 @@ class BaseListModel(QAbstractListModel):
         default_flags = QAbstractListModel.flags(self, index)
         if self.drag_drop:
             if index.isValid():
-                return default_flags | Qt.ItemIsDragEnabled \
-                    | Qt.ItemIsDropEnabled
+                return default_flags | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
             else:
                 return default_flags | Qt.ItemIsDropEnabled
         else:
@@ -104,7 +108,7 @@ class EditListModel(BaseListModel):
     def __init__(self, data, show_index=False, drag_drop=False, **kwargs):
         super().__init__(data, show_index, drag_drop, **kwargs)
 
-    def flags(self, index=QModelIndex()):
+    def flags(self, index):
         default_flags = BaseListModel.flags(self, index)
         if index.isValid():
             return default_flags | Qt.ItemIsEditable
@@ -139,8 +143,15 @@ class CheckListModel(BaseListModel):
 
     """
 
-    def __init__(self, data, checked, one_check=False, show_index=False,
-                 drag_drop=False, **kwargs):
+    def __init__(
+        self,
+        data,
+        checked,
+        one_check=False,
+        show_index=False,
+        drag_drop=False,
+        **kwargs,
+    ):
         super().__init__(data, show_index, drag_drop, **kwargs)
         self.one_check = one_check
 
@@ -154,13 +165,13 @@ class CheckListModel(BaseListModel):
         else:
             self._checked = checked
 
-    def getChecked(self, index=QModelIndex()):
+    def getChecked(self, index):
         return self.checked[index.row()]
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
             if self.show_index:
-                return f'{index.row()}: {self.getData(index)}'
+                return f"{index.row()}: {self.getData(index)}"
             else:
                 return str(self.getData(index))
 
@@ -183,7 +194,7 @@ class CheckListModel(BaseListModel):
             return True
         return False
 
-    def flags(self, index=QModelIndex()):
+    def flags(self, index):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
 
 
@@ -214,18 +225,26 @@ class CheckDictModel(BaseListModel):
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data, check_dict, show_index=False, drag_drop=False,
-                 yes_bt=None, no_bt=None, **kwargs):
+    def __init__(
+        self,
+        data,
+        check_dict,
+        show_index=False,
+        drag_drop=False,
+        yes_bt=None,
+        no_bt=None,
+        **kwargs,
+    ):
         super().__init__(data, show_index, drag_drop, **kwargs)
         self._check_dict = check_dict
 
-        self.yes_bt = yes_bt or 'SP_DialogApplyButton'
-        self.no_bt = no_bt or 'SP_DialogCancelButton'
+        self.yes_bt = yes_bt or "SP_DialogApplyButton"
+        self.no_bt = no_bt or "SP_DialogCancelButton"
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
             if self.show_index:
-                return f'{index.row()}: {self.getData(index)}'
+                return f"{index.row()}: {self.getData(index)}"
             else:
                 return str(self.getData(index))
         elif role == Qt.EditRole:
@@ -264,10 +283,16 @@ class CheckDictEditModel(CheckDictModel, EditListModel):
     https://doc.qt.io/qt-5/qstyle.html#StandardPixmap-enum
     """
 
-    def __init__(self, data, check_dict, show_index=False, drag_drop=False,
-                 yes_bt=None, no_bt=None):
-        super().__init__(data, check_dict, show_index, drag_drop, yes_bt,
-                         no_bt)
+    def __init__(
+        self,
+        data,
+        check_dict,
+        show_index=False,
+        drag_drop=False,
+        yes_bt=None,
+        no_bt=None,
+    ):
+        super().__init__(data, check_dict, show_index, drag_drop, yes_bt, no_bt)
         # EditListModel doesn't have to be initialized
         # because in __init__ of EditListModel
         # only BaseListModel is initialized which is already done
@@ -296,7 +321,7 @@ class BaseDictModel(QAbstractTableModel):
         else:
             self._data = data
 
-    def getData(self, index=QModelIndex()):
+    def getData(self, index):
         try:
             if index.column() == 0:
                 return list(self._data.keys())[index.row()]
@@ -305,7 +330,7 @@ class BaseDictModel(QAbstractTableModel):
         # Happens, when a duplicate key is entered
         except IndexError:
             self.layoutChanged.emit()
-            return ''
+            return ""
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole or role == Qt.EditRole:
@@ -315,16 +340,16 @@ class BaseDictModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 if idx == 0:
-                    return 'Key'
+                    return "Key"
                 elif idx == 1:
-                    return 'Value'
+                    return "Value"
             elif orientation == Qt.Vertical:
                 return str(idx)
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self, parent=None, *args, **kwargs):
         return len(self._data)
 
-    def columnCount(self, index=QModelIndex()):
+    def columnCount(self, parent=None, *args, **kwargs):
         return 2
 
 
@@ -357,8 +382,7 @@ class EditDictModel(BaseDictModel):
             except (SyntaxError, ValueError):
                 pass
             if index.column() == 0:
-                self._data[value] = self._data.pop(
-                    list(self._data.keys())[index.row()])
+                self._data[value] = self._data.pop(list(self._data.keys())[index.row()])
             elif index.column() == 1:
                 self._data[list(self._data.keys())[index.row()]] = value
             else:
@@ -369,30 +393,30 @@ class EditDictModel(BaseDictModel):
 
         return False
 
-    def flags(self, index=QModelIndex()):
+    def flags(self, index):
         if not self.only_edit:
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-        elif index.column() == 0 and self.only_edit == 'keys':
+        elif index.column() == 0 and self.only_edit == "keys":
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-        elif index.column() == 1 and self.only_edit == 'values':
+        elif index.column() == 1 and self.only_edit == "values":
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
         else:
             return QAbstractItemModel.flags(self, index)
 
-    def insertRows(self, row, count, index=QModelIndex()):
-        self.beginInsertRows(index, row, row + count - 1)
+    def insertRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginInsertRows(parent, row, row + count - 1)
         for n in range(count):
-            key_name = f'__new{n}__'
+            key_name = f"__new{n}__"
             while key_name in self._data.keys():
                 n += 1
-                key_name = f'__new{n}__'
-            self._data[key_name] = ''
+                key_name = f"__new{n}__"
+            self._data[key_name] = ""
         self.endInsertRows()
 
         return True
 
-    def removeRows(self, row, count, index=QModelIndex()):
-        self.beginRemoveRows(index, row, row + count - 1)
+    def removeRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, row, row + count - 1)
         for n in range(count):
             self._data.pop(list(self._data.keys())[row + n])
         self.endRemoveRows()
@@ -417,7 +441,7 @@ class BasePandasModel(QAbstractTableModel):
         else:
             self._data = data
 
-    def getData(self, index=QModelIndex()):
+    def getData(self, index):
         return self._data.iloc[index.row(), index.column()]
 
     def data(self, index, role=None):
@@ -431,15 +455,15 @@ class BasePandasModel(QAbstractTableModel):
             elif orientation == Qt.Vertical:
                 return str(self._data.index[idx])
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self, parent=None, *args, **kwargs):
         return len(self._data.index)
 
-    def columnCount(self, index=QModelIndex()):
+    def columnCount(self, parent=None, *args, **kwargs):
         return len(self._data.columns)
 
 
 class EditPandasModel(BasePandasModel):
-    """ Editable TableModel for Pandas DataFrames
+    """Editable TableModel for Pandas DataFrames
     Parameters
     ----------
     data : pandas.DataFrame | None
@@ -493,67 +517,73 @@ class EditPandasModel(BasePandasModel):
 
         return False
 
-    def flags(self, index=QModelIndex()):
+    def flags(self, index):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
-    def insertRows(self, row, count, index=QModelIndex()):
-        self.beginInsertRows(index, row, row + count - 1)
-        add_data = pd.DataFrame(columns=self._data.columns,
-                                index=[r for r in range(count)])
+    def insertRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginInsertRows(parent, row, row + count - 1)
+        add_data = pd.DataFrame(
+            columns=self._data.columns, index=[r for r in range(count)]
+        )
         if row == 0:
             self._data = pd.concat([add_data, self._data])
         elif row == len(self._data.index):
             self._data = self._data.append(add_data)
         else:
-            self._data = pd.concat([self._data.iloc[:row], add_data,
-                                    self._data.iloc[row:]])
+            self._data = pd.concat(
+                [self._data.iloc[:row], add_data, self._data.iloc[row:]]
+            )
         self.endInsertRows()
 
         return True
 
-    def insertColumns(self, column, count, index=QModelIndex()):
-        self.beginInsertColumns(index, column, column + count - 1)
-        add_data = pd.DataFrame(index=self._data.index,
-                                columns=[c for c in range(count)])
+    def insertColumns(self, column, count, parent=None, *args, **kwargs):
+        self.beginInsertColumns(parent, column, column + count - 1)
+        add_data = pd.DataFrame(
+            index=self._data.index, columns=[c for c in range(count)]
+        )
         if column == 0:
             self._data = pd.concat([add_data, self._data], axis=1)
         elif column == len(self._data.columns):
             self._data = pd.concat([self._data, add_data], axis=1)
         else:
             self._data = pd.concat(
-                [self._data.iloc[:, :column], add_data,
-                 self._data.iloc[:, column:]], axis=1)
+                [self._data.iloc[:, :column], add_data, self._data.iloc[:, column:]],
+                axis=1,
+            )
         self.endInsertColumns()
 
         return True
 
-    def removeRows(self, row, count, index=QModelIndex()):
-        self.beginRemoveRows(index, row, row + count - 1)
+    def removeRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, row, row + count - 1)
         # Can't use DataFrame.drop() here,
         # because there could be rows with similar index-labels
         if row == 0:
-            self._data = self._data.iloc[row + count:]
+            self._data = self._data.iloc[row + count :]
         elif row + count >= len(self._data.index):
             self._data = self._data.iloc[:row]
         else:
-            self._data = pd.concat([self._data.iloc[:row],
-                                    self._data.iloc[row + count:]])
+            self._data = pd.concat(
+                [self._data.iloc[:row], self._data.iloc[row + count :]]
+            )
         self.endRemoveRows()
 
         return True
 
-    def removeColumns(self, column, count, index=QModelIndex()):
-        self.beginRemoveColumns(index, column, column + count - 1)
+    def removeColumns(self, column, count, parent=None, *args, **kwargs):
+        self.beginRemoveColumns(parent, column, column + count - 1)
         # Can't use DataFrame.drop() here,
         # because there could be columns with similar column-labels
         if column == 0:
-            self._data = self._data.iloc[:, column + count:]
+            self._data = self._data.iloc[:, column + count :]
         elif column + count >= len(self._data.columns):
             self._data = self._data.iloc[:, :column]
         else:
             self._data = pd.concat(
-                [self._data.iloc[:, :column],
-                 self._data.iloc[:, column + count:]], axis=1)
+                [self._data.iloc[:, :column], self._data.iloc[:, column + count :]],
+                axis=1,
+            )
         self.endRemoveColumns()
 
         return True
@@ -596,7 +626,8 @@ class TreeItem:
     def insertChild(self, position):
         if 0 <= position < len(self._children):
             self._children.insert(
-                position, TreeItem([f'__new__{len(self._children)}'], self))
+                position, TreeItem([f"__new__{len(self._children)}"], self)
+            )
             return True
         return False
 
@@ -608,7 +639,7 @@ class TreeItem:
 
     def insertColumn(self, position):
         if 0 <= position < len(self._data):
-            self._data.insert(position, f'__new__{len(self._data)}')
+            self._data.insert(position, f"__new__{len(self._data)}")
             for child in self._children:
                 child.insertColumns(position)
             return True
@@ -625,16 +656,16 @@ class TreeItem:
 
 class TreeModel(QAbstractItemModel):
     """Tree-Model as in
-     https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
+    https://doc.qt.io/qt-5/qtwidgets-itemviews-simpletreemodel-example.html"""
 
     def __init__(self, data, n_columns=1, headers=None, parent=None):
         super().__init__(parent)
         self._data = data
         self._n_columns = n_columns
         if headers is None:
-            headers = ['' for i in range(n_columns)]
+            headers = ["" for _ in range(n_columns)]
         elif len(headers) < n_columns:
-            headers += ['' for i in range(n_columns - headers)]
+            headers += ["" for _ in range(n_columns - headers)]
         elif len(headers) > n_columns:
             headers = headers[:n_columns]
         self._headers = headers
@@ -647,7 +678,7 @@ class TreeModel(QAbstractItemModel):
             parent = TreeItem(self._headers)
 
         for key, value in datadict.items():
-            data = [key] + ['' for i in range(self._n_columns - 1)]
+            data = [key] + ["" for _ in range(self._n_columns - 1)]
             tree_item = TreeItem(data, parent)
             if isinstance(value, dict):
                 child_item = self.dict_to_items(value, tree_item)
@@ -662,55 +693,53 @@ class TreeModel(QAbstractItemModel):
             item = index.internalPointer()
             return item.data(index.column())
 
-    def data(self, index: QModelIndex, role: int = ...) -> object:
+    def data(self, index, role=None):
         if role == Qt.DisplayRole:
             return self.getData(index)
 
-    def index(self, row: int, column: int, parent: QModelIndex = ...) \
-            -> QModelIndex:
+    def index(self, row, column, parent=None, *args, **kwargs):
         if self.hasIndex(row, column, parent):
             if parent.isValid():
-                parentItem = parent.internalPointer()
+                parent_item = parent.internalPointer()
             else:
-                parentItem = self.root_item
+                parent_item = self.root_item
 
-            childItem = parentItem.child(row)
-            if childItem is not None:
-                return self.createIndex(row, column, childItem)
+            child_item = parent_item.child(row)
+            if child_item is not None:
+                return self.createIndex(row, column, child_item)
         return QModelIndex()
 
-    def parent(self, child: QModelIndex) -> QModelIndex:
+    def parent(self, child=None):
         if child.isValid():
-            childItem = child.internalPointer()
-            parentItem = childItem._parent
+            child_item = child.internalPointer()
+            parent_item = child_item._parent
 
-            if parentItem != self.root_item:
-                return self.createIndex(parentItem.row(), 0, parentItem)
+            if parent_item != self.root_item:
+                return self.createIndex(parent_item.row(), 0, parent_item)
         return QModelIndex()
 
-    def rowCount(self, parent: QModelIndex = ...) -> int:
+    def rowCount(self, parent=None, *args, **kwargs):
         if parent.column() > 0:
             return 0
 
         if parent.isValid():
-            parentItem = parent.internalPointer()
+            parent_item = parent.internalPointer()
         else:
-            parentItem = self.root_item
+            parent_item = self.root_item
 
-        return parentItem.childCount()
+        return parent_item.childCount()
 
-    def columnCount(self, parent: QModelIndex = ...) -> int:
+    def columnCount(self, parent=None, *args, **kwargs):
         if parent.isValid():
             return parent.internalPointer().columnCount()
         return self.root_item.columnCount()
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+    def flags(self, index):
         if index.isValid():
             return QAbstractItemModel.flags(self, index)
         return Qt.NoItemFlags
 
-    def headerData(self, section: int,
-                   orientation: Qt.Orientation, role: int = ...) -> object:
+    def headerData(self, section, orientation, role=None):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             self.root_item.data(section)
 
@@ -723,21 +752,23 @@ class AddFilesModel(BasePandasModel):
         column = self._data.columns[index.column()]
 
         if role == Qt.DisplayRole:
-            if column != 'Empty-Room?':
+            if column != "Empty-Room?":
                 return str(self.getData(index))
             else:
-                return ''
+                return ""
 
         elif role == Qt.CheckStateRole:
-            if column == 'Empty-Room?':
+            if column == "Empty-Room?":
                 if self.getData(index):
                     return Qt.Checked
                 else:
                     return Qt.Unchecked
 
     def setData(self, index, value, role=None):
-        if role == Qt.CheckStateRole \
-                and self._data.columns[index.column()] == 'Empty-Room?':
+        if (
+            role == Qt.CheckStateRole
+            and self._data.columns[index.column()] == "Empty-Room?"
+        ):
             if value == Qt.Checked:
                 self._data.iloc[index.row(), index.column()] = 1
             else:
@@ -747,24 +778,24 @@ class AddFilesModel(BasePandasModel):
 
         return False
 
-    def flags(self, index=QModelIndex()):
-        if self._data.columns[index.column()] == 'Empty-Room?':
-            return QAbstractItemModel.flags(self, index) \
-                | Qt.ItemIsUserCheckable
+    def flags(self, index):
+        if self._data.columns[index.column()] == "Empty-Room?":
+            return QAbstractItemModel.flags(self, index) | Qt.ItemIsUserCheckable
 
         return QAbstractItemModel.flags(self, index)
 
-    def removeRows(self, row, count, index=QModelIndex()):
-        self.beginRemoveRows(index, row, row + count - 1)
+    def removeRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, row, row + count - 1)
         # Can't use DataFrame.drop() here,
         # because there could be rows with similar index-labels
         if row == 0:
-            self._data = self._data.iloc[row + count:]
+            self._data = self._data.iloc[row + count :]
         elif row + count >= len(self._data.index):
             self._data = self._data.iloc[:row]
         else:
-            self._data = pd.concat([self._data.iloc[:row],
-                                    self._data.iloc[row + count:]])
+            self._data = pd.concat(
+                [self._data.iloc[:row], self._data.iloc[row + count :]]
+            )
         self.endRemoveRows()
 
         return True
@@ -780,37 +811,40 @@ class FileManagementModel(BasePandasModel):
     def data(self, index, role=None):
         value = self.getData(index)
         if role == Qt.DisplayRole:
-            if pd.isna(value) or value in ['existst', 'possible_conflict',
-                                           'critical_conflict']:
+            if pd.isna(value) or value in [
+                "existst",
+                "possible_conflict",
+                "critical_conflict",
+            ]:
                 pass
             elif isinstance(value, datetime):
-                return value.strftime('%d.%m.%y %H:%M')
+                return value.strftime("%d.%m.%y %H:%M")
             elif isinstance(value, float):
                 if value == 0:
                     pass
                 elif value / 1024 < 1000:
-                    return f'{int(value / 1024)} KB'
+                    return f"{int(value / 1024)} KB"
                 else:
-                    return f'{int(value / (1024 ** 2))} MB'
+                    return f"{int(value / (1024 ** 2))} MB"
 
         if role == Qt.DecorationRole:
             if pd.isna(value) or value == 0:
-                return get_std_icon('SP_DialogCancelButton')
-            elif value == 'exists':
-                return get_std_icon('SP_DialogApplyButton')
-            elif value == 'possible_conflict':
-                return get_std_icon('SP_MessageBoxQuestion')
-            elif value == 'critical_conflict':
-                return get_std_icon('SP_MessageBoxWarning')
+                return get_std_icon("SP_DialogCancelButton")
+            elif value == "exists":
+                return get_std_icon("SP_DialogApplyButton")
+            elif value == "possible_conflict":
+                return get_std_icon("SP_MessageBoxQuestion")
+            elif value == "critical_conflict":
+                return get_std_icon("SP_MessageBoxWarning")
 
         elif role == Qt.BackgroundRole:
             if pd.isna(value) or value == 0:
                 return QBrush(Qt.darkRed)
-            elif value == 'exists':
+            elif value == "exists":
                 return QBrush(Qt.green)
-            elif value == 'possible_conflict':
+            elif value == "possible_conflict":
                 return QBrush(Qt.lightGray)
-            elif value == 'critical_conflict':
+            elif value == "critical_conflict":
                 return QBrush(Qt.darkYellow)
 
 
@@ -829,7 +863,7 @@ class CustomFunctionModel(QAbstractListModel):
         super().__init__(**kwargs)
         self._data = data
 
-    def getData(self, index=QModelIndex()):
+    def getData(self, index):
         return self._data.index[index.row()]
 
     def updateData(self, new_data):
@@ -841,40 +875,39 @@ class CustomFunctionModel(QAbstractListModel):
             return str(self.getData(index))
 
         elif role == Qt.DecorationRole:
-            if self._data.loc[self.getData(index), 'ready']:
-                return get_std_icon('SP_DialogApplyButton')
+            if self._data.loc[self.getData(index), "ready"]:
+                return get_std_icon("SP_DialogApplyButton")
             else:
-                return get_std_icon('SP_DialogCancelButton')
+                return get_std_icon("SP_DialogCancelButton")
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self, parent=None, *args, **kwargs):
         return len(self._data.index)
 
 
 class RunModel(QAbstractListModel):
-    """A model for the items/functions of a Pipeline-Run
-    """
+    """A model for the items/functions of a Pipeline-Run"""
 
-    def __init__(self, data, mode):
-        super().__init__()
+    def __init__(self, data, mode, **kwargs):
+        super().__init__(**kwargs)
         self._data = data
         self.mode = mode
 
-    def getKey(self, index=QModelIndex()):
+    def getKey(self, index):
         return list(self._data.keys())[index.row()]
 
-    def getValue(self, index=QModelIndex()):
-        if self.mode == 'object':
-            return self._data[self.getKey(index)]['status']
+    def getValue(self, index):
+        if self.mode == "object":
+            return self._data[self.getKey(index)]["status"]
         else:
             return self._data[self.getKey(index)]
 
-    def getType(self, index=QModelIndex()):
-        return self._data[self.getKey(index)]['type']
+    def getType(self, index):
+        return self._data[self.getKey(index)]["type"]
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:
-            if self.mode == 'object':
-                return f'{self.getType(index)}: {self.getKey(index)}'
+            if self.mode == "object":
+                return f"{self.getType(index)}: {self.getKey(index)}"
             return self.getKey(index)
 
         # Object/Function-States:
@@ -897,9 +930,9 @@ class RunModel(QAbstractListModel):
         # mark objects according to their type (color-code)
         elif role == Qt.DecorationRole:
             if self.getValue(index) == 0:
-                return get_std_icon('SP_DialogApplyButton')
+                return get_std_icon("SP_DialogApplyButton")
             elif self.getValue(index) == 2:
-                return get_std_icon('SP_ArrowRight')
+                return get_std_icon("SP_ArrowRight")
 
         elif role == Qt.FontRole:
             if self.getValue(index) == 2:
@@ -907,5 +940,5 @@ class RunModel(QAbstractListModel):
                 bold_font.setBold(True)
                 return bold_font
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self, parent=None, *args, **kwargs):
         return len(self._data)

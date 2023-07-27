@@ -1,34 +1,34 @@
 {
-    "settings": {
-        "selected_project": null,
-        "selected_modules": [
-          "operations",
-          "plot"
-        ],
-      "parameter_preset": "Default",
-      "checked_funcs": [],
-      "show_plots": true,
-      "save_plots": true,
-      "shutdown": false,
-      "img_format": ".png",
-      "dpi": 150,
-      "overwrite": false,
-      "use_plot_manager": false
-    },
-    "qsettings": {
-        "gui": true,
-        "home_path": "",
-        "n_jobs": -1,
-        "n_parallel": 1,
-        "use_qthread": 1,
-        "save_ram": 1,
-        "enable_cuda": 0,
-        "log_level": 20,
-        "education": 0,
-        "fs_path": "",
-        "mne_path": "",
-        "app_font": "AnyStyle",
-        "app_font_size": 10,
-        "app_style": "auto"
-    }
+  "settings": {
+    "selected_project": null,
+    "selected_modules": [
+      "operations",
+      "plot"
+    ],
+    "parameter_preset": "Default",
+    "checked_funcs": [],
+    "show_plots": true,
+    "save_plots": true,
+    "shutdown": false,
+    "img_format": ".png",
+    "dpi": 150,
+    "overwrite": false,
+    "use_plot_manager": false
+  },
+  "qsettings": {
+    "gui": true,
+    "home_path": "",
+    "n_jobs": -1,
+    "n_parallel": 1,
+    "use_qthread": 1,
+    "save_ram": 1,
+    "enable_cuda": 0,
+    "log_level": 20,
+    "education": 0,
+    "fs_path": "",
+    "mne_path": "",
+    "app_font": "AnyStyle",
+    "app_font_size": 10,
+    "app_style": "auto"
+  }
 }

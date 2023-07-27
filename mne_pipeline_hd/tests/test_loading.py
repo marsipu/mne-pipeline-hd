@@ -7,8 +7,8 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 
 def test_meeg(controller):
-    controller.pr.add_meeg('__sample__')
+    controller.pr.add_meeg("__sample__")
 
 
 def test_fsmri(controller):
-    controller.pr.add_fsmri('fsaverage')
+    controller.pr.add_fsmri("fsaverage")

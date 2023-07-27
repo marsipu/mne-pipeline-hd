@@ -17,4 +17,4 @@ def test_init(main_window, qtbot):
 
     _test_wait(qtbot, 1000)
 
-    assert _object_refs['main_window'] is None
+    assert _object_refs["main_window"] is None
