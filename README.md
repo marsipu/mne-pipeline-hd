@@ -1,6 +1,6 @@
 # mne-pipeline-hd
 
-### A [MNE-Python](https://mne.tools/stable/index.html) Pipeline-GUI for MEG-Lab Heidelberg
+### A Pipeline-GUI for [MNE-Python](https://mne.tools/stable/index.html)  from MEG-Lab Heidelberg
 
 ![mne-pipeline-hd Logo](mne_pipeline_hd/resource/mne_pipeline_logo_evee_smaller.jpg)
 

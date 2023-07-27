@@ -18,10 +18,10 @@ def controller(tmpdir):
     # Initialize testing-environment
     _set_test_run()
     # Create home-path
-    home_path = tmpdir.join('TestHome')
+    home_path = tmpdir.join("TestHome")
     mkdir(home_path)
     # Create Controller
-    ct = Controller(home_path, 'test')
+    ct = Controller(home_path, "test")
 
     return ct
 
