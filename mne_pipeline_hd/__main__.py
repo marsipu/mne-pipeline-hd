@@ -15,12 +15,10 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication
 
-from mne_pipeline_hd.gui.gui_utils import \
-    (StdoutStderrStream, UncaughtHook)
+from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
-from mne_pipeline_hd.pipeline.pipeline_utils import \
-    (ismac, islin, QS)
+from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS
 
 # Check for changes in required packages
 legacy_import_check()

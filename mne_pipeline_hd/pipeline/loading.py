@@ -23,6 +23,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
+
 # =============================================================================
 # LOADING FUNCTIONS
 # =============================================================================
@@ -536,9 +537,7 @@ class BaseLoading:
 class MEEG(BaseLoading):
     """Class for File-Data in File-Loop"""
 
-    def __init__(
-        self, name, controller, fsmri=None, suppress_warnings=True
-    ):
+    def __init__(self, name, controller, fsmri=None, suppress_warnings=True):
         self.fsmri = fsmri
         self.suppress_warnings = suppress_warnings
         super().__init__(name, controller)
@@ -568,9 +567,7 @@ class MEEG(BaseLoading):
             if self.fsmri and self.fsmri.name == self.pr.meeg_to_fsmri[self.name]:
                 pass
             else:
-                self.fsmri = FSMRI(
-                    self.pr.meeg_to_fsmri[self.name], self.ct
-                )
+                self.fsmri = FSMRI(self.pr.meeg_to_fsmri[self.name], self.ct)
         else:
             self.fsmri = FSMRI(None, self.ct)
             if not self.suppress_warnings:
@@ -1388,8 +1385,7 @@ class FSMRI(BaseLoading):
             if self.labels is None:
                 self.labels = self._get_available_labels()
             for label_list in self.labels.values():
-                labels += [lb for lb in label_list
-                           if lb.name in target_labels]
+                labels += [lb for lb in label_list if lb.name in target_labels]
 
         return labels
 

@@ -660,13 +660,21 @@ class AddFilesWidget(QWidget):
                     erm = 0
 
                 self.pd_files = pd.concat(
-                    [self.pd_files,
-                     pd.DataFrame([
-                         {'Name': file_name,
-                          'File-Type': p.suffix,
-                          'Empty-Room?': erm,
-                          'Path': file_path}])
-                     ], ignore_index=True)
+                    [
+                        self.pd_files,
+                        pd.DataFrame(
+                            [
+                                {
+                                    "Name": file_name,
+                                    "File-Type": p.suffix,
+                                    "Empty-Room?": erm,
+                                    "Path": file_path,
+                                }
+                            ]
+                        ),
+                    ],
+                    ignore_index=True,
+                )
 
             self.update_model()
 

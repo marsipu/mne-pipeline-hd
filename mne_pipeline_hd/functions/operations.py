@@ -1371,7 +1371,7 @@ def estimate_noise_covariance(
         print("Noise Covariance on Empty-Room-Data")
         erm_filtered = meeg.load_erm_processed()
         # Add bad channels to erm-recording
-        erm_filtered.info['bads'] = meeg.bad_channels
+        erm_filtered.info["bads"] = meeg.bad_channels
 
         kwargs = check_kwargs(kwargs, mne.compute_raw_covariance)
         noise_covariance = mne.compute_raw_covariance(

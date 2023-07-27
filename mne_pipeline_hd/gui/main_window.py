@@ -41,8 +41,7 @@ from mne_pipeline_hd.gui.dialogs import (
     AboutDialog,
     CopyParamsDialog,
 )
-from mne_pipeline_hd.gui.education_widgets import EducationEditor, \
-    EducationTour
+from mne_pipeline_hd.gui.education_widgets import EducationEditor, EducationTour
 from mne_pipeline_hd.gui.function_widgets import (
     AddKwargs,
     ChooseCustomModules,
@@ -417,28 +416,41 @@ class MainWindow(QMainWindow):
         #                                            ' even if their parameters '
         #                                            'where unchanged.',
         #                                groupbox_layout=False))
-        self.toolbar.addWidget(BoolGui(data=self.ct.settings,
-                                       name='show_plots', alias='Show Plots',
-                                       description='Do you want to show'
-                                                   ' plots?\n'
-                                                   '(or just save them without'
-                                                   ' showing, then just check'
-                                                   ' "Save Plots").',
-
-                                       groupbox_layout=False))
-        self.toolbar.addWidget(BoolGui(data=self.ct.settings,
-                                       name='save_plots', alias='Save Plots',
-                                       description='Do you want to save the '
-                                                   'plots made to a file?',
-                                       groupbox_layout=False))
-        self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='shutdown',
-                                       alias='Shutdown',
-                                       description='Do you want to shut your '
-                                                   'system down after '
-                                                   ' execution of all '
-                                                   'subjects?',
-                                       groupbox_layout=False))
-        close_all_bt = QPushButton('Close All Plots')
+        self.toolbar.addWidget(
+            BoolGui(
+                data=self.ct.settings,
+                name="show_plots",
+                alias="Show Plots",
+                description="Do you want to show"
+                " plots?\n"
+                "(or just save them without"
+                " showing, then just check"
+                ' "Save Plots").',
+                groupbox_layout=False,
+            )
+        )
+        self.toolbar.addWidget(
+            BoolGui(
+                data=self.ct.settings,
+                name="save_plots",
+                alias="Save Plots",
+                description="Do you want to save the " "plots made to a file?",
+                groupbox_layout=False,
+            )
+        )
+        self.toolbar.addWidget(
+            BoolGui(
+                data=self.ct.settings,
+                name="shutdown",
+                alias="Shutdown",
+                description="Do you want to shut your "
+                "system down after "
+                " execution of all "
+                "subjects?",
+                groupbox_layout=False,
+            )
+        )
+        close_all_bt = QPushButton("Close All Plots")
         close_all_bt.pressed.connect(close_all)
         self.toolbar.addWidget(close_all_bt)
 

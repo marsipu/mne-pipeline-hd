@@ -1368,8 +1368,7 @@ class LabelDialog(SimpleDialog):
         self._parc_changed()
 
     def _subject_changed(self):
-        self._fsmri = FSMRI(self.fsmri_cmbx.currentText(), self.ct,
-                            load_labels=True)
+        self._fsmri = FSMRI(self.fsmri_cmbx.currentText(), self.ct, load_labels=True)
 
         self.parcellation_cmbx.clear()
         self.parcellation_cmbx.addItems(self._fsmri.parcellations)
