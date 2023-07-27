@@ -3,7 +3,7 @@
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-
+import importlib
 # -- Path setup --------------------------------------------------------------
 
 import sys
@@ -18,8 +18,6 @@ curdir = dirname(__file__)
 sys.path.append(abspath(join(curdir, '..', '..', 'mne_pipeline_hd')))
 
 # -- Project information -----------------------------------------------------
-import mne_pipeline_hd  # noqa: E402
-
 project = 'mne-pipeline-hd'
 author = 'Martin Schulz'
 
@@ -28,7 +26,7 @@ copyright = (f'2018-{datetime.now().year}, {author}, '
              f'Last updated {td.strftime("%Y-%m-%d %H:%M %Z")}')
 
 # The full version, including alpha/beta/rc tags
-release = mne_pipeline_hd.__version__
+release = importlib.metadata.version("mne_pipeline_hd")
 
 # -- General configuration ---------------------------------------------------
 
