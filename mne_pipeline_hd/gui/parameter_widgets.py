@@ -1860,7 +1860,7 @@ class ParametersDock(QDockWidget):
                         param_unit=unit,
                         **gui_args,
                     )
-                except:  # noqa: E722
+                except Exception:
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
                         f'Initialization of Parameter-Widget "{idx}" '

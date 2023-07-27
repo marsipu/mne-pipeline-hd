@@ -198,7 +198,7 @@ class DataTerminal(QDialog):
         name = self.sub_cmbx.itemText(index)
         try:
             self.obj = MEEG(name, self.ct)
-        except:  # noqa: E722
+        except Exception:
             get_exception_tuple()
             # Return ComboBox to previous state
             if self.obj is None:
@@ -230,7 +230,7 @@ class DataTerminal(QDialog):
         try:
             load_fn = getattr(self.obj, self.load_mapping[bt_name])
             self.t_globals[bt_name] = load_fn()
-        except (FileNotFoundError, OSError):
+        except OSError:
             result_msg = f"<b><center>No file found for {bt_name}</center></b><br>"
         else:
             result_msg = (
@@ -254,11 +254,11 @@ class DataTerminal(QDialog):
         except SyntaxError:
             try:
                 exec(command, self.t_globals)
-            except:  # noqa: E722
+            except Exception:
                 get_exception_tuple()
             else:
                 self.inputw.clear()
-        except:  # noqa: E722
+        except Exception:
             get_exception_tuple()
         else:
             self.inputw.clear()

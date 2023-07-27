@@ -171,7 +171,7 @@ def check_kwargs(kwargs, function):
 def count_dict_keys(d, max_level=None):
     """Count the number of keys of a nested dictionary"""
     keys = 0
-    for key, value in d.items():
+    for value in d.values():
         if isinstance(value, dict):
             if max_level is None:
                 keys += count_dict_keys(value)

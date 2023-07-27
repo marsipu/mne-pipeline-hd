@@ -71,7 +71,7 @@ def load_decorator(load_func):
             # Todo: Dependencies!
             try:
                 data = load_func(self, *args, **kwargs)
-            except (FileNotFoundError, OSError) as err:
+            except OSError as err:
                 deprc_path = self.deprecated_paths.get(data_type, "")
                 if isfile(deprc_path):
                     new_path = self.io_dict[data_type]["path"]

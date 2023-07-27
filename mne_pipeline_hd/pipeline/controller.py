@@ -323,7 +323,7 @@ class Controller:
                     sys.path.insert(0, pkg_path)
                     try:
                         import_module(module_name)
-                    except:  # noqa: E722, B001
+                    except Exception:
                         traceback.print_exc()
                     else:
                         correct_count += 1
@@ -349,7 +349,7 @@ class Controller:
                             na_values=[""],
                             keep_default_na=False,
                         )
-                    except:  # noqa: E722
+                    except Exception:
                         traceback.print_exc()
                     else:
                         # Add pkg_name here (would be redundant

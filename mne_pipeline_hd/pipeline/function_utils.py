@@ -152,7 +152,7 @@ def run_func(func, keywargs, pipe=None):
         sys.stderr = stream_manager.stderr_sender
     try:
         return func(**keywargs)
-    except:  # noqa: E722
+    except Exception:
         return get_exception_tuple(is_mp=pipe is not None)
 
 

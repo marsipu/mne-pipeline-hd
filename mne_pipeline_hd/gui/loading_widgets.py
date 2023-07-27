@@ -2248,7 +2248,7 @@ class ICASelect(QDialog):
                     fig.canvas.mpl_connect(
                         "close_event", partial(self.get_selected_components, ica)
                     )
-            except:  # noqa: E722, B001
+            except Exception:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(
                     self,
@@ -2279,7 +2279,7 @@ class ICASelect(QDialog):
                     fig.canvas.mpl_connect(
                         "close_event", partial(self.get_selected_components, ica)
                     )
-            except:  # noqa: E722
+            except Exception:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(
                     self,
@@ -2304,7 +2304,7 @@ class ICASelect(QDialog):
                     ica_overlay_data=self.parameters["ica_overlay_data"],
                     show_plots=True,
                 )
-            except:  # noqa: E722
+            except Exception:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(
                     self,
@@ -2325,7 +2325,7 @@ class ICASelect(QDialog):
             dialog.open()
             try:
                 plot_ica_properties(meeg=self.current_obj, show_plots=True)
-            except:  # noqa: E722
+            except Exception:
                 err_tuple = get_exception_tuple()
                 QMessageBox.critical(
                     self,

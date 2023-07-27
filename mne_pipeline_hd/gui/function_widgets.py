@@ -1225,7 +1225,7 @@ class ImportFuncs(QDialog):
             )
             self.module = util.module_from_spec(spec)
             spec.loader.exec_module(self.module)
-        except:  # noqa: E722, B001
+        except Exception:
             err = get_exception_tuple()
             ErrorDialog(err, self)
         else:

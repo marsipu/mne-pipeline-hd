@@ -386,7 +386,7 @@ class Worker(QRunnable):
         # Retrieve args/kwargs here; and fire processing using them
         try:
             return_value = self.function(*self.args, **self.kwargs)
-        except:  # noqa: E722, B001
+        except Exception:
             exc_tuple = get_exception_tuple()
             self.signals.error.emit(exc_tuple)
         else:
