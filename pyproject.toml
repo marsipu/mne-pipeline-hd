@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mne-pipeline-hd"
+authors = [
+    { name = "Martin Schulz", email = "dev@mgschulz.de" }
+]
+description = "A Pipeline-GUI for MNE-Python from MEG-Lab Heidelberg"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { "text" = "BSD-3-Clause" }
+keywords = ["mne-python", "meg", "eeg", "pipeline", "gui", "heidelberg"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+]
+dynamic = ["version", "dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/marsipu/mne-pipeline-hd"
+Repository = "https://github.com/marsipu/mne-pipeline-hd.git"
+
+[project.scripts]
+mne_pipeline_hd = "mne_pipeline_hd.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "mne_pipeline_hd.__version__" }
+dependencies = { file = "requirements.txt" }
