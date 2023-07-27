@@ -2,3 +2,4 @@ pytest
 pytest-qt
 sphinx
 pydata-sphinx-theme
+flake8

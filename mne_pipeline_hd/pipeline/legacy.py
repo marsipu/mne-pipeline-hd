@@ -9,6 +9,8 @@ License: GPL-3.0
 import json
 import logging
 import os
+import subprocess
+import sys
 from os.path import isdir, join, isfile
 
 from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
@@ -52,6 +54,53 @@ renamed_parameters = {
         'Evokeds (ECG)': 'evoked (ECG)'
     }
 }
+
+# New packages with {import_name: install_name} (can be the same)
+new_packages = {
+    'qdarktheme': 'pyqtdarktheme'
+}
+
+
+def install_package(package_name):
+    print(f'Installing {package_name}...')
+    print(subprocess.check_output([sys.executable, '-m', 'pip', 'install',
+                                   package_name], text=True))
+
+
+def uninstall_package(package_name):
+    print(f'Uninstalling {package_name}...')
+    print(subprocess.check_output([sys.executable, '-m', 'pip', 'uninstall',
+                                   '-y', package_name], text=True))
+
+
+def legacy_import_check(test_package=None):
+    """
+    This function checks for recent package changes
+    and offers installation or manual installation instructions.
+    """
+    # For testing purposes
+    if test_package is not None:
+        new_packages[test_package] = test_package
+
+    for import_name, install_name in new_packages.items():
+        try:
+            __import__(import_name)
+        except ImportError:
+            print(f'The package {import_name} '
+                  f'is required for this application.\n')
+            ans = input('Do you want to install the '
+                        'new package now? [y/n]').lower()
+            if ans == 'y':
+                try:
+                    install_package(install_name)
+                except subprocess.CalledProcessError:
+                    print('Installation failed!')
+                else:
+                    return
+            print(f'Please install the new package {import_name} '
+                  f'manually with:\n\n'
+                  f'> pip install {install_name}')
+            sys.exit(1)
 
 
 def transfer_file_params_to_single_subject(ct):
