@@ -13,9 +13,8 @@ from PyQt5.QtCore import QSettings
 
 def test_qsettings_types(qtbot):
     """Test if QSettings keep types on all operating systems."""
-    with resources.open_text('mne_pipeline_hd.resource',
-                             'default_settings.json') as file:
-        default_qsettings = json.load(file)['qsettings']
+    with resources.open_text("mne_pipeline_hd.resource", "default_settings.json") as file:
+        default_qsettings = json.load(file)["qsettings"]
 
     for v in default_qsettings:
         QSettings().setValue(v, default_qsettings[v])

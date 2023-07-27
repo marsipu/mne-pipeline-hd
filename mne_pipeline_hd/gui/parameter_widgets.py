@@ -11,29 +11,53 @@ import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap
-from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
-                             QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-                             QLineEdit, QPushButton, QSizePolicy, QSlider,
-                             QSpinBox, QVBoxLayout, QWidget, QDockWidget,
-                             QTabWidget, QScrollArea, QMessageBox,
-                             QColorDialog)
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDoubleSpinBox,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSizePolicy,
+    QSlider,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+    QDockWidget,
+    QTabWidget,
+    QScrollArea,
+    QMessageBox,
+    QColorDialog,
+)
 from mne.viz import Brain
 from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
 
 from mne_pipeline_hd import _object_refs
-from mne_pipeline_hd.gui.base_widgets import (CheckList, EditDict, EditList,
-                                              SimpleList, SimpleDialog,
-                                              ComboBox)
+from mne_pipeline_hd.gui.base_widgets import (
+    CheckList,
+    EditDict,
+    EditList,
+    SimpleList,
+    SimpleDialog,
+    ComboBox,
+)
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
-from mne_pipeline_hd.gui.gui_utils import (get_std_icon, WorkerDialog,
-                                           get_exception_tuple,
-                                           get_user_input_string, center)
+from mne_pipeline_hd.gui.gui_utils import (
+    get_std_icon,
+    WorkerDialog,
+    get_exception_tuple,
+    get_user_input_string,
+    center,
+)
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.loading import FSMRI
-from mne_pipeline_hd.pipeline.pipeline_utils import (QS,
-                                                     iswin)
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, iswin
 
 
 class Param(QWidget):
@@ -47,11 +71,21 @@ class Param(QWidget):
     paramChanged : pyqtSignal
         This signal is emmited when the parameter changes.
     """
+
     paramChanged = pyqtSignal(object)
 
-    def __init__(self, data, name, alias=None, default=None,
-                 param_unit=None, groupbox_layout=True,
-                 none_select=False, description=None, depending_on=None):
+    def __init__(
+        self,
+        data,
+        name,
+        alias=None,
+        default=None,
+        param_unit=None,
+        groupbox_layout=True,
+        none_select=False,
+        description=None,
+        depending_on=None,
+    ):
         """
         Parameters
         ----------
@@ -107,18 +141,17 @@ class Param(QWidget):
             self.groupbox_layout = True
 
         # Connect widget on which this widget depends on
-        dep_widget = _object_refs['parameter_widgets'].get(depending_on,
-                                                           None)
+        dep_widget = _object_refs["parameter_widgets"].get(depending_on, None)
         if dep_widget is not None:
             dep_widget.paramChanged.connect(self.set_param)
 
         # Add to object-reference
-        _object_refs['parameter_widgets'][self.name] = self
+        _object_refs["parameter_widgets"][self.name] = self
 
     def init_ui(self, layout=None):
         """Base layout initialization, which adds the given layout to a
         group-box with the parameters name if groupbox_layout is enabled.
-        Else the layout will be horizontal with a QLabel for the name """
+        Else the layout will be horizontal with a QLabel for the name"""
 
         main_layout = QHBoxLayout()
 
@@ -141,7 +174,7 @@ class Param(QWidget):
 
         else:
             # Add this to get no label in MultiTypeGui
-            if self.alias != '':
+            if self.alias != "":
                 main_layout.addWidget(QLabel(self.alias))
             main_layout.addLayout(layout)
 
@@ -206,8 +239,7 @@ class Param(QWidget):
         # (depending on selected parameter-preset and selected Project)
         elif isinstance(self.data, Controller):
             if name in self.data.pr.parameters[self.data.pr.p_preset]:
-                value = \
-                    self.data.pr.parameters[self.data.pr.p_preset][name]
+                value = self.data.pr.parameters[self.data.pr.p_preset][name]
             else:
                 value = self.default
 
@@ -227,8 +259,7 @@ class Param(QWidget):
         if isinstance(self.data, dict):
             self.data[name] = value
         elif isinstance(self.data, Controller):
-            self.data.pr.parameters[self.data.pr.p_preset][
-                name] = value
+            self.data.pr.parameters[self.data.pr.p_preset][name] = value
         elif isinstance(self.data, QS):
             self.data.setValue(name, value)
 
@@ -239,8 +270,7 @@ class Param(QWidget):
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
 
-    def __init__(self, min_val=0, max_val=1000,
-                 special_value_text=None, **kwargs):
+    def __init__(self, min_val=0, max_val=1000, special_value_text=None, **kwargs):
         """
         Parameters
         ----------
@@ -259,12 +289,11 @@ class IntGui(Param):
         self.param_widget = QSpinBox()
         self.param_widget.setMinimum(min_val)
         self.param_widget.setMaximum(max_val)
-        self.param_widget.setToolTip(
-            f'MinValue = {min_val}\nMaxValue = {max_val}')
+        self.param_widget.setToolTip(f"MinValue = {min_val}\nMaxValue = {max_val}")
         if special_value_text:
             self.param_widget.setSpecialValueText(special_value_text)
         if self.param_unit:
-            self.param_widget.setSuffix(f' {self.param_unit}')
+            self.param_widget.setSuffix(f" {self.param_unit}")
         self.param_widget.valueChanged.connect(self._get_param)
 
         self.read_param()
@@ -287,9 +316,7 @@ class IntGui(Param):
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
 
-    def __init__(self, min_val=-1000.,
-                 max_val=1000., step=0.1,
-                 decimals=2, **kwargs):
+    def __init__(self, min_val=-1000.0, max_val=1000.0, step=0.1, decimals=2, **kwargs):
         """
         Parameters
         ----------
@@ -311,10 +338,9 @@ class FloatGui(Param):
         self.param_widget.setMaximum(max_val)
         self.param_widget.setSingleStep(step)
         self.param_widget.setDecimals(decimals)
-        self.param_widget.setToolTip(
-            f'MinValue = {min_val}\nMaxVal = {max_val}')
+        self.param_widget.setToolTip(f"MinValue = {min_val}\nMaxVal = {max_val}")
         if self.param_unit:
-            self.param_widget.setSuffix(f' {self.param_unit}')
+            self.param_widget.setSuffix(f" {self.param_unit}")
         self.param_widget.valueChanged.connect(self._get_param)
 
         self.read_param()
@@ -373,14 +399,13 @@ class StringGui(Param):
 
 def _eval_param(param_exp):
     try:
-        return eval(param_exp, {'np': np})
+        return eval(param_exp, {"np": np})
     except (NameError, SyntaxError, ValueError, TypeError):
         return None
 
 
 class FuncGui(Param):
-    """A GUI for Parameters defined by small functions, e.g from numpy
-    """
+    """A GUI for Parameters defined by small functions, e.g from numpy"""
 
     def __init__(self, **kwargs):
         """
@@ -393,9 +418,10 @@ class FuncGui(Param):
         self.param_exp = None
         self.param_widget = QLineEdit()
         self.param_widget.setToolTip(
-            'Use of functions also allowed '
-            '(from already imported modules + numpy as np)\n'
-            'Be carefull as everything entered will be executed!')
+            "Use of functions also allowed "
+            "(from already imported modules + numpy as np)\n"
+            "Be carefull as everything entered will be executed!"
+        )
         self.param_widget.editingFinished.connect(self._get_param)
 
         self.display_widget = QLabel()
@@ -406,8 +432,8 @@ class FuncGui(Param):
 
     def init_func_layout(self):
         func_layout = QGridLayout()
-        label1 = QLabel('Insert Function/Value here')
-        label2 = QLabel('Output')
+        label1 = QLabel("Insert Function/Value here")
+        label2 = QLabel("Output")
         func_layout.addWidget(label1, 0, 0)
         func_layout.addWidget(label2, 0, 1, 1, 2)
         func_layout.addWidget(self.param_widget, 1, 0)
@@ -446,9 +472,9 @@ class FuncGui(Param):
         # the exact expression which is evaluated
         super().read_param()
         real_value = self.param_value
-        self.name = self.name + '_exp'
+        self.name = self.name + "_exp"
         super().read_param()
-        if self.param_value != '' and self.param_value is not None:
+        if self.param_value != "" and self.param_value is not None:
             self.param_exp = self.param_value
         else:
             self.param_exp = real_value
@@ -458,7 +484,7 @@ class FuncGui(Param):
     def save_param(self):
         super().save_param()
         real_value = self.param_value
-        self.name = self.name + '_exp'
+        self.name = self.name + "_exp"
         self.param_value = self.param_exp
         super().save_param()
         self.name = self.name[:-4]
@@ -507,7 +533,7 @@ class BoolGui(Param):
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
 
-    def __init__(self, min_val=-1000., max_val=1000., step=.1, **kwargs):
+    def __init__(self, min_val=-1000.0, max_val=1000.0, step=0.1, **kwargs):
         """
         Parameters
         ----------
@@ -531,29 +557,31 @@ class TupleGui(Param):
         else:
             self.param_widget1 = QDoubleSpinBox()
             self.param_widget2 = QDoubleSpinBox()
-            decimals = len(str(step)[str(step).find('.'):]) - 1
+            decimals = len(str(step)[str(step).find(".") :]) - 1
             self.param_widget1.setDecimals(decimals)
             self.param_widget2.setDecimals(decimals)
 
         self._external_set = False
 
         self.param_widget1.setToolTip(
-            f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n')
+            f"MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n"
+        )
         self.param_widget2.setToolTip(
-            f'MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n')
+            f"MinValue = {min_val}\nMaxVal = {max_val}\nStep = {step}\n"
+        )
 
         self.param_widget1.setMinimum(min_val)
         self.param_widget1.setMaximum(max_val)
         self.param_widget1.setSingleStep(step)
         if self.param_unit:
-            self.param_widget1.setSuffix(f' {self.param_unit}')
+            self.param_widget1.setSuffix(f" {self.param_unit}")
         self.param_widget1.valueChanged.connect(self._get_param)
 
         self.param_widget2.setMinimum(min_val)
         self.param_widget2.setMaximum(max_val)
         self.param_widget2.setSingleStep(step)
         if self.param_unit:
-            self.param_widget2.setSuffix(f' {self.param_unit}')
+            self.param_widget2.setSuffix(f" {self.param_unit}")
         self.param_widget2.valueChanged.connect(self._get_param)
 
         self.read_param()
@@ -622,15 +650,17 @@ class ComboGui(Param):
 
     def set_value(self, value):
         if isinstance(self.options, dict):
-            self.param_widget.setCurrentText(
-                str(self.options[value]))
+            self.param_widget.setCurrentText(str(self.options[value]))
         else:
             self.param_widget.setCurrentText(str(value))
 
     def get_value(self):
         if isinstance(self.options, dict):
-            text = [key for key, value in self.options.items()
-                    if value == self.param_widget.currentText()][0]
+            text = [
+                key
+                for key, value in self.options.items()
+                if value == self.param_widget.currentText()
+            ][0]
         else:
             text = self.param_widget.currentText()
         try:
@@ -652,7 +682,7 @@ class ListDialog(QDialog):
     def _init_layout(self):
         layout = QVBoxLayout()
         layout.addWidget(EditList(self.paramw.param_value))
-        close_bt = QPushButton('Close')
+        close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)
         self.setLayout(layout)
@@ -693,9 +723,8 @@ class ListGui(Param):
         self.value_label = QLabel()
         list_layout.addWidget(self.value_label)
 
-        self.param_widget = QPushButton('Edit')
-        self.param_widget.setSizePolicy(QSizePolicy.Maximum,
-                                        QSizePolicy.Maximum)
+        self.param_widget = QPushButton("Edit")
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(ListDialog, self))
         list_layout.addWidget(self.param_widget, alignment=Qt.AlignCenter)
 
@@ -707,17 +736,15 @@ class ListGui(Param):
         self.check_groupbox_state()
         if isinstance(value, list):
             if self.param_unit:
-                val_str = ', '.join(
-                    [f'{item} {self.param_unit}' for item in value])
+                val_str = ", ".join([f"{item} {self.param_unit}" for item in value])
             else:
-                val_str = ', '.join([str(item) for item in value])
+                val_str = ", ".join([str(item) for item in value])
             if len(val_str) >= self.value_string_length:
-                self.value_label.setText(
-                    f'{val_str[:self.value_string_length]} ...')
+                self.value_label.setText(f"{val_str[:self.value_string_length]} ...")
             else:
                 self.value_label.setText(val_str)
         else:
-            self.value_label.setText('None')
+            self.value_label.setText("None")
 
     def get_value(self):
         if self.param_value is None:
@@ -742,11 +769,15 @@ class CheckListDialog(QDialog):
 
     def _init_layout(self):
         layout = QVBoxLayout()
-        layout.addWidget(CheckList(data=self.paramw.options,
-                                   checked=self.paramw.param_value,
-                                   one_check=self.paramw.one_check))
+        layout.addWidget(
+            CheckList(
+                data=self.paramw.options,
+                checked=self.paramw.param_value,
+                one_check=self.paramw.one_check,
+            )
+        )
 
-        close_bt = QPushButton('Close')
+        close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)
 
@@ -759,11 +790,9 @@ class CheckListDialog(QDialog):
 
 
 class CheckListGui(Param):
-    """A GUI to select items from a list of options
-    """
+    """A GUI to select items from a list of options"""
 
-    def __init__(self, options, value_string_length=30, one_check=False,
-                 **kwargs):
+    def __init__(self, options, value_string_length=30, one_check=False, **kwargs):
         """
         Parameters
         ----------
@@ -780,7 +809,7 @@ class CheckListGui(Param):
         """
 
         if not isinstance(options, list) or len(options) == 0:
-            options = ['Empty']
+            options = ["Empty"]
 
         super().__init__(**kwargs)
         self.options = options
@@ -800,9 +829,8 @@ class CheckListGui(Param):
         self.value_label = QLabel()
         check_list_layout.addWidget(self.value_label)
 
-        self.param_widget = QPushButton('Edit')
-        self.param_widget.setSizePolicy(QSizePolicy.Maximum,
-                                        QSizePolicy.Maximum)
+        self.param_widget = QPushButton("Edit")
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(CheckListDialog, self))
         check_list_layout.addWidget(self.param_widget)
 
@@ -814,17 +842,15 @@ class CheckListGui(Param):
         self.check_groupbox_state()
         if isinstance(value, list):
             if self.param_unit:
-                val_str = ', '.join(
-                    [f'{item} {self.param_unit}' for item in value])
+                val_str = ", ".join([f"{item} {self.param_unit}" for item in value])
             else:
-                val_str = ', '.join([str(item) for item in value])
+                val_str = ", ".join([str(item) for item in value])
             if len(val_str) >= self.value_string_length:
-                self.value_label.setText(
-                    f'{val_str[:self.value_string_length]} ...')
+                self.value_label.setText(f"{val_str[:self.value_string_length]} ...")
             else:
                 self.value_label.setText(val_str)
         else:
-            self.value_label.setText('None')
+            self.value_label.setText("None")
 
     def get_value(self):
         if self.param_value is None:
@@ -850,7 +876,7 @@ class DictDialog(QDialog):
     def _init_layout(self):
         layout = QVBoxLayout()
         layout.addWidget(EditDict(self.paramw.param_value))
-        close_bt = QPushButton('Close')
+        close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)
         self.setLayout(layout)
@@ -893,9 +919,8 @@ class DictGui(Param):
         self.value_label = QLabel()
         dict_layout.addWidget(self.value_label)
 
-        self.param_widget = QPushButton('Edit')
-        self.param_widget.setSizePolicy(QSizePolicy.Maximum,
-                                        QSizePolicy.Maximum)
+        self.param_widget = QPushButton("Edit")
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(DictDialog, self))
         dict_layout.addWidget(self.param_widget)
 
@@ -909,18 +934,20 @@ class DictGui(Param):
         self.check_groupbox_state()
         if isinstance(value, dict):
             if self.param_unit:
-                val_str = ', '.join(
-                    [f'{k} {self.param_unit}: {v} {self.param_unit}'
-                     for k, v in value.items()])
+                val_str = ", ".join(
+                    [
+                        f"{k} {self.param_unit}: {v} {self.param_unit}"
+                        for k, v in value.items()
+                    ]
+                )
             else:
-                val_str = ', '.join([f'{k}: {v}' for k, v in value.items()])
+                val_str = ", ".join([f"{k}: {v}" for k, v in value.items()])
             if len(val_str) > self.value_string_length:
-                self.value_label.setText(
-                    f'{val_str[:self.value_string_length]} ...')
+                self.value_label.setText(f"{val_str[:self.value_string_length]} ...")
             else:
                 self.value_label.setText(val_str)
         else:
-            self.value_label.setText('None')
+            self.value_label.setText("None")
 
     def get_value(self):
         if self.param_value is None:
@@ -938,8 +965,7 @@ class DictGui(Param):
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
 
-    def __init__(self, min_val=0, max_val=100, step=1, tracking=True,
-                 **kwargs):
+    def __init__(self, min_val=0, max_val=100, step=1, tracking=True, **kwargs):
         """
         Parameters
         ----------
@@ -960,16 +986,16 @@ class SliderGui(Param):
         self.min_val = min_val
         self.max_val = max_val
         self.param_widget = QSlider()
-        self.param_widget.setSizePolicy(QSizePolicy.Expanding,
-                                        QSizePolicy.Maximum)
+        self.param_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.decimal_count = max(
-            [len(str(value)[str(value).find('.'):]) - 1 for value in
-             [min_val, max_val, step]])
+            [
+                len(str(value)[str(value).find(".") :]) - 1
+                for value in [min_val, max_val, step]
+            ]
+        )
         if self.decimal_count > 0:
-            self.param_widget.setMinimum(
-                int(self.min_val * 10 ** self.decimal_count))
-            self.param_widget.setMaximum(
-                int(self.max_val * 10 ** self.decimal_count))
+            self.param_widget.setMinimum(int(self.min_val * 10**self.decimal_count))
+            self.param_widget.setMaximum(int(self.max_val * 10**self.decimal_count))
         else:
             self.param_widget.setMinimum(self.min_val)
             self.param_widget.setMaximum(self.max_val)
@@ -978,12 +1004,12 @@ class SliderGui(Param):
         # Only change value when slider is released
         self.param_widget.setTracking(tracking)
         self.param_widget.setToolTip(
-            f'MinValue = {min_val}\nMaxValue = {max_val}\nStep = {step}')
+            f"MinValue = {min_val}\nMaxValue = {max_val}\nStep = {step}"
+        )
         self.param_widget.valueChanged.connect(self._get_param)
 
         self.display_widget = QLineEdit()
-        self.display_widget.setSizePolicy(QSizePolicy.Maximum,
-                                          QSizePolicy.Maximum)
+        self.display_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.display_widget.setAlignment(Qt.AlignRight)
         self.display_widget.editingFinished.connect(self.display_edited)
 
@@ -1008,15 +1034,13 @@ class SliderGui(Param):
             new_value = None
         if new_value:
             self.param_value = new_value
-            self.param_widget.setValue(
-                int(new_value * 10 ** self.decimal_count))
+            self.param_widget.setValue(int(new_value * 10**self.decimal_count))
 
     def set_value(self, value):
         self.check_groupbox_state()
         if value is not None:
             if self.decimal_count > 0:
-                self.param_widget.setValue(
-                    int(value * 10 ** self.decimal_count))
+                self.param_widget.setValue(int(value * 10**self.decimal_count))
             else:
                 self.param_widget.setValue(value)
             self.display_widget.setText(str(value))
@@ -1024,7 +1048,7 @@ class SliderGui(Param):
     def get_value(self):
         value = self.param_widget.value()
         if self.decimal_count > 0:
-            value /= 10 ** self.decimal_count
+            value /= 10**self.decimal_count
         self.display_widget.setText(str(value))
 
         return value
@@ -1033,8 +1057,7 @@ class SliderGui(Param):
 class MultiTypeGui(Param):
     """A GUI which accepts multiple types of values in a single LineEdit"""
 
-    def __init__(self, type_selection=False, types=None, type_kwargs=None,
-                 **kwargs):
+    def __init__(self, type_selection=False, types=None, type_kwargs=None, **kwargs):
         """
         Parameters
         ----------
@@ -1053,23 +1076,23 @@ class MultiTypeGui(Param):
         """
         super().__init__(**kwargs)
         self.type_selection = type_selection
-        self.types = types or ['int', 'float', 'bool', 'str', 'list', 'dict',
-                               'tuple']
+        self.types = types or ["int", "float", "bool", "str", "list", "dict", "tuple"]
         self.type_kwargs = type_kwargs or dict()
 
         # A dictionary to map possible types with their GUI
-        self.gui_types = {'int': 'IntGui',
-                          'float': 'FloatGui',
-                          'bool': 'BoolGui',
-                          'str': 'StringGui',
-                          'list': 'ListGui',
-                          'dict': 'DictGui',
-                          'tuple': 'TupleGui'}
+        self.gui_types = {
+            "int": "IntGui",
+            "float": "FloatGui",
+            "bool": "BoolGui",
+            "str": "StringGui",
+            "list": "ListGui",
+            "dict": "DictGui",
+            "tuple": "TupleGui",
+        }
 
         if self.type_selection:
             self.type_cmbx = QComboBox()
-            self.type_cmbx.setSizePolicy(QSizePolicy.Maximum,
-                                         QSizePolicy.Maximum)
+            self.type_cmbx.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             self.type_cmbx.addItems(self.types)
             self.type_cmbx.activated.connect(self.change_type)
         else:
@@ -1081,7 +1104,7 @@ class MultiTypeGui(Param):
 
         # Get current type (NoneType not allowed)
         self.param_type = type(self.param_value).__name__
-        if self.param_type == 'NoneType':
+        if self.param_type == "NoneType":
             self.param_type = self.types[0]
         if self.type_selection:
             self.type_cmbx.setCurrentText(self.param_type)
@@ -1100,14 +1123,14 @@ class MultiTypeGui(Param):
             kwargs = dict()
 
         # Set standard parameter-keyword-arguments as given to MultiTypeGui
-        kwargs['data'] = self.data
-        kwargs['name'] = self.name
-        kwargs['alias'] = ''
-        kwargs['default'] = self.default
-        kwargs['groupbox_layout'] = False
-        kwargs['none_select'] = False
-        kwargs['description'] = self.description
-        kwargs['param_unit'] = self.param_unit
+        kwargs["data"] = self.data
+        kwargs["name"] = self.name
+        kwargs["alias"] = ""
+        kwargs["default"] = self.default
+        kwargs["groupbox_layout"] = False
+        kwargs["none_select"] = False
+        kwargs["description"] = self.description
+        kwargs["param_unit"] = self.param_unit
 
         self.param_widget = globals()[gui_name](**kwargs)
         self.param_widget.param_value = self.param_value
@@ -1149,8 +1172,7 @@ class MultiTypeGui(Param):
             self.param_widget._set_param()
         elif value is not None:
             self.param_widget.setText(str(value))
-            self.type_display.setText(
-                f'Type: {type(value).__name__}')
+            self.type_display.setText(f"Type: {type(value).__name__}")
 
     def get_value(self):
         if self.type_selection:
@@ -1163,11 +1185,11 @@ class MultiTypeGui(Param):
                 self.param_type = type(value).__name__
             except ValueError:
                 value = text
-                self.param_type = 'str'
+                self.param_type = "str"
             except SyntaxError:
                 value = None
-                self.param_type = 'error'
-            self.type_display.setText(f'Type: {self.param_type}')
+                self.param_type = "error"
+            self.type_display.setText(f"Type: {self.param_type}")
             self.save_param()
 
         return value
@@ -1179,7 +1201,7 @@ class LabelPicker(Brain):
             super().__init__(*args, **kwargs)
         except TypeError:
             # Backwards compatibility mne==0.24
-            kwargs.pop('block')
+            kwargs.pop("block")
             super().__init__(*args, **kwargs)
         self.paramdlg = paramdlg
         self.paramw = paramdlg.paramw
@@ -1188,7 +1210,7 @@ class LabelPicker(Brain):
 
         self._set_annotations()
         self._init_picking()
-        self.add_text(0, 0.9, 'Pick labels', 'title', font_size=14)
+        self.add_text(0, 0.9, "Pick labels", "title", font_size=14)
 
     def _set_annotations(self):
         fsmri = self.paramdlg._fsmri
@@ -1196,15 +1218,16 @@ class LabelPicker(Brain):
         self.clear_glyphs()
         self.remove_labels()
         self.remove_annotations()
-        self.add_annotation(parcellation, color='w', alpha=0.75)
+        self.add_annotation(parcellation, color="w", alpha=0.75)
 
-        for parc in [parcellation, 'Other']:
+        for parc in [parcellation, "Other"]:
             if parc in fsmri.labels:
                 labels = fsmri.labels[parc]
                 for hemi in self._hemis:
                     hemi_labels = [lb for lb in labels if lb.hemi == hemi]
                     self._vertex_to_label_id[hemi] = np.full(
-                        self.geo[hemi].coords.shape[0], -1)
+                        self.geo[hemi].coords.shape[0], -1
+                    )
                     self._annotation_labels[hemi] = hemi_labels
                     for idx, label in enumerate(hemi_labels):
                         self._vertex_to_label_id[hemi][label.vertices] = idx
@@ -1216,8 +1239,9 @@ class LabelPicker(Brain):
         add_obs(vtkCommand.LeftButtonPressEvent, self._on_button_press)
         add_obs(vtkCommand.EndInteractionEvent, self._on_button_release)
         self._renderer.plotter.picker = vtkCellPicker()
-        self._renderer.plotter.picker.AddObserver(vtkCommand.EndPickEvent,
-                                                  self._label_picked)
+        self._renderer.plotter.picker.AddObserver(
+            vtkCommand.EndPickEvent, self._label_picked
+        )
 
     def _label_picked(self, vtk_picker, _):
         cell_id = vtk_picker.GetCellId()
@@ -1228,8 +1252,10 @@ class LabelPicker(Brain):
                 return  # don't pick
             pos = np.array(vtk_picker.GetPickPosition())
             vtk_cell = mesh.GetCell(cell_id)
-            cell = [vtk_cell.GetPointId(point_id) for point_id
-                    in range(vtk_cell.GetNumberOfPoints())]
+            cell = [
+                vtk_cell.GetPointId(point_id)
+                for point_id in range(vtk_cell.GetNumberOfPoints())
+            ]
             vertices = mesh.points[cell]
             idx = np.argmin(abs(vertices - pos), axis=0)
             vertex_id = cell[idx[0]]
@@ -1268,9 +1294,13 @@ class LabelPicker(Brain):
 class LabelDialog(SimpleDialog):
     def __init__(self, paramw):
         self.main_widget = QWidget()
-        super().__init__(self.main_widget, parent=paramw,
-                         title='Choose a label!',
-                         window_title='Label Picker', modal=False)
+        super().__init__(
+            self.main_widget,
+            parent=paramw,
+            title="Choose a label!",
+            window_title="Label Picker",
+            modal=False,
+        )
         self.paramw = paramw
         self.ct = paramw.data
         self.params = self.ct.pr.parameters[self.ct.pr.p_preset]
@@ -1300,9 +1330,12 @@ class LabelDialog(SimpleDialog):
         self.parcellation_cmbx.activated.connect(self._parc_changed)
         layout.addWidget(self.parcellation_cmbx)
 
-        self.label_list = CheckList(data=self._all_label_names,
-                                    checked=self._selected_labels,
-                                    ui_buttons=True, ui_button_pos='bottom')
+        self.label_list = CheckList(
+            data=self._all_label_names,
+            checked=self._selected_labels,
+            ui_buttons=True,
+            ui_button_pos="bottom",
+        )
         self.label_list.checkedChanged.connect(self._labels_changed)
         layout.addWidget(self.label_list)
 
@@ -1347,18 +1380,19 @@ class LabelDialog(SimpleDialog):
         self._selected_labels.clear()
 
         # Add single labels
-        self._all_label_names += [lb.name for lb in
-                                  self._fsmri.labels['Other']]
+        self._all_label_names += [lb.name for lb in self._fsmri.labels["Other"]]
 
         # Add parcellation labels
         self._parcellation = self.parcellation_cmbx.currentText()
         if self._parcellation in self._fsmri.labels:
-            self._all_label_names += \
-                [lb.name for lb in self._fsmri.labels[self._parcellation]]
+            self._all_label_names += [
+                lb.name for lb in self._fsmri.labels[self._parcellation]
+            ]
 
         # get selected
-        self._selected_labels += [lb for lb in self.paramw.param_value
-                                  if lb in self._all_label_names]
+        self._selected_labels += [
+            lb for lb in self.paramw.param_value if lb in self._all_label_names
+        ]
         self.label_list.content_changed()
 
         if self._label_picker is not None:
@@ -1380,18 +1414,24 @@ class LabelDialog(SimpleDialog):
             elevation = self.elevation_slider.param_value
             azimuth = self.azimuth_slider.param_value
             for row, col in [(0, 0), (0, 1), (1, 0), (1, 1)]:
-                self._label_picker.show_view(roll=roll, elevation=elevation,
-                                             azimuth=azimuth, row=row,
-                                             col=col)
+                self._label_picker.show_view(
+                    roll=roll, elevation=elevation, azimuth=azimuth, row=row, col=col
+                )
 
     def _open_label_picker(self):
-        background = self.params['stc_background']
+        background = self.params["stc_background"]
 
         self._label_picker = LabelPicker(
-            self, self._fsmri.name, hemi='split', views=['lat', 'med'],
-            surf='inflated', title='Pick labels',
-            subjects_dir=self.ct.subjects_dir, block=False,
-            background=background)
+            self,
+            self._fsmri.name,
+            hemi="split",
+            views=["lat", "med"],
+            surf="inflated",
+            title="Pick labels",
+            subjects_dir=self.ct.subjects_dir,
+            block=False,
+            background=background,
+        )
         self._slider_changed(None)
 
     def closeEvent(self, event):
@@ -1422,8 +1462,10 @@ class LabelGui(Param):
         super().__init__(**kwargs)
         self.value_string_length = value_string_length
         if not isinstance(self.data, Controller):
-            raise RuntimeError('LabelGui can only used with an instance of '
-                               'Controller passed as data.')
+            raise RuntimeError(
+                "LabelGui can only used with an instance of "
+                "Controller passed as data."
+            )
         self.read_param()
         self._init_layout()
         self._set_param()
@@ -1435,9 +1477,8 @@ class LabelGui(Param):
         self.value_label = QLabel()
         check_list_layout.addWidget(self.value_label)
 
-        self.param_widget = QPushButton('Edit')
-        self.param_widget.setSizePolicy(QSizePolicy.Maximum,
-                                        QSizePolicy.Maximum)
+        self.param_widget = QPushButton("Edit")
+        self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.param_widget.clicked.connect(partial(LabelDialog, self))
         check_list_layout.addWidget(self.param_widget)
 
@@ -1449,16 +1490,15 @@ class LabelGui(Param):
         self.check_groupbox_state()
         if isinstance(value, list):
             if self.param_unit:
-                val_str = ', '.join([f'{item}' for item in value])
+                val_str = ", ".join([f"{item}" for item in value])
             else:
-                val_str = ', '.join([str(item) for item in value])
+                val_str = ", ".join([str(item) for item in value])
             if len(val_str) >= self.value_string_length:
-                self.value_label.setText(
-                    f'{val_str[:self.value_string_length]} ...')
+                self.value_label.setText(f"{val_str[:self.value_string_length]} ...")
             else:
                 self.value_label.setText(val_str)
         else:
-            self.value_label.setText('None')
+            self.value_label.setText("None")
 
     def get_value(self):
         if self.param_value is None:
@@ -1510,10 +1550,9 @@ class ColorGui(Param):
         self.select_widget.activated.connect(self._change_display_color)
         layout.addWidget(self.select_widget)
         self.display_widget = QLabel()
-        self.display_widget.setSizePolicy(QSizePolicy.Maximum,
-                                          QSizePolicy.Preferred)
+        self.display_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         layout.addWidget(self.display_widget)
-        self.param_widget = QPushButton('Pick Color')
+        self.param_widget = QPushButton("Pick Color")
         self.param_widget.clicked.connect(self._pick_color)
         layout.addWidget(self.param_widget)
         self.init_ui(layout)
@@ -1526,7 +1565,7 @@ class ColorGui(Param):
             pixmap.fill(color)
             self.display_widget.setPixmap(pixmap)
         else:
-            self.display_widget.setText('None')
+            self.display_widget.setText("None")
 
     def set_value(self, value):
         self._cached_value = value
@@ -1541,12 +1580,15 @@ class ColorGui(Param):
         if key in self._cached_value:
             previous_color = _get_color(self._cached_value[key])
             color = QColorDialog.getColor(
-                initial=previous_color, parent=self,
-                title=f'Pick a color for {self.name}')
+                initial=previous_color,
+                parent=self,
+                title=f"Pick a color for {self.name}",
+            )
         else:
             # blocking
             color = QColorDialog.getColor(
-                parent=self, title=f'Pick a color for {self.name}')
+                parent=self, title=f"Pick a color for {self.name}"
+            )
         self._cached_value[key] = color.name()
         self._change_display_color()
         self._set_param()
@@ -1565,15 +1607,18 @@ class ResetDialog(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout()
-        layout.addWidget(CheckList(
-            list(self.pd.ct.pr.parameters[self.pd.ct.pr.p_preset].keys()),
-            self.selected_params,
-            title='Select the Parameters to reset'))
-        reset_bt = QPushButton('Reset')
+        layout.addWidget(
+            CheckList(
+                list(self.pd.ct.pr.parameters[self.pd.ct.pr.p_preset].keys()),
+                self.selected_params,
+                title="Select the Parameters to reset",
+            )
+        )
+        reset_bt = QPushButton("Reset")
         reset_bt.clicked.connect(self.reset_params)
         layout.addWidget(reset_bt)
 
-        close_bt = QPushButton('Close')
+        close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)
 
@@ -1582,9 +1627,8 @@ class ResetDialog(QDialog):
     def reset_params(self):
         for name in self.selected_params:
             self.pd.ct.pr.load_default_param(name)
-            print(f'Reset {name}')
-        WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...',
-                     blocking=True)
+            print(f"Reset {name}")
+        WorkerDialog(self, self.pd.ct.pr.save, title="Saving project...", blocking=True)
         self.pd.update_all_param_guis()
         self.close()
 
@@ -1619,11 +1663,11 @@ class CopyPDialog(QDialog):
 
         bt_layout = QHBoxLayout()
 
-        copy_bt = QPushButton('Copy')
+        copy_bt = QPushButton("Copy")
         copy_bt.clicked.connect(self.copy_parameters)
         bt_layout.addWidget(copy_bt)
 
-        close_bt = QPushButton('Close')
+        close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         bt_layout.addWidget(close_bt)
 
@@ -1633,19 +1677,18 @@ class CopyPDialog(QDialog):
 
     def from_selected(self, current):
         self.selected_from = current
-        self.copy_to.replace_data(
-            [pp for pp in self.p.keys() if pp != current])
+        self.copy_to.replace_data([pp for pp in self.p.keys() if pp != current])
         self.copy_ps.replace_data([p for p in self.p[current]])
 
     def copy_parameters(self):
         if len(self.selected_to) > 0:
             for p_preset in self.selected_to:
                 for parameter in self.selected_ps:
-                    self.p[p_preset][parameter] = self.p[self.selected_from][
-                        parameter]
+                    self.p[p_preset][parameter] = self.p[self.selected_from][parameter]
 
-            WorkerDialog(self, self.pd.ct.pr.save, title='Saving project...',
-                         blocking=True)
+            WorkerDialog(
+                self, self.pd.ct.pr.save, title="Saving project...", blocking=True
+            )
             self.pd.update_all_param_guis()
             self.close()
 
@@ -1653,13 +1696,12 @@ class CopyPDialog(QDialog):
 class RemovePPresetDlg(CheckListDlg):
     def __init__(self, parent):
         self.parent = parent
-        self.preset_list = [p for p in self.parent.ct.pr.parameters if
-                            p != 'Default']
+        self.preset_list = [p for p in self.parent.ct.pr.parameters if p != "Default"]
         self.rm_list = []
 
         super().__init__(parent, self.preset_list, self.rm_list)
 
-        self.do_bt.setText('Remove Parameter-Preset')
+        self.do_bt.setText("Remove Parameter-Preset")
         self.do_bt.clicked.connect(self.remove_selected)
 
         self.open()
@@ -1674,8 +1716,7 @@ class RemovePPresetDlg(CheckListDlg):
 
         # If current Parameter-Preset was deleted
         if self.parent.ct.pr.p_preset not in self.parent.ct.pr.parameters:
-            self.parent.ct.pr.p_preset = \
-                list(self.parent.ct.pr.parameters.keys())[0]
+            self.parent.ct.pr.p_preset = list(self.parent.ct.pr.parameters.keys())[0]
             self.parent.update_all_param_guis()
 
         self.close()
@@ -1683,7 +1724,7 @@ class RemovePPresetDlg(CheckListDlg):
 
 class ParametersDock(QDockWidget):
     def __init__(self, main_win):
-        super().__init__('Parameters', main_win)
+        super().__init__("Parameters", main_win)
         self.mw = main_win
         self.ct = main_win.ct
         self.setAllowedAreas(Qt.RightDockWidgetArea)
@@ -1697,22 +1738,22 @@ class ParametersDock(QDockWidget):
         # Create a set of all unique parameters used by functions
         # in selected_modules
         sel_pdfuncs = self.ct.pd_funcs.loc[
-            self.ct.pd_funcs['module'].isin(
-                self.ct.get_setting('selected_modules'))]
+            self.ct.pd_funcs["module"].isin(self.ct.get_setting("selected_modules"))
+        ]
         # Remove rows with NaN in func_args
-        sel_pdfuncs = sel_pdfuncs.loc[sel_pdfuncs['func_args'].notna()]
-        all_used_params_str = ','.join(sel_pdfuncs['func_args'])
+        sel_pdfuncs = sel_pdfuncs.loc[sel_pdfuncs["func_args"].notna()]
+        all_used_params_str = ",".join(sel_pdfuncs["func_args"])
         # Make sure there are no spaces left
-        all_used_params_str = all_used_params_str.replace(' ', '')
-        all_used_params = set(all_used_params_str.split(','))
+        all_used_params_str = all_used_params_str.replace(" ", "")
+        all_used_params = set(all_used_params_str.split(","))
         drop_idx_list = list()
         self.cleaned_pd_params = self.ct.pd_params.copy()
         for param in self.cleaned_pd_params.index:
             if param in all_used_params:
                 # Group-Name (if not given, set to 'Various')
-                group_name = self.cleaned_pd_params.loc[param, 'group']
+                group_name = self.cleaned_pd_params.loc[param, "group"]
                 if pd.isna(group_name):
-                    self.cleaned_pd_params.loc[param, 'group'] = 'Various'
+                    self.cleaned_pd_params.loc[param, "group"] = "Various"
             else:
                 # Drop Parameters which aren't used by functions
                 drop_idx_list.append(param)
@@ -1724,7 +1765,7 @@ class ParametersDock(QDockWidget):
         # Add Parameter-Preset-ComboBox
         title_layouts = QVBoxLayout()
         title_layout1 = QHBoxLayout()
-        p_preset_l = QLabel('Parameter-Presets: ')
+        p_preset_l = QLabel("Parameter-Presets: ")
         title_layout1.addWidget(p_preset_l)
         self.p_preset_cmbx = QComboBox()
         self.p_preset_cmbx.setSizeAdjustPolicy(QComboBox.AdjustToContents)
@@ -1732,31 +1773,31 @@ class ParametersDock(QDockWidget):
         self.update_ppreset_cmbx()
         title_layout1.addWidget(self.p_preset_cmbx)
 
-        add_bt = QPushButton(icon=get_std_icon('SP_FileDialogNewFolder'))
+        add_bt = QPushButton(icon=get_std_icon("SP_FileDialogNewFolder"))
         add_bt.clicked.connect(self.add_p_preset)
         title_layout1.addWidget(add_bt)
 
-        rm_bt = QPushButton(icon=get_std_icon('SP_DialogDiscardButton'))
+        rm_bt = QPushButton(icon=get_std_icon("SP_DialogDiscardButton"))
         rm_bt.clicked.connect(partial(RemovePPresetDlg, self))
         title_layout1.addWidget(rm_bt)
 
         title_layouts.addLayout(title_layout1)
 
         title_layout2 = QHBoxLayout()
-        copy_bt = QPushButton('Copy')
-        copy_bt.setFont(QFont(QS().value('app_font'), 16))
+        copy_bt = QPushButton("Copy")
+        copy_bt.setFont(QFont(QS().value("app_font"), 16))
         copy_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         copy_bt.clicked.connect(partial(CopyPDialog, self))
         title_layout2.addWidget(copy_bt)
 
-        reset_bt = QPushButton('Reset')
-        reset_bt.setFont(QFont(QS().value('app_font'), 16))
+        reset_bt = QPushButton("Reset")
+        reset_bt.setFont(QFont(QS().value("app_font"), 16))
         reset_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         reset_bt.clicked.connect(partial(ResetDialog, self))
         title_layout2.addWidget(reset_bt)
 
-        reset_all_bt = QPushButton('Reset All')
-        reset_all_bt.setFont(QFont(QS().value('app_font'), 16))
+        reset_all_bt = QPushButton("Reset All")
+        reset_all_bt.setFont(QFont(QS().value("app_font"), 16))
         reset_all_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         reset_all_bt.clicked.connect(self.reset_all_parameters)
         title_layout2.addWidget(reset_all_bt)
@@ -1773,40 +1814,39 @@ class ParametersDock(QDockWidget):
         # Create Tab-Widget for Parameters, grouped by group
         self.tab_param_widget = QTabWidget()
 
-        grouped_params = self.cleaned_pd_params.groupby('group', sort=False)
+        grouped_params = self.cleaned_pd_params.groupby("group", sort=False)
 
         for group_name, group in grouped_params:
             layout = QVBoxLayout()
             tab = QScrollArea()
             child_w = QWidget()
             for idx, parameter in group.iterrows():
-
                 # Get Parameters for Gui-Call
-                if pd.notna(parameter['alias']):
-                    alias = parameter['alias']
+                if pd.notna(parameter["alias"]):
+                    alias = parameter["alias"]
                 else:
                     alias = idx
-                if pd.notna(parameter['gui_type']):
-                    gui_name = parameter['gui_type']
+                if pd.notna(parameter["gui_type"]):
+                    gui_name = parameter["gui_type"]
                 else:
-                    gui_name = 'FuncGui'
+                    gui_name = "FuncGui"
                 try:
-                    default = literal_eval(parameter['default'])
+                    default = literal_eval(parameter["default"])
                 except (SyntaxError, ValueError):
-                    if gui_name == 'FuncGui':
-                        default = _eval_param(parameter['default'])
+                    if gui_name == "FuncGui":
+                        default = _eval_param(parameter["default"])
                     else:
-                        default = parameter['default']
-                if pd.notna(parameter['description']):
-                    description = parameter['description']
+                        default = parameter["default"]
+                if pd.notna(parameter["description"]):
+                    description = parameter["description"]
                 else:
-                    description = ''
-                if pd.notna(parameter['unit']):
-                    unit = parameter['unit']
+                    description = ""
+                if pd.notna(parameter["unit"]):
+                    unit = parameter["unit"]
                 else:
                     unit = None
                 try:
-                    gui_args = literal_eval(parameter['gui_args'])
+                    gui_args = literal_eval(parameter["gui_args"])
                 except (SyntaxError, ValueError):
                     gui_args = {}
 
@@ -1818,14 +1858,16 @@ class ParametersDock(QDockWidget):
                         default=default,
                         description=description,
                         param_unit=unit,
-                        **gui_args)
+                        **gui_args,
+                    )
                 except:  # noqa: E722
                     err_tuple = get_exception_tuple()
                     raise RuntimeError(
                         f'Initialization of Parameter-Widget "{idx}" '
-                        f'with value={default} '
-                        f'failed:\n'
-                        f'{err_tuple[1]}')
+                        f"with value={default} "
+                        f"failed:\n"
+                        f"{err_tuple[1]}"
+                    )
 
                 layout.addWidget(self.param_guis[idx])
 
@@ -1843,8 +1885,7 @@ class ParametersDock(QDockWidget):
         if self.ct.pr.p_preset in self.ct.pr.parameters.keys():
             self.p_preset_cmbx.setCurrentText(self.ct.pr.p_preset)
         else:
-            self.p_preset_cmbx.setCurrentText(
-                list(self.ct.pr.parameters.keys())[0])
+            self.p_preset_cmbx.setCurrentText(list(self.ct.pr.parameters.keys())[0])
 
     def p_preset_changed(self, idx):
         self.ct.pr.p_preset = self.p_preset_cmbx.itemText(idx)
@@ -1852,8 +1893,8 @@ class ParametersDock(QDockWidget):
 
     def add_p_preset(self):
         preset_name = get_user_input_string(
-            'Enter a name for a new Parameter-Preset:',
-            'Add Parameter-Preset')
+            "Enter a name for a new Parameter-Preset:", "Add Parameter-Preset"
+        )
         if preset_name is not None:
             self.ct.pr.p_preset = preset_name
             self.ct.pr.load_default_parameters()
@@ -1875,11 +1916,13 @@ class ParametersDock(QDockWidget):
             param_gui._set_param()
 
     def reset_all_parameters(self):
-        msgbox = QMessageBox.question(self, 'Reset all Parameters?',
-                                      'Do you really want to reset all '
-                                      'parameters to their default?',
-                                      QMessageBox.Yes | QMessageBox.No,
-                                      QMessageBox.No)
+        msgbox = QMessageBox.question(
+            self,
+            "Reset all Parameters?",
+            "Do you really want to reset all " "parameters to their default?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
         if msgbox == QMessageBox.Yes:
             self.ct.pr.load_default_parameters()
             self.update_all_param_guis()
@@ -1891,109 +1934,109 @@ class SettingsDlg(QDialog):
         self.ct = controller
 
         self.settings_items = {
-            'app_style': {
-                'gui_type': 'ComboGui',
-                'data_type': 'QSettings',
-                'gui_kwargs': {
-                    'alias': 'Application Style',
-                    'description': 'Changes the application style '
-                                   '(Restart required).',
-                    'options': ['light', 'dark', 'auto'],
-                }
+            "app_style": {
+                "gui_type": "ComboGui",
+                "data_type": "QSettings",
+                "gui_kwargs": {
+                    "alias": "Application Style",
+                    "description": "Changes the application style "
+                    "(Restart required).",
+                    "options": ["light", "dark", "auto"],
+                },
             },
-            'app_font': {
-                'gui_type': 'ComboGui',
-                'data_type': 'QSettings',
-                'gui_kwargs': {
-                    'alias': 'Application Font',
-                    'description': 'Changes default application font '
-                                   '(Restart required).',
-                    'options': QFontDatabase().families(QFontDatabase.Latin)
-                }
+            "app_font": {
+                "gui_type": "ComboGui",
+                "data_type": "QSettings",
+                "gui_kwargs": {
+                    "alias": "Application Font",
+                    "description": "Changes default application font "
+                    "(Restart required).",
+                    "options": QFontDatabase().families(QFontDatabase.Latin),
+                },
             },
-            'app_font_size': {
-                'gui_type': 'IntGui',
-                'data_type': 'QSettings',
-                'gui_kwargs': {
-                    'alias': 'Font Size',
-                    'description': 'Changes default application font-size '
-                                   '(Restart required).',
-                    'min_val': 5,
-                    'max_val': 20
-                }
+            "app_font_size": {
+                "gui_type": "IntGui",
+                "data_type": "QSettings",
+                "gui_kwargs": {
+                    "alias": "Font Size",
+                    "description": "Changes default application font-size "
+                    "(Restart required).",
+                    "min_val": 5,
+                    "max_val": 20,
+                },
             },
-            'img_format': {
-                'gui_type': 'ComboGui',
-                'data_type': 'Settings',
-                'gui_kwargs': {
-                    'alias': 'Image Format',
-                    'description': 'Choose the image format for plots.',
-                    'options': ['.png', '.jpg', '.tiff'],
-                }
+            "img_format": {
+                "gui_type": "ComboGui",
+                "data_type": "Settings",
+                "gui_kwargs": {
+                    "alias": "Image Format",
+                    "description": "Choose the image format for plots.",
+                    "options": [".png", ".jpg", ".tiff"],
+                },
             },
-            'dpi': {
-                'gui_type': 'IntGui',
-                'data_type': 'Settings',
-                'gui_kwargs': {
-                    'alias': 'DPI',
-                    'description': 'Set dpi for saved plots.',
-                    'min_val': 10,
-                    'max_val': 5000
-                }
+            "dpi": {
+                "gui_type": "IntGui",
+                "data_type": "Settings",
+                "gui_kwargs": {
+                    "alias": "DPI",
+                    "description": "Set dpi for saved plots.",
+                    "min_val": 10,
+                    "max_val": 5000,
+                },
             },
-            'enable_cuda': {
-                'gui_type': 'BoolGui',
-                'data_type': 'QSettings',
-                'gui_kwargs': {
-                    'alias': 'Enable CUDA',
-                    'description': 'Enable for CUDA support '
-                                   '(system has to be setup for cuda '
-                                   'as in https://mne.tools/stable/install/'
-                                   'advanced.html#gpu-acceleration-with-cuda)',
-                    'return_integer': True
-                }
+            "enable_cuda": {
+                "gui_type": "BoolGui",
+                "data_type": "QSettings",
+                "gui_kwargs": {
+                    "alias": "Enable CUDA",
+                    "description": "Enable for CUDA support "
+                    "(system has to be setup for cuda "
+                    "as in https://mne.tools/stable/install/"
+                    "advanced.html#gpu-acceleration-with-cuda)",
+                    "return_integer": True,
+                },
             },
-            'save_ram': {
-                'gui_type': 'BoolGui',
-                'data_type': 'QSettings',
-                'gui_kwargs': {
-                    'alias': 'Save RAM',
-                    'description': 'Set to True on low RAM-Machines to avoid'
-                                   ' the process to be killed by the OS due '
-                                   'to low Memory (with leaving it off, '
-                                   'the pipeline goes a bit faster, because '
-                                   'the data can be saved in memory).',
-                    'return_integer': True
-                }
+            "save_ram": {
+                "gui_type": "BoolGui",
+                "data_type": "QSettings",
+                "gui_kwargs": {
+                    "alias": "Save RAM",
+                    "description": "Set to True on low RAM-Machines to avoid"
+                    " the process to be killed by the OS due "
+                    "to low Memory (with leaving it off, "
+                    "the pipeline goes a bit faster, because "
+                    "the data can be saved in memory).",
+                    "return_integer": True,
+                },
             },
-            'fs_path': {
-                'gui_type': 'StringGui',
-                'data_type': 'QSettings',
-                'gui_kwargs': {
-                    'alias': 'FREESURFER_HOME-Path',
-                    'description': 'Set the Path to the "freesurfer"-directory'
-                                   ' of your Freesurfer-Installation '
-                                   '(for Windows to the LINUX-Path of the '
-                                   'Freesurfer-Installation in '
-                                   'Windows-Subsystem for Linux(WSL))',
-                    'none_select': True
-                }
+            "fs_path": {
+                "gui_type": "StringGui",
+                "data_type": "QSettings",
+                "gui_kwargs": {
+                    "alias": "FREESURFER_HOME-Path",
+                    "description": 'Set the Path to the "freesurfer"-directory'
+                    " of your Freesurfer-Installation "
+                    "(for Windows to the LINUX-Path of the "
+                    "Freesurfer-Installation in "
+                    "Windows-Subsystem for Linux(WSL))",
+                    "none_select": True,
+                },
             },
-            'mne_path': {
-                'gui_type': 'StringGui',
-                'data_type': 'QSettings',
-                'gui_kwargs': {
-                    'alias': 'MNE-WSL-Path',
-                    'description': 'Set the LINUX-Path to the mne-environment '
-                                   '(e.g ...anaconda3/envs/mne) in '
-                                   'Windows-Subsystem for Linux(WSL))',
-                    'none_select': True
-                }
-            }
+            "mne_path": {
+                "gui_type": "StringGui",
+                "data_type": "QSettings",
+                "gui_kwargs": {
+                    "alias": "MNE-WSL-Path",
+                    "description": "Set the LINUX-Path to the mne-environment "
+                    "(e.g ...anaconda3/envs/mne) in "
+                    "Windows-Subsystem for Linux(WSL))",
+                    "none_select": True,
+                },
+            },
         }
 
         if not iswin:
-            self.settings_items.pop('mne_path')
+            self.settings_items.pop("mne_path")
 
         self.init_ui()
         self.open()
@@ -2002,25 +2045,22 @@ class SettingsDlg(QDialog):
         layout = QVBoxLayout()
 
         for setting in self.settings_items:
-            gui_handle = globals()[self.settings_items[setting]['gui_type']]
-            data_type = self.settings_items[setting]['data_type']
-            gui_kwargs = self.settings_items[setting]['gui_kwargs']
-            if data_type == 'QSettings':
-                gui_kwargs['data'] = QS()
-                gui_kwargs['default'] = self.ct.default_settings['qsettings'][
-                    setting]
-            elif data_type == 'Controller':
-                gui_kwargs['data'] = self.mw.ct
-                gui_kwargs['default'] = self.ct.pd_params.loc[
-                    setting, 'default']
+            gui_handle = globals()[self.settings_items[setting]["gui_type"]]
+            data_type = self.settings_items[setting]["data_type"]
+            gui_kwargs = self.settings_items[setting]["gui_kwargs"]
+            if data_type == "QSettings":
+                gui_kwargs["data"] = QS()
+                gui_kwargs["default"] = self.ct.default_settings["qsettings"][setting]
+            elif data_type == "Controller":
+                gui_kwargs["data"] = self.mw.ct
+                gui_kwargs["default"] = self.ct.pd_params.loc[setting, "default"]
             else:
-                gui_kwargs['data'] = self.ct.settings
-                gui_kwargs['default'] = self.ct.default_settings['settings'][
-                    setting]
-            gui_kwargs['name'] = setting
+                gui_kwargs["data"] = self.ct.settings
+                gui_kwargs["default"] = self.ct.default_settings["settings"][setting]
+            gui_kwargs["name"] = setting
             layout.addWidget(gui_handle(**gui_kwargs))
 
-        close_bt = QPushButton('Close')
+        close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)
 
