@@ -41,8 +41,7 @@ from mne_pipeline_hd.gui.dialogs import (
     AboutDialog,
     CopyParamsDialog,
 )
-from mne_pipeline_hd.gui.education_widgets import EducationEditor, \
-    EducationTour
+from mne_pipeline_hd.gui.education_widgets import EducationEditor, EducationTour
 from mne_pipeline_hd.gui.function_widgets import (
     AddKwargs,
     ChooseCustomModules,
@@ -411,17 +410,12 @@ class MainWindow(QMainWindow):
         #                         ' with separate processes, '
         #                         'but has a few limitations',
         #             default=0, return_integer=True))
-        self.toolbar.addWidget(
-            BoolGui(
-                data=self.ct.settings,
-                name="overwrite",
-                alias="Overwrite",
-                description="Check to overwrite files"
-                " even if their parameters "
-                "where unchanged.",
-                groupbox_layout=False,
-            )
-        )
+        # self.toolbar.addWidget(BoolGui(data=self.ct.settings, name='overwrite',
+        #                                alias='Overwrite',
+        #                                description='Check to overwrite files'
+        #                                            ' even if their parameters '
+        #                                            'where unchanged.',
+        #                                groupbox_layout=False))
         self.toolbar.addWidget(
             BoolGui(
                 data=self.ct.settings,
