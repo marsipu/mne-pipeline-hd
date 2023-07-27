@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Pipeline-GUI for Analysis with MNE-Python
-@author: Martin Schulz
-@email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne-pipeline-hd
-License: GPL-3.0
+Authors: Martin Schulz <dev@mgschulz.de>
+License: BSD 3-Clause
+Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import inspect
@@ -266,6 +264,7 @@ class QSettingsDummy(BaseSettings):
 try:
     from PyQt5.QtCore import QSettings
 
+
     class ModQSettings(QSettings, BaseSettings):
         def __init__(self):
             super(QSettings, self).__init__()
@@ -287,6 +286,7 @@ try:
                     return defaultValue
             else:
                 return loaded_value
+
 
     class QS(ModQSettings):
         def __init__(self):
