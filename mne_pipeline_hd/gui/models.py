@@ -55,11 +55,11 @@ class BaseListModel(QAbstractListModel):
         elif role == Qt.EditRole:
             return str(self.getData(index))
 
-    def rowCount(self, index):
+    def rowCount(self, *args, **kwargs):
         return len(self._data)
 
-    def insertRows(self, row, count, index):
-        self.beginInsertRows(index, row, row + count - 1)
+    def insertRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginInsertRows(parent, row, row + count - 1)
         n = 0
         for pos in range(row, row + count):
             item_name = f"__new{n}__"
@@ -70,8 +70,8 @@ class BaseListModel(QAbstractListModel):
         self.endInsertRows()
         return True
 
-    def removeRows(self, row, count, index):
-        self.beginRemoveRows(index, row, row + count - 1)
+    def removeRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, row, row + count - 1)
         for item in [self._data[i] for i in range(row, row + count)]:
             self._data.remove(item)
         self.endRemoveRows()
@@ -346,10 +346,10 @@ class BaseDictModel(QAbstractTableModel):
             elif orientation == Qt.Vertical:
                 return str(idx)
 
-    def rowCount(self, index):
+    def rowCount(self, parent=None, *args, **kwargs):
         return len(self._data)
 
-    def columnCount(self, index):
+    def columnCount(self, parent=None, *args, **kwargs):
         return 2
 
 
@@ -403,8 +403,8 @@ class EditDictModel(BaseDictModel):
         else:
             return QAbstractItemModel.flags(self, index)
 
-    def insertRows(self, row, count, index):
-        self.beginInsertRows(index, row, row + count - 1)
+    def insertRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginInsertRows(parent, row, row + count - 1)
         for n in range(count):
             key_name = f"__new{n}__"
             while key_name in self._data.keys():
@@ -415,8 +415,8 @@ class EditDictModel(BaseDictModel):
 
         return True
 
-    def removeRows(self, row, count, index):
-        self.beginRemoveRows(index, row, row + count - 1)
+    def removeRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, row, row + count - 1)
         for n in range(count):
             self._data.pop(list(self._data.keys())[row + n])
         self.endRemoveRows()
@@ -455,10 +455,10 @@ class BasePandasModel(QAbstractTableModel):
             elif orientation == Qt.Vertical:
                 return str(self._data.index[idx])
 
-    def rowCount(self, index):
+    def rowCount(self, parent=None, *args, **kwargs):
         return len(self._data.index)
 
-    def columnCount(self, index):
+    def columnCount(self, parent=None, *args, **kwargs):
         return len(self._data.columns)
 
 
@@ -520,8 +520,8 @@ class EditPandasModel(BasePandasModel):
     def flags(self, index):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
-    def insertRows(self, row, count, index):
-        self.beginInsertRows(index, row, row + count - 1)
+    def insertRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginInsertRows(parent, row, row + count - 1)
         add_data = pd.DataFrame(
             columns=self._data.columns, index=[r for r in range(count)]
         )
@@ -537,8 +537,8 @@ class EditPandasModel(BasePandasModel):
 
         return True
 
-    def insertColumns(self, column, count, index):
-        self.beginInsertColumns(index, column, column + count - 1)
+    def insertColumns(self, column, count, parent=None, *args, **kwargs):
+        self.beginInsertColumns(parent, column, column + count - 1)
         add_data = pd.DataFrame(
             index=self._data.index, columns=[c for c in range(count)]
         )
@@ -555,8 +555,8 @@ class EditPandasModel(BasePandasModel):
 
         return True
 
-    def removeRows(self, row, count, index):
-        self.beginRemoveRows(index, row, row + count - 1)
+    def removeRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, row, row + count - 1)
         # Can't use DataFrame.drop() here,
         # because there could be rows with similar index-labels
         if row == 0:
@@ -571,8 +571,8 @@ class EditPandasModel(BasePandasModel):
 
         return True
 
-    def removeColumns(self, column, count, index):
-        self.beginRemoveColumns(index, column, column + count - 1)
+    def removeColumns(self, column, count, parent=None, *args, **kwargs):
+        self.beginRemoveColumns(parent, column, column + count - 1)
         # Can't use DataFrame.drop() here,
         # because there could be columns with similar column-labels
         if column == 0:
@@ -663,9 +663,9 @@ class TreeModel(QAbstractItemModel):
         self._data = data
         self._n_columns = n_columns
         if headers is None:
-            headers = ["" for i in range(n_columns)]
+            headers = ["" for _ in range(n_columns)]
         elif len(headers) < n_columns:
-            headers += ["" for i in range(n_columns - headers)]
+            headers += ["" for _ in range(n_columns - headers)]
         elif len(headers) > n_columns:
             headers = headers[:n_columns]
         self._headers = headers
@@ -678,7 +678,7 @@ class TreeModel(QAbstractItemModel):
             parent = TreeItem(self._headers)
 
         for key, value in datadict.items():
-            data = [key] + ["" for i in range(self._n_columns - 1)]
+            data = [key] + ["" for _ in range(self._n_columns - 1)]
             tree_item = TreeItem(data, parent)
             if isinstance(value, dict):
                 child_item = self.dict_to_items(value, tree_item)
@@ -693,55 +693,53 @@ class TreeModel(QAbstractItemModel):
             item = index.internalPointer()
             return item.data(index.column())
 
-    def data(self, index: QModelIndex, role: int = ...) -> object:
+    def data(self, index, role=None):
         if role == Qt.DisplayRole:
             return self.getData(index)
 
-    def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex:
+    def index(self, row, column, parent=None, *args, **kwargs):
         if self.hasIndex(row, column, parent):
             if parent.isValid():
-                parentItem = parent.internalPointer()
+                parent_item = parent.internalPointer()
             else:
-                parentItem = self.root_item
+                parent_item = self.root_item
 
-            childItem = parentItem.child(row)
-            if childItem is not None:
-                return self.createIndex(row, column, childItem)
+            child_item = parent_item.child(row)
+            if child_item is not None:
+                return self.createIndex(row, column, child_item)
         return QModelIndex()
 
-    def parent(self, child: QModelIndex) -> QModelIndex:
+    def parent(self, child=None):
         if child.isValid():
-            childItem = child.internalPointer()
-            parentItem = childItem._parent
+            child_item = child.internalPointer()
+            parent_item = child_item._parent
 
-            if parentItem != self.root_item:
-                return self.createIndex(parentItem.row(), 0, parentItem)
+            if parent_item != self.root_item:
+                return self.createIndex(parent_item.row(), 0, parent_item)
         return QModelIndex()
 
-    def rowCount(self, parent: QModelIndex = ...) -> int:
+    def rowCount(self, parent=None, *args, **kwargs):
         if parent.column() > 0:
             return 0
 
         if parent.isValid():
-            parentItem = parent.internalPointer()
+            parent_item = parent.internalPointer()
         else:
-            parentItem = self.root_item
+            parent_item = self.root_item
 
-        return parentItem.childCount()
+        return parent_item.childCount()
 
-    def columnCount(self, parent: QModelIndex = ...) -> int:
+    def columnCount(self, parent=None, *args, **kwargs):
         if parent.isValid():
             return parent.internalPointer().columnCount()
         return self.root_item.columnCount()
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+    def flags(self, index):
         if index.isValid():
             return QAbstractItemModel.flags(self, index)
         return Qt.NoItemFlags
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int = ...
-    ) -> object:
+    def headerData(self, section, orientation, role=None):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             self.root_item.data(section)
 
@@ -786,8 +784,8 @@ class AddFilesModel(BasePandasModel):
 
         return QAbstractItemModel.flags(self, index)
 
-    def removeRows(self, row, count, index):
-        self.beginRemoveRows(index, row, row + count - 1)
+    def removeRows(self, row, count, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, row, row + count - 1)
         # Can't use DataFrame.drop() here,
         # because there could be rows with similar index-labels
         if row == 0:
@@ -882,15 +880,15 @@ class CustomFunctionModel(QAbstractListModel):
             else:
                 return get_std_icon("SP_DialogCancelButton")
 
-    def rowCount(self, index):
+    def rowCount(self, parent=None, *args, **kwargs):
         return len(self._data.index)
 
 
 class RunModel(QAbstractListModel):
     """A model for the items/functions of a Pipeline-Run"""
 
-    def __init__(self, data, mode):
-        super().__init__()
+    def __init__(self, data, mode, **kwargs):
+        super().__init__(**kwargs)
         self._data = data
         self.mode = mode
 
@@ -942,5 +940,5 @@ class RunModel(QAbstractListModel):
                 bold_font.setBold(True)
                 return bold_font
 
-    def rowCount(self, index):
+    def rowCount(self, parent=None, *args, **kwargs):
         return len(self._data)
