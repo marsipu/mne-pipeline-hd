@@ -1550,7 +1550,7 @@ class SavePkgDialog(QDialog):
                         f for f in read_pd_funcs.index if f in final_add_pd_funcs.index
                     ]
                     read_pd_funcs.drop(index=drop_funcs, inplace=True)
-                    final_add_pd_funcs = read_pd_funcs.append(final_add_pd_funcs)
+                    final_add_pd_funcs = pd.concat([read_pd_funcs, final_add_pd_funcs])
                 if isfile(pd_params_path):
                     read_pd_params = pd.read_csv(
                         pd_params_path,
@@ -1566,7 +1566,9 @@ class SavePkgDialog(QDialog):
                         if p in final_add_pd_params.index
                     ]
                     read_pd_params.drop(index=drop_params, inplace=True)
-                    final_add_pd_params = read_pd_params.append(final_add_pd_params)
+                    final_add_pd_params = pd.concat(
+                        [read_pd_params, final_add_pd_params]
+                    )
 
                 if self.my_pkg_name and self.my_pkg_name != self.cf_dialog.pkg_name:
                     # Rename folder and .csv-files if you enter a new name

@@ -17,7 +17,7 @@ skip_by_annotation;;Filtering;['edge', 'bad_acq_skip'];;;ListGui;
 fir_pad;;Filtering;reflect_limited;;;StringGui;
 erm_t_limit;;Preprocessing;300;s;Limits Empty-Room-Measurement-Length[s];IntGui;{'none_select': True, 'min_val':0, 'max_val': 10000}
 stim_channels;Stimulation-Channels;events;['STI 001'];;Stimulation Channel(s);ListGui;
-min_duration;Minimum Duration;events;0.002;s;Minimum-Duration for events;FloatGui;{'min_val': 0, 'step': 0.001}
+min_duration;Minimum Duration;events;0.002;s;Minimum-Duration for events;FloatGui;{'min_val': 0, 'step': 0.001, 'decimals': 3}
 shortest_event;Shortest Event;events;2;sample;Shortest possible Event;IntGui;{'min_val': 0}
 adjust_timeline_by_msec;Adjust Time;events;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;Epoch-Timeframe;epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
@@ -60,7 +60,7 @@ src_spacing;;Forward;ico5;;See the MNE-Documentation for further details;StringG
 vol_src_spacing;;Forward;5.0;;Spacing between sources in 3D-Grid;FloatGui;
 surface;;Forward;white;;Surface for computing the Source-Space;ComboGui;{'options': ['white', 'pial']}
 noise_cov_mode;Noise-Covariance Mode;Preprocessing;'Empty-Room';;Select the origin of the Noise-Covariance;ComboGui;{'options': ['Empty-Room', 'epochs']}
-noise_cov_method;Noise-Covariance Method;Preprocessing;empirical;;Select the method for computing the Noise-Covariance;ComboGui;{'options': ['shrunk', 'diagonal_fixed', 'empirical']}
+noise_cov_method;Noise-Covariance Method;Preprocessing;empirical;;Select the method for computing the Noise-Covariance;ComboGui;{'options': ['auto', 'empirical', 'diagonal_fixed', 'shrunk', 'oas', 'ledoit_wolf', 'factor_analysis', 'shrinkage', 'pca']}
 inverse_method;Inverse-Method;Inverse;MNE;;Choose the Inverse-Method for Source-Estimate;ComboGui;{'options': ['MNE', 'dSPM', 'sLORETA', 'eLORETA']}
 pick_ori;Dipole-Orientation;Inverse;None;;Choose the Dipole-Orientation for Source-Estimate;ComboGui;{'options': [None, 'normal', 'vector']}
 lambda2;;Inverse;1.0 / 3.0 ** 2;;lambda2 for Source-Estimate;FuncGui;
