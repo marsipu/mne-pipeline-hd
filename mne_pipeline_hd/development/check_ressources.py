@@ -17,7 +17,13 @@ from mne_pipeline_hd.functions import operations, plot
 # as in the signature of the actual function
 # (May have changed during development without
 # changing func_args in functions.csv)
-pd_funcs = pd.read_csv(resources.files(extra) / "functions.csv", sep=";", index_col=0, na_values=[""], keep_default_na=False)
+pd_funcs = pd.read_csv(
+    resources.files(extra) / "functions.csv",
+    sep=";",
+    index_col=0,
+    na_values=[""],
+    keep_default_na=False,
+)
 
 for func_name in pd_funcs.index:
     module_name = pd_funcs.loc[func_name, "module"]
