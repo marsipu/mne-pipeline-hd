@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from mne_pipeline_hd import _object_refs
+from mne_pipeline_hd import _object_refs, extra
 from mne_pipeline_hd.gui.base_widgets import SimpleList
 from mne_pipeline_hd.gui.gui_utils import center, WorkerDialog, \
     get_user_input_string
@@ -56,10 +56,8 @@ class WelcomeWindow(QWidget):
         layout.addWidget(title_label)
 
         image_label = QLabel()
-        with resources.path(
-            "mne_pipeline_hd.resource", "mne_pipeline_logo_evee_smaller.jpg"
-        ) as img_path:
-            image_label.setPixmap(QPixmap(str(img_path)))
+        img_path = resources.files(extra) / "mne_pipeline_logo_evee_smaller.jpg"
+        image_label.setPixmap(QPixmap(str(img_path)))
         layout.addWidget(image_label)
 
         home_layout = QHBoxLayout()
