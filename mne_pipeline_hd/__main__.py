@@ -9,7 +9,6 @@ import logging
 import os
 import sys
 from importlib import resources
-from os.path import join
 
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QFont

@@ -7,7 +7,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 from collections import Counter
 from importlib import resources
-from os.path import join
 from pathlib import Path
 
 import mne

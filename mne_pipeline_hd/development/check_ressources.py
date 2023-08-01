@@ -7,7 +7,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 import inspect
 from importlib import resources
-from os.path import join
 
 import pandas as pd
 
