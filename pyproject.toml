@@ -31,3 +31,7 @@ mne_pipeline_hd = "mne_pipeline_hd.__main__:main"
 [tool.setuptools.dynamic]
 version = { attr = "mne_pipeline_hd.__version__" }
 dependencies = { file = "requirements.txt" }
+
+[tool.black]
+line-lenght = 88
+target-version = ["py39", "py310", "py311"]

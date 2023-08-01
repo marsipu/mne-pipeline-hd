@@ -224,8 +224,8 @@ class BaseSettings:
     def __init__(self):
         # Load default settings
         default_settings_path = join(
-            resources.files(mne_pipeline_hd.extra),
-            "default_settings.json")
+            resources.files(mne_pipeline_hd.extra), "default_settings.json"
+        )
         with open(default_settings_path, "r") as file:
             self.default_qsettings = json.load(file)["qsettings"]
 
