@@ -1233,10 +1233,8 @@ class ImportFuncs(QDialog):
                 func = self.module.__dict__[func_key]
                 # Only functions are allowed
                 # (Classes should be called from function!)
-                if (
-                    type(func) == FunctionType
-                    and func.__module__ == self.module.__name__
-                ):
+                if (isinstance(func, FunctionType)
+                        and func.__module__ == self.module.__name__):
                     # Check, if function is already existing
                     if func_key in self.cf.exst_functions:
                         if (

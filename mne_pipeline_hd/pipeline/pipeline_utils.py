@@ -20,6 +20,8 @@ from pathlib import Path
 import numpy as np
 import psutil
 
+import mne_pipeline_hd
+
 datetime_format = "%d.%m.%Y %H:%M:%S"
 
 ismac = sys.platform.startswith("darwin")
@@ -221,9 +223,10 @@ def _get_func_param_kwargs(func, params):
 class BaseSettings:
     def __init__(self):
         # Load default settings
-        with resources.open_text(
-            "mne_pipeline_hd.resource", "default_settings.json"
-        ) as file:
+        default_settings_path = join(
+            resources.files(mne_pipeline_hd.extra),
+            "default_settings.json")
+        with open(default_settings_path, "r") as file:
             self.default_qsettings = json.load(file)["qsettings"]
 
     def get_default(self, name):

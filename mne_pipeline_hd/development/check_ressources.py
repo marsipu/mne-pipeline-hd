@@ -10,16 +10,14 @@ from importlib import resources
 
 import pandas as pd
 
+from mne_pipeline_hd import extra
 from mne_pipeline_hd.functions import operations, plot
 
 # Check, if the function-arguments saved in functions.csv are the same
 # as in the signature of the actual function
 # (May have changed during development without
 # changing func_args in functions.csv)
-with resources.path("mne_pipeline_hd.resource", "functions.csv") as pd_funcs_path:
-    pd_funcs = pd.read_csv(
-        str(pd_funcs_path), sep=";", index_col=0, na_values=[""], keep_default_na=False
-    )
+pd_funcs = pd.read_csv(resources.files(extra) / "functions.csv", sep=";", index_col=0, na_values=[""], keep_default_na=False)
 
 for func_name in pd_funcs.index:
     module_name = pd_funcs.loc[func_name, "module"]
@@ -49,5 +47,4 @@ for func_name in pd_funcs.index:
             f" corresponding function in {module}"
         )
 
-with resources.path("mne_pipeline_hd.resource", "functions.csv") as pd_funcs_path:
-    pd_funcs.to_csv(pd_funcs_path, sep=";")
+pd_funcs.to_csv(resources.files(extra) / "functions.csv", sep=";")
