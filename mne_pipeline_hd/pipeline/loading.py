@@ -23,7 +23,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-
 # =============================================================================
 # LOADING FUNCTIONS
 # =============================================================================
@@ -450,6 +449,14 @@ class BaseLoading:
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
+    def load(self, data_type, **kwargs):
+        """General load function with data_type as parameter."""
+        return self.io_dict[data_type]["load"](**kwargs)
+
+    def save(self, data_type, data, **kwargs):
+        """General save function with data_type as parameter."""
+        self.io_dict[data_type]["save"](data, **kwargs)
+
     def load_json(self, file_name, default=None):
         file_path = join(self.save_dir, f"{self.name}_{self.p_preset}_{file_name}.json")
         try:
@@ -781,6 +788,16 @@ class MEEG(BaseLoading):
                 "load": self.load_evokeds,
                 "save": self.save_evokeds,
             },
+            "evoked_eog": {
+                "path": None,
+                "load": self.load_eog_evoked,
+                "save": None
+            },
+            "evoked_ecg": {
+                "path": None,
+                "load": self.load_ecg_evoked,
+                "save": None
+            },
             "tf_power_epochs": {
                 "path": self.power_tfr_epochs_path,
                 "load": self.load_power_tfr_epochs,
@@ -869,10 +886,9 @@ class MEEG(BaseLoading):
 
         # Load sample
         test_data_folder = join(mne.datasets.sample.data_path(), "MEG", "sample")
-        test_file_dict = sample_paths
 
-        for data_type in test_file_dict:
-            test_file_name = test_file_dict[data_type]
+        for data_type in sample_paths:
+            test_file_name = sample_paths[data_type]
             test_file_path = join(test_data_folder, test_file_name)
             file_path = self.io_dict[data_type]["path"]
 
@@ -1032,6 +1048,14 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_evokeds(self, evokeds):
         mne.evoked.write_evokeds(self.evokeds_path, evokeds, overwrite=True)
+
+    @load_decorator
+    def load_eog_evokeds(self):
+        return self.load_eog_epochs().average()
+
+    @load_decorator
+    def load_ecg_evokeds(self):
+        return self.load_ecg_epochs().average()
 
     @load_decorator
     def load_power_tfr_epochs(self):

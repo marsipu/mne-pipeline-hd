@@ -774,18 +774,25 @@ def plot_ica_components(meeg, show_plots):
     return components_fig, ica
 
 
-def plot_ica_sources(meeg, ica_source_data, show_plots):
-    ica, data = _ica_plotto_helper(meeg, ica_source_data)
-    sources_fig = ica.plot_sources(
-        data, stop=ica.n_components, title=meeg.name, show=show_plots
-    )
-    meeg.plot_save("ica", subfolder="sources", matplotlib_figure=sources_fig)
+def plot_ica_sources(meeg, ica_source_data, show_plots, interactive=True):
+    ica = meeg.load_ica()
+    data = meeg.load(ica_source_data)
+
+    backend = "qt" if interactive else "matplotlib"
+    with mne.viz.use_browser_backend(backend):
+        sources_fig = ica.plot_sources(
+            data, stop=ica.n_components, title=meeg.name, show=show_plots
+        )
+    if not interactive:
+        meeg.plot_save("ica", subfolder="sources", matplotlib_figure=sources_fig)
 
     return sources_fig, ica
 
 
 def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
-    ica, data = _ica_plotto_helper(meeg, ica_overlay_data)
+    ica = meeg.load_ica()
+    data = meeg.load(ica_overlay_data)
+
     overlay_figs = list()
 
     if ica_overlay_data == "Evokeds":
