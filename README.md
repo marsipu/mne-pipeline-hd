@@ -2,7 +2,7 @@
 
 ### A Pipeline-GUI for [MNE-Python](https://mne.tools/stable/index.html)  from MEG-Lab Heidelberg
 
-![mne-pipeline-hd Logo](mne_pipeline_hd/resource/mne_pipeline_logo_evee_smaller.jpg)
+![mne-pipeline-hd Logo](mne_pipeline_hd/extra/mne_pipeline_logo_evee_smaller.jpg)
 
 ## Installation
 

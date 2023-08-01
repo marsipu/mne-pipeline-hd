@@ -20,10 +20,9 @@ from pathlib import Path
 import mne
 import pandas as pd
 
-from mne_pipeline_hd import functions
+from mne_pipeline_hd import functions, extra
 from mne_pipeline_hd.gui.gui_utils import get_user_input_string
-from mne_pipeline_hd.pipeline.legacy import \
-    transfer_file_params_to_single_subject
+from mne_pipeline_hd.pipeline.legacy import transfer_file_params_to_single_subject
 from mne_pipeline_hd.pipeline.pipeline_utils import QS
 from mne_pipeline_hd.pipeline.project import Project
 
@@ -80,9 +79,8 @@ class Controller:
         self.edu_program = None
 
         # Load default settings
-        with resources.open_text(
-            "mne_pipeline_hd.resource", "default_settings.json"
-        ) as file:
+        default_path = join(resources.files(extra), "default_settings.json")
+        with open(default_path, "r") as file:
             self.default_settings = json.load(file)
 
         # Load settings (which are stored as .json-file in home_path)
@@ -94,29 +92,23 @@ class Controller:
 
         # Pandas-DataFrame for contextual data of basic functions
         # (included with program)
-        with resources.path(
-            "mne_pipeline_hd.resource", "functions.csv"
-        ) as pd_funcs_path:
-            self.pd_funcs = pd.read_csv(
-                str(pd_funcs_path),
-                sep=";",
-                index_col=0,
-                na_values=[""],
-                keep_default_na=False,
-            )
+        self.pd_funcs = pd.read_csv(
+            resources.files(extra) / "functions.csv",
+            sep=";",
+            index_col=0,
+            na_values=[""],
+            keep_default_na=False,
+        )
 
         # Pandas-DataFrame for contextual data of parameters
         # for basic functions (included with program)
-        with resources.path(
-            "mne_pipeline_hd.resource", "parameters.csv"
-        ) as pd_params_path:
-            self.pd_params = pd.read_csv(
-                str(pd_params_path),
-                sep=";",
-                index_col=0,
-                na_values=[""],
-                keep_default_na=False,
-            )
+        self.pd_params = pd.read_csv(
+            resources.files(extra) / "parameters.csv",
+            sep=";",
+            index_col=0,
+            na_values=[""],
+            keep_default_na=False,
+        )
 
         # Import the basic- and custom-function-modules
         self.import_custom_modules()

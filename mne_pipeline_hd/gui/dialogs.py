@@ -7,6 +7,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 from collections import Counter
 from importlib import resources
+from os.path import join
 from pathlib import Path
 
 import mne
@@ -24,6 +25,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
 )
 
+from mne_pipeline_hd import extra
 from mne_pipeline_hd.gui.base_widgets import SimpleList, SimpleDialog
 from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
@@ -323,7 +325,7 @@ class AboutDialog(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
-        with resources.open_text("mne_pipeline_hd.resource", "license.txt") as file:
+        with open(resources.files(extra) / "license.txt", "r") as file:
             license_text = file.read()
         license_text = license_text.replace("\n", "<br>")
         text = (

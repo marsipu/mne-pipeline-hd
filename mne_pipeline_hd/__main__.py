@@ -9,11 +9,13 @@ import logging
 import os
 import sys
 from importlib import resources
+from os.path import join
 
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWidgets import QApplication
 
+import mne_pipeline_hd
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
@@ -110,8 +112,8 @@ def main():
         else:
             icon_name = "mne_pipeline_icon_light.png"
 
-    with resources.path("mne_pipeline_hd.resource", icon_name) as icon_path:
-        app_icon = QIcon(str(icon_path))
+    icon_path = resources.files(mne_pipeline_hd.extra) / icon_name
+    app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
 
     # Initiate WelcomeWindow

@@ -9,7 +9,7 @@ authors = [
 ]
 description = "A Pipeline-GUI for MNE-Python from MEG-Lab Heidelberg"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { "text" = "BSD-3-Clause" }
 keywords = ["mne-python", "meg", "eeg", "pipeline", "gui", "heidelberg"]
 classifiers = [
