@@ -2109,8 +2109,8 @@ class ICASelect(QDialog):
         # Create Parameter-GUI which stores parameter in dictionary
         # (not the same as project.parameters)
         ica_source_data_param = ComboGui(
-            self.parameters,
-            "ica_source_data",
+            data = (self.parameters,)
+            name = ("ica_source_data",)
             options=[
                 "raw",
                 "raw_filtered",
@@ -2130,8 +2130,8 @@ class ICASelect(QDialog):
         bt_layout.addWidget(plot_source_bt)
 
         ica_overlay_data_param = ComboGui(
-            self.parameters,
-            "ica_overlay_data",
+            data=self.parameters,
+            name="ica_overlay_data",
             options=[
                 "raw",
                 "raw_filtered",
