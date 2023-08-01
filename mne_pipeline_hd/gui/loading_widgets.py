@@ -2055,13 +2055,6 @@ class ICASelect(QDialog):
         self.current_obj = None
         self.parameters = dict()
         self.chkbxs = dict()
-        self.offline_plots = [
-            "plot_ica_components",
-            "plot_ica_sources",
-            "plot_ica_scores",
-            "plot_ica_overlay",
-        ]
-        self.selected_offline_plots = list()
 
         self.max_width, self.max_height = set_ratio_geometry(0.8)
         self.setMaximumSize(self.max_width, self.max_height)
@@ -2093,12 +2086,6 @@ class ICASelect(QDialog):
         comp_widget.setLayout(self.comp_chkbx_layout)
         comp_scroll.setWidget(comp_widget)
         list_layout.addWidget(comp_scroll)
-
-        # Todo: Fix Offline-Plots Layout
-        # offline_plot_list = CheckList(self.offline_plots,
-        #                               self.selected_offline_plots,
-        #                               title='Offline-Plots to select')
-        # list_layout.addWidget(offline_plot_list)
 
         bt_layout = QVBoxLayout()
 
