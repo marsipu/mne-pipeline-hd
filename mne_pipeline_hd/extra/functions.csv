@@ -73,9 +73,9 @@ plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;basic;group,ta
 plot_grand_average_stc_interactive;;Group;Plot;Grand-Average;True;True;;plot;basic;group,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_background,stc_roll,stc_azimuth,stc_elevation
 plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,con_fmin,con_fmax,target_labels,morph_to,show_plots,connectivity_vmin,connectivity_vmax
-plot_ica_components;Plot ICA-Components;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
-plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_source_data,show_plots
-plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;operations;basic;meeg,ica_overlay_data,show_plots
-plot_ica_properties;Plot ICA-Properties;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
-plot_ica_scores;Plot ICA-Scores;MEEG;Plot;ICA;True;False;;operations;basic;meeg,show_plots
+plot_ica_components;Plot ICA-Components;MEEG;Plot;ICA;True;False;;plot;basic;meeg,show_plots
+plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;plot;basic;meeg,ica_source_data,show_plots
+plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;plot;basic;meeg,ica_overlay_data,show_plots
+plot_ica_properties;Plot ICA-Properties;MEEG;Plot;ICA;True;False;;plot;basic;meeg,show_plots
+plot_ica_scores;Plot ICA-Scores;MEEG;Plot;ICA;True;False;;plot;basic;meeg,show_plots
 print_info;Print Info;MEEG;Plot;Raw;False;False;;operations;basic;meeg

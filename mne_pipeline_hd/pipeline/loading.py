@@ -186,6 +186,14 @@ class BaseLoading:
             self.pr.plot_files[self.name][self.p_preset] = dict()
         self.plot_files = self.pr.plot_files[self.name][self.p_preset]
 
+    def get_parameter(self, parameter_name):
+        """Get parameter from parameter-dictionary"""
+
+        if parameter_name in self.pa:
+            return self.pa[parameter_name]
+        else:
+            raise KeyError(f"Parameter {parameter_name} not found in parameters")
+
     def init_attributes(self):
         """Initialization of additional attributes, should be overridden
         in inherited classes"""
@@ -620,6 +628,12 @@ class MEEG(BaseLoading):
                 if any([k in self.sel_trials for k in key.split("/")])
             }
 
+        # The excluded ica-components
+        if self.name not in self.pr.meeg_ica_exclude:
+            self.ica_exclude = list()
+        else:
+            self.ica_exclude = self.pr.meeg_ica_exclude[self.name]
+
     def init_paths(self):
         """Load Paths as attributes
         (depending on which Parameter-Preset is selected)"""
@@ -788,16 +802,8 @@ class MEEG(BaseLoading):
                 "load": self.load_evokeds,
                 "save": self.save_evokeds,
             },
-            "evoked_eog": {
-                "path": None,
-                "load": self.load_eog_evoked,
-                "save": None
-            },
-            "evoked_ecg": {
-                "path": None,
-                "load": self.load_ecg_evoked,
-                "save": None
-            },
+            "evoked_eog": {"path": None, "load": self.load_eog_evokeds, "save": None},
+            "evoked_ecg": {"path": None, "load": self.load_ecg_evokeds, "save": None},
             "tf_power_epochs": {
                 "path": self.power_tfr_epochs_path,
                 "load": self.load_power_tfr_epochs,
@@ -938,6 +944,14 @@ class MEEG(BaseLoading):
                 if isfile(old_path):
                     os.renames(old_path, new_path)
 
+    def set_bad_channels(self, bad_channels):
+        self.bad_channels = bad_channels
+        self.pr.meeg_bad_channels[self.name] = self.bad_channels
+
+    def set_ica_exclude(self, ica_exclude):
+        self.ica_exclude = ica_exclude
+        self.pr.meeg_ica_exclude[self.name] = self.ica_exclude
+
     ###########################################################################
     # Load- & Save-Methods
     ###########################################################################
@@ -1017,8 +1031,8 @@ class MEEG(BaseLoading):
         ica = mne.preprocessing.read_ica(self.ica_path)
         # Change ica.exclude to indices stored in ica_exclude.py
         # for this MEEG-Object
-        if self.name in self.pr.ica_exclude:
-            ica.exclude = self.pr.ica_exclude[self.name]
+        if self.name in self.pr.meeg_ica_exclude:
+            ica.exclude = self.pr.meeg_ica_exclude[self.name]
         return ica
 
     @save_decorator

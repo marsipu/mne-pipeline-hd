@@ -266,10 +266,6 @@ class Param(QWidget):
     def save_param(self):
         self._save_data(self.name, self.param_value)
 
-    def copy_widget(self):
-        """Return a copy of this widget"""
-        return
-
 
 class IntGui(Param):
     """A GUI for Integer-Parameters"""

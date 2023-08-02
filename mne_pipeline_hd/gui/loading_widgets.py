@@ -18,7 +18,6 @@ import mne
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -49,11 +48,12 @@ from PyQt5.QtWidgets import (
 )
 from matplotlib import pyplot as plt
 
-from mne_pipeline_hd.functions.operations import (
+from mne_pipeline_hd.functions.plot import (
     plot_ica_components,
+    plot_ica_sources,
     plot_ica_overlay,
     plot_ica_properties,
-    plot_ica_sources,
+    plot_raw,
 )
 from mne_pipeline_hd.gui.base_widgets import (
     AssignWidget,
@@ -71,9 +71,9 @@ from mne_pipeline_hd.gui.gui_utils import (
     Worker,
     WorkerDialog,
     center,
-    get_exception_tuple,
     set_ratio_geometry,
     get_user_input_string,
+    gui_error,
 )
 from mne_pipeline_hd.gui.models import AddFilesModel
 from mne_pipeline_hd.gui.parameter_widgets import ComboGui
@@ -1263,25 +1263,22 @@ class SubBadsWidget(QWidget):
 
     def bad_ckbx_assigned(self):
         bad_channels = [ch for ch in self.bad_chkbts if self.bad_chkbts[ch].isChecked()]
-        self._assign_bad_channels(bad_channels)
+        self.current_obj.set_bad_channels(bad_channels)
 
     def set_chkbx_enable(self, enable):
         for chkbx in self.bad_chkbts:
             self.bad_chkbts[chkbx].setEnabled(enable)
 
-    def get_selected_bads(self, _):
-        # In-Place-Operations to maintain reference
-        # from current_obj to meeg_bad_channels
-        bad_channels = self.raw.info["bads"]
-        self._assign_bad_channels(bad_channels)
+    def get_selected_bads(self, _, meeg, raw):
+        self.current_obj.set_bad_channels(raw.info["bads"])
         self.update_selection()
         self.set_chkbx_enable(True)
 
         if self.save_raw_annot.isChecked():
             WorkerDialog(
                 self,
-                self.current_obj.save_raw,
-                raw=self.raw,
+                meeg.save_raw,
+                raw=raw,
                 show_console=True,
                 title="Saving raw with Annotations",
             )
@@ -1296,20 +1293,8 @@ class SubBadsWidget(QWidget):
         plot_dialog = QDialog(self)
         plot_dialog.setWindowTitle("Opening raw-Plot...")
         plot_dialog.open()
-        self.raw = self.current_obj.load_raw()
-        try:
-            events = self.current_obj.load_events()
-        except FileNotFoundError:
-            events = None
-        self.raw_fig = self.raw.plot(
-            events=events, n_channels=30, bad_color="red", title=self.current_obj.name
-        )
-        if hasattr(self.raw_fig, "canvas"):
-            # Connect Closing of Matplotlib-Figure
-            # to assignment of bad-channels
-            self.raw_fig.canvas.mpl_connect("close_event", self.get_selected_bads)
-        else:
-            self.raw_fig.gotClosed.connect(partial(self.get_selected_bads, None))
+
+        plot_raw(self.current_obj, show_plots=True, close_func=self.get_selected_bads)
         plot_dialog.close()
 
     def resizeEvent(self, event):
@@ -2066,7 +2051,7 @@ class ICASelect(QDialog):
         self.main_layout = QVBoxLayout()
         list_layout = QHBoxLayout()
 
-        self.file_list = CheckDictList(self.pr.all_meeg, self.pr.ica_exclude)
+        self.file_list = CheckDictList(self.pr.all_meeg, self.pr.meeg_ica_exclude)
         self.file_list.currentChanged.connect(self.obj_selected)
         list_layout.addWidget(self.file_list)
 
@@ -2098,16 +2083,16 @@ class ICASelect(QDialog):
         ica_source_data_param = ComboGui(
             data=self.parameters,
             name="ica_source_data",
-            options=[
-                "raw",
-                "raw_filtered",
-                "epochs",
-                "epochs_eog",
-                "epochs (ECG)",
-                "Evokeds",
-                "Evokeds (EOG)",
-                "Evokeds (ECG)",
-            ],
+            options={
+                "raw": "Raw (unfiltered)",
+                "raw_filtered": "Raw (filtered)",
+                "epochs": "Epochs",
+                "epochs_eog": "Epochs (EOG)",
+                "epochs_ecg": "Epochs (ECG)",
+                "evoked": "Evoked",
+                "evoked_eog": "Evoked (EOG)",
+                "evoked_ecg": "Evoked (ECG)",
+            },
             default="raw_filtered",
         )
         bt_layout.addWidget(ica_source_data_param)
@@ -2119,13 +2104,13 @@ class ICASelect(QDialog):
         ica_overlay_data_param = ComboGui(
             data=self.parameters,
             name="ica_overlay_data",
-            options=[
-                "raw",
-                "raw_filtered",
-                "Evokeds",
-                "Evokeds (EOG)",
-                "Evokeds (ECG)",
-            ],
+            options={
+                "raw": "Raw (unfiltered)",
+                "raw_filtered": "Raw (filtered)",
+                "evoked": "Evoked",
+                "evoked_eog": "Evoked (EOG)",
+                "evoked_ecg": "Evoked (ECG)",
+            },
             default="raw_filtered",
         )
         bt_layout.addWidget(ica_overlay_data_param)
@@ -2153,8 +2138,8 @@ class ICASelect(QDialog):
 
     def update_chkbxs(self):
         # Check, if object is already in ica_exclude
-        if self.current_obj.name in self.pr.ica_exclude:
-            selected_components = self.pr.ica_exclude[self.current_obj.name]
+        if self.current_obj.name in self.pr.meeg_ica_exclude:
+            selected_components = self.pr.meeg_ica_exclude[self.current_obj.name]
         else:
             selected_components = list()
 
@@ -2168,50 +2153,15 @@ class ICASelect(QDialog):
                 self.chkbxs[idx].setChecked(True)
             else:
                 # Remove idx if not in range(n_components)
-                self.pr.ica_exclude[self.current_obj.name].remove(idx)
-
-    def update_plots(self):
-        # Remove old layout with plots
-        if self.main_layout.count() > 1:
-            old_layout = self.main_layout.itemAt(self.main_layout.count() - 1)
-            self.main_layout.removeItem(old_layout)
-            for sub_layout in [
-                old_layout.itemAt(idx).layout() for idx in range(old_layout.count())
-            ]:
-                for widget in [
-                    sub_layout.itemAt(idx).widget() for idx in range(sub_layout.count())
-                ]:
-                    widget.deleteLater()
-            del old_layout
-
-        plot_layout = QHBoxLayout()
-
-        for plot_func in self.selected_offline_plots:
-            sub_plot_layout = QVBoxLayout()
-            try:
-                plot_paths = self.current_obj.plot_files[plot_func]
-            except KeyError:
-                continue
-            else:
-                for plot_path in plot_paths:
-                    plot_path = join(self.pr.figures_path, plot_path)
-                    pixmap = QPixmap(plot_path)
-                    label = QLabel()
-                    label.setScaledContents(True)
-                    label.setPixmap(pixmap)
-                    sub_plot_layout.addWidget(label)
-            plot_layout.addLayout(sub_plot_layout)
-
-        self.main_layout.addLayout(plot_layout)
+                self.pr.meeg_ica_exclude[self.current_obj.name].remove(idx)
 
     def obj_selected(self, current_name):
         self.current_obj = MEEG(current_name, self.ct)
         self.update_chkbxs()
-        self.update_plots()
 
     def component_selected(self):
         if self.current_obj:
-            self.pr.ica_exclude[self.current_obj.name] = [
+            self.pr.meeg_ica_exclude[self.current_obj.name] = [
                 idx for idx in self.chkbxs if self.chkbxs[idx].isChecked()
             ]
         self.file_list.content_changed()
@@ -2220,9 +2170,9 @@ class ICASelect(QDialog):
         for chkbx in self.chkbxs:
             self.chkbxs[chkbx].setEnabled(enable)
 
-    def get_selected_components(self, ica, _):
+    def get_selected_components(self, _, meeg, ica):
         self.set_chkbx_enable(True)
-        self.pr.ica_exclude[self.current_obj.name] = ica.exclude
+        meeg.set_ica_exclude(ica.exclude)
         self.update_chkbxs()
         self.file_list.content_changed()
 
@@ -2234,24 +2184,13 @@ class ICASelect(QDialog):
             dialog = QDialog(self)
             dialog.setWindowTitle("Opening...")
             dialog.open()
-            try:
-                figs, ica = plot_ica_components(meeg=self.current_obj, show_plots=True)
-                if not isinstance(figs, list):
-                    figs = [figs]
-                for fig in figs:
-                    fig.canvas.mpl_connect(
-                        "close_event", partial(self.get_selected_components, ica)
-                    )
-            except Exception:
-                err_tuple = get_exception_tuple()
-                QMessageBox.critical(
-                    self,
-                    "An Error ocurred!",
-                    f"{err_tuple[0]}: {err_tuple[1]}\n" f"{err_tuple[2]}",
+            with gui_error():
+                plot_ica_components(
+                    meeg=self.current_obj,
+                    show_plots=True,
+                    close_func=self.get_selected_components,
                 )
-                self.set_chkbx_enable(True)
-            finally:
-                dialog.close()
+            dialog.close()
 
     def plot_sources(self):
         if self.current_obj:
@@ -2261,74 +2200,42 @@ class ICASelect(QDialog):
             dialog = QDialog(self)
             dialog.setWindowTitle("Opening...")
             dialog.open()
-            try:
-                figs, ica = plot_ica_sources(
+
+            with gui_error():
+                plot_ica_sources(
                     meeg=self.current_obj,
                     ica_source_data=self.parameters["ica_source_data"],
                     show_plots=True,
+                    close_func=self.get_selected_components,
                 )
-                if not isinstance(figs, list):
-                    figs = [figs]
-                for fig in figs:
-                    fig.canvas.mpl_connect(
-                        "close_event", partial(self.get_selected_components, ica)
-                    )
-            except Exception:
-                err_tuple = get_exception_tuple()
-                QMessageBox.critical(
-                    self,
-                    "An Error ocurred!",
-                    f"{err_tuple[0]}: {err_tuple[1]}\n" f"{err_tuple[2]}",
-                )
-                self.set_chkbx_enable(False)
-            finally:
-                dialog.close()
+            dialog.close()
 
     def plot_overlay(self):
         if self.current_obj:
             # Disable CheckBoxes to avoid confusion
             # (Bad-Selection only goes unidirectional from Plot>GUI)
-            self.set_chkbx_enable(False)
             dialog = QDialog(self)
             dialog.setWindowTitle("Opening...")
             dialog.open()
-            try:
+
+            with gui_error():
                 plot_ica_overlay(
                     meeg=self.current_obj,
                     ica_overlay_data=self.parameters["ica_overlay_data"],
                     show_plots=True,
                 )
-            except Exception:
-                err_tuple = get_exception_tuple()
-                QMessageBox.critical(
-                    self,
-                    "An Error ocurred!",
-                    f"{err_tuple[0]}: {err_tuple[1]}\n" f"{err_tuple[2]}",
-                )
-                self.set_chkbx_enable(False)
-            finally:
-                dialog.close()
+            dialog.close()
 
     def plot_properties(self):
         if self.current_obj:
             # Disable CheckBoxes to avoid confusion
             # (Bad-Selection only goes unidirectional from Plot>GUI)
-            self.set_chkbx_enable(False)
             dialog = QDialog(self)
             dialog.setWindowTitle("Opening...")
             dialog.open()
-            try:
+            with gui_error():
                 plot_ica_properties(meeg=self.current_obj, show_plots=True)
-            except Exception:
-                err_tuple = get_exception_tuple()
-                QMessageBox.critical(
-                    self,
-                    "An Error ocurred!",
-                    f"{err_tuple[0]}: {err_tuple[1]}\n" f"{err_tuple[2]}",
-                )
-                self.set_chkbx_enable(False)
-            finally:
-                dialog.close()
+            dialog.close()
 
 
 class ReloadRaw(QDialog):

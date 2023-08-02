@@ -9,6 +9,7 @@ from __future__ import print_function
 
 import gc
 import multiprocessing
+from functools import partial
 from os.path import join
 
 import matplotlib.pyplot as plt
@@ -31,9 +32,14 @@ from mne_pipeline_hd.functions import operations as op
 # ==============================================================================
 # PLOTTING FUNCTIONS
 # ==============================================================================
+def _save_raw_on_close(_, meeg, raw):
+    # Save bad-channels
+    meeg.set_bad_channels(raw.info["bads"])
+    # Save raw for annotations
+    meeg.save_raw(raw)
 
 
-def plot_raw(meeg, show_plots):
+def plot_raw(meeg, show_plots, close_func=_save_raw_on_close):
     raw = meeg.load_raw()
 
     try:
@@ -42,7 +48,7 @@ def plot_raw(meeg, show_plots):
         events = None
         print("No events found")
 
-    raw.plot(
+    fig = raw.plot(
         events=events,
         n_channels=30,
         bad_color="red",
@@ -50,6 +56,13 @@ def plot_raw(meeg, show_plots):
         title=f"{meeg.name}",
         show=show_plots,
     )
+
+    if hasattr(fig, "canvas"):
+        # Connect to closing of Matplotlib-Figure
+        fig.canvas.mpl_connect("close_event", partial(close_func, meeg=meeg, raw=raw))
+    else:
+        # Connect to closing of PyQt-Figure
+        fig.gotClosed.connect(partial(close_func, None, meeg=meeg, raw=raw))
 
 
 def plot_filtered(meeg, show_plots):
@@ -391,6 +404,124 @@ def plot_gfp(meeg, show_plots):
             fig.show()
 
         meeg.plot_save("evokeds", subfolder="gfp", trial=trial, matplotlib_figure=fig)
+
+
+def _save_ica_on_close(_, meeg, ica):
+    meeg.set_ica_exclude(ica.exclude)
+    meeg.save_ica(ica)
+
+
+def plot_ica_components(meeg, show_plots, close_func=_save_ica_on_close):
+    ica = meeg.load_ica()
+    figs = ica.plot_components(title=meeg.name, show=show_plots)
+    if not isinstance(figs, list):
+        figs = [figs]
+    figs[0].canvas.mpl_connect("close_event", partial(close_func, meeg=meeg, ica=ica))
+    meeg.plot_save("ica", subfolder="components", matplotlib_figure=figs)
+
+
+def plot_ica_sources(meeg, ica_source_data, show_plots, close_func=_save_ica_on_close):
+    ica = meeg.load_ica()
+    data = meeg.load(ica_source_data)
+
+    fig = ica.plot_sources(
+        data, title=meeg.name, show=show_plots
+    )
+    if hasattr(fig, "canvas"):
+        # Connect to closing of Matplotlib-Figure
+        fig.canvas.mpl_connect("close_event", partial(close_func, meeg=meeg, ica=ica))
+        # Save plot as image
+        meeg.plot_save("ica", subfolder="sources", matplotlib_figure=fig)
+    else:
+        # Connect to closing of PyQt-Figure
+        fig.gotClosed.connect(partial(close_func, None, meeg=meeg, ica=ica))
+
+
+def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
+    ica = meeg.load_ica()
+    data = meeg.load(ica_overlay_data)
+
+    overlay_figs = list()
+
+    if ica_overlay_data == "Evokeds":
+        for evoked in [e for e in data if e.comment in meeg.sel_trials]:
+            ovl_fig = ica.plot_overlay(
+                evoked, title=f"{meeg.name}-{evoked.comment}", show=show_plots
+            )
+            overlay_figs.append(ovl_fig)
+    else:
+        ovl_fig = ica.plot_overlay(data, title=meeg.name, show=show_plots)
+        overlay_figs.append(ovl_fig)
+
+    meeg.plot_save("ica", subfolder="overlay", matplotlib_figure=overlay_figs)
+
+    return overlay_figs
+
+
+def plot_ica_properties(meeg, show_plots):
+    ica = meeg.load_ica()
+    epochs = meeg.load_epochs()
+
+    eog_indices = meeg.load_json("eog_indices", default=list())
+    ecg_indices = meeg.load_json("ecg_indices", default=list())
+    psd_args = {"fmax": meeg.pa["lowpass"]}
+
+    if len(eog_indices) > 0:
+        eog_epochs = meeg.load_eog_epochs()
+        eog_prop_figs = ica.plot_properties(
+            eog_epochs, eog_indices, psd_args=psd_args, show=show_plots
+        )
+        meeg.plot_save(
+            "ica", subfolder="properties", trial="eog", matplotlib_figure=eog_prop_figs
+        )
+
+    if len(ecg_indices) > 0:
+        ecg_epochs = meeg.load_ecg_epochs()
+        ecg_prop_figs = ica.plot_properties(
+            ecg_epochs, ecg_indices, psd_args=psd_args, show=show_plots
+        )
+        meeg.plot_save(
+            "ica", subfolder="properties", trial="ecg", matplotlib_figure=ecg_prop_figs
+        )
+
+    remaining_indices = [
+        ix for ix in ica.exclude if ix not in eog_indices + ecg_indices
+    ]
+    if len(remaining_indices) > 0:
+        prop_figs = ica.plot_properties(
+            epochs, remaining_indices, psd_args=psd_args, show=show_plots
+        )
+        meeg.plot_save(
+            "ica", subfolder="properties", trial="manually", matplotlib_figure=prop_figs
+        )
+
+
+def plot_ica_scores(meeg, show_plots):
+    eog_scores = meeg.load_json("eog_scores", default=list())
+    if len(eog_scores) > 1:
+        ica = meeg.load_ica()
+        eog_score_fig = ica.plot_scores(
+            eog_scores, title=f"{meeg.name}: EOG", show=show_plots
+        )
+        meeg.plot_save(
+            "ica", subfolder="scores", trial="eog", matplotlib_figure=eog_score_fig
+        )
+    else:
+        eog_score_fig = None
+
+    ecg_scores = meeg.load_json("ecg_scores", default=list())
+    if len(ecg_scores) > 1:
+        ica = meeg.load_ica()
+        ecg_score_fig = ica.plot_scores(
+            ecg_scores, title=f"{meeg.name}: ECG", show=show_plots
+        )
+        meeg.plot_save(
+            "ica", subfolder="scores", trial="ecg", matplotlib_figure=ecg_score_fig
+        )
+    else:
+        ecg_score_fig = None
+
+    return eog_score_fig, ecg_score_fig
 
 
 def plot_transformation(meeg):
