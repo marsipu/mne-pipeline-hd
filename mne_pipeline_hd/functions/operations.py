@@ -512,7 +512,7 @@ def epoch_raw(
 
     if (
         any([i is not None for i in [use_autoreject, reject, flat]])
-        and bad_interpolation == "Evokeds"
+        and bad_interpolation == "evokeds"
     ):
         raise RuntimeWarning(
             'With bad_interpolation="Evokeds", '

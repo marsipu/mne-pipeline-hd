@@ -441,7 +441,7 @@ def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
 
     overlay_figs = list()
 
-    if ica_overlay_data == "Evokeds":
+    if ica_overlay_data == "evoked":
         for evoked in [e for e in data if e.comment in meeg.sel_trials]:
             ovl_fig = ica.plot_overlay(
                 evoked, title=f"{meeg.name}-{evoked.comment}", show=show_plots
