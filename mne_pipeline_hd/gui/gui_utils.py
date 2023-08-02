@@ -161,6 +161,7 @@ def gui_error_decorator(func):
         except Exception:
             exc_tuple = get_exception_tuple()
             ErrorDialog(exc_tuple)
+
     return wrapper
 
 

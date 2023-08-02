@@ -424,9 +424,7 @@ def plot_ica_sources(meeg, ica_source_data, show_plots, close_func=_save_ica_on_
     ica = meeg.load_ica()
     data = meeg.load(ica_source_data)
 
-    fig = ica.plot_sources(
-        data, title=meeg.name, show=show_plots
-    )
+    fig = ica.plot_sources(data, title=meeg.name, show=show_plots)
     if hasattr(fig, "canvas"):
         # Connect to closing of Matplotlib-Figure
         fig.canvas.mpl_connect("close_event", partial(close_func, meeg=meeg, ica=ica))
