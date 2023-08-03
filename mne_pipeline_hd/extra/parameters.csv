@@ -34,6 +34,7 @@ flat;;epochs;{'mag': 1e-15, 'grad':1e-13, 'eeg': 1e-6};;Chose flat-thresholds;Di
 decim;;epochs;1;;Downsampling-Factor for epochs;IntGui;
 ica_method;ICA-Method;ICA;fastica;;The method for calculating ICA;ComboGui;{'options': ['fastica', 'infomax', 'picard']}
 ica_fitto;Fit ICA to:;ICA;'raw_filtered';;The data to fit the ICA to;ComboGui;{'options': ['raw', 'raw_filtered', 'epochs']}
+ica_apply_target;Apply ICA to:;ICA;raw_filtered;;The target object (Raw, Epochs or Evoked) to apply ICA and remove the selected components from;ComboGui;{'options': {'raw_filtered': 'Raw (filtered)', 'epochs': 'Epochs', 'evoked': 'Evoked'}}
 n_components;;ICA;25;;The number of components for ICA;IntGui;
 max_pca_components;;ICA;None;;;IntGui;{'none_select': True}
 n_pca_components;;ICA;None;;;IntGui;{'none_select': True}
@@ -85,8 +86,8 @@ ecd_times;;Inverse;{};;;DictGui;
 ecd_positions;;Inverse;{};;;DictGui;
 ecd_orientations;;Inverse;{};;;DictGui;
 morph_to;;Grand-Average;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
-ica_source_data;;ICA;raw_filtered;;Which data to plot in sources-plot from ICA;ComboGui;{'options': {'raw': 'Raw (unfiltered)', 'raw_filtered': 'Raw (filtered', 'epochs': 'Epochs', 'epochs_eog': 'Epochs (EOG)', 'epochs_ecg': 'Epochs (ECG)', 'evoked': 'Evoked', 'evoked_eog': 'Evoked (EOG)', 'evoked_ecg': 'Evoked (ECG)'}}
-ica_overlay_data;;ICA;evoked;;Which data to plot in overlay-plot from ICA;ComboGui;{'options': {'raw': 'Raw (unfiltered)', 'raw_filtered': 'Raw (filtered', 'evoked': 'Evoked', 'evoked_eog': 'Evoked (EOG)', 'evoked_ecg': 'Evoked (ECG)'}}
+ica_source_data;;ICA;raw_filtered;;Which data to plot in sources-plot from ICA;ComboGui;{'options': {'raw': 'Raw (unfiltered)', 'raw_filtered': 'Raw (filtered)', 'epochs': 'Epochs', 'epochs_eog': 'Epochs (EOG)', 'epochs_ecg': 'Epochs (ECG)', 'evoked': 'Evoked', 'evoked_eog': 'Evoked (EOG)', 'evoked_ecg': 'Evoked (ECG)'}}
+ica_overlay_data;;ICA;evoked;;Which data to plot in overlay-plot from ICA;ComboGui;{'options': {'raw': 'Raw (unfiltered)', 'raw_filtered': 'Raw (filtered)', 'evoked': 'Evoked', 'evoked_eog': 'Evoked (EOG)', 'evoked_ecg': 'Evoked (ECG)'}}
 plot_sensors_kind;;Plot;'topomap';;The kind of plot for plot_sensors;ComboGui;{'options':['topomap', '3d', 'select']}
 erm_ssp_duration;;Preprocessing;1;s;The time-chunk to use for ssp;IntGui;
 erm_n_grad;;Preprocessing;2;;The number of projections for Gradiometer;IntGui;

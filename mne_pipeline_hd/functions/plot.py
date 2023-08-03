@@ -39,7 +39,7 @@ def _save_raw_on_close(_, meeg, raw):
     meeg.save_raw(raw)
 
 
-def plot_raw(meeg, show_plots, close_func=_save_raw_on_close):
+def plot_raw(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
     raw = meeg.load_raw()
 
     try:
@@ -50,11 +50,11 @@ def plot_raw(meeg, show_plots, close_func=_save_raw_on_close):
 
     fig = raw.plot(
         events=events,
-        n_channels=30,
         bad_color="red",
         scalings="auto",
         title=f"{meeg.name}",
         show=show_plots,
+        **kwargs
     )
 
     if hasattr(fig, "canvas"):
@@ -76,9 +76,8 @@ def plot_filtered(meeg, show_plots):
 
     raw.plot(
         events=events,
-        n_channels=30,
         bad_color="red",
-        scalings=dict(mag=1e-12, grad=4e-11, eeg=20e-5, stim=1),
+        scalings="auto",
         title=f'{meeg.name} highpass={meeg.pa["highpass"]} '
         f'lowpass={meeg.pa["lowpass"]}',
         show=show_plots,

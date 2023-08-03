@@ -733,29 +733,18 @@ def run_ica(
     meeg.pr.meeg_ica_exclude[meeg.name] = ica.exclude
 
 
-def apply_ica(meeg, n_pca_components):
+def apply_ica(meeg, ica_apply_target, n_pca_components):
     # Check file-parameters to make sure,
     # that ica is not applied twice in a row
-    epochs_file = Path(meeg.epochs_path).name
-    if (
-        epochs_file in meeg.file_parameters
-        and meeg.file_parameters[epochs_file]["FUNCTION"] == "apply_ica"
-    ):
-        print(
-            f"Not applying ICA because it was already applied to this file "
-            f'on {meeg.file_parameters[epochs_file]["TIME"]}. '
-            f"If you want to apply ICA again, delete the epochs-File in "
-            "FileManagement and redo the epochs."
-        )
-    else:
-        epochs = meeg.load_epochs()
-        ica = meeg.load_ica()
 
-        if len(ica.exclude) == 0:
-            print(f"No components excluded for {meeg.name}")
-        else:
-            ica_epochs = ica.apply(epochs, n_pca_components=n_pca_components)
-            meeg.save_epochs(ica_epochs)
+    data = meeg.load(ica_apply_target)
+    ica = meeg.load_ica()
+
+    if len(ica.exclude) == 0:
+        print(f"No components excluded for {meeg.name}")
+    else:
+        applied_data = ica.apply(data, n_pca_components=n_pca_components)
+        meeg.save(ica_apply_target, applied_data)
 
         # Apply to Empty-Room-Data as well if present
         if meeg.erm:
@@ -764,7 +753,7 @@ def apply_ica(meeg, n_pca_components):
             except FileNotFoundError:
                 erm_data = meeg.load_erm()
             try:
-                ica.apply(erm_data, n_pca_components)
+                ica.apply(erm_data, n_pca_components=n_pca_components)
             # Todo: Unmeddling ERM-SSP and ICA stuff
             except ValueError:
                 print(
