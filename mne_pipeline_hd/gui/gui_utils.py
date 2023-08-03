@@ -434,7 +434,9 @@ class WorkerDialog(QDialog):
         show_console=False,
         close_directly=True,
         blocking=False,
-        return_exception=False, title=None, **kwargs,
+        return_exception=False,
+        title=None,
+        **kwargs,
     ):
         super().__init__(parent)
 

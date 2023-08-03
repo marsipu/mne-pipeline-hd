@@ -106,11 +106,11 @@ def transfer_file_params_to_single_subject(ct):
             file_parameters = json.load(file, object_hook=type_json_hook)
             for obj_name in file_parameters:
                 if obj_name in ct.pr.all_meeg:
-                    obj = MEEG(obj_name, ct, preload=False)
+                    obj = MEEG(obj_name, ct)
                 elif obj_name in ct.pr.all_fsmri:
-                    obj = FSMRI(obj_name, ct, preload=False)
+                    obj = FSMRI(obj_name, ct)
                 elif obj_name in ct.pr.all_groups:
-                    obj = Group(obj_name, ct, preload=False)
+                    obj = Group(obj_name, ct)
                 else:
                     obj = None
                 if obj is not None:

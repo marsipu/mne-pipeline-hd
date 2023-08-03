@@ -1182,11 +1182,11 @@ class SubBadsWidget(QWidget):
         plot_bt.clicked.connect(self.plot_raw_bad)
         self.bt_layout.addWidget(plot_bt)
 
-        find_bads_bt = QPushButton('Find bads')
+        find_bads_bt = QPushButton("Find bads")
         find_bads_bt.clicked.connect(self.find_bads)
         self.bt_layout.addWidget(find_bads_bt)
 
-        find_all_bads_bt = QPushButton('Find bads (all)')
+        find_all_bads_bt = QPushButton("Find bads (all)")
         find_all_bads_bt.clicked.connect(self.find_bads_all)
         self.bt_layout.addWidget(find_all_bads_bt)
 
@@ -1327,42 +1327,50 @@ class SubBadsWidget(QWidget):
     def _find_bads(self, name):
         raw = MEEG(name, self.ct, preload=False).load_raw()
 
-        if raw.info['dev_head_t'] is None:
-            coord_frame = 'meg'
+        if raw.info["dev_head_t"] is None:
+            coord_frame = "meg"
         else:
-            coord_frame = 'head'
+            coord_frame = "head"
 
-        noisy_chs, flat_chs = find_bad_channels_maxwell(
-            raw, coord_frame=coord_frame)
+        noisy_chs, flat_chs = find_bad_channels_maxwell(raw, coord_frame=coord_frame)
 
-        logging.info(f'Noisy channels: {noisy_chs}\n'
-                     f'Flat channels: {flat_chs}')
+        logging.info(f"Noisy channels: {noisy_chs}\n" f"Flat channels: {flat_chs}")
         bad_channels = noisy_chs + flat_chs
         self._assign_bad_channels(name, bad_channels)
 
     def find_bads(self):
         name = self.current_obj.name
         self.current_obj = None
-        wd = WorkerDialog(self, self._find_bads, name=name,
-                          show_console=True, show_buttons=True,
-                          close_directly=False, return_exception=False,
-                          title='Finding bads with maxwell filter...')
+        wd = WorkerDialog(
+            self,
+            self._find_bads,
+            name=name,
+            show_console=True,
+            show_buttons=True,
+            close_directly=False,
+            return_exception=False,
+            title="Finding bads with maxwell filter...",
+        )
         wd.thread_finished.connect(self.update_selection)
 
     def _find_bads_all(self, worker_signals):
         self.current_obj = None
         for name in self.all_files:
-            logging.info(f'Finding bads for {name}...')
+            logging.info(f"Finding bads for {name}...")
             self._find_bads(name)
             if worker_signals.was_canceled:
                 break
 
     def find_bads_all(self):
         wd = WorkerDialog(
-            self, self._find_bads_all,
-            show_console=True, show_buttons=True,
-            close_directly=False, return_exception=False,
-            title='Finding bads with maxwell filter for all files...')
+            self,
+            self._find_bads_all,
+            show_console=True,
+            show_buttons=True,
+            close_directly=False,
+            return_exception=False,
+            title="Finding bads with maxwell filter for all files...",
+        )
         wd.thread_finished.connect(self.update_selection)
 
     def resizeEvent(self, event):
