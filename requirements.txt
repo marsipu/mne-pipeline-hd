@@ -2,8 +2,7 @@
 PyQt5
 qtpy
 pyobjc-framework-Cocoa; sys_platform == "darwin"
-darkdetect
-qdarkstyle
+pyqtdarktheme
 
 # MNE-related
 mne
@@ -12,6 +11,8 @@ mne-qt-browser
 autoreject
 h5io
 vtk
+nibabel
 
 # Pipeline-related
 psutil
+pandas

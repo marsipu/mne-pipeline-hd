@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Pipeline-GUI for Analysis with MNE-Python
-@author: Martin Schulz
-@email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne-pipeline-hd
-License: GPL-3.0
+Authors: Martin Schulz <dev@mgschulz.de>
+License: BSD 3-Clause
+Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import json
@@ -12,12 +10,14 @@ from importlib import resources
 
 from PyQt5.QtCore import QSettings
 
+from mne_pipeline_hd import extra
+
 
 def test_qsettings_types(qtbot):
     """Test if QSettings keep types on all operating systems."""
-    with resources.open_text('mne_pipeline_hd.resource',
-                             'default_settings.json') as file:
-        default_qsettings = json.load(file)['qsettings']
+    settings_path = resources.files(extra) / "default_settings.json"
+    with open(settings_path, "r") as file:
+        default_qsettings = json.load(file)["qsettings"]
 
     for v in default_qsettings:
         QSettings().setValue(v, default_qsettings[v])

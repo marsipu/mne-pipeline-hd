@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Pipeline-GUI for Analysis with MNE-Python
-@author: Martin Schulz
-@email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne-pipeline-hd
-License: GPL-3.0
+Authors: Martin Schulz <dev@mgschulz.de>
+License: BSD 3-Clause
+Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import io
@@ -12,15 +10,34 @@ import logging
 import multiprocessing
 import sys
 import traceback
+from contextlib import contextmanager
 from inspect import signature
 
-from PyQt5.QtCore import (QObject, QProcess, QRunnable, QThreadPool,
-                          Qt, pyqtSignal, pyqtSlot, QTimer)
+from PyQt5.QtCore import (
+    QObject,
+    QProcess,
+    QRunnable,
+    QThreadPool,
+    Qt,
+    pyqtSignal,
+    pyqtSlot,
+    QTimer,
+)
 from PyQt5.QtGui import QFont, QTextCursor
-from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDialog,
-                             QHBoxLayout,
-                             QLabel, QMessageBox, QProgressBar, QPushButton,
-                             QTextEdit, QVBoxLayout, QStyle, QInputDialog)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QDesktopWidget,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QStyle,
+    QInputDialog,
+)
 
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.pipeline.pipeline_utils import QS
@@ -47,8 +64,7 @@ def set_ratio_geometry(size_ratio, widget=None):
 
 
 def get_std_icon(icon_name):
-    return QApplication.instance().style().standardIcon(
-        getattr(QStyle, icon_name))
+    return QApplication.instance().style().standardIcon(getattr(QStyle, icon_name))
 
 
 class ExceptionTuple(object):
@@ -74,7 +90,7 @@ def get_exception_tuple(is_mp=False):
         logger = multiprocessing.get_logger()
     else:
         logger = logging.getLogger()
-    logger.error(f'{exctype}: {value}')
+    logger.error(f"{exctype}: {value}")
     exc_tuple = ExceptionTuple(exctype, value, traceback_str)
 
     return exc_tuple
@@ -91,7 +107,7 @@ class ErrorDialog(QDialog):
         if self.title:
             self.setWindowTitle(self.title)
         else:
-            self.setWindowTitle('An Error ocurred!')
+            self.setWindowTitle("An Error ocurred!")
 
         set_ratio_geometry(0.6, self)
 
@@ -108,18 +124,19 @@ class ErrorDialog(QDialog):
         self.display = QTextEdit()
         self.display.setLineWrapMode(QTextEdit.WidgetWidth)
         self.display.setReadOnly(True)
-        self.formated_tb_text = self.err[2].replace('\n', '<br>')
+        self.formated_tb_text = self.err[2].replace("\n", "<br>")
         if self.title:
-            self.html_text = f'<h1>{self.title}</h1>' \
-                             f'<h2>{self.err[1]}</h2>' \
-                             f'{self.formated_tb_text}'
+            self.html_text = (
+                f"<h1>{self.title}</h1>"
+                f"<h2>{self.err[1]}</h2>"
+                f"{self.formated_tb_text}"
+            )
         else:
-            self.html_text = f'<h1>{self.err[1]}</h1>' \
-                             f'{self.formated_tb_text}'
+            self.html_text = f"<h1>{self.err[1]}</h1>" f"{self.formated_tb_text}"
         self.display.setHtml(self.html_text)
         layout.addWidget(self.display)
 
-        self.close_bt = QPushButton('Close')
+        self.close_bt = QPushButton("Close")
         self.close_bt.clicked.connect(self.close)
         layout.addWidget(self.close_bt)
 
@@ -132,15 +149,36 @@ def show_error_dialog(exc_str):
      If unavailable (non-console application), log an additional notice.
     """
     if QApplication.instance() is not None:
-        ErrorDialog(exc_str, title='A unexpected error occurred')
+        ErrorDialog(exc_str, title="A unexpected error occurred")
     else:
         logging.debug("No QApplication instance available.")
+
+
+def gui_error_decorator(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            exc_tuple = get_exception_tuple()
+            ErrorDialog(exc_tuple)
+
+    return wrapper
+
+
+@contextmanager
+def gui_error():
+    try:
+        yield
+    except Exception:
+        exc_tuple = get_exception_tuple()
+        ErrorDialog(exc_tuple)
 
 
 # ToDo: Test
 class UncaughtHook(QObject):
     """This class is a modified version
     of https://timlehr.com/python-exception-hooks-with-qt-message-box/"""
+
     _exception_caught = pyqtSignal(object)
 
     def __init__(self, *args, **kwargs):
@@ -161,12 +199,17 @@ class UncaughtHook(QObject):
             # Print Error to Console
             traceback.print_exception(exc_type, exc_value, exc_traceback)
             exc_info = (exc_type, exc_value, exc_traceback)
-            exc_str = (exc_type.__name__, exc_value,
-                       ''.join(traceback.format_tb(exc_traceback)))
-            logging.critical(f'Uncaught exception:\n'
-                             f'{exc_str[0]}: {exc_str[1]}\n'
-                             f'{exc_str[2]}',
-                             exc_info=exc_info)
+            exc_str = (
+                exc_type.__name__,
+                exc_value,
+                "".join(traceback.format_tb(exc_traceback)),
+            )
+            logging.critical(
+                f"Uncaught exception:\n"
+                f"{exc_str[0]}: {exc_str[1]}\n"
+                f"{exc_str[2]}",
+                exc_info=exc_info,
+            )
 
             # trigger showing of error-dialog
             self._exception_caught.emit(exc_str)
@@ -178,10 +221,10 @@ class CodeEditor(QTextEdit):
 
 
 def _html_compatible(text):
-    text = text.replace('<', '&lt;')
-    text = text.replace('>', '&gt;')
-    text = text.replace('\n', '<br>')
-    text = text.replace('\x1b', '')
+    text = text.replace("<", "&lt;")
+    text = text.replace(">", "&gt;")
+    text = text.replace("\n", "<br>")
+    text = text.replace("\x1b", "")
 
     return text
 
@@ -211,11 +254,11 @@ class ConsoleWidget(QTextEdit):
     def write_buffer(self):
         if len(self.buffer) > 0:
             text, kind = self.buffer.pop(0)
-            if kind == 'html':
+            if kind == "html":
                 self._add_html(text)
 
-            elif kind == 'progress':
-                text = text.replace('\r', '')
+            elif kind == "progress":
+                text = text.replace("\r", "")
                 text = _html_compatible(text)
                 text = f'<font color="green">{text}</font>'
                 # Delete last line
@@ -224,14 +267,14 @@ class ConsoleWidget(QTextEdit):
                 cursor.removeSelectedText()
                 self._add_html(text)
 
-            elif kind == 'stdout':
+            elif kind == "stdout":
                 text = _html_compatible(text)
                 self._add_html(text)
 
-            elif kind == 'stderr':
+            elif kind == "stderr":
                 # weird characters in some progress are excluded
                 # (e.g. from autoreject)
-                if '\x1b' not in text:
+                if "\x1b" not in text:
                     text = _html_compatible(text)
                     text = f'<font color="red">{text}</font>'
                     self._add_html(text)
@@ -240,16 +283,16 @@ class ConsoleWidget(QTextEdit):
         self.autoscroll = autoscroll
 
     def write_html(self, text):
-        self.buffer.append((text, 'html'))
+        self.buffer.append((text, "html"))
 
     def write_stdout(self, text):
-        self.buffer.append((text, 'stdout'))
+        self.buffer.append((text, "stdout"))
 
     def write_stderr(self, text):
-        self.buffer.append((text, 'stderr'))
+        self.buffer.append((text, "stderr"))
 
     def write_progress(self, text):
-        self.buffer.append((text, 'progress'))
+        self.buffer.append((text, "progress"))
 
     # Make sure cursor is not moved
     def mousePressEvent(self, event):
@@ -261,7 +304,7 @@ class ConsoleWidget(QTextEdit):
 
 class MainConsoleWidget(ConsoleWidget):
     """A subclass of ConsoleWidget which is linked to stdout/stderr
-     of the main process"""
+    of the main process"""
 
     def __init__(self):
         super().__init__()
@@ -283,11 +326,10 @@ class StreamSignals(QObject):
 #  (continue writing to sys.__stdout__/__stderr__)
 #  when no accepted/printed-signal is coming back from receiving Widget
 class StdoutStderrStream(io.TextIOBase):
-
     def __init__(self, kind):
         super().__init__()
         self.signal = StreamSignals()
-        if kind == 'stdout':
+        if kind == "stdout":
             self.original_stream = sys.__stdout__
         else:
             self.original_stream = sys.__stderr__
@@ -297,7 +339,7 @@ class StdoutStderrStream(io.TextIOBase):
         self.original_stream.write(text)
 
         # Get progress-text with '\r' as prefix
-        if text[:1] == '\r':
+        if text[:1] == "\r":
             self.signal.text_updated.emit(text)
         else:
             self.signal.text_written.emit(text)
@@ -307,8 +349,8 @@ class StdoutStderrStream(io.TextIOBase):
 
 
 class WorkerSignals(QObject):
-    """Class for standard Worker-Signals
-    """
+    """Class for standard Worker-Signals"""
+
     # Emitted when the function finished and returns the return-value
     finished = pyqtSignal(object)
 
@@ -359,13 +401,13 @@ class Worker(QRunnable):
         Initialise the runner function with passed args, kwargs.
         """
         # Add signals to kwargs if in parameters of function
-        if 'worker_signals' in signature(self.function).parameters:
-            self.kwargs['worker_signals'] = self.signals
+        if "worker_signals" in signature(self.function).parameters:
+            self.kwargs["worker_signals"] = self.signals
 
         # Retrieve args/kwargs here; and fire processing using them
         try:
             return_value = self.function(*self.args, **self.kwargs)
-        except:  # noqa: E722
+        except Exception:
             exc_tuple = get_exception_tuple()
             self.signals.error.emit(exc_tuple)
         else:
@@ -381,11 +423,19 @@ class Worker(QRunnable):
 # ToDo: Make PyQt-independent with tqdm
 class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
+
     thread_finished = pyqtSignal(object)
 
-    def __init__(self, parent, function, show_buttons=False,
-                 show_console=False, close_directly=True, blocking=False,
-                 return_exception=False, title=None, **kwargs):
+    def __init__(
+        self,
+        parent,
+        function,
+        show_buttons=False,
+        show_console=False,
+        close_directly=True,
+        blocking=False,
+        return_exception=False, title=None, **kwargs,
+    ):
         super().__init__(parent)
 
         self.show_buttons = show_buttons
@@ -419,7 +469,7 @@ class WorkerDialog(QDialog):
 
         if self.title:
             title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyType', 18, QFont.Bold))
+            title_label.setFont(QFont("AnyType", 18, QFont.Bold))
             layout.addWidget(title_label)
 
         self.progress_label = QLabel()
@@ -437,11 +487,11 @@ class WorkerDialog(QDialog):
         if self.show_buttons:
             bt_layout = QHBoxLayout()
 
-            cancel_bt = QPushButton('Cancel')
+            cancel_bt = QPushButton("Cancel")
             cancel_bt.clicked.connect(self.cancel)
             bt_layout.addWidget(cancel_bt)
 
-            self.close_bt = QPushButton('Close')
+            self.close_bt = QPushButton("Close")
             self.close_bt.clicked.connect(self.close)
             self.close_bt.setEnabled(False)
             bt_layout.addWidget(self.close_bt)
@@ -483,14 +533,17 @@ class WorkerDialog(QDialog):
             event.accept()
         else:
             QMessageBox.warning(
-                self, 'Closing not possible!',
-                'You can\'t close this Dialog before this Thread finished!')
+                self,
+                "Closing not possible!",
+                "You can't close this Dialog before this Thread finished!",
+            )
             event.ignore()
 
 
 # ToDo: WIP
 class QProcessWorker(QObject):
     """A worker for QProcess."""
+
     # Send stdout from current process.
     stdoutSignal = pyqtSignal(str)
     # Send stderr from curren process.
@@ -513,26 +566,28 @@ class QProcessWorker(QObject):
         # Parse command(s)
         if not isinstance(commands, list):
             commands = [commands]
-        self.commands = [cmd.split(' ') for cmd in commands]
+        self.commands = [cmd.split(" ") for cmd in commands]
         self.printtostd = printtostd
         self.process = None
 
     def handle_stdout(self):
-        text = bytes(self.process.readAllStandardOutput()).decode('utf8')
+        text = bytes(self.process.readAllStandardOutput()).decode("utf8")
         self.stdoutSignal.emit(text)
         if self.printtostd:
             sys.stdout.write(text)
 
     def handle_stderr(self):
-        text = bytes(self.process.readAllStandardError()).decode('utf8')
+        text = bytes(self.process.readAllStandardError()).decode("utf8")
         self.stderrSignal.emit(text)
         if self.printtostd:
             sys.stderr.write(text)
 
     def error_occurred(self):
-        text = f'An error occured with \"{self.process.program()} ' \
-               f'{" ".join(self.process.arguments())}\":\n' \
-               f'{self.process.errorString()}\n'
+        text = (
+            f'An error occured with "{self.process.program()} '
+            f'{" ".join(self.process.arguments())}":\n'
+            f"{self.process.errorString()}\n"
+        )
         self.stderrSignal.emit(text)
         if self.printtostd:
             sys.stderr.write(text)
@@ -540,8 +595,10 @@ class QProcessWorker(QObject):
 
     def process_finished(self):
         if self.process.exitCode() == 1:
-            text = f'\"{self.process.program()} ' \
-                   f'{" ".join(self.process.arguments())}\" has crashed\n'
+            text = (
+                f'"{self.process.program()} '
+                f'{" ".join(self.process.arguments())}" has crashed\n'
+            )
             self.stderrSignal.emit(text)
             if self.printtostd:
                 sys.stderr.write(text)
@@ -568,9 +625,16 @@ class QProcessWorker(QObject):
 
 
 class QProcessDialog(QDialog):
-    def __init__(self, parent, commands, show_buttons=True,
-                 show_console=True, close_directly=False,
-                 title=None, blocking=True):
+    def __init__(
+        self,
+        parent,
+        commands,
+        show_buttons=True,
+        show_console=True,
+        close_directly=False,
+        title=None,
+        blocking=True,
+    ):
         super().__init__(parent)
         self.commands = commands
         self.show_buttons = show_buttons
@@ -596,7 +660,7 @@ class QProcessDialog(QDialog):
 
         if self.title:
             title_label = QLabel(self.title)
-            title_label.setFont(QFont('AnyType', 18, QFont.Bold))
+            title_label.setFont(QFont("AnyType", 18, QFont.Bold))
             layout.addWidget(title_label)
 
         if self.show_console:
@@ -606,11 +670,11 @@ class QProcessDialog(QDialog):
         if self.show_buttons:
             bt_layout = QHBoxLayout()
 
-            cancel_bt = QPushButton('Cancel')
+            cancel_bt = QPushButton("Cancel")
             cancel_bt.clicked.connect(self.cancel)
             bt_layout.addWidget(cancel_bt)
 
-            self.close_bt = QPushButton('Close')
+            self.close_bt = QPushButton("Close")
             self.close_bt.clicked.connect(self.close)
             self.close_bt.setEnabled(False)
             bt_layout.addWidget(self.close_bt)
@@ -632,10 +696,8 @@ class QProcessDialog(QDialog):
     def start_process(self):
         self.process_worker = QProcessWorker(self.commands)
         if self.show_console:
-            self.process_worker.stdoutSignal.connect(
-                self.console_output.write_stdout)
-            self.process_worker.stderrSignal.connect(
-                self.console_output.write_stderr)
+            self.process_worker.stdoutSignal.connect(self.console_output.write_stdout)
+            self.process_worker.stderrSignal.connect(self.console_output.write_stderr)
         self.process_worker.finished.connect(self.process_finished)
         self.process_worker.start()
 
@@ -646,21 +708,22 @@ class QProcessDialog(QDialog):
         else:
             event.ignore()
             QMessageBox.warning(
-                self, 'Closing not possible!',
-                'You can\'t close the Dialog before this Process finished!')
+                self,
+                "Closing not possible!",
+                "You can't close the Dialog before this Process finished!",
+            )
 
 
-def get_user_input_string(prompt, title='Input required!', force=False):
+def get_user_input_string(prompt, title="Input required!", force=False):
     # Determine GUI or non-GUI-mode
-    if QS().value('gui') and any([obj is not None
-                                  for obj in _object_refs.values()]):
-        parent = _object_refs['main_window'] or _object_refs['welcome_window']
+    if QS().value("gui") and any([obj is not None for obj in _object_refs.values()]):
+        parent = _object_refs["main_window"] or _object_refs["welcome_window"]
     else:
         parent = None
     if parent is not None:
         user_input, ok = QInputDialog.getText(parent, title, prompt)
     else:
-        user_input = input(f'{title}: {prompt}')
+        user_input = input(f"{title}: {prompt}")
         ok = True
 
     # Check user input
@@ -668,12 +731,15 @@ def get_user_input_string(prompt, title='Input required!', force=False):
         if force:
             if parent:
                 QMessageBox().warning(
-                    parent, 'Input required!',
-                    'You need to provide an appropriate input to proceed!')
+                    parent,
+                    "Input required!",
+                    "You need to provide an appropriate input to proceed!",
+                )
             else:
                 print(
-                    'Warning: Input required! '
-                    'You need to provide an appropriate input to proceed!')
+                    "Warning: Input required! "
+                    "You need to provide an appropriate input to proceed!"
+                )
             user_input = get_user_input_string(prompt, title, force)
         else:
             user_input = None

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Pipeline-GUI for Analysis with MNE-Python
-@author: Martin Schulz
-@email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne-pipeline-hd
-License: GPL-3.0
+Authors: Martin Schulz <dev@mgschulz.de>
+License: BSD 3-Clause
+Github: https://github.com/marsipu/mne-pipeline-hd
 """
 from os import mkdir
 
@@ -20,10 +18,10 @@ def controller(tmpdir):
     # Initialize testing-environment
     _set_test_run()
     # Create home-path
-    home_path = tmpdir.join('TestHome')
+    home_path = tmpdir.join("TestHome")
     mkdir(home_path)
     # Create Controller
-    ct = Controller(home_path, 'test')
+    ct = Controller(home_path, "test")
 
     return ct
 

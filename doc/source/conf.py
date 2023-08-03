@@ -3,10 +3,12 @@
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
+import importlib
 
 # -- Path setup --------------------------------------------------------------
 
 import sys
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -15,33 +17,30 @@ from datetime import datetime, timezone
 from os.path import dirname, abspath, join
 
 curdir = dirname(__file__)
-sys.path.append(abspath(join(curdir, '..', '..', 'mne_pipeline_hd')))
+sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd")))
 
 # -- Project information -----------------------------------------------------
-import mne_pipeline_hd  # noqa: E402
-
-project = 'mne-pipeline-hd'
-author = 'Martin Schulz'
+project = "mne-pipeline-hd"
+author = "Martin Schulz"
 
 td = datetime.now(tz=timezone.utc)
-copyright = (f'2018-{datetime.now().year}, {author}, '
-             f'Last updated {td.strftime("%Y-%m-%d %H:%M %Z")}')
+copyright = (
+    f"2018-{datetime.now().year}, {author}, "
+    f'Last updated {td.strftime("%Y-%m-%d %H:%M %Z")}'
+)
 
 # The full version, including alpha/beta/rc tags
-release = mne_pipeline_hd.__version__
+release = importlib.metadata.version("mne_pipeline_hd")
 
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.napoleon'
-              ]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosummary", "sphinx.ext.napoleon"]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -53,9 +52,9 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'pydata_sphinx_theme'
+html_theme = "pydata_sphinx_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]

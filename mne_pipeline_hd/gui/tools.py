@@ -1,23 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Pipeline-GUI for Analysis with MNE-Python
-@author: Martin Schulz
-@email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne-pipeline-hd
-License: GPL-3.0
+Authors: Martin Schulz <dev@mgschulz.de>
+License: BSD 3-Clause
+Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 from functools import partial
 
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QComboBox, QDialog, QGridLayout,
-                             QHBoxLayout, QPushButton,
-                             QSizePolicy, QVBoxLayout)
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+)
 
 from mne_pipeline_hd.gui.base_widgets import CheckList
-from mne_pipeline_hd.gui.gui_utils import (CodeEditor, MainConsoleWidget,
-                                           WorkerDialog, get_exception_tuple,
-                                           set_ratio_geometry)
+from mne_pipeline_hd.gui.gui_utils import (
+    CodeEditor,
+    MainConsoleWidget,
+    WorkerDialog,
+    get_exception_tuple,
+    set_ratio_geometry,
+)
 from mne_pipeline_hd.pipeline.loading import MEEG
 from mne_pipeline_hd.pipeline.pipeline_utils import QS
 
@@ -38,11 +46,11 @@ class HistoryDlg(QDialog):
 
         layout.addWidget(self.checklist)
 
-        add_bt = QPushButton('Add')
+        add_bt = QPushButton("Add")
         add_bt.clicked.connect(self.add_cmds)
         layout.addWidget(add_bt)
 
-        close_bt = QPushButton('Close')
+        close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)
 
@@ -66,38 +74,50 @@ class DataTerminal(QDialog):
         self.obj = current_object
         self.history = list()
 
-        self.default_t_globals = ['mw', 'main_window', 'ct', 'controller',
-                                  'pr', 'project', 'par', 'parameters']
+        self.default_t_globals = [
+            "mw",
+            "main_window",
+            "ct",
+            "controller",
+            "pr",
+            "project",
+            "par",
+            "parameters",
+        ]
 
-        self.t_globals = {'mw': self.mw,
-                          'main_window': self.mw,
-                          'ct': self.ct,
-                          'controller': self.ct,
-                          'pr': self.pr,
-                          'project': self.pr,
-                          'par': self.pr.parameters,
-                          'parameters': self.pr.parameters}
+        self.t_globals = {
+            "mw": self.mw,
+            "main_window": self.mw,
+            "ct": self.ct,
+            "controller": self.ct,
+            "pr": self.pr,
+            "project": self.pr,
+            "par": self.pr.parameters,
+            "parameters": self.pr.parameters,
+        }
 
         # Load the subject in globals if given in Class-Call
         if self.obj:
-            self.t_globals['obj'] = self.obj
+            self.t_globals["obj"] = self.obj
 
         self.bt_dict = {}
 
-        self.load_mapping = {'info': 'load_info',
-                             'raw': 'load_raw',
-                             'filtered': 'load_filtered',
-                             'events': 'load_events',
-                             'epochs': 'load_epochs',
-                             'evokeds': 'load_evokeds',
-                             'ica': 'load_ica',
-                             'tfr_epochs': 'load_power_tfr_epochs',
-                             'tfr_average': 'load_power_tfr_average',
-                             'trans': 'load_transformation',
-                             'forward': 'load_forward',
-                             'noise_cov': 'load_noise_covariance',
-                             'inv_op': 'load_inverse_operator',
-                             'stc': 'load_source_estimates'}
+        self.load_mapping = {
+            "info": "load_info",
+            "raw": "load_raw",
+            "filtered": "load_filtered",
+            "events": "load_events",
+            "epochs": "load_epochs",
+            "evokeds": "load_evokeds",
+            "ica": "load_ica",
+            "tfr_epochs": "load_power_tfr_epochs",
+            "tfr_average": "load_power_tfr_average",
+            "trans": "load_transformation",
+            "forward": "load_forward",
+            "noise_cov": "load_noise_covariance",
+            "inv_op": "load_inverse_operator",
+            "stc": "load_source_estimates",
+        }
 
         # sys.stdout.signal.text_written.connect(self.update_label)
 
@@ -135,28 +155,32 @@ class DataTerminal(QDialog):
 
         self.sub_layout = QGridLayout()
         self.inputw = CodeEditor()
-        self.inputw.setSizePolicy(QSizePolicy(QSizePolicy.Preferred,
-                                              QSizePolicy.Maximum))
+        self.inputw.setSizePolicy(
+            QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        )
         self.sub_layout.addWidget(self.inputw, 0, 0, 3, 1)
 
-        self.start_bt = QPushButton('Start')
-        self.start_bt.setFont(QFont(QS().value('app_font'), 16))
-        self.start_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum,
-                                                QSizePolicy.Preferred))
+        self.start_bt = QPushButton("Start")
+        self.start_bt.setFont(QFont(QS().value("app_font"), 16))
+        self.start_bt.setSizePolicy(
+            QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        )
         self.start_bt.clicked.connect(self.start_execution)
         self.sub_layout.addWidget(self.start_bt, 0, 1)
 
-        self.history_bt = QPushButton('History')
-        self.history_bt.setFont(QFont(QS().value('app_font'), 16))
-        self.history_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum,
-                                                  QSizePolicy.Preferred))
+        self.history_bt = QPushButton("History")
+        self.history_bt.setFont(QFont(QS().value("app_font"), 16))
+        self.history_bt.setSizePolicy(
+            QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        )
         self.history_bt.clicked.connect(partial(HistoryDlg, self))
         self.sub_layout.addWidget(self.history_bt, 1, 1)
 
-        self.quit_bt = QPushButton('Close')
-        self.quit_bt.setFont(QFont(QS().value('app_font'), 16))
-        self.quit_bt.setSizePolicy(QSizePolicy(QSizePolicy.Maximum,
-                                               QSizePolicy.Preferred))
+        self.quit_bt = QPushButton("Close")
+        self.quit_bt.setFont(QFont(QS().value("app_font"), 16))
+        self.quit_bt.setSizePolicy(
+            QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        )
         self.quit_bt.clicked.connect(self.close)
         self.sub_layout.addWidget(self.quit_bt, 2, 1)
 
@@ -174,7 +198,7 @@ class DataTerminal(QDialog):
         name = self.sub_cmbx.itemText(index)
         try:
             self.obj = MEEG(name, self.ct)
-        except:  # noqa: E722
+        except Exception:
             get_exception_tuple()
             # Return ComboBox to previous state
             if self.obj is None:
@@ -183,18 +207,18 @@ class DataTerminal(QDialog):
                 self.sub_cmbx.setCurrentText(self.obj.name)
         else:
             # Reset globals to default
-            for key in [k for k in self.t_globals.keys()
-                        if k not in self.default_t_globals]:
+            for key in [
+                k for k in self.t_globals.keys() if k not in self.default_t_globals
+            ]:
                 self.t_globals.pop(key)
-            self.t_globals['obj'] = self.obj
-            self.displayw.insertHtml(
-                f'<b>Subject: {self.obj.name} loaded</b><br>')
+            self.t_globals["obj"] = self.obj
+            self.displayw.insertHtml(f"<b>Subject: {self.obj.name} loaded</b><br>")
             self.displayw.ensureCursorVisible()
 
     def load_bt_pressed(self, bt_name):
         worker_dialog = WorkerDialog(
-            self, self.start_load, title=f'Loading {bt_name}...',
-            bt_name=bt_name)
+            self, self.start_load, title=f"Loading {bt_name}...", bt_name=bt_name
+        )
         worker_dialog.thread_finished.connect(self.finished_handling)
 
     def finished_handling(self, result_msg):
@@ -206,21 +230,22 @@ class DataTerminal(QDialog):
         try:
             load_fn = getattr(self.obj, self.load_mapping[bt_name])
             self.t_globals[bt_name] = load_fn()
-        except (FileNotFoundError, OSError):
-            result_msg = \
-                f'<b><center>No file found for {bt_name}</center></b><br>'
+        except OSError:
+            result_msg = f"<b><center>No file found for {bt_name}</center></b><br>"
         else:
-            result_msg = \
-                f'<b><big><center>{bt_name} loaded ' \
-                f'(namespace = {bt_name})</center></big></b><br>'
+            result_msg = (
+                f"<b><big><center>{bt_name} loaded "
+                f"(namespace = {bt_name})</center></big></b><br>"
+            )
 
         return result_msg
 
     def start_execution(self):
         command = self.inputw.toPlainText()
-        command_html = command.replace('\n', '<br>')
+        command_html = command.replace("\n", "<br>")
         self.displayw.insertHtml(
-            f'<font color="blue"><b><i>{command_html}</i></b></font><br>')
+            f'<font color="blue"><b><i>{command_html}</i></b></font><br>'
+        )
         self.displayw.ensureCursorVisible()
         self.history.insert(0, command)
 
@@ -229,11 +254,11 @@ class DataTerminal(QDialog):
         except SyntaxError:
             try:
                 exec(command, self.t_globals)
-            except:  # noqa: E722
+            except Exception:
                 get_exception_tuple()
             else:
                 self.inputw.clear()
-        except:  # noqa: E722
+        except Exception:
             get_exception_tuple()
         else:
             self.inputw.clear()

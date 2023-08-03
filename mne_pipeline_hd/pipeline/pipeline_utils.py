@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Pipeline-GUI for Analysis with MNE-Python
-@author: Martin Schulz
-@email: dev@earthman-music.de
-@github: https://github.com/marsipu/mne-pipeline-hd
-License: GPL-3.0
+Authors: Martin Schulz <dev@mgschulz.de>
+License: BSD 3-Clause
+Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import inspect
@@ -22,7 +20,9 @@ from pathlib import Path
 import numpy as np
 import psutil
 
-datetime_format = '%d.%m.%Y %H:%M:%S'
+import mne_pipeline_hd
+
+datetime_format = "%d.%m.%Y %H:%M:%S"
 
 ismac = sys.platform.startswith("darwin")
 iswin = sys.platform.startswith("win32")
@@ -37,7 +37,7 @@ def encode_tuples(input_dict):
             encode_tuples(value)
         else:
             if isinstance(value, tuple):
-                input_dict[key] = {'tuple_type': value}
+                input_dict[key] = {"tuple_type": value}
 
 
 class TypedJSONEncoder(json.JSONEncoder):
@@ -47,28 +47,28 @@ class TypedJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, np.floating):
             return float(obj)
         elif isinstance(obj, np.ndarray):
-            return {'numpy_array': obj.tolist()}
+            return {"numpy_array": obj.tolist()}
         elif isinstance(obj, datetime):
-            return {'datetime': obj.strftime(datetime_format)}
+            return {"datetime": obj.strftime(datetime_format)}
         elif isinstance(obj, set):
-            return {'set_type': list(obj)}
+            return {"set_type": list(obj)}
         else:
             return json.JSONEncoder.default(self, obj)
 
 
 def type_json_hook(obj):
-    if 'numpy_int' in obj.keys():
-        return obj['numpy_int']
-    elif 'numpy_float' in obj.keys():
-        return obj['numpy_float']
-    elif 'numpy_array' in obj.keys():
-        return np.asarray(obj['numpy_array'])
-    elif 'datetime' in obj.keys():
-        return datetime.strptime(obj['datetime'], datetime_format)
-    elif 'tuple_type' in obj.keys():
-        return tuple(obj['tuple_type'])
-    elif 'set_type' in obj.keys():
-        return set(obj['set_type'])
+    if "numpy_int" in obj.keys():
+        return obj["numpy_int"]
+    elif "numpy_float" in obj.keys():
+        return obj["numpy_float"]
+    elif "numpy_array" in obj.keys():
+        return np.asarray(obj["numpy_array"])
+    elif "datetime" in obj.keys():
+        return datetime.strptime(obj["datetime"], datetime_format)
+    elif "tuple_type" in obj.keys():
+        return tuple(obj["tuple_type"])
+    elif "set_type" in obj.keys():
+        return set(obj["set_type"])
     else:
         return obj
 
@@ -104,12 +104,12 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
     # which altered the data at path
     try:
         # The last entry in FUNCTION should be the most recent
-        function = obj.file_parameters[file_name]['FUNCTION']
-        critical_params_str = obj.ct.pd_funcs.loc[function, 'func_args']
+        function = obj.file_parameters[file_name]["FUNCTION"]
+        critical_params_str = obj.ct.pd_funcs.loc[function, "func_args"]
         # Make sure there are no spaces left
-        critical_params_str = critical_params_str.replace(' ', '')
-        if ',' in critical_params_str:
-            critical_params = critical_params_str.split(',')
+        critical_params_str = critical_params_str.replace(" ", "")
+        if "," in critical_params_str:
+            critical_params = critical_params_str.split(",")
         else:
             critical_params = [critical_params_str]
     except KeyError:
@@ -124,33 +124,37 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
             current_value = obj.pa[param]
 
             if str(previous_value) == str(current_value):
-                result_dict[param] = 'equal'
+                result_dict[param] = "equal"
                 if verbose:
-                    print(f'{param} equal for {file_name}')
+                    print(f"{param} equal for {file_name}")
             else:
                 if param in critical_params:
                     result_dict[param] = (previous_value, current_value, True)
                     if verbose:
                         print(
-                            f'{param} changed from {previous_value} to '
-                            f'{current_value} for {file_name} '
-                            f'and is probably crucial for {function}')
+                            f"{param} changed from {previous_value} to "
+                            f"{current_value} for {file_name} "
+                            f"and is probably crucial for {function}"
+                        )
                 else:
                     result_dict[param] = (previous_value, current_value, False)
                     if verbose:
                         print(
-                            f'{param} changed from {previous_value} to '
-                            f'{current_value} for {file_name}')
+                            f"{param} changed from {previous_value} to "
+                            f"{current_value} for {file_name}"
+                        )
         except KeyError:
-            result_dict[param] = 'missing'
+            result_dict[param] = "missing"
             if verbose:
-                print(f'{param} is missing in records for {file_name}')
+                print(f"{param} is missing in records for {file_name}")
 
-    if obj.ct.settings['overwrite']:
-        result_dict[param] = 'overwrite'
+    if obj.ct.settings["overwrite"]:
+        result_dict[param] = "overwrite"
         if verbose:
-            print(f'{file_name} will be overwritten anyway'
-                  f' because Overwrite=True (Settings)')
+            print(
+                f"{file_name} will be overwritten anyway"
+                f" because Overwrite=True (Settings)"
+            )
 
     return result_dict
 
@@ -169,7 +173,7 @@ def check_kwargs(kwargs, function):
 def count_dict_keys(d, max_level=None):
     """Count the number of keys of a nested dictionary"""
     keys = 0
-    for key, value in d.items():
+    for value in d.values():
         if isinstance(value, dict):
             if max_level is None:
                 keys += count_dict_keys(value)
@@ -185,17 +189,17 @@ def count_dict_keys(d, max_level=None):
 
 def shutdown():
     if iswin:
-        os.system('shutdown /s')
+        os.system("shutdown /s")
     if islin:
-        os.system('sudo shutdown now')
+        os.system("sudo shutdown now")
     if ismac:
-        os.system('sudo shutdown -h now')
+        os.system("sudo shutdown -h now")
 
 
 def restart_program():
     """Restarts the current program, with file objects and descriptors
-       cleanup."""
-    logging.info('Restarting')
+    cleanup."""
+    logging.info("Restarting")
     try:
         p = psutil.Process(os.getpid())
         for handler in p.open_files() + p.connections():
@@ -208,8 +212,10 @@ def restart_program():
 
 
 def _get_func_param_kwargs(func, params):
-    kwargs = {kwarg: params[kwarg] if kwarg in params else None
-              for kwarg in inspect.signature(func).parameters}
+    kwargs = {
+        kwarg: params[kwarg] if kwarg in params else None
+        for kwarg in inspect.signature(func).parameters
+    }
 
     return kwargs
 
@@ -217,33 +223,37 @@ def _get_func_param_kwargs(func, params):
 class BaseSettings:
     def __init__(self):
         # Load default settings
-        with resources.open_text('mne_pipeline_hd.resource',
-                                 'default_settings.json') as file:
-            self.default_qsettings = json.load(file)['qsettings']
+        default_settings_path = join(
+            resources.files(mne_pipeline_hd.extra), "default_settings.json"
+        )
+        with open(default_settings_path, "r") as file:
+            self.default_qsettings = json.load(file)["qsettings"]
 
     def get_default(self, name):
         if name in self.default_qsettings:
             return self.default_qsettings[name]
         else:
-            raise RuntimeError(f'{name} not in default_settings.json! '
-                               f'Please add it or fix the bug.')
+            raise RuntimeError(
+                f"{name} not in default_settings.json! "
+                f"Please add it or fix the bug."
+            )
 
 
 class QSettingsDummy(BaseSettings):
     def __init__(self):
         super().__init__()
 
-        self.settings_path = join(Path.home(), '.mnephd_settings.json')
+        self.settings_path = join(Path.home(), ".mnephd_settings.json")
 
     def _load_settings(self):
         if isfile(self.settings_path):
-            with open(self.settings_path, 'r') as file:
+            with open(self.settings_path, "r") as file:
                 self.settings = json.load(file)
         else:
             self.settings = deepcopy(self.default_qsettings)
 
     def _write_settings(self):
-        with open(self.settings_path, 'w') as file:
+        with open(self.settings_path, "w") as file:
             json.dump(self.settings, file)
 
     def value(self, setting, defaultValue=None):
@@ -300,13 +310,13 @@ except ImportError:
 
 
 def _set_test_run():
-    os.environ['TEST_RUN'] = 'True'
+    os.environ["TEST_RUN"] = "True"
 
 
 def _test_run():
-    if 'TEST_RUN' in os.environ:
+    if "TEST_RUN" in os.environ:
         return True
 
 
 def _run_from_script():
-    return '__main__.py' in sys.argv[0]
+    return "__main__.py" in sys.argv[0]
