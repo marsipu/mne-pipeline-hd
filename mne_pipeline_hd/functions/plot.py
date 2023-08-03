@@ -54,7 +54,7 @@ def plot_raw(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
         scalings="auto",
         title=f"{meeg.name}",
         show=show_plots,
-        **kwargs
+        **kwargs,
     )
 
     if hasattr(fig, "canvas"):
