@@ -7,6 +7,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 from ast import literal_eval
 from functools import partial
 
+import mne
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -33,7 +34,6 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QColorDialog,
 )
-from mne.viz import Brain
 from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
@@ -1195,7 +1195,7 @@ class MultiTypeGui(Param):
         return value
 
 
-class LabelPicker(Brain):
+class LabelPicker(mne.viz.Brain):
     def __init__(self, paramdlg, *args, **kwargs):
         try:
             super().__init__(*args, **kwargs)

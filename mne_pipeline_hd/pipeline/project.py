@@ -97,7 +97,7 @@ class Project:
         # Maps each MEG/EEG-File to a Freesurfer-Segmentation or None
         self.meeg_to_fsmri = dict()
         # Stores the ICA-Components to be excluded
-        self.ica_exclude = dict()
+        self.meeg_ica_exclude = dict()
         # Groups MEG/EEG-Files e.g. for Grand-Average
         self.all_groups = dict()
         # Stores selected Grand-Average-Groups
@@ -171,7 +171,7 @@ class Project:
             self.all_fsmri_path: "all_fsmri",
             self.sel_fsmri_path: "sel_fsmri",
             self.meeg_to_fsmri_path: "meeg_to_fsmri",
-            self.ica_exclude_path: "ica_exclude",
+            self.ica_exclude_path: "meeg_ica_exclude",
             self.all_groups_path: "all_groups",
             self.sel_groups_path: "sel_groups",
             self.plot_files_path: "plot_files",

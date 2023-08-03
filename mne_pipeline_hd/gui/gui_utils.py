@@ -10,6 +10,7 @@ import logging
 import multiprocessing
 import sys
 import traceback
+from contextlib import contextmanager
 from inspect import signature
 
 from PyQt5.QtCore import (
@@ -151,6 +152,26 @@ def show_error_dialog(exc_str):
         ErrorDialog(exc_str, title="A unexpected error occurred")
     else:
         logging.debug("No QApplication instance available.")
+
+
+def gui_error_decorator(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            exc_tuple = get_exception_tuple()
+            ErrorDialog(exc_tuple)
+
+    return wrapper
+
+
+@contextmanager
+def gui_error():
+    try:
+        yield
+    except Exception:
+        exc_tuple = get_exception_tuple()
+        ErrorDialog(exc_tuple)
 
 
 # ToDo: Test

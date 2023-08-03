@@ -187,6 +187,14 @@ class BaseLoading:
             self.pr.plot_files[self.name][self.p_preset] = dict()
         self.plot_files = self.pr.plot_files[self.name][self.p_preset]
 
+    def get_parameter(self, parameter_name):
+        """Get parameter from parameter-dictionary"""
+
+        if parameter_name in self.pa:
+            return self.pa[parameter_name]
+        else:
+            raise KeyError(f"Parameter {parameter_name} not found in parameters")
+
     def init_attributes(self):
         """Initialization of additional attributes, should be overridden
         in inherited classes"""
@@ -450,6 +458,14 @@ class BaseLoading:
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
+    def load(self, data_type, **kwargs):
+        """General load function with data_type as parameter."""
+        return self.io_dict[data_type]["load"](**kwargs)
+
+    def save(self, data_type, data, **kwargs):
+        """General save function with data_type as parameter."""
+        self.io_dict[data_type]["save"](data, **kwargs)
+
     def load_json(self, file_name, default=None):
         file_path = join(self.save_dir, f"{self.name}_{self.p_preset}_{file_name}.json")
         try:
@@ -612,6 +628,12 @@ class MEEG(BaseLoading):
                 for key, value in self.pr.meeg_event_id[self.name].items()
                 if any([k in self.sel_trials for k in key.split("/")])
             }
+
+        # The excluded ica-components
+        if self.name not in self.pr.meeg_ica_exclude:
+            self.ica_exclude = list()
+        else:
+            self.ica_exclude = self.pr.meeg_ica_exclude[self.name]
 
     def init_paths(self):
         """Load Paths as attributes
@@ -781,6 +803,8 @@ class MEEG(BaseLoading):
                 "load": self.load_evokeds,
                 "save": self.save_evokeds,
             },
+            "evoked_eog": {"path": None, "load": self.load_eog_evokeds, "save": None},
+            "evoked_ecg": {"path": None, "load": self.load_ecg_evokeds, "save": None},
             "tf_power_epochs": {
                 "path": self.power_tfr_epochs_path,
                 "load": self.load_power_tfr_epochs,
@@ -869,10 +893,9 @@ class MEEG(BaseLoading):
 
         # Load sample
         test_data_folder = join(mne.datasets.sample.data_path(), "MEG", "sample")
-        test_file_dict = sample_paths
 
-        for data_type in test_file_dict:
-            test_file_name = test_file_dict[data_type]
+        for data_type in sample_paths:
+            test_file_name = sample_paths[data_type]
             test_file_path = join(test_data_folder, test_file_name)
             file_path = self.io_dict[data_type]["path"]
 
@@ -921,6 +944,14 @@ class MEEG(BaseLoading):
             for new_path, old_path in zip(new_paths, old_paths):
                 if isfile(old_path):
                     os.renames(old_path, new_path)
+
+    def set_bad_channels(self, bad_channels):
+        self.bad_channels = bad_channels
+        self.pr.meeg_bad_channels[self.name] = self.bad_channels
+
+    def set_ica_exclude(self, ica_exclude):
+        self.ica_exclude = ica_exclude
+        self.pr.meeg_ica_exclude[self.name] = self.ica_exclude
 
     ###########################################################################
     # Load- & Save-Methods
@@ -1001,8 +1032,8 @@ class MEEG(BaseLoading):
         ica = mne.preprocessing.read_ica(self.ica_path)
         # Change ica.exclude to indices stored in ica_exclude.py
         # for this MEEG-Object
-        if self.name in self.pr.ica_exclude:
-            ica.exclude = self.pr.ica_exclude[self.name]
+        if self.name in self.pr.meeg_ica_exclude:
+            ica.exclude = self.pr.meeg_ica_exclude[self.name]
         return ica
 
     @save_decorator
@@ -1032,6 +1063,14 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_evokeds(self, evokeds):
         mne.evoked.write_evokeds(self.evokeds_path, evokeds, overwrite=True)
+
+    @load_decorator
+    def load_eog_evokeds(self):
+        return self.load_eog_epochs().average()
+
+    @load_decorator
+    def load_ecg_evokeds(self):
+        return self.load_ecg_epochs().average()
 
     @load_decorator
     def load_power_tfr_epochs(self):

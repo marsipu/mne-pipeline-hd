@@ -512,7 +512,7 @@ def epoch_raw(
 
     if (
         any([i is not None for i in [use_autoreject, reject, flat]])
-        and bad_interpolation == "Evokeds"
+        and bad_interpolation == "evokeds"
     ):
         raise RuntimeWarning(
             'With bad_interpolation="Evokeds", '
@@ -730,168 +730,21 @@ def run_ica(
 
     meeg.save_ica(ica)
     # Add components to ica_exclude-dictionary
-    meeg.pr.ica_exclude[meeg.name] = ica.exclude
+    meeg.pr.meeg_ica_exclude[meeg.name] = ica.exclude
 
 
-def _ica_plotto_helper(meeg, ica_plotto):
-    ica = meeg.load_ica()
-
-    if ica_plotto == "raw":
-        data = meeg.load_raw()
-
-    elif ica_plotto == "raw_filtered":
-        data = meeg.load_filtered()
-
-    elif ica_plotto == "epochs":
-        data = meeg.load_epochs()
-
-    elif ica_plotto == "epochs_eog":
-        data = meeg.load_eog_epochs()
-
-    elif ica_plotto == "epochs_ecg":
-        data = meeg.load_ecg_epochs()
-
-    elif ica_plotto == "evoked":
-        data = meeg.load_evokeds()
-
-    elif ica_plotto == "evoked (EOG)":
-        data = meeg.load_eog_epochs().average()
-
-    elif ica_plotto == "evoked (ECG)":
-        data = meeg.load_ecg_epochs().average()
-
-    else:
-        data = None
-
-    return ica, data
-
-
-def plot_ica_components(meeg, show_plots):
-    ica = meeg.load_ica()
-    components_fig = ica.plot_components(title=meeg.name, show=show_plots)
-    meeg.plot_save("ica", subfolder="components", matplotlib_figure=components_fig)
-
-    return components_fig, ica
-
-
-def plot_ica_sources(meeg, ica_source_data, show_plots):
-    ica, data = _ica_plotto_helper(meeg, ica_source_data)
-    sources_fig = ica.plot_sources(
-        data, stop=ica.n_components, title=meeg.name, show=show_plots
-    )
-    meeg.plot_save("ica", subfolder="sources", matplotlib_figure=sources_fig)
-
-    return sources_fig, ica
-
-
-def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
-    ica, data = _ica_plotto_helper(meeg, ica_overlay_data)
-    overlay_figs = list()
-
-    if ica_overlay_data == "Evokeds":
-        for evoked in [e for e in data if e.comment in meeg.sel_trials]:
-            ovl_fig = ica.plot_overlay(
-                evoked, title=f"{meeg.name}-{evoked.comment}", show=show_plots
-            )
-            overlay_figs.append(ovl_fig)
-    else:
-        ovl_fig = ica.plot_overlay(data, title=meeg.name, show=show_plots)
-        overlay_figs.append(ovl_fig)
-
-    meeg.plot_save("ica", subfolder="overlay", matplotlib_figure=overlay_figs)
-
-    return overlay_figs
-
-
-def plot_ica_properties(meeg, show_plots):
-    ica = meeg.load_ica()
-    epochs = meeg.load_epochs()
-
-    eog_indices = meeg.load_json("eog_indices", default=list())
-    ecg_indices = meeg.load_json("ecg_indices", default=list())
-    psd_args = {"fmax": meeg.pa["lowpass"]}
-
-    if len(eog_indices) > 0:
-        eog_epochs = meeg.load_eog_epochs()
-        eog_prop_figs = ica.plot_properties(
-            eog_epochs, eog_indices, psd_args=psd_args, show=show_plots
-        )
-        meeg.plot_save(
-            "ica", subfolder="properties", trial="eog", matplotlib_figure=eog_prop_figs
-        )
-
-    if len(ecg_indices) > 0:
-        ecg_epochs = meeg.load_ecg_epochs()
-        ecg_prop_figs = ica.plot_properties(
-            ecg_epochs, ecg_indices, psd_args=psd_args, show=show_plots
-        )
-        meeg.plot_save(
-            "ica", subfolder="properties", trial="ecg", matplotlib_figure=ecg_prop_figs
-        )
-
-    remaining_indices = [
-        ix for ix in ica.exclude if ix not in eog_indices + ecg_indices
-    ]
-    if len(remaining_indices) > 0:
-        prop_figs = ica.plot_properties(
-            epochs, remaining_indices, psd_args=psd_args, show=show_plots
-        )
-        meeg.plot_save(
-            "ica", subfolder="properties", trial="manually", matplotlib_figure=prop_figs
-        )
-
-
-def plot_ica_scores(meeg, show_plots):
-    eog_scores = meeg.load_json("eog_scores", default=list())
-    if len(eog_scores) > 1:
-        ica = meeg.load_ica()
-        eog_score_fig = ica.plot_scores(
-            eog_scores, title=f"{meeg.name}: EOG", show=show_plots
-        )
-        meeg.plot_save(
-            "ica", subfolder="scores", trial="eog", matplotlib_figure=eog_score_fig
-        )
-    else:
-        eog_score_fig = None
-
-    ecg_scores = meeg.load_json("ecg_scores", default=list())
-    if len(ecg_scores) > 1:
-        ica = meeg.load_ica()
-        ecg_score_fig = ica.plot_scores(
-            ecg_scores, title=f"{meeg.name}: ECG", show=show_plots
-        )
-        meeg.plot_save(
-            "ica", subfolder="scores", trial="ecg", matplotlib_figure=ecg_score_fig
-        )
-    else:
-        ecg_score_fig = None
-
-    return eog_score_fig, ecg_score_fig
-
-
-def apply_ica(meeg, n_pca_components):
+def apply_ica(meeg, ica_apply_target, n_pca_components):
     # Check file-parameters to make sure,
     # that ica is not applied twice in a row
-    epochs_file = Path(meeg.epochs_path).name
-    if (
-        epochs_file in meeg.file_parameters
-        and meeg.file_parameters[epochs_file]["FUNCTION"] == "apply_ica"
-    ):
-        print(
-            f"Not applying ICA because it was already applied to this file "
-            f'on {meeg.file_parameters[epochs_file]["TIME"]}. '
-            f"If you want to apply ICA again, delete the epochs-File in "
-            "FileManagement and redo the epochs."
-        )
-    else:
-        epochs = meeg.load_epochs()
-        ica = meeg.load_ica()
 
-        if len(ica.exclude) == 0:
-            print(f"No components excluded for {meeg.name}")
-        else:
-            ica_epochs = ica.apply(epochs, n_pca_components=n_pca_components)
-            meeg.save_epochs(ica_epochs)
+    data = meeg.load(ica_apply_target)
+    ica = meeg.load_ica()
+
+    if len(ica.exclude) == 0:
+        print(f"No components excluded for {meeg.name}")
+    else:
+        applied_data = ica.apply(data, n_pca_components=n_pca_components)
+        meeg.save(ica_apply_target, applied_data)
 
         # Apply to Empty-Room-Data as well if present
         if meeg.erm:
@@ -900,7 +753,7 @@ def apply_ica(meeg, n_pca_components):
             except FileNotFoundError:
                 erm_data = meeg.load_erm()
             try:
-                ica.apply(erm_data, n_pca_components)
+                ica.apply(erm_data, n_pca_components=n_pca_components)
             # Todo: Unmeddling ERM-SSP and ICA stuff
             except ValueError:
                 print(

@@ -32,55 +32,44 @@ def get_func(func_name, obj):
 
 
 def get_arguments(func, obj):
-    keyword_arguments = {}
-    project_attributes = vars(obj.pr)
-
     # Get arguments from function signature
-    arg_names = list(inspect.signature(func).parameters)
+    arguments = {
+        arg_name: arg.default
+        for arg_name, arg in inspect.signature(func).parameters.items()
+    }
 
     # Remove args/kwargs
-    if "args" in arg_names:
-        arg_names.remove("args")
-    if "kwargs" in arg_names:
-        arg_names.remove("kwargs")
+    for pop_item in ["args", "kwargs"]:
+        arguments.pop(pop_item, None)
+
+    # Set data-objects
+    for obj_name, obj in [
+        ("ct", obj.ct),
+        ("controller", obj.ct),
+        ("pr", obj.pr),
+        ("project", obj.pr),
+        ("meeg", obj),
+        ("fsmri", obj),
+        ("group", obj),
+    ]:
+        if obj_name in arguments:
+            arguments[obj_name] = obj
 
     # Get the values for parameter-names
-    for arg_name in arg_names:
-        if arg_name == "ct":
-            keyword_arguments.update({"ct": obj.ct})
-        elif arg_name == "controller":
-            keyword_arguments.update({"controller": obj.ct})
-        elif arg_name == "pr":
-            keyword_arguments.update({"pr": obj.pr})
-        elif arg_name == "project":
-            keyword_arguments.update({"project": obj.pr})
-        elif arg_name == "meeg":
-            keyword_arguments.update({"meeg": obj})
-        elif arg_name == "fsmri":
-            keyword_arguments.update({"fsmri": obj})
-        elif arg_name == "group":
-            keyword_arguments.update({"group": obj})
-        elif arg_name in project_attributes:
-            keyword_arguments.update({arg_name: project_attributes[arg_name]})
-        elif arg_name in obj.pr.parameters[obj.pr.p_preset]:
-            keyword_arguments.update(
-                {arg_name: obj.pr.parameters[obj.pr.p_preset][arg_name]}
-            )
+    for arg_name in arguments:
+        if arg_name in obj.pa:
+            arguments[arg_name] = obj.pa[arg_name]
         elif arg_name in obj.ct.settings:
-            keyword_arguments.update({arg_name: obj.ct.settings[arg_name]})
+            arguments[arg_name] = obj.ct.settings[arg_name]
         elif arg_name in QS().childKeys():
-            keyword_arguments.update({arg_name: QS().value(arg_name)})
-        else:
-            raise RuntimeError(
-                f"{arg_name} could not be found " f"in Subject, Project or Parameters"
-            )
+            arguments[arg_name] = QS().value(arg_name)
 
     # Add additional keyword-arguments if added for function by user
     if func.__name__ in obj.pr.add_kwargs:
         for kwarg in obj.pr.add_kwargs[func.__name__]:
-            keyword_arguments[kwarg] = obj.pr.add_kwargs[func.__name__][kwarg]
+            arguments[kwarg] = obj.pr.add_kwargs[func.__name__][kwarg]
 
-    return keyword_arguments
+    return arguments
 
 
 class StreamManager:

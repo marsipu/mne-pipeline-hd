@@ -128,16 +128,25 @@ def test_basic_param_guis(qtbot, gui_name):
         gui.set_param(neg_value)
         assert parameters[gui_name] == min_val
 
+    # Test return integer for BoolGui
     if "return_integer" in gui_parameters:
         gui.return_integer = True
         gui.set_param(True)
         assert gui.get_value() == 1
 
+    # Test ComboGui
     if gui_name == "ComboGui":
         # Don't set values which are not in options
         with pytest.raises(KeyError):
             gui.set_param("d")
 
+        # Test option-aliases
+        gui.set_param("a")
+        assert gui.param_widget.currentText() == "A"
+        gui.param_widget.setCurrentText("B")
+        assert gui.get_value() == "b"
+
+    # Test MultiTypeGui
     if gui_name == "MultiTypeGui":
         for gui_type, gui_name in gui.gui_types.items():
             gui.set_param(parameters[gui_name])

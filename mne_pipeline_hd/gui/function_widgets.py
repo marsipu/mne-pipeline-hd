@@ -1696,7 +1696,7 @@ class ChooseCustomModules(QDialog):
 class AddKwargs(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
-        self.mw = main_win
+        self.ct = main_win.ct
         self.current_func = None
 
         self.init_ui()
@@ -1709,7 +1709,7 @@ class AddKwargs(QDialog):
         func_list = CheckDictList(
             self.ct.pd_funcs.index,
             self.ct.pr.add_kwargs,
-            no_bt=QStyle.SP_MessageBoxQuestion,
+            no_bt="SP_MessageBoxQuestion",
         )
         func_list.currentChanged.connect(self.func_selected)
         list_layout.addWidget(func_list)
