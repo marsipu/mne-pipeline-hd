@@ -51,8 +51,9 @@ def find_bads(meeg, n_jobs, **kwargs):
     # Set number of CPU-cores to use
     os.environ["OMP_NUM_THREADS"] = str(get_n_jobs(n_jobs))
 
-    noisy_chs, flat_chs = find_bad_channels_maxwell(raw, coord_frame=coord_frame,
-                                                    **kwargs)
+    noisy_chs, flat_chs = find_bad_channels_maxwell(
+        raw, coord_frame=coord_frame, **kwargs
+    )
     logging.info(f"Noisy channels: {noisy_chs}\n" f"Flat channels: {flat_chs}")
     raw.info["bads"] = noisy_chs + flat_chs + raw.info["bads"]
     meeg.set_bad_channels(raw.info["bads"])
