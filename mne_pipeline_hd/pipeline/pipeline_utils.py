@@ -8,6 +8,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 import inspect
 import json
 import logging
+import multiprocessing
 import os
 import sys
 from ast import literal_eval
@@ -27,6 +28,16 @@ datetime_format = "%d.%m.%Y %H:%M:%S"
 ismac = sys.platform.startswith("darwin")
 iswin = sys.platform.startswith("win32")
 islin = not ismac and not iswin
+
+
+def get_n_jobs(n_jobs):
+    """Get the number of jobs to use for parallel processing"""
+    if n_jobs == -1 or n_jobs in ["auto", "max"]:
+        n_cores = multiprocessing.cpu_count()
+    else:
+        n_cores = int(n_jobs)
+
+    return n_cores
 
 
 def encode_tuples(input_dict):
