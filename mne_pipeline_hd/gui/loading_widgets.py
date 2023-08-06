@@ -4,6 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+import gc
 import logging
 import os
 import re
@@ -49,6 +50,7 @@ from PyQt5.QtWidgets import (
 from matplotlib import pyplot as plt
 from mne.preprocessing import find_bad_channels_maxwell
 
+from mne_pipeline_hd.functions.operations import find_bads
 from mne_pipeline_hd.functions.plot import (
     plot_ica_components,
     plot_ica_sources,
@@ -79,7 +81,7 @@ from mne_pipeline_hd.gui.gui_utils import (
 from mne_pipeline_hd.gui.models import AddFilesModel
 from mne_pipeline_hd.gui.parameter_widgets import ComboGui
 from mne_pipeline_hd.pipeline.loading import FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep
+from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS
 
 
 def index_parser(index, all_items):
@@ -1186,10 +1188,6 @@ class SubBadsWidget(QWidget):
         find_bads_bt.clicked.connect(self.find_bads)
         self.bt_layout.addWidget(find_bads_bt)
 
-        find_all_bads_bt = QPushButton("Find bads (all)")
-        find_all_bads_bt.clicked.connect(self.find_bads_all)
-        self.bt_layout.addWidget(find_all_bads_bt)
-
         copy_bt = QPushButton("Copy Bads")
         copy_bt.clicked.connect(partial(CopyBadsDialog, self))
         self.bt_layout.addWidget(copy_bt)
@@ -1268,7 +1266,7 @@ class SubBadsWidget(QWidget):
                 worker_dlg.thread_finished.connect(self._make_bad_chbxs)
 
     def bad_dict_selected(self, current, _):
-        self.current_obj = MEEG(current, self.ct, preload=False)
+        self.current_obj = MEEG(current, self.ct)
 
         # Close current Plot-Window
         if self.raw_fig:
@@ -1279,18 +1277,9 @@ class SubBadsWidget(QWidget):
 
         self.make_bad_chbxs()
 
-    def _assign_bad_channels(self, name, bad_channels):
-        meeg = MEEG(name, self.ct, preload=False)
-        # Directly replace value in bad_channels_dict
-        # (needed for first-time assignment)
-        self.pr.meeg_bad_channels[name] = bad_channels
-        # Restore/Establish reference to direct object-attribute
-        meeg.bad_channels = bad_channels
-        self.files_widget.content_changed()
-
     def bad_ckbx_assigned(self):
         bad_channels = [ch for ch in self.bad_chkbts if self.bad_chkbts[ch].isChecked()]
-        self.current_obj.set_bad_channels(self.current_obj.name, bad_channels)
+        self.current_obj.set_bad_channels(bad_channels)
 
     def set_chkbx_enable(self, enable):
         for chkbx in self.bad_chkbts:
@@ -1324,52 +1313,17 @@ class SubBadsWidget(QWidget):
         plot_raw(self.current_obj, show_plots=True, close_func=self.get_selected_bads)
         plot_dialog.close()
 
-    def _find_bads(self, name):
-        raw = MEEG(name, self.ct, preload=False).load_raw()
-
-        if raw.info["dev_head_t"] is None:
-            coord_frame = "meg"
-        else:
-            coord_frame = "head"
-
-        noisy_chs, flat_chs = find_bad_channels_maxwell(raw, coord_frame=coord_frame)
-
-        logging.info(f"Noisy channels: {noisy_chs}\n" f"Flat channels: {flat_chs}")
-        bad_channels = noisy_chs + flat_chs
-        self._assign_bad_channels(name, bad_channels)
-
     def find_bads(self):
-        name = self.current_obj.name
-        self.current_obj = None
         wd = WorkerDialog(
             self,
-            self._find_bads,
-            name=name,
+            find_bads,
+            meeg=self.current_obj,
+            n_jobs=QS().value("n_jobs"),
             show_console=True,
             show_buttons=True,
             close_directly=False,
             return_exception=False,
             title="Finding bads with maxwell filter...",
-        )
-        wd.thread_finished.connect(self.update_selection)
-
-    def _find_bads_all(self, worker_signals):
-        self.current_obj = None
-        for name in self.all_files:
-            logging.info(f"Finding bads for {name}...")
-            self._find_bads(name)
-            if worker_signals.was_canceled:
-                break
-
-    def find_bads_all(self):
-        wd = WorkerDialog(
-            self,
-            self._find_bads_all,
-            show_console=True,
-            show_buttons=True,
-            close_directly=False,
-            return_exception=False,
-            title="Finding bads with maxwell filter for all files...",
         )
         wd.thread_finished.connect(self.update_selection)
 
