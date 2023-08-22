@@ -762,7 +762,11 @@ class MEEG(BaseLoading):
                 "load": self.load_filtered,
                 "save": self.save_filtered,
             },
-            "erm": {"path": self.erm_path, "load": self.load_erm, "save": None},
+            "erm": {
+                "path": self.erm_path,
+                "load": self.load_erm,
+                "save": None
+            },
             "erm_filtered": {
                 "path": self.erm_processed_path,
                 "load": self.load_erm_processed,

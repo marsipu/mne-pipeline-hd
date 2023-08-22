@@ -455,9 +455,8 @@ def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
     return overlay_figs
 
 
-def plot_ica_properties(meeg, show_plots):
+def plot_ica_properties(meeg, ica_fitto, show_plots):
     ica = meeg.load_ica()
-    epochs = meeg.load_epochs()
 
     eog_indices = meeg.load_json("eog_indices", default=list())
     ecg_indices = meeg.load_json("ecg_indices", default=list())
@@ -485,8 +484,9 @@ def plot_ica_properties(meeg, show_plots):
         ix for ix in ica.exclude if ix not in eog_indices + ecg_indices
     ]
     if len(remaining_indices) > 0:
+        data = meeg.load(ica_fitto)
         prop_figs = ica.plot_properties(
-            epochs, remaining_indices, psd_args=psd_args, show=show_plots
+            data, remaining_indices, psd_args=psd_args, show=show_plots
         )
         meeg.plot_save(
             "ica", subfolder="properties", trial="manually", matplotlib_figure=prop_figs

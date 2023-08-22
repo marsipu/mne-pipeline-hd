@@ -33,7 +33,7 @@ reject;;epochs;{'mag':3000e-15, 'grad':3000e-13, 'eeg':100e-6, 'eog':200e-6};;Ch
 flat;;epochs;{'mag': 1e-15, 'grad':1e-13, 'eeg': 1e-6};;Chose flat-thresholds;DictGui;{'none_select': True}
 decim;;epochs;1;;Downsampling-Factor for epochs;IntGui;
 ica_method;ICA-Method;ICA;fastica;;The method for calculating ICA;ComboGui;{'options': ['fastica', 'infomax', 'picard']}
-ica_fitto;Fit ICA to:;ICA;'raw_filtered';;The data to fit the ICA to;ComboGui;{'options': ['raw', 'raw_filtered', 'epochs']}
+ica_fitto;Fit ICA to:;ICA;'raw_filtered';;The data to fit the ICA to;ComboGui;{'options': {'raw': 'Raw (unfiltered)', 'raw_filtered': 'Raw (filtered)', 'epochs': 'Epochs'}}
 ica_apply_target;Apply ICA to:;ICA;raw_filtered;;The target object (Raw, Epochs or Evoked) to apply ICA and remove the selected components from;ComboGui;{'options': {'raw_filtered': 'Raw (filtered)', 'epochs': 'Epochs', 'evoked': 'Evoked'}}
 n_components;;ICA;25;;The number of components for ICA;IntGui;
 max_pca_components;;ICA;None;;;IntGui;{'none_select': True}

@@ -583,16 +583,9 @@ def run_ica(
     ecg_channel,
     **kwargs,
 ):
-    if ica_fitto == "epochs":
-        data = meeg.load_epochs()
-        # Bad-Channels and Channel-Types are already picked in epoch_raw
-    else:
-        if ica_fitto == "raw":
-            data = meeg.load_raw()
-
-        else:
-            data = meeg.load_filtered()
-
+    data = meeg.load(ica_fitto)
+    # Bad-Channels and Channel-Types are already picked in epochs
+    if ica_fitto != "epochs":
         data.pick(ch_types, exclude="bads")
         if len(ch_names) > 0 and ch_names != "all":
             data.pick_channels(ch_names)
