@@ -114,51 +114,37 @@ def plot_events(meeg, show_plots):
     return fig
 
 
-def plot_power_spectra(meeg, show_plots, n_jobs):
-    raw = meeg.load_filtered()
-
-    # Does not accept -1 for n_jobs
-    if n_jobs == -1:
-        n_jobs = multiprocessing.cpu_count()
-
-    fig = raw.plot_psd(fmax=raw.info["lowpass"], show=show_plots, n_jobs=n_jobs)
-    fig.suptitle(meeg.name)
+def plot_power_spectra(meeg, show_plots):
+    psd = meeg.load_psd_raw()
+    fig = psd.plot(show=show_plots)
+    fig.suptitle(f"Raw: {meeg.name}", x=0.3)
 
     meeg.plot_save("power_spectra", subfolder="raw", matplotlib_figure=fig)
 
 
-def plot_power_spectra_topo(meeg, show_plots, n_jobs):
-    raw = meeg.load_filtered()
-
-    # Does not accept -1 for n_jobs
-    if n_jobs == -1:
-        n_jobs = multiprocessing.cpu_count()
-
-    fig = raw.plot_psd_topo(show=show_plots, n_jobs=n_jobs)
+def plot_power_spectra_topomap(meeg, psd_topomap_bands, show_plots):
+    psd = meeg.load_psd_raw()
+    fig = psd.plot_topomap(badns=psd_topomap_bands, show=show_plots)
+    fig.suptitle(f"Raw: {meeg.name}", x=0.3)
 
     meeg.plot_save("power_spectra", subfolder="raw_topo", matplotlib_figure=fig)
 
 
-def plot_power_spectra_epochs(meeg, show_plots, n_jobs):
-    epochs = meeg.load_epochs()
-
-    # Does not accept -1 for n_jobs
-    if n_jobs == -1:
-        n_jobs = multiprocessing.cpu_count()
-
+def plot_power_spectra_epochs(meeg, show_plots):
+    psd = meeg.load_psd_epochs()
     for trial in meeg.sel_trials:
-        fig = epochs[trial].plot_psd(show=show_plots, n_jobs=n_jobs)
-        fig.suptitle(meeg.name + "-" + trial)
+        fig = psd[trial].plot(show=show_plots)
+        fig.suptitle(f"Epochs: {meeg.name}-{trial}", x=0.3)
         meeg.plot_save(
             "power_spectra", subfolder="epochs", trial=trial, matplotlib_figure=fig
         )
 
 
-def plot_power_spectra_epochs_topo(meeg, show_plots, n_jobs):
-    epochs = meeg.load_epochs()
+def plot_power_spectra_epochs_topomap(meeg, psd_topomap_bands, show_plots):
+    psd = meeg.load_psd_epochs()
     for trial in meeg.sel_trials:
-        fig = epochs[trial].plot_psd_topomap(show=show_plots, n_jobs=n_jobs)
-        fig.suptitle(meeg.name + "-" + trial)
+        fig = psd[trial].plot_topomap(bands=psd_topomap_bands, show=show_plots)
+        fig.suptitle(f"Epochs: {meeg.name}-{trial}")
         meeg.plot_save(
             "power_spectra", subfolder="epochs_topo", trial=trial, matplotlib_figure=fig
         )

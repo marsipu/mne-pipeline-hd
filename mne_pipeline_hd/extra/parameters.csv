@@ -88,7 +88,7 @@ ecd_orientations;;Inverse;{};;;DictGui;
 morph_to;;Grand-Average;fsaverage;;name of the freesurfer subject to be morphed to;StringGui;
 ica_source_data;;ICA;raw_filtered;;Which data to plot in sources-plot from ICA;ComboGui;{'options': {'raw': 'Raw (unfiltered)', 'raw_filtered': 'Raw (filtered)', 'epochs': 'Epochs', 'epochs_eog': 'Epochs (EOG)', 'epochs_ecg': 'Epochs (ECG)', 'evoked': 'Evoked', 'evoked_eog': 'Evoked (EOG)', 'evoked_ecg': 'Evoked (ECG)'}}
 ica_overlay_data;;ICA;evoked;;Which data to plot in overlay-plot from ICA;ComboGui;{'options': {'raw': 'Raw (unfiltered)', 'raw_filtered': 'Raw (filtered)', 'evoked': 'Evoked', 'evoked_eog': 'Evoked (EOG)', 'evoked_ecg': 'Evoked (ECG)'}}
-plot_sensors_kind;;Plot;'topomap';;The kind of plot for plot_sensors;ComboGui;{'options':['topomap', '3d', 'select']}
+plot_sensors_kind;;Plot;'topomap';;The kind of plot for plot_sensors;ComboGui;{'options': ['topomap', '3d', 'select']}
 erm_ssp_duration;;Preprocessing;1;s;The time-chunk to use for ssp;IntGui;
 erm_n_grad;;Preprocessing;2;;The number of projections for Gradiometer;IntGui;
 erm_n_mag;;Preprocessing;2;;The number of projections for Magnetometer;IntGui;
@@ -97,3 +97,5 @@ ga_interpolate_bads;;Grand-Average;True;;If to interpolate bad channels for the 
 ga_drop_bads;;Grand-Average;True;;If to drop bad channels for the Grand-Average;BoolGui;
 connectivity_vmin;;Connectivity;None;;Minimum value for colormap;FloatGui;{'step': 0.01, 'none_select':True}
 connectivity_vmax;;Connectivity;None;;Maximum value for colormap;FloatGui;{'step': 0.01, 'none_select':True}
+psd_method;;Time-Frequency;welch;;The method for spectral estimation;ComboGui;{'options': ['welch', 'multitaper']}
+psd_topomap_bands;;Time-Frequency;None;;The frequency bands for the topomap-plot;DictGui;{'none_select': True}

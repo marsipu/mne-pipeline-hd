@@ -10,6 +10,8 @@ epoch_raw;Get Epochs;MEEG;Compute;events;False;False;;operations;basic;meeg,ch_t
 estimate_noise_covariance;Noise-Covariance;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,baseline,n_jobs,noise_cov_mode,noise_cov_method
 get_evokeds;Get Evokeds;MEEG;Compute;events;False;False;;operations;basic;meeg
 interpolate_bads;Interpolate Bads;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,bad_interpolation
+compute_psd_raw;Compute PSD (Raw);MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,psd_method,n_jobs
+compute_psd_epochs;Compute PSD (Epochs);MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,psd_method,n_jobs
 tfr;Time-Frequency;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,tfr_freqs,tfr_n_cycles,tfr_average,tfr_use_fft,tfr_baseline,tfr_baseline_mode,tfr_method,multitaper_bandwidth,stockwell_width,n_jobs
 apply_watershed;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri
 prepare_bem;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri,bem_spacing,bem_conductivity
@@ -40,10 +42,10 @@ plot_sensors;;MEEG;Plot;Forward;True;False;;plot;basic;meeg,plot_sensors_kind,ch
 plot_raw;;MEEG;Plot;Raw;True;False;;plot;basic;meeg,show_plots
 plot_filtered;;MEEG;Plot;Raw;True;False;;plot;basic;meeg,show_plots
 plot_events;;MEEG;Plot;events;True;False;;plot;basic;meeg,show_plots
-plot_power_spectra;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
-plot_power_spectra_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
-plot_power_spectra_epochs;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
-plot_power_spectra_epochs_topo;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots,n_jobs
+plot_power_spectra;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots
+plot_power_spectra_topomap;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,psd_topomap_bands,show_plots
+plot_power_spectra_epochs;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots
+plot_power_spectra_epochs_topomap;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,psd_topomap_bands,show_plots
 plot_tfr;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,show_plots
 plot_epochs;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots
 plot_epochs_image;;MEEG;Plot;Epochs;True;False;;plot;basic;meeg,show_plots

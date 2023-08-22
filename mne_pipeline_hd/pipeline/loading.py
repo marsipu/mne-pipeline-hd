@@ -675,6 +675,8 @@ class MEEG(BaseLoading):
             self.save_dir, f"{self.name}_{self.p_preset}-ecg-epo.fif"
         )
         self.evokeds_path = join(self.save_dir, f"{self.name}_{self.p_preset}-ave.fif")
+        self.psd_raw_path = join(self.save_dir, f"{self.name}_{self.p_preset}-raw-psd.h5")
+        self.psd_epochs_path = join(self.save_dir, f"{self.name}_{self.p_preset}-epo-psd.h5")
         self.power_tfr_epochs_path = join(
             self.save_dir,
             f"{self.name}_{self.p_preset}_" f'#{self.pa["tfr_method"]}-epo-pw-tfr.h5',
@@ -762,11 +764,7 @@ class MEEG(BaseLoading):
                 "load": self.load_filtered,
                 "save": self.save_filtered,
             },
-            "erm": {
-                "path": self.erm_path,
-                "load": self.load_erm,
-                "save": None
-            },
+            "erm": {"path": self.erm_path, "load": self.load_erm, "save": None},
             "erm_filtered": {
                 "path": self.erm_processed_path,
                 "load": self.load_erm_processed,
@@ -809,6 +807,16 @@ class MEEG(BaseLoading):
             },
             "evoked_eog": {"path": None, "load": self.load_eog_evokeds, "save": None},
             "evoked_ecg": {"path": None, "load": self.load_ecg_evokeds, "save": None},
+            "psd_raw": {
+                "path": self.psd_raw_path,
+                "load": self.load_psd_raw,
+                "save": self.save_psd_raw,
+            },
+            "psd_epochs": {
+                "path": self.psd_epochs_path,
+                "load": self.load_psd_epochs,
+                "save": self.save_psd_epochs,
+            },
             "tf_power_epochs": {
                 "path": self.power_tfr_epochs_path,
                 "load": self.load_power_tfr_epochs,
@@ -1075,6 +1083,22 @@ class MEEG(BaseLoading):
     @load_decorator
     def load_ecg_evokeds(self):
         return self.load_ecg_epochs().average()
+
+    @load_decorator
+    def load_psd_raw(self):
+        return mne.time_frequency.read_spectrum(self.psd_raw_path)
+
+    @save_decorator
+    def save_psd_raw(self, psd_raw):
+        psd_raw.save(self.psd_raw_path, overwrite=True)
+
+    @load_decorator
+    def load_psd_epochs(self):
+        return mne.time_frequency.read_spectrum(self.psd_epochs_path)
+
+    @save_decorator
+    def save_psd_epochs(self, psd_epochs):
+        psd_epochs.save(self.psd_epochs_path, overwrite=True)
 
     @load_decorator
     def load_power_tfr_epochs(self):

@@ -809,6 +809,20 @@ def grand_avg_evokeds(group, ga_interpolate_bads, ga_drop_bads):
     group.save_ga_evokeds(ga_evokeds)
 
 
+def compute_psd_raw(meeg, psd_method, n_jobs, **kwargs):
+    raw = meeg.load_filtered()
+    psd_raw = raw.compute_psd(method=psd_method, fmax=raw.info['lowpass'],
+                              n_jobs=n_jobs, **kwargs)
+    meeg.save_psd_raw(psd_raw)
+
+
+def compute_psd_epochs(meeg, psd_method, n_jobs, **kwargs):
+    epochs = meeg.load_epochs()
+    psd_epochs = epochs.compute_psd(method=psd_method, fmax=epochs.info['lowpass'],
+                                    n_jobs=n_jobs, **kwargs)
+    meeg.save_psd_epochs(psd_epochs)
+
+
 def tfr(
     meeg,
     tfr_freqs,
