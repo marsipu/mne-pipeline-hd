@@ -536,7 +536,7 @@ def epoch_raw(
         if use_autoreject == "Threshold":
             reject = meeg.load_json("autoreject_threshold")
             if reject is None or overwrite_ar:
-                reject = ar.get_rejection_threshold(epochs)
+                reject = ar.get_rejection_threshold(epochs, random_state=8)
                 meeg.save_json("autoreject_threshold", reject)
             print(
                 f"Dropping bad epochs with autoreject"
@@ -574,6 +574,7 @@ def run_ica(
     ica_remove_proj,
     ica_reject,
     ica_autoreject,
+    overwrite_ar,
     ch_types,
     ch_names,
     reject_by_annotation,
@@ -617,12 +618,12 @@ def run_ica(
         simulated_epochs = mne.Epochs(
             data, simulated_events, baseline=None, tmin=0, tmax=1, proj=False
         )
-        reject = ar.get_rejection_threshold(simulated_epochs)
+        reject = ar.get_rejection_threshold(simulated_epochs, random_state=8)
         print(f"Autoreject Rejection-Threshold: {reject}")
     elif ica_autoreject and ica_fitto == "epochs":
         reject = meeg.load_json("autoreject_threshold")
-        if not reject:
-            reject = ar.get_rejection_threshold(data)
+        if reject is None or overwrite_ar:
+            reject = ar.get_rejection_threshold(data, random_state=8)
             meeg.save_json("autoreject_threshold", reject)
     else:
         reject = ica_reject

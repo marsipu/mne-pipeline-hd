@@ -6,7 +6,7 @@ find_events;Find events;MEEG;Compute;events;False;False;;operations;basic;meeg,s
 find_6ch_binary_events;Find events HD;MEEG;Compute;events;False;False;;operations;basic;meeg,min_duration,shortest_event,adjust_timeline_by_msec
 epoch_raw;Get Epochs;MEEG;Compute;events;False;False;;operations;basic;meeg,ch_types,ch_names,t_epoch,baseline,apply_proj,reject,flat,reject_by_annotation,bad_interpolation,use_autoreject,consensus_percs,n_interpolates,overwrite_ar,decim,n_jobs
 estimate_noise_covariance;Noise-Covariance;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,baseline,n_jobs,noise_cov_mode,noise_cov_method
-run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_method,ica_fitto,n_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,ch_types,ch_names,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
+run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_method,ica_fitto,n_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,overwrite_ar,ch_types,ch_names,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
 apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_apply_target,n_pca_components
 get_evokeds;Get Evokeds;MEEG;Compute;events;False;False;;operations;basic;meeg
 interpolate_bads;Interpolate Bads;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,bad_interpolation
