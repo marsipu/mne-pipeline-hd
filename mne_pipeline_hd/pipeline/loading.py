@@ -16,7 +16,7 @@ import os
 import pickle
 import shutil
 from datetime import datetime
-from os import listdir, makedirs, remove
+from os import listdir, makedirs
 from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
@@ -493,6 +493,17 @@ class BaseLoading:
 
         self.save_file_params(file_path)
 
+    def remove_json(self, file_name):
+        file_path = join(self.save_dir, f"{self.name}_{self.p_preset}_{file_name}.json")
+        try:
+            os.remove(file_path)
+        except FileNotFoundError:
+            print(f"{file_path} was not found")
+        except OSError as err:
+            print(f"{file_path} could not be removed due to {err}")
+        else:
+            print(f"{file_path} was removed")
+
     def get_existing_paths(self):
         """Get existing paths and add the mapped File-Type
         to existing_paths (set)"""
@@ -531,7 +542,7 @@ class BaseLoading:
                 except KeyError:
                     print(f"{Path(p).name} not in file-parameters")
             try:
-                remove(p)
+                os.remove(p)
             except FileNotFoundError:
                 # Accounting for Source-Estimate naming-conventions
                 try:
@@ -548,6 +559,8 @@ class BaseLoading:
                     print(f"{p} could not be removed due to {err}")
             except OSError as err:
                 print(f"{p} could not be removed due to {err}")
+            else:
+                print(f"{p} was removed")
 
 
 class MEEG(BaseLoading):
@@ -1230,7 +1243,7 @@ class MEEG(BaseLoading):
             makedirs(join(self.save_dir, "mixn_dipoles"))
         old_dipoles = listdir(join(self.save_dir, "mixn_dipoles"))
         for file in old_dipoles:
-            remove(join(self.save_dir, "mixn_dipoles", file))
+            os.remove(join(self.save_dir, "mixn_dipoles", file))
 
         for trial in mixn_dips:
             for idx, dip in enumerate(mixn_dips[trial]):

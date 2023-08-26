@@ -684,6 +684,11 @@ def run_ica(
             meeg.save_eog_epochs(eog_epochs)
             meeg.save_json("eog_indices", eog_indices)
             meeg.save_json("eog_scores", eog_scores)
+    else:
+        # Remove old eog_epochs, eog_indices and eog_scores if new ICA is calculated
+        meeg.remove_path("eog_epochs")
+        meeg.remove_json("eog_indices")
+        meeg.remove_json("eog_scores")
 
     if ica_ecg:
         create_ecg_kwargs = check_kwargs(kwargs, mne.preprocessing.create_ecg_epochs)
@@ -721,6 +726,11 @@ def run_ica(
             meeg.save_ecg_epochs(ecg_epochs)
             meeg.save_json("ecg_indices", ecg_indices)
             meeg.save_json("ecg_scores", ecg_scores)
+    else:
+        # Remove old ecg_epochs, ecg_indices and ecg_scores if new ICA is calculated
+        meeg.remove_path("ecg_epochs")
+        meeg.remove_json("ecg_indices")
+        meeg.remove_json("ecg_scores")
 
     meeg.save_ica(ica)
     # Add components to ica_exclude-dictionary
