@@ -16,6 +16,7 @@ from multiprocessing import Pipe
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtWidgets import QAbstractItemView
 
+from gui.base_widgets import TimedMessageBox
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
 from mne_pipeline_hd.pipeline.loading import BaseLoading, FSMRI, Group, MEEG
 from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, ismac, QS
@@ -398,8 +399,15 @@ class QRunController(RunController):
 
         if self.ct.get_setting("shutdown"):
             self.ct.save()
-
-            shutdown()
+            ans = TimedMessageBox.information(
+                60,
+                parent=self.rd,
+                title="Shutdown",
+                text="The PC is about to shutdown. Cancel?",
+                buttons=TimedMessageBox.Cancel,
+            )
+            if not ans == TimedMessageBox.Cancel:
+                shutdown()
 
     def start(self):
         kwds = self.prepare_start()
