@@ -398,6 +398,7 @@ class QRunController(RunController):
 
         if self.ct.get_setting("shutdown"):
             self.ct.save()
+
             shutdown()
 
     def start(self):
