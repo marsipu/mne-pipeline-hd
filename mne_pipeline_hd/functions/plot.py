@@ -8,7 +8,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 from __future__ import print_function
 
 import gc
-import multiprocessing
 from functools import partial
 from os.path import join
 
