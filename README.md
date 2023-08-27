@@ -37,10 +37,10 @@ apply to all data.***
 
 ## Bug-Report/Feature-Request
 
-Please report bugs on GitHub as an issue or to me (dev@earthman-music.de)
+Please report bugs on GitHub as an issue or to me (dev@mgschulz.de)
 directly.
 And if you got ideas on how to improve the pipeline or some feature-requests,
-you are welcome to open an issue too or send an e-mail (dev@earthman-music.de)
+you are welcome to open an issue too or send an e-mail (dev@mgschulz.de)
 
 ## Contribute and build your own functions/fix bugs
 
@@ -57,13 +57,13 @@ installed.
    terminal: `git clone <url you get from the green clone-button from your forked repository on GitHub>`
 4. Add upstream to git for
    updates: `git remote add upstream git://github.com/marsipu/mne-pipeline-hd.git`
-5. Install development version with pip: `pip install -e ./`
+5. Install development version with pip: `pip install -e .[tests]`
 6. Create a branch for changes: `git checkout -b <branch-name>`
 7. Commit changes: `git commit -am "<your commit message>"`
 8. Push changes to your forked repository on GitHub: `git push`
 9. Make "New pull request" from your new feature branch
 
-You can always [write me](mailto:dev@earthman-music.de), if you have questions
+You can always [write me](mailto:dev@mgschulz.de), if you have questions
 about the contribution-process
 or about the program-structure.
 
