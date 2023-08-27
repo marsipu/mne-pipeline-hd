@@ -42,7 +42,8 @@ jobs:
           python -m pip install -r requirements_dev.txt
       - name: Get testing version
         run: |
-          curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/get_testing_version.sh
+          mkdir -p mne/datasets
+          curl --output-dir mne/datasets/ --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/get_testing_version.sh
           bash get_testing_version.sh
       - uses: actions/cache@v3
         with:
