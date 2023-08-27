@@ -1,3 +1,5 @@
+
+# Pipeline-related
 autoreject
 h5io
 
@@ -7,10 +9,9 @@ mne-connectivity
 mne-qt-browser
 nibabel
 pandas
-
-# Pipeline-related
 psutil
 pyobjc-framework-Cocoa; sys_platform == "darwin"
+
 # PyQt
 PyQt5
 pyqtdarktheme
