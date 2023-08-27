@@ -688,8 +688,12 @@ class MEEG(BaseLoading):
             self.save_dir, f"{self.name}_{self.p_preset}-ecg-epo.fif"
         )
         self.evokeds_path = join(self.save_dir, f"{self.name}_{self.p_preset}-ave.fif")
-        self.psd_raw_path = join(self.save_dir, f"{self.name}_{self.p_preset}-raw-psd.h5")
-        self.psd_epochs_path = join(self.save_dir, f"{self.name}_{self.p_preset}-epo-psd.h5")
+        self.psd_raw_path = join(
+            self.save_dir, f"{self.name}_{self.p_preset}-raw-psd.h5"
+        )
+        self.psd_epochs_path = join(
+            self.save_dir, f"{self.name}_{self.p_preset}-epo-psd.h5"
+        )
         self.power_tfr_epochs_path = join(
             self.save_dir,
             f"{self.name}_{self.p_preset}_" f'#{self.pa["tfr_method"]}-epo-pw-tfr.h5',

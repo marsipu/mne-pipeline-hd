@@ -1551,7 +1551,13 @@ class TimedMessageBox(QMessageBox):
         defaultButton=QMessageBox.NoButton,
     ):
         return TimedMessageBox._static_setup(
-            QMessageBox.Information, timeout, parent, title, text, buttons, defaultButton
+            QMessageBox.Information,
+            timeout,
+            parent,
+            title,
+            text,
+            buttons,
+            defaultButton,
         )
 
     @staticmethod
