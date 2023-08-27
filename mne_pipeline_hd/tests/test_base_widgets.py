@@ -15,8 +15,7 @@ def test_timed_messagebox(qtbot):
     qtbot.addWidget(timed_messagebox)
     timed_messagebox.show()
 
-    # Leave enought time for variance between systems
-    qtbot.wait(1500)
+    qtbot.wait(1000)
     assert timed_messagebox.text() == "Test\nTimeout: 1"
 
     # Test messagebox properly closes
