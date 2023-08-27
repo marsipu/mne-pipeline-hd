@@ -19,7 +19,7 @@ def test_timed_messagebox(qtbot):
     qtbot.wait(1100)
     # For some reason Windows-CI seems to fail here,
     # maybe timed_messagebox.show() is blocking there
-    if iswin:
+    if not iswin:
         assert timed_messagebox.text() == "Test\nTimeout: 1"
 
     # Test messagebox properly closes
