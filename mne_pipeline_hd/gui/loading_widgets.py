@@ -4,8 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import gc
-import logging
 import os
 import re
 import shutil
@@ -48,7 +46,6 @@ from PyQt5.QtWidgets import (
     QWizardPage,
 )
 from matplotlib import pyplot as plt
-from mne.preprocessing import find_bad_channels_maxwell
 
 from mne_pipeline_hd.functions.operations import find_bads
 from mne_pipeline_hd.functions.plot import (
