@@ -8,7 +8,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 def test_timed_messagebox(qtbot):
     """Test TimedMessageBox."""
-    from gui.base_widgets import TimedMessageBox
+    from mne_pipeline_hd.gui.base_widgets import TimedMessageBox
 
     # Test text and countdown
     timed_messagebox = TimedMessageBox(2)
