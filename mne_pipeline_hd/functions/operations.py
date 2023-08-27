@@ -23,7 +23,7 @@ import autoreject as ar
 import mne
 import mne_connectivity
 import numpy as np
-from mne.preprocessing import ICA
+from mne.preprocessing import ICA, find_bad_channels_maxwell
 
 from mne_pipeline_hd.pipeline.loading import MEEG
 from mne_pipeline_hd.pipeline.pipeline_utils import (
@@ -31,6 +31,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     compare_filep,
     ismac,
     iswin,
+    get_n_jobs,
 )
 
 
@@ -38,6 +39,26 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
 # =============================================================================
 # PREPROCESSING AND GETTING TO EVOKED AND TFR
 # =============================================================================
+def find_bads(meeg, n_jobs, **kwargs):
+    raw = meeg.load_raw()
+
+    if raw.info["dev_head_t"] is None:
+        coord_frame = "meg"
+    else:
+        coord_frame = "head"
+
+    # Set number of CPU-cores to use
+    os.environ["OMP_NUM_THREADS"] = str(get_n_jobs(n_jobs))
+
+    noisy_chs, flat_chs = find_bad_channels_maxwell(
+        raw, coord_frame=coord_frame, **kwargs
+    )
+    logging.info(f"Noisy channels: {noisy_chs}\n" f"Flat channels: {flat_chs}")
+    raw.info["bads"] = noisy_chs + flat_chs + raw.info["bads"]
+    meeg.set_bad_channels(raw.info["bads"])
+    meeg.save_raw(raw)
+
+
 def filter_data(
     meeg,
     filter_target,

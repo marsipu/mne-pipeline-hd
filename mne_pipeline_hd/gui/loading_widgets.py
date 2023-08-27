@@ -4,7 +4,8 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-
+import gc
+import logging
 import os
 import re
 import shutil
@@ -47,7 +48,9 @@ from PyQt5.QtWidgets import (
     QWizardPage,
 )
 from matplotlib import pyplot as plt
+from mne.preprocessing import find_bad_channels_maxwell
 
+from mne_pipeline_hd.functions.operations import find_bads
 from mne_pipeline_hd.functions.plot import (
     plot_ica_components,
     plot_ica_sources,
@@ -78,7 +81,7 @@ from mne_pipeline_hd.gui.gui_utils import (
 from mne_pipeline_hd.gui.models import AddFilesModel
 from mne_pipeline_hd.gui.parameter_widgets import ComboGui
 from mne_pipeline_hd.pipeline.loading import FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep
+from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS
 
 
 def index_parser(index, all_items):
@@ -1062,6 +1065,22 @@ class FileDictWizardPage(QWizardPage):
         self.setLayout(layout)
 
 
+class FindBadsDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.pw = parent
+
+        self.values
+
+        self.init_ui()
+        self.open()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        self.setLayout(layout)
+
+
 class CopyBadsDialog(QDialog):
     def __init__(self, parent_w):
         super().__init__(parent_w)
@@ -1134,6 +1153,7 @@ class SubBadsWidget(QWidget):
         self.ct = main_win.ct
         self.pr = main_win.ct.pr
         self.setWindowTitle("Assign bad_channels for your files")
+        self.all_files = self.pr.all_meeg + self.pr.all_erm
         self.bad_chkbts = dict()
         self.info_dict = dict()
         self.current_obj = None
@@ -1163,6 +1183,10 @@ class SubBadsWidget(QWidget):
         plot_bt = QPushButton("Plot raw")
         plot_bt.clicked.connect(self.plot_raw_bad)
         self.bt_layout.addWidget(plot_bt)
+
+        find_bads_bt = QPushButton("Find bads")
+        find_bads_bt.clicked.connect(self.find_bads)
+        self.bt_layout.addWidget(find_bads_bt)
 
         copy_bt = QPushButton("Copy Bads")
         copy_bt.clicked.connect(partial(CopyBadsDialog, self))
@@ -1253,14 +1277,6 @@ class SubBadsWidget(QWidget):
 
         self.make_bad_chbxs()
 
-    def _assign_bad_channels(self, bad_channels):
-        # Directly replace value in bad_channels_dict
-        # (needed for first-time assignment)
-        self.current_obj.pr.meeg_bad_channels[self.current_obj.name] = bad_channels
-        # Restore/Establish reference to direct object-attribute
-        self.current_obj.bad_channels = bad_channels
-        self.files_widget.content_changed()
-
     def bad_ckbx_assigned(self):
         bad_channels = [ch for ch in self.bad_chkbts if self.bad_chkbts[ch].isChecked()]
         self.current_obj.set_bad_channels(bad_channels)
@@ -1296,6 +1312,20 @@ class SubBadsWidget(QWidget):
 
         plot_raw(self.current_obj, show_plots=True, close_func=self.get_selected_bads)
         plot_dialog.close()
+
+    def find_bads(self):
+        wd = WorkerDialog(
+            self,
+            find_bads,
+            meeg=self.current_obj,
+            n_jobs=QS().value("n_jobs"),
+            show_console=True,
+            show_buttons=True,
+            close_directly=False,
+            return_exception=False,
+            title="Finding bads with maxwell filter...",
+        )
+        wd.thread_finished.connect(self.update_selection)
 
     def resizeEvent(self, event):
         if self.current_obj:

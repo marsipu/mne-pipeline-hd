@@ -23,10 +23,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-
-# =============================================================================
-# LOADING FUNCTIONS
-# =============================================================================
 from tqdm import tqdm
 
 from mne_pipeline_hd.pipeline.pipeline_utils import (
@@ -1458,7 +1454,7 @@ class FSMRI(BaseLoading):
                     subjects_dir=self.subjects_dir,
                     verbose="warning",
                 )
-            except RuntimeError:
+            except (RuntimeError, OSError):
                 print(f"Parcellation {parcellation} could not be loaded!")
 
         return labels
