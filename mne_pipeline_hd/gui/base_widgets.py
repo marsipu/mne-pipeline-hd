@@ -1477,8 +1477,14 @@ class AssignWidget(QWidget):
 
 
 class TimedMessageBox(QMessageBox):
-    def __init__(self, timeout=10, *args, **kwargs):
+    def __init__(self, timeout=10, title=None, text=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if title is not None:
+            self.setWindowTitle(title)
+        if text is not None:
+            self.setText(text)
+
         self._got_clicked = False
         self.buttonClicked.connect(lambda: setattr(self, "_got_clicked", True))
 
@@ -1510,13 +1516,12 @@ class TimedMessageBox(QMessageBox):
     def _static_setup(icon, timeout, parent, title, text, buttons, defaultButton):
         cls = TimedMessageBox(
             timeout=timeout,
+            title=title,
+            text=text,
             icon=icon,
             parent=parent,
         )
-        if title is not None:
-            cls.setWindowTitle(title)
-        if text is not None:
-            cls.setText(text)
+
         cls._update_timeout_text()
         cls.setStandardButtons(buttons)
         cls.setDefaultButton(defaultButton)

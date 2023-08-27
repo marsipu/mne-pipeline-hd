@@ -175,6 +175,7 @@ class RawInfo(QDialog):
 
         self.setLayout(layout)
 
+    # ToDo: Just parse repr(info) instead of rewriting all keys
     def meeg_selected(self, meeg_name):
         # Get size in Mebibytes of all files associated to this
         meeg = MEEG(meeg_name, self.mw.ct)
@@ -207,7 +208,7 @@ class RawInfo(QDialog):
         )
 
         key_list = [
-            ("no_files", "Size of all associated files"),
+            ("no_files", "Number associated files"),
             ("size", "Size of all associated files", size_unit),
             ("proj_name", "Project-Name"),
             ("experimenter", "Experimenter"),

@@ -11,14 +11,12 @@ def test_timed_messagebox(qtbot):
     from mne_pipeline_hd.gui.base_widgets import TimedMessageBox
 
     # Test text and countdown
-    timed_messagebox = TimedMessageBox(2)
-    timed_messagebox.setText("Test")
+    timed_messagebox = TimedMessageBox(2, text="Test")
     qtbot.addWidget(timed_messagebox)
     timed_messagebox.show()
 
-    qtbot.wait(1000)
+    qtbot.wait(1500)
     qtbot.waitSignal(timed_messagebox.timer.timeout)
-    qtbot.wait(100)
     assert timed_messagebox.text() == "Test\nTimeout: 1"
 
     # Test messagebox properly closes
