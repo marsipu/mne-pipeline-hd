@@ -21,6 +21,17 @@ classifiers = [
 ]
 dynamic = ["version", "dependencies"]
 
+[project.optional-dependencies]
+tests = [
+    "black",
+    "pre-commit",
+    "pydata-sphinx-theme",
+    "pytest",
+    "pytest-qt",
+    "ruff",
+    "sphinx"
+]
+
 [project.urls]
 Homepage = "https://github.com/marsipu/mne-pipeline-hd"
 Repository = "https://github.com/marsipu/mne-pipeline-hd.git"
