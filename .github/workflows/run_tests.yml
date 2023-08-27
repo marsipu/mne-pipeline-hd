@@ -38,8 +38,7 @@ jobs:
       - name: Installation with dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -ve .
-          python -m pip install -r requirements_dev.txt
+          python -m pip install -ve .[tests]
       - name: Get testing version
         run: |
           mkdir -p mne/datasets
