@@ -23,7 +23,7 @@ jobs:
       DISPLAY: ':99.0'
     defaults:
       run:
-        shell: bash
+        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - name: Setup xvfb on Linux
@@ -46,8 +46,8 @@ jobs:
           curl --output-dir mne/datasets/ --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/config.py
           curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/get_testing_version.sh
           echo "local_test=$(bash get_testing_version.sh)" >> $GITHUB_ENV
-          echo ${TESTING_VERSION}
-          echo ${local_test}
+          echo ${{ env.TESTING_VERSION }}
+          echo ${{ env.local_test }}
       - uses: actions/cache@v3
         with:
           key: ${{ env.TESTING_VERSION }}
