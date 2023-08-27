@@ -1,0 +1,18 @@
+repos:
+  # Pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    - id: check-json
+    - id: check-toml
+    - id: end-of-file-fixer
+    - id: fix-encoding-pragma
+    - id: requirements-txt-fixer
+    - id: trailing-whitespace
+
+  # Black
+  - repo: https://github.com/psf/black
+    rev: 23.7.0
+    hooks:
+      - id: black
+        args: [ --quiet ]

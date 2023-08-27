@@ -5,3 +5,4 @@ pydata-sphinx-theme
 black
 flake8
 flake8-bugbear
+pre-commit
