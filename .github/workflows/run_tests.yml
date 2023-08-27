@@ -45,7 +45,7 @@ jobs:
           mkdir -p mne/datasets
           curl --output-dir mne/datasets/ --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/config.py
           curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/get_testing_version.sh
-          echo "local_test=$(./get_testing_version.sh)" >> $GITHUB_ENV
+          echo "local_test=$(bash get_testing_version.sh)" >> $GITHUB_ENV
           echo ${TESTING_VERSION}
           echo ${local_test}
       - uses: actions/cache@v3
