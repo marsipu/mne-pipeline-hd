@@ -8,7 +8,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 from __future__ import print_function
 
 import gc
-import multiprocessing
 from functools import partial
 from os.path import join
 
@@ -114,51 +113,37 @@ def plot_events(meeg, show_plots):
     return fig
 
 
-def plot_power_spectra(meeg, show_plots, n_jobs):
-    raw = meeg.load_filtered()
-
-    # Does not accept -1 for n_jobs
-    if n_jobs == -1:
-        n_jobs = multiprocessing.cpu_count()
-
-    fig = raw.plot_psd(fmax=raw.info["lowpass"], show=show_plots, n_jobs=n_jobs)
-    fig.suptitle(meeg.name)
+def plot_power_spectra(meeg, show_plots):
+    psd = meeg.load_psd_raw()
+    fig = psd.plot(show=show_plots)
+    fig.suptitle(f"Raw: {meeg.name}", x=0.3)
 
     meeg.plot_save("power_spectra", subfolder="raw", matplotlib_figure=fig)
 
 
-def plot_power_spectra_topo(meeg, show_plots, n_jobs):
-    raw = meeg.load_filtered()
-
-    # Does not accept -1 for n_jobs
-    if n_jobs == -1:
-        n_jobs = multiprocessing.cpu_count()
-
-    fig = raw.plot_psd_topo(show=show_plots, n_jobs=n_jobs)
+def plot_power_spectra_topomap(meeg, psd_topomap_bands, show_plots):
+    psd = meeg.load_psd_raw()
+    fig = psd.plot_topomap(badns=psd_topomap_bands, show=show_plots)
+    fig.suptitle(f"Raw: {meeg.name}", x=0.3)
 
     meeg.plot_save("power_spectra", subfolder="raw_topo", matplotlib_figure=fig)
 
 
-def plot_power_spectra_epochs(meeg, show_plots, n_jobs):
-    epochs = meeg.load_epochs()
-
-    # Does not accept -1 for n_jobs
-    if n_jobs == -1:
-        n_jobs = multiprocessing.cpu_count()
-
+def plot_power_spectra_epochs(meeg, show_plots):
+    psd = meeg.load_psd_epochs()
     for trial in meeg.sel_trials:
-        fig = epochs[trial].plot_psd(show=show_plots, n_jobs=n_jobs)
-        fig.suptitle(meeg.name + "-" + trial)
+        fig = psd[trial].plot(show=show_plots)
+        fig.suptitle(f"Epochs: {meeg.name}-{trial}", x=0.3)
         meeg.plot_save(
             "power_spectra", subfolder="epochs", trial=trial, matplotlib_figure=fig
         )
 
 
-def plot_power_spectra_epochs_topo(meeg, show_plots, n_jobs):
-    epochs = meeg.load_epochs()
+def plot_power_spectra_epochs_topomap(meeg, psd_topomap_bands, show_plots):
+    psd = meeg.load_psd_epochs()
     for trial in meeg.sel_trials:
-        fig = epochs[trial].plot_psd_topomap(show=show_plots, n_jobs=n_jobs)
-        fig.suptitle(meeg.name + "-" + trial)
+        fig = psd[trial].plot_topomap(bands=psd_topomap_bands, show=show_plots)
+        fig.suptitle(f"Epochs: {meeg.name}-{trial}")
         meeg.plot_save(
             "power_spectra", subfolder="epochs_topo", trial=trial, matplotlib_figure=fig
         )
@@ -455,9 +440,8 @@ def plot_ica_overlay(meeg, ica_overlay_data, show_plots):
     return overlay_figs
 
 
-def plot_ica_properties(meeg, show_plots):
+def plot_ica_properties(meeg, ica_fitto, show_plots):
     ica = meeg.load_ica()
-    epochs = meeg.load_epochs()
 
     eog_indices = meeg.load_json("eog_indices", default=list())
     ecg_indices = meeg.load_json("ecg_indices", default=list())
@@ -485,8 +469,9 @@ def plot_ica_properties(meeg, show_plots):
         ix for ix in ica.exclude if ix not in eog_indices + ecg_indices
     ]
     if len(remaining_indices) > 0:
+        data = meeg.load(ica_fitto)
         prop_figs = ica.plot_properties(
-            epochs, remaining_indices, psd_args=psd_args, show=show_plots
+            data, remaining_indices, psd_args=psd_args, show=show_plots
         )
         meeg.plot_save(
             "ica", subfolder="properties", trial="manually", matplotlib_figure=prop_figs

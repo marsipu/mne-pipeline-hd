@@ -16,7 +16,7 @@ import os
 import pickle
 import shutil
 from datetime import datetime
-from os import listdir, makedirs, remove
+from os import listdir, makedirs
 from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
@@ -489,6 +489,17 @@ class BaseLoading:
 
         self.save_file_params(file_path)
 
+    def remove_json(self, file_name):
+        file_path = join(self.save_dir, f"{self.name}_{self.p_preset}_{file_name}.json")
+        try:
+            os.remove(file_path)
+        except FileNotFoundError:
+            print(f"{file_path} was not found")
+        except OSError as err:
+            print(f"{file_path} could not be removed due to {err}")
+        else:
+            print(f"{file_path} was removed")
+
     def get_existing_paths(self):
         """Get existing paths and add the mapped File-Type
         to existing_paths (set)"""
@@ -527,7 +538,7 @@ class BaseLoading:
                 except KeyError:
                     print(f"{Path(p).name} not in file-parameters")
             try:
-                remove(p)
+                os.remove(p)
             except FileNotFoundError:
                 # Accounting for Source-Estimate naming-conventions
                 try:
@@ -544,6 +555,8 @@ class BaseLoading:
                     print(f"{p} could not be removed due to {err}")
             except OSError as err:
                 print(f"{p} could not be removed due to {err}")
+            else:
+                print(f"{p} was removed")
 
 
 class MEEG(BaseLoading):
@@ -671,6 +684,12 @@ class MEEG(BaseLoading):
             self.save_dir, f"{self.name}_{self.p_preset}-ecg-epo.fif"
         )
         self.evokeds_path = join(self.save_dir, f"{self.name}_{self.p_preset}-ave.fif")
+        self.psd_raw_path = join(
+            self.save_dir, f"{self.name}_{self.p_preset}-raw-psd.h5"
+        )
+        self.psd_epochs_path = join(
+            self.save_dir, f"{self.name}_{self.p_preset}-epo-psd.h5"
+        )
         self.power_tfr_epochs_path = join(
             self.save_dir,
             f"{self.name}_{self.p_preset}_" f'#{self.pa["tfr_method"]}-epo-pw-tfr.h5',
@@ -801,6 +820,16 @@ class MEEG(BaseLoading):
             },
             "evoked_eog": {"path": None, "load": self.load_eog_evokeds, "save": None},
             "evoked_ecg": {"path": None, "load": self.load_ecg_evokeds, "save": None},
+            "psd_raw": {
+                "path": self.psd_raw_path,
+                "load": self.load_psd_raw,
+                "save": self.save_psd_raw,
+            },
+            "psd_epochs": {
+                "path": self.psd_epochs_path,
+                "load": self.load_psd_epochs,
+                "save": self.save_psd_epochs,
+            },
             "tf_power_epochs": {
                 "path": self.power_tfr_epochs_path,
                 "load": self.load_power_tfr_epochs,
@@ -1069,6 +1098,22 @@ class MEEG(BaseLoading):
         return self.load_ecg_epochs().average()
 
     @load_decorator
+    def load_psd_raw(self):
+        return mne.time_frequency.read_spectrum(self.psd_raw_path)
+
+    @save_decorator
+    def save_psd_raw(self, psd_raw):
+        psd_raw.save(self.psd_raw_path, overwrite=True)
+
+    @load_decorator
+    def load_psd_epochs(self):
+        return mne.time_frequency.read_spectrum(self.psd_epochs_path)
+
+    @save_decorator
+    def save_psd_epochs(self, psd_epochs):
+        psd_epochs.save(self.psd_epochs_path, overwrite=True)
+
+    @load_decorator
     def load_power_tfr_epochs(self):
         return mne.time_frequency.read_tfrs(self.power_tfr_epochs_path)
 
@@ -1198,7 +1243,7 @@ class MEEG(BaseLoading):
             makedirs(join(self.save_dir, "mixn_dipoles"))
         old_dipoles = listdir(join(self.save_dir, "mixn_dipoles"))
         for file in old_dipoles:
-            remove(join(self.save_dir, "mixn_dipoles", file))
+            os.remove(join(self.save_dir, "mixn_dipoles", file))
 
         for trial in mixn_dips:
             for idx, dip in enumerate(mixn_dips[trial]):

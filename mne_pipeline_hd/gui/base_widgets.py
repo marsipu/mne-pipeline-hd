@@ -6,6 +6,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import itertools
+import re
 import sys
 
 import numpy as np
@@ -29,6 +30,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QComboBox,
+    QMessageBox,
 )
 
 from mne_pipeline_hd import _object_refs
@@ -1472,6 +1474,122 @@ class AssignWidget(QWidget):
 
     def show_assignments(self):
         SimpleDialog(EditDict(self.assignments), parent=self, modal=False)
+
+
+class TimedMessageBox(QMessageBox):
+    def __init__(self, timeout=10, title=None, text=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if title is not None:
+            self.setWindowTitle(title)
+        if text is not None:
+            self.setText(text)
+
+        self._got_clicked = False
+        self.buttonClicked.connect(lambda: setattr(self, "_got_clicked", True))
+
+        self.timeout = timeout
+        self._update_timeout_text()
+
+        # Start timer
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.countdown)
+        self.timer.start(1000)
+
+    def _update_timeout_text(self):
+        text = self.text()
+        match = re.match(r"(.*)\nTimeout: \d+", text)
+        if match:
+            text = match.group(1)
+        self.setText(f"{text}\nTimeout: {self.timeout}")
+
+    def countdown(self):
+        self.timeout -= 1
+        self._update_timeout_text()
+        if self.timeout <= 0:
+            self.timer.stop()
+            if self.defaultButton() is not None:
+                self.defaultButton().click()
+            else:
+                self.close()
+
+    def _static_setup(icon, timeout, parent, title, text, buttons, defaultButton):
+        cls = TimedMessageBox(
+            timeout=timeout,
+            title=title,
+            text=text,
+            icon=icon,
+            parent=parent,
+        )
+
+        cls._update_timeout_text()
+        cls.setStandardButtons(buttons)
+        cls.setDefaultButton(defaultButton)
+        ans = cls.exec()
+
+        # Make sure ans is the default button if timeout is reached
+        if not cls._got_clicked:
+            ans = cls.defaultButton()
+
+        return ans
+
+    @staticmethod
+    def critical(
+        timeout=10,
+        parent=None,
+        title=None,
+        text=None,
+        buttons=QMessageBox.Ok,
+        defaultButton=QMessageBox.NoButton,
+    ):
+        return TimedMessageBox._static_setup(
+            QMessageBox.Critical, timeout, parent, title, text, buttons, defaultButton
+        )
+
+    @staticmethod
+    def information(
+        timeout=10,
+        parent=None,
+        title=None,
+        text=None,
+        buttons=QMessageBox.Ok,
+        defaultButton=QMessageBox.NoButton,
+    ):
+        return TimedMessageBox._static_setup(
+            QMessageBox.Information,
+            timeout,
+            parent,
+            title,
+            text,
+            buttons,
+            defaultButton,
+        )
+
+    @staticmethod
+    def question(
+        timeout=10,
+        parent=None,
+        title=None,
+        text=None,
+        buttons=QMessageBox.Yes | QMessageBox.No,
+        defaultButton=QMessageBox.No,
+    ):
+        return TimedMessageBox._static_setup(
+            QMessageBox.Question, timeout, parent, title, text, buttons, defaultButton
+        )
+
+    @staticmethod
+    def warning(
+        timeout=10,
+        parent=None,
+        title=None,
+        text=None,
+        buttons=QMessageBox.Ok,
+        defaultButton=QMessageBox.NoButton,
+    ):
+        return TimedMessageBox._static_setup(
+            QMessageBox.Warning, timeout, parent, title, text, buttons, defaultButton
+        )
 
 
 class AllBaseWidgets(QWidget):

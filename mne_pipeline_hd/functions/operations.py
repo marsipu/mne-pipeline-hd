@@ -18,7 +18,6 @@ from functools import reduce
 from itertools import combinations
 from os import environ
 from os.path import isdir, isfile, join
-from pathlib import Path
 
 import autoreject as ar
 import mne
@@ -557,7 +556,7 @@ def epoch_raw(
         if use_autoreject == "Threshold":
             reject = meeg.load_json("autoreject_threshold")
             if reject is None or overwrite_ar:
-                reject = ar.get_rejection_threshold(epochs)
+                reject = ar.get_rejection_threshold(epochs, random_state=8)
                 meeg.save_json("autoreject_threshold", reject)
             print(
                 f"Dropping bad epochs with autoreject"
@@ -595,6 +594,7 @@ def run_ica(
     ica_remove_proj,
     ica_reject,
     ica_autoreject,
+    overwrite_ar,
     ch_types,
     ch_names,
     reject_by_annotation,
@@ -604,16 +604,9 @@ def run_ica(
     ecg_channel,
     **kwargs,
 ):
-    if ica_fitto == "epochs":
-        data = meeg.load_epochs()
-        # Bad-Channels and Channel-Types are already picked in epoch_raw
-    else:
-        if ica_fitto == "raw":
-            data = meeg.load_raw()
-
-        else:
-            data = meeg.load_filtered()
-
+    data = meeg.load(ica_fitto)
+    # Bad-Channels and Channel-Types are already picked in epochs
+    if ica_fitto != "epochs":
         data.pick(ch_types, exclude="bads")
         if len(ch_names) > 0 and ch_names != "all":
             data.pick_channels(ch_names)
@@ -645,12 +638,12 @@ def run_ica(
         simulated_epochs = mne.Epochs(
             data, simulated_events, baseline=None, tmin=0, tmax=1, proj=False
         )
-        reject = ar.get_rejection_threshold(simulated_epochs)
+        reject = ar.get_rejection_threshold(simulated_epochs, random_state=8)
         print(f"Autoreject Rejection-Threshold: {reject}")
     elif ica_autoreject and ica_fitto == "epochs":
         reject = meeg.load_json("autoreject_threshold")
-        if not reject:
-            reject = ar.get_rejection_threshold(data)
+        if reject is None or overwrite_ar:
+            reject = ar.get_rejection_threshold(data, random_state=8)
             meeg.save_json("autoreject_threshold", reject)
     else:
         reject = ica_reject
@@ -711,6 +704,11 @@ def run_ica(
             meeg.save_eog_epochs(eog_epochs)
             meeg.save_json("eog_indices", eog_indices)
             meeg.save_json("eog_scores", eog_scores)
+    else:
+        # Remove old eog_epochs, eog_indices and eog_scores if new ICA is calculated
+        meeg.remove_path("eog_epochs")
+        meeg.remove_json("eog_indices")
+        meeg.remove_json("eog_scores")
 
     if ica_ecg:
         create_ecg_kwargs = check_kwargs(kwargs, mne.preprocessing.create_ecg_epochs)
@@ -748,6 +746,11 @@ def run_ica(
             meeg.save_ecg_epochs(ecg_epochs)
             meeg.save_json("ecg_indices", ecg_indices)
             meeg.save_json("ecg_scores", ecg_scores)
+    else:
+        # Remove old ecg_epochs, ecg_indices and ecg_scores if new ICA is calculated
+        meeg.remove_path("ecg_epochs")
+        meeg.remove_json("ecg_indices")
+        meeg.remove_json("ecg_scores")
 
     meeg.save_ica(ica)
     # Add components to ica_exclude-dictionary
@@ -835,6 +838,22 @@ def grand_avg_evokeds(group, ga_interpolate_bads, ga_drop_bads):
             ga_evokeds[trial] = ga
 
     group.save_ga_evokeds(ga_evokeds)
+
+
+def compute_psd_raw(meeg, psd_method, n_jobs, **kwargs):
+    raw = meeg.load_filtered()
+    psd_raw = raw.compute_psd(
+        method=psd_method, fmax=raw.info["lowpass"], n_jobs=n_jobs, **kwargs
+    )
+    meeg.save_psd_raw(psd_raw)
+
+
+def compute_psd_epochs(meeg, psd_method, n_jobs, **kwargs):
+    epochs = meeg.load_epochs()
+    psd_epochs = epochs.compute_psd(
+        method=psd_method, fmax=epochs.info["lowpass"], n_jobs=n_jobs, **kwargs
+    )
+    meeg.save_psd_epochs(psd_epochs)
 
 
 def tfr(

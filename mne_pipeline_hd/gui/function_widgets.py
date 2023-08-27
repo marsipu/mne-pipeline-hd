@@ -35,7 +35,6 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSizePolicy,
-    QStyle,
     QTabWidget,
     QVBoxLayout,
     QGridLayout,

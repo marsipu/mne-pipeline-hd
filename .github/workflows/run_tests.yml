@@ -6,22 +6,6 @@ on:
       - main
 
 jobs:
-  black:
-    name: Check code style with black
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install black
-      - name: Check code style
-        run: black --check .
-
   pytest:
     strategy:
       fail-fast: false
@@ -56,9 +40,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -ve .
           python -m pip install -r requirements_dev.txt
+      - name: Get testing version
+        run: |
+          mkdir -p mne/datasets
+          curl --output-dir mne/datasets/ --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/mne/datasets/config.py
+          curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/get_testing_version.sh
+          bash ./get_testing_version.sh
       - uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-sample-data
+          key: ${{ env.TESTING_VERSION }}
           path: ~/mne_data
         name: 'Cache testing data'
       - run: python -c 'import mne; print(mne.datasets.testing.data_path(verbose=True))'
