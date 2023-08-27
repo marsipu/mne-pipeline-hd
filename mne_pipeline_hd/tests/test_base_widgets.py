@@ -15,7 +15,7 @@ def test_timed_messagebox(qtbot):
     qtbot.addWidget(timed_messagebox)
     timed_messagebox.show()
 
-    qtbot.wait(1500)
+    qtbot.wait(1000)
     qtbot.waitSignal(timed_messagebox.timer.timeout)
     assert timed_messagebox.text() == "Test\nTimeout: 1"
 
