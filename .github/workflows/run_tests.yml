@@ -40,9 +40,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -ve .
           python -m pip install -r requirements_dev.txt
+      - name: Get testing version
+        run: |
+          curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/get_testing_version.sh
+          bash get_testing_version.sh
       - uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-sample-data
+          key: ${{ env.TESTING_VERSION }}
           path: ~/mne_data
         name: 'Cache testing data'
       - run: python -c 'import mne; print(mne.datasets.testing.data_path(verbose=True))'
