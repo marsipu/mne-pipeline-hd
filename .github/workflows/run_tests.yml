@@ -45,10 +45,11 @@ jobs:
           mkdir -p mne/datasets
           curl --output-dir mne/datasets/ --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/config.py
           curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/get_testing_version.sh
-          bash get_testing_version.sh
+          export TESTING_VERSION=$(get_testing_version.sh)
+          echo $TESTING_VERSION
       - uses: actions/cache@v3
         with:
-          key: ${{ env.TESTING_VERSION }}
+          key: $TESTING_VERSION
           path: ~/mne_data
         name: 'Cache testing data'
       - run: python -c 'import mne; print(mne.datasets.testing.data_path(verbose=True))'
