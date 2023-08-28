@@ -506,28 +506,26 @@ def plot_ica_scores(meeg, show_plots):
     return eog_score_fig, ecg_score_fig
 
 
-def plot_transformation(meeg):
+def plot_transformation(meeg, backend_3d):
     info = meeg.load_info()
     trans = meeg.load_transformation()
 
-    mne.viz.plot_alignment(
-        info,
-        trans,
-        meeg.fsmri.name,
-        meeg.subjects_dir,
-        surfaces=["head-dense", "inner_skull", "brain"],
-        show_axes=True,
-        dig=True,
-    )
+    with mne.viz.use_3d_backend(backend_3d):
+        mne.viz.plot_alignment(
+            info,
+            trans,
+            meeg.fsmri.name,
+            meeg.subjects_dir,
+            surfaces=["head-dense", "inner_skull", "brain"],
+            show_axes=True,
+            dig=True,
+        )
 
-    meeg.plot_save("transformation", mayavi=True)
 
-
-def plot_src(fsmri):
+def plot_src(fsmri, backend_3d):
     src = fsmri.load_source_space()
-    src.plot()
-
-    fsmri.plot_save("src", mayavi=True)
+    with mne.viz.use_3d_backend(backend_3d):
+        src.plot()
 
 
 def plot_bem(fsmri, show_plots):
@@ -586,6 +584,7 @@ def _brain_plot(
     stc_roll,
     stc_azimuth,
     stc_elevation,
+    backend_3d="pyvistaqt",
     interactive=False,
     **brain_movie_kwargs,
 ):
@@ -644,6 +643,7 @@ def plot_stc(
     stc_roll,
     stc_azimuth,
     stc_elevation,
+    backend_3d,
 ):
     stcs = meeg.load_source_estimates()
     _brain_plot(
@@ -660,6 +660,7 @@ def plot_stc(
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
         stc_elevation=stc_elevation,
+        backend_3d=backend_3d,
     )
 
 
@@ -674,6 +675,7 @@ def plot_stc_interactive(
     stc_roll,
     stc_azimuth,
     stc_elevation,
+    backend_3d,
 ):
     stcs = meeg.load_source_estimates()
     _brain_plot(
@@ -690,6 +692,7 @@ def plot_stc_interactive(
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
         stc_elevation=stc_elevation,
+        backend_3d=backend_3d,
         interactive=True,
     )
 
@@ -709,6 +712,7 @@ def plot_animated_stc(
     stc_elevation,
     stc_animation_span,
     stc_animation_dilat,
+    backend_3d,
 ):
     stcs = meeg.load_source_estimates()
     _brain_plot(
@@ -727,24 +731,28 @@ def plot_animated_stc(
         stc_elevation=stc_elevation,
         stc_animation_span=stc_animation_span,
         stc_animation_dilat=stc_animation_dilat,
+        backend_3d=backend_3d,
     )
 
 
-def plot_labels(fsmri, target_labels, label_colors, stc_hemi, stc_surface, stc_views):
-    Brain = mne.viz.get_brain_class()
-    brain = Brain(
-        subject_id=fsmri.name,
-        hemi=stc_hemi,
-        surf=stc_surface,
-        subjects_dir=fsmri.subjects_dir,
-        views=stc_views,
-    )
+def plot_labels(
+    fsmri, target_labels, label_colors, stc_hemi, stc_surface, stc_views, backend_3d
+):
+    with mne.viz.use_3d_backend(backend_3d):
+        Brain = mne.viz.get_brain_class()
+        brain = Brain(
+            subject_id=fsmri.name,
+            hemi=stc_hemi,
+            surf=stc_surface,
+            subjects_dir=fsmri.subjects_dir,
+            views=stc_views,
+        )
 
-    labels = fsmri.get_labels(target_labels)
-    for label in labels:
-        color = label_colors.get(label.name)
-        brain.add_label(label, borders=False, color=color)
-    fsmri.plot_save("labels", brain=brain)
+        labels = fsmri.get_labels(target_labels)
+        for label in labels:
+            color = label_colors.get(label.name)
+            brain.add_label(label, borders=False, color=color)
+        fsmri.plot_save("labels", brain=brain)
 
 
 def plot_ecd(meeg):
@@ -939,6 +947,7 @@ def plot_grand_avg_stc(
     stc_roll,
     stc_azimuth,
     stc_elevation,
+    backend_3d,
 ):
     stcs = group.load_ga_stc()
     _brain_plot(
@@ -955,6 +964,7 @@ def plot_grand_avg_stc(
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
         stc_elevation=stc_elevation,
+        backend_3d=backend_3d,
     )
 
 
@@ -969,6 +979,7 @@ def plot_grand_average_stc_interactive(
     stc_roll,
     stc_azimuth,
     stc_elevation,
+    backend_3d,
 ):
     stcs = group.load_ga_stc()
     _brain_plot(
@@ -984,6 +995,7 @@ def plot_grand_average_stc_interactive(
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
         stc_elevation=stc_elevation,
+        backend_3d=backend_3d,
         interactive=True,
     )
 
@@ -1003,6 +1015,7 @@ def plot_grand_avg_stc_anim(
     stc_elevation,
     stc_animation_span,
     stc_animation_dilat,
+    backend_3d,
 ):
     stcs = group.load_ga_stc()
     _brain_plot(
@@ -1021,6 +1034,7 @@ def plot_grand_avg_stc_anim(
         stc_elevation=stc_elevation,
         stc_animation_span=stc_animation_span,
         stc_animation_dilat=stc_animation_dilat,
+        backend_3d=backend_3d,
     )
 
 
