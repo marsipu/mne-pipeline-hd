@@ -1,7 +1,0 @@
-black
-pre-commit
-pydata-sphinx-theme
-pytest
-pytest-qt
-ruff
-sphinx
