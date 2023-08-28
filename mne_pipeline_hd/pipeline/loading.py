@@ -853,7 +853,7 @@ class MEEG(BaseLoading):
             "trans": {
                 "path": self.trans_path,
                 "load": self.load_transformation,
-                "save": None,
+                "save": self.save_transformation,
             },
             "forward": {
                 "path": self.forward_path,
@@ -1152,6 +1152,10 @@ class MEEG(BaseLoading):
     @load_decorator
     def load_transformation(self):
         return mne.read_trans(self.trans_path)
+
+    @save_decorator
+    def save_transformation(self, trans):
+        mne.write_trans(self.trans_path, trans, overwrite=True)
 
     @load_decorator
     def load_forward(self):
