@@ -334,6 +334,7 @@ class BaseLoading:
         trial=None,
         idx=None,
         matplotlib_figure=None,
+        pyvista_figure=None,
         brain=None,
         brain_movie_kwargs=None,
         dpi=None,
@@ -359,6 +360,8 @@ class BaseLoading:
         matplotlib_figure : matplotlib.figure.Figure | None
             Supply a matplotlib-figure here (if none is given,
              the current-figure will be taken with plt.savefig()).
+        pyvista_figure: pyvista.Plotter
+            Supply a pyvista-plotter here.
         brain : mne.viz.Brain | None
             Supply a Brain-instance here.
         brain_movie_kwargs : dict
@@ -432,6 +435,12 @@ class BaseLoading:
                             self.plot_files[calling_func].append(plot_files_save_path)
                 else:
                     matplotlib_figure.savefig(save_path, dpi=dpi)
+            elif pyvista_figure:
+                if self.img_format != ".svg":
+                    file_name = file_name.strip(self.img_format) + ".svg"
+                    save_path = join(dir_path, file_name)
+                    logging.info("Pyvista-Plots are saved as .svg")
+                pyvista_figure.plotter.save_graphics(save_path, title=file_name)
             elif brain:
                 if brain_movie_kwargs is not None:
                     time_dilation = brain_movie_kwargs["stc_animation_dilat"]

@@ -99,3 +99,4 @@ connectivity_vmin;;Connectivity;None;;Minimum value for colormap;FloatGui;{'step
 connectivity_vmax;;Connectivity;None;;Maximum value for colormap;FloatGui;{'step': 0.01, 'none_select':True}
 psd_method;;Time-Frequency;welch;;The method for spectral estimation;ComboGui;{'options': ['welch', 'multitaper']}
 psd_topomap_bands;;Time-Frequency;None;;The frequency bands for the topomap-plot;DictGui;{'none_select': True}
+backend_3d;3D-Backend;Plot;pyvistaqt;;Choose the 3D-Backend for Brain-plots.;ComboGui;{'options': ['pyvistaqt', 'notebook']}
