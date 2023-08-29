@@ -1440,7 +1440,10 @@ class FSMRI(BaseLoading):
                 desc="Loading labels...",
                 ascii=True,
             ):
-                label = mne.read_label(join(label_dir, label_path), self.name)
+                try:
+                    label = mne.read_label(join(label_dir, label_path), self.name)
+                except ValueError:
+                    raise RuntimeWarning(f"Label {label_path} could not be loaded!")
                 labels["Other"].append(label)
         except FileNotFoundError:
             logging.warning(f"No label directory found for {self.name}!")
