@@ -862,7 +862,7 @@ class MEEG(BaseLoading):
             "trans": {
                 "path": self.trans_path,
                 "load": self.load_transformation,
-                "save": None,
+                "save": self.save_transformation,
             },
             "forward": {
                 "path": self.forward_path,
@@ -1162,6 +1162,10 @@ class MEEG(BaseLoading):
     def load_transformation(self):
         return mne.read_trans(self.trans_path)
 
+    @save_decorator
+    def save_transformation(self, trans):
+        mne.write_trans(self.trans_path, trans, overwrite=True)
+
     @load_decorator
     def load_forward(self):
         return mne.read_forward_solution(self.forward_path, verbose="WARNING")
@@ -1445,7 +1449,10 @@ class FSMRI(BaseLoading):
                 desc="Loading labels...",
                 ascii=True,
             ):
-                label = mne.read_label(join(label_dir, label_path), self.name)
+                try:
+                    label = mne.read_label(join(label_dir, label_path), self.name)
+                except ValueError:
+                    raise RuntimeWarning(f"Label {label_path} could not be loaded!")
                 labels["Other"].append(label)
         except FileNotFoundError:
             logging.warning(f"No label directory found for {self.name}!")
