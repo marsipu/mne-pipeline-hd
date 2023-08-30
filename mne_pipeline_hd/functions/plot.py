@@ -929,7 +929,9 @@ def plot_grand_avg_tfr(group, show_plots):
 
     for trial in ga_dict:
         power = ga_dict[trial]
-        fig1 = power.plot(title=f"{group.name}-{power.comment}", show=show_plots)
+        fig1 = power.plot(
+            title=f"{group.name}-{power.comment}", combine="mean", show=show_plots
+        )
         fig2 = power.plot_topo(title=f"{group.name}-{power.comment}", show=show_plots)
         fig3 = power.plot_joint(title=f"{group.name}-{power.comment}", show=show_plots)
         fig4 = power.plot_topomap(show=show_plots)
