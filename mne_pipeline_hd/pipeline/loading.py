@@ -463,10 +463,12 @@ class BaseLoading:
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
+    # Should have save-decorator!
     def load(self, data_type, **kwargs):
         """General load function with data_type as parameter."""
         return self.io_dict[data_type]["load"](**kwargs)
 
+    # ToDo: Should have load-decorator!
     def save(self, data_type, data, **kwargs):
         """General save function with data_type as parameter."""
         self.io_dict[data_type]["save"](data, **kwargs)
