@@ -31,11 +31,11 @@ from mne_pipeline_hd.functions import operations as op
 # ==============================================================================
 # PLOTTING FUNCTIONS
 # ==============================================================================
-def _save_raw_on_close(_, meeg, raw):
+def _save_raw_on_close(_, meeg, raw, raw_type):
     # Save bad-channels
     meeg.set_bad_channels(raw.info["bads"])
     # Save raw for annotations
-    meeg.save_raw(raw)
+    meeg.save(raw_type, raw)
 
 
 def plot_raw(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
@@ -58,13 +58,18 @@ def plot_raw(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
 
     if hasattr(fig, "canvas"):
         # Connect to closing of Matplotlib-Figure
-        fig.canvas.mpl_connect("close_event", partial(close_func, meeg=meeg, raw=raw))
+        fig.canvas.mpl_connect(
+            "close_event",
+            partial(close_func, meeg=meeg, raw=raw, raw_type="raw_filtered"),
+        )
     else:
         # Connect to closing of PyQt-Figure
-        fig.gotClosed.connect(partial(close_func, None, meeg=meeg, raw=raw))
+        fig.gotClosed.connect(
+            partial(close_func, None, meeg=meeg, raw=raw, raw_type="raw_filtered")
+        )
 
 
-def plot_filtered(meeg, show_plots):
+def plot_filtered(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
     raw = meeg.load_filtered()
 
     try:
@@ -73,14 +78,27 @@ def plot_filtered(meeg, show_plots):
         events = None
         print("No events found")
 
-    raw.plot(
+    fig = raw.plot(
         events=events,
         bad_color="red",
         scalings="auto",
         title=f'{meeg.name} highpass={meeg.pa["highpass"]} '
         f'lowpass={meeg.pa["lowpass"]}',
         show=show_plots,
+        **kwargs,
     )
+
+    if hasattr(fig, "canvas"):
+        # Connect to closing of Matplotlib-Figure
+        fig.canvas.mpl_connect(
+            "close_event",
+            partial(close_func, meeg=meeg, raw=raw, raw_type="raw_filtered"),
+        )
+    else:
+        # Connect to closing of PyQt-Figure
+        fig.gotClosed.connect(
+            partial(close_func, None, meeg=meeg, raw=raw, raw_type="raw_filtered")
+        )
 
 
 def plot_sensors(meeg, plot_sensors_kind, ch_types, show_plots):
