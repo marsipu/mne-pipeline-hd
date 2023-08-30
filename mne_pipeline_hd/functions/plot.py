@@ -932,9 +932,7 @@ def plot_grand_avg_tfr(group, show_plots):
         fig1 = power.plot(title=f"{group.name}-{power.comment}", show=show_plots)
         fig2 = power.plot_topo(title=f"{group.name}-{power.comment}", show=show_plots)
         fig3 = power.plot_joint(title=f"{group.name}-{power.comment}", show=show_plots)
-        fig4 = power.plot_topomap(
-            title=f"{group.name}-{power.comment}", show=show_plots
-        )
+        fig4 = power.plot_topomap(show=show_plots)
 
         group.plot_save(
             "ga_tfr", subfolder="plot", trial=power.comment, matplotlib_figure=fig1

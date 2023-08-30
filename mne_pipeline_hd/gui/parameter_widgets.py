@@ -1996,19 +1996,19 @@ class SettingsDlg(QDialog):
                     "return_integer": True,
                 },
             },
-            # "save_ram": {
-            #     "gui_type": "BoolGui",
-            #     "data_type": "QSettings",
-            #     "gui_kwargs": {
-            #         "alias": "Save RAM",
-            #         "description": "Set to True on low RAM-Machines to avoid"
-            #         " the process to be killed by the OS due "
-            #         "to low Memory (with leaving it off, "
-            #         "the pipeline goes a bit faster, because "
-            #         "the data can be saved in memory).",
-            #         "return_integer": True,
-            #     },
-            # },
+            "save_ram": {
+                "gui_type": "BoolGui",
+                "data_type": "QSettings",
+                "gui_kwargs": {
+                    "alias": "Save RAM",
+                    "description": "Set to True on low RAM-Machines to avoid"
+                    " the process to be killed by the OS due "
+                    "to low Memory (with leaving it off, "
+                    "the pipeline goes a bit faster, because "
+                    "the data can be saved in memory).",
+                    "return_integer": True,
+                },
+            },
             "fs_path": {
                 "gui_type": "StringGui",
                 "data_type": "QSettings",

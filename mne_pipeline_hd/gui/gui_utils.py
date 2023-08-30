@@ -229,7 +229,8 @@ def _html_compatible(text):
     return text
 
 
-# ToDo: Better with QPlainTextEdit(.appendHtml) probably for performance,
+# ToDo: Better with QPlainTextEdit(.appendHtml) probably for performance
+#  and probably ditch timer approach
 # add buffer-limit and tests
 class ConsoleWidget(QTextEdit):
     """A Widget displaying formatted stdout/stderr-output"""
