@@ -706,7 +706,7 @@ def run_ica(
             meeg.save_json("eog_scores", eog_scores)
     else:
         # Remove old eog_epochs, eog_indices and eog_scores if new ICA is calculated
-        meeg.remove_path("eog_epochs")
+        meeg.remove_path("epochs_eog")
         meeg.remove_json("eog_indices")
         meeg.remove_json("eog_scores")
 
@@ -748,7 +748,7 @@ def run_ica(
             meeg.save_json("ecg_scores", ecg_scores)
     else:
         # Remove old ecg_epochs, ecg_indices and ecg_scores if new ICA is calculated
-        meeg.remove_path("ecg_epochs")
+        meeg.remove_path("epochs_ecg")
         meeg.remove_json("ecg_indices")
         meeg.remove_json("ecg_scores")
 
