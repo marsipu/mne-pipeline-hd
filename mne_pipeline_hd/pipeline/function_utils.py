@@ -304,19 +304,29 @@ class RunController:
             self.finished()
 
     def start(self):
-        kwds = self.prepare_start()
-        if kwds is not None:
+        """No-Gui start method."""
+        for name, func in self.all_steps:
+            self.current_obj_name = name
+            self.current_func = func
+            self.get_object()
+            kwds = dict()
+            kwds["func"] = get_func(self.current_func, self.current_object)
+            kwds["keywargs"] = get_arguments(kwds["func"], self.current_object)
+            print(
+                f"########################################\n"
+                f"Running {self.current_func} for {self.current_obj_name}\n"
+                f"########################################\n"
+            )
             result = run_func(**kwds)
 
             if isinstance(result, ExceptionTuple):
                 self.errors.append(
                     (self.current_object.name, self.current_func, result)
                 )
-
             # ToDo: MP
             # self.pool.apply_async(func=run_func, kwds=kwds,
             #                       callback=self.process_finished)
-            self.process_finished(result)
+        self.finished()
 
 
 class QRunController(RunController):
