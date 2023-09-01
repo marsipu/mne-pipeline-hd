@@ -20,9 +20,9 @@ setup_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri,s
 compute_src_distances;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri,n_jobs
 make_dense_scalp_surfaces;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri
 setup_vol_src;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri,vol_src_spacing
+create_forward_solution;;MEEG;Compute;Forward;False;False;;operations;basic;meeg,n_jobs,ch_types
 morph_fsmri;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,morph_to
 morph_labels_from_fsaverage;;FSMRI;Compute;MRI-Preprocessing;False;False;;operations;basic;fsmri
-create_forward_solution;;MEEG;Compute;Forward;False;False;;operations;basic;meeg,n_jobs,ch_types
 create_inverse_operator;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg
 source_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,inverse_method,pick_ori,lambda2
 apply_morph;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,morph_to

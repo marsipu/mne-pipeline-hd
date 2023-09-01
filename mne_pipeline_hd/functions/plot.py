@@ -180,7 +180,7 @@ def plot_tfr(meeg, show_plots):
         print("Plotting TFR-Joint")
         fig3 = power.plot_joint(title=f"{meeg.name}-{power.comment}", show=show_plots)
         print("Plotting TFR-Topomap")
-        fig4 = power.plot_topomap(title=f"{meeg.name}-{power.comment}", show=show_plots)
+        fig4 = power.plot_topomap(show=show_plots)
 
         meeg.plot_save(
             "time_frequency",
@@ -213,11 +213,9 @@ def plot_tfr(meeg, show_plots):
         print(f"{meeg.itc_tfr_average_path} not found!")
     else:
         for itc in itcs:
-            fig5 = itc.plot_topo(
+            fig5 = itc.plot(
                 title=f"{meeg.name}-{itc.comment}-itc",
-                vmin=0.0,
-                vmax=1.0,
-                cmap="Reds",
+                combine="mean",
                 show=show_plots,
             )
             meeg.plot_save(
@@ -931,12 +929,12 @@ def plot_grand_avg_tfr(group, show_plots):
 
     for trial in ga_dict:
         power = ga_dict[trial]
-        fig1 = power.plot(title=f"{group.name}-{power.comment}", show=show_plots)
+        fig1 = power.plot(
+            title=f"{group.name}-{power.comment}", combine="mean", show=show_plots
+        )
         fig2 = power.plot_topo(title=f"{group.name}-{power.comment}", show=show_plots)
         fig3 = power.plot_joint(title=f"{group.name}-{power.comment}", show=show_plots)
-        fig4 = power.plot_topomap(
-            title=f"{group.name}-{power.comment}", show=show_plots
-        )
+        fig4 = power.plot_topomap(show=show_plots)
 
         group.plot_save(
             "ga_tfr", subfolder="plot", trial=power.comment, matplotlib_figure=fig1

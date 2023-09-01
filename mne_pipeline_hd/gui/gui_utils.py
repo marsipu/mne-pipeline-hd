@@ -229,7 +229,8 @@ def _html_compatible(text):
     return text
 
 
-# ToDo: Better with QPlainTextEdit(.appendHtml) probably for performance,
+# ToDo: Better with QPlainTextEdit(.appendHtml) probably for performance
+#  and probably ditch timer approach
 # add buffer-limit and tests
 class ConsoleWidget(QTextEdit):
     """A Widget displaying formatted stdout/stderr-output"""
@@ -240,7 +241,7 @@ class ConsoleWidget(QTextEdit):
         self.setReadOnly(True)
         self.autoscroll = True
 
-        self.buffer_time = 10
+        self.buffer_time = 5
 
         # Buffer to avoid crash for too many inputs
         self.buffer = list()

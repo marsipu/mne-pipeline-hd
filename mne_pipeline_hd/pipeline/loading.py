@@ -68,7 +68,7 @@ def load_decorator(load_func):
             # Todo: Dependencies!
             try:
                 data = load_func(self, *args, **kwargs)
-            except OSError as err:
+            except (OSError, FileNotFoundError) as err:
                 deprc_path = self.deprecated_paths.get(data_type, "")
                 if isfile(deprc_path):
                     new_path = self.io_dict[data_type]["path"]
@@ -82,7 +82,7 @@ def load_decorator(load_func):
                     # Save data with new path
                     save_func = self.io_dict[data_type]["save"]
                     # Does only support save-functions with no extra args
-                    save_func(self, data)
+                    save_func(data)
                     # Remove deprecated path
                     os.remove(deprc_path)
 
@@ -97,7 +97,7 @@ def load_decorator(load_func):
                     self.p_preset = "Default"
                     self.init_paths()
 
-                    data = load_func(*args, **kwargs)
+                    data = load_func(self, *args, **kwargs)
 
                     self.p_preset = actual_p_preset
                     self.init_paths()
@@ -463,10 +463,12 @@ class BaseLoading:
         else:
             print('Not saving plots; set "save_plots" to "True" to save')
 
+    # Should have save-decorator!
     def load(self, data_type, **kwargs):
         """General load function with data_type as parameter."""
         return self.io_dict[data_type]["load"](**kwargs)
 
+    # ToDo: Should have load-decorator!
     def save(self, data_type, data, **kwargs):
         """General save function with data_type as parameter."""
         self.io_dict[data_type]["save"](data, **kwargs)
@@ -568,6 +570,9 @@ class BaseLoading:
                 print(f"{p} was removed")
 
 
+# ToDo: Currently there is duplication with attribute for Path and io_dict['path'].
+#  In the future there should be only one,
+#  favor io_dict (better than attribute since easier to set from config-files)
 class MEEG(BaseLoading):
     """Class for File-Data in File-Loop"""
 
@@ -1378,42 +1383,36 @@ class FSMRI(BaseLoading):
         # Main Path
         self.save_dir = join(self.subjects_dir, self.name)
 
-        # Data-Paths
-        self.src_path = join(
-            self.save_dir,
-            "bem",
-            f'{self.name}_{self.p_preset}_{self.pa["src_spacing"]}-src.fif',
-        )
-        self.bem_model_path = join(
-            self.save_dir, "bem", f"{self.name}_{self.p_preset}-bem.fif"
-        )
-        self.bem_solution_path = join(
-            self.save_dir, "bem", f"{self.name}_{self.p_preset}-bem-sol.fif"
-        )
-        self.vol_src_path = join(
-            self.save_dir, "bem", f"{self.name}_{self.p_preset}-vol-src.fif"
-        )
-
         # This dictionary contains entries for each data-type
         # which is loaded to/saved from disk
         self.io_dict = {
             "src": {
-                "path": self.src_path,
+                "path": join(
+                    self.save_dir,
+                    "bem",
+                    f'{self.name}_{self.p_preset}_{self.pa["src_spacing"]}-src.fif',
+                ),
                 "load": self.load_source_space,
                 "save": self.save_source_space,
             },
             "bem_model": {
-                "path": self.bem_model_path,
+                "path": join(
+                    self.save_dir, "bem", f"{self.name}_{self.p_preset}-bem.fif"
+                ),
                 "load": self.load_bem_model,
                 "save": self.save_bem_model,
             },
             "bem_solution": {
-                "path": self.bem_solution_path,
+                "path": join(
+                    self.save_dir, "bem", f"{self.name}_{self.p_preset}-bem-sol.fif"
+                ),
                 "load": self.load_bem_solution,
                 "save": self.save_bem_solution,
             },
             "volume_src": {
-                "path": self.vol_src_path,
+                "path": join(
+                    self.save_dir, "bem", f"{self.name}_{self.p_preset}-vol-src.fif"
+                ),
                 "load": self.load_volume_source_space,
                 "save": self.save_volume_source_space,
             },
@@ -1490,35 +1489,39 @@ class FSMRI(BaseLoading):
     ###########################################################################
     @load_decorator
     def load_source_space(self):
-        return mne.read_source_spaces(self.src_path)
+        return mne.read_source_spaces(self.io_dict["src"]["path"])
 
     @save_decorator
     def save_source_space(self, src):
-        src.save(self.src_path, overwrite=True)
+        src.save(self.io_dict["src"]["path"], overwrite=True)
 
     @load_decorator
     def load_bem_model(self):
-        return mne.read_bem_surfaces(self.bem_model_path)
+        return mne.read_bem_surfaces(self.io_dict["bem_model"]["path"])
 
     @save_decorator
     def save_bem_model(self, bem_model):
-        mne.write_bem_surfaces(self.bem_model_path, bem_model, overwrite=True)
+        mne.write_bem_surfaces(
+            self.io_dict["bem_model"]["path"], bem_model, overwrite=True
+        )
 
     @load_decorator
     def load_bem_solution(self):
-        return mne.read_bem_solution(self.bem_solution_path)
+        return mne.read_bem_solution(self.io_dict["bem_solution"]["path"])
 
     @save_decorator
     def save_bem_solution(self, bem_solution):
-        mne.write_bem_solution(self.bem_solution_path, bem_solution, overwrite=True)
+        mne.write_bem_solution(
+            self.io_dict["bem_solution"]["path"], bem_solution, overwrite=True
+        )
 
     @load_decorator
     def load_volume_source_space(self):
-        return mne.read_source_spaces(self.vol_src_path)
+        return mne.read_source_spaces(self.io_dict["volume_src"]["path"])
 
     @save_decorator
     def save_volume_source_space(self, vol_src):
-        vol_src.save(self.vol_src_path, overwrite=True)
+        vol_src.save(self.io_dict["volume_src"]["path"], overwrite=True)
 
 
 class Group(BaseLoading):

@@ -215,7 +215,7 @@ def add_erm_ssp(
 
     # Only include channels from Empty-Room-Data,
     # which are present in filtered-data
-    erm_filtered = erm_filtered.copy().pick_channels(
+    erm_filtered = erm_filtered.copy().pick(
         [ch for ch in erm_filtered.ch_names if ch in raw_filtered.ch_names]
     )
 
@@ -507,7 +507,7 @@ def epoch_raw(
     raw_filtered.pick(ch_types)
 
     if len(ch_names) > 0 and ch_names != "all":
-        raw_filtered.pick_channels(ch_names)
+        raw_filtered.pick(ch_names)
 
     if bad_interpolation is None:
         # Exclude bad-channels if no Bad-Channel-Interpolation is intended
@@ -609,7 +609,7 @@ def run_ica(
     if ica_fitto != "epochs":
         data.pick(ch_types, exclude="bads")
         if len(ch_names) > 0 and ch_names != "all":
-            data.pick_channels(ch_names)
+            data.pick(ch_names)
 
     # Filter if data is not highpass-filtered >= 1
     if data.info["highpass"] < 1:
@@ -706,7 +706,7 @@ def run_ica(
             meeg.save_json("eog_scores", eog_scores)
     else:
         # Remove old eog_epochs, eog_indices and eog_scores if new ICA is calculated
-        meeg.remove_path("eog_epochs")
+        meeg.remove_path("epochs_eog")
         meeg.remove_json("eog_indices")
         meeg.remove_json("eog_scores")
 
@@ -748,7 +748,7 @@ def run_ica(
             meeg.save_json("ecg_scores", ecg_scores)
     else:
         # Remove old ecg_epochs, ecg_indices and ecg_scores if new ICA is calculated
-        meeg.remove_path("ecg_epochs")
+        meeg.remove_path("epochs_ecg")
         meeg.remove_json("ecg_indices")
         meeg.remove_json("ecg_scores")
 
@@ -979,7 +979,7 @@ def grand_avg_tfr(group):
                 commons = commons & set(pw.ch_names)
             print(f"{trial}:Reducing all n_channels to {len(commons)}")
             for idx, pw in enumerate(trial_dict[trial]):
-                trial_dict[trial][idx] = pw.pick_channels(list(commons))
+                trial_dict[trial][idx] = pw.pick(list(commons))
 
             ga = mne.grand_average(
                 trial_dict[trial], interpolate_bads=True, drop_bads=True

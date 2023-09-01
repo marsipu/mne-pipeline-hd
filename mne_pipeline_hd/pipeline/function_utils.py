@@ -157,7 +157,9 @@ class RunController:
         self.current_object = None
         self.loaded_fsmri = None
         self.current_func = None
+
         self.prog_count = 0
+        self.errors = list()
 
         self.init_lists()
 
@@ -268,10 +270,14 @@ class RunController:
     def process_finished(self, result):
         # ToDo: tqdm-progressbar for headless-mode
         self.prog_count += 1
-        self.start()
+        if len(self.all_steps) > 0:
+            self.start()
+        else:
+            self.finished()
 
     def finished(self):
-        pass
+        for name, func, error in self.errors:
+            print(f"Error in {name} <- {func}: {error}")
 
     def prepare_start(self):
         # Take first step of all_steps until there are no steps left.
@@ -300,11 +306,17 @@ class RunController:
     def start(self):
         kwds = self.prepare_start()
         if kwds is not None:
-            run_func(**kwds)
+            result = run_func(**kwds)
+
+            if isinstance(result, ExceptionTuple):
+                self.errors.append(
+                    (self.current_object.name, self.current_func, result)
+                )
+
             # ToDo: MP
             # self.pool.apply_async(func=run_func, kwds=kwds,
             #                       callback=self.process_finished)
-            self.process_finished(None)
+            self.process_finished(result)
 
 
 class QRunController(RunController):

@@ -1282,7 +1282,7 @@ class SubBadsWidget(QWidget):
         for chkbx in self.bad_chkbts:
             self.bad_chkbts[chkbx].setEnabled(enable)
 
-    def get_selected_bads(self, _, meeg, raw):
+    def get_selected_bads(self, _, meeg, raw, raw_type):
         self.current_obj.set_bad_channels(raw.info["bads"])
         self.update_selection()
         self.set_chkbx_enable(True)
@@ -1290,8 +1290,9 @@ class SubBadsWidget(QWidget):
         if self.save_raw_annot.isChecked():
             WorkerDialog(
                 self,
-                meeg.save_raw,
-                raw=raw,
+                meeg.save,
+                data_type=raw_type,
+                data=raw,
                 show_console=True,
                 title="Saving raw with Annotations",
             )
