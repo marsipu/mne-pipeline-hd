@@ -353,6 +353,7 @@ class BaseDictModel(QAbstractTableModel):
         return 2
 
 
+# ToDo: Somehow inputs are automatically sorted (annoyig, disable-toggle)
 class EditDictModel(BaseDictModel):
     """An editable model for Dictionaries
 
