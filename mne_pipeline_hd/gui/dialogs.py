@@ -9,7 +9,6 @@ from collections import Counter
 from importlib import resources
 from pathlib import Path
 
-import mne
 from PyQt5.QtWidgets import (
     QDialog,
     QGridLayout,
@@ -175,7 +174,7 @@ class RawInfo(QDialog):
 
         self.setLayout(layout)
 
-    # ToDo: Just parse repr(info) instead of rewriting all keys
+    # ToDo: Just parse/reformat repr(info) instead of rewriting all keys
     def meeg_selected(self, meeg_name):
         # Get size in Mebibytes of all files associated to this
         meeg = MEEG(meeg_name, self.mw.ct)
@@ -200,9 +199,7 @@ class RawInfo(QDialog):
             other_infos["size"] = f"{int(sizes_sum / 1024 ** 2)}"
             size_unit = "MB"
 
-        ch_type_counter = Counter(
-            [mne.io.pick.channel_type(info, idx) for idx in range(len(info["chs"]))]
-        )
+        ch_type_counter = Counter(info.get_channel_types())
         other_infos["ch_types"] = ", ".join(
             [f"{key}: {value}" for key, value in ch_type_counter.items()]
         )
