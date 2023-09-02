@@ -199,7 +199,7 @@ class BaseLoading:
     def init_paths(self):
         """Initialization of all paths and the io_dict, should be overridden
         in inherited classes"""
-        self.save_dir = None
+        self.save_dir = ""
         self.io_dict = dict()
         self.deprecated_paths = dict()
 

@@ -707,10 +707,11 @@ class AddFilesWidget(QWidget):
             # names in the given directory
             list_of_file = os.walk(folder_path)
             files_list = list()
+            file_types = [x for x in self.supported_file_types if x != ".*"]
             # Iterate over all the entries
             for dirpath, _, filenames in list_of_file:
                 for file in filenames:
-                    for file_type in self.supported_file_types:
+                    for file_type in file_types:
                         match = re.match(rf"(.+)({file_type})", file)
                         if match and len(match.group()) == len(file):
                             # Make sure, that no files from Pipeline-Analysis

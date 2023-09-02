@@ -33,7 +33,9 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QMessageBox,
     QColorDialog,
+    QFileDialog,
 )
+
 from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
@@ -204,6 +206,10 @@ class Param(QWidget):
                 self.save_param()
 
     def get_value(self):
+        """This should be implemented for each widget"""
+        pass
+
+    def set_value(self, value):
         """This should be implemented for each widget"""
         pass
 
@@ -1593,6 +1599,54 @@ class ColorGui(Param):
         self._change_display_color()
         self._set_param()
         self._get_param()
+
+
+# ToDo: Own testable QFileDialog-Implementations
+class PathGui(Param):
+    """A GUI to pick a path."""
+
+    def __init__(self, pick_mode="file", **kwargs):
+        """
+        Parameters
+        ----------
+        pick_mode : str
+            Can be either "file" or "directory".
+        **kwargs
+            All the parameters for :method:`Param.__init__` go here.
+        """
+
+        super().__init__(**kwargs)
+
+        self.pick_mode = pick_mode
+
+        self.read_param()
+        self._init_layout()
+        self._set_param()
+        self.save_param()
+
+    def _init_layout(self):
+        layout = QHBoxLayout()
+        self.display_widget = QLabel()
+        layout.addWidget(self.display_widget)
+        self.param_widget = QPushButton("Pick Path")
+        self.param_widget.clicked.connect(self._pick_path)
+        layout.addWidget(self.param_widget)
+
+        self.init_ui(layout)
+
+    def _pick_path(self):
+        if self.pick_mode == "file":
+            path = QFileDialog.getOpenFileName(self, self.description)[0]
+        else:
+            path = QFileDialog.getExistingDirectory(self, self.description)
+        self.set_value(path)
+        self._get_param()
+
+    def set_value(self, value):
+        self.display_widget.setText(value)
+
+    def get_value(self):
+        return self.display_widget.text()
 
 
 # Todo: Ordering Parameters in Tabs and add Find-Command

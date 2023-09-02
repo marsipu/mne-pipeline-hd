@@ -40,6 +40,7 @@ parameters = {
     "DictGui": {"A": "B", "C": 58.144, 3: [1, 2, 3, 4], "D": {"A": 1, "B": 2}},
     "SliderGui": 5,
     "ColorGui": {"C": "#98765432", "3": "#97867564"},
+    "PathGui": "C:/test",
 }
 
 alternative_parameters = {
@@ -56,6 +57,7 @@ alternative_parameters = {
     "DictGui": {"B": "V", "e": 11.333, 5: [65, 3, 11], "F": {"C": 1, "D": 2}},
     "SliderGui": 2,
     "ColorGui": {"A": "#12345678", "B": "#13243546"},
+    "PathGui": "D:/test",
 }
 
 gui_kwargs = {
