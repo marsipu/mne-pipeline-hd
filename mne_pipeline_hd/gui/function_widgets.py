@@ -18,7 +18,7 @@ from types import FunctionType
 
 import pandas as pd
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QTextDocument
 from PyQt5.QtWidgets import (
     QButtonGroup,
     QComboBox,
@@ -204,10 +204,16 @@ class RunDialog(QDialog):
         else:
             self.console_widget.set_autoscroll(False)
 
-    def show_error(self, current, _):
+    def show_error(self, current, previous):
         self.console_widget.set_autoscroll(False)
         self.autoscroll_bt.setChecked(False)
-        self.console_widget.scrollToAnchor(str(self.rc.errors[current][1]))
+        if current < previous:
+            self.console_widget.find(
+                f"Error-No. {self.rc.errors[current][1]} (above)",
+                QTextDocument.FindBackward,
+            )
+        else:
+            self.console_widget.find(f"Error-No. {self.rc.errors[current][1]} (above)")
 
     def closeEvent(self, event):
         self.mw.pipeline_running = False

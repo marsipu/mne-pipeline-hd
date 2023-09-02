@@ -402,8 +402,7 @@ class QRunController(RunController):
                 # Insert Error-Number into console-widget as an anchor
                 # for later inspection
                 self.rd.console_widget.write_html(
-                    f'<a name="{self.error_count}" href={self.error_count}>'
-                    f"<i>Error No.{self.error_count}</i><br></a>"
+                    f"<b>Error-No. {self.error_count} (above)</b><br>"
                 )
                 # Increase Error-Count by one
                 self.error_count += 1

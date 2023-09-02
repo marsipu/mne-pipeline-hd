@@ -80,10 +80,13 @@ def main():
     logger.info("Starting MNE-Pipeline HD")
 
     # Initialize Exception-Hook
-    qt_exception_hook = UncaughtHook()
-    # this registers the exception_hook() function
-    # as hook with the Python interpreter
-    sys.excepthook = qt_exception_hook.exception_hook
+    if os.environ.get("MNEPHD_DEBUG", False) == "true":
+        print("Debug-Mode is activated")
+    else:
+        qt_exception_hook = UncaughtHook()
+        # this registers the exception_hook() function
+        # as hook with the Python interpreter
+        sys.excepthook = qt_exception_hook.exception_hook
 
     # Initialize Layout
     font_family = QS().value("app_font")
