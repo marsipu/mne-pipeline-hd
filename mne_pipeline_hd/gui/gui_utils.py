@@ -37,6 +37,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QStyle,
     QInputDialog,
+    QPlainTextEdit,
 )
 
 from mne_pipeline_hd import _object_refs
@@ -229,10 +230,7 @@ def _html_compatible(text):
     return text
 
 
-# ToDo: Better with QPlainTextEdit(.appendHtml) probably for performance
-#  and probably ditch timer approach
-# add buffer-limit and tests
-class ConsoleWidget(QTextEdit):
+class ConsoleWidget(QPlainTextEdit):
     """A Widget displaying formatted stdout/stderr-output"""
 
     def __init__(self):
@@ -241,7 +239,7 @@ class ConsoleWidget(QTextEdit):
         self.setReadOnly(True)
         self.autoscroll = True
 
-        self.buffer_time = 5
+        self.buffer_time = 1
 
         # Buffer to avoid crash for too many inputs
         self.buffer = list()
@@ -250,7 +248,7 @@ class ConsoleWidget(QTextEdit):
         self.buffer_timer.start(self.buffer_time)
 
     def _add_html(self, text):
-        self.insertHtml(text)
+        self.appendHtml(text)
         if self.autoscroll:
             self.ensureCursorVisible()
 
