@@ -8,7 +8,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 import json
 from importlib import resources
 
-from PyQt5.QtCore import QSettings
+from qtpy.QtCore import QSettings
 
 from mne_pipeline_hd import extra
 

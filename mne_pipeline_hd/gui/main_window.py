@@ -10,9 +10,9 @@ from functools import partial
 
 import mne
 import pandas as pd
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import Qt, Signal
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import (
     QAction,
     QApplication,
     QComboBox,
@@ -91,8 +91,8 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
 class MainWindow(QMainWindow):
     # Define Main-Window-Signals to send into QThread
     # to control function execution
-    cancel_functions = pyqtSignal(bool)
-    plot_running = pyqtSignal(bool)
+    cancel_functions = Signal(bool)
+    plot_running = Signal(bool)
 
     def __init__(self, controller):
         super().__init__()

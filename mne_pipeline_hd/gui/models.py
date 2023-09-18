@@ -9,14 +9,14 @@ from ast import literal_eval
 from datetime import datetime
 
 import pandas as pd
-from PyQt5.QtCore import (
+from qtpy.QtCore import (
     QAbstractItemModel,
     QAbstractListModel,
     QAbstractTableModel,
     QModelIndex,
     Qt,
 )
-from PyQt5.QtGui import QBrush, QFont
+from qtpy.QtGui import QBrush, QFont
 
 from mne_pipeline_hd.gui.gui_utils import get_std_icon
 

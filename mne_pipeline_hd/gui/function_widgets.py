@@ -17,9 +17,9 @@ from pathlib import Path
 from types import FunctionType
 
 import pandas as pd
-from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QFont, QTextDocument
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import QSize, Qt
+from qtpy.QtGui import QFont, QTextDocument
+from qtpy.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QDialog,

@@ -10,9 +10,9 @@ import os
 import sys
 from importlib import resources
 
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtWidgets import QApplication
+from qtpy.QtCore import QTimer, Qt
+from qtpy.QtGui import QIcon, QFont
+from qtpy.QtWidgets import QApplication
 
 import mne_pipeline_hd
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
@@ -54,10 +54,6 @@ def main():
     if ismac:
         # Workaround for not showing with PyQt < 5.15.2
         os.environ["QT_MAC_WANTS_LAYER"] = "1"
-
-    # Avoid Mayavi-Issues
-    os.environ["ETS_TOOLKIT"] = "qt4"
-    os.environ["QT_API"] = "pyqt5"
 
     # ToDo: MP
     # # Set multiprocessing method to spawn

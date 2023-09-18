@@ -1,4 +1,4 @@
-
+# ToDo: Check every requirement in the end if really necessary
 # Pipeline-related
 autoreject
 h5io
@@ -13,7 +13,6 @@ psutil
 pyobjc-framework-Cocoa; sys_platform == "darwin"
 
 # PyQt
-PyQt5
-pyqtdarktheme
 qtpy
+pyqtdarktheme
 vtk

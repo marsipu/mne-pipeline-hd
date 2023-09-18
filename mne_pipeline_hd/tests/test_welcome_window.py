@@ -6,8 +6,8 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 from os import mkdir
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFileDialog, QInputDialog
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QFileDialog, QInputDialog
 
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 

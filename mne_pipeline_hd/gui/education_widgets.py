@@ -10,9 +10,9 @@ from os import makedirs
 from os.path import isdir, join
 from shutil import copytree
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import (
     QComboBox,
     QFileDialog,
     QGridLayout,

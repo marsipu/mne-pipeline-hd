@@ -10,9 +10,9 @@ from functools import partial
 import mne
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFontDatabase, QFont, QPixmap
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import Qt, Signal
+from qtpy.QtGui import QFontDatabase, QFont, QPixmap
+from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
@@ -70,11 +70,11 @@ class Param(QWidget):
 
     Attributes
     ----------
-    paramChanged : pyqtSignal
+    paramChanged : Signal
         This signal is emmited when the parameter changes.
     """
 
-    paramChanged = pyqtSignal(object)
+    paramChanged = Signal(object)
 
     def __init__(
         self,

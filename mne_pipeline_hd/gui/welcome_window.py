@@ -9,9 +9,9 @@ from importlib import resources
 from os import listdir
 from os.path import isdir, join
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QFont, QPixmap
+from qtpy.QtWidgets import (
     QComboBox,
     QFileDialog,
     QGroupBox,

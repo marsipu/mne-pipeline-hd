@@ -11,9 +11,9 @@ import sys
 
 import numpy as np
 import pandas
-from PyQt5.QtCore import QItemSelectionModel, QTimer, Qt, pyqtSignal
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import QItemSelectionModel, QTimer, Qt, Signal
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QDialog,
@@ -52,9 +52,9 @@ from mne_pipeline_hd.pipeline.pipeline_utils import QS
 
 
 class Base(QWidget):
-    currentChanged = pyqtSignal(object, object)
-    selectionChanged = pyqtSignal(object)
-    dataChanged = pyqtSignal(object, object)
+    currentChanged = Signal(object, object)
+    selectionChanged = Signal(object)
+    dataChanged = Signal(object, object)
 
     def __init__(self, model, view, drag_drop, parent, title, verbose=False):
         if parent:
@@ -372,7 +372,7 @@ class CheckList(BaseList):
     If you change the reference to data, call replace_data or replace_checked.
     """
 
-    checkedChanged = pyqtSignal(list)
+    checkedChanged = Signal(list)
 
     def __init__(
         self,

@@ -285,7 +285,7 @@ class QSettingsDummy(BaseSettings):
 
 # Import QSettings or provide Dummy-Class to be independent from PyQt/PySide
 try:
-    from PyQt5.QtCore import QSettings
+    from qtpy.QtCore import QSettings
 
     class ModQSettings(QSettings, BaseSettings):
         def __init__(self):
