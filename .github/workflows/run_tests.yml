@@ -21,7 +21,7 @@ jobs:
             python: '3.10'
             qt : 'PySide6'
           - os: ubuntu
-            python : '3.11'
+            python : '3.10'
             qt : 'PySide2'
           - os: ubuntu
             python : '3.11'

@@ -4,6 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+import logging
 from ast import literal_eval
 from functools import partial
 
@@ -1151,7 +1152,10 @@ class MultiTypeGui(Param):
 
         old_widget = self.type_layout.itemAt(1)
         self.type_layout.removeItem(old_widget)
-        old_widget.widget().deleteLater()
+        try:
+            old_widget.widget().deleteLater()
+        except RuntimeError:
+            logging.debug("Old widget already deleted")
         del old_widget, self.param_widget
 
         self.param_type = self.types[type_idx]

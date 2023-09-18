@@ -250,50 +250,16 @@ class BaseSettings:
             )
 
 
-class QSettingsDummy(BaseSettings):
-    def __init__(self):
-        super().__init__()
-
-        self.settings_path = join(Path.home(), ".mnephd_settings.json")
-
-    def _load_settings(self):
-        if isfile(self.settings_path):
-            with open(self.settings_path, "r") as file:
-                self.settings = json.load(file)
-        else:
-            self.settings = deepcopy(self.default_qsettings)
-
-    def _write_settings(self):
-        with open(self.settings_path, "w") as file:
-            json.dump(self.settings, file)
-
-    def value(self, setting, defaultValue=None):
-        self._load_settings()
-        if setting in self.settings:
-            return self.settings[setting]
-
-        if defaultValue is None:
-            return self.get_default(setting)
-        else:
-            return defaultValue
-
-    def setValue(self, setting, value):
-        self._load_settings()
-        self.settings[setting] = value
-        self._write_settings()
-
-
 # Import QSettings or provide Dummy-Class to be independent from PyQt/PySide
 try:
     from qtpy.QtCore import QSettings
 
-    class ModQSettings(QSettings, BaseSettings):
+    class QS(BaseSettings):
         def __init__(self):
-            super(QSettings, self).__init__()
-            super(BaseSettings, self).__init__()
+            super().__init__()
 
         def value(self, setting, defaultValue=None):
-            loaded_value = super().value(setting, defaultValue=defaultValue)
+            loaded_value = QSettings().value(setting, defaultValue=defaultValue)
             # Type-Conversion for UNIX-Systems
             # (ini-File does not preserve type, converts to strings)
             if not isinstance(loaded_value, type(self.get_default(setting))):
@@ -309,15 +275,55 @@ try:
             else:
                 return loaded_value
 
-    class QS(ModQSettings):
-        def __init__(self):
-            super().__init__()
+        def setValue(self, setting, value):
+            QSettings().setValue(setting, value)
+
+        def sync(self):
+            QSettings().sync()
+
+        def childKeys(self):
+            return QSettings().childKeys()
 
 except ImportError:
 
-    class QS(QSettingsDummy):
+    class QS(BaseSettings):
         def __init__(self):
             super().__init__()
+
+            self.settings_path = join(Path.home(), ".mnephd_settings.json")
+
+        def _load_settings(self):
+            if isfile(self.settings_path):
+                with open(self.settings_path, "r") as file:
+                    self.settings = json.load(file)
+            else:
+                self.settings = deepcopy(self.default_qsettings)
+
+        def _write_settings(self):
+            with open(self.settings_path, "w") as file:
+                json.dump(self.settings, file)
+
+        def value(self, setting, defaultValue=None):
+            self._load_settings()
+            if setting in self.settings:
+                return self.settings[setting]
+
+            if defaultValue is None:
+                return self.get_default(setting)
+            else:
+                return defaultValue
+
+        def setValue(self, setting, value):
+            self._load_settings()
+            self.settings[setting] = value
+            self._write_settings()
+
+        def sync(self):
+            self._write_settings()
+            self._load_settings()
+
+        def childKeys(self):
+            return self.settings.keys()
 
 
 def _set_test_run():

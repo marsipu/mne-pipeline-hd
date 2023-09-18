@@ -4,7 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-
+import logging
 import sys
 from functools import partial
 
@@ -553,7 +553,10 @@ class MainWindow(QMainWindow):
         while self.tab_func_widget.count():
             tab = self.tab_func_widget.removeTab(0)
             if tab:
-                tab.deleteLater()
+                try:
+                    tab.deleteLater()
+                except RuntimeError:
+                    logging.debug("Tab already deleted")
         self.bt_dict = dict()
 
         self.add_func_bts()
