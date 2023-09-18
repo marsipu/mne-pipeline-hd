@@ -10,6 +10,8 @@ from functools import partial
 import mne
 import numpy as np
 import pandas as pd
+from mne_qt_browser._pg_figure import _get_color
+from qtpy import compat
 from qtpy.QtCore import Qt, Signal
 from qtpy.QtGui import QFontDatabase, QFont, QPixmap
 from qtpy.QtWidgets import (
@@ -33,10 +35,7 @@ from qtpy.QtWidgets import (
     QScrollArea,
     QMessageBox,
     QColorDialog,
-    QFileDialog,
 )
-
-from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
 
@@ -1636,9 +1635,9 @@ class PathGui(Param):
 
     def _pick_path(self):
         if self.pick_mode == "file":
-            path = QFileDialog.getOpenFileName(self, self.description)[0]
+            path = compat.getopenfilename(self, self.description)[0]
         else:
-            path = QFileDialog.getExistingDirectory(self, self.description)
+            path = compat.getexistingdirectory(self, self.description)
         self.set_value(path)
         self._get_param()
 

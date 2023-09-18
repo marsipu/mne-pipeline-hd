@@ -6,8 +6,9 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 from os import mkdir
 
+from qtpy import compat
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QFileDialog, QInputDialog
+from qtpy.QtWidgets import QInputDialog
 
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 
@@ -24,9 +25,7 @@ def test_welcome_window(controller, tmpdir, qtbot, monkeypatch):
     # make new home-path
     new_home_path = tmpdir.join("TestHome2")
     mkdir(new_home_path)
-    monkeypatch.setattr(
-        QFileDialog, "getExistingDirectory", lambda *args: new_home_path
-    )
+    monkeypatch.setattr(compat, "getexistingdirectory", lambda *args: new_home_path)
     qtbot.mouseClick(welcome_window.home_path_bt, Qt.LeftButton)
     new_controller = welcome_window.ct
     assert new_controller.home_path == new_home_path
@@ -34,8 +33,6 @@ def test_welcome_window(controller, tmpdir, qtbot, monkeypatch):
 
     # Change back to old controller
     old_home_path = controller.home_path
-    monkeypatch.setattr(
-        QFileDialog, "getExistingDirectory", lambda *args: old_home_path
-    )
+    monkeypatch.setattr(compat, "getexistingdirectory", lambda *args: old_home_path)
     qtbot.mouseClick(welcome_window.home_path_bt, Qt.LeftButton)
     assert welcome_window.ct.pr.name == "test2"

@@ -16,6 +16,8 @@ from pathlib import Path
 import mne
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
+from qtpy import compat
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -23,7 +25,6 @@ from qtpy.QtWidgets import (
     QComboBox,
     QDialog,
     QDockWidget,
-    QFileDialog,
     QGridLayout,
     QHBoxLayout,
     QHeaderView,
@@ -45,7 +46,6 @@ from qtpy.QtWidgets import (
     QWizard,
     QWizardPage,
 )
-from matplotlib import pyplot as plt
 
 from mne_pipeline_hd.functions.operations import find_bads
 from mne_pipeline_hd.functions.plot import (
@@ -692,13 +692,13 @@ class AddFilesWidget(QWidget):
         ]
         filter_list.insert(0, "All Files (*.*)")
         filter_qstring = ";;".join(filter_list)
-        files_list = QFileDialog.getOpenFileNames(
+        files_list = compat.getopenfilenames(
             self, "Choose raw-file/s to import", filter=filter_qstring
         )[0]
         self.insert_files(files_list)
 
     def get_folder_path(self):
-        folder_path = QFileDialog.getExistingDirectory(
+        folder_path = compat.getexistingdirectory(
             self,
             "Choose a folder to import your raw-Files from " "(including subfolders)",
         )
@@ -917,7 +917,7 @@ class AddMRIWidget(QWidget):
             self.paths[new_name] = self.paths[old_name]
 
     def import_mri_subject(self):
-        folder_path = QFileDialog.getExistingDirectory(
+        folder_path = compat.getexistingdirectory(
             self, "Choose a folder with a subject's Freesurfe-Segmentation"
         )
 
@@ -934,7 +934,7 @@ class AddMRIWidget(QWidget):
                 print("Selected Folder doesn't seem to " "be a Freesurfer-Segmentation")
 
     def import_mri_subjects(self):
-        parent_folder = QFileDialog.getExistingDirectory(
+        parent_folder = compat.getexistingdirectory(
             self, "Choose a folder containting several " "Freesurfer-Segmentations"
         )
         folder_list = sorted(
@@ -2303,7 +2303,7 @@ class ReloadRaw(QDialog):
         # Not with partial because otherwise the clicked-arg
         # from clicked goes into *args
         selected_raw = self.raw_list.get_current()
-        raw_path = QFileDialog.getOpenFileName(self, "Select raw for Reload")[0]
+        raw_path = compat.getopenfilename(self, "Select raw for Reload")[0]
         if raw_path:
             WorkerDialog(
                 self,
@@ -2341,7 +2341,7 @@ class ExportDialog(QDialog):
             self.export_paths[meeg_name] = meeg.existing_paths
 
     def _get_destination(self):
-        dest = QFileDialog.getExistingDirectory(self, "Select Destination-Folder")[0]
+        dest = compat.getexistingdirectory(self, "Select Destination-Folder")[0]
         if dest:
             self.dest_path = dest
 

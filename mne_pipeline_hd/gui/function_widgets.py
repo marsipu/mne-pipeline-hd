@@ -17,13 +17,13 @@ from pathlib import Path
 from types import FunctionType
 
 import pandas as pd
+from qtpy import compat
 from qtpy.QtCore import QSize, Qt
 from qtpy.QtGui import QFont, QTextDocument
 from qtpy.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QDialog,
-    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -1038,7 +1038,7 @@ class CustomFunctionImport(QDialog):
         self.clear_param_items()
 
         # Returns tuple of files-list and file-type
-        cf_path_string = QFileDialog.getOpenFileName(
+        cf_path_string = compat.getopenfilename(
             self,
             "Choose the Python-File containing your function to import",
             filter="Python-File (*.py)",
@@ -1055,7 +1055,7 @@ class CustomFunctionImport(QDialog):
         self.clear_param_items()
 
         # Returns tuple of files-list and file-type
-        cf_path_string = QFileDialog.getOpenFileName(
+        cf_path_string = compat.getopenfilename(
             self,
             "Choose the Python-File containing the functions to edit",
             filter="Python-File (*.py)",

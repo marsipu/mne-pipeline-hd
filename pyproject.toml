@@ -50,3 +50,10 @@ target-version = ["py39", "py310", "py311"]
 [tool.ruff]
 line-length = 88
 target-version = "py39"
+
+# For type checking
+[tool.pyright.defineConstant]
+PYQT5 = false
+PYSIDE2 = false
+PYQT6 = true
+PYSIDE6 = false

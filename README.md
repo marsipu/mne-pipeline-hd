@@ -58,10 +58,11 @@ installed.
 4. Add upstream to git for
    updates: `git remote add upstream git://github.com/marsipu/mne-pipeline-hd.git`
 5. Install development version with pip: `pip install -e .[tests]`
-6. Create a branch for changes: `git checkout -b <branch-name>`
-7. Commit changes: `git commit -am "<your commit message>"`
-8. Push changes to your forked repository on GitHub: `git push`
-9. Make "New pull request" from your new feature branch
+6. Install the pre-commit hooks with: `pre-commit install`
+7. Create a branch for changes: `git checkout -b <branch-name>`
+8. Commit changes: `git commit -am "<your commit message>"`
+9. Push changes to your forked repository on GitHub: `git push`
+10. Make "New pull request" from your new feature branch
 
 You can always [write me](mailto:dev@mgschulz.de), if you have questions
 about the contribution-process

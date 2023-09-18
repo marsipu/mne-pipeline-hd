@@ -10,13 +10,13 @@ from functools import partial
 
 import mne
 import pandas as pd
+from qtpy import compat
 from qtpy.QtCore import Qt, Signal
 from qtpy.QtGui import QFont
 from qtpy.QtWidgets import (
     QAction,
     QApplication,
     QComboBox,
-    QFileDialog,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
         # First save the former projects-data
         WorkerDialog(self, self.ct.save, blocking=True)
 
-        new_home_path = QFileDialog.getExistingDirectory(
+        new_home_path = compat.getexistingdirectory(
             self, "Change your Home-Path (top-level folder of Pipeline-Data)"
         )
         if new_home_path != "":
