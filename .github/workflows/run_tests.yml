@@ -16,19 +16,19 @@ jobs:
         include:
           - os: ubuntu
             python: '3.9'
-            qt : [ 'PySide6' ]
+            qt : 'PySide6'
           - os: ubuntu
             python: '3.10'
-            qt : [ 'PySide6' ]
+            qt : 'PySide6'
           - os: ubuntu
             python : '3.11'
-            qt : [ 'PySide2' ]
+            qt : 'PySide2'
           - os: ubuntu
             python : '3.11'
-            qt : [ 'PyQt6' ]
+            qt : 'PyQt6'
           - os: ubuntu
             python: '3.11'
-            qt: [ 'PyQt5' ]
+            qt: 'PyQt5'
     name: Run pytest on ${{ matrix.os }} - ${{matrix.python}} with ${{ matrix.qt }}
     runs-on: ${{ matrix.os }}-latest
     env:
