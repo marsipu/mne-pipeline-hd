@@ -10,6 +10,7 @@ import os
 import sys
 from importlib import resources
 
+import qtpy
 from qtpy.QtCore import QTimer, Qt
 from qtpy.QtGui import QIcon, QFont
 from qtpy.QtWidgets import QApplication
@@ -68,6 +69,13 @@ def main():
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     logger.info("Starting MNE-Pipeline HD")
+
+    # Show Qt-binding
+    if any([qtpy.PYQT5, qtpy.PYQT6]):
+        qt_version = qtpy.PYQT_VERSION
+    else:
+        qt_version = qtpy.PYSIDE_VERSION
+    logger.info(f"Using {qtpy.API_NAME} {qt_version}")
 
     # Initialize Exception-Hook
     if os.environ.get("MNEPHD_DEBUG", False) == "true":
