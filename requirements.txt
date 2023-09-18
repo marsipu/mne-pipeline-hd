@@ -11,8 +11,8 @@ nibabel
 pandas
 psutil
 pyobjc-framework-Cocoa; sys_platform == "darwin"
-pyqtdarktheme
 
 # PyQt
+pyqtdarktheme
 qtpy
 vtk

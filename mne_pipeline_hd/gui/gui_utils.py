@@ -26,7 +26,6 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QFont, QTextCursor
 from qtpy.QtWidgets import (
     QApplication,
-    QDesktopWidget,
     QDialog,
     QHBoxLayout,
     QLabel,
@@ -46,7 +45,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import QS
 
 def center(widget):
     qr = widget.frameGeometry()
-    cp = QDesktopWidget().availableGeometry().center()
+    cp = QApplication.desktop().availableGeometry().center()
     qr.moveCenter(cp)
     widget.move(qr.topLeft())
 
@@ -55,7 +54,7 @@ def set_ratio_geometry(size_ratio, widget=None):
     if not isinstance(size_ratio, tuple):
         size_ratio = (size_ratio, size_ratio)
     wratio, hratio = size_ratio
-    desk_geometry = QApplication.instance().desktop().availableGeometry()
+    desk_geometry = QApplication.desktop().availableGeometry()
     width = int(desk_geometry.width() * wratio)
     height = int(desk_geometry.height() * hratio)
     if widget:
