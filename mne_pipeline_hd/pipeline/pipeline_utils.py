@@ -284,6 +284,9 @@ try:
         def childKeys(self):
             return QSettings().childKeys()
 
+        def remove(self, setting):
+            QSettings().remove(setting)
+
 except ImportError:
 
     class QS(BaseSettings):
@@ -323,7 +326,13 @@ except ImportError:
             self._load_settings()
 
         def childKeys(self):
+            self._load_settings()
             return self.settings.keys()
+
+        def remove(self, setting):
+            self._load_settings()
+            self._settings.pop(setting)
+            self._write_settings()
 
 
 def _set_test_run():
