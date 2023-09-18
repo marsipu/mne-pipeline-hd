@@ -596,6 +596,7 @@ def _brain_plot(
     stc_clim,
     stc_background,
     target_labels,
+    target_parcellation,
     label_colors,
     stc_roll,
     stc_azimuth,
@@ -604,7 +605,7 @@ def _brain_plot(
     interactive=False,
     **brain_movie_kwargs,
 ):
-    labels = meeg.fsmri.get_labels(target_labels)
+    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
     for trial, stc in stcs.items():
         title = f"{meeg.name}-{trial}"
         brain = stc.plot(
@@ -752,7 +753,14 @@ def plot_animated_stc(
 
 
 def plot_labels(
-    fsmri, target_labels, label_colors, stc_hemi, stc_surface, stc_views, backend_3d
+    fsmri,
+    target_labels,
+    target_parcellation,
+    label_colors,
+    stc_hemi,
+    stc_surface,
+    stc_views,
+    backend_3d,
 ):
     with mne.viz.use_3d_backend(backend_3d):
         Brain = mne.viz.get_brain_class()
@@ -764,7 +772,7 @@ def plot_labels(
             views=stc_views,
         )
 
-        labels = fsmri.get_labels(target_labels)
+        labels = fsmri.get_labels(target_labels, target_parcellation)
         for label in labels:
             color = label_colors.get(label.name)
             brain.add_label(label, borders=False, color=color)
@@ -857,9 +865,11 @@ def plot_label_time_course(meeg, show_plots):
             meeg.plot_save("label-time-course", subfolder=label, trial=trial)
 
 
-def plot_src_connectivity(meeg, target_labels, con_fmin, con_fmax, show_plots):
+def plot_src_connectivity(
+    meeg, target_labels, target_parcellation, con_fmin, con_fmax, show_plots
+):
     con_dict = meeg.load_connectivity()
-    labels = meeg.fsmri.get_labels(target_labels)
+    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
     if "unknown-lh" in labels:
         labels.pop("unknown-lh")
     label_colors = [label.color for label in labels]
@@ -1077,6 +1087,7 @@ def plot_grand_avg_connect(
     con_fmin,
     con_fmax,
     target_labels,
+    target_parcellation,
     morph_to,
     show_plots,
     connectivity_vmin,
@@ -1087,7 +1098,7 @@ def plot_grand_avg_connect(
     # Get labels for FreeSurfer 'aparc' cortical parcellation
     # with 34 labels/hemi
     fsmri = FSMRI(morph_to, group.ct)
-    labels = fsmri.get_labels(target_labels)
+    labels = fsmri.get_labels(target_labels, target_parcellation)
     if "unknown-lh" in labels:
         labels.remove("unknown-lh")
 
