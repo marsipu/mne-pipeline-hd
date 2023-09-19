@@ -10,11 +10,11 @@ from os import makedirs
 from os.path import isdir, join
 from shutil import copytree
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
+from qtpy import compat
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import (
     QComboBox,
-    QFileDialog,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -238,7 +238,7 @@ class EducationEditor(QMainWindow):
             self.edu["tour"][current_page] = text
 
     def load_edu_file(self):
-        file_path = QFileDialog().getOpenFileName(self, directory=self.edu_folder)[0]
+        file_path = compat.getopenfilename(self, directory=self.edu_folder)[0]
         if file_path != "":
             with open(file_path, "r") as file:
                 self.edu = json.load(file)

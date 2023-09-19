@@ -10,7 +10,7 @@ import sys
 import traceback
 from ast import literal_eval
 
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QGridLayout,

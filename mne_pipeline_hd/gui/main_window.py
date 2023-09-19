@@ -4,19 +4,19 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-
+import logging
 import sys
 from functools import partial
 
 import mne
 import pandas as pd
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
+from qtpy import compat
+from qtpy.QtCore import Qt, Signal
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import (
     QAction,
     QApplication,
     QComboBox,
-    QFileDialog,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -91,8 +91,8 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
 class MainWindow(QMainWindow):
     # Define Main-Window-Signals to send into QThread
     # to control function execution
-    cancel_functions = pyqtSignal(bool)
-    plot_running = pyqtSignal(bool)
+    cancel_functions = Signal(bool)
+    plot_running = Signal(bool)
 
     def __init__(self, controller):
         super().__init__()
@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
         # First save the former projects-data
         WorkerDialog(self, self.ct.save, blocking=True)
 
-        new_home_path = QFileDialog.getExistingDirectory(
+        new_home_path = compat.getexistingdirectory(
             self, "Change your Home-Path (top-level folder of Pipeline-Data)"
         )
         if new_home_path != "":
@@ -553,7 +553,10 @@ class MainWindow(QMainWindow):
         while self.tab_func_widget.count():
             tab = self.tab_func_widget.removeTab(0)
             if tab:
-                tab.deleteLater()
+                try:
+                    tab.deleteLater()
+                except RuntimeError:
+                    logging.debug("Tab already deleted")
         self.bt_dict = dict()
 
         self.add_func_bts()

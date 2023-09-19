@@ -9,9 +9,9 @@ from functools import partial
 from importlib import import_module
 from os.path import join, isfile
 
-from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import Qt, QThreadPool
+from qtpy.QtGui import QPixmap, QFont
+from qtpy.QtWidgets import (
     QMainWindow,
     QWidget,
     QGridLayout,

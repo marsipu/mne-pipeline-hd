@@ -9,7 +9,7 @@ import sys
 from ast import literal_eval
 
 import pytest
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QVBoxLayout,
     QGridLayout,
     QPushButton,

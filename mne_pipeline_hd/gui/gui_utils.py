@@ -13,20 +13,19 @@ import traceback
 from contextlib import contextmanager
 from inspect import signature
 
-from PyQt5.QtCore import (
+from qtpy.QtCore import (
     QObject,
     QProcess,
     QRunnable,
     QThreadPool,
     Qt,
-    pyqtSignal,
-    pyqtSlot,
+    Signal,
+    Slot,
     QTimer,
 )
-from PyQt5.QtGui import QFont, QTextCursor
-from PyQt5.QtWidgets import (
+from qtpy.QtGui import QFont, QTextCursor
+from qtpy.QtWidgets import (
     QApplication,
-    QDesktopWidget,
     QDialog,
     QHBoxLayout,
     QLabel,
@@ -46,7 +45,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import QS
 
 def center(widget):
     qr = widget.frameGeometry()
-    cp = QDesktopWidget().availableGeometry().center()
+    cp = QApplication.primaryScreen().availableGeometry().center()
     qr.moveCenter(cp)
     widget.move(qr.topLeft())
 
@@ -55,7 +54,7 @@ def set_ratio_geometry(size_ratio, widget=None):
     if not isinstance(size_ratio, tuple):
         size_ratio = (size_ratio, size_ratio)
     wratio, hratio = size_ratio
-    desk_geometry = QApplication.instance().desktop().availableGeometry()
+    desk_geometry = QApplication.primaryScreen().availableGeometry()
     width = int(desk_geometry.width() * wratio)
     height = int(desk_geometry.height() * hratio)
     if widget:
@@ -180,7 +179,7 @@ class UncaughtHook(QObject):
     """This class is a modified version
     of https://timlehr.com/python-exception-hooks-with-qt-message-box/"""
 
-    _exception_caught = pyqtSignal(object)
+    _exception_caught = Signal(object)
 
     def __init__(self, *args, **kwargs):
         super(UncaughtHook, self).__init__(*args, **kwargs)
@@ -319,8 +318,8 @@ class MainConsoleWidget(ConsoleWidget):
 
 
 class StreamSignals(QObject):
-    text_updated = pyqtSignal(str)
-    text_written = pyqtSignal(str)
+    text_updated = Signal(str)
+    text_written = Signal(str)
 
 
 # ToDo: Buffering and halting signal-emission
@@ -353,18 +352,18 @@ class WorkerSignals(QObject):
     """Class for standard Worker-Signals"""
 
     # Emitted when the function finished and returns the return-value
-    finished = pyqtSignal(object)
+    finished = Signal(object)
 
     # Emitted when the function throws an error and returns
     # a tuple with information about the error
     # (see get_exception_tuple)
-    error = pyqtSignal(object)
+    error = Signal(object)
 
     # Can be passed to function to be emitted when a part
     # of the function progresses to update a Progress-Bar
-    pgbar_max = pyqtSignal(int)
-    pgbar_n = pyqtSignal(int)
-    pgbar_text = pyqtSignal(str)
+    pgbar_max = Signal(int)
+    pgbar_n = Signal(int)
+    pgbar_text = Signal(str)
 
     # Only an attribute which is stored here to maintain
     # reference when passing it to the function
@@ -396,7 +395,7 @@ class Worker(QRunnable):
         self.kwargs = kwargs
         self.signals = WorkerSignals()
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         """
         Initialise the runner function with passed args, kwargs.
@@ -425,7 +424,7 @@ class Worker(QRunnable):
 class WorkerDialog(QDialog):
     """A Dialog for a Worker doing a function"""
 
-    thread_finished = pyqtSignal(object)
+    thread_finished = Signal(object)
 
     def __init__(
         self,
@@ -548,11 +547,11 @@ class QProcessWorker(QObject):
     """A worker for QProcess."""
 
     # Send stdout from current process.
-    stdoutSignal = pyqtSignal(str)
+    stdoutSignal = Signal(str)
     # Send stderr from curren process.
-    stderrSignal = pyqtSignal(str)
+    stderrSignal = Signal(str)
     # Send when all processes from commands are finished.
-    finished = pyqtSignal()
+    finished = Signal()
 
     def __init__(self, commands, printtostd=True):
         """
