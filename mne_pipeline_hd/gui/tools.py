@@ -7,8 +7,8 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 from functools import partial
 
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import (
     QComboBox,
     QDialog,
     QGridLayout,

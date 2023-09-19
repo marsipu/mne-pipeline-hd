@@ -10,9 +10,10 @@ import os
 import sys
 from importlib import resources
 
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtWidgets import QApplication
+import qtpy
+from qtpy.QtCore import QTimer, Qt
+from qtpy.QtGui import QIcon, QFont
+from qtpy.QtWidgets import QApplication
 
 import mne_pipeline_hd
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
@@ -40,12 +41,6 @@ def main():
     app.setOrganizationName(organization_name)
     app.setOrganizationDomain(domain_name)
 
-    # Disable Help-Button
-    try:
-        app.setAttribute(Qt.AA_DisableWindowContextHelpButton, True)
-    except AttributeError:
-        print("pyqt-Version is < 5.12")
-
     # Avoid file-dialog-problems with custom file-managers in linux
     if islin:
         app.setAttribute(Qt.AA_DontUseNativeDialogs, True)
@@ -54,10 +49,6 @@ def main():
     if ismac:
         # Workaround for not showing with PyQt < 5.15.2
         os.environ["QT_MAC_WANTS_LAYER"] = "1"
-
-    # Avoid Mayavi-Issues
-    os.environ["ETS_TOOLKIT"] = "qt4"
-    os.environ["QT_API"] = "pyqt5"
 
     # ToDo: MP
     # # Set multiprocessing method to spawn
@@ -78,6 +69,13 @@ def main():
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     logger.info("Starting MNE-Pipeline HD")
+
+    # Show Qt-binding
+    if any([qtpy.PYQT5, qtpy.PYQT6]):
+        qt_version = qtpy.PYQT_VERSION
+    else:
+        qt_version = qtpy.PYSIDE_VERSION
+    logger.info(f"Using {qtpy.API_NAME} {qt_version}")
 
     # Initialize Exception-Hook
     if os.environ.get("MNEPHD_DEBUG", False) == "true":

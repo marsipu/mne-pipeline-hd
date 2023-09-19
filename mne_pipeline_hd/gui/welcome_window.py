@@ -9,11 +9,11 @@ from importlib import resources
 from os import listdir
 from os.path import isdir, join
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import (
+from qtpy import compat
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QFont, QPixmap
+from qtpy.QtWidgets import (
     QComboBox,
-    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -131,7 +131,7 @@ class WelcomeWindow(QWidget):
     def set_home_path(self):
         if self.ct is not None:
             self.ct.save()
-        loaded_home_path = QFileDialog.getExistingDirectory(
+        loaded_home_path = compat.getexistingdirectory(
             self, "Select a folder as Home-Path"
         )
         if loaded_home_path != "":

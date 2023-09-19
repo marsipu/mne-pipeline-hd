@@ -4,15 +4,18 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+import logging
 from ast import literal_eval
 from functools import partial
 
 import mne
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFontDatabase, QFont, QPixmap
-from PyQt5.QtWidgets import (
+from mne_qt_browser._pg_figure import _get_color
+from qtpy import compat
+from qtpy.QtCore import Qt, Signal
+from qtpy.QtGui import QFontDatabase, QFont, QPixmap
+from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
@@ -33,10 +36,7 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QMessageBox,
     QColorDialog,
-    QFileDialog,
 )
-
-from mne_qt_browser._pg_figure import _get_color
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
 
@@ -70,11 +70,11 @@ class Param(QWidget):
 
     Attributes
     ----------
-    paramChanged : pyqtSignal
+    paramChanged : Signal
         This signal is emmited when the parameter changes.
     """
 
-    paramChanged = pyqtSignal(object)
+    paramChanged = Signal(object)
 
     def __init__(
         self,
@@ -1152,7 +1152,10 @@ class MultiTypeGui(Param):
 
         old_widget = self.type_layout.itemAt(1)
         self.type_layout.removeItem(old_widget)
-        old_widget.widget().deleteLater()
+        try:
+            old_widget.widget().deleteLater()
+        except RuntimeError:
+            logging.debug("Old widget already deleted")
         del old_widget, self.param_widget
 
         self.param_type = self.types[type_idx]
@@ -1636,9 +1639,9 @@ class PathGui(Param):
 
     def _pick_path(self):
         if self.pick_mode == "file":
-            path = QFileDialog.getOpenFileName(self, self.description)[0]
+            path = compat.getopenfilename(self, self.description)[0]
         else:
-            path = QFileDialog.getExistingDirectory(self, self.description)
+            path = compat.getexistingdirectory(self, self.description)
         self.set_value(path)
         self._get_param()
 

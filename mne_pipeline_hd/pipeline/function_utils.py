@@ -13,8 +13,8 @@ from collections import OrderedDict
 from importlib import import_module
 from multiprocessing import Pipe
 
-from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal
-from PyQt5.QtWidgets import QAbstractItemView
+from qtpy.QtCore import QThreadPool, QRunnable, Slot, QObject, Signal
+from qtpy.QtWidgets import QAbstractItemView
 
 from mne_pipeline_hd.gui.base_widgets import TimedMessageBox
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
@@ -107,9 +107,9 @@ class StreamSender(io.TextIOBase):
 
 
 class StreamRcvSignals(QObject):
-    stdout_received = pyqtSignal(str)
-    stderr_received = pyqtSignal(str)
-    progress_received = pyqtSignal(str)
+    stdout_received = Signal(str)
+    stderr_received = Signal(str)
+    progress_received = Signal(str)
 
 
 class StreamReceiver(QRunnable):
@@ -118,7 +118,7 @@ class StreamReceiver(QRunnable):
         self.pipe = pipe
         self.signals = StreamRcvSignals()
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         while True:
             try:
