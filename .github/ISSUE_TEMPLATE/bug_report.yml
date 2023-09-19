@@ -1,0 +1,33 @@
+name: Bug Report
+description: File a bug report
+title: "BUG: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "## Thank you for taking the time to fill out this bug report!"
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: Describe the bug
+      placeholder: terrible things happening
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: What steps made the bug appear? Please describe the steps as detailed as possible
+      placeholder: things I did/buttons I clicked
+  - type: textarea
+    attributes:
+      label: Error Traceback
+      description: Please copy the full error traceback into here (either from the dialog that popped up or the terminal)
+      placeholder: error-traceback
+      render: python
+  - type: markdown
+    attributes:
+      value: 'Please run `python -c "import mne; mne.sys_info()"` and paste the result into the field below.'
+  - type: textarea
+    attributes:
+      label: System-Info
+      description: Please paste the results from the aforementioned command in here.
+      placeholder: sys-info
+      render: shell

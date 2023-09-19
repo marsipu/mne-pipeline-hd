@@ -1,0 +1,13 @@
+name: Feature Request
+description: Suggest a new feature
+title: "ENH: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "## Thank you for contributing to this project!"
+  - type: textarea
+    attributes:
+      label: Suggestion?
+      description: What would you like to suggest?
+      placeholder: <cool new feature>
