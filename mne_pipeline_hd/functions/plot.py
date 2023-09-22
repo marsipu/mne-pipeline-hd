@@ -60,12 +60,12 @@ def plot_raw(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
         # Connect to closing of Matplotlib-Figure
         fig.canvas.mpl_connect(
             "close_event",
-            partial(close_func, meeg=meeg, raw=raw, raw_type="raw_filtered"),
+            partial(close_func, meeg=meeg, raw=raw, raw_type="raw"),
         )
     else:
         # Connect to closing of PyQt-Figure
         fig.gotClosed.connect(
-            partial(close_func, None, meeg=meeg, raw=raw, raw_type="raw_filtered")
+            partial(close_func, None, meeg=meeg, raw=raw, raw_type="raw")
         )
 
 
