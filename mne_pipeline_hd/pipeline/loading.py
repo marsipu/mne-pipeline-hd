@@ -461,15 +461,19 @@ class BaseLoading:
         else:
             logging.info('Not saving plots; set "save_plots" to "True" to save')
 
-    # Should have save-decorator!
+    # ToDo: Should have load-decorator!
     def load(self, data_type, **kwargs):
         """General load function with data_type as parameter."""
-        return self.io_dict[data_type]["load"](**kwargs)
+        load_func = self.io_dict[data_type]["load"]
+        if load_func is not None:
+            return load_func(**kwargs)
 
-    # ToDo: Should have load-decorator!
+    # Should have save-decorator!
     def save(self, data_type, data, **kwargs):
         """General save function with data_type as parameter."""
-        self.io_dict[data_type]["save"](data, **kwargs)
+        save_func = self.io_dict[data_type]["save"]
+        if save_func is not None:
+            save_func(data, **kwargs)
 
     def load_json(self, file_name, default=None):
         file_path = join(self.save_dir, f"{self.name}_{self.p_preset}_{file_name}.json")
@@ -938,31 +942,6 @@ class MEEG(BaseLoading):
         self.pr.all_erm.append("ernoise")
         self.erm = "ernoise"
         self.pr.meeg_to_erm[self.name] = self.erm
-        self.init_paths()
-
-        # Load sample
-        test_data_folder = join(mne.datasets.sample.data_path(), "MEG", "sample")
-
-        for data_type in sample_paths:
-            test_file_name = sample_paths[data_type]
-            test_file_path = join(test_data_folder, test_file_name)
-            file_path = self.io_dict[data_type]["path"]
-            if data_type == "stcs":
-                file_path = file_path[self.sel_trials[0]]
-
-            if (isfile(test_file_path) or data_type == "stcs") and not isfile(
-                file_path
-            ):
-                logging.debug(f"Copying {data_type} from sample-dataset...")
-                folder = Path(file_path).parent
-                if not isdir(folder):
-                    os.mkdir(folder)
-                shutil.copy2(test_file_path, file_path)
-                logging.debug("Done!")
-
-        # Add bad_channels
-        self.bad_channels = self.load_info()["bads"]
-        self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
         # Add event_id
         self.event_id = {
@@ -978,6 +957,34 @@ class MEEG(BaseLoading):
         #  to select "auditory/left" from the gui.
         self.sel_trials = ["auditory"]
         self.pr.sel_event_id[self.name] = self.sel_trials
+
+        # init paths again
+        self.init_paths()
+
+        # Load sample
+        test_data_folder = join(mne.datasets.sample.data_path(), "MEG", "sample")
+
+        for data_type in sample_paths:
+            test_file_name = sample_paths[data_type]
+            test_file_path = join(test_data_folder, test_file_name)
+            file_path = self.io_dict[data_type]["path"]
+            if data_type == "stcs":
+                file_path = file_path[self.sel_trials[0]]
+                if not isfile(file_path + "-lh.stc"):
+                    logging.debug(f"Copying {data_type} from sample-dataset...")
+                    stcs = mne.source_estimate.read_source_estimate(test_file_path)
+                    stcs.save(file_path)
+            elif isfile(test_file_path) and not isfile(file_path):
+                logging.debug(f"Copying {data_type} from sample-dataset...")
+                folder = Path(file_path).parent
+                if not isdir(folder):
+                    os.mkdir(folder)
+                shutil.copy2(test_file_path, file_path)
+                logging.debug("Done!")
+
+        # Add bad_channels
+        self.bad_channels = self.load_info()["bads"]
+        self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
     def rename(self, new_name):
         # Stor old name
@@ -1329,6 +1336,9 @@ class MEEG(BaseLoading):
             for dip in self.ecd_paths[trial]:
                 ecd_dipoles[trial][dip] = mne.read_dipole(self.ecd_paths[trial][dip])
 
+        if all([len(ecd_dipoles[trial]) == 0 for trial in ecd_dipoles]):
+            raise FileNotFoundError(f"No ECD-Dipoles found for {self.name}!")
+
         return ecd_dipoles
 
     @save_decorator
@@ -1352,6 +1362,9 @@ class MEEG(BaseLoading):
                         f"for trial {trial} "
                         f"in label {label}!"
                     )
+
+        if all([len(ltcs[trial]) == 0 for trial in ltcs]):
+            raise FileNotFoundError(f"No Label-Time-Courses found for {self.name}!")
 
         return ltcs
 
