@@ -4,6 +4,29 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+from tests._test_utils import click_view_checkbox
+
+
+# ToDo: Test all base widgets
+
+
+def test_checklist(qtbot):
+    from mne_pipeline_hd.gui.base_widgets import CheckList
+
+    data = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+    checked = list()
+    cl = CheckList(data=data, checked=checked)
+    qtbot.addWidget(cl)
+
+    # Test check all
+    cl.select_all()
+    assert checked == data
+    cl.clear_all()
+    assert checked == []
+
+    # Test check by clicking
+    click_view_checkbox(0, qtbot, cl.view)
+    assert checked == ["a"]
 
 
 def test_timed_messagebox(qtbot):

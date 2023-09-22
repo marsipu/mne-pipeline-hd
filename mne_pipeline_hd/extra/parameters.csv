@@ -76,7 +76,8 @@ stc_azimuth;;Inverse;0;;Azimuth for view for Source Estimate Plots;IntGui;{'max_
 stc_elevation;;Inverse;0;;Elevation for view for Source Estimate Plots;IntGui;{'max_val': 360}
 stc_animation_span;;Inverse;(0,0.5);s;time-span for stc-animation[s];TupleGui;
 stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
-target_labels;;Inverse;[];;;LabelGui;
+target_parcellation;Target Parcellation;Inverse;aparc;;The parcellation to use.;StringGui;
+target_labels;Target Labels;Inverse;[];;;LabelGui;
 label_colors;;Inverse;{};;Set custom colors for labels.;ColorGui;{'keys': 'target_labels', 'none_select':True}
 extract_mode;Label-Extraction-Mode;Inverse;mean_flip;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['max', 'mean', 'mean_flip', 'pca_flip']}
 con_methods;;Connectivity;['coh'];;methods for connectivity plots;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}

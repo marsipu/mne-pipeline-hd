@@ -79,7 +79,7 @@ def main():
 
     # Initialize Exception-Hook
     if os.environ.get("MNEPHD_DEBUG", False) == "true":
-        print("Debug-Mode is activated")
+        logger.info("Debug-Mode is activated")
     else:
         qt_exception_hook = UncaughtHook()
         # this registers the exception_hook() function

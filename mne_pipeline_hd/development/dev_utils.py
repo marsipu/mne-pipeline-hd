@@ -25,7 +25,7 @@ from qtpy.QtWidgets import (
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.base_widgets import SimpleDict
 from mne_pipeline_hd.gui.parameter_widgets import Param
-from mne_pipeline_hd.tests.test_param_guis import gui_kwargs, parameters
+from mne_pipeline_hd.tests.test_parameter_widgets import gui_kwargs, parameters
 
 
 class ParamGuis(QWidget):

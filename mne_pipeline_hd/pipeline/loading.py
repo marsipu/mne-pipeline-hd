@@ -1474,15 +1474,17 @@ class FSMRI(BaseLoading):
 
         return labels
 
-    def get_labels(self, target_labels, parcellation=None):
+    def get_labels(self, target_labels=None, parcellation=None):
         labels = list()
         parcellation = parcellation or "Other"
+        if self.labels is None:
+            self.labels = self._get_available_labels()
         if target_labels is not None:
-            if self.labels is None:
-                self.labels = self._get_available_labels()
             labels += [
                 lb for lb in self.labels[parcellation] if lb.name in target_labels
             ]
+        else:
+            labels = self.labels[parcellation]
 
         return labels
 

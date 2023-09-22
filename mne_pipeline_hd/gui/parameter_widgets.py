@@ -62,6 +62,7 @@ from mne_pipeline_hd.pipeline.loading import FSMRI
 from mne_pipeline_hd.pipeline.pipeline_utils import QS, iswin
 
 
+# ToDo: Unify None-select and more
 class Param(QWidget):
     """
     Base-Class Parameter-GUIs, not to be called directly
@@ -1205,41 +1206,54 @@ class MultiTypeGui(Param):
 
 
 class LabelPicker(mne.viz.Brain):
-    def __init__(self, paramdlg, *args, **kwargs):
-        try:
-            super().__init__(*args, **kwargs)
-        except TypeError:
-            # Backwards compatibility mne==0.24
-            kwargs.pop("block")
-            super().__init__(*args, **kwargs)
+    def __init__(self, paramdlg, parcellation, selected, list_changed_slot, title):
+        super().__init__(
+            paramdlg._fsmri.name,
+            surf="inflated",
+            title=title,
+            subjects_dir=paramdlg.ct.subjects_dir,
+        )
         self.paramdlg = paramdlg
         self.paramw = paramdlg.paramw
 
+        self.parcellation = parcellation
+        self.selected = selected
+        self.list_changed_slot = list_changed_slot
+
         self._shown_labels = list()
 
-        self._set_annotations()
-        self._init_picking()
-        self.add_text(0, 0.9, "Pick labels", "title", font_size=14)
+        self.add_text(
+            0, 0.95, "Select labels by clicking on them", color="w", font_size=20
+        )
 
-    def _set_annotations(self):
+        self.show_view(roll=0, elevation=60, azimuth=70)
+
+        self._set_annotations(parcellation)
+        self._init_picking()
+
+    def _set_annotations(self, parcellation):
         fsmri = self.paramdlg._fsmri
-        parcellation = self.paramdlg._parcellation
         self.clear_glyphs()
         self.remove_labels()
         self.remove_annotations()
-        self.add_annotation(parcellation, color="w", alpha=0.75)
+        labels = fsmri.get_labels(parcellation=parcellation)
+        if parcellation == "Other":
+            for label in labels:
+                self.add_label(
+                    label, borders=True, color="k", alpha=0.75, reset_camera=False
+                )
+        else:
+            self.add_annotation(
+                parcellation, borders=True, color="k", alpha=0.75, remove_existing=True
+            )
 
-        for parc in [parcellation, "Other"]:
-            if parc in fsmri.labels:
-                labels = fsmri.labels[parc]
-                for hemi in self._hemis:
-                    hemi_labels = [lb for lb in labels if lb.hemi == hemi]
-                    self._vertex_to_label_id[hemi] = np.full(
-                        self.geo[hemi].coords.shape[0], -1
-                    )
-                    self._annotation_labels[hemi] = hemi_labels
-                    for idx, label in enumerate(hemi_labels):
-                        self._vertex_to_label_id[hemi][label.vertices] = idx
+        # Add label coordinates to dictionary to allow selection
+        for hemi in self._hemis:
+            hemi_labels = [lb for lb in labels if lb.hemi == hemi]
+            self._vertex_to_label_id[hemi] = np.full(self.geo[hemi].coords.shape[0], -1)
+            self._annotation_labels[hemi] = hemi_labels
+            for idx, hemi_label in enumerate(hemi_labels):
+                self._vertex_to_label_id[hemi][hemi_label.vertices] = idx
 
     def _init_picking(self):
         self._mouse_no_mvt = -1
@@ -1272,13 +1286,13 @@ class LabelPicker(mne.viz.Brain):
             label_id = self._vertex_to_label_id[hemi][vertex_id]
             label = self._annotation_labels[hemi][label_id]
 
-            if label.name in self.paramdlg._selected_labels:
+            if label.name in self.selected:
                 self._remove_label_name(label.name, hemi)
-                self.paramdlg._selected_labels.remove(label.name)
+                self.selected.remove(label.name)
             else:
                 self._add_label_name(label.name, hemi, label)
-                self.paramdlg._selected_labels.append(label.name)
-            self.paramdlg.label_list.content_changed()
+                self.selected.append(label.name)
+            self.list_changed_slot()
 
     def _add_label_name(self, label_name, hemi, label=None):
         if label is None:
@@ -1315,11 +1329,14 @@ class LabelDialog(SimpleDialog):
         self.params = self.ct.pr.parameters[self.ct.pr.p_preset]
         self.param_value = paramw.param_value
 
-        self._label_picker = None
+        self._parc_picker = None
+        self._extra_picker = None
         self._fsmri = None
         self._parcellation = None
-        self._all_label_names = list()
-        self._selected_labels = list()
+        self._parc_labels = list()
+        self._selected_parc_labels = list()
+        self._extra_labels = list()
+        self._selected_extra_labels = list()
 
         self.resize(400, 800)
         center(self)
@@ -1339,38 +1356,37 @@ class LabelDialog(SimpleDialog):
         self.parcellation_cmbx.activated.connect(self._parc_changed)
         layout.addWidget(self.parcellation_cmbx)
 
-        self.label_list = CheckList(
-            data=self._all_label_names,
-            checked=self._selected_labels,
+        self.parc_label_list = CheckList(
+            data=self._parc_labels,
+            checked=self._selected_parc_labels,
             ui_buttons=True,
             ui_button_pos="bottom",
+            title="Parcellation Labels",
         )
-        self.label_list.checkedChanged.connect(self._labels_changed)
-        layout.addWidget(self.label_list)
+        self.parc_label_list.checkedChanged.connect(
+            partial(self._labels_changed, picker_name="parcellation")
+        )
+        layout.addWidget(self.parc_label_list)
 
-        # ToDo: fix Brain-Picker (errors and somehow all labels are selected)
-        # slider_kwargs = {'max_val': 360, 'tracking': False}
-        # self.elevation_slider = SliderGui(data=self.paramw.data,
-        #                                   name='stc_elevation',
-        #                                   **slider_kwargs)
-        # self.elevation_slider.paramChanged.connect(self._slider_changed)
-        # layout.addWidget(self.elevation_slider)
-        #
-        # self.roll_slider = SliderGui(data=self.paramw.data,
-        #                              name='stc_roll',
-        #                              **slider_kwargs)
-        # self.roll_slider.paramChanged.connect(self._slider_changed)
-        # layout.addWidget(self.roll_slider)
-        #
-        # self.azimuth_slider = SliderGui(data=self.paramw.data,
-        #                                 name='stc_azimuth',
-        #                                 **slider_kwargs)
-        # self.azimuth_slider.paramChanged.connect(self._slider_changed)
-        # layout.addWidget(self.azimuth_slider)
-        #
-        # choose_bt = QPushButton('Choose Labels')
-        # choose_bt.clicked.connect(self._open_label_picker)
-        # layout.addWidget(choose_bt)
+        self.extra_label_list = CheckList(
+            data=self._extra_labels,
+            checked=self._selected_extra_labels,
+            ui_buttons=True,
+            ui_button_pos="bottom",
+            title="Extra Labels",
+        )
+        self.extra_label_list.checkedChanged.connect(
+            partial(self._labels_changed, picker_name="extra")
+        )
+        layout.addWidget(self.extra_label_list)
+
+        self.choose_parc_bt = QPushButton("Choose Parcellation Labels")
+        self.choose_parc_bt.clicked.connect(self._open_parc_picker)
+        layout.addWidget(self.choose_parc_bt)
+
+        self.choose_extra_bt = QPushButton("Choose Extra Labels")
+        self.choose_extra_bt.clicked.connect(self._open_extra_picker)
+        layout.addWidget(self.choose_extra_bt)
 
         # Initialize with first items
         self._subject_changed()
@@ -1381,77 +1397,91 @@ class LabelDialog(SimpleDialog):
 
         self.parcellation_cmbx.clear()
         self.parcellation_cmbx.addItems(self._fsmri.parcellations)
+
+        # Get currently set parcellation
+        if (
+            self.ct.pr.parameters[self.ct.pr.p_preset]["target_parcellation"]
+            in self._fsmri.parcellations
+        ):
+            self.parcellation_cmbx.setCurrentText(
+                self.ct.pr.parameters[self.ct.pr.p_preset]["target_parcellation"]
+            )
+
+        # Add extra labels
+        self._extra_labels.clear()
+        self._extra_labels += [lb.name for lb in self._fsmri.labels["Other"]]
+        self.extra_label_list.content_changed()
+
+        old_selected = self._selected_extra_labels.copy()
+        self._selected_extra_labels.clear()
+        self._selected_extra_labels += [
+            lb for lb in old_selected if lb in self._extra_labels
+        ]
+        self.extra_label_list.content_changed()
+
+        # Update parcellation labels
         self._parc_changed()
 
     def _parc_changed(self):
         # Keep reference for inplace change
-        self._all_label_names.clear()
-        self._selected_labels.clear()
-
-        # Add single labels
-        self._all_label_names += [lb.name for lb in self._fsmri.labels["Other"]]
+        self._parc_labels.clear()
 
         # Add parcellation labels
         self._parcellation = self.parcellation_cmbx.currentText()
         if self._parcellation in self._fsmri.labels:
-            self._all_label_names += [
+            self._parc_labels += [
                 lb.name for lb in self._fsmri.labels[self._parcellation]
             ]
 
-        # get selected
-        self._selected_labels += [
-            lb for lb in self.paramw.param_value if lb in self._all_label_names
+        # get former selected
+        old_selected = self._selected_parc_labels.copy()
+        self._selected_parc_labels.clear()
+        self._selected_parc_labels += [
+            lb for lb in old_selected if lb in self._parc_labels
         ]
-        self.label_list.content_changed()
+        self.parc_label_list.content_changed()
 
-        if self._label_picker is not None:
-            self._label_picker._set_annotations()
+        if self._parc_picker is not None:
+            self._parc_picker._set_annotations()
 
-    def _labels_changed(self, labels):
-        if self._label_picker is not None:
-            shown_labels = self._label_picker._shown_labels
+    def _labels_changed(self, labels, picker_name):
+        picker = (
+            self._parc_picker if picker_name == "parcellation" else self._extra_picker
+        )
+        if picker is not None:
+            shown_labels = picker._shown_labels
             for add_name in [lb for lb in labels if lb not in shown_labels]:
                 hemi = add_name[-2:]
-                self._label_picker._add_label_name(add_name, hemi)
+                picker._add_label_name(add_name, hemi)
             for remove_name in [lb for lb in shown_labels if lb not in labels]:
                 hemi = remove_name[-2:]
-                self._label_picker._remove_label_name(remove_name, hemi)
+                picker._remove_label_name(remove_name, hemi)
 
-    def _slider_changed(self, _):
-        if self._label_picker is not None:
-            roll = self.roll_slider.param_value
-            elevation = self.elevation_slider.param_value
-            azimuth = self.azimuth_slider.param_value
-            for row, col in [(0, 0), (0, 1), (1, 0), (1, 1)]:
-                self._label_picker.show_view(
-                    roll=roll, elevation=elevation, azimuth=azimuth, row=row, col=col
-                )
-
-    def _open_label_picker(self):
-        background = self.params["stc_background"]
-
-        self._label_picker = LabelPicker(
+    def _open_parc_picker(self):
+        self._parc_picker = LabelPicker(
             self,
-            self._fsmri.name,
-            hemi="split",
-            views=["lat", "med"],
-            surf="inflated",
-            title="Pick labels",
-            subjects_dir=self.ct.subjects_dir,
-            block=False,
-            background=background,
+            self._parcellation,
+            self._selected_parc_labels,
+            self.parc_label_list.content_changed,
+            title="Pick parcellation labels",
         )
-        self._slider_changed(None)
+
+    def _open_extra_picker(self):
+        self._extra_picker = LabelPicker(
+            self,
+            "Other",
+            self._selected_extra_labels,
+            self.extra_label_list.content_changed,
+            title="Pick extra labels",
+        )
 
     def closeEvent(self, event):
         event.accept()
-        self.paramw.param_value = self._selected_labels
-        self.paramw._get_param()
-        self.paramw._set_param()
-        if self._label_picker is not None:
-            if self._label_picker.plotter is not None:
-                self._label_picker.plotter.close()
-        # ToDo: Update slider across all instances
+        self.paramw.set_param(self._selected_parc_labels + self._selected_extra_labels)
+        for picker in [self._parc_picker, self._extra_picker]:
+            if picker is not None:
+                if picker.plotter is not None:
+                    picker.plotter.close()
 
 
 class LabelGui(Param):
@@ -1475,6 +1505,9 @@ class LabelGui(Param):
                 "LabelGui can only used with an instance of "
                 "Controller passed as data."
             )
+
+        self._dialog = None
+
         self.read_param()
         self._init_layout()
         self._set_param()
@@ -1488,10 +1521,14 @@ class LabelGui(Param):
 
         self.param_widget = QPushButton("Edit")
         self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        self.param_widget.clicked.connect(partial(LabelDialog, self))
+        self.param_widget.clicked.connect(self.show_picker)
         check_list_layout.addWidget(self.param_widget)
 
         self.init_ui(check_list_layout)
+
+    def show_picker(self):
+        if self._dialog is None:
+            self._dialog = LabelDialog(self)
 
     def set_value(self, value):
         if value is not None:
