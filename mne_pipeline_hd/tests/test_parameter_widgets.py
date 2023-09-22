@@ -12,7 +12,7 @@ from numpy.testing import assert_allclose
 
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.parameter_widgets import Param, _eval_param, LabelGui
-from tests._test_utils import click_view_checkbox
+from mne_pipeline_hd.tests._test_utils import click_view_checkbox
 
 parameters = {
     "IntGui": 1,

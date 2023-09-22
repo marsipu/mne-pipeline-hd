@@ -4,7 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-from tests._test_utils import click_view_checkbox
+from mne_pipeline_hd.tests._test_utils import click_view_checkbox
 
 
 # ToDo: Test all base widgets
