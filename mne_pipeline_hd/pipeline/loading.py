@@ -943,6 +943,9 @@ class MEEG(BaseLoading):
         self.erm = "ernoise"
         self.pr.meeg_to_erm[self.name] = self.erm
 
+        self.pr.meeg_to_fsmri[self.name] = "fsaverage"
+        self.fsmri = FSMRI("fsaverage", self.ct)
+
         # Add event_id
         self.event_id = {
             "auditory/left": 1,
