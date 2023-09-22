@@ -738,9 +738,9 @@ def get_user_input_string(prompt, title="Input required!", force=False):
                     "You need to provide an appropriate input to proceed!",
                 )
             else:
-                print(
-                    "Warning: Input required! "
-                    "You need to provide an appropriate input to proceed!"
+                logging.warning(
+                    "Input required! You need to provide "
+                    "an appropriate input to proceed!"
                 )
             user_input = get_user_input_string(prompt, title, force)
         else:

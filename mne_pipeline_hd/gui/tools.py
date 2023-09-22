@@ -7,6 +7,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 from functools import partial
 
+from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont
 from qtpy.QtWidgets import (
     QComboBox,
@@ -262,3 +263,8 @@ class DataTerminal(QDialog):
             get_exception_tuple()
         else:
             self.inputw.clear()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Up:
+            self.inputw.insertPlainText(self.history[0])
+            self.inputw.ensureCursorVisible()

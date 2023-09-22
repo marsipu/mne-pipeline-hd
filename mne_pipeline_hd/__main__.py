@@ -59,9 +59,14 @@ def main():
     # Redirect stderr to capture it later in GUI
     sys.stderr = StdoutStderrStream("stderr")
 
+    debug_mode = os.environ.get("MNEPHD_DEBUG", False) == "true"
+
     # Initialize Logger (root)
     logger = logging.getLogger()
-    logger.setLevel(QS().value("log_level", defaultValue=logging.INFO))
+    if debug_mode:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(QS().value("log_level", defaultValue=logging.INFO))
     formatter = logging.Formatter(
         "%(asctime)s: %(message)s", datefmt="%Y/%m/%d %H:%M:%S"
     )
@@ -78,7 +83,7 @@ def main():
     logger.info(f"Using {qtpy.API_NAME} {qt_version}")
 
     # Initialize Exception-Hook
-    if os.environ.get("MNEPHD_DEBUG", False) == "true":
+    if debug_mode:
         logger.info("Debug-Mode is activated")
     else:
         qt_exception_hook = UncaughtHook()

@@ -6,6 +6,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import itertools
+import logging
 import re
 import sys
 
@@ -56,13 +57,12 @@ class Base(QWidget):
     selectionChanged = Signal(object)
     dataChanged = Signal(object, object)
 
-    def __init__(self, model, view, drag_drop, parent, title, verbose=False):
+    def __init__(self, model, view, drag_drop, parent, title):
         if parent:
             super().__init__(parent)
         else:
             super().__init__()
         self.title = title
-        self.verbose = verbose
 
         self.model = model
         self.view = view
@@ -108,8 +108,7 @@ class Base(QWidget):
 
         self.currentChanged.emit(current, previous)
 
-        if self.verbose:
-            print(f"Current changed from {previous} to {current}")
+        logging.debug(f"Current changed from {previous} to {current}")
 
     def get_selected(self):
         try:
@@ -127,15 +126,13 @@ class Base(QWidget):
 
         self.selectionChanged.emit(selected)
 
-        if self.verbose:
-            print(f"Selection changed to {selected}")
+        logging.debug(f"Selection changed to {selected}")
 
     def _data_changed(self, index, _):
         data = self.model.getData(index)
 
         self.dataChanged.emit(data, index)
-        if self.verbose:
-            print(f"{data} changed at {index}")
+        logging.debug(f"{data} changed at {index}")
 
     def content_changed(self):
         """Informs ModelView about external change made in data"""
@@ -156,9 +153,8 @@ class BaseList(Base):
         drag_drop=False,
         parent=None,
         title=None,
-        verbose=False,
     ):
-        super().__init__(model, view, drag_drop, parent, title, verbose=verbose)
+        super().__init__(model, view, drag_drop, parent, title)
 
         if extended_selection:
             self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -209,7 +205,6 @@ class SimpleList(BaseList):
         drag_drop=False,
         parent=None,
         title=None,
-        verbose=False,
     ):
         super().__init__(
             model=BaseListModel(data, show_index, drag_drop),
@@ -218,7 +213,6 @@ class SimpleList(BaseList):
             drag_drop=drag_drop,
             parent=parent,
             title=title,
-            verbose=verbose,
         )
 
 
@@ -265,7 +259,6 @@ class EditList(BaseList):
         parent=None,
         title=None,
         model=None,
-        verbose=False,
     ):
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
@@ -280,7 +273,6 @@ class EditList(BaseList):
             drag_drop=drag_drop,
             parent=parent,
             title=title,
-            verbose=verbose,
         )
 
     def init_ui(self):
@@ -385,7 +377,6 @@ class CheckList(BaseList):
         drag_drop=False,
         parent=None,
         title=None,
-        verbose=False,
     ):
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
@@ -397,7 +388,6 @@ class CheckList(BaseList):
             drag_drop=drag_drop,
             parent=parent,
             title=title,
-            verbose=verbose,
         )
 
         self.model.dataChanged.connect(self._checked_changed)
@@ -440,8 +430,7 @@ class CheckList(BaseList):
 
     def _checked_changed(self):
         self.checkedChanged.emit(self.model._checked)
-        if self.verbose:
-            print(f"Changed values: {self.model._checked}")
+        logging.debug(f"Changed values: {self.model._checked}")
 
     def replace_checked(self, new_checked):
         """Replaces model._checked with new checked list"""
@@ -514,7 +503,6 @@ class CheckDictList(BaseList):
         no_bt=None,
         parent=None,
         title=None,
-        verbose=False,
     ):
         super().__init__(
             model=CheckDictModel(
@@ -525,7 +513,6 @@ class CheckDictList(BaseList):
             drag_drop=drag_drop,
             parent=parent,
             title=title,
-            verbose=verbose,
         )
 
     def replace_check_dict(self, new_check_dict=None):
@@ -591,7 +578,6 @@ class CheckDictEditList(EditList):
         drag_drop=False,
         parent=None,
         title=None,
-        verbose=False,
     ):
         model = CheckDictEditModel(
             data, check_dict, show_index=show_index, yes_bt=yes_bt, no_bt=no_bt
@@ -605,7 +591,6 @@ class CheckDictEditList(EditList):
             drag_drop=drag_drop,
             parent=parent,
             title=title,
-            verbose=verbose,
             model=model,
         )
 
@@ -626,10 +611,8 @@ class BaseDict(Base):
         title=None,
         resize_rows=False,
         resize_columns=False,
-        verbose=False,
     ):
-        super().__init__(model, view, drag_drop, parent, title, verbose=verbose)
-        self.verbose = verbose
+        super().__init__(model, view, drag_drop, parent, title)
 
         if resize_rows:
             model.layoutChanged.connect(self.view.resizeRowsToContents)
@@ -669,8 +652,7 @@ class BaseDict(Base):
 
         self.currentChanged.emit(current_data, previous_data)
 
-        if self.verbose:
-            print(f"Current changed from {current_data} to {previous_data}")
+        logging.debug(f"Current changed from {current_data} to {previous_data}")
 
     def _selected_keyvalue(self, indexes):
         try:
@@ -686,8 +668,7 @@ class BaseDict(Base):
 
         self.selectionChanged.emit(selected_data)
 
-        if self.verbose:
-            print(f"Selection to {selected_data}")
+        logging.debug(f"Selection to {selected_data}")
 
     def select(self, keys, values, clear_selection=True):
         key_indices = [i for i, x in enumerate(self.model._data.keys()) if x in keys]
@@ -737,7 +718,6 @@ class SimpleDict(BaseDict):
         title=None,
         resize_rows=False,
         resize_columns=False,
-        verbose=False,
     ):
         super().__init__(
             model=BaseDictModel(data),
@@ -747,7 +727,6 @@ class SimpleDict(BaseDict):
             title=title,
             resize_rows=resize_rows,
             resize_columns=resize_columns,
-            verbose=verbose,
         )
 
 
@@ -788,7 +767,6 @@ class EditDict(BaseDict):
         title=None,
         resize_rows=False,
         resize_columns=False,
-        verbose=False,
     ):
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
@@ -801,7 +779,6 @@ class EditDict(BaseDict):
             title=title,
             resize_rows=resize_rows,
             resize_columns=resize_columns,
-            verbose=verbose,
         )
 
     def init_ui(self):
@@ -887,7 +864,6 @@ class BasePandasTable(Base):
         title=None,
         resize_rows=False,
         resize_columns=False,
-        verbose=False,
     ):
         super().__init__(
             model=model,
@@ -895,9 +871,7 @@ class BasePandasTable(Base):
             drag_drop=drag_drop,
             parent=parent,
             title=title,
-            verbose=verbose,
         )
-        self.verbose = verbose
 
         if resize_rows:
             model.layoutChanged.connect(self.view.resizeRowsToContents)
@@ -947,8 +921,7 @@ class BasePandasTable(Base):
 
         self.currentChanged.emit(current_list, previous_list)
 
-        if self.verbose:
-            print(f"Current changed from {previous_list} to {current_list}")
+        logging.debug(f"Current changed from {previous_list} to {current_list}")
 
     def get_selected(self):
         # Somehow, the indexes got from selectionChanged
@@ -963,8 +936,7 @@ class BasePandasTable(Base):
         selection_list = self.get_selected()
         self.selectionChanged.emit(selection_list)
 
-        if self.verbose:
-            print(f"Selection changed to {selection_list}")
+        logging.debug(f"Selection changed to {selection_list}")
 
     def select(self, values=None, rows=None, columns=None, clear_selection=True):
         """
@@ -1052,7 +1024,6 @@ class SimplePandasTable(BasePandasTable):
         title=None,
         resize_rows=False,
         resize_columns=False,
-        verbose=False,
     ):
         super().__init__(
             model=BasePandasModel(data),
@@ -1062,7 +1033,6 @@ class SimplePandasTable(BasePandasTable):
             title=title,
             resize_rows=resize_rows,
             resize_columns=resize_columns,
-            verbose=verbose,
         )
 
 
@@ -1107,7 +1077,6 @@ class EditPandasTable(BasePandasTable):
         title=None,
         resize_rows=False,
         resize_columns=False,
-        verbose=False,
     ):
         self.ui_buttons = ui_buttons
         self.ui_button_pos = ui_button_pos
@@ -1120,7 +1089,6 @@ class EditPandasTable(BasePandasTable):
             title=title,
             resize_rows=resize_rows,
             resize_columns=resize_columns,
-            verbose=verbose,
         )
 
     def init_ui(self):
@@ -1288,7 +1256,7 @@ class FilePandasTable(BasePandasTable):
     give the changed DataFrame to replace_data to update this widget
     """
 
-    def __init__(self, data=None, parent=None, title=None, verbose=False):
+    def __init__(self, data=None, parent=None, title=None):
         super().__init__(
             model=FileManagementModel(data),
             view=QTableView(),
@@ -1296,19 +1264,17 @@ class FilePandasTable(BasePandasTable):
             title=title,
             resize_rows=True,
             resize_columns=True,
-            verbose=verbose,
         )
 
 
 class DictTree(Base):
-    def __init__(self, data, drag_drop=False, parent=None, title=None, verbose=False):
+    def __init__(self, data, drag_drop=False, parent=None, title=None):
         super().__init__(
             model=TreeModel(data),
             view=QTreeView(),
             drag_drop=drag_drop,
             parent=parent,
             title=title,
-            verbose=verbose,
         )
 
 
@@ -1381,12 +1347,10 @@ class AssignWidget(QWidget):
         parent=None,
         title=None,
         subtitles=None,
-        verbose=False,
     ):
         super().__init__(parent)
         self.title = title
         self.subtitles = subtitles
-        self.verbose = verbose
 
         self.items = items
         self.props = properties
@@ -1409,7 +1373,6 @@ class AssignWidget(QWidget):
             self.assignments,
             extended_selection=True,
             title=subtitle1,
-            verbose=self.verbose,
         )
         self.items_w.selectionChanged.connect(self.items_selected)
         list_layout.addWidget(self.items_w)
@@ -1419,14 +1382,12 @@ class AssignWidget(QWidget):
                 self.props,
                 extended_selection=False,
                 title=subtitle2,
-                verbose=self.verbose,
             )
         else:
             self.props_w = SimpleList(
                 self.props,
                 extended_selection=False,
                 title=subtitle2,
-                verbose=self.verbose,
             )
         list_layout.addWidget(self.props_w)
         layout.addLayout(list_layout)

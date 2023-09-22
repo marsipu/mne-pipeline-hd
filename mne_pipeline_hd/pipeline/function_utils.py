@@ -277,7 +277,7 @@ class RunController:
 
     def finished(self):
         for name, func, error in self.errors:
-            print(f"Error in {name} <- {func}: {error}")
+            logging.critical(f"Error in {name} <- {func}: {error}")
 
     def prepare_start(self):
         # Take first step of all_steps until there are no steps left.
@@ -312,7 +312,7 @@ class RunController:
             kwds = dict()
             kwds["func"] = get_func(self.current_func, self.current_object)
             kwds["keywargs"] = get_arguments(kwds["func"], self.current_object)
-            print(
+            logging.info(
                 f"########################################\n"
                 f"Running {self.current_func} for {self.current_obj_name}\n"
                 f"########################################\n"

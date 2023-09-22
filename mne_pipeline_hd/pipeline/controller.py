@@ -169,7 +169,7 @@ class Controller:
             ) as file:
                 json.dump(self.settings, file, indent=4)
         except FileNotFoundError:
-            print("Settings could not be saved!")
+            logging.warning("Settings could not be saved!")
 
         # Sync QSettings with other instances
         QS().sync()

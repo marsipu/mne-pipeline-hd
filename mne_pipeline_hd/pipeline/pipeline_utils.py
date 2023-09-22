@@ -137,12 +137,12 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
             if str(previous_value) == str(current_value):
                 result_dict[param] = "equal"
                 if verbose:
-                    print(f"{param} equal for {file_name}")
+                    logging.debug(f"{param} equal for {file_name}")
             else:
                 if param in critical_params:
                     result_dict[param] = (previous_value, current_value, True)
                     if verbose:
-                        print(
+                        logging.debug(
                             f"{param} changed from {previous_value} to "
                             f"{current_value} for {file_name} "
                             f"and is probably crucial for {function}"
@@ -150,19 +150,19 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
                 else:
                     result_dict[param] = (previous_value, current_value, False)
                     if verbose:
-                        print(
+                        logging.debug(
                             f"{param} changed from {previous_value} to "
                             f"{current_value} for {file_name}"
                         )
         except KeyError:
             result_dict[param] = "missing"
             if verbose:
-                print(f"{param} is missing in records for {file_name}")
+                logging.warning(f"{param} is missing in records for {file_name}")
 
     if obj.ct.settings["overwrite"]:
         result_dict[param] = "overwrite"
         if verbose:
-            print(
+            logging.info(
                 f"{file_name} will be overwritten anyway"
                 f" because Overwrite=True (Settings)"
             )
