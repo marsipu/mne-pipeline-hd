@@ -10,8 +10,6 @@ def _test_wait(qtbot, timeout):
         qtbot.waitUntil(lambda: False, timeout=timeout)
 
 
-def click_view_checkbox(row, qtbot, view, delay=0):
-    rect = view.visualRect(view.model().index(row, 0))
-    pos = rect.center()
-    pos.setX(rect.left() + int(0.01 * rect.width()))
-    qtbot.mouseClick(view.viewport(), Qt.LeftButton, pos=pos, delay=delay)
+def toggle_checked_list_model(model, value=1, row=0, column=0):
+    value = Qt.Checked if value else Qt.Unchecked
+    model.setData(model.index(row, column), value, Qt.CheckStateRole)

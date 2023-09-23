@@ -12,7 +12,7 @@ from numpy.testing import assert_allclose
 
 from mne_pipeline_hd.gui import parameter_widgets
 from mne_pipeline_hd.gui.parameter_widgets import Param, _eval_param, LabelGui
-from mne_pipeline_hd.tests._test_utils import click_view_checkbox
+from mne_pipeline_hd.tests._test_utils import toggle_checked_list_model
 
 parameters = {
     "IntGui": 1,
@@ -185,12 +185,12 @@ def test_label_gui(qtbot, controller):
     qtbot.mouseClick(parc_plot, Qt.LeftButton, pos=parc_plot.rect().center(), delay=100)
     assert "superiorfrontal-rh" not in dlg._selected_parc_labels
     # Add label by selecting from list
-    click_view_checkbox(5, qtbot, dlg.parc_label_list.view, delay=100)
+    toggle_checked_list_model(dlg.parc_label_list.model, value=1, row=5)
     assert "caudalmiddlefrontal-rh" in dlg._parc_picker._shown_labels
-    click_view_checkbox(5, qtbot, dlg.parc_label_list.view, delay=100)
+    toggle_checked_list_model(dlg.parc_label_list.model, value=0, row=5)
     assert "caudalmiddlefrontal-rh" not in dlg._parc_picker._shown_labels
 
     # Add all labels
-    click_view_checkbox(0, qtbot, dlg.parc_label_list.view, delay=100)
+    toggle_checked_list_model(dlg.parc_label_list.model, value=1, row=0)
     dlg.close()
     assert label_gui.param_value == ["bankssts-lh"]
