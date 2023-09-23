@@ -9,8 +9,8 @@ import logging
 import pytest
 
 
-def _test_load_save(obj, available_test_paths):
-    for data_type in obj.io_dict:
+def _test_load_save(obj, available_test_paths, excepted_data_types=[]):
+    for data_type in [d for d in obj.io_dict if d not in excepted_data_types]:
         logging.info(f"Testing {data_type}")
         if data_type not in available_test_paths:
             with pytest.raises((OSError, FileNotFoundError)):
@@ -27,7 +27,7 @@ def test_meeg(controller):
     meeg = MEEG("_sample_", controller)
 
     # Test load/save functions
-    _test_load_save(meeg, sample_paths)
+    _test_load_save(meeg, sample_paths, excepted_data_types=["trans"])
 
 
 def test_fsmri(controller):

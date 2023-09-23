@@ -421,7 +421,7 @@ class QRunController(RunController):
         if self.ct.get_setting("shutdown"):
             self.ct.save()
             ans = TimedMessageBox.information(
-                60,
+                timeout=60,
                 parent=self.rd,
                 title="Shutdown",
                 text="The PC is about to shutdown. Cancel?",

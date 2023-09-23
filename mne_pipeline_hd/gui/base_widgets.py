@@ -1438,7 +1438,9 @@ class AssignWidget(QWidget):
 
 
 class TimedMessageBox(QMessageBox):
-    def __init__(self, timeout=10, title=None, text=None, *args, **kwargs):
+    def __init__(
+        self, timeout=10, step_length=1000, title=None, text=None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         if title is not None:
@@ -1455,7 +1457,7 @@ class TimedMessageBox(QMessageBox):
         # Start timer
         self.timer = QTimer()
         self.timer.timeout.connect(self.countdown)
-        self.timer.start(1000)
+        self.timer.start(step_length)
 
     def _update_timeout_text(self):
         text = self.text()
