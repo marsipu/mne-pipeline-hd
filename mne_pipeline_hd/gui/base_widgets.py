@@ -1467,8 +1467,8 @@ class TimedMessageBox(QMessageBox):
         self.setText(f"{text}\nTimeout: {self.timeout}")
 
     def countdown(self):
-        self.timeout -= 1
         self._update_timeout_text()
+        self.timeout -= 1
         if self.timeout <= 0:
             self.timer.stop()
             if self.defaultButton() is not None:

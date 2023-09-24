@@ -37,10 +37,10 @@ def test_timed_messagebox(qtbot):
     timed_messagebox = TimedMessageBox(timeout=2, step_length=100, text="Test")
     qtbot.addWidget(timed_messagebox)
 
-    qtbot.wait(150)
+    qtbot.waitForWindowShown(timed_messagebox)
     # For some reason Windows-CI seems to fail here,
     # maybe timed_messagebox.show() is blocking there
-    assert timed_messagebox.text() == "Test\nTimeout: 1"
+    assert timed_messagebox.text() == "Test\nTimeout: 2"
 
     # Test messagebox properly closes
     qtbot.wait(250)
@@ -65,5 +65,5 @@ def test_timed_messagebox(qtbot):
     ans = TimedMessageBox.information(
         1, buttons=TimedMessageBox.Cancel, defaultButton=TimedMessageBox.NoButton
     )
-    qtbot.wait(110)
+    qtbot.wait(150)
     assert ans is None
