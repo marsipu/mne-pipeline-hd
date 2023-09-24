@@ -1298,10 +1298,10 @@ def source_estimate(meeg, inverse_method, pick_ori, lambda2):
     meeg.save_source_estimates(stcs)
 
 
-def label_time_course(meeg, target_labels, extract_mode):
+def label_time_course(meeg, target_labels, target_parcellation, extract_mode):
     stcs = meeg.load_source_estimates()
     src = meeg.fsmri.load_source_space()
-    labels = meeg.fsmri.get_labels(target_labels)
+    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
 
     ltc_dict = {}
 
@@ -1469,6 +1469,7 @@ def apply_morph(meeg, morph_to):
 def src_connectivity(
     meeg,
     target_labels,
+    target_parcellation,
     inverse_method,
     lambda2,
     con_methods,
@@ -1480,7 +1481,7 @@ def src_connectivity(
     all_epochs = meeg.load_epochs()
     inverse_operator = meeg.load_inverse_operator()
     src = inverse_operator["src"]
-    labels = meeg.fsmri.get_labels(target_labels)
+    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
 
     con_dict = {}
 

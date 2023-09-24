@@ -318,7 +318,7 @@ class PlotViewSelection(QDialog):
                             self.thread_error(err_tuple, o_name, ppreset, "plot")
 
                         worker.signals.error.connect(error_func)
-                        print(
+                        logging.info(
                             f"Starting Thread for Object= {obj_name} "
                             f"and Parameter-Preset= {p_preset}"
                         )

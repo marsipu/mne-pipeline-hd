@@ -51,7 +51,7 @@ new_packages = {"qdarktheme": "pyqtdarktheme"}
 
 
 def install_package(package_name):
-    print(f"Installing {package_name}...")
+    logging.info(f"Installing {package_name}...")
     print(
         subprocess.check_output(
             [sys.executable, "-m", "pip", "install", package_name], text=True
@@ -60,7 +60,7 @@ def install_package(package_name):
 
 
 def uninstall_package(package_name):
-    print(f"Uninstalling {package_name}...")
+    logging.info(f"Uninstalling {package_name}...")
     print(
         subprocess.check_output(
             [sys.executable, "-m", "pip", "uninstall", "-y", package_name], text=True
@@ -81,16 +81,18 @@ def legacy_import_check(test_package=None):
         try:
             __import__(import_name)
         except ImportError:
-            print(f"The package {import_name} " f"is required for this application.\n")
+            logging.info(
+                f"The package {import_name} " f"is required for this application.\n"
+            )
             ans = input("Do you want to install the " "new package now? [y/n]").lower()
             if ans == "y":
                 try:
                     install_package(install_name)
                 except subprocess.CalledProcessError:
-                    print("Installation failed!")
+                    logging.critical("Installation failed!")
                 else:
                     return
-            print(
+            logging.info(
                 f"Please install the new package {import_name} "
                 f"manually with:\n\n"
                 f"> pip install {install_name}"

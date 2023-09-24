@@ -32,13 +32,6 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     _test_run,
 )
 
-sample_paths = {
-    "raw": "sample_audvis_raw.fif",
-    "erm": "ernoise_raw.fif",
-    "events": "sample_audvis_raw-eve.fif",
-    "trans": "sample_audvis_raw-trans.fif",
-}
-
 
 def _get_data_type_from_func(self, func, method):
     # Get matching data-type from IO-Dict
@@ -60,7 +53,7 @@ def load_decorator(load_func):
     def load_wrapper(self, *args, **kwargs):
         # Get matching data-type from IO-Dict
         data_type = _get_data_type_from_func(self, load_func, "load")
-        print(f"Loading {data_type} for {self.name}")
+        logging.info(f"Loading {data_type} for {self.name}")
 
         if data_type in self.data_dict:
             data = self.data_dict[data_type]
@@ -69,40 +62,45 @@ def load_decorator(load_func):
             try:
                 data = load_func(self, *args, **kwargs)
             except (OSError, FileNotFoundError) as err:
-                deprc_path = self.deprecated_paths.get(data_type, "")
-                if isfile(deprc_path):
-                    new_path = self.io_dict[data_type]["path"]
-                    self.io_dict[data_type]["path"] = deprc_path
-                    data = load_func(self, *args, **kwargs)
-                    self.io_dict[data_type]["path"] = new_path
-                    logging.info(
-                        f"Deprecated path: Saving file for "
-                        f"{data_type} in updated path..."
-                    )
-                    # Save data with new path
-                    save_func = self.io_dict[data_type]["save"]
-                    # Does only support save-functions with no extra args
-                    save_func(data)
-                    # Remove deprecated path
-                    os.remove(deprc_path)
-
-                elif self.p_preset != "Default":
-                    print(
-                        f"No File for {data_type} from {self.name}"
-                        f" with Parameter-Preset={self.p_preset} found,"
-                        f" trying Default"
-                    )
-
-                    actual_p_preset = self.p_preset
-                    self.p_preset = "Default"
-                    self.init_paths()
-
-                    data = load_func(self, *args, **kwargs)
-
-                    self.p_preset = actual_p_preset
-                    self.init_paths()
+                deprc_paths = self.deprecated_paths.get(data_type, "")
+                if isinstance(deprc_paths, dict):
+                    deprc_paths = deprc_paths.values()
                 else:
-                    raise err
+                    deprc_paths = [deprc_paths]
+                for dp in deprc_paths:
+                    if isfile(dp):
+                        new_path = self.io_dict[data_type]["path"]
+                        self.io_dict[data_type]["path"] = dp
+                        data = load_func(self, *args, **kwargs)
+                        self.io_dict[data_type]["path"] = new_path
+                        logging.info(
+                            f"Deprecated path: Saving file for "
+                            f"{data_type} in updated path..."
+                        )
+                        # Save data with new path
+                        save_func = self.io_dict[data_type]["save"]
+                        # Does only support save-functions with no extra args
+                        save_func(data)
+                        # Remove deprecated path
+                        os.remove(dp)
+
+                    elif self.p_preset != "Default":
+                        logging.info(
+                            f"No File for {data_type} from {self.name}"
+                            f" with Parameter-Preset={self.p_preset} found,"
+                            f" trying Default"
+                        )
+
+                        actual_p_preset = self.p_preset
+                        self.p_preset = "Default"
+                        self.init_paths()
+
+                        data = load_func(self, *args, **kwargs)
+
+                        self.p_preset = actual_p_preset
+                        self.init_paths()
+                    else:
+                        raise err
 
         # Save data in data-dict for machines with big RAM
         if not QS().value("save_ram"):
@@ -132,7 +130,7 @@ def save_decorator(save_func):
         for path in [p for p in paths if not isdir(Path(p).parent)]:
             makedirs(Path(path).parent, exist_ok=True)
 
-        print(f"Saving {data_type} for {self.name}")
+        logging.info(f"Saving {data_type} for {self.name}")
         save_func(self, *args, **kwargs)
 
         # Save data in data-dict for machines with big RAM
@@ -167,9 +165,9 @@ class BaseLoading:
         self.data_dict = dict()
         self.existing_paths = dict()
 
+        self.init_attributes()
         if name is not None:
             self.init_parameters()
-            self.init_attributes()
             self.init_paths()
             self.load_file_parameter_file()
 
@@ -321,7 +319,7 @@ class BaseLoading:
 
         for file_name in remove_files:
             self.file_parameters.pop(file_name)
-        print(
+        logging.info(
             f"Removed {len(remove_files)} Files " f"and {n_remove_params} Parameters."
         )
         self.save_file_parameter_file()
@@ -424,7 +422,7 @@ class BaseLoading:
                         )
                         idx_file_path = join(dir_path, idx_file_name)
                         figure.savefig(idx_file_path)
-                        print(f"figure: {idx_file_path} has been saved")
+                        logging.info(f"figure: {idx_file_path} has been saved")
                         # Only store relative path to be compatible across OS
                         plot_files_save_path = os.path.relpath(
                             idx_file_path, self.figures_path
@@ -452,7 +450,7 @@ class BaseLoading:
                     brain.save_image(save_path)
             else:
                 plt.savefig(save_path, dpi=dpi)
-            print(f"figure: {save_path} has been saved")
+            logging.info(f"figure: {save_path} has been saved")
 
             if not isinstance(matplotlib_figure, list):
                 # Only store relative path to be compatible across OS
@@ -461,17 +459,21 @@ class BaseLoading:
                 if plot_files_save_path not in self.plot_files[calling_func]:
                     self.plot_files[calling_func].append(plot_files_save_path)
         else:
-            print('Not saving plots; set "save_plots" to "True" to save')
-
-    # Should have save-decorator!
-    def load(self, data_type, **kwargs):
-        """General load function with data_type as parameter."""
-        return self.io_dict[data_type]["load"](**kwargs)
+            logging.info('Not saving plots; set "save_plots" to "True" to save')
 
     # ToDo: Should have load-decorator!
+    def load(self, data_type, **kwargs):
+        """General load function with data_type as parameter."""
+        load_func = self.io_dict[data_type]["load"]
+        if load_func is not None:
+            return load_func(**kwargs)
+
+    # Should have save-decorator!
     def save(self, data_type, data, **kwargs):
         """General save function with data_type as parameter."""
-        self.io_dict[data_type]["save"](data, **kwargs)
+        save_func = self.io_dict[data_type]["save"]
+        if save_func is not None:
+            save_func(data, **kwargs)
 
     def load_json(self, file_name, default=None):
         file_path = join(self.save_dir, f"{self.name}_{self.p_preset}_{file_name}.json")
@@ -479,10 +481,10 @@ class BaseLoading:
             with open(file_path, "r") as file:
                 data = json.load(file, object_hook=type_json_hook)
         except json.JSONDecodeError:
-            print(f"{file_path} could not be loaded")
+            logging.warning(f"{file_path} could not be loaded")
             data = default
         except FileNotFoundError:
-            print(f"{file_path} could not be found")
+            logging.warning(f"{file_path} could not be found")
             data = default
 
         return data
@@ -496,7 +498,7 @@ class BaseLoading:
             with open(file_path, "w") as file:
                 json.dump(data, file, cls=TypedJSONEncoder, indent=4)
         except json.JSONDecodeError:
-            print(f"{file_path} could not be saved")
+            logging.warning(f"{file_path} could not be saved")
 
         self.save_file_params(file_path)
 
@@ -505,11 +507,11 @@ class BaseLoading:
         try:
             os.remove(file_path)
         except FileNotFoundError:
-            print(f"{file_path} was not found")
+            logging.warning(f"{file_path} was not found")
         except OSError as err:
-            print(f"{file_path} could not be removed due to {err}")
+            logging.warning(f"{file_path} could not be removed due to {err}")
         else:
-            print(f"{file_path} was removed")
+            logging.warning(f"{file_path} was removed")
 
     def get_existing_paths(self):
         """Get existing paths and add the mapped File-Type
@@ -547,7 +549,7 @@ class BaseLoading:
                     for pn in [p_name_lh, p_name_rh]:
                         self.file_parameters.pop(pn)
                 except KeyError:
-                    print(f"{Path(p).name} not in file-parameters")
+                    logging.warning(f"{Path(p).name} not in file-parameters")
             try:
                 os.remove(p)
             except FileNotFoundError:
@@ -558,16 +560,28 @@ class BaseLoading:
                     for ps in [p_lh, p_rh]:
                         os.remove(ps)
                 except FileNotFoundError:
-                    print(f"{p} was not found")
+                    logging.warning(f"{p} was not found")
             except IsADirectoryError:
                 try:
                     shutil.rmtree(p)
                 except OSError as err:
-                    print(f"{p} could not be removed due to {err}")
+                    logging.warning(f"{p} could not be removed due to {err}")
             except OSError as err:
-                print(f"{p} could not be removed due to {err}")
+                logging.warning(f"{p} could not be removed due to {err}")
             else:
-                print(f"{p} was removed")
+                logging.warning(f"{p} was removed")
+
+
+sample_paths = {
+    "raw": "sample_audvis_raw.fif",
+    "erm": "ernoise_raw.fif",
+    "events": "sample_audvis_raw-eve.fif",
+    "evoked": "sample_audvis-ave.fif",
+    "noise_cov": "sample_audvis-cov.fif",
+    "forward": "sample_audvis-meg-eeg-oct-6-fwd.fif",
+    "inverse": "sample_audvis-meg-eeg-oct-6-meg-eeg-inv.fif",
+    "stcs": "sample_audvis-meg-eeg",
+}
 
 
 # ToDo: Currently there is duplication with attribute for Path and io_dict['path'].
@@ -590,7 +604,7 @@ class MEEG(BaseLoading):
         if self.name not in self.pr.meeg_to_erm:
             self.erm = None
             if not self.suppress_warnings:
-                print(
+                logging.warning(
                     f"No Empty-Room-Measurement assigned for {self.name},"
                     f' defaulting to "None"'
                 )
@@ -610,7 +624,7 @@ class MEEG(BaseLoading):
         else:
             self.fsmri = FSMRI(None, self.ct)
             if not self.suppress_warnings:
-                print(
+                logging.warning(
                     f"No Freesurfer-MRI-Subject assigned for {self.name},"
                     f' defaulting to "None"'
                 )
@@ -619,7 +633,7 @@ class MEEG(BaseLoading):
         if self.name not in self.pr.meeg_bad_channels:
             self.bad_channels = list()
             if not self.suppress_warnings:
-                print(
+                logging.warning(
                     f"No bad channels assigned for {self.name},"
                     f" defaulting to empty list"
                 )
@@ -630,7 +644,7 @@ class MEEG(BaseLoading):
         if self.name not in self.pr.sel_event_id:
             self.sel_trials = list()
             if not self.suppress_warnings:
-                print(
+                logging.warning(
                     f"No Trials selected for {self.name}," f" defaulting to empty list"
                 )
         else:
@@ -640,7 +654,7 @@ class MEEG(BaseLoading):
         if self.name not in self.pr.meeg_event_id:
             self.event_id = dict()
             if not self.suppress_warnings:
-                print(
+                logging.warning(
                     f"No EventID assigned for {self.name},"
                     f" defaulting to empty dictionary"
                 )
@@ -928,6 +942,26 @@ class MEEG(BaseLoading):
         self.pr.all_erm.append("ernoise")
         self.erm = "ernoise"
         self.pr.meeg_to_erm[self.name] = self.erm
+
+        self.pr.meeg_to_fsmri[self.name] = "fsaverage"
+        self.fsmri = FSMRI("fsaverage", self.ct)
+
+        # Add event_id
+        self.event_id = {
+            "auditory/left": 1,
+            "auditory/right": 2,
+            "visual/left": 3,
+            "visual/right": 4,
+            "face": 5,
+            "buttonpress": 32,
+        }
+        self.pr.meeg_event_id[self.name] = self.event_id
+        # ToDo: Here is problem, since there is no way
+        #  to select "auditory/left" from the gui.
+        self.sel_trials = ["auditory"]
+        self.pr.sel_event_id[self.name] = self.sel_trials
+
+        # init paths again
         self.init_paths()
 
         # Load sample
@@ -937,15 +971,21 @@ class MEEG(BaseLoading):
             test_file_name = sample_paths[data_type]
             test_file_path = join(test_data_folder, test_file_name)
             file_path = self.io_dict[data_type]["path"]
-
-            if isfile(test_file_path) and not isfile(file_path):
-                print(f"Copying {data_type} from sample-dataset...")
+            if data_type == "stcs":
+                file_path = file_path[self.sel_trials[0]]
+                if not isfile(file_path + "-lh.stc"):
+                    logging.debug(f"Copying {data_type} from sample-dataset...")
+                    stcs = mne.source_estimate.read_source_estimate(test_file_path)
+                    stcs.save(file_path)
+            elif isfile(test_file_path) and not isfile(file_path):
+                logging.debug(f"Copying {data_type} from sample-dataset...")
                 folder = Path(file_path).parent
                 if not isdir(folder):
                     os.mkdir(folder)
                 shutil.copy2(test_file_path, file_path)
-                print("Done!")
+                logging.debug("Done!")
 
+        # Add bad_channels
         self.bad_channels = self.load_info()["bads"]
         self.pr.meeg_bad_channels[self.name] = self.bad_channels
 
@@ -1165,6 +1205,9 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_transformation(self):
+        # Load built-in transformation for fsaverage
+        if self.fsmri.name == "fsaverage":
+            return "fsaverage"
         return mne.read_trans(self.trans_path)
 
     @save_decorator
@@ -1251,7 +1294,7 @@ class MEEG(BaseLoading):
                 dip_list.append(mne.read_dipole(mixn_dip_path))
                 idx += 1
             mixn_dips[trial] = dip_list
-            print(f"{idx + 1} dipoles read for {self.name}-{trial}")
+            logging.info(f"{idx + 1} dipoles read for {self.name}-{trial}")
 
         return mixn_dips
 
@@ -1296,6 +1339,9 @@ class MEEG(BaseLoading):
             for dip in self.ecd_paths[trial]:
                 ecd_dipoles[trial][dip] = mne.read_dipole(self.ecd_paths[trial][dip])
 
+        if all([len(ecd_dipoles[trial]) == 0 for trial in ecd_dipoles]):
+            raise FileNotFoundError(f"No ECD-Dipoles found for {self.name}!")
+
         return ecd_dipoles
 
     @save_decorator
@@ -1319,6 +1365,9 @@ class MEEG(BaseLoading):
                         f"for trial {trial} "
                         f"in label {label}!"
                     )
+
+        if all([len(ltcs[trial]) == 0 for trial in ltcs]):
+            raise FileNotFoundError(f"No Label-Time-Courses found for {self.name}!")
 
         return ltcs
 
@@ -1345,26 +1394,21 @@ class MEEG(BaseLoading):
                 np.save(self.con_paths[trial][con_method], con_dict[trial][con_method])
 
 
+fsaverage_paths = {
+    "src": "bem/fsaverage-ico-5-src.fif",
+    "bem_model": "bem/fsaverage-5120-5120-5120-bem.fif",
+    "bem_solution": "bem/fsaverage-5120-5120-5120-bem-sol.fif",
+    "volume_src": "bem/fsaverage-vol-5-src.fif",
+}
+
+
 class FSMRI(BaseLoading):
     def __init__(self, name, controller, load_labels=False):
-        if name == "fsaverage" and not isfile(
-            join(controller.subjects_dir, "fsaverage/mri/T1.mgz")
-        ):
-            if _test_run():
-                test_data_folder = join(
-                    mne.datasets.sample.data_path(), "subjects", "fsaverage"
-                )
-                shutil.copytree(test_data_folder, join(controller.subjects_dir, name))
-            else:
-                try:
-                    logging.info("Downloading fsaverage...")
-                    mne.datasets.fetch_fsaverage(subjects_dir=controller.subjects_dir)
-                # Not working on macOS for mne<=0.24
-                except ValueError:
-                    logging.warning("fsaverage could not be downloaded!")
-
         self.load_labels = load_labels
         super().__init__(name, controller)
+
+        if name == "fsaverage":
+            self.init_fsaverage()
 
     def init_attributes(self):
         """Initialize additional attributes for FSMRI"""
@@ -1427,6 +1471,27 @@ class FSMRI(BaseLoading):
             "volume_src": join(self.save_dir, "bem", f"{self.name}-vol-src.fif"),
         }
 
+    def init_fsaverage(self):
+        # Set SUBJECTS_DIR in config to None for test case,
+        # so fsaverage will be downloaded to "~/mne_data/MNE-fsaverage-data"
+        if _test_run():
+            mne.set_config("SUBJECTS_DIR", None)
+        logging.info("Downloading fsaverage...")
+        fsaverage_dir = mne.datasets.fetch_fsaverage(subjects_dir=None)
+        if _test_run():
+            mne.set_config("SUBJECTS_DIR", self.ct.subjects_dir)
+            new_dir = join(self.ct.subjects_dir, "fsaverage")
+            if not isdir(new_dir):
+                shutil.copytree(fsaverage_dir, new_dir)
+
+        # Rename files to match naming convention
+        for data_type, from_path in fsaverage_paths.items():
+            from_path = join(self.save_dir, from_path)
+            to_path = self.io_dict[data_type]["path"]
+            if not isfile(to_path):
+                os.rename(from_path, to_path)
+                logging.info(f"Renamed {from_path} to {to_path}")
+
     def _get_available_parc(self):
         annot_dir = join(self.subjects_dir, self.name, "label")
         try:
@@ -1470,17 +1535,24 @@ class FSMRI(BaseLoading):
                     verbose="warning",
                 )
             except (RuntimeError, OSError):
-                print(f"Parcellation {parcellation} could not be loaded!")
+                logging.warning(f"Parcellation {parcellation} could not be loaded!")
 
         return labels
 
-    def get_labels(self, target_labels):
+    def get_labels(self, target_labels=None, parcellation=None):
         labels = list()
-        if target_labels is not None:
+        if self.name is None:
+            logging.warning("FSMRI-Object has no name and is empty!")
+        else:
+            parcellation = parcellation or "Other"
             if self.labels is None:
                 self.labels = self._get_available_labels()
-            for label_list in self.labels.values():
-                labels += [lb for lb in label_list if lb.name in target_labels]
+            if target_labels is not None:
+                labels += [
+                    lb for lb in self.labels[parcellation] if lb.name in target_labels
+                ]
+            else:
+                labels = self.labels[parcellation]
 
         return labels
 
@@ -1534,7 +1606,7 @@ class Group(BaseLoading):
         if self.name not in self.pr.all_groups:
             self.group_list = []
             if not self.suppress_warnings:
-                print(
+                logging.warning(
                     f"No objects assigned for {self.name}," f" defaulting to empty list"
                 )
         else:

@@ -14,5 +14,6 @@ pyobjc-framework-Cocoa; sys_platform == "darwin"
 
 # PyQt
 pyqtdarktheme
+pyvistaqt
 qtpy
 vtk

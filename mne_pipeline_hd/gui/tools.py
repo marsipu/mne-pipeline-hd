@@ -7,6 +7,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 from functools import partial
 
+from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont
 from qtpy.QtWidgets import (
     QComboBox,
@@ -212,7 +213,7 @@ class DataTerminal(QDialog):
             ]:
                 self.t_globals.pop(key)
             self.t_globals["obj"] = self.obj
-            self.displayw.insertHtml(f"<b>Subject: {self.obj.name} loaded</b><br>")
+            self.displayw.appendHtml(f"<b>Subject: {self.obj.name} loaded</b><br>")
             self.displayw.ensureCursorVisible()
 
     def load_bt_pressed(self, bt_name):
@@ -223,7 +224,7 @@ class DataTerminal(QDialog):
 
     def finished_handling(self, result_msg):
         if isinstance(result_msg, str):
-            self.displayw.insertHtml(result_msg)
+            self.displayw.appendHtml(result_msg)
             self.displayw.ensureCursorVisible()
 
     def start_load(self, bt_name):
@@ -243,7 +244,7 @@ class DataTerminal(QDialog):
     def start_execution(self):
         command = self.inputw.toPlainText()
         command_html = command.replace("\n", "<br>")
-        self.displayw.insertHtml(
+        self.displayw.appendHtml(
             f'<font color="blue"><b><i>{command_html}</i></b></font><br>'
         )
         self.displayw.ensureCursorVisible()
@@ -262,3 +263,8 @@ class DataTerminal(QDialog):
             get_exception_tuple()
         else:
             self.inputw.clear()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Up:
+            self.inputw.insertPlainText(self.history[0])
+            self.inputw.ensureCursorVisible()

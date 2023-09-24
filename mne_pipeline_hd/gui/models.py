@@ -20,6 +20,8 @@ from qtpy.QtGui import QBrush, QFont
 
 from mne_pipeline_hd.gui.gui_utils import get_std_icon
 
+# ToDo: Merge models and base widgets
+
 
 class BaseListModel(QAbstractListModel):
     """A basic List-Model
@@ -164,9 +166,6 @@ class CheckListModel(BaseListModel):
             self._checked = list()
         else:
             self._checked = checked
-
-    def getChecked(self, index):
-        return self.checked[index.row()]
 
     def data(self, index, role=None):
         if role == Qt.DisplayRole:

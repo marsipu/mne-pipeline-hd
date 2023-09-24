@@ -60,12 +60,12 @@ def plot_raw(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
         # Connect to closing of Matplotlib-Figure
         fig.canvas.mpl_connect(
             "close_event",
-            partial(close_func, meeg=meeg, raw=raw, raw_type="raw_filtered"),
+            partial(close_func, meeg=meeg, raw=raw, raw_type="raw"),
         )
     else:
         # Connect to closing of PyQt-Figure
         fig.gotClosed.connect(
-            partial(close_func, None, meeg=meeg, raw=raw, raw_type="raw_filtered")
+            partial(close_func, None, meeg=meeg, raw=raw, raw_type="raw")
         )
 
 
@@ -596,6 +596,7 @@ def _brain_plot(
     stc_clim,
     stc_background,
     target_labels,
+    target_parcellation,
     label_colors,
     stc_roll,
     stc_azimuth,
@@ -604,7 +605,7 @@ def _brain_plot(
     interactive=False,
     **brain_movie_kwargs,
 ):
-    labels = meeg.fsmri.get_labels(target_labels)
+    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
     for trial, stc in stcs.items():
         title = f"{meeg.name}-{trial}"
         brain = stc.plot(
@@ -649,6 +650,7 @@ def _brain_plot(
 def plot_stc(
     meeg,
     target_labels,
+    target_parcellation,
     label_colors,
     stc_surface,
     stc_hemi,
@@ -672,6 +674,7 @@ def plot_stc(
         stc_clim=stc_clim,
         stc_background=stc_background,
         target_labels=target_labels,
+        target_parcellation=target_parcellation,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -704,6 +707,7 @@ def plot_stc_interactive(
         stc_clim=stc_clim,
         stc_background=stc_background,
         target_labels=None,
+        target_parcellation=None,
         label_colors=None,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -716,6 +720,7 @@ def plot_stc_interactive(
 def plot_animated_stc(
     meeg,
     target_labels,
+    target_parcellation,
     label_colors,
     stc_surface,
     stc_hemi,
@@ -741,6 +746,7 @@ def plot_animated_stc(
         stc_clim=stc_clim,
         stc_background=stc_background,
         target_labels=target_labels,
+        target_parcellation=target_parcellation,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -752,7 +758,14 @@ def plot_animated_stc(
 
 
 def plot_labels(
-    fsmri, target_labels, label_colors, stc_hemi, stc_surface, stc_views, backend_3d
+    fsmri,
+    target_labels,
+    target_parcellation,
+    label_colors,
+    stc_hemi,
+    stc_surface,
+    stc_views,
+    backend_3d,
 ):
     with mne.viz.use_3d_backend(backend_3d):
         Brain = mne.viz.get_brain_class()
@@ -764,7 +777,7 @@ def plot_labels(
             views=stc_views,
         )
 
-        labels = fsmri.get_labels(target_labels)
+        labels = fsmri.get_labels(target_labels, target_parcellation)
         for label in labels:
             color = label_colors.get(label.name)
             brain.add_label(label, borders=False, color=color)
@@ -857,9 +870,11 @@ def plot_label_time_course(meeg, show_plots):
             meeg.plot_save("label-time-course", subfolder=label, trial=trial)
 
 
-def plot_src_connectivity(meeg, target_labels, con_fmin, con_fmax, show_plots):
+def plot_src_connectivity(
+    meeg, target_labels, target_parcellation, con_fmin, con_fmax, show_plots
+):
     con_dict = meeg.load_connectivity()
-    labels = meeg.fsmri.get_labels(target_labels)
+    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
     if "unknown-lh" in labels:
         labels.pop("unknown-lh")
     label_colors = [label.color for label in labels]
@@ -953,6 +968,7 @@ def plot_grand_avg_tfr(group, show_plots):
 def plot_grand_avg_stc(
     group,
     target_labels,
+    target_parcellation,
     label_colors,
     stc_surface,
     stc_hemi,
@@ -976,6 +992,7 @@ def plot_grand_avg_stc(
         stc_clim=stc_clim,
         stc_background=stc_background,
         target_labels=target_labels,
+        target_parcellation=target_parcellation,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -1008,6 +1025,7 @@ def plot_grand_average_stc_interactive(
         stc_clim=stc_clim,
         stc_background=stc_background,
         target_labels=None,
+        target_parcellation=None,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
         stc_elevation=stc_elevation,
@@ -1019,6 +1037,7 @@ def plot_grand_average_stc_interactive(
 def plot_grand_avg_stc_anim(
     group,
     target_labels,
+    target_parcellation,
     label_colors,
     stc_surface,
     stc_hemi,
@@ -1044,6 +1063,7 @@ def plot_grand_avg_stc_anim(
         stc_clim=stc_clim,
         stc_background=stc_background,
         target_labels=target_labels,
+        target_parcellation=target_parcellation,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -1077,6 +1097,7 @@ def plot_grand_avg_connect(
     con_fmin,
     con_fmax,
     target_labels,
+    target_parcellation,
     morph_to,
     show_plots,
     connectivity_vmin,
@@ -1087,7 +1108,7 @@ def plot_grand_avg_connect(
     # Get labels for FreeSurfer 'aparc' cortical parcellation
     # with 34 labels/hemi
     fsmri = FSMRI(morph_to, group.ct)
-    labels = fsmri.get_labels(target_labels)
+    labels = fsmri.get_labels(target_labels, target_parcellation)
     if "unknown-lh" in labels:
         labels.remove("unknown-lh")
 
