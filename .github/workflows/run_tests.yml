@@ -21,7 +21,7 @@ jobs:
           - os: ubuntu
             python: '3.10'
             qt : 'PySide6'
-    name: Run pytest on ${{ matrix.os }} - ${{matrix.python}} with ${{ matrix.qt }}
+    name: Run tests on ${{ matrix.os }} - ${{matrix.python}} - ${{ matrix.qt }}
     runs-on: ${{ matrix.os }}-latest
     env:
       DISPLAY: ':99.0'
