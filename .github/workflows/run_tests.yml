@@ -30,11 +30,12 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v3
-      - name: Setup xvfb on Linux
-        if: runner.os == 'Linux'
-        run: |
-          curl --remote-name https://raw.githubusercontent.com/mne-tools/mne-python/main/tools/setup_xvfb.sh
-          bash setup_xvfb.sh
+      # Set up headless display for windows and linux
+      - name: Setup headless display
+        uses: pyvista/setup-headless-display-action@main
+        with:
+          qt: true
+          pyvista: false
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
