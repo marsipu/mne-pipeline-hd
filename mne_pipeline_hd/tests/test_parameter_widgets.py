@@ -169,7 +169,6 @@ def test_label_gui(qtbot, controller):
 
     label_gui = LabelGui(data=controller, name="test_labels", default=[])
     qtbot.addWidget(label_gui)
-    label_gui.show()
 
     # Push edit button
     label_gui.param_widget.click()
