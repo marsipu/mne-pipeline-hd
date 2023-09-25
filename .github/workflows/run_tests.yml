@@ -56,8 +56,9 @@ jobs:
           key: ${{ env.TESTING_VERSION }}
           path: ~/mne_data
         name: 'Cache testing data'
-      - run: python -c 'import mne; print(mne.datasets.testing.data_path(verbose=True))'
-        name: 'Download sample data'
+      - name: 'Download testing, sample and fsaverage data'
+        run: |
+          python -c 'import mne; mne.datasets.testing.data_path(); mne.datasets.sample.data_path(); mne.datasets.fetch_fsaverage()'
       - name: Show system information
         run: mne sys_info
       - run: pytest
