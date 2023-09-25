@@ -156,6 +156,7 @@ class BaseLoading:
         self.ct = controller
         self.pr = controller.pr
         self.p_preset = self.pr.p_preset
+        self.pa = self.pr.parameters[self.p_preset]
         self.subjects_dir = self.ct.subjects_dir
         self.save_plots = self.ct.get_setting("save_plots")
         self.figures_path = self.pr.figures_path
@@ -167,13 +168,11 @@ class BaseLoading:
 
         self.init_attributes()
         if name is not None:
-            self.init_parameters()
+            self.init_plot_files()
             self.init_paths()
             self.load_file_parameter_file()
 
-    def init_parameters(self):
-        self.pa = self.pr.parameters[self.p_preset]
-
+    def init_plot_files(self):
         # Prepare plot-files-dictionary for Loading-Object
         if self.name not in self.pr.plot_files:
             self.pr.plot_files[self.name] = dict()

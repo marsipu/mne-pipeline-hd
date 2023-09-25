@@ -287,7 +287,7 @@ class PlotViewSelection(QDialog):
                     # and reload load/save-paths
                     if p_preset != obj.p_preset:
                         obj.p_preset = p_preset
-                        obj.init_parameters()
+                        obj.init_plot_files()
                         obj.init_paths()
 
                     # Load Matplotlib-Plots
