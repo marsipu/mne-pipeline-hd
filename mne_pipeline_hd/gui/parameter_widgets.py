@@ -6,6 +6,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 import logging
 from ast import literal_eval
+from copy import copy
 from functools import partial
 
 import mne
@@ -1212,7 +1213,9 @@ class LabelPicker(mne.viz.Brain):
             surf="inflated",
             title=title,
             subjects_dir=paramdlg.ct.subjects_dir,
+            background=(0, 0, 0),
         )
+        self._renderer.plotter.show()
         self.paramdlg = paramdlg
         self.paramw = paramdlg.paramw
 
@@ -1222,17 +1225,21 @@ class LabelPicker(mne.viz.Brain):
 
         self._shown_labels = list()
 
-        self.add_text(
-            0, 0.95, "Select labels by clicking on them", color="w", font_size=20
-        )
+        self.add_text(0, 0.9, "", color="w", font_size=14, name="title")
 
         self.show_view(roll=0, elevation=60, azimuth=70)
 
         self._set_annotations(parcellation)
         self._init_picking()
 
+        # Add selected labels
+        for label_name in selected:
+            hemi = label_name[-2:]
+            self._add_label_name(label_name, hemi)
+
     def _set_annotations(self, parcellation):
         fsmri = self.paramdlg._fsmri
+        self.parcellation = parcellation
         self.clear_glyphs()
         self.remove_labels()
         self.remove_annotations()
@@ -1254,6 +1261,12 @@ class LabelPicker(mne.viz.Brain):
             self._annotation_labels[hemi] = hemi_labels
             for idx, hemi_label in enumerate(hemi_labels):
                 self._vertex_to_label_id[hemi][hemi_label.vertices] = idx
+
+        # Update text
+        self._actors["text"]["title"].SetInput(
+            f"Subject={self.paramdlg._fsmri.name}, Parcellation={parcellation}\n"
+            f"Select labels by clicking on them"
+        )
 
     def _init_picking(self):
         self._mouse_no_mvt = -1
@@ -1309,9 +1322,15 @@ class LabelPicker(mne.viz.Brain):
         self._shown_labels.remove(label_name)
         self._renderer._update()
 
-    def closeEvent(self, event):
-        self.paramdlg._label_picker = None
-        super().closeEvent(event)
+    def isclosed(self):
+        if self.plotter is None:
+            self._closed = True
+        return self._closed
+
+    def close(self):
+        if self.plotter is not None:
+            super().close()
+        self._closed = True
 
 
 class LabelDialog(SimpleDialog):
@@ -1326,22 +1345,27 @@ class LabelDialog(SimpleDialog):
         )
         self.paramw = paramw
         self.ct = paramw.data
-        self.params = self.ct.pr.parameters[self.ct.pr.p_preset]
         self.param_value = paramw.param_value
 
         self._parc_picker = None
         self._extra_picker = None
         self._fsmri = None
         self._parcellation = None
+        # Put selected labels from LabelGui in both parc and extra,
+        # since they get removed if not fitting later anyway
         self._parc_labels = list()
-        self._selected_parc_labels = list()
+        self._selected_parc_labels = copy(paramw.param_value) or list()
         self._extra_labels = list()
-        self._selected_extra_labels = list()
+        self._selected_extra_labels = copy(paramw.param_value) or list()
 
         self.resize(400, 800)
         center(self)
 
         self._init_layout()
+
+        # Initialize with first items
+        self._subject_changed()
+
         self.open()
 
     def _init_layout(self):
@@ -1388,10 +1412,6 @@ class LabelDialog(SimpleDialog):
         self.choose_extra_bt.clicked.connect(self._open_extra_picker)
         layout.addWidget(self.choose_extra_bt)
 
-        # Initialize with first items
-        self._subject_changed()
-        self._parc_changed()
-
     def _subject_changed(self):
         self._fsmri = FSMRI(self.fsmri_cmbx.currentText(), self.ct, load_labels=True)
 
@@ -1419,6 +1439,14 @@ class LabelDialog(SimpleDialog):
         ]
         self.extra_label_list.content_changed()
 
+        # Update pickers if open
+        if self._parc_picker is not None and not self._parc_picker.isclosed():
+            self._parc_picker.close()
+            self._open_parc_picker()
+        if self._extra_picker is not None and not self._extra_picker.isclosed():
+            self._extra_picker.close()
+            self._open_extra_picker()
+
         # Update parcellation labels
         self._parc_changed()
 
@@ -1441,8 +1469,8 @@ class LabelDialog(SimpleDialog):
         ]
         self.parc_label_list.content_changed()
 
-        if self._parc_picker is not None:
-            self._parc_picker._set_annotations()
+        if self._parc_picker is not None and not self._parc_picker.isclosed():
+            self._parc_picker._set_annotations(self._parcellation)
 
     def _labels_changed(self, labels, picker_name):
         picker = (
@@ -1457,6 +1485,7 @@ class LabelDialog(SimpleDialog):
                 hemi = remove_name[-2:]
                 picker._remove_label_name(remove_name, hemi)
 
+    # Keep pickers on top
     def _open_parc_picker(self):
         self._parc_picker = LabelPicker(
             self,
@@ -1476,12 +1505,11 @@ class LabelDialog(SimpleDialog):
         )
 
     def closeEvent(self, event):
-        event.accept()
         self.paramw.set_param(self._selected_parc_labels + self._selected_extra_labels)
         for picker in [self._parc_picker, self._extra_picker]:
-            if picker is not None:
-                if picker.plotter is not None:
-                    picker.plotter.close()
+            if picker is not None and not picker.isclosed():
+                picker.close()
+        self.hide()
 
 
 class LabelGui(Param):
@@ -1521,14 +1549,16 @@ class LabelGui(Param):
 
         self.param_widget = QPushButton("Edit")
         self.param_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        self.param_widget.clicked.connect(self.show_picker)
+        self.param_widget.clicked.connect(self.show_dialog)
         check_list_layout.addWidget(self.param_widget)
 
         self.init_ui(check_list_layout)
 
-    def show_picker(self):
+    def show_dialog(self):
         if self._dialog is None:
             self._dialog = LabelDialog(self)
+        else:
+            self._dialog.show()
 
     def set_value(self, value):
         if value is not None:
