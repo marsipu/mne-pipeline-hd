@@ -1483,6 +1483,15 @@ def src_connectivity(
     src = inverse_operator["src"]
     labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
 
+    if len(labels) == 0:
+        raise RuntimeError(
+            "No labels found, check your target_labels and target_parcellation"
+        )
+    if len(meeg.sel_trials) == 0:
+        raise RuntimeError(
+            "No trials selected, check your Selected IDs in Preparation/"
+        )
+
     con_dict = {}
 
     for trial in meeg.sel_trials:
@@ -1524,6 +1533,12 @@ def src_connectivity(
         # freq. band for each con_method
         for method, c in zip(con_methods, con):
             con_dict[trial][method] = c.get_data(output="dense")[:, :, 0]
+
+    # Add target_labels for later identification
+    con_dict["__info__"] = {
+        "labels": target_labels,
+        "parcellation": target_parcellation,
+    }
 
     meeg.save_connectivity(con_dict)
 
@@ -1635,6 +1650,7 @@ def grand_avg_connect(group):
         meeg = MEEG(name, group.ct)
         print(f"Add {name} to grand_average")
         con_dict = meeg.load_connectivity()
+        label_info = con_dict.pop("__info__")
         for trial in con_dict:
             if trial not in con_average_dict:
                 con_average_dict[trial] = {}
@@ -1646,7 +1662,7 @@ def grand_avg_connect(group):
                 else:
                     con_average_dict[trial][con_method] = [con_dict[trial][con_method]]
 
-    ga_con = {}
+    ga_con = {"__info__": label_info}
     for trial in con_average_dict:
         ga_con[trial] = {}
         for con_method in con_average_dict[trial]:

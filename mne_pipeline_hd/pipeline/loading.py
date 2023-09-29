@@ -786,6 +786,7 @@ class MEEG(BaseLoading):
             trial: {
                 con_method: join(
                     self.save_dir,
+                    "connectivity",
                     f"{self.name}_{trial}_{self.p_preset}_{con_method}-con.npy",
                 )
                 for con_method in self.pa["con_methods"]
@@ -1380,7 +1381,7 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_connectivity(self):
-        con_dict = dict()
+        con_dict = {"__info__": self.load_json("con_labels")}
         for trial in self.con_paths:
             con_dict[trial] = dict()
             for con_method in self.con_paths[trial]:
@@ -1390,6 +1391,9 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_connectivity(self, con_dict):
+        # Write info about label and parcellation into json
+        label_info = con_dict.pop("__info__")
+        self.save_json("con_labels", label_info)
         for trial in con_dict:
             for con_method in con_dict[trial]:
                 np.save(self.con_paths[trial][con_method], con_dict[trial][con_method])
