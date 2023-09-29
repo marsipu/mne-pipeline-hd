@@ -145,6 +145,8 @@ def save_decorator(save_func):
     return save_wrapper
 
 
+# ToDo: Unify all objects to one loading-class
+# For example Group and MEEG can have the same load-method for Source-Estimates then
 class BaseLoading:
     """Base-Class for Sub (The current File/MRI-File/Grand-Average-Group,
     which is executed)"""
