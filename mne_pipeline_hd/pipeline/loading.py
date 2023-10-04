@@ -1800,7 +1800,7 @@ class Group(BaseLoading):
 
     @load_decorator
     def load_ga_con(self):
-        ga_connect = dict()
+        ga_connect = {"__info__": self.load_json("con_labels")}
         for trial in self.ga_con_paths:
             ga_connect[trial] = {}
             for con_method in self.ga_con_paths[trial]:
@@ -1812,6 +1812,8 @@ class Group(BaseLoading):
 
     @save_decorator
     def save_ga_con(self, ga_con):
+        label_info = ga_con.pop("__info__")
+        self.save_json("con_labels", label_info)
         for trial in ga_con:
             for con_method in ga_con[trial]:
                 np.save(self.ga_con_paths[trial][con_method], ga_con[trial][con_method])
