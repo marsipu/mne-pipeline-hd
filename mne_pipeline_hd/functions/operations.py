@@ -1473,8 +1473,8 @@ def src_connectivity(
     inverse_method,
     lambda2,
     con_methods,
-    con_fmin,
-    con_fmax,
+    con_frequencies,
+    con_time_window,
     n_jobs,
 ):
     info = meeg.load_info()
@@ -1483,11 +1483,27 @@ def src_connectivity(
     src = inverse_operator["src"]
     labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
 
+    if len(labels) == 0:
+        raise RuntimeError(
+            "No labels found, check your target_labels and target_parcellation"
+        )
+    if len(meeg.sel_trials) == 0:
+        raise RuntimeError(
+            "No trials selected, check your Selected IDs in Preparation/"
+        )
+
     con_dict = {}
 
-    for trial in [t for t in all_epochs.event_id if t]:
-        con_dict[trial.split("/")[0]] = {}
-        epochs = all_epochs[trial.split("/")[0]]
+    for trial in meeg.sel_trials:
+        con_dict[trial] = {}
+        epochs = all_epochs[trial]
+
+        # Crop if necessary
+        if con_time_window is not None:
+            epochs = epochs.copy().crop(
+                tmin=con_time_window[0], tmax=con_time_window[1]
+            )
+
         # Compute inverse solution and for each epoch.
         # By using "return_generator=True" stcs will be a generator object
         # instead of a list.
@@ -1510,8 +1526,8 @@ def src_connectivity(
             method=con_methods,
             mode="multitaper",
             sfreq=sfreq,
-            fmin=con_fmin,
-            fmax=con_fmax,
+            fmin=con_frequencies[0],
+            fmax=con_frequencies[1],
             faverage=True,
             mt_adaptive=True,
             n_jobs=n_jobs,
@@ -1523,54 +1539,14 @@ def src_connectivity(
         # con is a 3D array, get the connectivity for the first (and only)
         # freq. band for each con_method
         for method, c in zip(con_methods, con):
-            con_dict[trial.split("/")[0]][method] = c.get_data(output="dense")[:, :, 0]
+            con_dict[trial][method] = c.get_data(output="dense")[:, :, 0]
 
-    meeg.save_connectivity(con_dict)
-
-    for trial in all_epochs.event_id:
-        con_dict[trial.split("/")[1]] = {}
-        # epochs = all_epochs[trial.split('/')[1]][:2]
-        epochs = all_epochs[trial.split("/")[1]]
-        # Compute inverse solution and for each epoch.
-        # By using "return_generator=True" stcs will be a generator object
-        # instead of a list.
-        stcs = mne.minimum_norm.apply_inverse_epochs(
-            epochs,
-            inverse_operator,
-            lambda2,
-            inverse_method,
-            pick_ori="normal",
-            return_generator=True,
-        )
-
-        # Average the source estimates within each label using
-        # sign-flips to reduce signal cancellations, also here we return a
-        # generator
-
-        label_ts = mne.extract_label_time_course(
-            stcs, labels, src, mode="mean_flip", return_generator=True
-        )
-
-        sfreq = info["sfreq"]  # the sampling frequency
-        con = mne_connectivity.spectral_connectivity(
-            label_ts,
-            method=con_methods,
-            mode="multitaper",
-            sfreq=sfreq,
-            fmin=con_fmin,
-            fmax=con_fmax,
-            faverage=True,
-            mt_adaptive=True,
-            n_jobs=n_jobs,
-        )
-
-        if not isinstance(con, list):
-            con = [con]
-
-        # con is a 3D array, get the connectivity for the first
-        # (and only) freq. band for each con_method
-        for method, c in zip(con_methods, con):
-            con_dict[trial.split("/")[1]][method] = c.get_data(output="dense")[:, :, 0]
+    # Add target_labels for later identification
+    con_dict["__info__"] = {
+        "labels": target_labels,
+        "parcellation": target_parcellation,
+        "frequencies": con_frequencies,
+    }
 
     meeg.save_connectivity(con_dict)
 
@@ -1682,6 +1658,7 @@ def grand_avg_connect(group):
         meeg = MEEG(name, group.ct)
         print(f"Add {name} to grand_average")
         con_dict = meeg.load_connectivity()
+        con_info = con_dict.pop("__info__")
         for trial in con_dict:
             if trial not in con_average_dict:
                 con_average_dict[trial] = {}
@@ -1693,7 +1670,7 @@ def grand_avg_connect(group):
                 else:
                     con_average_dict[trial][con_method] = [con_dict[trial][con_method]]
 
-    ga_con = {}
+    ga_con = {"__info__": con_info}
     for trial in con_average_dict:
         ga_con[trial] = {}
         for con_method in con_average_dict[trial]:

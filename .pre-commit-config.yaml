@@ -15,7 +15,6 @@ repos:
     rev: 23.9.1
     hooks:
       - id: black
-        args: [ --quiet ]
 
   # Ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit

@@ -145,6 +145,8 @@ def save_decorator(save_func):
     return save_wrapper
 
 
+# ToDo: Unify all objects to one loading-class
+# For example Group and MEEG can have the same load-method for Source-Estimates then
 class BaseLoading:
     """Base-Class for Sub (The current File/MRI-File/Grand-Average-Group,
     which is executed)"""
@@ -156,6 +158,7 @@ class BaseLoading:
         self.ct = controller
         self.pr = controller.pr
         self.p_preset = self.pr.p_preset
+        self.pa = self.pr.parameters[self.p_preset]
         self.subjects_dir = self.ct.subjects_dir
         self.save_plots = self.ct.get_setting("save_plots")
         self.figures_path = self.pr.figures_path
@@ -167,13 +170,11 @@ class BaseLoading:
 
         self.init_attributes()
         if name is not None:
-            self.init_parameters()
+            self.init_plot_files()
             self.init_paths()
             self.load_file_parameter_file()
 
-    def init_parameters(self):
-        self.pa = self.pr.parameters[self.p_preset]
-
+    def init_plot_files(self):
         # Prepare plot-files-dictionary for Loading-Object
         if self.name not in self.pr.plot_files:
             self.pr.plot_files[self.name] = dict()
@@ -785,6 +786,7 @@ class MEEG(BaseLoading):
             trial: {
                 con_method: join(
                     self.save_dir,
+                    "connectivity",
                     f"{self.name}_{trial}_{self.p_preset}_{con_method}-con.npy",
                 )
                 for con_method in self.pa["con_methods"]
@@ -1379,7 +1381,7 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_connectivity(self):
-        con_dict = dict()
+        con_dict = {"__info__": self.load_json("con_labels")}
         for trial in self.con_paths:
             con_dict[trial] = dict()
             for con_method in self.con_paths[trial]:
@@ -1389,6 +1391,9 @@ class MEEG(BaseLoading):
 
     @save_decorator
     def save_connectivity(self, con_dict):
+        # Write info about label and parcellation into json
+        con_info = con_dict.pop("__info__")
+        self.save_json("con_labels", con_info)
         for trial in con_dict:
             for con_method in con_dict[trial]:
                 np.save(self.con_paths[trial][con_method], con_dict[trial][con_method])
@@ -1795,7 +1800,7 @@ class Group(BaseLoading):
 
     @load_decorator
     def load_ga_con(self):
-        ga_connect = dict()
+        ga_connect = {"__info__": self.load_json("con_labels")}
         for trial in self.ga_con_paths:
             ga_connect[trial] = {}
             for con_method in self.ga_con_paths[trial]:
@@ -1807,6 +1812,8 @@ class Group(BaseLoading):
 
     @save_decorator
     def save_ga_con(self, ga_con):
+        con_info = ga_con.pop("__info__")
+        self.save_json("con_labels", con_info)
         for trial in ga_con:
             for con_method in ga_con[trial]:
                 np.save(self.ga_con_paths[trial][con_method], ga_con[trial][con_method])

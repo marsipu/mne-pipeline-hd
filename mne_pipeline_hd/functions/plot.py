@@ -594,7 +594,6 @@ def _brain_plot(
     stc_views,
     stc_time,
     stc_clim,
-    stc_background,
     target_labels,
     target_parcellation,
     label_colors,
@@ -605,7 +604,6 @@ def _brain_plot(
     interactive=False,
     **brain_movie_kwargs,
 ):
-    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
     for trial, stc in stcs.items():
         title = f"{meeg.name}-{trial}"
         brain = stc.plot(
@@ -616,13 +614,13 @@ def _brain_plot(
             views=stc_views,
             clim=stc_clim,
             initial_time=stc_time,
-            background=stc_background,
             title=title,
             time_viewer=interactive,
         )
         brain.show_view(roll=stc_roll, azimuth=stc_azimuth, elevation=stc_elevation)
-        brain.add_text(0, 0.9, title, "title", font_size=14)
+        brain.add_text(0, 0.9, title, "title", color="w", font_size=14)
         if not interactive:
+            labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
             for label in labels:
                 color = label_colors.get(label.name)
                 brain.add_label(label, borders=True, color=color)
@@ -657,7 +655,6 @@ def plot_stc(
     stc_views,
     stc_time,
     stc_clim,
-    stc_background,
     stc_roll,
     stc_azimuth,
     stc_elevation,
@@ -672,7 +669,6 @@ def plot_stc(
         stc_views=stc_views,
         stc_time=stc_time,
         stc_clim=stc_clim,
-        stc_background=stc_background,
         target_labels=target_labels,
         target_parcellation=target_parcellation,
         label_colors=label_colors,
@@ -690,7 +686,6 @@ def plot_stc_interactive(
     stc_views,
     stc_time,
     stc_clim,
-    stc_background,
     stc_roll,
     stc_azimuth,
     stc_elevation,
@@ -705,7 +700,6 @@ def plot_stc_interactive(
         stc_views=stc_views,
         stc_time=stc_time,
         stc_clim=stc_clim,
-        stc_background=stc_background,
         target_labels=None,
         target_parcellation=None,
         label_colors=None,
@@ -727,7 +721,6 @@ def plot_animated_stc(
     stc_views,
     stc_time,
     stc_clim,
-    stc_background,
     stc_roll,
     stc_azimuth,
     stc_elevation,
@@ -744,7 +737,6 @@ def plot_animated_stc(
         stc_views=stc_views,
         stc_time=stc_time,
         stc_clim=stc_clim,
-        stc_background=stc_background,
         target_labels=target_labels,
         target_parcellation=target_parcellation,
         label_colors=label_colors,
@@ -870,11 +862,10 @@ def plot_label_time_course(meeg, show_plots):
             meeg.plot_save("label-time-course", subfolder=label, trial=trial)
 
 
-def plot_src_connectivity(
-    meeg, target_labels, target_parcellation, con_fmin, con_fmax, show_plots
-):
+def plot_src_connectivity(meeg, show_plots):
     con_dict = meeg.load_connectivity()
-    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
+    con_info = con_dict.pop("__info__")
+    labels = meeg.fsmri.get_labels(con_info["labels"], con_info["parcellation"])
     if "unknown-lh" in labels:
         labels.pop("unknown-lh")
     label_colors = [label.color for label in labels]
@@ -906,13 +897,16 @@ def plot_src_connectivity(
     # We only show the 300 strongest connections.
     for trial in con_dict:
         for con_method in con_dict[trial]:
+            title = (
+                f"{trial}: {con_info['frequencies'][0]}-{con_info['frequencies'][1]}"
+            )
             fig, axes = mne_connectivity.viz.plot_connectivity_circle(
                 con_dict[trial][con_method],
                 label_names,
                 n_lines=100,
                 node_angles=node_angles,
                 node_colors=label_colors,
-                title=f"{trial}: " f"{str(con_fmin)}-{str(con_fmax)}",
+                title=title,
                 fontsize_names=8,
                 show=show_plots,
             )
@@ -975,7 +969,6 @@ def plot_grand_avg_stc(
     stc_views,
     stc_time,
     stc_clim,
-    stc_background,
     stc_roll,
     stc_azimuth,
     stc_elevation,
@@ -990,7 +983,6 @@ def plot_grand_avg_stc(
         stc_views=stc_views,
         stc_time=stc_time,
         stc_clim=stc_clim,
-        stc_background=stc_background,
         target_labels=target_labels,
         target_parcellation=target_parcellation,
         label_colors=label_colors,
@@ -1003,12 +995,12 @@ def plot_grand_avg_stc(
 
 def plot_grand_average_stc_interactive(
     group,
+    label_colors,
     stc_surface,
     stc_hemi,
     stc_views,
     stc_time,
     stc_clim,
-    stc_background,
     stc_roll,
     stc_azimuth,
     stc_elevation,
@@ -1023,9 +1015,9 @@ def plot_grand_average_stc_interactive(
         stc_views=stc_views,
         stc_time=stc_time,
         stc_clim=stc_clim,
-        stc_background=stc_background,
         target_labels=None,
         target_parcellation=None,
+        label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
         stc_elevation=stc_elevation,
@@ -1044,7 +1036,6 @@ def plot_grand_avg_stc_anim(
     stc_views,
     stc_time,
     stc_clim,
-    stc_background,
     stc_roll,
     stc_azimuth,
     stc_elevation,
@@ -1061,7 +1052,6 @@ def plot_grand_avg_stc_anim(
         stc_views=stc_views,
         stc_time=stc_time,
         stc_clim=stc_clim,
-        stc_background=stc_background,
         target_labels=target_labels,
         target_parcellation=target_parcellation,
         label_colors=label_colors,
@@ -1094,21 +1084,17 @@ def plot_grand_avg_ltc(group, show_plots):
 
 def plot_grand_avg_connect(
     group,
-    con_fmin,
-    con_fmax,
-    target_labels,
-    target_parcellation,
     morph_to,
     show_plots,
     connectivity_vmin,
     connectivity_vmax,
 ):
     ga_dict = group.load_ga_con()
-
+    con_info = ga_dict.pop("__info__")
     # Get labels for FreeSurfer 'aparc' cortical parcellation
     # with 34 labels/hemi
     fsmri = FSMRI(morph_to, group.ct)
-    labels = fsmri.get_labels(target_labels, target_parcellation)
+    labels = fsmri.get_labels(con_info["labels"], con_info["parcellation"])
     if "unknown-lh" in labels:
         labels.remove("unknown-lh")
 
@@ -1140,13 +1126,16 @@ def plot_grand_avg_connect(
 
     for trial in ga_dict:
         for method in ga_dict[trial]:
+            title = (
+                f"{method}: {con_info['frequencies'][0]}-{con_info['frequencies'][1]}"
+            )
             fig, axes = mne_connectivity.viz.plot_connectivity_circle(
                 ga_dict[trial][method],
                 label_names,
                 n_lines=300,
                 node_angles=node_angles,
                 node_colors=label_colors,
-                title=f"{method}: {str(con_fmin)}-{str(con_fmax)}",
+                title=title,
                 vmin=connectivity_vmin,
                 vmax=connectivity_vmax,
                 fontsize_names=16,

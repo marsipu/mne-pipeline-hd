@@ -23,13 +23,11 @@ jobs:
             qt : 'PySide6'
     name: Run tests on ${{ matrix.os }} - ${{matrix.python}} - ${{ matrix.qt }}
     runs-on: ${{ matrix.os }}-latest
-    env:
-      DISPLAY: ':99.0'
     defaults:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # Set up headless display for windows and linux
       - name: Setup headless display
         uses: pyvista/setup-headless-display-action@main
@@ -44,7 +42,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install ${{ matrix.qt }}
-          python -m pip install -ve .[tests]
+          python -m pip install -ve ".[tests]"
       - name: Get testing version
         run: |
           mkdir -p mne/datasets
@@ -56,8 +54,9 @@ jobs:
           key: ${{ env.TESTING_VERSION }}
           path: ~/mne_data
         name: 'Cache testing data'
-      - run: python -c 'import mne; print(mne.datasets.testing.data_path(verbose=True))'
-        name: 'Download sample data'
+      - name: 'Download testing, sample and fsaverage data'
+        run: |
+          python -c 'import mne; mne.datasets.testing.data_path(); mne.datasets.sample.data_path(); mne.datasets.fetch_fsaverage()'
       - name: Show system information
         run: mne sys_info
       - run: pytest
