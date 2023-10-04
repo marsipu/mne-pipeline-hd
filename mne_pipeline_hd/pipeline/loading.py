@@ -1392,8 +1392,8 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_connectivity(self, con_dict):
         # Write info about label and parcellation into json
-        label_info = con_dict.pop("__info__")
-        self.save_json("con_labels", label_info)
+        con_info = con_dict.pop("__info__")
+        self.save_json("con_labels", con_info)
         for trial in con_dict:
             for con_method in con_dict[trial]:
                 np.save(self.con_paths[trial][con_method], con_dict[trial][con_method])
@@ -1812,8 +1812,8 @@ class Group(BaseLoading):
 
     @save_decorator
     def save_ga_con(self, ga_con):
-        label_info = ga_con.pop("__info__")
-        self.save_json("con_labels", label_info)
+        con_info = ga_con.pop("__info__")
+        self.save_json("con_labels", con_info)
         for trial in ga_con:
             for con_method in ga_con[trial]:
                 np.save(self.ga_con_paths[trial][con_method], ga_con[trial][con_method])

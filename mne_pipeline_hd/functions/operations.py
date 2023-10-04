@@ -1473,8 +1473,8 @@ def src_connectivity(
     inverse_method,
     lambda2,
     con_methods,
-    con_fmin,
-    con_fmax,
+    con_frequencies,
+    con_time_window,
     n_jobs,
 ):
     info = meeg.load_info()
@@ -1497,6 +1497,13 @@ def src_connectivity(
     for trial in meeg.sel_trials:
         con_dict[trial] = {}
         epochs = all_epochs[trial]
+
+        # Crop if necessary
+        if con_time_window is not None:
+            epochs = epochs.copy().crop(
+                tmin=con_time_window[0], tmax=con_time_window[1]
+            )
+
         # Compute inverse solution and for each epoch.
         # By using "return_generator=True" stcs will be a generator object
         # instead of a list.
@@ -1519,8 +1526,8 @@ def src_connectivity(
             method=con_methods,
             mode="multitaper",
             sfreq=sfreq,
-            fmin=con_fmin,
-            fmax=con_fmax,
+            fmin=con_frequencies[0],
+            fmax=con_frequencies[1],
             faverage=True,
             mt_adaptive=True,
             n_jobs=n_jobs,
@@ -1538,6 +1545,7 @@ def src_connectivity(
     con_dict["__info__"] = {
         "labels": target_labels,
         "parcellation": target_parcellation,
+        "frequencies": con_frequencies,
     }
 
     meeg.save_connectivity(con_dict)
@@ -1650,7 +1658,7 @@ def grand_avg_connect(group):
         meeg = MEEG(name, group.ct)
         print(f"Add {name} to grand_average")
         con_dict = meeg.load_connectivity()
-        label_info = con_dict.pop("__info__")
+        con_info = con_dict.pop("__info__")
         for trial in con_dict:
             if trial not in con_average_dict:
                 con_average_dict[trial] = {}
@@ -1662,7 +1670,7 @@ def grand_avg_connect(group):
                 else:
                     con_average_dict[trial][con_method] = [con_dict[trial][con_method]]
 
-    ga_con = {"__info__": label_info}
+    ga_con = {"__info__": con_info}
     for trial in con_average_dict:
         ga_con[trial] = {}
         for con_method in con_average_dict[trial]:

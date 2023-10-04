@@ -862,10 +862,10 @@ def plot_label_time_course(meeg, show_plots):
             meeg.plot_save("label-time-course", subfolder=label, trial=trial)
 
 
-def plot_src_connectivity(meeg, con_fmin, con_fmax, show_plots):
+def plot_src_connectivity(meeg, show_plots):
     con_dict = meeg.load_connectivity()
-    label_info = con_dict.pop("__info__")
-    labels = meeg.fsmri.get_labels(label_info["labels"], label_info["parcellation"])
+    con_info = con_dict.pop("__info__")
+    labels = meeg.fsmri.get_labels(con_info["labels"], con_info["parcellation"])
     if "unknown-lh" in labels:
         labels.pop("unknown-lh")
     label_colors = [label.color for label in labels]
@@ -897,13 +897,16 @@ def plot_src_connectivity(meeg, con_fmin, con_fmax, show_plots):
     # We only show the 300 strongest connections.
     for trial in con_dict:
         for con_method in con_dict[trial]:
+            title = (
+                f"{trial}: {con_info['frequencies'][0]}-{con_info['frequencies'][1]}"
+            )
             fig, axes = mne_connectivity.viz.plot_connectivity_circle(
                 con_dict[trial][con_method],
                 label_names,
                 n_lines=100,
                 node_angles=node_angles,
                 node_colors=label_colors,
-                title=f"{trial}: " f"{str(con_fmin)}-{str(con_fmax)}",
+                title=title,
                 fontsize_names=8,
                 show=show_plots,
             )
@@ -1081,19 +1084,17 @@ def plot_grand_avg_ltc(group, show_plots):
 
 def plot_grand_avg_connect(
     group,
-    con_fmin,
-    con_fmax,
     morph_to,
     show_plots,
     connectivity_vmin,
     connectivity_vmax,
 ):
     ga_dict = group.load_ga_con()
-    label_info = ga_dict.pop("__info__")
+    con_info = ga_dict.pop("__info__")
     # Get labels for FreeSurfer 'aparc' cortical parcellation
     # with 34 labels/hemi
     fsmri = FSMRI(morph_to, group.ct)
-    labels = fsmri.get_labels(label_info["labels"], label_info["parcellation"])
+    labels = fsmri.get_labels(con_info["labels"], con_info["parcellation"])
     if "unknown-lh" in labels:
         labels.remove("unknown-lh")
 
@@ -1125,13 +1126,16 @@ def plot_grand_avg_connect(
 
     for trial in ga_dict:
         for method in ga_dict[trial]:
+            title = (
+                f"{method}: {con_info['frequencies'][0]}-{con_info['frequencies'][1]}"
+            )
             fig, axes = mne_connectivity.viz.plot_connectivity_circle(
                 ga_dict[trial][method],
                 label_names,
                 n_lines=300,
                 node_angles=node_angles,
                 node_colors=label_colors,
-                title=f"{method}: {str(con_fmin)}-{str(con_fmax)}",
+                title=title,
                 vmin=connectivity_vmin,
                 vmax=connectivity_vmax,
                 fontsize_names=16,
