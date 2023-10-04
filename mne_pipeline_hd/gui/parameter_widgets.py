@@ -557,17 +557,11 @@ class TupleGui(Param):
 
         super().__init__(**kwargs)
 
-        if step == 1:
-            self.param_widget1 = QSpinBox()
-            self.param_widget2 = QSpinBox()
-            min_val = int(min_val)
-            max_val = int(max_val)
-        else:
-            self.param_widget1 = QDoubleSpinBox()
-            self.param_widget2 = QDoubleSpinBox()
-            decimals = len(str(step)[str(step).find(".") :]) - 1
-            self.param_widget1.setDecimals(decimals)
-            self.param_widget2.setDecimals(decimals)
+        self.param_widget1 = QDoubleSpinBox()
+        self.param_widget2 = QDoubleSpinBox()
+        decimals = len(str(step)[str(step).find(".") :]) - 1
+        self.param_widget1.setDecimals(decimals)
+        self.param_widget2.setDecimals(decimals)
 
         self._external_set = False
 
