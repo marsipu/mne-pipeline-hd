@@ -1207,10 +1207,12 @@ class MultiTypeGui(Param):
 
 
 class LabelPicker(mne.viz.Brain):
-    def __init__(self, paramdlg, parcellation, selected, list_changed_slot, title):
+    def __init__(
+        self, paramdlg, parcellation, surface, selected, list_changed_slot, title
+    ):
         super().__init__(
             paramdlg._fsmri.name,
-            surf="inflated",
+            surf=surface,
             title=title,
             subjects_dir=paramdlg.ct.subjects_dir,
             background=(0, 0, 0),
@@ -1351,6 +1353,7 @@ class LabelDialog(SimpleDialog):
         self._extra_picker = None
         self._fsmri = None
         self._parcellation = None
+        self._surface = None
         # Put selected labels from LabelGui in both parc and extra,
         # since they get removed if not fitting later anyway
         self._parc_labels = list()
@@ -1365,20 +1368,29 @@ class LabelDialog(SimpleDialog):
 
         # Initialize with first items
         self._subject_changed()
+        self._surface_changed()
 
         self.open()
 
     def _init_layout(self):
         layout = QVBoxLayout(self.main_widget)
 
+        layout.addWidget(QLabel("Choose a subject:"))
         self.fsmri_cmbx = QComboBox()
         self.fsmri_cmbx.addItems(self.ct.pr.all_fsmri)
         self.fsmri_cmbx.activated.connect(self._subject_changed)
         layout.addWidget(self.fsmri_cmbx)
 
+        layout.addWidget(QLabel("Choose a parcellation:"))
         self.parcellation_cmbx = QComboBox()
         self.parcellation_cmbx.activated.connect(self._parc_changed)
         layout.addWidget(self.parcellation_cmbx)
+
+        layout.addWidget(QLabel("Choose a surface:"))
+        self.surface_cmbx = QComboBox()
+        self.surface_cmbx.addItems(["inflated", "pial", "white"])
+        self.surface_cmbx.activated.connect(self._surface_changed)
+        layout.addWidget(self.surface_cmbx)
 
         self.parc_label_list = CheckList(
             data=self._parc_labels,
@@ -1472,6 +1484,12 @@ class LabelDialog(SimpleDialog):
         if self._parc_picker is not None and not self._parc_picker.isclosed():
             self._parc_picker._set_annotations(self._parcellation)
 
+    def _surface_changed(self):
+        self._surface = self.surface_cmbx.currentText()
+        if self._parc_picker is not None and not self._parc_picker.isclosed():
+            self._parc_picker.close()
+            self._open_parc_picker()
+
     def _labels_changed(self, labels, picker_name):
         picker = (
             self._parc_picker if picker_name == "parcellation" else self._extra_picker
@@ -1490,6 +1508,7 @@ class LabelDialog(SimpleDialog):
         self._parc_picker = LabelPicker(
             self,
             self._parcellation,
+            self._surface,
             self._selected_parc_labels,
             self.parc_label_list.content_changed,
             title="Pick parcellation labels",
@@ -1499,6 +1518,7 @@ class LabelDialog(SimpleDialog):
         self._extra_picker = LabelPicker(
             self,
             "Other",
+            self._surface,
             self._selected_extra_labels,
             self.extra_label_list.content_changed,
             title="Pick extra labels",
