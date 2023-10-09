@@ -1,6 +1,7 @@
 # ToDo: Check every requirement in the end if really necessary
 # Pipeline-related
 autoreject
+git+https://github.com/marsipu/NodeGraphQt_qtpy.git@main
 h5io
 
 # MNE-related
