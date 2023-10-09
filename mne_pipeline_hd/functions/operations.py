@@ -87,7 +87,7 @@ def filter_data(
 
     if any([results[key] != "equal" for key in results]):
         # Load Data
-        data = meeg.io_dict[filter_target]["load"]()
+        data = meeg.load(filter_target)
 
         # use cuda for filtering if enabled
         if enable_cuda:
@@ -131,9 +131,9 @@ def filter_data(
 
         # Save Data
         if filter_target == "raw":
-            meeg.io_dict["raw_filtered"]["save"](data)
+            meeg.save("raw_filtered", data)
         else:
-            meeg.io_dict[filter_target]["save"](data)
+            meeg.save(filter_target, data)
 
         # Remove raw to avoid memory overload
         del data
@@ -196,15 +196,19 @@ def filter_data(
 
 
 def interpolate_bads(meeg, bad_interpolation):
-    data = meeg.io_dict[bad_interpolation]["load"]()
+    data = meeg.load(bad_interpolation)
 
     if bad_interpolation == "evoked":
         for evoked in data:
-            evoked.interpolate_bads()
+            # Add bads for channels present
+            evoked.info["bads"] = [b for b in meeg.bad_channels if b in data.ch_names]
+            evoked.interpolate_bads(reset_bads=True)
     else:
-        data.interpolate_bads()
+        # Add bads for channels present
+        data.info["bads"] = [b for b in meeg.bad_channels if b in data.ch_names]
+        data.interpolate_bads(reset_bads=True)
 
-    meeg.io_dict[bad_interpolation]["save"](data)
+    meeg.save(bad_interpolation, data)
 
 
 def add_erm_ssp(

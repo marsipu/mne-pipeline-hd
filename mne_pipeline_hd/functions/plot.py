@@ -78,7 +78,7 @@ def plot_filtered(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
         events = None
         print("No events found")
 
-    fig = raw.plot(
+    raw.plot(
         events=events,
         bad_color="red",
         scalings="auto",
@@ -87,18 +87,6 @@ def plot_filtered(meeg, show_plots, close_func=_save_raw_on_close, **kwargs):
         show=show_plots,
         **kwargs,
     )
-
-    if hasattr(fig, "canvas"):
-        # Connect to closing of Matplotlib-Figure
-        fig.canvas.mpl_connect(
-            "close_event",
-            partial(close_func, meeg=meeg, raw=raw, raw_type="raw_filtered"),
-        )
-    else:
-        # Connect to closing of PyQt-Figure
-        fig.gotClosed.connect(
-            partial(close_func, None, meeg=meeg, raw=raw, raw_type="raw_filtered")
-        )
 
 
 def plot_sensors(meeg, plot_sensors_kind, ch_types, show_plots):

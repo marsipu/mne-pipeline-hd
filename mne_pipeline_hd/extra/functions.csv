@@ -1,6 +1,7 @@
 ;alias;target;tab;group;matplotlib;mayavi;dependencies;module;pkg_name;func_args
 find_bads;Find Bad Channels;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,n_jobs
 filter_data;Filter;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,filter_target,highpass,lowpass,filter_length,l_trans_bandwidth,h_trans_bandwidth,filter_method,iir_params,fir_phase,fir_window,fir_design,skip_by_annotation,fir_pad,n_jobs,enable_cuda,erm_t_limit,bad_interpolation
+interpolate_bads;Interpolate Bads;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,bad_interpolation
 add_erm_ssp;Empty-Room SSP;MEEG;Compute;Preprocessing;True;False;;operations;basic;meeg,erm_ssp_duration,erm_n_grad,erm_n_mag,erm_n_eeg,n_jobs,show_plots
 eeg_reference_raw;Set EEG Reference;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ref_channels
 find_events;Find events;MEEG;Compute;events;False;False;;operations;basic;meeg,stim_channels,min_duration,shortest_event,adjust_timeline_by_msec
@@ -10,7 +11,6 @@ estimate_noise_covariance;Noise-Covariance;MEEG;Compute;Preprocessing;False;Fals
 run_ica;Run ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_method,ica_fitto,n_components,ica_noise_cov,ica_remove_proj,ica_reject,ica_autoreject,overwrite_ar,ch_types,ch_names,reject_by_annotation,ica_eog,eog_channel,ica_ecg,ecg_channel
 apply_ica;Apply ICA;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,ica_apply_target,n_pca_components
 get_evokeds;Get Evokeds;MEEG;Compute;events;False;False;;operations;basic;meeg
-interpolate_bads;Interpolate Bads;MEEG;Compute;Preprocessing;False;False;;operations;basic;meeg,bad_interpolation
 compute_psd_raw;Compute PSD (Raw);MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,psd_method,n_jobs
 compute_psd_epochs;Compute PSD (Epochs);MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,psd_method,n_jobs
 tfr;Time-Frequency;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,tfr_freqs,tfr_n_cycles,tfr_average,tfr_use_fft,tfr_baseline,tfr_baseline_mode,tfr_method,multitaper_bandwidth,stockwell_width,n_jobs
