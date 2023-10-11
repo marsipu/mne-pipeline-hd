@@ -2,6 +2,7 @@
 # Pipeline-related
 autoreject
 h5io
+h5netcdf  # only until new version of mne-connectivity is released
 
 # MNE-related
 mne

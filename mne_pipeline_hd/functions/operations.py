@@ -25,7 +25,7 @@ import mne_connectivity
 import numpy as np
 from mne.preprocessing import ICA, find_bad_channels_maxwell
 
-from mne_pipeline_hd.pipeline.loading import MEEG
+from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI
 from mne_pipeline_hd.pipeline.pipeline_utils import (
     check_kwargs,
     compare_filep,
@@ -1174,11 +1174,13 @@ def prepare_bem(fsmri, bem_spacing, bem_conductivity):
 def morph_fsmri(meeg, morph_to):
     if meeg.fsmri.name != morph_to:
         forward = meeg.load_forward()
+        fsmri_to = FSMRI(morph_to, meeg.ct)
         morph = mne.compute_source_morph(
             forward["src"],
             subject_from=meeg.fsmri.name,
             subject_to=morph_to,
             subjects_dir=meeg.subjects_dir,
+            src_to=fsmri_to.load_source_space(),
         )
         meeg.save_source_morph(morph)
     else:
@@ -1543,7 +1545,7 @@ def src_connectivity(
         # con is a 3D array, get the connectivity for the first (and only)
         # freq. band for each con_method
         for method, c in zip(con_methods, con):
-            con_dict[trial][method] = c.get_data(output="dense")[:, :, 0]
+            con_dict[trial][method] = c
 
     # Add target_labels for later identification
     con_dict["__info__"] = {
@@ -1669,7 +1671,7 @@ def grand_avg_connect(group):
             for con_method in con_dict[trial]:
                 if con_method in con_average_dict[trial]:
                     con_average_dict[trial][con_method].append(
-                        con_dict[trial][con_method]
+                        con_dict[trial][con_method].get_data(output="dense")[:, :, 0]
                     )
                 else:
                     con_average_dict[trial][con_method] = [con_dict[trial][con_method]]

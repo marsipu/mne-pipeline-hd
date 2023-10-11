@@ -22,6 +22,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import mne
+import mne_connectivity
 import numpy as np
 from tqdm import tqdm
 
@@ -787,7 +788,7 @@ class MEEG(BaseLoading):
                 con_method: join(
                     self.save_dir,
                     "connectivity",
-                    f"{self.name}_{trial}_{self.p_preset}_{con_method}-con.npy",
+                    f"{self.name}_{trial}_{self.p_preset}_{con_method}-con.nc",
                 )
                 for con_method in self.pa["con_methods"]
             }
@@ -1383,8 +1384,10 @@ class MEEG(BaseLoading):
         con_dict = {"__info__": self.load_json("con_labels")}
         for trial in self.con_paths:
             con_dict[trial] = dict()
-            for con_method in self.con_paths[trial]:
-                con_dict[trial][con_method] = np.load(self.con_paths[trial][con_method])
+            for con_method, con_path in self.con_paths[trial].items():
+                con_dict[trial][con_method] = mne_connectivity.read_connectivity(
+                    con_path
+                )
 
         return con_dict
 
@@ -1394,8 +1397,8 @@ class MEEG(BaseLoading):
         con_info = con_dict.pop("__info__")
         self.save_json("con_labels", con_info)
         for trial in con_dict:
-            for con_method in con_dict[trial]:
-                np.save(self.con_paths[trial][con_method], con_dict[trial][con_method])
+            for con_method, con in con_dict[trial].items():
+                con.save(self.con_paths[trial][con_method])
 
 
 fsaverage_paths = {

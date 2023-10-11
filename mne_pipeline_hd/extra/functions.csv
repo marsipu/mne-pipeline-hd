@@ -28,7 +28,7 @@ source_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,inverse
 apply_morph;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,morph_to
 label_time_course;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,target_labels,target_parcellation,extract_mode
 ecd_fit;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,ecd_times,ecd_positions,ecd_orientations,t_epoch
-src_connectivity;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,target_labels,target_parcellation,inverse_method,lambda2,con_methods,con_frequencies,con_time_window,n_jobs
+src_connectivity;;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,target_labels,target_parcellation,inverse_method,lambda2,con_methods,con_frequencies,con_time_window,n_jobs
 grand_avg_evokeds;;Group;Compute;Grand-Average;False;False;;operations;basic;group,ga_interpolate_bads,ga_drop_bads
 grand_avg_tfr;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;basic;group,morph_to

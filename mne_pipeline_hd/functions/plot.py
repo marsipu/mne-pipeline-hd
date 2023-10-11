@@ -750,7 +750,7 @@ def plot_labels(
     with mne.viz.use_3d_backend(backend_3d):
         Brain = mne.viz.get_brain_class()
         brain = Brain(
-            subject_id=fsmri.name,
+            subject=fsmri.name,
             hemi=stc_hemi,
             surf=stc_surface,
             subjects_dir=fsmri.subjects_dir,
@@ -758,9 +758,13 @@ def plot_labels(
         )
 
         labels = fsmri.get_labels(target_labels, target_parcellation)
+        y = 0.95
         for label in labels:
             color = label_colors.get(label.name)
             brain.add_label(label, borders=False, color=color)
+            brain.add_text(x=0.05, y=y, text=label.name, color=color, font_size=14)
+            y -= 0.05
+
         fsmri.plot_save("labels", brain=brain)
 
 
@@ -884,12 +888,13 @@ def plot_src_connectivity(meeg, show_plots):
     # Plot the graph using node colors from the FreeSurfer parcellation.
     # We only show the 300 strongest connections.
     for trial in con_dict:
-        for con_method in con_dict[trial]:
+        for con_method, con in con_dict[trial].items():
+            con_data = con.get_data(output="dense")[:, :, 0]
             title = (
                 f"{trial}: {con_info['frequencies'][0]}-{con_info['frequencies'][1]}"
             )
             fig, axes = mne_connectivity.viz.plot_connectivity_circle(
-                con_dict[trial][con_method],
+                con_data,
                 label_names,
                 n_lines=100,
                 node_angles=node_angles,
