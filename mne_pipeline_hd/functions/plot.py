@@ -1088,6 +1088,7 @@ def plot_grand_avg_connect(
     show_plots,
     connectivity_vmin,
     connectivity_vmax,
+    con_group_boundaries,
 ):
     ga_dict = group.load_ga_con()
     con_info = ga_dict.pop("__info__")
@@ -1122,7 +1123,7 @@ def plot_grand_avg_connect(
         label_names,
         node_order,
         start_pos=90,
-        group_boundaries=[0, len(label_names) / 2],
+        group_boundaries=con_group_boundaries,
     )
 
     for trial in ga_dict:
