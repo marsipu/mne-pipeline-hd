@@ -1117,6 +1117,7 @@ def plot_grand_avg_connect(
     node_order.extend(lh_labels[::-1])  # reverse the order
     node_order.extend(rh_labels)
 
+    # ToDo: what happens when there is an odd number of labels/groups
     node_angles = mne.viz.circular_layout(
         label_names,
         node_order,

@@ -1221,6 +1221,7 @@ class LabelPicker(mne.viz.Brain):
 
         self._shown_labels = list()
 
+        # Title text
         self.add_text(0, 0.9, "", color="w", font_size=14, name="title")
 
         self.show_view(roll=0, elevation=60, azimuth=70)
@@ -1302,6 +1303,19 @@ class LabelPicker(mne.viz.Brain):
                 self._add_label_name(label.name, hemi, label)
                 self.selected.append(label.name)
             self.list_changed_slot()
+
+            # Update label text
+            if "label" in self._actors["text"]:
+                self.remove_text("label")
+            self.add_text(
+                0,
+                0.05,
+                label.name,
+                color=label.color[:3],
+                opacity=label.color[-1],
+                font_size=12,
+                name="label",
+            )
 
     def _add_label_name(self, label_name, hemi, label=None):
         if label is None:
