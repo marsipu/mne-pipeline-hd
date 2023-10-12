@@ -195,6 +195,13 @@ def filter_data(
         print("no erm_file assigned")
 
 
+def notch_filter(meeg, notch_frequencies, n_jobs):
+    raw_filtered = meeg.load_filtered()
+
+    raw_filtered = raw_filtered.notch_filter(notch_frequencies, n_jobs=1)
+    meeg.save_filtered(raw_filtered)
+
+
 def interpolate_bads(meeg, bad_interpolation):
     data = meeg.load(bad_interpolation)
 

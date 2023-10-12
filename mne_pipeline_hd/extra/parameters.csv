@@ -102,3 +102,4 @@ psd_method;;Time-Frequency;welch;;The method for spectral estimation;ComboGui;{'
 psd_topomap_bands;;Time-Frequency;None;;The frequency bands for the topomap-plot;DictGui;{'none_select': True}
 backend_3d;3D-Backend;Plot;pyvistaqt;;Choose the 3D-Backend for Brain-plots.;ComboGui;{'options': ['pyvistaqt', 'notebook']}
 con_group_boundaries;;Connectivity;None;;Set group-boundaries for circular plot.;FuncGui;{'none_select': True}
+notch_frequencies;;Preprocessing;50;;Set frequencies for Notch filtering;FuncGui;""
