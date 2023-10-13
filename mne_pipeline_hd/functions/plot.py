@@ -761,6 +761,8 @@ def plot_labels(
         y = 0.95
         for label in labels:
             color = label_colors.get(label.name)
+            if color is None:
+                color = label.color
             brain.add_label(label, borders=False, color=color)
             brain.add_text(x=0.05, y=y, text=label.name, color=color, font_size=14)
             y -= 0.05
@@ -836,31 +838,36 @@ def plot_snr(meeg, show_plots):
         meeg.plot_save("snr", trial=trial, matplotlib_figure=fig)
 
 
-def plot_label_time_course(meeg, show_plots):
+def plot_label_time_course(meeg, label_colors, show_plots):
     ltcs = meeg.load_ltc()
     for trial in ltcs:
-        for label in ltcs[trial]:
-            plt.figure()
-            plt.plot(ltcs[trial][label][1], ltcs[trial][label][0])
-            plt.title(
-                f"{meeg.name}-{trial}-{label}\n"
-                f'Extraction-Mode: {meeg.pa["extract_mode"]}'
-            )
-            plt.xlabel("Time in s")
-            plt.ylabel("Source amplitude")
-            if show_plots:
-                plt.show()
+        plt.figure()
+        plt.title(
+            f"{meeg.name}-{trial}\n" f'Extraction-Mode: {meeg.pa["extract_mode"]}'
+        )
+        plt.xlabel("Time in s")
+        plt.ylabel("Source amplitude")
+        for label_name, data in ltcs[trial].items():
+            color = label_colors.get(label_name, "black")
+            plt.plot(data[1], data[0], color=color, label=label_name)
+        plt.legend()
+        if show_plots:
+            plt.show()
+        meeg.plot_save("label-time-course", trial=trial)
 
-            meeg.plot_save("label-time-course", subfolder=label, trial=trial)
 
-
-def plot_src_connectivity(meeg, show_plots):
+def plot_src_connectivity(meeg, label_colors, show_plots):
     con_dict = meeg.load_connectivity()
     con_info = con_dict.pop("__info__")
     labels = meeg.fsmri.get_labels(con_info["labels"], con_info["parcellation"])
     if "unknown-lh" in labels:
         labels.pop("unknown-lh")
-    label_colors = [label.color for label in labels]
+    colors = list()
+    for label in labels:
+        color = label_colors.get(label.name)
+        if color is None:
+            color = label.color
+        colors.append(color)
     label_names = [label.name for label in labels]
     lh_labels = [l_name for l_name in label_names if l_name.endswith("lh")]
     rh_labels = [l_name for l_name in label_names if l_name.endswith("rh")]
@@ -898,7 +905,7 @@ def plot_src_connectivity(meeg, show_plots):
                 label_names,
                 n_lines=100,
                 node_angles=node_angles,
-                node_colors=label_colors,
+                node_colors=colors,
                 title=title,
                 fontsize_names=8,
                 show=show_plots,
@@ -1057,27 +1064,30 @@ def plot_grand_avg_stc_anim(
     )
 
 
-def plot_grand_avg_ltc(group, show_plots):
+def plot_grand_avg_ltc(group, label_colors, show_plots):
     ga_ltc = group.load_ga_ltc()
     for trial in ga_ltc:
-        for label in ga_ltc[trial]:
-            plt.figure()
-            plt.plot(ga_ltc[trial][label][1], ga_ltc[trial][label][0])
-            plt.title(
-                f"Label-Time-Course for {group.name}-{trial}-{label}\n"
-                f'with Extraction-Mode: {group.pa["extract_mode"]}'
-            )
-            plt.xlabel("Time in ms")
-            plt.ylabel("Source amplitude")
-            if show_plots:
-                plt.show()
+        plt.figure()
+        plt.title(
+            f"Label-Time-Course for {group.name}-{trial}\n"
+            f'with Extraction-Mode: {group.pa["extract_mode"]}'
+        )
+        plt.xlabel("Time in ms")
+        plt.ylabel("Source amplitude")
+        for label_name, data in ga_ltc[trial].items():
+            color = label_colors.get(label_name, "black")
+            plt.plot(data[1], data[0], color=color, label=label_name)
+        plt.legend()
+        if show_plots:
+            plt.show()
 
-            group.plot_save("ga_label-time-course", subfolder=label, trial=trial)
+        group.plot_save("ga_label-time-course", trial=trial)
 
 
 def plot_grand_avg_connect(
     group,
     morph_to,
+    label_colors,
     show_plots,
     connectivity_vmin,
     connectivity_vmax,
@@ -1092,7 +1102,13 @@ def plot_grand_avg_connect(
     if "unknown-lh" in labels:
         labels.remove("unknown-lh")
 
-    label_colors = [label.color for label in labels]
+    colors = list()
+    for label in labels:
+        color = label_colors.get(label.name)
+        if color is None:
+            color = label.color
+        colors.append(color)
+
     label_names = [lb.name for lb in labels]
 
     lh_labels = [l_name for l_name in label_names if l_name.endswith("lh")]
@@ -1129,7 +1145,7 @@ def plot_grand_avg_connect(
                 label_names,
                 n_lines=300,
                 node_angles=node_angles,
-                node_colors=label_colors,
+                node_colors=colors,
                 title=title,
                 vmin=connectivity_vmin,
                 vmax=connectivity_vmax,
