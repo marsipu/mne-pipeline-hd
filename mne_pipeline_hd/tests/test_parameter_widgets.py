@@ -138,27 +138,27 @@ def test_basic_param_guis(qtbot, gui_name):
 
     # Test MultiTypeGui
     if gui_name == "MultiTypeGui":
-        for gui_type, gui_name in gui.gui_types.items():
-            gui.set_param(parameters[gui_name])
-            assert gui.get_value() == parameters[gui_name]
+        for gui_type, type_gui_name in gui.gui_types.items():
+            gui.set_param(parameters[type_gui_name])
+            assert gui.get_value() == parameters[type_gui_name]
             assert type(gui.get_value()).__name__ == gui_type
         kwargs["type_selection"] = True
         kwargs["type_kwargs"] = dict()
-        for gui_name in gui.gui_types.values():
-            type_class = getattr(parameter_widgets, gui_name)
+        for type_gui_name in gui.gui_types.values():
+            type_class = getattr(parameter_widgets, type_gui_name)
             gui_parameters = list(inspect.signature(type_class).parameters) + list(
                 inspect.signature(Param).parameters
             )
             t_kwargs = {
                 key: value for key, value in gui_kwargs.items() if key in gui_parameters
             }
-            kwargs["type_kwargs"][gui_name] = t_kwargs
+            kwargs["type_kwargs"][type_gui_name] = t_kwargs
         gui = gui_class(data=parameters, name=gui_name, **kwargs)
-        for gui_type, gui_name in gui.gui_types.items():
+        for gui_type, type_gui_name in gui.gui_types.items():
             type_idx = gui.types.index(gui_type)
             gui.change_type(type_idx)
-            gui.set_param(parameters[gui_name])
-            assert gui.get_value() == parameters[gui_name]
+            gui.set_param(parameters[type_gui_name])
+            assert gui.get_value() == parameters[type_gui_name]
             assert type(gui.get_value()).__name__ == gui_type
 
 
