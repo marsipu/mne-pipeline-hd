@@ -1486,7 +1486,8 @@ def src_connectivity(
     inverse_method,
     lambda2,
     con_methods,
-    con_frequencies,
+    con_fmin,
+    con_fmax,
     con_time_window,
     n_jobs,
 ):
@@ -1539,8 +1540,8 @@ def src_connectivity(
             method=con_methods,
             mode="multitaper",
             sfreq=sfreq,
-            fmin=con_frequencies[0],
-            fmax=con_frequencies[1],
+            fmin=con_fmin,
+            fmax=con_fmax,
             faverage=True,
             mt_adaptive=True,
             n_jobs=n_jobs,
@@ -1558,7 +1559,7 @@ def src_connectivity(
     con_dict["__info__"] = {
         "labels": target_labels,
         "parcellation": target_parcellation,
-        "frequencies": con_frequencies,
+        "frequencies": (con_fmin, con_fmax),
     }
 
     meeg.save_connectivity(con_dict)
@@ -1675,29 +1676,30 @@ def grand_avg_connect(group):
         for trial in con_dict:
             if trial not in con_average_dict:
                 con_average_dict[trial] = {}
-            for con_method in con_dict[trial]:
-                if con_method in con_average_dict[trial]:
-                    con_average_dict[trial][con_method].append(
-                        con_dict[trial][con_method].get_data(output="dense")[:, :, 0]
-                    )
-                else:
-                    con_average_dict[trial][con_method] = [con_dict[trial][con_method]]
+            for con_method, con in con_dict[trial].items():
+                con_average_dict[trial][con_method] = dict()
+                for freq_idx, freq in enumerate(con.freqs):
+                    con_data = con.get_data(output="dense")[:, :, freq_idx]
+                    if freq in con_average_dict[trial][con_method]:
+                        con_average_dict[trial][con_method][freq].append(con_data)
+                    else:
+                        con_average_dict[trial][con_method][freq] = [con_data]
 
     ga_con = {"__info__": con_info}
     for trial in con_average_dict:
         ga_con[trial] = {}
         for con_method in con_average_dict[trial]:
-            if len(con_average_dict[trial][con_method]) != 0:
-                print(f"grand_average for {trial}-{con_method}")
-                con_list = con_average_dict[trial][con_method]
-                n_subjects = len(con_list)
-                average = con_list[0]
-                for idx in range(1, n_subjects):
-                    average += con_list[idx]
+            for freq, con_list in con_average_dict[trial][con_method].items():
+                if len(con_list) != 0:
+                    print(f"grand_average for {trial}-{con_method}-{freq}")
+                    n_subjects = len(con_list)
+                    average = con_list[0]
+                    for idx in range(1, n_subjects):
+                        average += con_list[idx]
 
-                average /= n_subjects
+                    average /= n_subjects
 
-                ga_con[trial][con_method] = average
+                    ga_con[trial][con_method][freq] = average
 
     group.save_ga_con(ga_con)
 

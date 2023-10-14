@@ -1818,4 +1818,7 @@ class Group(BaseLoading):
         self.save_json("con_labels", con_info)
         for trial in ga_con:
             for con_method in ga_con[trial]:
-                np.save(self.ga_con_paths[trial][con_method], ga_con[trial][con_method])
+                for freq, con in ga_con[trial][con_method].items():
+                    np.save(
+                        self.ga_con_paths[trial][con_method], ga_con[trial][con_method]
+                    )

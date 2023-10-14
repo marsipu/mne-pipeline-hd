@@ -29,7 +29,7 @@ source_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,inverse
 apply_morph;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,morph_to
 label_time_course;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,target_labels,target_parcellation,extract_mode
 ecd_fit;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,ecd_times,ecd_positions,ecd_orientations,t_epoch
-src_connectivity;;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,target_labels,target_parcellation,inverse_method,lambda2,con_methods,con_frequencies,con_time_window,n_jobs
+src_connectivity;;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,target_labels,target_parcellation,inverse_method,lambda2,con_methods,con_fmin,con_fmax,con_time_window,n_jobs
 grand_avg_evokeds;;Group;Compute;Grand-Average;False;False;;operations;basic;group,ga_interpolate_bads,ga_drop_bads
 grand_avg_tfr;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;basic;group,morph_to
@@ -75,7 +75,7 @@ plot_grand_avg_tfr;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_p
 plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,target_labels,target_parcellation,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,backend_3d
 plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;basic;group,target_labels,target_parcellation,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,stc_animation_span,stc_animation_dilat,backend_3d
 plot_grand_average_stc_interactive;;Group;Plot;Grand-Average;True;True;;plot;basic;group,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,backend_3d
-plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
+plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;basic;group,label_colors,show_plots
 plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,morph_to,label_colors,show_plots,connectivity_vmin,connectivity_vmax,con_group_boundaries
 plot_ica_components;Plot ICA-Components;MEEG;Plot;ICA;True;False;;plot;basic;meeg,show_plots,close_func
 plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;plot;basic;meeg,ica_source_data,show_plots,close_func

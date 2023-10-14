@@ -81,7 +81,8 @@ target_labels;Target Labels;Inverse;[];;;LabelGui;
 label_colors;;Inverse;{};;Set custom colors for labels.;ColorGui;{'keys': 'target_labels', 'none_select':True}
 extract_mode;Label-Extraction-Mode;Inverse;auto;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['auto', 'max', 'mean', 'mean_flip', 'pca_flip']}
 con_methods;;Connectivity;['coh'];;methods for connectivity;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}
-con_frequencies;;Connectivity;(30, 80);;frequencies for connectivity;TupleGui;{'none_select': True, 'step': 1}
+con_fmin;;Connectivity;30;;lower frequency/frequencies for connectivity;MultiTypeGui;{'type_selection': True, 'types': ['float', 'list']}
+con_fmax;;Connectivity;80;;upper frequency/frequencies for connectivity;MultiTypeGui;{'type_selection': True, 'types': ['float', 'list']}
 con_time_window;;Connectivity;(0, 0.5);;time-window for connectivity;TupleGui;{'none_select': True, 'step': 0.001}
 ecd_times;;Inverse;{};;;DictGui;
 ecd_positions;;Inverse;{};;;DictGui;
