@@ -24,6 +24,7 @@ import mne
 import mne_connectivity
 import numpy as np
 from mne.preprocessing import ICA, find_bad_channels_maxwell
+from mne_connectivity import SpectralConnectivity
 
 from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI
 from mne_pipeline_hd.pipeline.pipeline_utils import (
@@ -801,7 +802,7 @@ def apply_ica(meeg, ica_apply_target, n_pca_components):
 
 def get_evokeds(meeg):
     epochs = meeg.load_epochs()
-    evokeds = []
+    evokeds = list()
     for trial in meeg.sel_trials:
         evoked = epochs[trial].average()
         # Todo: optional if you want weights in your evoked.comment?!
@@ -823,7 +824,7 @@ def calculate_gfp(evoked):
 
 
 def grand_avg_evokeds(group, ga_interpolate_bads, ga_drop_bads):
-    trial_dict = {}
+    trial_dict = dict()
     for name in group.group_list:
         meeg = MEEG(name, group.ct)
         print(f"Add {name} to grand_average")
@@ -1301,7 +1302,7 @@ def source_estimate(meeg, inverse_method, pick_ori, lambda2):
     inverse_operator = meeg.load_inverse_operator()
     evokeds = meeg.load_evokeds()
 
-    stcs = {}
+    stcs = dict()
     for evoked in [ev for ev in evokeds if ev.comment in meeg.sel_trials]:
         stc = mne.minimum_norm.apply_inverse(
             evoked, inverse_operator, lambda2, method=inverse_method, pick_ori=pick_ori
@@ -1311,15 +1312,20 @@ def source_estimate(meeg, inverse_method, pick_ori, lambda2):
     meeg.save_source_estimates(stcs)
 
 
-def label_time_course(meeg, target_labels, target_parcellation, extract_mode):
+def label_time_course(meeg, target_labels, extract_mode):
+    if len(target_labels) == 0:
+        raise RuntimeError(
+            "No labels selected for label time course extraction. "
+            "Please select at least one label."
+        )
     stcs = meeg.load_source_estimates()
     src = meeg.fsmri.load_source_space()
-    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
+    labels = meeg.fsmri.get_labels(target_labels)
 
-    ltc_dict = {}
+    ltc_dict = dict()
 
     for trial in stcs:
-        ltc_dict[trial] = {}
+        ltc_dict[trial] = dict()
         times = stcs[trial].times
         for label in labels:
             ltc = stcs[trial].extract_label_time_course(label, src, mode=extract_mode)[
@@ -1352,8 +1358,8 @@ def mixed_norm_estimate(meeg, pick_ori, inverse_method):
                 evoked, inv_op, lambda2, method="dSPM"
             )
 
-    mixn_dips = {}
-    mixn_stcs = {}
+    mixn_dips = dict()
+    mixn_stcs = dict()
 
     for evoked in [ev for ev in evokeds if ev.comment in meeg.sel_trials]:
         alpha = 30  # regularization parameter between 0 and 100 (100 is high)
@@ -1416,11 +1422,11 @@ def ecd_fit(meeg, ecd_times, ecd_positions, ecd_orientations, t_epoch):
     bem = meeg.fsmri.load_bem_solution()
     trans = meeg.load_transformation()
 
-    ecd_dips = {}
+    ecd_dips = dict()
 
     for evoked in evokeds:
         trial = evoked.comment
-        ecd_dips[trial] = {}
+        ecd_dips[trial] = dict()
         for dip in ecd_time:
             tmin, tmax = ecd_time[dip]
             copy_evoked = evoked.copy().crop(tmin, tmax)
@@ -1468,7 +1474,7 @@ def apply_morph(meeg, morph_to):
         stcs = meeg.load_source_estimates()
         morph = meeg.load_source_morph()
 
-        morphed_stcs = {}
+        morphed_stcs = dict()
         for trial in stcs:
             morphed_stcs[trial] = morph.apply(stcs[trial])
         meeg.save_morphed_source_estimates(morphed_stcs)
@@ -1482,7 +1488,6 @@ def apply_morph(meeg, morph_to):
 def src_connectivity(
     meeg,
     target_labels,
-    target_parcellation,
     inverse_method,
     lambda2,
     con_methods,
@@ -1491,25 +1496,28 @@ def src_connectivity(
     con_time_window,
     n_jobs,
 ):
+    if len(target_labels) == 0:
+        raise RuntimeError(
+            "No labels selected for connectivity estimation. "
+            "Please select at least one label."
+        )
     info = meeg.load_info()
     all_epochs = meeg.load_epochs()
     inverse_operator = meeg.load_inverse_operator()
     src = inverse_operator["src"]
-    labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
+    labels = meeg.fsmri.get_labels(target_labels)
 
     if len(labels) == 0:
-        raise RuntimeError(
-            "No labels found, check your target_labels and target_parcellation"
-        )
+        raise RuntimeError("No labels found, check your target_labels")
     if len(meeg.sel_trials) == 0:
         raise RuntimeError(
             "No trials selected, check your Selected IDs in Preparation/"
         )
 
-    con_dict = {}
+    con_dict = dict()
 
     for trial in meeg.sel_trials:
-        con_dict[trial] = {}
+        con_dict[trial] = dict()
         epochs = all_epochs[trial]
 
         # Crop if necessary
@@ -1537,6 +1545,7 @@ def src_connectivity(
         sfreq = info["sfreq"]  # the sampling frequency
         con = mne_connectivity.spectral_connectivity_epochs(
             label_ts,
+            names=target_labels,
             method=con_methods,
             mode="multitaper",
             sfreq=sfreq,
@@ -1555,13 +1564,6 @@ def src_connectivity(
         for method, c in zip(con_methods, con):
             con_dict[trial][method] = c
 
-    # Add target_labels for later identification
-    con_dict["__info__"] = {
-        "labels": target_labels,
-        "parcellation": target_parcellation,
-        "frequencies": (con_fmin, con_fmax),
-    }
-
     meeg.save_connectivity(con_dict)
 
 
@@ -1570,9 +1572,9 @@ def grand_avg_morphed(group, morph_to):
     # stc in the end!!!
     n_chunks = 8
     # divide in chunks to save memory
-    fusion_dict = {}
+    fusion_dict = dict()
     for i in range(0, len(group.group_list), n_chunks):
-        sub_trial_dict = {}
+        sub_trial_dict = dict()
         ga_chunk = group.group_list[i : i + n_chunks]
         print(ga_chunk)
         for name in ga_chunk:
@@ -1606,7 +1608,7 @@ def grand_avg_morphed(group, morph_to):
                 else:
                     fusion_dict.update({trial: [sub_trial_average]})
 
-    ga_stcs = {}
+    ga_stcs = dict()
     for trial in fusion_dict:
         if len(fusion_dict[trial]) != 0:
             print(f"grand_average for {group.name}-{trial}")
@@ -1625,7 +1627,7 @@ def grand_avg_morphed(group, morph_to):
 
 
 def grand_avg_ltc(group):
-    ltc_average_dict = {}
+    ltc_average_dict = dict()
     times = None
     for name in group.group_list:
         meeg = MEEG(name, group.ct)
@@ -1633,7 +1635,7 @@ def grand_avg_ltc(group):
         ltc_dict = meeg.load_ltc()
         for trial in ltc_dict:
             if trial not in ltc_average_dict:
-                ltc_average_dict[trial] = {}
+                ltc_average_dict[trial] = dict()
             for label in ltc_dict[trial]:
                 # First row of array is label-time-course-data,
                 # second row is time-array
@@ -1644,9 +1646,9 @@ def grand_avg_ltc(group):
                 # Should be the same for each trial and label
                 times = ltc_dict[trial][label][1]
 
-    ga_ltc = {}
+    ga_ltc = dict()
     for trial in ltc_average_dict:
-        ga_ltc[trial] = {}
+        ga_ltc[trial] = dict()
         for label in ltc_average_dict[trial]:
             if len(ltc_average_dict[trial][label]) != 0:
                 print(f"grand_average for {trial}-{label}")
@@ -1667,41 +1669,39 @@ def grand_avg_ltc(group):
 
 def grand_avg_connect(group):
     # Prepare the Average-Dict
-    con_average_dict = {}
+    con_average_dict = dict()
     for name in group.group_list:
         meeg = MEEG(name, group.ct)
         print(f"Add {name} to grand_average")
         con_dict = meeg.load_connectivity()
-        con_info = con_dict.pop("__info__")
         for trial in con_dict:
             if trial not in con_average_dict:
-                con_average_dict[trial] = {}
+                con_average_dict[trial] = dict()
             for con_method, con in con_dict[trial].items():
-                con_average_dict[trial][con_method] = dict()
-                for freq_idx, freq in enumerate(con.freqs):
-                    con_data = con.get_data(output="dense")[:, :, freq_idx]
-                    if freq in con_average_dict[trial][con_method]:
-                        con_average_dict[trial][con_method][freq].append(con_data)
-                    else:
-                        con_average_dict[trial][con_method][freq] = [con_data]
+                if con_method not in con_average_dict[trial]:
+                    con_average_dict[trial][con_method] = list()
+                con_average_dict[trial][con_method].append(con)
 
-    ga_con = {"__info__": con_info}
+    ga_con_dict = dict()
     for trial in con_average_dict:
-        ga_con[trial] = {}
-        for con_method in con_average_dict[trial]:
-            for freq, con_list in con_average_dict[trial][con_method].items():
-                if len(con_list) != 0:
-                    print(f"grand_average for {trial}-{con_method}-{freq}")
-                    n_subjects = len(con_list)
-                    average = con_list[0]
-                    for idx in range(1, n_subjects):
-                        average += con_list[idx]
+        ga_con_dict[trial] = dict()
+        for con_method, con_list in con_average_dict[trial].items():
+            if len(con_list) != 0:
+                print(f"grand_average for {trial}-{con_method}")
+                avg_data = np.mean([con.get_data() for con in con_list], axis=0)
 
-                    average /= n_subjects
+                ga_con = SpectralConnectivity(
+                    data=avg_data,
+                    freqs=con_list[0].freqs,
+                    n_nodes=con_list[0].n_nodes,
+                    names=con_list[0].names,
+                    indices=con_list[0].indices,
+                    method=con_list[0].method,
+                    n_epochs_used=len(con_list),
+                )
+                ga_con_dict[trial][con_method] = ga_con
 
-                    ga_con[trial][con_method][freq] = average
-
-    group.save_ga_con(ga_con)
+    group.save_ga_con(ga_con_dict)
 
 
 def print_info(meeg):

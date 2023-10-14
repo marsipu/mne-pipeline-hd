@@ -1303,6 +1303,7 @@ class LabelPicker(mne.viz.Brain):
                 self._add_label_name(label.name, hemi, label)
                 self.selected.append(label.name)
             self.list_changed_slot()
+            self.paramdlg.update_selected_display()
 
             # Update label text
             if "label" in self._actors["text"]:
@@ -1400,6 +1401,12 @@ class LabelDialog(SimpleDialog):
         self.surface_cmbx.activated.connect(self._surface_changed)
         layout.addWidget(self.surface_cmbx)
 
+        self.selected_display = SimpleList(
+            data=self._selected_parc_labels + self._selected_extra_labels,
+            title="Selected Labels",
+        )
+        layout.addWidget(self.selected_display)
+
         self.parc_label_list = CheckList(
             data=self._parc_labels,
             checked=self._selected_parc_labels,
@@ -1438,26 +1445,29 @@ class LabelDialog(SimpleDialog):
         self.parcellation_cmbx.clear()
         self.parcellation_cmbx.addItems(self._fsmri.parcellations)
 
-        # Get currently set parcellation
-        if (
-            self.ct.pr.parameters[self.ct.pr.p_preset]["target_parcellation"]
-            in self._fsmri.parcellations
-        ):
-            self.parcellation_cmbx.setCurrentText(
-                self.ct.pr.parameters[self.ct.pr.p_preset]["target_parcellation"]
-            )
-
-        # Add extra labels
+        # Update extra labels
         self._extra_labels.clear()
         self._extra_labels += [lb.name for lb in self._fsmri.labels["Other"]]
         self.extra_label_list.content_changed()
 
-        old_selected = self._selected_extra_labels.copy()
+        old_selected_extra = self._selected_extra_labels.copy()
         self._selected_extra_labels.clear()
         self._selected_extra_labels += [
-            lb for lb in old_selected if lb in self._extra_labels
+            lb for lb in old_selected_extra if lb in self._extra_labels
         ]
         self.extra_label_list.content_changed()
+
+        # Update selected parcellation labels
+        all_labels_exept_other = list()
+        for parc_name, labels in self._fsmri.labels.items():
+            if parc_name != "Other":
+                all_labels_exept_other += [lb.name for lb in labels]
+        old_selected_parc = self._selected_parc_labels.copy()
+        self._selected_parc_labels.clear()
+        self._selected_parc_labels += [
+            lb for lb in old_selected_parc if lb in all_labels_exept_other
+        ]
+        self.parc_label_list.content_changed()
 
         # Update pickers if open
         if self._parc_picker is not None and not self._parc_picker.isclosed():
@@ -1481,22 +1491,24 @@ class LabelDialog(SimpleDialog):
                 lb.name for lb in self._fsmri.labels[self._parcellation]
             ]
 
-        # get former selected
-        old_selected = self._selected_parc_labels.copy()
-        self._selected_parc_labels.clear()
-        self._selected_parc_labels += [
-            lb for lb in old_selected if lb in self._parc_labels
-        ]
-        self.parc_label_list.content_changed()
-
         if self._parc_picker is not None and not self._parc_picker.isclosed():
             self._parc_picker._set_annotations(self._parcellation)
+            for label_name in [
+                lb for lb in self._selected_parc_labels if lb in self._parc_labels
+            ]:
+                hemi = label_name[-2:]
+                self._parc_picker._add_label_name(label_name, hemi)
 
     def _surface_changed(self):
         self._surface = self.surface_cmbx.currentText()
         if self._parc_picker is not None and not self._parc_picker.isclosed():
             self._parc_picker.close()
             self._open_parc_picker()
+
+    def update_selected_display(self):
+        self.selected_display.replace_data(
+            self._selected_parc_labels + self._selected_extra_labels
+        )
 
     def _labels_changed(self, labels, picker_name):
         picker = (
@@ -1510,6 +1522,8 @@ class LabelDialog(SimpleDialog):
             for remove_name in [lb for lb in shown_labels if lb not in labels]:
                 hemi = remove_name[-2:]
                 picker._remove_label_name(remove_name, hemi)
+        # Update display
+        self.update_selected_display()
 
     # Keep pickers on top
     def _open_parc_picker(self):

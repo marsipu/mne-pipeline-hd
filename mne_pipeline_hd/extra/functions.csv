@@ -27,9 +27,9 @@ morph_labels_from_fsaverage;;FSMRI;Compute;MRI-Preprocessing;False;False;;operat
 create_inverse_operator;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg
 source_estimate;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,inverse_method,pick_ori,lambda2
 apply_morph;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,morph_to
-label_time_course;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,target_labels,target_parcellation,extract_mode
+label_time_course;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,target_labels,extract_mode
 ecd_fit;;MEEG;Compute;Inverse;False;False;;operations;basic;meeg,ecd_times,ecd_positions,ecd_orientations,t_epoch
-src_connectivity;;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,target_labels,target_parcellation,inverse_method,lambda2,con_methods,con_fmin,con_fmax,con_time_window,n_jobs
+src_connectivity;;MEEG;Compute;Time-Frequency;False;False;;operations;basic;meeg,target_labels,inverse_method,lambda2,con_methods,con_fmin,con_fmax,con_time_window,n_jobs
 grand_avg_evokeds;;Group;Compute;Grand-Average;False;False;;operations;basic;group,ga_interpolate_bads,ga_drop_bads
 grand_avg_tfr;;Group;Compute;Grand-Average;False;False;;operations;basic;group
 grand_avg_morphed;;Group;Compute;Grand-Average;False;False;;operations;basic;group,morph_to
@@ -62,21 +62,21 @@ plot_evoked_white;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_evoked_image;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_compare_evokeds;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
 plot_gfp;;MEEG;Plot;Evoked;True;False;;plot;basic;meeg,show_plots
-plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,target_labels,target_parcellation,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,backend_3d
+plot_stc;Plot Source-Estimate;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,target_labels,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,backend_3d
 plot_stc_interactive;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,backend_3d
-plot_labels;;FSMRI;Plot;Inverse;True;True;;plot;basic;fsmri,target_labels,target_parcellation,label_colors,stc_hemi,stc_surface,stc_views,backend_3d
-plot_animated_stc;Plot Source-Estimate Video;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,target_labels,target_parcellation,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,stc_animation_span,stc_animation_dilat,backend_3d
+plot_labels;;FSMRI;Plot;Inverse;True;True;;plot;basic;fsmri,target_labels,label_colors,stc_hemi,stc_surface,stc_views,backend_3d
+plot_animated_stc;Plot Source-Estimate Video;MEEG;Plot;Inverse;True;True;;plot;basic;meeg,target_labels,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,stc_animation_span,stc_animation_dilat,backend_3d
 plot_snr;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,show_plots
 plot_label_time_course;;MEEG;Plot;Inverse;True;False;;plot;basic;meeg,label_colors,show_plots
 plot_ecd;;MEEG;Plot;Inverse;True;True;;plot;basic;meeg
 plot_src_connectivity;;MEEG;Plot;Time-Frequency;True;False;;plot;basic;meeg,label_colors,show_plots
 plot_grand_avg_evokeds;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
 plot_grand_avg_tfr;;Group;Plot;Grand-Average;True;False;;plot;basic;group,show_plots
-plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,target_labels,target_parcellation,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,backend_3d
-plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;basic;group,target_labels,target_parcellation,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,stc_animation_span,stc_animation_dilat,backend_3d
+plot_grand_avg_stc;;Group;Plot;Grand-Average;True;True;;plot;basic;group,target_labels,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,backend_3d
+plot_grand_avg_stc_anim;;Group;Plot;Grand-Average;True;True;;plot;basic;group,target_labels,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,stc_animation_span,stc_animation_dilat,backend_3d
 plot_grand_average_stc_interactive;;Group;Plot;Grand-Average;True;True;;plot;basic;group,label_colors,stc_surface,stc_hemi,stc_views,stc_time,stc_clim,stc_roll,stc_azimuth,stc_elevation,backend_3d
 plot_grand_avg_ltc;;Group;Plot;Grand-Average;True;False;;plot;basic;group,label_colors,show_plots
-plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,morph_to,label_colors,show_plots,connectivity_vmin,connectivity_vmax,con_group_boundaries
+plot_grand_avg_connect;;Group;Plot;Grand-Average;True;False;;plot;basic;group,label_colors,show_plots
 plot_ica_components;Plot ICA-Components;MEEG;Plot;ICA;True;False;;plot;basic;meeg,show_plots,close_func
 plot_ica_sources;Plot ICA-Sources;MEEG;Plot;ICA;True;False;;plot;basic;meeg,ica_source_data,show_plots,close_func
 plot_ica_overlay;Plot ICA-Overlay;MEEG;Plot;ICA;True;False;;plot;basic;meeg,ica_overlay_data,show_plots

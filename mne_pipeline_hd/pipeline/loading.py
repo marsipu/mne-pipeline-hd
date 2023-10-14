@@ -1381,7 +1381,7 @@ class MEEG(BaseLoading):
 
     @load_decorator
     def load_connectivity(self):
-        con_dict = {"__info__": self.load_json("con_labels")}
+        con_dict = dict()
         for trial in self.con_paths:
             con_dict[trial] = dict()
             for con_method, con_path in self.con_paths[trial].items():
@@ -1394,8 +1394,6 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_connectivity(self, con_dict):
         # Write info about label and parcellation into json
-        con_info = con_dict.pop("__info__")
-        self.save_json("con_labels", con_info)
         for trial in con_dict:
             for con_method, con in con_dict[trial].items():
                 con.save(self.con_paths[trial][con_method])
@@ -1503,9 +1501,9 @@ class FSMRI(BaseLoading):
         annot_dir = join(self.subjects_dir, self.name, "label")
         try:
             files = os.listdir(annot_dir)
-            annotations = [file[3:-6] for file in files if file[-6:] == ".annot"]
+            annotations = set([file[3:-6] for file in files if file[-6:] == ".annot"])
         except FileNotFoundError:
-            annotations = list()
+            annotations = set()
 
         return annotations
 
@@ -1551,15 +1549,27 @@ class FSMRI(BaseLoading):
         if self.name is None:
             logging.warning("FSMRI-Object has no name and is empty!")
         else:
-            parcellation = parcellation or "Other"
+            # Get available parcellations
             if self.labels is None:
                 self.labels = self._get_available_labels()
-            if target_labels is not None:
-                labels += [
-                    lb for lb in self.labels[parcellation] if lb.name in target_labels
-                ]
+
+            # Subselect labels with parcellation
+            if parcellation is None:
+                search_labels = list()
+                for parcellation in self.labels:
+                    search_labels += self.labels[parcellation]
             else:
-                labels = self.labels[parcellation]
+                if parcellation in self.labels:
+                    search_labels = self.labels[parcellation]
+                else:
+                    raise RuntimeError(
+                        f"Parcellation '{parcellation}' not found for {self.name}!"
+                    )
+
+            if target_labels is not None:
+                labels += [lb for lb in search_labels if lb.name in target_labels]
+            else:
+                labels = search_labels
 
         return labels
 
@@ -1683,7 +1693,7 @@ class Group(BaseLoading):
                 con_method: join(
                     self.save_dir,
                     "connectivity",
-                    f"{self.name}_{trial}_" f"{self.p_preset}_{con_method}.npy",
+                    f"{self.name}_{trial}_" f"{self.p_preset}_{con_method}.nc",
                 )
                 for con_method in self.pa["con_methods"]
             }
@@ -1802,23 +1812,18 @@ class Group(BaseLoading):
 
     @load_decorator
     def load_ga_con(self):
-        ga_connect = {"__info__": self.load_json("con_labels")}
+        ga_connect = dict()
         for trial in self.ga_con_paths:
             ga_connect[trial] = {}
-            for con_method in self.ga_con_paths[trial]:
-                ga_connect[trial][con_method] = np.load(
-                    self.ga_con_paths[trial][con_method]
+            for con_method, con_path in self.ga_con_paths[trial].items():
+                ga_connect[trial][con_method] = mne_connectivity.read_connectivity(
+                    con_path
                 )
 
         return ga_connect
 
     @save_decorator
-    def save_ga_con(self, ga_con):
-        con_info = ga_con.pop("__info__")
-        self.save_json("con_labels", con_info)
-        for trial in ga_con:
-            for con_method in ga_con[trial]:
-                for freq, con in ga_con[trial][con_method].items():
-                    np.save(
-                        self.ga_con_paths[trial][con_method], ga_con[trial][con_method]
-                    )
+    def save_ga_con(self, ga_con_dict):
+        for trial in ga_con_dict:
+            for con_method, ga_con in ga_con_dict[trial].items():
+                ga_con.save(self.ga_con_paths[trial][con_method])

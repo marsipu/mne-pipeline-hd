@@ -17,7 +17,7 @@ import mne_connectivity
 import numpy as np
 
 # Make use of program also possible with sensor-space installation of mne
-from mne_pipeline_hd.pipeline.loading import FSMRI
+from mne_pipeline_hd.pipeline.loading import MEEG
 from mne_pipeline_hd.pipeline.plot_utils import pipeline_plot
 
 try:
@@ -583,7 +583,6 @@ def _brain_plot(
     stc_time,
     stc_clim,
     target_labels,
-    target_parcellation,
     label_colors,
     stc_roll,
     stc_azimuth,
@@ -608,7 +607,7 @@ def _brain_plot(
         brain.show_view(roll=stc_roll, azimuth=stc_azimuth, elevation=stc_elevation)
         brain.add_text(0, 0.9, title, "title", color="w", font_size=14)
         if not interactive:
-            labels = meeg.fsmri.get_labels(target_labels, target_parcellation)
+            labels = meeg.fsmri.get_labels(target_labels)
             for label in labels:
                 color = label_colors.get(label.name)
                 brain.add_label(label, borders=True, color=color)
@@ -636,7 +635,6 @@ def _brain_plot(
 def plot_stc(
     meeg,
     target_labels,
-    target_parcellation,
     label_colors,
     stc_surface,
     stc_hemi,
@@ -658,7 +656,6 @@ def plot_stc(
         stc_time=stc_time,
         stc_clim=stc_clim,
         target_labels=target_labels,
-        target_parcellation=target_parcellation,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -689,7 +686,6 @@ def plot_stc_interactive(
         stc_time=stc_time,
         stc_clim=stc_clim,
         target_labels=None,
-        target_parcellation=None,
         label_colors=None,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -702,7 +698,6 @@ def plot_stc_interactive(
 def plot_animated_stc(
     meeg,
     target_labels,
-    target_parcellation,
     label_colors,
     stc_surface,
     stc_hemi,
@@ -726,7 +721,6 @@ def plot_animated_stc(
         stc_time=stc_time,
         stc_clim=stc_clim,
         target_labels=target_labels,
-        target_parcellation=target_parcellation,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -740,7 +734,6 @@ def plot_animated_stc(
 def plot_labels(
     fsmri,
     target_labels,
-    target_parcellation,
     label_colors,
     stc_hemi,
     stc_surface,
@@ -757,7 +750,7 @@ def plot_labels(
             views=stc_views,
         )
 
-        labels = fsmri.get_labels(target_labels, target_parcellation)
+        labels = fsmri.get_labels(target_labels)
         y = 0.95
         for label in labels:
             color = label_colors.get(label.name)
@@ -856,69 +849,74 @@ def plot_label_time_course(meeg, label_colors, show_plots):
         meeg.plot_save("label-time-course", trial=trial)
 
 
-def plot_src_connectivity(meeg, label_colors, show_plots):
-    con_dict = meeg.load_connectivity()
-    con_info = con_dict.pop("__info__")
-    labels = meeg.fsmri.get_labels(con_info["labels"], con_info["parcellation"])
-    if "unknown-lh" in labels:
-        labels.pop("unknown-lh")
-    colors = list()
-    for label in labels:
-        color = label_colors.get(label.name)
-        if color is None:
-            color = label.color
-        colors.append(color)
-    label_names = [label.name for label in labels]
-    lh_labels = [l_name for l_name in label_names if l_name.endswith("lh")]
-    rh_labels = [l_name for l_name in label_names if l_name.endswith("rh")]
-
-    # Get the y-location of the label
-    lh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels if lb.name in lh_labels]
-    rh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels if lb.name in rh_labels]
-
-    # Reorder the labels based on their location
-    lh_labels = [label for (yp, label) in sorted(zip(lh_label_ypos, lh_labels))]
-    rh_labels = [label for (yp, label) in sorted(zip(rh_label_ypos, rh_labels))]
-
-    # Save the plot order and create a circular layout
-    node_order = list()
-    node_order.extend(lh_labels[::-1])  # reverse the order
-    node_order.extend(rh_labels)
-
-    node_angles = mne.viz.circular_layout(
-        label_names,
-        node_order,
-        start_pos=90,
-        group_boundaries=[0, len(label_names) / 2],
-    )
-
-    # Plot the graph using node colors from the FreeSurfer parcellation.
-    # We only show the 300 strongest connections.
+def _plot_connectivity(obj, con_dict, label_colors, show_plots):
     for trial in con_dict:
         for con_method, con in con_dict[trial].items():
-            con_data = con.get_data(output="dense")[:, :, 0]
-            title = (
-                f"{trial}: {con_info['frequencies'][0]}-{con_info['frequencies'][1]}"
-            )
-            fig, axes = mne_connectivity.viz.plot_connectivity_circle(
-                con_data,
-                label_names,
-                n_lines=100,
-                node_angles=node_angles,
-                node_colors=colors,
-                title=title,
-                fontsize_names=8,
-                show=show_plots,
-            )
+            labels = obj.fsmri.get_labels(con.names)
+            if "unknown-lh" in labels:
+                labels.pop("unknown-lh")
+            colors = list()
+            for label in labels:
+                color = label_colors.get(label.name)
+                if color is None:
+                    color = label.color
+                colors.append(color)
+            label_names = [label.name for label in labels]
+            lh_labels = [l_name for l_name in label_names if l_name.endswith("lh")]
+            rh_labels = [l_name for l_name in label_names if l_name.endswith("rh")]
 
-            meeg.plot_save(
-                "connectivity", subfolder=con_method, trial=trial, matplotlib_figure=fig
+            # Get the y-location of the label
+            lh_label_ypos = [
+                np.mean(lb.pos[:, 1]) for lb in labels if lb.name in lh_labels
+            ]
+            rh_label_ypos = [
+                np.mean(lb.pos[:, 1]) for lb in labels if lb.name in rh_labels
+            ]
+
+            # Reorder the labels based on their location
+            lh_labels = [label for (yp, label) in sorted(zip(lh_label_ypos, lh_labels))]
+            rh_labels = [label for (yp, label) in sorted(zip(rh_label_ypos, rh_labels))]
+
+            # Save the plot order and create a circular layout
+            node_order = list()
+            node_order.extend(lh_labels[::-1])  # reverse the order
+            node_order.extend(rh_labels)
+
+            node_angles = mne.viz.circular_layout(
+                label_names,
+                node_order,
+                start_pos=90,
+                group_boundaries=[0, len(label_names) / 2],
             )
+            con_data = con.get_data(output="dense")
+            for freq_idx, freq in enumerate(con.freqs):
+                title = f"{trial}, Frequency={freq}"
+                fig, axes = mne_connectivity.viz.plot_connectivity_circle(
+                    con_data[:, :, freq_idx],
+                    label_names,
+                    n_lines=None,
+                    node_angles=node_angles,
+                    node_colors=colors,
+                    title=title,
+                    fontsize_names=8,
+                    show=show_plots,
+                )
+
+                if isinstance(obj, MEEG):
+                    plot_name = f"connectivity_{freq:.1f}"
+                else:
+                    plot_name = f"ga_connectivity_{freq:.1f}"
+                obj.plot_save(
+                    plot_name, subfolder=con_method, trial=trial, matplotlib_figure=fig
+                )
+
+
+def plot_src_connectivity(meeg, label_colors, show_plots):
+    con_dict = meeg.load_connectivity()
+    _plot_connectivity(meeg, con_dict, label_colors, show_plots)
 
 
 # %% Grand-Average Plots
-
-
 def plot_grand_avg_evokeds(group, show_plots):
     ga_evokeds = group.load_ga_evokeds()
 
@@ -962,7 +960,6 @@ def plot_grand_avg_tfr(group, show_plots):
 def plot_grand_avg_stc(
     group,
     target_labels,
-    target_parcellation,
     label_colors,
     stc_surface,
     stc_hemi,
@@ -984,7 +981,6 @@ def plot_grand_avg_stc(
         stc_time=stc_time,
         stc_clim=stc_clim,
         target_labels=target_labels,
-        target_parcellation=target_parcellation,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -1016,7 +1012,6 @@ def plot_grand_average_stc_interactive(
         stc_time=stc_time,
         stc_clim=stc_clim,
         target_labels=None,
-        target_parcellation=None,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -1029,7 +1024,6 @@ def plot_grand_average_stc_interactive(
 def plot_grand_avg_stc_anim(
     group,
     target_labels,
-    target_parcellation,
     label_colors,
     stc_surface,
     stc_hemi,
@@ -1053,7 +1047,6 @@ def plot_grand_avg_stc_anim(
         stc_time=stc_time,
         stc_clim=stc_clim,
         target_labels=target_labels,
-        target_parcellation=target_parcellation,
         label_colors=label_colors,
         stc_roll=stc_roll,
         stc_azimuth=stc_azimuth,
@@ -1086,76 +1079,11 @@ def plot_grand_avg_ltc(group, label_colors, show_plots):
 
 def plot_grand_avg_connect(
     group,
-    morph_to,
     label_colors,
     show_plots,
-    connectivity_vmin,
-    connectivity_vmax,
-    con_group_boundaries,
 ):
-    ga_dict = group.load_ga_con()
-    con_info = ga_dict.pop("__info__")
-    # Get labels for FreeSurfer 'aparc' cortical parcellation
-    # with 34 labels/hemi
-    fsmri = FSMRI(morph_to, group.ct)
-    labels = fsmri.get_labels(con_info["labels"], con_info["parcellation"])
-    if "unknown-lh" in labels:
-        labels.remove("unknown-lh")
-
-    colors = list()
-    for label in labels:
-        color = label_colors.get(label.name)
-        if color is None:
-            color = label.color
-        colors.append(color)
-
-    label_names = [lb.name for lb in labels]
-
-    lh_labels = [l_name for l_name in label_names if l_name.endswith("lh")]
-    rh_labels = [l_name for l_name in label_names if l_name.endswith("rh")]
-
-    # Get the y-location of the label
-    lh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels if lb.name in lh_labels]
-    rh_label_ypos = [np.mean(lb.pos[:, 1]) for lb in labels if lb.name in rh_labels]
-
-    # Reorder the labels based on their location
-    lh_labels = [label for (yp, label) in sorted(zip(lh_label_ypos, lh_labels))]
-    rh_labels = [label for (yp, label) in sorted(zip(rh_label_ypos, rh_labels))]
-
-    # Save the plot order and create a circular layout
-    node_order = list()
-    node_order.extend(lh_labels[::-1])  # reverse the order
-    node_order.extend(rh_labels)
-
-    # ToDo: what happens when there is an odd number of labels/groups
-    node_angles = mne.viz.circular_layout(
-        label_names,
-        node_order,
-        start_pos=90,
-        group_boundaries=con_group_boundaries,
-    )
-
-    for trial in ga_dict:
-        for method in ga_dict[trial]:
-            title = (
-                f"{method}: {con_info['frequencies'][0]}-{con_info['frequencies'][1]}"
-            )
-            fig, axes = mne_connectivity.viz.plot_connectivity_circle(
-                ga_dict[trial][method],
-                label_names,
-                n_lines=300,
-                node_angles=node_angles,
-                node_colors=colors,
-                title=title,
-                vmin=connectivity_vmin,
-                vmax=connectivity_vmax,
-                fontsize_names=16,
-                show=show_plots,
-            )
-
-            group.plot_save(
-                "ga_connectivity", subfolder=method, trial=trial, matplotlib_figure=fig
-            )
+    con_dict = group.load_ga_con()
+    _plot_connectivity(group, con_dict, label_colors, show_plots)
 
 
 def close_all():
