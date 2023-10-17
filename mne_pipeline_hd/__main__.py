@@ -61,6 +61,7 @@ def main():
 
     debug_mode = os.environ.get("MNEPHD_DEBUG", False) == "true"
 
+    # ToDo: log-level debug only for mne-pipeline-hd, not all apps
     # Initialize Logger (root)
     logger = logging.getLogger()
     if debug_mode:

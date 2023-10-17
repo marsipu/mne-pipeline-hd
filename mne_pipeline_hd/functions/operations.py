@@ -830,6 +830,16 @@ def grand_avg_evokeds(group, ga_interpolate_bads, ga_drop_bads):
         print(f"Add {name} to grand_average")
         evokeds = meeg.load_evokeds()
         for evoked in evokeds:
+            if ga_interpolate_bads:
+                bad_evoked = evoked.copy().pick(np.arange(len(meeg.bad_channels)))
+                bad_evoked = bad_evoked.rename_channels(
+                    {
+                        old: new
+                        for old, new in zip(bad_evoked.ch_names, meeg.bad_channels)
+                    }
+                )
+                bad_evoked.info["bads"] = meeg.bad_channels
+                evoked.add_channels([bad_evoked])
             if evoked.nave != 0:
                 if evoked.comment in trial_dict:
                     trial_dict[evoked.comment].append(evoked)
