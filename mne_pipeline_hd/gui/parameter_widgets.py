@@ -237,31 +237,36 @@ class Param(QWidget):
 
     def _read_data(self, name):
         # get data from dictionary
-        if isinstance(self.data, dict):
-            if name in self.data:
-                value = self.data[name]
-            else:
-                value = self.default
+        if isinstance(self.data, dict) and name in self.data:
+            value = self.data[name]
 
         # get data from Parameters in Project in MainWindow
         # (depending on selected parameter-preset and selected Project)
-        elif isinstance(self.data, Controller):
-            if name in self.data.pr.parameters[self.data.pr.p_preset]:
-                value = self.data.pr.parameters[self.data.pr.p_preset][name]
-            else:
-                value = self.default
+        elif (
+            isinstance(self.data, Controller)
+            and name in self.data.pr.parameters[self.data.pr.p_preset]
+        ):
+            value = self.data.pr.parameters[self.data.pr.p_preset][name]
 
         # get data from QSettings
-        elif isinstance(self.data, QS):
-            if name in self.data.childKeys():
-                value = self.data.value(name)
-            else:
-                value = self.default
+        elif isinstance(self.data, QS) and name in self.data.childKeys():
+            value = self.data.value(name)
+        else:
+            value = self.default
 
         return value
 
     def read_param(self):
-        self.param_value = self._read_data(self.name)
+        data = self._read_data(self.name)
+        if not self.none_select:
+            if self.data_type != "multiple":
+                if not isinstance(data, self.data_type):
+                    logging.warning(
+                        f"Data for {self.name} has to be of type {self.data_type}, "
+                        f"but is of type {type(data)} instead!"
+                    )
+                    data = self.data_type()
+        self.param_value = data
 
     def _save_data(self, name, value):
         if isinstance(self.data, dict):
@@ -277,6 +282,8 @@ class Param(QWidget):
 
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
+
+    data_type = int
 
     def __init__(self, min_val=0, max_val=1000, special_value_text=None, **kwargs):
         """
@@ -323,6 +330,8 @@ class IntGui(Param):
 
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
+
+    data_type = float
 
     def __init__(self, min_val=-1000.0, max_val=1000.0, step=0.1, decimals=2, **kwargs):
         """
@@ -373,6 +382,8 @@ class StringGui(Param):
     A GUI for String-Parameters
     """
 
+    data_type = str
+
     def __init__(self, **kwargs):
         """
 
@@ -414,6 +425,8 @@ def _eval_param(param_exp):
 
 class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy"""
+
+    data_type = "multiple"
 
     def __init__(self, **kwargs):
         """
@@ -502,6 +515,8 @@ class FuncGui(Param):
 class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
+    data_type = bool
+
     def __init__(self, return_integer=False, **kwargs):
         """
         Parameters
@@ -540,6 +555,8 @@ class BoolGui(Param):
 
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
+
+    data_type = tuple
 
     def __init__(self, min_val=-1000.0, max_val=1000.0, step=0.1, **kwargs):
         """
@@ -616,6 +633,8 @@ class TupleGui(Param):
 
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
+
+    data_type = "multiple"
 
     def __init__(self, options, **kwargs):
         """
@@ -697,6 +716,8 @@ class ListDialog(QDialog):
 
 class ListGui(Param):
     """A GUI for as list"""
+
+    data_type = list
 
     def __init__(self, value_string_length=30, **kwargs):
         """
@@ -793,6 +814,8 @@ class CheckListDialog(QDialog):
 
 class CheckListGui(Param):
     """A GUI to select items from a list of options"""
+
+    data_type = list
 
     def __init__(self, options, value_string_length=30, one_check=False, **kwargs):
         """
@@ -892,6 +915,8 @@ class DictDialog(QDialog):
 class DictGui(Param):
     """A GUI for a dictionary"""
 
+    data_type = dict
+
     def __init__(self, value_string_length=30, **kwargs):
         """
 
@@ -966,6 +991,8 @@ class DictGui(Param):
 
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
+
+    data_type = "multiple"
 
     def __init__(self, min_val=0, max_val=100, step=1, tracking=True, **kwargs):
         """
@@ -1058,6 +1085,8 @@ class SliderGui(Param):
 
 class MultiTypeGui(Param):
     """A GUI which accepts multiple types of values in a single LineEdit"""
+
+    data_type = "multiple"
 
     def __init__(self, type_selection=False, types=None, type_kwargs=None, **kwargs):
         """
@@ -1557,6 +1586,8 @@ class LabelDialog(SimpleDialog):
 class LabelGui(Param):
     """This GUI lets the user pick labels from a brain."""
 
+    data_type = list
+
     def __init__(self, value_string_length=30, **kwargs):
         """
         Parameters
@@ -1633,6 +1664,8 @@ class LabelGui(Param):
 
 class ColorGui(Param):
     """A GUI to pick a color and returns a dictionary with HexRGBA-Strings."""
+
+    data_type = dict
 
     def __init__(self, keys, **kwargs):
         """
@@ -1716,6 +1749,8 @@ class ColorGui(Param):
 # ToDo: Own testable QFileDialog-Implementations
 class PathGui(Param):
     """A GUI to pick a path."""
+
+    data_type = str
 
     def __init__(self, pick_mode="file", **kwargs):
         """
