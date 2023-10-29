@@ -1642,6 +1642,7 @@ class Group(BaseLoading):
             gi for gi in self.group_list if gi in self.ct.pr.sel_event_id
         ]:
             self.sel_trials = self.sel_trials | set(self.ct.pr.sel_event_id[group_item])
+        self.sel_trials = list(self.sel_trials)
 
         # The fsmri where all group members are morphed to
         self.fsmri = FSMRI(self.pa["morph_to"], self.ct)

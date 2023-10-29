@@ -1337,12 +1337,18 @@ class LabelPicker(mne.viz.Brain):
             # Update label text
             if "label" in self._actors["text"]:
                 self.remove_text("label")
+            if label.color is not None:
+                color = label.color[:3]
+                opacity = label.color[-1]
+            else:
+                color = "w"
+                opacity = 1
             self.add_text(
                 0,
                 0.05,
                 label.name,
-                color=label.color[:3],
-                opacity=label.color[-1],
+                color=color,
+                opacity=opacity,
                 font_size=12,
                 name="label",
             )
