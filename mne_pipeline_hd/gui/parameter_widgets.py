@@ -631,6 +631,7 @@ class TupleGui(Param):
         return self.param_widget1.value(), self.param_widget2.value()
 
 
+# ToDo: make options replacable
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
 
@@ -812,6 +813,7 @@ class CheckListDialog(QDialog):
         event.accept()
 
 
+# ToDo: make options replacable
 class CheckListGui(Param):
     """A GUI to select items from a list of options"""
 

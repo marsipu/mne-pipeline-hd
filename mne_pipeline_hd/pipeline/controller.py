@@ -215,14 +215,24 @@ class Controller:
             )
 
     def copy_parameters_between_projects(
-        self, from_name, from_p_preset, to_name, to_p_preset
+        self,
+        from_name,
+        from_p_preset,
+        to_name,
+        to_p_preset,
+        parameter=None,
     ):
         from_project = Project(self, from_name)
         if to_name == self.pr.name:
             to_project = self.pr
         else:
             to_project = Project(self, to_name)
-        to_project.parameters[to_p_preset] = from_project.parameters[from_p_preset]
+        if parameter is not None:
+            from_param = from_project.parameters[from_p_preset][parameter]
+            to_project.parameters[to_p_preset][parameter] = from_param
+        else:
+            from_param = from_project.parameters[from_p_preset]
+            to_project.parameters[to_p_preset] = from_param
         to_project.save()
 
     def save(self, worker_signals=None):
