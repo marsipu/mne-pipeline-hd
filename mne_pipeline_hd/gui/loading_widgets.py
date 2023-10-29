@@ -82,7 +82,7 @@ from mne_pipeline_hd.pipeline.loading import FSMRI, Group, MEEG
 from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS
 
 
-def index_parser(index, all_items):
+def index_parser(index, all_items, groups=None):
     """
     Parses indices from a index-string in all_items
 
@@ -96,7 +96,7 @@ def index_parser(index, all_items):
     -------
 
     """
-    run = list()
+    indices = list()
     rm = list()
 
     try:
@@ -115,9 +115,9 @@ def index_parser(index, all_items):
                         rm.append(int(sp[1:]))
                     elif "all" in sp:
                         for i in range(len(all_items)):
-                            run.append(i)
+                            indices.append(i)
             else:
-                run = [x for x in range(len(all_items))]
+                indices = [x for x in range(len(all_items))]
 
         elif "," in index and "-" in index:
             z = index.split(",")
@@ -125,9 +125,9 @@ def index_parser(index, all_items):
                 if "-" in i and "!" not in i:
                     x, y = i.split("-")
                     for n in range(int(x), int(y) + 1):
-                        run.append(n)
+                        indices.append(n)
                 elif "!" not in i:
-                    run.append(int(i))
+                    indices.append(int(i))
                 elif "!" in i and "-" in i:
                     x, y = i.split("-")
                     x = x[1:]
@@ -138,7 +138,7 @@ def index_parser(index, all_items):
 
         elif "-" in index and "," not in index:
             x, y = index.split("-")
-            run = [x for x in range(int(x), int(y) + 1)]
+            indices = [x for x in range(int(x), int(y) + 1)]
 
         elif "," in index and "-" not in index:
             splits = index.split(",")
@@ -146,21 +146,25 @@ def index_parser(index, all_items):
                 if "!" in sp:
                     rm.append(int(sp))
                 else:
-                    run.append(int(sp))
+                    indices.append(int(sp))
+
+        elif groups is not None and index in groups:
+            files = [x for x in all_items if x in groups[index]]
+            indices = [all_items.index(x) for x in files]
 
         else:
             if len(all_items) < int(index) or int(index) < 0:
-                run = []
+                indices = []
             else:
-                run = [int(index)]
+                indices = [int(index)]
 
-        run = [i for i in run if i not in rm]
-        files = [x for (i, x) in enumerate(all_items) if i in run]
+        indices = [i for i in indices if i not in rm]
+        files = np.asarray(all_items)[indices].tolist()
 
-        return files, run
+        return files
 
     except ValueError:
-        return [], []
+        return []
 
 
 class RemoveDialog(QDialog):
@@ -232,7 +236,8 @@ class FileDock(QDockWidget):
             "'1-4,7,20-26' (The last two combined)\n"
             "'1-20,!4-6' (1-20 except 4-6)\n"
             "'all' (All files in file_list.py)\n"
-            "'all,!4-6' (All files except 4-6)"
+            "'all,!4-6' (All files except 4-6)\n"
+            "<group-name> (All files in group)"
         )
 
         if self.meeg_view:
@@ -328,13 +333,15 @@ class FileDock(QDockWidget):
 
     def select_meeg(self):
         index = self.meeg_ledit.text()
-        self.mw.ct.pr.sel_meeg, idxs = index_parser(index, self.mw.ct.pr.all_meeg)
+        self.mw.ct.pr.sel_meeg = index_parser(
+            index, self.mw.ct.pr.all_meeg, self.mw.ct.pr.all_groups
+        )
         # Replace _checked in CheckListModel because of rereferencing above
         self.meeg_list.replace_checked(self.mw.ct.pr.sel_meeg)
 
     def select_fsmri(self):
         index = self.fsmri_ledit.text()
-        self.mw.ct.pr.sel_fsmri, idxs = index_parser(index, self.mw.ct.pr.all_fsmri)
+        self.mw.ct.pr.sel_fsmri = index_parser(index, self.mw.ct.pr.all_fsmri)
         # Replace _checked in CheckListModel because of rereferencing above
         self.fsmri_list.replace_checked(self.mw.ct.pr.sel_fsmri)
 
