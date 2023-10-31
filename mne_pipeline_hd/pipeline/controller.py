@@ -214,6 +214,34 @@ class Controller:
                 f"and has to be deleted manually!"
             )
 
+    def rename_project(self):
+        check_writable = os.access(self.pr.project_path, os.W_OK)
+        if check_writable:
+            new_project_name = get_user_input_string(
+                f'Change the name of project "{self.pr.name}" to:',
+                "Rename Project",
+                force=False,
+            )
+            if new_project_name is not None:
+                try:
+                    old_name = self.pr.name
+                    self.pr.rename(new_project_name)
+                except PermissionError:
+                    # ToDo: Warning-Function for GUI with dialog and non-GUI
+                    logging.critical(
+                        f"Can't rename {old_name} to {new_project_name}. "
+                        f"Probably a file from inside the project is still opened. "
+                        f"Please close all files and try again."
+                    )
+                else:
+                    self.projects.remove(old_name)
+                    self.projects.append(new_project_name)
+        else:
+            logging.warning(
+                "The project-folder seems to be not writable at the moment, "
+                "maybe some files inside are still in use?"
+            )
+
     def copy_parameters_between_projects(
         self,
         from_name,

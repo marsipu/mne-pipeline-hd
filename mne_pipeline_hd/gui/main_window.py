@@ -202,6 +202,10 @@ class MainWindow(QMainWindow):
 
         self.update_project_ui()
 
+    def pr_rename(self):
+        self.ct.rename_project()
+        self.update_project_box()
+
     def pr_clean_fp(self):
         WorkerDialog(
             self,
@@ -299,6 +303,7 @@ class MainWindow(QMainWindow):
 
         # Project
         project_menu = self.menuBar().addMenu("&Project")
+        project_menu.addAction("&Rename Project", self.pr_rename)
         project_menu.addAction("&Clean File-Parameters", self.pr_clean_fp)
         project_menu.addAction("&Clean Plot-Files", self.pr_clean_pf)
         project_menu.addAction(

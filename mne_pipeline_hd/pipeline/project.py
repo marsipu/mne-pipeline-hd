@@ -181,6 +181,23 @@ class Project:
             self.sel_p_preset_path: "p_preset",
         }
 
+    def rename(self, new_name):
+        # Rename folder
+        old_name = self.name
+        os.rename(self.project_path, join(self.ct.projects_path, new_name))
+        self.name = new_name
+        self.init_main_paths()
+        # Rename project-files
+        old_paths = [Path(p).name for p in self.path_to_attribute]
+        self.init_pipeline_scripts()
+        new_paths = [Path(p).name for p in self.path_to_attribute]
+        for old_path, new_path in zip(old_paths, new_paths):
+            os.rename(
+                join(self.pscripts_path, old_path), join(self.pscripts_path, new_path)
+            )
+            logging.info(f"Renamed project-script {old_path} to {new_path}")
+        logging.info(f'Finished renaming project "{old_name}" to "{new_name}"')
+
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
         self.old_all_meeg_path = join(self.pscripts_path, "file_list.json")
