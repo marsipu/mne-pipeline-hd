@@ -1661,7 +1661,10 @@ class Group(BaseLoading):
             self.event_id = {**self.event_id, **self.ct.pr.meeg_event_id[group_item]}
 
         # The selected trials from the event-id (assume first to allow meta-queries)
-        self.sel_trials = MEEG(self.group_list[0], self.ct).sel_trials
+        if len(self.group_list) > 0:
+            self.sel_trials = MEEG(self.group_list[0], self.ct).sel_trials
+        else:
+            self.sel_trials = dict()
 
         # The fsmri where all group members are morphed to
         self.fsmri = FSMRI(self.pa["morph_to"], self.ct)

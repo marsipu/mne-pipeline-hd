@@ -368,7 +368,7 @@ def plot_evoked_image(meeg, show_plots):
 def plot_compare_evokeds(meeg, show_plots):
     evokeds = meeg.load_evokeds()
 
-    evokeds = {evoked.comment: evoked for evoked in evokeds}
+    evokeds = {f"{evoked.comment}={evoked.nave}": evoked for evoked in evokeds}
 
     fig = mne.viz.plot_compare_evokeds(evokeds, show=show_plots)
 
