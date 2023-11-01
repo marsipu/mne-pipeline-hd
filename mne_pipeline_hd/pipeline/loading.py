@@ -644,13 +644,17 @@ class MEEG(BaseLoading):
 
         # The selected trials from the event-id
         if self.name not in self.pr.sel_event_id:
-            self.sel_trials = list()
+            self.sel_trials = dict()
             if not self.suppress_warnings:
                 logging.warning(
                     f"No Trials selected for {self.name}," f" defaulting to empty list"
                 )
         else:
             self.sel_trials = self.pr.sel_event_id[self.name]
+            # Legacy for before when sel_event_id was a list
+            if isinstance(self.sel_trials, list):
+                self.sel_trials = {k: None for k in self.sel_trials}
+                self.pr.sel_event_id[self.name] = self.sel_trials
 
         # The assigned event-id
         if self.name not in self.pr.meeg_event_id:
@@ -950,19 +954,26 @@ class MEEG(BaseLoading):
         self.fsmri = FSMRI("fsaverage", self.ct)
 
         # Add event_id
-        self.event_id = {
-            "auditory/left": 1,
-            "auditory/right": 2,
-            "visual/left": 3,
-            "visual/right": 4,
-            "face": 5,
-            "buttonpress": 32,
-        }
-        self.pr.meeg_event_id[self.name] = self.event_id
+        if self.name not in self.pr.meeg_event_id:
+            self.event_id = {
+                "auditory/left": 1,
+                "auditory/right": 2,
+                "visual/left": 3,
+                "visual/right": 4,
+                "face": 5,
+                "buttonpress": 32,
+            }
+            self.pr.meeg_event_id[self.name] = self.event_id
+        else:
+            self.event_id = self.pr.meeg_event_id[self.name]
+
         # ToDo: Here is problem, since there is no way
         #  to select "auditory/left" from the gui.
-        self.sel_trials = ["auditory"]
-        self.pr.sel_event_id[self.name] = self.sel_trials
+        if self.name not in self.pr.sel_event_id:
+            self.sel_trials = {"auditory": None}
+            self.pr.sel_event_id[self.name] = self.sel_trials
+        else:
+            self.sel_trials = self.pr.sel_event_id[self.name]
 
         # init paths again
         self.init_paths()
@@ -975,7 +986,7 @@ class MEEG(BaseLoading):
             test_file_path = join(test_data_folder, test_file_name)
             file_path = self.io_dict[data_type]["path"]
             if data_type == "stcs":
-                file_path = file_path[self.sel_trials[0]]
+                file_path = file_path["auditory"]
                 if not isfile(file_path + "-lh.stc"):
                     logging.debug(f"Copying {data_type} from sample-dataset...")
                     stcs = mne.source_estimate.read_source_estimate(test_file_path)
@@ -1097,6 +1108,19 @@ class MEEG(BaseLoading):
     @save_decorator
     def save_epochs(self, epochs):
         epochs.save(self.epochs_path, overwrite=True)
+
+    def get_trial_epochs(self):
+        """Return epochs for each trial in self.sel_trials"""
+        epochs = self.load_epochs()
+        for trial, meta_query in self.sel_trials.items():
+            epoch_trial = meta_query or trial
+            # ToDo: Make this optional (at own risk) and not for normal trials
+            try:
+                epoch_trial = eval(epoch_trial)
+            except (NameError, SyntaxError, ValueError, TypeError):
+                pass
+
+            yield trial, epochs[epoch_trial]
 
     @load_decorator
     def load_reject_log(self):
@@ -1636,13 +1660,8 @@ class Group(BaseLoading):
         ]:
             self.event_id = {**self.event_id, **self.ct.pr.meeg_event_id[group_item]}
 
-        # The selected trials from the event-id
-        self.sel_trials = set()
-        for group_item in [
-            gi for gi in self.group_list if gi in self.ct.pr.sel_event_id
-        ]:
-            self.sel_trials = self.sel_trials | set(self.ct.pr.sel_event_id[group_item])
-        self.sel_trials = list(self.sel_trials)
+        # The selected trials from the event-id (assume first to allow meta-queries)
+        self.sel_trials = MEEG(self.group_list[0], self.ct).sel_trials
 
         # The fsmri where all group members are morphed to
         self.fsmri = FSMRI(self.pa["morph_to"], self.ct)

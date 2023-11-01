@@ -338,7 +338,9 @@ class CopyParamsDialog(SimpleDialog):
         if to_name == self.ct.pr.name:
             self.main_win.parameters_dock.redraw_param_widgets()
         QMessageBox().information(
-            self, "Finished", f"Parameters copied from {from_name} " f"to {to_name}!"
+            self,
+            "Finished",
+            f"Copied parameter '{param}' from {from_name} to {to_name}!",
         )
 
 

@@ -1431,13 +1431,14 @@ class EventIDGui(QDialog):
 
         self.name = None
         self.event_id = dict()
+        self.queries = dict()
         self.labels = list()
         self.checked_labels = list()
 
         self.layout = QVBoxLayout()
         self.init_ui()
 
-        self.open()
+        self.show()
 
     def init_ui(self):
         list_layout = QHBoxLayout()
@@ -1468,6 +1469,15 @@ class EventIDGui(QDialog):
         event_id_layout.addWidget(self.event_id_label)
 
         list_layout.addLayout(event_id_layout)
+
+        self.query_widget = EditDict(
+            self.queries, ui_buttons=True, title="Metadata-Queries"
+        )
+        self.query_widget.setToolTip(
+            "Add Metadata-Queries as value for trials which are named with key"
+        )
+        self.query_widget.dataChanged.connect(self.update_check_list)
+        list_layout.addWidget(self.query_widget)
 
         self.check_widget = CheckList(title="Select IDs")
         list_layout.addWidget(self.check_widget)
@@ -1500,15 +1510,27 @@ class EventIDGui(QDialog):
             self.event_id = dict()
         self.event_id_widget.replace_data(self.event_id)
 
+        meeg = MEEG(self.name, self.ct, suppress_warnings=True)
         try:
             # Load events from File
-            meeg = MEEG(self.name, self.ct, suppress_warnings=True)
             events = meeg.load_events()
         except FileNotFoundError:
-            self.event_id_label.setText(f"No events found for {self.name}")
+            label_text = f"No events found for {self.name}"
         else:
-            ids = np.unique(events[:, 2])
-            self.event_id_label.setText(f"events found: {ids}")
+            label_text = f"events found: {np.unique(events[:, 2])}"
+
+        try:
+            # Load epochs from File
+            epochs = meeg.load_epochs()
+            assert epochs.metadata is not None
+        except (FileNotFoundError, AssertionError):
+            self.query_widget.setEnabled(False)
+            label_text += "\nNo metadata found"
+        else:
+            self.query_widget.setEnabled(True)
+            label_text += "\nMetadata found"
+
+        self.event_id_label.setText(label_text)
 
     def save_event_id(self):
         if self.name:
@@ -1516,8 +1538,14 @@ class EventIDGui(QDialog):
                 # Write Event-ID to Project
                 self.pr.meeg_event_id[self.name] = self.event_id
 
-                # Get selected Trials and write them to meeg.pr
-                self.pr.sel_event_id[self.name] = self.checked_labels
+                # Get selected Trials, add queries and write them to meeg.pr
+                sel_event_id = dict()
+                for label in self.checked_labels:
+                    if label in self.queries:
+                        sel_event_id[label] = self.queries[label]
+                    else:
+                        sel_event_id[label] = None
+                self.pr.sel_event_id[self.name] = sel_event_id
 
     def file_selected(self, current, _):
         """Called when File from file_widget is selected"""
@@ -1530,12 +1558,23 @@ class EventIDGui(QDialog):
 
         # Load checked trials
         if self.name in self.pr.sel_event_id:
-            self.checked_labels = self.pr.sel_event_id[self.name]
+            # Update query-widget
+            if self.query_widget.isEnabled():
+                sel_trials = self.pr.sel_event_id[self.name]
+                if not isinstance(sel_trials, dict):
+                    sel_trials = {k: None for k in sel_trials}
+                self.queries = {k: v for k, v in sel_trials.items() if v is not None}
+                self.query_widget.replace_data(self.queries)
+            # Legacy to allow reading lists before
+            # they were changed to dicts for queries
+            self.checked_labels = list(self.pr.sel_event_id[self.name])
         else:
             self.checked_labels = list()
         self.update_check_list()
 
+    # ToDo: Make all combinations possible
     def update_check_list(self):
+        self.labels = [k for k in self.queries.keys()]
         # Get selectable trials and update widget
         prelabels = [i.split("/") for i in self.event_id.keys() if i != ""]
         if len(prelabels) > 0:
@@ -1545,11 +1584,14 @@ class EventIDGui(QDialog):
                 for item in prelabels[1:]:
                     conc_labels += item
             # Make sure that only unique labels exist
-            self.labels = list(set(conc_labels))
+            self.labels += list(set(conc_labels))
 
             # Make sure, that only trials, which exist in event_id exist
             for chk_label in self.checked_labels:
-                if not any(chk_label in key for key in self.event_id):
+                if (
+                    not any(chk_label in key for key in self.event_id)
+                    and chk_label not in self.queries
+                ):
                     self.checked_labels.remove(chk_label)
         else:
             self.labels = list()
@@ -1575,6 +1617,10 @@ class EvIDApply(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
         self.p = parent
+
+        # Save to make sel_event_id available in apply_evid
+        self.p.save_event_id()
+
         self.apply_to = list()
 
         self.layout = QVBoxLayout()
@@ -1606,8 +1652,8 @@ class EvIDApply(QDialog):
         for file in self.apply_to:
             # Avoid with copy that CheckList-Model changes selected
             # for all afterwards (same reference)
-            self.p.pr.meeg_event_id[file] = self.p.event_id.copy()
-            self.p.pr.sel_event_id[file] = self.p.checked_labels.copy()
+            self.p.pr.meeg_event_id[file] = self.p.pr.meeg_event_id[self.p.name].copy()
+            self.p.pr.sel_event_id[file] = self.p.pr.sel_event_id[self.p.name].copy()
 
 
 class CopyTrans(QDialog):

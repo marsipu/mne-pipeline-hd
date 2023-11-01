@@ -801,10 +801,10 @@ def apply_ica(meeg, ica_apply_target, n_pca_components):
 
 
 def get_evokeds(meeg):
-    epochs = meeg.load_epochs()
+    meeg.load_epochs()
     evokeds = list()
-    for trial in meeg.sel_trials:
-        evoked = epochs[trial].average()
+    for trial, epoch in meeg.get_trial_epochs():
+        evoked = epoch.average()
         # Todo: optional if you want weights in your evoked.comment?!
         evoked.comment = trial
         evokeds.append(evoked)
@@ -895,15 +895,15 @@ def tfr(
     powers = list()
     itcs = list()
 
-    epochs = meeg.load_epochs()
+    meeg.load_epochs()
 
     # Calculate Time-Frequency for each trial from epochs
     # using the selected method
-    for trial in meeg.sel_trials:
+    for trial, epoch in meeg.get_trial_epochs():
         if tfr_method == "multitaper":
             multitaper_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_multitaper)
             tfr_result = mne.time_frequency.tfr_multitaper(
-                epochs[trial],
+                epoch,
                 freqs=tfr_freqs,
                 n_cycles=tfr_n_cycles,
                 time_bandwidth=multitaper_bandwidth,
@@ -917,7 +917,7 @@ def tfr(
             fmin, fmax = tfr_freqs[[0, -1]]
             stockwell_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_stockwell)
             tfr_result = mne.time_frequency.tfr_stockwell(
-                epochs[trial],
+                epoch,
                 fmin=fmin,
                 fmax=fmax,
                 width=stockwell_width,
@@ -928,7 +928,7 @@ def tfr(
         else:
             morlet_kwargs = check_kwargs(kwargs, mne.time_frequency.tfr_morlet)
             tfr_result = mne.time_frequency.tfr_morlet(
-                epochs[trial],
+                epoch,
                 freqs=tfr_freqs,
                 n_cycles=tfr_n_cycles,
                 n_jobs=n_jobs,
@@ -1512,7 +1512,6 @@ def src_connectivity(
             "Please select at least one label."
         )
     info = meeg.load_info()
-    all_epochs = meeg.load_epochs()
     inverse_operator = meeg.load_inverse_operator()
     src = inverse_operator["src"]
     labels = meeg.fsmri.get_labels(target_labels)
@@ -1526,9 +1525,9 @@ def src_connectivity(
 
     con_dict = dict()
 
-    for trial in meeg.sel_trials:
+    for trial, epoch in meeg.get_trial_epochs():
         con_dict[trial] = dict()
-        epochs = all_epochs[trial]
+        epochs = epoch
 
         # Crop if necessary
         if con_time_window is not None:
