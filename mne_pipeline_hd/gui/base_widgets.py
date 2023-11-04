@@ -730,6 +730,7 @@ class SimpleDict(BaseDict):
         )
 
 
+# ToDo: DataChanged somehow not emitted when row is removed
 class EditDict(BaseDict):
     """A Widget to display and edit a Dictionary
 

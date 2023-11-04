@@ -32,7 +32,7 @@ from qtpy.QtWidgets import (
 )
 
 from mne_pipeline_hd import _object_refs
-from mne_pipeline_hd.functions.plot import close_all
+from mne_pipeline_hd.pipeline.function_utils import close_all
 from mne_pipeline_hd.gui.dialogs import (
     QuickGuide,
     RawInfo,

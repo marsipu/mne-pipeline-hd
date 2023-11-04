@@ -7,7 +7,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 from __future__ import print_function
 
-import gc
+import itertools
 from functools import partial
 from os.path import join
 
@@ -849,6 +849,19 @@ def plot_label_time_course(meeg, label_colors, show_plots):
         meeg.plot_save("label-time-course", trial=trial)
 
 
+def _get_n_subplots(n_items):
+    n_subplots = np.ceil(np.sqrt(n_items)).astype(int)
+    if n_items <= 2:
+        nrows = 1
+        ax_idxs = range(n_subplots)
+    else:
+        nrows = n_subplots
+        ax_idxs = itertools.product(range(n_subplots), repeat=2)
+    ncols = n_subplots
+
+    return nrows, ncols, ax_idxs
+
+
 def _plot_connectivity(obj, con_dict, label_colors, show_plots):
     for trial in con_dict:
         for con_method, con in con_dict[trial].items():
@@ -889,26 +902,49 @@ def _plot_connectivity(obj, con_dict, label_colors, show_plots):
                 group_boundaries=[0, len(label_names) / 2],
             )
             con_data = con.get_data(output="dense")
+
+            nrows, ncols, ax_idxs = _get_n_subplots(len(con.freqs))
+            ax_idxs = list(ax_idxs)
+            fig, axes = plt.subplots(
+                nrows=nrows,
+                ncols=ncols,
+                subplot_kw={"projection": "polar"},
+                facecolor="black",
+                figsize=(8, 8),
+            )
+            # Remove extra axes
+            if nrows**2 > len(con.freqs):
+                fig.delaxes(axes[-1, -1])
+
             for freq_idx, freq in enumerate(con.freqs):
-                title = f"{trial}, Frequency={freq}"
-                fig, axes = mne_connectivity.viz.plot_connectivity_circle(
+                if isinstance(axes, np.ndarray):
+                    ax = axes[ax_idxs[freq_idx]]
+                else:
+                    ax = axes
+                title = f"Frequency={freq:.1f} Hz"
+                mne_connectivity.viz.plot_connectivity_circle(
                     con_data[:, :, freq_idx],
                     label_names,
                     n_lines=None,
                     node_angles=node_angles,
                     node_colors=colors,
                     title=title,
-                    fontsize_names=8,
                     show=show_plots,
+                    ax=ax,
                 )
-
-                if isinstance(obj, MEEG):
-                    plot_name = f"connectivity_{freq:.1f}"
-                else:
-                    plot_name = f"ga_connectivity_{freq:.1f}"
-                obj.plot_save(
-                    plot_name, subfolder=con_method, trial=trial, matplotlib_figure=fig
-                )
+            fig.suptitle(
+                f"{obj.name}-{trial}-{con_method}",
+                horizontalalignment="center",
+                color="white",
+            )
+            plt.tight_layout()
+            if isinstance(obj, MEEG):
+                plot_name = "connectivity"
+            else:
+                plot_name = "ga_connectivity"
+            obj.plot_save(
+                plot_name, subfolder=con_method, trial=trial, matplotlib_figure=fig
+            )
 
 
 def plot_src_connectivity(meeg, label_colors, show_plots):
@@ -1084,8 +1120,3 @@ def plot_grand_avg_connect(
 ):
     con_dict = group.load_ga_con()
     _plot_connectivity(group, con_dict, label_colors, show_plots)
-
-
-def close_all():
-    plt.close("all")
-    gc.collect()

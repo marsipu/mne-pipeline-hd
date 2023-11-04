@@ -4,7 +4,9 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+from __future__ import print_function
 
+import gc
 import inspect
 import io
 import logging
@@ -13,6 +15,7 @@ from collections import OrderedDict
 from importlib import import_module
 from multiprocessing import Pipe
 
+from matplotlib import pyplot as plt
 from qtpy.QtCore import QThreadPool, QRunnable, Slot, QObject, Signal
 from qtpy.QtWidgets import QAbstractItemView
 
@@ -418,6 +421,9 @@ class QRunController(RunController):
         self.rd.restart_bt.setEnabled(True)
         self.rd.close_bt.setEnabled(True)
 
+        if not self.ct.get_setting("show_plots"):
+            close_all()
+
         if self.ct.get_setting("shutdown"):
             self.ct.save()
             ans = TimedMessageBox.information(
@@ -475,3 +481,8 @@ class QRunController(RunController):
                 self.pool.apply_async(
                     func=run_func, kwds=kwds, callback=self.process_finished
                 )
+
+
+def close_all():
+    plt.close("all")
+    gc.collect()

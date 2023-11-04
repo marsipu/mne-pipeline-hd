@@ -1135,8 +1135,7 @@ def make_dense_scalp_surfaces(fsmri):
         "mne",
         "make_scalp_surfaces",
         "--overwrite",
-        "--subject",
-        fsmri.name,
+        f"--subject={fsmri.name}",
         "--force",
     ]
 
