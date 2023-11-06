@@ -1661,14 +1661,7 @@ def grand_avg_ltc(group):
             if len(ltc_average_dict[trial][label]) != 0:
                 print(f"grand_average for {trial}-{label}")
                 ltc_list = ltc_average_dict[trial][label]
-                # Take the absolute values
-                ltc_list = [abs(it) for it in ltc_list]
-                n_subjects = len(ltc_list)
-                average = ltc_list[0]
-                for idx in range(1, n_subjects):
-                    average += ltc_list[idx]
-
-                average /= n_subjects
+                average = np.mean(ltc_list, axis=0)
 
                 ga_ltc[trial][label] = np.vstack((average, times))
 
