@@ -220,15 +220,6 @@ class CodeEditor(QTextEdit):
         super().__init__(parent)
 
 
-def _html_compatible(text):
-    text = text.replace("<", "&lt;")
-    text = text.replace(">", "&gt;")
-    text = text.replace("\n", "<br>")
-    text = text.replace("\x1b", "")
-
-    return text
-
-
 class ConsoleWidget(QPlainTextEdit):
     """A Widget displaying formatted stdout/stderr-output"""
 
@@ -237,62 +228,64 @@ class ConsoleWidget(QPlainTextEdit):
 
         self.setReadOnly(True)
         self.autoscroll = True
-
-        self.buffer_time = 1
+        self.is_progress = False
 
         # Buffer to avoid crash for too many inputs
         self.buffer = list()
+        self.buffer_time = 10
         self.buffer_timer = QTimer()
         self.buffer_timer.timeout.connect(self.write_buffer)
         self.buffer_timer.start(self.buffer_time)
 
-    def _add_html(self, text):
-        self.appendHtml(text)
-        if self.autoscroll:
-            self.ensureCursorVisible()
-
     def write_buffer(self):
+        if self.is_progress:
+            # Delete last line
+            cursor = self.textCursor()
+            # Avoid having no break between progress and text
+            # Remove last line
+            cursor.select(QTextCursor.LineUnderCursor)
+            cursor.removeSelectedText()
+            cursor.deletePreviousChar()
+            self.is_progress = False
+
         if len(self.buffer) > 0:
-            text, kind = self.buffer.pop(0)
-            if kind == "html":
-                self._add_html(text)
-
-            elif kind == "progress":
-                text = text.replace("\r", "")
-                text = _html_compatible(text)
-                text = f'<font color="green">{text}</font>'
-                # Delete last line
-                cursor = self.textCursor()
-                cursor.select(QTextCursor.LineUnderCursor)
-                cursor.removeSelectedText()
-                self._add_html(text)
-
-            elif kind == "stdout":
-                text = _html_compatible(text)
-                self._add_html(text)
-
-            elif kind == "stderr":
-                # weird characters in some progress are excluded
-                # (e.g. from autoreject)
-                if "\x1b" not in text:
-                    text = _html_compatible(text)
-                    text = f'<font color="red">{text}</font>'
-                    self._add_html(text)
+            text_list = self.buffer.copy()
+            self.buffer.clear()
+            text = "".join(text_list)
+            self.appendHtml(text)
+            if self.autoscroll:
+                self.ensureCursorVisible()
 
     def set_autoscroll(self, autoscroll):
         self.autoscroll = autoscroll
 
     def write_html(self, text):
-        self.buffer.append((text, "html"))
+        self.buffer.append(text)
+
+    def _html_compatible(self, text):
+        text = text.replace("<", "&lt;")
+        text = text.replace(">", "&gt;")
+        text = text.replace("\n", "<br>")
+        text = text.replace("\x1b", "")
+
+        if text[:1] == "\r":
+            self.is_progress = True
+            text = text.replace("\r", "")
+            # Avoid having no break between progress and text
+            text = f"<font color='green'>{text}</font>"
+            if len(self.buffer) > 0:
+                if self.buffer[-1][:20] == "<font color='green'>":
+                    self.buffer.pop(-1)
+        return text
 
     def write_stdout(self, text):
-        self.buffer.append((text, "stdout"))
+        text = self._html_compatible(text)
+        self.buffer.append(text)
 
     def write_stderr(self, text):
-        self.buffer.append((text, "stderr"))
-
-    def write_progress(self, text):
-        self.buffer.append((text, "progress"))
+        text = self._html_compatible(text)
+        text = f'<font color="red">{text}</font>'
+        self.buffer.append(text)
 
     # Make sure cursor is not moved
     def mousePressEvent(self, event):
@@ -312,19 +305,12 @@ class MainConsoleWidget(ConsoleWidget):
         # Connect custom stdout and stderr to display-function
         sys.stdout.signal.text_written.connect(self.write_stdout)
         sys.stderr.signal.text_written.connect(self.write_stderr)
-        # Handle progress-bars
-        sys.stdout.signal.text_updated.connect(self.write_progress)
-        sys.stderr.signal.text_updated.connect(self.write_progress)
 
 
 class StreamSignals(QObject):
-    text_updated = Signal(str)
     text_written = Signal(str)
 
 
-# ToDo: Buffering and halting signal-emission
-#  (continue writing to sys.__stdout__/__stderr__)
-#  when no accepted/printed-signal is coming back from receiving Widget
 class StdoutStderrStream(io.TextIOBase):
     def __init__(self, kind):
         super().__init__()
@@ -337,12 +323,8 @@ class StdoutStderrStream(io.TextIOBase):
     def write(self, text):
         # Still send output to the command-line
         self.original_stream.write(text)
-
-        # Get progress-text with '\r' as prefix
-        if text[:1] == "\r":
-            self.signal.text_updated.emit(text)
-        else:
-            self.signal.text_written.emit(text)
+        # Emit signal to display in GUI
+        self.signal.text_written.emit(text)
 
     def flush(self):
         self.original_stream.flush()

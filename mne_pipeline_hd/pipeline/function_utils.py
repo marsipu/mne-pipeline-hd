@@ -101,10 +101,7 @@ class StreamSender(io.TextIOBase):
         while self.manager.pipe_busy:
             pass
         self.manager.pipe_busy = True
-        if text[:1] == "\r":
-            kind = "progress"
-        else:
-            kind = self.kind
+        kind = self.kind
         self.pipe.send((text, kind))
         self.manager.pipe_busy = False
 
@@ -112,7 +109,6 @@ class StreamSender(io.TextIOBase):
 class StreamRcvSignals(QObject):
     stdout_received = Signal(str)
     stderr_received = Signal(str)
-    progress_received = Signal(str)
 
 
 class StreamReceiver(QRunnable):
@@ -129,12 +125,10 @@ class StreamReceiver(QRunnable):
             except EOFError:
                 break
             else:
-                if kind == "stdout":
-                    self.signals.stdout_received.emit(text)
-                elif kind == "stderr":
+                if kind == "stderr":
                     self.signals.stderr_received.emit(text)
                 else:
-                    self.signals.progress_received.emit(text)
+                    self.signals.stdout_received.emit(text)
 
 
 def run_func(func, keywargs, pipe=None):
@@ -472,9 +466,6 @@ class QRunController(RunController):
                 )
                 stream_rcv.signals.stderr_received.connect(
                     self.rd.console_widget.write_stderr
-                )
-                stream_rcv.signals.progress_received.connect(
-                    self.rd.console_widget.write_progress
                 )
                 QThreadPool.globalInstance().start(stream_rcv)
                 # ToDO: MP
