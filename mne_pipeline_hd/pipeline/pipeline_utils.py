@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import psutil
 
-import mne_pipeline_hd
+from mne_pipeline_hd import extra
 
 datetime_format = "%d.%m.%Y %H:%M:%S"
 
@@ -234,9 +234,7 @@ def _get_func_param_kwargs(func, params):
 class BaseSettings:
     def __init__(self):
         # Load default settings
-        default_settings_path = join(
-            resources.files(mne_pipeline_hd.extra), "default_settings.json"
-        )
+        default_settings_path = join(resources.files(extra), "default_settings.json")
         with open(default_settings_path, "r") as file:
             self.default_qsettings = json.load(file)["qsettings"]
 

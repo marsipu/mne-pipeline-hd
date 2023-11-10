@@ -77,6 +77,9 @@ class Base(QWidget):
         self.view.selectionModel().currentChanged.connect(self._current_changed)
         self.view.selectionModel().selectionChanged.connect(self._selection_changed)
         self.model.dataChanged.connect(self._data_changed)
+        # Also send signal when rows are removed/added
+        self.model.rowsInserted.connect(self._data_changed)
+        self.model.rowsRemoved.connect(self._data_changed)
 
         self.init_ui()
 
@@ -1556,6 +1559,7 @@ class TimedMessageBox(QMessageBox):
         )
 
 
+# ToDo: Proper testing
 class AllBaseWidgets(QWidget):
     def __init__(self):
         super().__init__()
@@ -1609,30 +1613,26 @@ class AllBaseWidgets(QWidget):
             "SimpleList": {
                 "extended_selection": True,
                 "title": "BaseList",
-                "verbose": True,
             },
             "EditList": {
                 "ui_button_pos": "bottom",
                 "extended_selection": True,
                 "title": "EditList",
-                "verbose": True,
             },
-            "CheckList": {"one_check": False, "title": "CheckList", "verbose": True},
+            "CheckList": {"one_check": False, "title": "CheckList"},
             "CheckDictList": {
                 "extended_selection": True,
                 "title": "CheckDictList",
-                "verbose": True,
             },
-            "CheckDictEditList": {"title": "CheckDictEditList", "verbose": True},
-            "SimpleDict": {"title": "BaseDict", "verbose": True},
-            "EditDict": {"ui_button_pos": "left", "title": "EditDict", "verbose": True},
-            "SimplePandasTable": {"title": "BasePandasTable", "verbose": True},
-            "EditPandasTable": {"title": "EditPandasTable", "verbose": True},
-            "DictTree": {"title": "BaseDictTree", "verbose": True},
+            "CheckDictEditList": {"title": "CheckDictEditList"},
+            "SimpleDict": {"title": "BaseDict"},
+            "EditDict": {"ui_button_pos": "left", "title": "EditDict"},
+            "SimplePandasTable": {"title": "BasePandasTable"},
+            "EditPandasTable": {"title": "EditPandasTable"},
+            "DictTree": {"title": "BaseDictTree"},
             "AssignWidget": {
                 "properties_editable": True,
                 "title": "AssignWidget",
-                "verbose": True,
             },
         }
 
