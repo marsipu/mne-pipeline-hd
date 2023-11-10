@@ -232,7 +232,7 @@ class ConsoleWidget(QPlainTextEdit):
 
         # Buffer to avoid crash for too many inputs
         self.buffer = list()
-        self.buffer_time = 10
+        self.buffer_time = 50
         self.buffer_timer = QTimer()
         self.buffer_timer.timeout.connect(self.write_buffer)
         self.buffer_timer.start(self.buffer_time)
@@ -252,6 +252,9 @@ class ConsoleWidget(QPlainTextEdit):
             text_list = self.buffer.copy()
             self.buffer.clear()
             text = "".join(text_list)
+            # Remove last break because of appendHtml above
+            if text[-4:] == "<br>":
+                text = text[:-4]
             self.appendHtml(text)
             if self.autoscroll:
                 self.ensureCursorVisible()
@@ -276,9 +279,6 @@ class ConsoleWidget(QPlainTextEdit):
             if len(self.buffer) > 0:
                 if self.buffer[-1][:20] == "<font color='green'>":
                     self.buffer.pop(-1)
-        # Remove last break because of appendHtml above
-        if text[-4:] == "<br>":
-            text = text[:-4]
         return text
 
     def write_stdout(self, text):

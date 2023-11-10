@@ -55,7 +55,7 @@ class SpeedWidget(QWidget):
         self.timer.timeout.connect(self.write)
 
     def start(self):
-        self.timer.start(45)
+        self.timer.start(42)
 
     def stop(self):
         self.timer.stop()
