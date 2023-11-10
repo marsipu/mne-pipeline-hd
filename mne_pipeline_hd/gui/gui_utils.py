@@ -276,6 +276,9 @@ class ConsoleWidget(QPlainTextEdit):
             if len(self.buffer) > 0:
                 if self.buffer[-1][:20] == "<font color='green'>":
                     self.buffer.pop(-1)
+        # Remove last break because of appendHtml above
+        if text[-4:] == "<br>":
+            text = text[:-4]
         return text
 
     def write_stdout(self, text):
