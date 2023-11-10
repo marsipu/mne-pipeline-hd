@@ -1560,6 +1560,8 @@ class TimedMessageBox(QMessageBox):
 
 
 # ToDo: Proper testing
+# Testing all signals properly emitted (also on row add/remove)
+# Testing when _data is empty and get-Data, what happens?
 class AllBaseWidgets(QWidget):
     def __init__(self):
         super().__init__()

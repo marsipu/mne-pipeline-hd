@@ -4,7 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-
+import logging
 from ast import literal_eval
 from datetime import datetime
 
@@ -46,6 +46,9 @@ class BaseListModel(QAbstractListModel):
             self._data = data
 
     def getData(self, index):
+        if len(self._data) == 0:
+            logging.warning("List is empty")
+            return None
         return self._data[index.row()]
 
     def data(self, index, role=None):
