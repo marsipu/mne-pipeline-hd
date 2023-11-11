@@ -7,8 +7,10 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 import logging
 import os
+import re
 import sys
 from importlib import resources
+from os.path import join
 
 import qtpy
 from qtpy.QtCore import QTimer, Qt
@@ -19,7 +21,7 @@ import mne_pipeline_hd
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
-from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS
+from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS, iswin
 
 # Check for changes in required packages
 legacy_import_check()
@@ -104,21 +106,23 @@ def main():
     if app_style not in ["dark", "light", "auto"]:
         app_style = "auto"
 
-    if app_style == "dark":
-        qdarktheme.setup_theme("dark")
+    qdarktheme.setup_theme(app_style)
+    st = qdarktheme.load_stylesheet(app_style)
+    is_dark = "background:rgba(32, 33, 36, 1.000)" in st
+    if is_dark:
         icon_name = "mne_pipeline_icon_dark.png"
-    elif app_style == "light":
-        qdarktheme.setup_theme("light")
-        icon_name = "mne_pipeline_icon_light.png"
+        # Fix ToolTip-Problem on Windows
+        # https://github.com/5yutan5/PyQtDarkTheme/issues/239
+        if iswin:
+            match = re.search(r"QToolTip \{([^\{\}]+)\}", st)
+            if match is not None:
+                replace_str = "QToolTip {" + match.group(1) + ";border: 0px}"
+                st = st.replace(match.group(0), replace_str)
+                QApplication.instance().setStyleSheet(st)
     else:
-        qdarktheme.setup_theme("auto")
-        st = qdarktheme.load_stylesheet("auto")
-        if "background:rgba(32, 33, 36, 1.000)" in st:
-            icon_name = "mne_pipeline_icon_dark.png"
-        else:
-            icon_name = "mne_pipeline_icon_light.png"
+        icon_name = "mne_pipeline_icon_light.png"
 
-    icon_path = resources.files(mne_pipeline_hd.extra) / icon_name
+    icon_path = join(resources.files(mne_pipeline_hd.extra), icon_name)
     app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
 
