@@ -47,7 +47,7 @@ class BaseListModel(QAbstractListModel):
 
     def getData(self, index):
         if len(self._data) == 0:
-            logging.warning("List is empty")
+            logging.debug("List is empty")
             return None
         return self._data[index.row()]
 

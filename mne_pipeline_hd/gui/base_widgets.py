@@ -190,8 +190,6 @@ class SimpleList(BaseList):
         Parent Widget (QWidget or inherited) or None if there is no parent.
     title : str | None
         An optional title.
-    verbose : bool
-        Set True to see debugging for signals.
 
     Notes
     -----
@@ -241,8 +239,6 @@ class EditList(BaseList):
         An optional title.
     model : QAbstractItemModel
         Provide an alternative to EditListModel.
-    verbose : bool
-        Set True to see debugging for signals
 
     Notes
     -----
@@ -357,8 +353,6 @@ class CheckList(BaseList):
         Parent Widget (QWidget or inherited) or None if there is no parent.
     title : str | None
         An optional title
-    verbose : bool
-        Set True to see debugging for signals
 
     Notes
     -----
@@ -481,8 +475,6 @@ class CheckDictList(BaseList):
         Parent Widget (QWidget or inherited) or None if there is no parent.
     title : str | None
         An optional title.
-    verbose : bool
-        Set True to see debugging for signals.
 
     Notes
     -----
@@ -554,8 +546,6 @@ class CheckDictEditList(EditList):
         Parent Widget (QWidget or inherited) or None if there is no parent.
     title : str | None
         An optional title.
-    verbose : bool
-        Set True to see debugging for signals.
 
     Notes
     -----
@@ -708,8 +698,6 @@ class SimpleDict(BaseDict):
         Set True to resize the rows to contents.
     resize_columns : bool
         Set True to resize the columns to contents.
-    verbose : bool
-        Set True to see debugging for signals.
 
     """
 
@@ -756,8 +744,6 @@ class EditDict(BaseDict):
         Set True to resize the rows to contents.
     resize_columns : bool
         Set True to resize the columns to contents.
-    verbose : bool
-        Set True to see debugging for signals.
 
     """
 
@@ -855,8 +841,6 @@ class BasePandasTable(Base):
         The view for the pandas DataFrame.
     title : str | None
         An optional title.
-    verbose : bool
-        Set True to see debugging for signals.
     """
 
     def __init__(
@@ -1011,8 +995,6 @@ class SimplePandasTable(BasePandasTable):
         Set True to resize the rows to contents
     resize_columns : bool
         Set True to resize the columns to contents
-    verbose : bool
-        Set True to see debugging for signals
 
     Notes
     -----
@@ -1062,8 +1044,6 @@ class EditPandasTable(BasePandasTable):
         Set True to resize the rows to contents.
     resize_columns : bool
         Set True to resize the columns to contents.
-    verbose : bool
-        Set True to see debugging for signals.
 
     Notes
     -----
@@ -1251,8 +1231,6 @@ class FilePandasTable(BasePandasTable):
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
         An optional title
-    verbose : bool
-        Set True to see debugging for signals
 
     Notes
     -----
