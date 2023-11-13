@@ -185,6 +185,8 @@ class CheckListModel(BaseListModel):
 
     def setData(self, index, value, role=None):
         if role == Qt.CheckStateRole:
+            # ToDo: This does not work under PySide6
+            #  since Qt.Checked returns no integer (only Qt.Checked.value)
             if value == Qt.Checked:
                 if self.one_check:
                     self._checked.clear()
@@ -772,6 +774,8 @@ class AddFilesModel(BasePandasModel):
             role == Qt.CheckStateRole
             and self._data.columns[index.column()] == "Empty-Room?"
         ):
+            # ToDo: This does not work under PySide6
+            #  since Qt.Checked returns no integer (only Qt.Checked.value)
             if value == Qt.Checked:
                 self._data.iloc[index.row(), index.column()] = 1
             else:
