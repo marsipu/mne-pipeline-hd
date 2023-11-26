@@ -618,10 +618,11 @@ class TupleGui(Param):
         # Signal valueChanged is already emitted after first setValue,
         # which leads to second param_value being 0 without being
         # preserved in self.loaded_value
-        self._external_set = True
-        self.param_widget1.setValue(value[0])
-        self.param_widget2.setValue(value[1])
-        self._external_set = False
+        if len(value) == 2:
+            self._external_set = True
+            self.param_widget1.setValue(value[0])
+            self.param_widget2.setValue(value[1])
+            self._external_set = False
 
     def _get_param(self):
         if not self._external_set:

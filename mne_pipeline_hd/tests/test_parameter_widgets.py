@@ -154,8 +154,7 @@ def test_basic_param_guis(qtbot, gui_name):
             }
             kwargs["type_kwargs"][type_gui_name] = t_kwargs
         gui = gui_class(data=parameters, name=gui_name, **kwargs)
-        for gui_type, type_gui_name in gui.gui_types.items():
-            type_idx = gui.types.index(gui_type)
+        for type_idx, (gui_type, type_gui_name) in enumerate(gui.gui_types.items()):
             gui.change_type(type_idx)
             gui.set_param(parameters[type_gui_name])
             assert gui.get_value() == parameters[type_gui_name]
