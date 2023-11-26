@@ -38,3 +38,11 @@ def test_fsmri(controller):
 
     # Test load/save functions
     _test_load_save(fsmri, fsaverage_paths)
+
+
+def test_kwargs_geopenfilenames():
+    import inspect
+    from qtpy import compat
+
+    signature = inspect.signature(compat.getopenfilenames)
+    assert "filters" in signature.parameters

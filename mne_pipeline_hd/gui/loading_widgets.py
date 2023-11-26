@@ -701,7 +701,7 @@ class AddFilesWidget(QWidget):
         filter_list.insert(0, "All Files (*.*)")
         filter_qstring = ";;".join(filter_list)
         files_list = compat.getopenfilenames(
-            self, "Choose raw-file/s to import", filter=filter_qstring
+            self, "Choose raw-file/s to import", filters=filter_qstring
         )[0]
         self.insert_files(files_list)
 
