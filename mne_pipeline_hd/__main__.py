@@ -70,6 +70,8 @@ def main():
     # # Set multiprocessing method to spawn
     # multiprocessing.set_start_method('spawn')
 
+    init_streams()
+
     debug_mode = os.environ.get("MNEPHD_DEBUG", False) == "true"
     init_logging(debug_mode)
 

@@ -37,9 +37,9 @@ def init_logging(debug_mode=False):
     # Initialize Logger
     _logger = logging.getLogger("mne_pipeline_hd")
     if debug_mode:
-        _logger.setLevel(logger().debug)
+        _logger.setLevel(logging.DEBUG)
     else:
-        _logger.setLevel(QS().value("log_level", defaultValue=logger().info))
+        _logger.setLevel(QS().value("log_level", defaultValue=logging.INFO))
     if debug_mode:
         fmt = "[%(levelname)s] %(module)s.%(funcName)s(): %(message)s"
     else:
