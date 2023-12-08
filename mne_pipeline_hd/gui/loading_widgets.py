@@ -4,7 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import logging
 import os
 import re
 import shutil
@@ -79,10 +78,10 @@ from mne_pipeline_hd.gui.gui_utils import (
 from mne_pipeline_hd.gui.models import AddFilesModel
 from mne_pipeline_hd.gui.parameter_widgets import ComboGui
 from mne_pipeline_hd.pipeline.loading import FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS
+from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS, logger
 
 
-def index_parser(index, all_items):
+def index_parser(index, all_items, groups=None):
     """
     Parses indices from a index-string in all_items
 
@@ -96,7 +95,7 @@ def index_parser(index, all_items):
     -------
 
     """
-    run = list()
+    indices = list()
     rm = list()
 
     try:
@@ -115,9 +114,9 @@ def index_parser(index, all_items):
                         rm.append(int(sp[1:]))
                     elif "all" in sp:
                         for i in range(len(all_items)):
-                            run.append(i)
+                            indices.append(i)
             else:
-                run = [x for x in range(len(all_items))]
+                indices = [x for x in range(len(all_items))]
 
         elif "," in index and "-" in index:
             z = index.split(",")
@@ -125,9 +124,9 @@ def index_parser(index, all_items):
                 if "-" in i and "!" not in i:
                     x, y = i.split("-")
                     for n in range(int(x), int(y) + 1):
-                        run.append(n)
+                        indices.append(n)
                 elif "!" not in i:
-                    run.append(int(i))
+                    indices.append(int(i))
                 elif "!" in i and "-" in i:
                     x, y = i.split("-")
                     x = x[1:]
@@ -138,7 +137,7 @@ def index_parser(index, all_items):
 
         elif "-" in index and "," not in index:
             x, y = index.split("-")
-            run = [x for x in range(int(x), int(y) + 1)]
+            indices = [x for x in range(int(x), int(y) + 1)]
 
         elif "," in index and "-" not in index:
             splits = index.split(",")
@@ -146,21 +145,25 @@ def index_parser(index, all_items):
                 if "!" in sp:
                     rm.append(int(sp))
                 else:
-                    run.append(int(sp))
+                    indices.append(int(sp))
+
+        elif groups is not None and index in groups:
+            files = [x for x in all_items if x in groups[index]]
+            indices = [all_items.index(x) for x in files]
 
         else:
             if len(all_items) < int(index) or int(index) < 0:
-                run = []
+                indices = []
             else:
-                run = [int(index)]
+                indices = [int(index)]
 
-        run = [i for i in run if i not in rm]
-        files = [x for (i, x) in enumerate(all_items) if i in run]
+        indices = [i for i in indices if i not in rm]
+        files = np.asarray(all_items)[indices].tolist()
 
-        return files, run
+        return files
 
     except ValueError:
-        return [], []
+        return []
 
 
 class RemoveDialog(QDialog):
@@ -232,7 +235,8 @@ class FileDock(QDockWidget):
             "'1-4,7,20-26' (The last two combined)\n"
             "'1-20,!4-6' (1-20 except 4-6)\n"
             "'all' (All files in file_list.py)\n"
-            "'all,!4-6' (All files except 4-6)"
+            "'all,!4-6' (All files except 4-6)\n"
+            "<group-name> (All files in group)"
         )
 
         if self.meeg_view:
@@ -328,13 +332,15 @@ class FileDock(QDockWidget):
 
     def select_meeg(self):
         index = self.meeg_ledit.text()
-        self.mw.ct.pr.sel_meeg, idxs = index_parser(index, self.mw.ct.pr.all_meeg)
+        self.mw.ct.pr.sel_meeg = index_parser(
+            index, self.mw.ct.pr.all_meeg, self.mw.ct.pr.all_groups
+        )
         # Replace _checked in CheckListModel because of rereferencing above
         self.meeg_list.replace_checked(self.mw.ct.pr.sel_meeg)
 
     def select_fsmri(self):
         index = self.fsmri_ledit.text()
-        self.mw.ct.pr.sel_fsmri, idxs = index_parser(index, self.mw.ct.pr.all_fsmri)
+        self.mw.ct.pr.sel_fsmri = index_parser(index, self.mw.ct.pr.all_fsmri)
         # Replace _checked in CheckListModel because of rereferencing above
         self.fsmri_list.replace_checked(self.mw.ct.pr.sel_fsmri)
 
@@ -771,7 +777,7 @@ class AddFilesWidget(QWidget):
                 self.pr.add_meeg(name, file_path, is_erm)
                 worker_signals.pgbar_n.emit(n + 1)
             else:
-                logging.info("Canceled Loading")
+                logger().info("Canceled Loading")
                 break
 
     def add_files_starter(self):
@@ -930,9 +936,9 @@ class AddMRIWidget(QWidget):
                     self.paths.update({fsmri: folder_path})
                     self.populate_list_widget()
                 else:
-                    logging.info(f"{fsmri} already existing in {self.ct.subjects_dir}")
+                    logger().info(f"{fsmri} already existing in {self.ct.subjects_dir}")
             else:
-                logging.warning(
+                logger().warning(
                     "Selected Folder doesn't seem to " "be a Freesurfer-Segmentation"
                 )
 
@@ -952,9 +958,9 @@ class AddMRIWidget(QWidget):
                     self.folders.append(fsmri)
                     self.paths.update({fsmri: folder_path})
                 else:
-                    logging.info(f"{fsmri} already existing in {self.ct.subjects_dir}")
+                    logger().info(f"{fsmri} already existing in {self.ct.subjects_dir}")
             else:
-                logging.warning(
+                logger().warning(
                     "Selected Folder doesn't seem to be " "a Freesurfer-Segmentation"
                 )
         self.populate_list_widget()
@@ -1424,13 +1430,14 @@ class EventIDGui(QDialog):
 
         self.name = None
         self.event_id = dict()
+        self.queries = dict()
         self.labels = list()
         self.checked_labels = list()
 
         self.layout = QVBoxLayout()
         self.init_ui()
 
-        self.open()
+        self.show()
 
     def init_ui(self):
         list_layout = QHBoxLayout()
@@ -1461,6 +1468,15 @@ class EventIDGui(QDialog):
         event_id_layout.addWidget(self.event_id_label)
 
         list_layout.addLayout(event_id_layout)
+
+        self.query_widget = EditDict(
+            self.queries, ui_buttons=True, title="Metadata-Queries"
+        )
+        self.query_widget.setToolTip(
+            "Add Metadata-Queries as value for trials which are named with key"
+        )
+        self.query_widget.dataChanged.connect(self.update_check_list)
+        list_layout.addWidget(self.query_widget)
 
         self.check_widget = CheckList(title="Select IDs")
         list_layout.addWidget(self.check_widget)
@@ -1493,15 +1509,27 @@ class EventIDGui(QDialog):
             self.event_id = dict()
         self.event_id_widget.replace_data(self.event_id)
 
+        meeg = MEEG(self.name, self.ct, suppress_warnings=True)
         try:
             # Load events from File
-            meeg = MEEG(self.name, self.ct, suppress_warnings=True)
             events = meeg.load_events()
         except FileNotFoundError:
-            self.event_id_label.setText(f"No events found for {self.name}")
+            label_text = f"No events found for {self.name}"
         else:
-            ids = np.unique(events[:, 2])
-            self.event_id_label.setText(f"events found: {ids}")
+            label_text = f"events found: {np.unique(events[:, 2])}"
+
+        try:
+            # Load epochs from File
+            epochs = meeg.load_epochs()
+            assert epochs.metadata is not None
+        except (FileNotFoundError, AssertionError):
+            self.query_widget.setEnabled(False)
+            label_text += "\nNo metadata found"
+        else:
+            self.query_widget.setEnabled(True)
+            label_text += "\nMetadata found"
+
+        self.event_id_label.setText(label_text)
 
     def save_event_id(self):
         if self.name:
@@ -1509,8 +1537,14 @@ class EventIDGui(QDialog):
                 # Write Event-ID to Project
                 self.pr.meeg_event_id[self.name] = self.event_id
 
-                # Get selected Trials and write them to meeg.pr
-                self.pr.sel_event_id[self.name] = self.checked_labels
+                # Get selected Trials, add queries and write them to meeg.pr
+                sel_event_id = dict()
+                for label in self.checked_labels:
+                    if label in self.queries:
+                        sel_event_id[label] = self.queries[label]
+                    else:
+                        sel_event_id[label] = None
+                self.pr.sel_event_id[self.name] = sel_event_id
 
     def file_selected(self, current, _):
         """Called when File from file_widget is selected"""
@@ -1523,12 +1557,23 @@ class EventIDGui(QDialog):
 
         # Load checked trials
         if self.name in self.pr.sel_event_id:
-            self.checked_labels = self.pr.sel_event_id[self.name]
+            # Update query-widget
+            if self.query_widget.isEnabled():
+                sel_trials = self.pr.sel_event_id[self.name]
+                if not isinstance(sel_trials, dict):
+                    sel_trials = {k: None for k in sel_trials}
+                self.queries = {k: v for k, v in sel_trials.items() if v is not None}
+                self.query_widget.replace_data(self.queries)
+            # Legacy to allow reading lists before
+            # they were changed to dicts for queries
+            self.checked_labels = list(self.pr.sel_event_id[self.name])
         else:
             self.checked_labels = list()
         self.update_check_list()
 
+    # ToDo: Make all combinations possible
     def update_check_list(self):
+        self.labels = [k for k in self.queries.keys()]
         # Get selectable trials and update widget
         prelabels = [i.split("/") for i in self.event_id.keys() if i != ""]
         if len(prelabels) > 0:
@@ -1538,11 +1583,14 @@ class EventIDGui(QDialog):
                 for item in prelabels[1:]:
                     conc_labels += item
             # Make sure that only unique labels exist
-            self.labels = list(set(conc_labels))
+            self.labels += list(set(conc_labels))
 
             # Make sure, that only trials, which exist in event_id exist
             for chk_label in self.checked_labels:
-                if not any(chk_label in key for key in self.event_id):
+                if (
+                    not any(chk_label in key for key in self.event_id)
+                    and chk_label not in self.queries
+                ):
                     self.checked_labels.remove(chk_label)
         else:
             self.labels = list()
@@ -1568,6 +1616,10 @@ class EvIDApply(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
         self.p = parent
+
+        # Save to make sel_event_id available in apply_evid
+        self.p.save_event_id()
+
         self.apply_to = list()
 
         self.layout = QVBoxLayout()
@@ -1599,8 +1651,8 @@ class EvIDApply(QDialog):
         for file in self.apply_to:
             # Avoid with copy that CheckList-Model changes selected
             # for all afterwards (same reference)
-            self.p.pr.meeg_event_id[file] = self.p.event_id.copy()
-            self.p.pr.sel_event_id[file] = self.p.checked_labels.copy()
+            self.p.pr.meeg_event_id[file] = self.p.pr.meeg_event_id[self.p.name].copy()
+            self.p.pr.sel_event_id[file] = self.p.pr.sel_event_id[self.p.name].copy()
 
 
 class CopyTrans(QDialog):
@@ -1740,7 +1792,7 @@ class FileManagment(QDialog):
             obj_pd = self.pd_group
             obj_pd_time = self.pd_group_time
             obj_pd_size = self.pd_group_size
-        logging.debug(f"Loading {kind}")
+        logger().debug(f"Loading {kind}")
 
         for obj_name in obj_list:
             if kind == "MEEG":
@@ -2302,7 +2354,7 @@ class ReloadRaw(QDialog):
         meeg = MEEG(selected_raw, self.ct)
         raw = mne.io.read_raw(raw_path, preload=True)
         meeg.save_raw(raw)
-        logging.info(f"Reloaded raw for {selected_raw}")
+        logger().info(f"Reloaded raw for {selected_raw}")
 
     def start_reload(self):
         # Not with partial because otherwise the clicked-arg
@@ -2378,7 +2430,7 @@ class ExportDialog(QDialog):
 
     def export_data(self):
         if self.dest_path:
-            logging.info("Starting Export\n")
+            logger().info("Starting Export\n")
             for meeg_name, path_types in self.export_paths.items():
                 os.mkdir(join(self.dest_path, meeg_name))
                 for path_type in [pt for pt in path_types if pt in self.selected_types]:
@@ -2388,6 +2440,6 @@ class ExportDialog(QDialog):
                         shutil.copy2(
                             src_path, join(self.dest_path, meeg_name, dest_name)
                         )
-                    logging.info(f"\r{meeg_name}: Copying {path_type}...")
+                    logger().info(f"\r{meeg_name}: Copying {path_type}...")
         else:
             QMessageBox.warning(self, "Ups!", "Destination-Path not set!")

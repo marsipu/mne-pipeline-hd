@@ -138,27 +138,26 @@ def test_basic_param_guis(qtbot, gui_name):
 
     # Test MultiTypeGui
     if gui_name == "MultiTypeGui":
-        for gui_type, gui_name in gui.gui_types.items():
-            gui.set_param(parameters[gui_name])
-            assert gui.get_value() == parameters[gui_name]
+        for gui_type, type_gui_name in gui.gui_types.items():
+            gui.set_param(parameters[type_gui_name])
+            assert gui.get_value() == parameters[type_gui_name]
             assert type(gui.get_value()).__name__ == gui_type
         kwargs["type_selection"] = True
         kwargs["type_kwargs"] = dict()
-        for gui_name in gui.gui_types.values():
-            type_class = getattr(parameter_widgets, gui_name)
+        for type_gui_name in gui.gui_types.values():
+            type_class = getattr(parameter_widgets, type_gui_name)
             gui_parameters = list(inspect.signature(type_class).parameters) + list(
                 inspect.signature(Param).parameters
             )
             t_kwargs = {
                 key: value for key, value in gui_kwargs.items() if key in gui_parameters
             }
-            kwargs["type_kwargs"][gui_name] = t_kwargs
+            kwargs["type_kwargs"][type_gui_name] = t_kwargs
         gui = gui_class(data=parameters, name=gui_name, **kwargs)
-        for gui_type, gui_name in gui.gui_types.items():
-            type_idx = gui.types.index(gui_type)
+        for type_idx, (gui_type, type_gui_name) in enumerate(gui.gui_types.items()):
             gui.change_type(type_idx)
-            gui.set_param(parameters[gui_name])
-            assert gui.get_value() == parameters[gui_name]
+            gui.set_param(parameters[type_gui_name])
+            assert gui.get_value() == parameters[type_gui_name]
             assert type(gui.get_value()).__name__ == gui_type
 
 
@@ -184,13 +183,16 @@ def test_label_gui(qtbot, controller):
     label_gui.param_widget.click()
     dlg = label_gui._dialog
 
-    # Test start labels checked
+    # Test start labels in checked
     assert ["insula-lh", "postcentral-lh"] == dlg._selected_parc_labels
     assert "lh.BA1-lh" in dlg._selected_extra_labels
 
     # Open Parc-Picker
     dlg.choose_parc_bt.click()
     parc_plot = dlg._parc_picker._renderer.plotter
+    # Select "aparc" parcellation
+    dlg.parcellation_cmbx.setCurrentText("aparc")
+    dlg._parc_changed()  # Only triggered by mouse click with .activated
     # Check if start labels are shown
     assert "insula-lh" in dlg._parc_picker._shown_labels
     assert "postcentral-lh" in dlg._parc_picker._shown_labels
@@ -220,17 +222,23 @@ def test_label_gui(qtbot, controller):
     # Change parcellation
     dlg.parcellation_cmbx.setCurrentText("aparc.a2009s")
     dlg._parc_changed()  # Only triggered by mouse click with .activated
-    # Check if labels where removed
-    assert dlg._selected_parc_labels == []
     # Add label by clicking on plot
     qtbot.mouseClick(parc_plot, Qt.LeftButton, pos=parc_plot.rect().center(), delay=100)
     assert "G_front_sup-rh" in dlg._selected_parc_labels
-
-    # Add all labels
+    # Add label by selecting from list
     toggle_checked_list_model(dlg.parc_label_list.model, value=1, row=0)
-    dlg.close()
-    assert label_gui.param_value == [
+    assert "G_Ins_lg_and_S_cent_ins-lh" in dlg._selected_parc_labels
+
+    final_selection = [
+        "insula-lh",
+        "postcentral-lh",
         "G_front_sup-rh",
         "G_Ins_lg_and_S_cent_ins-lh",
         "lh.BA1-lh",
     ]
+    # Check display widget
+    assert dlg.selected_display.model._data == final_selection
+
+    # Add all labels
+    dlg.close()
+    assert label_gui.param_value == final_selection

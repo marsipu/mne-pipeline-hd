@@ -76,12 +76,12 @@ stc_azimuth;;Inverse;70;;Azimuth for view for Source Estimate Plots;IntGui;{'max
 stc_elevation;;Inverse;60;;Elevation for view for Source Estimate Plots;IntGui;{'max_val': 360}
 stc_animation_span;;Inverse;(0,0.5);s;time-span for stc-animation[s];TupleGui;
 stc_animation_dilat;;Inverse;20;;time-dilation for stc-animation;IntGui;
-target_parcellation;Target Parcellation;Inverse;aparc;;The parcellation to use.;StringGui;
 target_labels;Target Labels;Inverse;[];;;LabelGui;
 label_colors;;Inverse;{};;Set custom colors for labels.;ColorGui;{'keys': 'target_labels', 'none_select':True}
 extract_mode;Label-Extraction-Mode;Inverse;auto;;mode for extracting label-time-course from Source-Estimate;ComboGui;{'options': ['auto', 'max', 'mean', 'mean_flip', 'pca_flip']}
 con_methods;;Connectivity;['coh'];;methods for connectivity;CheckListGui;{'options': ['coh', 'cohy', 'imcoh', 'plv', 'ciplv', 'ppc', 'pli', 'pli2_unbiased', 'wpli', 'wpli2_debiased']}
-con_frequencies;;Connectivity;(30, 80);;frequencies for connectivity;TupleGui;{'none_select': True, 'step': 1}
+con_fmin;;Connectivity;30;;lower frequency/frequencies for connectivity;MultiTypeGui;{'type_selection': True, 'types': ['float', 'list']}
+con_fmax;;Connectivity;80;;upper frequency/frequencies for connectivity;MultiTypeGui;{'type_selection': True, 'types': ['float', 'list']}
 con_time_window;;Connectivity;(0, 0.5);;time-window for connectivity;TupleGui;{'none_select': True, 'step': 0.001}
 ecd_times;;Inverse;{};;;DictGui;
 ecd_positions;;Inverse;{};;;DictGui;
@@ -96,9 +96,8 @@ erm_n_mag;;Preprocessing;2;;The number of projections for Magnetometer;IntGui;
 erm_n_eeg;;Preprocessing;0;;The number of projections for EEG;IntGui;
 ga_interpolate_bads;;Grand-Average;True;;If to interpolate bad channels for the Grand-Average;BoolGui;
 ga_drop_bads;;Grand-Average;True;;If to drop bad channels for the Grand-Average;BoolGui;
-connectivity_vmin;;Connectivity;None;;Minimum value for colormap;FloatGui;{'step': 0.01, 'none_select':True}
-connectivity_vmax;;Connectivity;None;;Maximum value for colormap;FloatGui;{'step': 0.01, 'none_select':True}
 psd_method;;Time-Frequency;welch;;The method for spectral estimation;ComboGui;{'options': ['welch', 'multitaper']}
 psd_topomap_bands;;Time-Frequency;None;;The frequency bands for the topomap-plot;DictGui;{'none_select': True}
 backend_3d;3D-Backend;Plot;pyvistaqt;;Choose the 3D-Backend for Brain-plots.;ComboGui;{'options': ['pyvistaqt', 'notebook']}
 con_group_boundaries;;Connectivity;None;;Set group-boundaries for circular plot.;FuncGui;{'none_select': True}
+notch_frequencies;;Preprocessing;50;;Set frequencies for Notch filtering;FuncGui;""

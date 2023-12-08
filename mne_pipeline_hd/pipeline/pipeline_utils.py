@@ -21,13 +21,41 @@ from pathlib import Path
 import numpy as np
 import psutil
 
-import mne_pipeline_hd
+from mne_pipeline_hd import extra
 
 datetime_format = "%d.%m.%Y %H:%M:%S"
 
 ismac = sys.platform.startswith("darwin")
 iswin = sys.platform.startswith("win32")
 islin = not ismac and not iswin
+
+_logger = None
+
+
+def init_logging(debug_mode=False):
+    global _logger
+    # Initialize Logger
+    _logger = logging.getLogger("mne_pipeline_hd")
+    if debug_mode:
+        _logger.setLevel(logging.DEBUG)
+    else:
+        _logger.setLevel(QS().value("log_level", defaultValue=logging.INFO))
+    if debug_mode:
+        fmt = "[%(levelname)s] %(module)s.%(funcName)s(): %(message)s"
+    else:
+        fmt = "[%(levelname)s] %(message)s"
+    formatter = logging.Formatter(fmt)
+    console_handler = logging.StreamHandler()
+    console_handler.set_name("console")
+    console_handler.setFormatter(formatter)
+    _logger.addHandler(console_handler)
+
+
+def logger():
+    global _logger
+    if _logger is None:
+        _logger = logging.getLogger("mne_pipeline_hd")
+    return _logger
 
 
 def get_n_jobs(n_jobs):
@@ -137,12 +165,12 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
             if str(previous_value) == str(current_value):
                 result_dict[param] = "equal"
                 if verbose:
-                    logging.debug(f"{param} equal for {file_name}")
+                    logger().debug(f"{param} equal for {file_name}")
             else:
                 if param in critical_params:
                     result_dict[param] = (previous_value, current_value, True)
                     if verbose:
-                        logging.debug(
+                        logger().debug(
                             f"{param} changed from {previous_value} to "
                             f"{current_value} for {file_name} "
                             f"and is probably crucial for {function}"
@@ -150,19 +178,19 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
                 else:
                     result_dict[param] = (previous_value, current_value, False)
                     if verbose:
-                        logging.debug(
+                        logger().debug(
                             f"{param} changed from {previous_value} to "
                             f"{current_value} for {file_name}"
                         )
         except KeyError:
             result_dict[param] = "missing"
             if verbose:
-                logging.warning(f"{param} is missing in records for {file_name}")
+                logger().warning(f"{param} is missing in records for {file_name}")
 
     if obj.ct.settings["overwrite"]:
         result_dict[param] = "overwrite"
         if verbose:
-            logging.info(
+            logger().info(
                 f"{file_name} will be overwritten anyway"
                 f" because Overwrite=True (Settings)"
             )
@@ -210,13 +238,13 @@ def shutdown():
 def restart_program():
     """Restarts the current program, with file objects and descriptors
     cleanup."""
-    logging.info("Restarting")
+    logger().info("Restarting")
     try:
         p = psutil.Process(os.getpid())
         for handler in p.open_files() + p.connections():
             os.close(handler.fd)
     except Exception as e:
-        logging.error(e)
+        logger().error(e)
 
     python = sys.executable
     os.execl(python, python, *sys.argv)
@@ -234,9 +262,7 @@ def _get_func_param_kwargs(func, params):
 class BaseSettings:
     def __init__(self):
         # Load default settings
-        default_settings_path = join(
-            resources.files(mne_pipeline_hd.extra), "default_settings.json"
-        )
+        default_settings_path = join(resources.files(extra), "default_settings.json")
         with open(default_settings_path, "r") as file:
             self.default_qsettings = json.load(file)["qsettings"]
 

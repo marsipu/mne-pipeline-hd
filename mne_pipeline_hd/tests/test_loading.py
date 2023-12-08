@@ -4,14 +4,15 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import logging
 
 import pytest
+
+from mne_pipeline_hd.pipeline.pipeline_utils import logger
 
 
 def _test_load_save(obj, available_test_paths, excepted_data_types=[]):
     for data_type in [d for d in obj.io_dict if d not in excepted_data_types]:
-        logging.info(f"Testing {data_type}")
+        logger().info(f"Testing {data_type}")
         if data_type not in available_test_paths:
             with pytest.raises((OSError, FileNotFoundError)):
                 obj.load(data_type)

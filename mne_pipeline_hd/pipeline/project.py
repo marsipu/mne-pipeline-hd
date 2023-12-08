@@ -6,7 +6,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import json
-import logging
 import os
 import shutil
 from ast import literal_eval
@@ -25,6 +24,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     count_dict_keys,
     encode_tuples,
     type_json_hook,
+    logger,
 )
 
 
@@ -72,7 +72,7 @@ class Project:
         for path in self.main_paths:
             if not exists(path):
                 makedirs(path)
-                logging.debug(f"{path} created")
+                logger().debug(f"{path} created")
 
     def init_attributes(self):
         # Stores the names of all MEG/EEG-Files
@@ -180,6 +180,23 @@ class Project:
             self.parameters_path: "parameters",
             self.sel_p_preset_path: "p_preset",
         }
+
+    def rename(self, new_name):
+        # Rename folder
+        old_name = self.name
+        os.rename(self.project_path, join(self.ct.projects_path, new_name))
+        self.name = new_name
+        self.init_main_paths()
+        # Rename project-files
+        old_paths = [Path(p).name for p in self.path_to_attribute]
+        self.init_pipeline_scripts()
+        new_paths = [Path(p).name for p in self.path_to_attribute]
+        for old_path, new_path in zip(old_paths, new_paths):
+            os.rename(
+                join(self.pscripts_path, old_path), join(self.pscripts_path, new_path)
+            )
+            logger().info(f"Renamed project-script {old_path} to {new_path}")
+        logger().info(f'Finished renaming project "{old_name}" to "{new_name}"')
 
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
@@ -364,7 +381,7 @@ class Project:
                     json.dump(attribute, file, cls=TypedJSONEncoder, indent=4)
 
             except json.JSONDecodeError as err:
-                logging.warning(f"There is a problem with path:\n" f"{err}")
+                logger().warning(f"There is a problem with path:\n" f"{err}")
 
     def add_meeg(self, name, file_path=None, is_erm=False):
         if is_erm:
@@ -395,7 +412,7 @@ class Project:
                 # Remove MEEG from Lists/Dictionaries
                 self.all_meeg.remove(meeg)
             except ValueError:
-                logging.warning(f"{meeg} already removed!")
+                logger().warning(f"{meeg} already removed!")
             self.meeg_to_erm.pop(meeg, None)
             self.meeg_to_fsmri.pop(meeg, None)
             self.meeg_bad_channels.pop(meeg, None)
@@ -404,9 +421,9 @@ class Project:
                 try:
                     remove_path = join(self.data_path, meeg)
                     shutil.rmtree(remove_path)
-                    logging.info(f"Succesful removed {remove_path}")
+                    logger().info(f"Succesful removed {remove_path}")
                 except FileNotFoundError:
-                    logging.critical(join(self.data_path, meeg) + " not found!")
+                    logger().critical(join(self.data_path, meeg) + " not found!")
         self.sel_meeg.clear()
 
     def add_fsmri(self, name, src_dir=None):
@@ -416,15 +433,15 @@ class Project:
         if src_dir is not None:
             dst_dir = join(self.ct.subjects_dir, name)
             if not isdir(dst_dir):
-                logging.debug(f"Copying Folder from {src_dir}...")
+                logger().debug(f"Copying Folder from {src_dir}...")
                 try:
                     shutil.copytree(src_dir, dst_dir)
                 # surfaces with .H and .K at the end can't be copied
                 except shutil.Error:
                     pass
-                logging.debug(f"Finished Copying to {dst_dir}")
+                logger().debug(f"Finished Copying to {dst_dir}")
             else:
-                logging.info(f"{dst_dir} already exists")
+                logger().info(f"{dst_dir} already exists")
 
         return fsmri
 
@@ -433,12 +450,12 @@ class Project:
             try:
                 self.all_fsmri.remove(fsmri)
             except ValueError:
-                logging.warning(f"{fsmri} already deleted!")
+                logger().warning(f"{fsmri} already deleted!")
             if remove_files:
                 try:
                     shutil.rmtree(join(self.ct.subjects_dir, fsmri))
                 except FileNotFoundError:
-                    logging.info(join(self.ct.subjects_dir, fsmri) + " not found!")
+                    logger().info(join(self.ct.subjects_dir, fsmri) + " not found!")
         self.sel_fsmri.clear()
 
     def add_group(self):
@@ -488,7 +505,7 @@ class Project:
             if worker_signals is not None:
                 worker_signals.pgbar_n.emit(count)
                 if worker_signals.was_canceled:
-                    logging.info("Cleaning was canceled by the user!")
+                    logger().info("Cleaning was canceled by the user!")
                     return
 
         for fsmri in self.all_fsmri:
@@ -499,7 +516,7 @@ class Project:
             if worker_signals is not None:
                 worker_signals.pgbar_n.emit(count)
                 if worker_signals.was_canceled:
-                    logging.info("Cleaning was canceled by the user!")
+                    logger().info("Cleaning was canceled by the user!")
                     return
 
         for group in self.all_groups:
@@ -510,7 +527,7 @@ class Project:
             if worker_signals is not None:
                 worker_signals.pgbar_n.emit(count)
                 if worker_signals.was_canceled:
-                    logging.info("Cleaning was canceled by the user!")
+                    logger().info("Cleaning was canceled by the user!")
                     return
 
     def clean_plot_files(self, worker_signals=None):
@@ -561,7 +578,7 @@ class Project:
                                 worker_signals is not None
                                 and worker_signals.was_canceled
                             ):
-                                logging.info("Cleaning was canceled by user")
+                                logger().info("Cleaning was canceled by user")
                                 return
 
                             if func not in self.ct.pd_funcs.index:
@@ -596,18 +613,18 @@ class Project:
                     self.plot_files[obj_key].pop(remove_preset_key)
                 n_remove_ppreset += len(remove_p_preset)
 
-            logging.info(
+            logger().info(
                 f"Removed {n_remove_ppreset} Parameter-Presets and "
                 f"{n_remove_funcs} from {obj_key}"
             )
 
         for remove_key in remove_obj:
             self.plot_files.pop(remove_key)
-        logging.info(f"Removed {len(remove_obj)} Objects from Plot-Files")
+        logger().info(f"Removed {len(remove_obj)} Objects from Plot-Files")
 
         # Remove image-files, which aren't listed in plot_files.
         free_space = 0
-        logging.info("Removing unregistered images...")
+        logger().info("Removing unregistered images...")
         n_removed_images = 0
         for root, _, files in os.walk(self.figures_path):
             files = [join(root, f) for f in files]
@@ -617,10 +634,10 @@ class Project:
                 free_space += getsize(file_path)
                 n_removed_images += 1
                 os.remove(file_path)
-        logging.info(f"Removed {n_removed_images} images")
+        logger().info(f"Removed {n_removed_images} images")
 
         # Remove empty folders (loop until all empty folders are removed)
-        logging.info("Removing empty folders...")
+        logger().info("Removing empty folders...")
         n_removed_folders = 0
         folder_loop = True
         # Redo the file-walk because folders can get empty
@@ -633,6 +650,6 @@ class Project:
                     os.rmdir(folder)
                     n_removed_folders += 1
                     folder_loop = True
-        logging.info(f"Removed {n_removed_folders} folders")
+        logger().info(f"Removed {n_removed_folders} folders")
 
-        logging.info(f"{round(free_space / (1024 ** 2), 2)} MB of space was freed!")
+        logger().info(f"{round(free_space / (1024 ** 2), 2)} MB of space was freed!")

@@ -4,7 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import logging
 from ast import literal_eval
 from copy import copy
 from functools import partial
@@ -60,7 +59,7 @@ from mne_pipeline_hd.gui.gui_utils import (
 )
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.loading import FSMRI
-from mne_pipeline_hd.pipeline.pipeline_utils import QS, iswin
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, iswin, logger
 
 
 # ToDo: Unify None-select and more
@@ -237,31 +236,36 @@ class Param(QWidget):
 
     def _read_data(self, name):
         # get data from dictionary
-        if isinstance(self.data, dict):
-            if name in self.data:
-                value = self.data[name]
-            else:
-                value = self.default
+        if isinstance(self.data, dict) and name in self.data:
+            value = self.data[name]
 
         # get data from Parameters in Project in MainWindow
         # (depending on selected parameter-preset and selected Project)
-        elif isinstance(self.data, Controller):
-            if name in self.data.pr.parameters[self.data.pr.p_preset]:
-                value = self.data.pr.parameters[self.data.pr.p_preset][name]
-            else:
-                value = self.default
+        elif (
+            isinstance(self.data, Controller)
+            and name in self.data.pr.parameters[self.data.pr.p_preset]
+        ):
+            value = self.data.pr.parameters[self.data.pr.p_preset][name]
 
         # get data from QSettings
-        elif isinstance(self.data, QS):
-            if name in self.data.childKeys():
-                value = self.data.value(name)
-            else:
-                value = self.default
+        elif isinstance(self.data, QS) and name in self.data.childKeys():
+            value = self.data.value(name)
+        else:
+            value = self.default
 
         return value
 
     def read_param(self):
-        self.param_value = self._read_data(self.name)
+        data = self._read_data(self.name)
+        if not self.none_select:
+            if self.data_type != "multiple":
+                if not isinstance(data, self.data_type):
+                    logger().warning(
+                        f"Data for {self.name} has to be of type {self.data_type}, "
+                        f"but is of type {type(data)} instead!"
+                    )
+                    data = self.data_type()
+        self.param_value = data
 
     def _save_data(self, name, value):
         if isinstance(self.data, dict):
@@ -277,6 +281,8 @@ class Param(QWidget):
 
 class IntGui(Param):
     """A GUI for Integer-Parameters"""
+
+    data_type = int
 
     def __init__(self, min_val=0, max_val=1000, special_value_text=None, **kwargs):
         """
@@ -323,6 +329,8 @@ class IntGui(Param):
 
 class FloatGui(Param):
     """A GUI for Float-Parameters"""
+
+    data_type = float
 
     def __init__(self, min_val=-1000.0, max_val=1000.0, step=0.1, decimals=2, **kwargs):
         """
@@ -373,6 +381,8 @@ class StringGui(Param):
     A GUI for String-Parameters
     """
 
+    data_type = str
+
     def __init__(self, **kwargs):
         """
 
@@ -414,6 +424,8 @@ def _eval_param(param_exp):
 
 class FuncGui(Param):
     """A GUI for Parameters defined by small functions, e.g from numpy"""
+
+    data_type = "multiple"
 
     def __init__(self, **kwargs):
         """
@@ -502,6 +514,8 @@ class FuncGui(Param):
 class BoolGui(Param):
     """A GUI for Boolean-Parameters"""
 
+    data_type = bool
+
     def __init__(self, return_integer=False, **kwargs):
         """
         Parameters
@@ -540,6 +554,8 @@ class BoolGui(Param):
 
 class TupleGui(Param):
     """A GUI for Tuple-Parameters"""
+
+    data_type = tuple
 
     def __init__(self, min_val=-1000.0, max_val=1000.0, step=0.1, **kwargs):
         """
@@ -601,10 +617,11 @@ class TupleGui(Param):
         # Signal valueChanged is already emitted after first setValue,
         # which leads to second param_value being 0 without being
         # preserved in self.loaded_value
-        self._external_set = True
-        self.param_widget1.setValue(value[0])
-        self.param_widget2.setValue(value[1])
-        self._external_set = False
+        if len(value) == 2:
+            self._external_set = True
+            self.param_widget1.setValue(value[0])
+            self.param_widget2.setValue(value[1])
+            self._external_set = False
 
     def _get_param(self):
         if not self._external_set:
@@ -614,8 +631,11 @@ class TupleGui(Param):
         return self.param_widget1.value(), self.param_widget2.value()
 
 
+# ToDo: make options replacable
 class ComboGui(Param):
     """A GUI for a Parameter with limited options"""
+
+    data_type = "multiple"
 
     def __init__(self, options, **kwargs):
         """
@@ -697,6 +717,8 @@ class ListDialog(QDialog):
 
 class ListGui(Param):
     """A GUI for as list"""
+
+    data_type = list
 
     def __init__(self, value_string_length=30, **kwargs):
         """
@@ -791,8 +813,11 @@ class CheckListDialog(QDialog):
         event.accept()
 
 
+# ToDo: make options replacable
 class CheckListGui(Param):
     """A GUI to select items from a list of options"""
+
+    data_type = list
 
     def __init__(self, options, value_string_length=30, one_check=False, **kwargs):
         """
@@ -892,6 +917,8 @@ class DictDialog(QDialog):
 class DictGui(Param):
     """A GUI for a dictionary"""
 
+    data_type = dict
+
     def __init__(self, value_string_length=30, **kwargs):
         """
 
@@ -966,6 +993,8 @@ class DictGui(Param):
 
 class SliderGui(Param):
     """A GUI to show a slider for Int/Float-Parameters"""
+
+    data_type = "multiple"
 
     def __init__(self, min_val=0, max_val=100, step=1, tracking=True, **kwargs):
         """
@@ -1059,6 +1088,8 @@ class SliderGui(Param):
 class MultiTypeGui(Param):
     """A GUI which accepts multiple types of values in a single LineEdit"""
 
+    data_type = "multiple"
+
     def __init__(self, type_selection=False, types=None, type_kwargs=None, **kwargs):
         """
         Parameters
@@ -1151,7 +1182,7 @@ class MultiTypeGui(Param):
         try:
             old_widget.widget().deleteLater()
         except RuntimeError:
-            logging.debug("Old widget already deleted")
+            logger().debug("Old widget already deleted")
         del old_widget, self.param_widget
 
         self.param_type = self.types[type_idx]
@@ -1303,16 +1334,23 @@ class LabelPicker(mne.viz.Brain):
                 self._add_label_name(label.name, hemi, label)
                 self.selected.append(label.name)
             self.list_changed_slot()
+            self.paramdlg.update_selected_display()
 
             # Update label text
             if "label" in self._actors["text"]:
                 self.remove_text("label")
+            if label.color is not None:
+                color = label.color[:3]
+                opacity = label.color[-1]
+            else:
+                color = "w"
+                opacity = 1
             self.add_text(
                 0,
                 0.05,
                 label.name,
-                color=label.color[:3],
-                opacity=label.color[-1],
+                color=color,
+                opacity=opacity,
                 font_size=12,
                 name="label",
             )
@@ -1400,6 +1438,12 @@ class LabelDialog(SimpleDialog):
         self.surface_cmbx.activated.connect(self._surface_changed)
         layout.addWidget(self.surface_cmbx)
 
+        self.selected_display = SimpleList(
+            data=self._selected_parc_labels + self._selected_extra_labels,
+            title="Selected Labels",
+        )
+        layout.addWidget(self.selected_display)
+
         self.parc_label_list = CheckList(
             data=self._parc_labels,
             checked=self._selected_parc_labels,
@@ -1438,26 +1482,29 @@ class LabelDialog(SimpleDialog):
         self.parcellation_cmbx.clear()
         self.parcellation_cmbx.addItems(self._fsmri.parcellations)
 
-        # Get currently set parcellation
-        if (
-            self.ct.pr.parameters[self.ct.pr.p_preset]["target_parcellation"]
-            in self._fsmri.parcellations
-        ):
-            self.parcellation_cmbx.setCurrentText(
-                self.ct.pr.parameters[self.ct.pr.p_preset]["target_parcellation"]
-            )
-
-        # Add extra labels
+        # Update extra labels
         self._extra_labels.clear()
         self._extra_labels += [lb.name for lb in self._fsmri.labels["Other"]]
         self.extra_label_list.content_changed()
 
-        old_selected = self._selected_extra_labels.copy()
+        old_selected_extra = self._selected_extra_labels.copy()
         self._selected_extra_labels.clear()
         self._selected_extra_labels += [
-            lb for lb in old_selected if lb in self._extra_labels
+            lb for lb in old_selected_extra if lb in self._extra_labels
         ]
         self.extra_label_list.content_changed()
+
+        # Update selected parcellation labels
+        all_labels_exept_other = list()
+        for parc_name, labels in self._fsmri.labels.items():
+            if parc_name != "Other":
+                all_labels_exept_other += [lb.name for lb in labels]
+        old_selected_parc = self._selected_parc_labels.copy()
+        self._selected_parc_labels.clear()
+        self._selected_parc_labels += [
+            lb for lb in old_selected_parc if lb in all_labels_exept_other
+        ]
+        self.parc_label_list.content_changed()
 
         # Update pickers if open
         if self._parc_picker is not None and not self._parc_picker.isclosed():
@@ -1481,22 +1528,24 @@ class LabelDialog(SimpleDialog):
                 lb.name for lb in self._fsmri.labels[self._parcellation]
             ]
 
-        # get former selected
-        old_selected = self._selected_parc_labels.copy()
-        self._selected_parc_labels.clear()
-        self._selected_parc_labels += [
-            lb for lb in old_selected if lb in self._parc_labels
-        ]
-        self.parc_label_list.content_changed()
-
         if self._parc_picker is not None and not self._parc_picker.isclosed():
             self._parc_picker._set_annotations(self._parcellation)
+            for label_name in [
+                lb for lb in self._selected_parc_labels if lb in self._parc_labels
+            ]:
+                hemi = label_name[-2:]
+                self._parc_picker._add_label_name(label_name, hemi)
 
     def _surface_changed(self):
         self._surface = self.surface_cmbx.currentText()
         if self._parc_picker is not None and not self._parc_picker.isclosed():
             self._parc_picker.close()
             self._open_parc_picker()
+
+    def update_selected_display(self):
+        self.selected_display.replace_data(
+            self._selected_parc_labels + self._selected_extra_labels
+        )
 
     def _labels_changed(self, labels, picker_name):
         picker = (
@@ -1510,6 +1559,8 @@ class LabelDialog(SimpleDialog):
             for remove_name in [lb for lb in shown_labels if lb not in labels]:
                 hemi = remove_name[-2:]
                 picker._remove_label_name(remove_name, hemi)
+        # Update display
+        self.update_selected_display()
 
     # Keep pickers on top
     def _open_parc_picker(self):
@@ -1542,6 +1593,8 @@ class LabelDialog(SimpleDialog):
 
 class LabelGui(Param):
     """This GUI lets the user pick labels from a brain."""
+
+    data_type = list
 
     def __init__(self, value_string_length=30, **kwargs):
         """
@@ -1619,6 +1672,8 @@ class LabelGui(Param):
 
 class ColorGui(Param):
     """A GUI to pick a color and returns a dictionary with HexRGBA-Strings."""
+
+    data_type = dict
 
     def __init__(self, keys, **kwargs):
         """
@@ -1702,6 +1757,8 @@ class ColorGui(Param):
 # ToDo: Own testable QFileDialog-Implementations
 class PathGui(Param):
     """A GUI to pick a path."""
+
+    data_type = str
 
     def __init__(self, pick_mode="file", **kwargs):
         """

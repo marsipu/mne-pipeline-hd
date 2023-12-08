@@ -5,10 +5,11 @@ License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
-import logging
 import os
+import re
 import sys
 from importlib import resources
+from os.path import join
 
 import qtpy
 from qtpy.QtCore import QTimer, Qt
@@ -19,12 +20,25 @@ import mne_pipeline_hd
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
-from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS
+from mne_pipeline_hd.pipeline.pipeline_utils import (
+    ismac,
+    islin,
+    QS,
+    iswin,
+    init_logging,
+    logger,
+)
 
 # Check for changes in required packages
 legacy_import_check()
 
 import qdarktheme  # noqa: E402
+
+
+def init_streams():
+    # Redirect stdout and stderr to capture it later in GUI
+    sys.stdout = StdoutStderrStream("stdout")
+    sys.stderr = StdoutStderrStream("stderr")
 
 
 def main():
@@ -40,6 +54,8 @@ def main():
     app.setApplicationName(app_name)
     app.setOrganizationName(organization_name)
     app.setOrganizationDomain(domain_name)
+    # For Spyder to make console accessible again
+    app.lastWindowClosed.connect(app.quit)
 
     # Avoid file-dialog-problems with custom file-managers in linux
     if islin:
@@ -54,37 +70,23 @@ def main():
     # # Set multiprocessing method to spawn
     # multiprocessing.set_start_method('spawn')
 
-    # Redirect stdout to capture it later in GUI
-    sys.stdout = StdoutStderrStream("stdout")
-    # Redirect stderr to capture it later in GUI
-    sys.stderr = StdoutStderrStream("stderr")
+    init_streams()
 
     debug_mode = os.environ.get("MNEPHD_DEBUG", False) == "true"
+    init_logging(debug_mode)
 
-    # Initialize Logger (root)
-    logger = logging.getLogger()
-    if debug_mode:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(QS().value("log_level", defaultValue=logging.INFO))
-    formatter = logging.Formatter(
-        "%(asctime)s: %(message)s", datefmt="%Y/%m/%d %H:%M:%S"
-    )
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    logger.info("Starting MNE-Pipeline HD")
+    logger().info("Starting MNE-Pipeline HD")
 
     # Show Qt-binding
     if any([qtpy.PYQT5, qtpy.PYQT6]):
         qt_version = qtpy.PYQT_VERSION
     else:
         qt_version = qtpy.PYSIDE_VERSION
-    logger.info(f"Using {qtpy.API_NAME} {qt_version}")
+    logger().info(f"Using {qtpy.API_NAME} {qt_version}")
 
     # Initialize Exception-Hook
     if debug_mode:
-        logger.info("Debug-Mode is activated")
+        logger().info("Debug-Mode is activated")
     else:
         qt_exception_hook = UncaughtHook()
         # this registers the exception_hook() function
@@ -103,39 +105,33 @@ def main():
     if app_style not in ["dark", "light", "auto"]:
         app_style = "auto"
 
-    if app_style == "dark":
-        qdarktheme.setup_theme("dark")
+    qdarktheme.setup_theme(app_style)
+    st = qdarktheme.load_stylesheet(app_style)
+    is_dark = "background:rgba(32, 33, 36, 1.000)" in st
+    if is_dark:
         icon_name = "mne_pipeline_icon_dark.png"
-    elif app_style == "light":
-        qdarktheme.setup_theme("light")
-        icon_name = "mne_pipeline_icon_light.png"
+        # Fix ToolTip-Problem on Windows
+        # https://github.com/5yutan5/PyQtDarkTheme/issues/239
+        if iswin:
+            match = re.search(r"QToolTip \{([^\{\}]+)\}", st)
+            if match is not None:
+                replace_str = "QToolTip {" + match.group(1) + ";border: 0px}"
+                st = st.replace(match.group(0), replace_str)
+                QApplication.instance().setStyleSheet(st)
     else:
-        qdarktheme.setup_theme("auto")
-        st = qdarktheme.load_stylesheet("auto")
-        if "background:rgba(32, 33, 36, 1.000)" in st:
-            icon_name = "mne_pipeline_icon_dark.png"
-        else:
-            icon_name = "mne_pipeline_icon_light.png"
+        icon_name = "mne_pipeline_icon_light.png"
 
-    icon_path = resources.files(mne_pipeline_hd.extra) / icon_name
+    icon_path = join(resources.files(mne_pipeline_hd.extra), icon_name)
     app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
 
     # Initiate WelcomeWindow
     WelcomeWindow()
 
-    # Redirect stdout to capture it later in GUI
-    sys.stdout = StdoutStderrStream("stdout")
-    # Redirect stderr to capture it later in GUI
-    sys.stderr = StdoutStderrStream("stderr")
-
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()
     timer.timeout.connect(lambda: None)
     timer.start(500)
-
-    # For Spyder to make console accessible again
-    app.lastWindowClosed.connect(app.quit)
 
     sys.exit(app.exec())
 
