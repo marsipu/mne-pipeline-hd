@@ -9,7 +9,6 @@ from __future__ import print_function
 import gc
 import inspect
 import io
-import logging
 import sys
 from collections import OrderedDict
 from importlib import import_module
@@ -22,7 +21,7 @@ from qtpy.QtWidgets import QAbstractItemView
 from mne_pipeline_hd.gui.base_widgets import TimedMessageBox
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
 from mne_pipeline_hd.pipeline.loading import BaseLoading, FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, ismac, QS
+from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, ismac, QS, logger
 
 
 def get_func(func_name, obj):
@@ -274,14 +273,14 @@ class RunController:
 
     def finished(self):
         for name, func, error in self.errors:
-            logging.critical(f"Error in {name} <- {func}: {error}")
+            logger().critical(f"Error in {name} <- {func}: {error}")
 
     def prepare_start(self):
         # Take first step of all_steps until there are no steps left.
         if len(self.all_steps) > 0:
             # Getting information as encoded in init_lists
             self.current_obj_name, self.current_func = self.all_steps.pop(0)
-            logging.debug(
+            logger().debug(
                 f"Running {self.current_func} for " f"{self.current_obj_name}"
             )
             # Get current object
@@ -309,7 +308,7 @@ class RunController:
             kwds = dict()
             kwds["func"] = get_func(self.current_func, self.current_object)
             kwds["keywargs"] = get_arguments(kwds["func"], self.current_object)
-            logging.info(
+            logger().info(
                 f"########################################\n"
                 f"Running {self.current_func} for {self.current_obj_name}\n"
                 f"########################################\n"
@@ -445,19 +444,19 @@ class QRunController(RunController):
                 or (ismpl and show_plots and use_qthread)
                 or (ismpl and not show_plots and use_qthread and ismac)
             ):
-                logging.info("Starting in Main-Thread.")
+                logger().info("Starting in Main-Thread.")
                 result = run_func(**kwds)
                 self.process_finished(result)
 
             elif QS().value("use_qthread"):
-                logging.info("Starting in separate Thread.")
+                logger().info("Starting in separate Thread.")
                 worker = Worker(function=run_func, **kwds)
                 worker.signals.error.connect(self.process_finished)
                 worker.signals.finished.connect(self.process_finished)
                 QThreadPool.globalInstance().start(worker)
 
             else:
-                logging.info("Starting in process from multiprocessing.")
+                logger().info("Starting in process from multiprocessing.")
                 recv_pipe, send_pipe = Pipe(False)
                 kwds["pipe"] = send_pipe
                 stream_rcv = StreamReceiver(recv_pipe)

@@ -8,7 +8,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 from __future__ import print_function
 
 import gc
-import logging
 import os
 import shutil
 import subprocess
@@ -33,6 +32,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     ismac,
     iswin,
     get_n_jobs,
+    logger,
 )
 
 
@@ -54,7 +54,7 @@ def find_bads(meeg, n_jobs, **kwargs):
     noisy_chs, flat_chs = find_bad_channels_maxwell(
         raw, coord_frame=coord_frame, **kwargs
     )
-    logging.info(f"Noisy channels: {noisy_chs}\n" f"Flat channels: {flat_chs}")
+    logger().info(f"Noisy channels: {noisy_chs}\n" f"Flat channels: {flat_chs}")
     raw.info["bads"] = noisy_chs + flat_chs + raw.info["bads"]
     meeg.set_bad_channels(raw.info["bads"])
     meeg.save_raw(raw)
@@ -1201,7 +1201,7 @@ def morph_fsmri(meeg, morph_to):
         )
         meeg.save_source_morph(morph)
     else:
-        logging.info(
+        logger().info(
             f"There is no need to morph the source-space for {meeg.name}, "
             f'because the morph-destination "{morph_to}" '
             f"is the same as the associated FSMRI."
@@ -1488,7 +1488,7 @@ def apply_morph(meeg, morph_to):
             morphed_stcs[trial] = morph.apply(stcs[trial])
         meeg.save_morphed_source_estimates(morphed_stcs)
     else:
-        logging.info(
+        logger().info(
             f"{meeg.name} is already in source-space of {morph_to} "
             f"and won't be morphed"
         )

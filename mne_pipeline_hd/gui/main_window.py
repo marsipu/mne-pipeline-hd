@@ -4,7 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import logging
 import sys
 from functools import partial
 
@@ -32,7 +31,6 @@ from qtpy.QtWidgets import (
 )
 
 from mne_pipeline_hd import _object_refs
-from mne_pipeline_hd.pipeline.function_utils import close_all
 from mne_pipeline_hd.gui.dialogs import (
     QuickGuide,
     RawInfo,
@@ -79,12 +77,14 @@ from mne_pipeline_hd.gui.parameter_widgets import (
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.pipeline.function_utils import close_all
 from mne_pipeline_hd.pipeline.pipeline_utils import (
     restart_program,
     ismac,
     QS,
     _run_from_script,
     iswin,
+    logger,
 )
 
 
@@ -561,7 +561,7 @@ class MainWindow(QMainWindow):
                 try:
                     tab.deleteLater()
                 except RuntimeError:
-                    logging.debug("Tab already deleted")
+                    logger().debug("Tab already deleted")
         self.bt_dict = dict()
 
         self.add_func_bts()

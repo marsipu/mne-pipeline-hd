@@ -23,7 +23,7 @@ import pandas as pd
 from mne_pipeline_hd import functions, extra
 from mne_pipeline_hd.gui.gui_utils import get_user_input_string
 from mne_pipeline_hd.pipeline.legacy import transfer_file_params_to_single_subject
-from mne_pipeline_hd.pipeline.pipeline_utils import QS
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
 from mne_pipeline_hd.pipeline.project import Project
 
 home_dirs = ["custom_packages", "freesurfer", "projects"]
@@ -50,10 +50,14 @@ class Controller:
 
         # Initialize log-file
         self.logging_path = join(self.home_path, "_pipeline.log")
+        file_handlers = [h for h in logger().handlers if h.name == "file"]
+        if len(file_handlers) > 0:
+            logger().removeHandler(file_handlers[0])
         file_handler = logging.FileHandler(self.logging_path, "w")
-        logging.getLogger().addHandler(file_handler)
+        file_handler.set_name("file")
+        logger().addHandler(file_handler)
 
-        logging.info(f"Home-Path: {self.home_path}")
+        logger().info(f"Home-Path: {self.home_path}")
         QS().setValue("home_path", self.home_path)
         # Create subdirectories if not existing for a valid home_path
         for subdir in [d for d in home_dirs if not isdir(join(self.home_path, d))]:
@@ -169,7 +173,7 @@ class Controller:
             ) as file:
                 json.dump(self.settings, file, indent=4)
         except FileNotFoundError:
-            logging.warning("Settings could not be saved!")
+            logger().warning("Settings could not be saved!")
 
         # Sync QSettings with other instances
         QS().sync()
@@ -187,7 +191,7 @@ class Controller:
         self.settings["selected_project"] = new_project
         if new_project not in self.projects:
             self.projects.append(new_project)
-        logging.info(f"Selected-Project: {self.pr.name}")
+        logger().info(f"Selected-Project: {self.pr.name}")
         # Legacy
         transfer_file_params_to_single_subject(self)
 
@@ -209,7 +213,7 @@ class Controller:
             shutil.rmtree(join(self.projects_path, project))
         except OSError as error:
             print(error)
-            logging.warning(
+            logger().warning(
                 f"The folder of {project} can't be deleted "
                 f"and has to be deleted manually!"
             )
@@ -228,7 +232,7 @@ class Controller:
                     self.pr.rename(new_project_name)
                 except PermissionError:
                     # ToDo: Warning-Function for GUI with dialog and non-GUI
-                    logging.critical(
+                    logger().critical(
                         f"Can't rename {old_name} to {new_project_name}. "
                         f"Probably a file from inside the project is still opened. "
                         f"Please close all files and try again."
@@ -237,7 +241,7 @@ class Controller:
                     self.projects.remove(old_name)
                     self.projects.append(new_project_name)
         else:
-            logging.warning(
+            logger().warning(
                 "The project-folder seems to be not writable at the moment, "
                 "maybe some files inside are still in use?"
             )
@@ -400,7 +404,7 @@ class Controller:
 
             else:
                 missing_files = [key for key in file_dict if file_dict[key] is None]
-                logging.warning(
+                logger().warning(
                     f"Files for import of {pkg_name} " f"are missing: {missing_files}"
                 )
 

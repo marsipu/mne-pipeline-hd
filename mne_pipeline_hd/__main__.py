@@ -5,7 +5,6 @@ License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
-import logging
 import os
 import re
 import sys
@@ -21,12 +20,25 @@ import mne_pipeline_hd
 from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
-from mne_pipeline_hd.pipeline.pipeline_utils import ismac, islin, QS, iswin
+from mne_pipeline_hd.pipeline.pipeline_utils import (
+    ismac,
+    islin,
+    QS,
+    iswin,
+    init_logging,
+    logger,
+)
 
 # Check for changes in required packages
 legacy_import_check()
 
 import qdarktheme  # noqa: E402
+
+
+def init_streams():
+    # Redirect stdout and stderr to capture it later in GUI
+    sys.stdout = StdoutStderrStream("stdout")
+    sys.stderr = StdoutStderrStream("stderr")
 
 
 def main():
@@ -42,6 +54,8 @@ def main():
     app.setApplicationName(app_name)
     app.setOrganizationName(organization_name)
     app.setOrganizationDomain(domain_name)
+    # For Spyder to make console accessible again
+    app.lastWindowClosed.connect(app.quit)
 
     # Avoid file-dialog-problems with custom file-managers in linux
     if islin:
@@ -56,38 +70,21 @@ def main():
     # # Set multiprocessing method to spawn
     # multiprocessing.set_start_method('spawn')
 
-    # Redirect stdout to capture it later in GUI
-    sys.stdout = StdoutStderrStream("stdout")
-    # Redirect stderr to capture it later in GUI
-    sys.stderr = StdoutStderrStream("stderr")
-
     debug_mode = os.environ.get("MNEPHD_DEBUG", False) == "true"
+    init_logging(debug_mode)
 
-    # ToDo: log-level debug only for mne-pipeline-hd, not all apps
-    # Initialize Logger (root)
-    logger = logging.getLogger()
-    if debug_mode:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(QS().value("log_level", defaultValue=logging.INFO))
-    formatter = logging.Formatter(
-        "%(asctime)s: %(message)s", datefmt="%Y/%m/%d %H:%M:%S"
-    )
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    logger.info("Starting MNE-Pipeline HD")
+    logger().info("Starting MNE-Pipeline HD")
 
     # Show Qt-binding
     if any([qtpy.PYQT5, qtpy.PYQT6]):
         qt_version = qtpy.PYQT_VERSION
     else:
         qt_version = qtpy.PYSIDE_VERSION
-    logger.info(f"Using {qtpy.API_NAME} {qt_version}")
+    logger().info(f"Using {qtpy.API_NAME} {qt_version}")
 
     # Initialize Exception-Hook
     if debug_mode:
-        logger.info("Debug-Mode is activated")
+        logger().info("Debug-Mode is activated")
     else:
         qt_exception_hook = UncaughtHook()
         # this registers the exception_hook() function
@@ -129,18 +126,10 @@ def main():
     # Initiate WelcomeWindow
     WelcomeWindow()
 
-    # Redirect stdout to capture it later in GUI
-    sys.stdout = StdoutStderrStream("stdout")
-    # Redirect stderr to capture it later in GUI
-    sys.stderr = StdoutStderrStream("stderr")
-
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()
     timer.timeout.connect(lambda: None)
     timer.start(500)
-
-    # For Spyder to make console accessible again
-    app.lastWindowClosed.connect(app.quit)
 
     sys.exit(app.exec())
 

@@ -40,7 +40,7 @@ from qtpy.QtWidgets import (
 )
 
 from mne_pipeline_hd import _object_refs
-from mne_pipeline_hd.pipeline.pipeline_utils import QS
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
 
 
 def center(widget):
@@ -151,7 +151,7 @@ def show_error_dialog(exc_str):
     if QApplication.instance() is not None:
         ErrorDialog(exc_str, title="A unexpected error occurred")
     else:
-        logging.debug("No QApplication instance available.")
+        logger().debug("No QApplication instance available.")
 
 
 def gui_error_decorator(func):
@@ -204,7 +204,7 @@ class UncaughtHook(QObject):
                 exc_value,
                 "".join(traceback.format_tb(exc_traceback)),
             )
-            logging.critical(
+            logger().critical(
                 f"Uncaught exception:\n"
                 f"{exc_str[0]}: {exc_str[1]}\n"
                 f"{exc_str[2]}",
@@ -287,7 +287,10 @@ class ConsoleWidget(QPlainTextEdit):
 
     def write_stderr(self, text):
         text = self._html_compatible(text)
-        text = f'<font color="red">{text}</font>'
+        if text[-4:] == "<br>":
+            text = f'<font color="red">{text[:-4]}</font><br>'
+        else:
+            text = f'<font color="red">{text}</font>'
         self.buffer.append(text)
 
     # Make sure cursor is not moved
@@ -318,19 +321,24 @@ class StdoutStderrStream(io.TextIOBase):
     def __init__(self, kind):
         super().__init__()
         self.signal = StreamSignals()
-        if kind == "stdout":
+        self.kind = kind
+        if self.kind == "stdout":
             self.original_stream = sys.__stdout__
-        else:
+        elif self.kind == "stderr":
             self.original_stream = sys.__stderr__
+        else:
+            self.original_stream = None
 
     def write(self, text):
-        # Still send output to the command-line
-        self.original_stream.write(text)
+        if self.original_stream is not None:
+            # Still send output to the command-line
+            self.original_stream.write(text)
         # Emit signal to display in GUI
         self.signal.text_written.emit(text)
 
     def flush(self):
-        self.original_stream.flush()
+        if self.original_stream is not None:
+            self.original_stream.flush()
 
 
 class WorkerSignals(QObject):
@@ -723,7 +731,7 @@ def get_user_input_string(prompt, title="Input required!", force=False):
                     "You need to provide an appropriate input to proceed!",
                 )
             else:
-                logging.warning(
+                logger().warning(
                     "Input required! You need to provide "
                     "an appropriate input to proceed!"
                 )

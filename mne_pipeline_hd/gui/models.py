@@ -4,7 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import logging
 from ast import literal_eval
 from datetime import datetime
 
@@ -19,6 +18,8 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QBrush, QFont
 
 from mne_pipeline_hd.gui.gui_utils import get_std_icon
+from mne_pipeline_hd.pipeline.pipeline_utils import logger
+
 
 # ToDo: Merge models and base widgets
 
@@ -47,7 +48,7 @@ class BaseListModel(QAbstractListModel):
 
     def getData(self, index):
         if len(self._data) == 0:
-            logging.debug("List is empty")
+            logger().debug("List is empty")
             return None
         return self._data[index.row()]
 

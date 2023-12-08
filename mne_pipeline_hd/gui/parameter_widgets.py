@@ -4,7 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import logging
 from ast import literal_eval
 from copy import copy
 from functools import partial
@@ -60,7 +59,7 @@ from mne_pipeline_hd.gui.gui_utils import (
 )
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.loading import FSMRI
-from mne_pipeline_hd.pipeline.pipeline_utils import QS, iswin
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, iswin, logger
 
 
 # ToDo: Unify None-select and more
@@ -261,7 +260,7 @@ class Param(QWidget):
         if not self.none_select:
             if self.data_type != "multiple":
                 if not isinstance(data, self.data_type):
-                    logging.warning(
+                    logger().warning(
                         f"Data for {self.name} has to be of type {self.data_type}, "
                         f"but is of type {type(data)} instead!"
                     )
@@ -1183,7 +1182,7 @@ class MultiTypeGui(Param):
         try:
             old_widget.widget().deleteLater()
         except RuntimeError:
-            logging.debug("Old widget already deleted")
+            logger().debug("Old widget already deleted")
         del old_widget, self.param_widget
 
         self.param_type = self.types[type_idx]

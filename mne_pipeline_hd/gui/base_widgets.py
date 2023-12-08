@@ -6,7 +6,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import itertools
-import logging
 import re
 import sys
 
@@ -49,7 +48,7 @@ from mne_pipeline_hd.gui.models import (
     FileManagementModel,
     TreeModel,
 )
-from mne_pipeline_hd.pipeline.pipeline_utils import QS
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
 
 
 class Base(QWidget):
@@ -107,11 +106,13 @@ class Base(QWidget):
 
     def _current_changed(self, current_idx, previous_idx):
         current = self.model.getData(current_idx)
+        # ToDo: For ListWidget after removal,
+        #  there is a bug when previous_idx is too high
         previous = self.model.getData(previous_idx)
 
         self.currentChanged.emit(current, previous)
 
-        logging.debug(f"Current changed from {previous} to {current}")
+        logger().debug(f"Current changed from {previous} to {current}")
 
     def get_selected(self):
         try:
@@ -129,13 +130,13 @@ class Base(QWidget):
 
         self.selectionChanged.emit(selected)
 
-        logging.debug(f"Selection changed to {selected}")
+        logger().debug(f"Selection changed to {selected}")
 
     def _data_changed(self, index, _):
         data = self.model.getData(index)
 
         self.dataChanged.emit(data, index)
-        logging.debug(f"{data} changed at {index}")
+        logger().debug(f"{data} changed at {index}")
 
     def content_changed(self):
         """Informs ModelView about external change made in data"""
@@ -427,7 +428,7 @@ class CheckList(BaseList):
 
     def _checked_changed(self):
         self.checkedChanged.emit(self.model._checked)
-        logging.debug(f"Changed values: {self.model._checked}")
+        logger().debug(f"Changed values: {self.model._checked}")
 
     def replace_checked(self, new_checked):
         """Replaces model._checked with new checked list"""
@@ -645,7 +646,7 @@ class BaseDict(Base):
 
         self.currentChanged.emit(current_data, previous_data)
 
-        logging.debug(f"Current changed from {current_data} to {previous_data}")
+        logger().debug(f"Current changed from {current_data} to {previous_data}")
 
     def _selected_keyvalue(self, indexes):
         try:
@@ -661,7 +662,7 @@ class BaseDict(Base):
 
         self.selectionChanged.emit(selected_data)
 
-        logging.debug(f"Selection to {selected_data}")
+        logger().debug(f"Selection to {selected_data}")
 
     def select(self, keys, values, clear_selection=True):
         key_indices = [i for i, x in enumerate(self.model._data.keys()) if x in keys]
@@ -909,7 +910,7 @@ class BasePandasTable(Base):
 
         self.currentChanged.emit(current_list, previous_list)
 
-        logging.debug(f"Current changed from {previous_list} to {current_list}")
+        logger().debug(f"Current changed from {previous_list} to {current_list}")
 
     def get_selected(self):
         # Somehow, the indexes got from selectionChanged
@@ -924,7 +925,7 @@ class BasePandasTable(Base):
         selection_list = self.get_selected()
         self.selectionChanged.emit(selection_list)
 
-        logging.debug(f"Selection changed to {selection_list}")
+        logger().debug(f"Selection changed to {selection_list}")
 
     def select(self, values=None, rows=None, columns=None, clear_selection=True):
         """

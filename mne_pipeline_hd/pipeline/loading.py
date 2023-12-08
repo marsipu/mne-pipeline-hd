@@ -11,7 +11,6 @@ import functools
 import inspect
 import itertools
 import json
-import logging
 import os
 import pickle
 import shutil
@@ -31,6 +30,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     type_json_hook,
     QS,
     _test_run,
+    logger,
 )
 
 
@@ -54,7 +54,7 @@ def load_decorator(load_func):
     def load_wrapper(self, *args, **kwargs):
         # Get matching data-type from IO-Dict
         data_type = _get_data_type_from_func(self, load_func, "load")
-        logging.info(f"Loading {data_type} for {self.name}")
+        logger().info(f"Loading {data_type} for {self.name}")
 
         if data_type in self.data_dict:
             data = self.data_dict[data_type]
@@ -74,7 +74,7 @@ def load_decorator(load_func):
                         self.io_dict[data_type]["path"] = dp
                         data = load_func(self, *args, **kwargs)
                         self.io_dict[data_type]["path"] = new_path
-                        logging.info(
+                        logger().info(
                             f"Deprecated path: Saving file for "
                             f"{data_type} in updated path..."
                         )
@@ -86,7 +86,7 @@ def load_decorator(load_func):
                         os.remove(dp)
 
                     elif self.p_preset != "Default":
-                        logging.info(
+                        logger().info(
                             f"No File for {data_type} from {self.name}"
                             f" with Parameter-Preset={self.p_preset} found,"
                             f" trying Default"
@@ -131,7 +131,7 @@ def save_decorator(save_func):
         for path in [p for p in paths if not isdir(Path(p).parent)]:
             makedirs(Path(path).parent, exist_ok=True)
 
-        logging.info(f"Saving {data_type} for {self.name}")
+        logger().info(f"Saving {data_type} for {self.name}")
         save_func(self, *args, **kwargs)
 
         # Save data in data-dict for machines with big RAM
@@ -321,7 +321,7 @@ class BaseLoading:
 
         for file_name in remove_files:
             self.file_parameters.pop(file_name)
-        logging.info(
+        logger().info(
             f"Removed {len(remove_files)} Files " f"and {n_remove_params} Parameters."
         )
         self.save_file_parameter_file()
@@ -424,7 +424,7 @@ class BaseLoading:
                         )
                         idx_file_path = join(dir_path, idx_file_name)
                         figure.savefig(idx_file_path)
-                        logging.info(f"figure: {idx_file_path} has been saved")
+                        logger().info(f"figure: {idx_file_path} has been saved")
                         # Only store relative path to be compatible across OS
                         plot_files_save_path = os.path.relpath(
                             idx_file_path, self.figures_path
@@ -439,7 +439,7 @@ class BaseLoading:
                 if self.img_format != ".svg":
                     file_name = file_name.strip(self.img_format) + ".svg"
                     save_path = join(dir_path, file_name)
-                    logging.info("Pyvista-Plots are saved as .svg")
+                    logger().info("Pyvista-Plots are saved as .svg")
                 pyvista_figure.plotter.save_graphics(save_path, title=file_name)
             elif brain:
                 if brain_movie_kwargs is not None:
@@ -452,7 +452,7 @@ class BaseLoading:
                     brain.save_image(save_path)
             else:
                 plt.savefig(save_path, dpi=dpi)
-            logging.info(f"figure: {save_path} has been saved")
+            logger().info(f"figure: {save_path} has been saved")
 
             if not isinstance(matplotlib_figure, list):
                 # Only store relative path to be compatible across OS
@@ -461,7 +461,7 @@ class BaseLoading:
                 if plot_files_save_path not in self.plot_files[calling_func]:
                     self.plot_files[calling_func].append(plot_files_save_path)
         else:
-            logging.info('Not saving plots; set "save_plots" to "True" to save')
+            logger().info('Not saving plots; set "save_plots" to "True" to save')
 
     # ToDo: Should have load-decorator!
     def load(self, data_type, **kwargs):
@@ -483,10 +483,10 @@ class BaseLoading:
             with open(file_path, "r") as file:
                 data = json.load(file, object_hook=type_json_hook)
         except json.JSONDecodeError:
-            logging.warning(f"{file_path} could not be loaded")
+            logger().warning(f"{file_path} could not be loaded")
             data = default
         except FileNotFoundError:
-            logging.warning(f"{file_path} could not be found")
+            logger().warning(f"{file_path} could not be found")
             data = default
 
         return data
@@ -500,7 +500,7 @@ class BaseLoading:
             with open(file_path, "w") as file:
                 json.dump(data, file, cls=TypedJSONEncoder, indent=4)
         except json.JSONDecodeError:
-            logging.warning(f"{file_path} could not be saved")
+            logger().warning(f"{file_path} could not be saved")
 
         self.save_file_params(file_path)
 
@@ -509,11 +509,11 @@ class BaseLoading:
         try:
             os.remove(file_path)
         except FileNotFoundError:
-            logging.warning(f"{file_path} was not found")
+            logger().warning(f"{file_path} was not found")
         except OSError as err:
-            logging.warning(f"{file_path} could not be removed due to {err}")
+            logger().warning(f"{file_path} could not be removed due to {err}")
         else:
-            logging.warning(f"{file_path} was removed")
+            logger().warning(f"{file_path} was removed")
 
     def get_existing_paths(self):
         """Get existing paths and add the mapped File-Type
@@ -551,7 +551,7 @@ class BaseLoading:
                     for pn in [p_name_lh, p_name_rh]:
                         self.file_parameters.pop(pn)
                 except KeyError:
-                    logging.warning(f"{Path(p).name} not in file-parameters")
+                    logger().warning(f"{Path(p).name} not in file-parameters")
             try:
                 os.remove(p)
             except FileNotFoundError:
@@ -562,16 +562,16 @@ class BaseLoading:
                     for ps in [p_lh, p_rh]:
                         os.remove(ps)
                 except FileNotFoundError:
-                    logging.warning(f"{p} was not found")
+                    logger().warning(f"{p} was not found")
             except IsADirectoryError:
                 try:
                     shutil.rmtree(p)
                 except OSError as err:
-                    logging.warning(f"{p} could not be removed due to {err}")
+                    logger().warning(f"{p} could not be removed due to {err}")
             except OSError as err:
-                logging.warning(f"{p} could not be removed due to {err}")
+                logger().warning(f"{p} could not be removed due to {err}")
             else:
-                logging.warning(f"{p} was removed")
+                logger().warning(f"{p} was removed")
 
 
 sample_paths = {
@@ -606,7 +606,7 @@ class MEEG(BaseLoading):
         if self.name not in self.pr.meeg_to_erm:
             self.erm = None
             if not self.suppress_warnings:
-                logging.warning(
+                logger().warning(
                     f"No Empty-Room-Measurement assigned for {self.name},"
                     f' defaulting to "None"'
                 )
@@ -626,7 +626,7 @@ class MEEG(BaseLoading):
         else:
             self.fsmri = FSMRI(None, self.ct)
             if not self.suppress_warnings:
-                logging.warning(
+                logger().warning(
                     f"No Freesurfer-MRI-Subject assigned for {self.name},"
                     f' defaulting to "None"'
                 )
@@ -635,7 +635,7 @@ class MEEG(BaseLoading):
         if self.name not in self.pr.meeg_bad_channels:
             self.bad_channels = list()
             if not self.suppress_warnings:
-                logging.warning(
+                logger().warning(
                     f"No bad channels assigned for {self.name},"
                     f" defaulting to empty list"
                 )
@@ -646,7 +646,7 @@ class MEEG(BaseLoading):
         if self.name not in self.pr.sel_event_id:
             self.sel_trials = dict()
             if not self.suppress_warnings:
-                logging.warning(
+                logger().warning(
                     f"No Trials selected for {self.name}," f" defaulting to empty list"
                 )
         else:
@@ -660,7 +660,7 @@ class MEEG(BaseLoading):
         if self.name not in self.pr.meeg_event_id:
             self.event_id = dict()
             if not self.suppress_warnings:
-                logging.warning(
+                logger().warning(
                     f"No EventID assigned for {self.name},"
                     f" defaulting to empty dictionary"
                 )
@@ -988,16 +988,16 @@ class MEEG(BaseLoading):
             if data_type == "stcs":
                 file_path = file_path["auditory"]
                 if not isfile(file_path + "-lh.stc"):
-                    logging.debug(f"Copying {data_type} from sample-dataset...")
+                    logger().debug(f"Copying {data_type} from sample-dataset...")
                     stcs = mne.source_estimate.read_source_estimate(test_file_path)
                     stcs.save(file_path)
             elif isfile(test_file_path) and not isfile(file_path):
-                logging.debug(f"Copying {data_type} from sample-dataset...")
+                logger().debug(f"Copying {data_type} from sample-dataset...")
                 folder = Path(file_path).parent
                 if not isdir(folder):
                     os.mkdir(folder)
                 shutil.copy2(test_file_path, file_path)
-                logging.debug("Done!")
+                logger().debug("Done!")
 
         # Add bad_channels
         self.bad_channels = self.load_info()["bads"]
@@ -1320,7 +1320,7 @@ class MEEG(BaseLoading):
                 dip_list.append(mne.read_dipole(mixn_dip_path))
                 idx += 1
             mixn_dips[trial] = dip_list
-            logging.info(f"{idx + 1} dipoles read for {self.name}-{trial}")
+            logger().info(f"{idx + 1} dipoles read for {self.name}-{trial}")
 
         return mixn_dips
 
@@ -1505,7 +1505,7 @@ class FSMRI(BaseLoading):
         # so fsaverage will be downloaded to "~/mne_data/MNE-fsaverage-data"
         if _test_run():
             mne.set_config("SUBJECTS_DIR", None)
-        logging.info("Downloading fsaverage...")
+        logger().info("Downloading fsaverage...")
         fsaverage_dir = mne.datasets.fetch_fsaverage(subjects_dir=None)
         if _test_run():
             mne.set_config("SUBJECTS_DIR", self.ct.subjects_dir)
@@ -1519,7 +1519,7 @@ class FSMRI(BaseLoading):
             to_path = self.io_dict[data_type]["path"]
             if not isfile(to_path):
                 os.rename(from_path, to_path)
-                logging.info(f"Renamed {from_path} to {to_path}")
+                logger().info(f"Renamed {from_path} to {to_path}")
 
     def _get_available_parc(self):
         annot_dir = join(self.subjects_dir, self.name, "label")
@@ -1545,10 +1545,10 @@ class FSMRI(BaseLoading):
                 try:
                     label = mne.read_label(join(label_dir, label_path), self.name)
                 except ValueError:
-                    logging.warning(f"Label {label_path} could not be loaded!")
+                    logger().warning(f"Label {label_path} could not be loaded!")
                 labels["Other"].append(label)
         except FileNotFoundError:
-            logging.warning(f"No label directory found for {self.name}!")
+            logger().warning(f"No label directory found for {self.name}!")
 
         if self.parcellations is None:
             self.parcellations = self._get_available_parc()
@@ -1564,14 +1564,14 @@ class FSMRI(BaseLoading):
                     verbose="warning",
                 )
             except (RuntimeError, OSError):
-                logging.warning(f"Parcellation {parcellation} could not be loaded!")
+                logger().warning(f"Parcellation {parcellation} could not be loaded!")
 
         return labels
 
     def get_labels(self, target_labels=None, parcellation=None):
         labels = list()
         if self.name is None:
-            logging.warning("FSMRI-Object has no name and is empty!")
+            logger().warning("FSMRI-Object has no name and is empty!")
         else:
             # Get available parcellations
             if self.labels is None:
@@ -1647,7 +1647,7 @@ class Group(BaseLoading):
         if self.name not in self.pr.all_groups:
             self.group_list = []
             if not self.suppress_warnings:
-                logging.warning(
+                logger().warning(
                     f"No objects assigned for {self.name}," f" defaulting to empty list"
                 )
         else:
@@ -1766,7 +1766,7 @@ class Group(BaseLoading):
             elif obj_type == "FSMRI":
                 obj = FSMRI(obj_name, self.ct)
             else:
-                logging.error(f"The object-type {obj_type} is not valid!")
+                logger().error(f"The object-type {obj_type} is not valid!")
                 continue
             if data_type is None:
                 yield obj
@@ -1774,7 +1774,7 @@ class Group(BaseLoading):
                 data = obj.io_dict[data_type]["load"]()
                 yield data, obj
             else:
-                logging.error(f"{data_type} is not valid for {obj_type}")
+                logger().error(f"{data_type} is not valid for {obj_type}")
 
     @load_decorator
     def load_ga_evokeds(self):
