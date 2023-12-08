@@ -4,22 +4,24 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+from __future__ import print_function
 
+import gc
 import inspect
 import io
-import logging
 import sys
 from collections import OrderedDict
 from importlib import import_module
 from multiprocessing import Pipe
 
+from matplotlib import pyplot as plt
 from qtpy.QtCore import QThreadPool, QRunnable, Slot, QObject, Signal
 from qtpy.QtWidgets import QAbstractItemView
 
 from mne_pipeline_hd.gui.base_widgets import TimedMessageBox
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
 from mne_pipeline_hd.pipeline.loading import BaseLoading, FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, ismac, QS
+from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, ismac, QS, logger
 
 
 def get_func(func_name, obj):
@@ -98,10 +100,7 @@ class StreamSender(io.TextIOBase):
         while self.manager.pipe_busy:
             pass
         self.manager.pipe_busy = True
-        if text[:1] == "\r":
-            kind = "progress"
-        else:
-            kind = self.kind
+        kind = self.kind
         self.pipe.send((text, kind))
         self.manager.pipe_busy = False
 
@@ -109,7 +108,6 @@ class StreamSender(io.TextIOBase):
 class StreamRcvSignals(QObject):
     stdout_received = Signal(str)
     stderr_received = Signal(str)
-    progress_received = Signal(str)
 
 
 class StreamReceiver(QRunnable):
@@ -126,12 +124,10 @@ class StreamReceiver(QRunnable):
             except EOFError:
                 break
             else:
-                if kind == "stdout":
-                    self.signals.stdout_received.emit(text)
-                elif kind == "stderr":
+                if kind == "stderr":
                     self.signals.stderr_received.emit(text)
                 else:
-                    self.signals.progress_received.emit(text)
+                    self.signals.stdout_received.emit(text)
 
 
 def run_func(func, keywargs, pipe=None):
@@ -277,14 +273,14 @@ class RunController:
 
     def finished(self):
         for name, func, error in self.errors:
-            logging.critical(f"Error in {name} <- {func}: {error}")
+            logger().critical(f"Error in {name} <- {func}: {error}")
 
     def prepare_start(self):
         # Take first step of all_steps until there are no steps left.
         if len(self.all_steps) > 0:
             # Getting information as encoded in init_lists
             self.current_obj_name, self.current_func = self.all_steps.pop(0)
-            logging.debug(
+            logger().debug(
                 f"Running {self.current_func} for " f"{self.current_obj_name}"
             )
             # Get current object
@@ -312,7 +308,7 @@ class RunController:
             kwds = dict()
             kwds["func"] = get_func(self.current_func, self.current_object)
             kwds["keywargs"] = get_arguments(kwds["func"], self.current_object)
-            logging.info(
+            logger().info(
                 f"########################################\n"
                 f"Running {self.current_func} for {self.current_obj_name}\n"
                 f"########################################\n"
@@ -418,6 +414,9 @@ class QRunController(RunController):
         self.rd.restart_bt.setEnabled(True)
         self.rd.close_bt.setEnabled(True)
 
+        if not self.ct.get_setting("show_plots"):
+            close_all()
+
         if self.ct.get_setting("shutdown"):
             self.ct.save()
             ans = TimedMessageBox.information(
@@ -445,19 +444,19 @@ class QRunController(RunController):
                 or (ismpl and show_plots and use_qthread)
                 or (ismpl and not show_plots and use_qthread and ismac)
             ):
-                logging.info("Starting in Main-Thread.")
+                logger().info("Starting in Main-Thread.")
                 result = run_func(**kwds)
                 self.process_finished(result)
 
             elif QS().value("use_qthread"):
-                logging.info("Starting in separate Thread.")
+                logger().info("Starting in separate Thread.")
                 worker = Worker(function=run_func, **kwds)
                 worker.signals.error.connect(self.process_finished)
                 worker.signals.finished.connect(self.process_finished)
                 QThreadPool.globalInstance().start(worker)
 
             else:
-                logging.info("Starting in process from multiprocessing.")
+                logger().info("Starting in process from multiprocessing.")
                 recv_pipe, send_pipe = Pipe(False)
                 kwds["pipe"] = send_pipe
                 stream_rcv = StreamReceiver(recv_pipe)
@@ -467,11 +466,13 @@ class QRunController(RunController):
                 stream_rcv.signals.stderr_received.connect(
                     self.rd.console_widget.write_stderr
                 )
-                stream_rcv.signals.progress_received.connect(
-                    self.rd.console_widget.write_progress
-                )
                 QThreadPool.globalInstance().start(stream_rcv)
                 # ToDO: MP
                 self.pool.apply_async(
                     func=run_func, kwds=kwds, callback=self.process_finished
                 )
+
+
+def close_all():
+    plt.close("all")
+    gc.collect()

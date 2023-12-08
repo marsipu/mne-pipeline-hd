@@ -3,6 +3,7 @@
 autoreject
 git+https://github.com/marsipu/NodeGraphQt_qtpy.git@main
 h5io
+h5netcdf  # only until new version of mne-connectivity is released
 
 # MNE-related
 mne

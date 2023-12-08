@@ -4,7 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-
 from ast import literal_eval
 from datetime import datetime
 
@@ -19,6 +18,8 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QBrush, QFont
 
 from mne_pipeline_hd.gui.gui_utils import get_std_icon
+from mne_pipeline_hd.pipeline.pipeline_utils import logger
+
 
 # ToDo: Merge models and base widgets
 
@@ -46,6 +47,9 @@ class BaseListModel(QAbstractListModel):
             self._data = data
 
     def getData(self, index):
+        if len(self._data) == 0:
+            logger().debug("List is empty")
+            return None
         return self._data[index.row()]
 
     def data(self, index, role=None):
@@ -182,6 +186,8 @@ class CheckListModel(BaseListModel):
 
     def setData(self, index, value, role=None):
         if role == Qt.CheckStateRole:
+            # ToDo: This does not work under PySide6
+            #  since Qt.Checked returns no integer (only Qt.Checked.value)
             if value == Qt.Checked:
                 if self.one_check:
                     self._checked.clear()
@@ -769,6 +775,8 @@ class AddFilesModel(BasePandasModel):
             role == Qt.CheckStateRole
             and self._data.columns[index.column()] == "Empty-Room?"
         ):
+            # ToDo: This does not work under PySide6
+            #  since Qt.Checked returns no integer (only Qt.Checked.value)
             if value == Qt.Checked:
                 self._data.iloc[index.row(), index.column()] = 1
             else:

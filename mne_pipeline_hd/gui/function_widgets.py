@@ -137,11 +137,8 @@ class RunDialog(QDialog):
         self.restart_bt.clicked.connect(self.restart)
         bt_layout.addWidget(self.restart_bt)
 
-        if QS().value("use_qthread"):
-            self.reload_chbx = None
-        else:
-            self.reload_chbx = QCheckBox("Reload Modules")
-            bt_layout.addWidget(self.reload_chbx)
+        self.reload_chbx = QCheckBox("Reload Modules")
+        bt_layout.addWidget(self.reload_chbx)
 
         self.autoscroll_bt = QPushButton("Auto-Scroll")
         self.autoscroll_bt.setCheckable(True)
@@ -181,6 +178,8 @@ class RunDialog(QDialog):
         # ToDo: MP
         # if self.reload_chbx and self.reload_chbx.isChecked():
         #     init_mp_pool()
+        if self.reload_chbx.isChecked():
+            self.mw.ct.reload_modules()
 
         # Clear Console-Widget
         self.console_widget.clear()

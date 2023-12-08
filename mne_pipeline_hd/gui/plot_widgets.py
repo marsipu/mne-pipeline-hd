@@ -4,11 +4,15 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import logging
 from functools import partial
 from importlib import import_module
 from os.path import join, isfile
 
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+from mne.viz import Brain
+from mne_qt_browser._pg_figure import MNEQtBrowser
 from qtpy.QtCore import Qt, QThreadPool
 from qtpy.QtGui import QPixmap, QFont
 from qtpy.QtWidgets import (
@@ -29,11 +33,8 @@ from qtpy.QtWidgets import (
     QToolBar,
     QSpinBox,
 )
-from matplotlib import pyplot as plt
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
-from mne.viz import Brain
-from mne_qt_browser._pg_figure import MNEQtBrowser
+
+from mne_pipeline_hd.pipeline.pipeline_utils import logger
 
 try:
     from mne.viz import Figure3D
@@ -110,7 +111,7 @@ class PlotManager(QMainWindow):
             elif isinstance(subplot, Figure3D):
                 plot_widget = subplot
             else:
-                logging.error(
+                logger().error(
                     f'Unrecognized type "{type(subplot)}" ' f'for "{func_name}"'
                 )
                 plot_widget = QWidget()
@@ -318,7 +319,7 @@ class PlotViewSelection(QDialog):
                             self.thread_error(err_tuple, o_name, ppreset, "plot")
 
                         worker.signals.error.connect(error_func)
-                        logging.info(
+                        logger().info(
                             f"Starting Thread for Object= {obj_name} "
                             f"and Parameter-Preset= {p_preset}"
                         )

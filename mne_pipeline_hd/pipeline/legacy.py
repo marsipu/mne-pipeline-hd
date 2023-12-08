@@ -5,14 +5,13 @@ License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
 import json
-import logging
 import os
 import subprocess
 import sys
 from os.path import isdir, join, isfile
 
 from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
-from mne_pipeline_hd.pipeline.pipeline_utils import type_json_hook
+from mne_pipeline_hd.pipeline.pipeline_utils import type_json_hook, logger
 
 renamed_parameters = {
     "filter_target": {"Raw": "raw", "Epochs": "epochs", "Evoked": "evoked"},
@@ -51,7 +50,7 @@ new_packages = {"qdarktheme": "pyqtdarktheme"}
 
 
 def install_package(package_name):
-    logging.info(f"Installing {package_name}...")
+    logger().info(f"Installing {package_name}...")
     print(
         subprocess.check_output(
             [sys.executable, "-m", "pip", "install", package_name], text=True
@@ -60,7 +59,7 @@ def install_package(package_name):
 
 
 def uninstall_package(package_name):
-    logging.info(f"Uninstalling {package_name}...")
+    logger().info(f"Uninstalling {package_name}...")
     print(
         subprocess.check_output(
             [sys.executable, "-m", "pip", "uninstall", "-y", package_name], text=True
@@ -81,7 +80,7 @@ def legacy_import_check(test_package=None):
         try:
             __import__(import_name)
         except ImportError:
-            logging.info(
+            logger().info(
                 f"The package {import_name} " f"is required for this application.\n"
             )
             ans = input("Do you want to install the " "new package now? [y/n]").lower()
@@ -89,10 +88,10 @@ def legacy_import_check(test_package=None):
                 try:
                     install_package(install_name)
                 except subprocess.CalledProcessError:
-                    logging.critical("Installation failed!")
+                    logger().critical("Installation failed!")
                 else:
                     return
-            logging.info(
+            logger().info(
                 f"Please install the new package {import_name} "
                 f"manually with:\n\n"
                 f"> pip install {install_name}"
@@ -103,7 +102,7 @@ def legacy_import_check(test_package=None):
 def transfer_file_params_to_single_subject(ct):
     old_fp_path = join(ct.pr.pscripts_path, f"file_parameters_{ct.pr.name}.json")
     if isfile(old_fp_path):
-        logging.info("Transfering File-Parameters to single files...")
+        logger().info("Transfering File-Parameters to single files...")
         with open(old_fp_path, "r") as file:
             file_parameters = json.load(file, object_hook=type_json_hook)
             for obj_name in file_parameters:
@@ -122,4 +121,4 @@ def transfer_file_params_to_single_subject(ct):
                     obj.save_file_parameter_file()
                     obj.clean_file_parameters()
         os.remove(old_fp_path)
-        logging.info("Done!")
+        logger().info("Done!")

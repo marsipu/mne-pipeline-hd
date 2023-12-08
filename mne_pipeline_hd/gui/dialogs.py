@@ -254,24 +254,28 @@ class CopyParamsDialog(SimpleDialog):
         layout.addWidget(self.from_cmbx, 1, 0)
         layout.addWidget(QLabel("Parameter-Preset:"), 2, 0)
         self.from_pp_cmbx = QComboBox()
+        self.from_pp_cmbx.currentTextChanged.connect(self.from_pp_selected)
         layout.addWidget(self.from_pp_cmbx, 3, 0)
 
         layout.addWidget(QLabel("To:"), 0, 1)
         self.to_cmbx = QComboBox()
         self.to_cmbx.currentTextChanged.connect(self.to_selected)
-        self.to_cmbx.setEnabled(False)
         layout.addWidget(self.to_cmbx, 1, 1)
         layout.addWidget(QLabel("Parameter-Preset:"), 2, 1)
         self.to_pp_cmbx = QComboBox()
         self.to_pp_cmbx.setEditable(True)
         layout.addWidget(self.to_pp_cmbx, 3, 1)
 
+        layout.addWidget(QLabel("Parameter:"), 4, 0, 1, 2)
+        self.param_cmbx = QComboBox()
+        layout.addWidget(self.param_cmbx, 5, 0, 1, 2)
+
         copy_bt = QPushButton("Copy")
         copy_bt.clicked.connect(self.copy_parameters)
-        layout.addWidget(copy_bt, 4, 0)
+        layout.addWidget(copy_bt, 6, 0)
         close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
-        layout.addWidget(close_bt, 4, 1)
+        layout.addWidget(close_bt, 6, 1)
 
         widget.setLayout(layout)
         super().__init__(
@@ -282,6 +286,9 @@ class CopyParamsDialog(SimpleDialog):
             show_close_bt=False,
         )
 
+        # Initialize with first from-entry
+        self.from_selected(self.from_cmbx.currentText())
+
     def _get_p_presets(self, pr_name):
         if self.ct.pr.name == pr_name:
             project = self.ct.pr
@@ -290,14 +297,26 @@ class CopyParamsDialog(SimpleDialog):
 
         return list(project.parameters.keys())
 
+    def from_pp_selected(self, from_pp_name):
+        if from_pp_name:
+            self.param_cmbx.clear()
+            params = list(
+                Project(self.ct, self.from_cmbx.currentText())
+                .parameters[from_pp_name]
+                .keys()
+            )
+            params.insert(0, "<all>")
+            self.param_cmbx.addItems(params)
+
     def from_selected(self, from_name):
         if from_name:
-            self.to_cmbx.setEnabled(True)
             self.to_cmbx.clear()
             self.to_cmbx.addItems([p for p in self.ct.projects if p != from_name])
 
             self.from_pp_cmbx.clear()
             self.from_pp_cmbx.addItems(self._get_p_presets(from_name))
+
+            self.from_pp_selected(self.from_pp_cmbx.currentText())
 
     def to_selected(self, to_name):
         if to_name:
@@ -309,12 +328,19 @@ class CopyParamsDialog(SimpleDialog):
         from_pp = self.from_pp_cmbx.currentText()
         to_name = self.to_cmbx.currentText()
         to_pp = self.to_pp_cmbx.currentText()
+        param = self.param_cmbx.currentText()
+        if param == "<all>":
+            param = None
         if from_name and to_name:
-            self.ct.copy_parameters_between_projects(from_name, from_pp, to_name, to_pp)
+            self.ct.copy_parameters_between_projects(
+                from_name, from_pp, to_name, to_pp, param
+            )
         if to_name == self.ct.pr.name:
             self.main_win.parameters_dock.redraw_param_widgets()
         QMessageBox().information(
-            self, "Finished", f"Parameters copied from {from_name} " f"to {to_name}!"
+            self,
+            "Finished",
+            f"Copied parameter '{param}' from {from_name} to {to_name}!",
         )
 
 

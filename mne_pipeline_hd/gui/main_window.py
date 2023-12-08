@@ -4,7 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-import logging
 import sys
 from functools import partial
 
@@ -32,7 +31,6 @@ from qtpy.QtWidgets import (
 )
 
 from mne_pipeline_hd import _object_refs
-from mne_pipeline_hd.functions.plot import close_all
 from mne_pipeline_hd.gui.dialogs import (
     QuickGuide,
     RawInfo,
@@ -79,12 +77,14 @@ from mne_pipeline_hd.gui.parameter_widgets import (
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.pipeline.function_utils import close_all
 from mne_pipeline_hd.pipeline.pipeline_utils import (
     restart_program,
     ismac,
     QS,
     _run_from_script,
     iswin,
+    logger,
 )
 
 
@@ -202,6 +202,10 @@ class MainWindow(QMainWindow):
 
         self.update_project_ui()
 
+    def pr_rename(self):
+        self.ct.rename_project()
+        self.update_project_box()
+
     def pr_clean_fp(self):
         WorkerDialog(
             self,
@@ -299,6 +303,7 @@ class MainWindow(QMainWindow):
 
         # Project
         project_menu = self.menuBar().addMenu("&Project")
+        project_menu.addAction("&Rename Project", self.pr_rename)
         project_menu.addAction("&Clean File-Parameters", self.pr_clean_fp)
         project_menu.addAction("&Clean Plot-Files", self.pr_clean_pf)
         project_menu.addAction(
@@ -556,7 +561,7 @@ class MainWindow(QMainWindow):
                 try:
                     tab.deleteLater()
                 except RuntimeError:
-                    logging.debug("Tab already deleted")
+                    logger().debug("Tab already deleted")
         self.bt_dict = dict()
 
         self.add_func_bts()

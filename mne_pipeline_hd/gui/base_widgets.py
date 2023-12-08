@@ -6,7 +6,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import itertools
-import logging
 import re
 import sys
 
@@ -49,7 +48,7 @@ from mne_pipeline_hd.gui.models import (
     FileManagementModel,
     TreeModel,
 )
-from mne_pipeline_hd.pipeline.pipeline_utils import QS
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
 
 
 class Base(QWidget):
@@ -77,6 +76,9 @@ class Base(QWidget):
         self.view.selectionModel().currentChanged.connect(self._current_changed)
         self.view.selectionModel().selectionChanged.connect(self._selection_changed)
         self.model.dataChanged.connect(self._data_changed)
+        # Also send signal when rows are removed/added
+        self.model.rowsInserted.connect(self._data_changed)
+        self.model.rowsRemoved.connect(self._data_changed)
 
         self.init_ui()
 
@@ -104,11 +106,13 @@ class Base(QWidget):
 
     def _current_changed(self, current_idx, previous_idx):
         current = self.model.getData(current_idx)
+        # ToDo: For ListWidget after removal,
+        #  there is a bug when previous_idx is too high
         previous = self.model.getData(previous_idx)
 
         self.currentChanged.emit(current, previous)
 
-        logging.debug(f"Current changed from {previous} to {current}")
+        logger().debug(f"Current changed from {previous} to {current}")
 
     def get_selected(self):
         try:
@@ -126,13 +130,13 @@ class Base(QWidget):
 
         self.selectionChanged.emit(selected)
 
-        logging.debug(f"Selection changed to {selected}")
+        logger().debug(f"Selection changed to {selected}")
 
     def _data_changed(self, index, _):
         data = self.model.getData(index)
 
         self.dataChanged.emit(data, index)
-        logging.debug(f"{data} changed at {index}")
+        logger().debug(f"{data} changed at {index}")
 
     def content_changed(self):
         """Informs ModelView about external change made in data"""
@@ -187,8 +191,6 @@ class SimpleList(BaseList):
         Parent Widget (QWidget or inherited) or None if there is no parent.
     title : str | None
         An optional title.
-    verbose : bool
-        Set True to see debugging for signals.
 
     Notes
     -----
@@ -238,8 +240,6 @@ class EditList(BaseList):
         An optional title.
     model : QAbstractItemModel
         Provide an alternative to EditListModel.
-    verbose : bool
-        Set True to see debugging for signals
 
     Notes
     -----
@@ -354,8 +354,6 @@ class CheckList(BaseList):
         Parent Widget (QWidget or inherited) or None if there is no parent.
     title : str | None
         An optional title
-    verbose : bool
-        Set True to see debugging for signals
 
     Notes
     -----
@@ -430,7 +428,7 @@ class CheckList(BaseList):
 
     def _checked_changed(self):
         self.checkedChanged.emit(self.model._checked)
-        logging.debug(f"Changed values: {self.model._checked}")
+        logger().debug(f"Changed values: {self.model._checked}")
 
     def replace_checked(self, new_checked):
         """Replaces model._checked with new checked list"""
@@ -478,8 +476,6 @@ class CheckDictList(BaseList):
         Parent Widget (QWidget or inherited) or None if there is no parent.
     title : str | None
         An optional title.
-    verbose : bool
-        Set True to see debugging for signals.
 
     Notes
     -----
@@ -551,8 +547,6 @@ class CheckDictEditList(EditList):
         Parent Widget (QWidget or inherited) or None if there is no parent.
     title : str | None
         An optional title.
-    verbose : bool
-        Set True to see debugging for signals.
 
     Notes
     -----
@@ -652,7 +646,7 @@ class BaseDict(Base):
 
         self.currentChanged.emit(current_data, previous_data)
 
-        logging.debug(f"Current changed from {current_data} to {previous_data}")
+        logger().debug(f"Current changed from {current_data} to {previous_data}")
 
     def _selected_keyvalue(self, indexes):
         try:
@@ -668,7 +662,7 @@ class BaseDict(Base):
 
         self.selectionChanged.emit(selected_data)
 
-        logging.debug(f"Selection to {selected_data}")
+        logger().debug(f"Selection to {selected_data}")
 
     def select(self, keys, values, clear_selection=True):
         key_indices = [i for i, x in enumerate(self.model._data.keys()) if x in keys]
@@ -705,8 +699,6 @@ class SimpleDict(BaseDict):
         Set True to resize the rows to contents.
     resize_columns : bool
         Set True to resize the columns to contents.
-    verbose : bool
-        Set True to see debugging for signals.
 
     """
 
@@ -730,6 +722,7 @@ class SimpleDict(BaseDict):
         )
 
 
+# ToDo: DataChanged somehow not emitted when row is removed
 class EditDict(BaseDict):
     """A Widget to display and edit a Dictionary
 
@@ -752,8 +745,6 @@ class EditDict(BaseDict):
         Set True to resize the rows to contents.
     resize_columns : bool
         Set True to resize the columns to contents.
-    verbose : bool
-        Set True to see debugging for signals.
 
     """
 
@@ -851,8 +842,6 @@ class BasePandasTable(Base):
         The view for the pandas DataFrame.
     title : str | None
         An optional title.
-    verbose : bool
-        Set True to see debugging for signals.
     """
 
     def __init__(
@@ -921,7 +910,7 @@ class BasePandasTable(Base):
 
         self.currentChanged.emit(current_list, previous_list)
 
-        logging.debug(f"Current changed from {previous_list} to {current_list}")
+        logger().debug(f"Current changed from {previous_list} to {current_list}")
 
     def get_selected(self):
         # Somehow, the indexes got from selectionChanged
@@ -936,7 +925,7 @@ class BasePandasTable(Base):
         selection_list = self.get_selected()
         self.selectionChanged.emit(selection_list)
 
-        logging.debug(f"Selection changed to {selection_list}")
+        logger().debug(f"Selection changed to {selection_list}")
 
     def select(self, values=None, rows=None, columns=None, clear_selection=True):
         """
@@ -1007,8 +996,6 @@ class SimplePandasTable(BasePandasTable):
         Set True to resize the rows to contents
     resize_columns : bool
         Set True to resize the columns to contents
-    verbose : bool
-        Set True to see debugging for signals
 
     Notes
     -----
@@ -1058,8 +1045,6 @@ class EditPandasTable(BasePandasTable):
         Set True to resize the rows to contents.
     resize_columns : bool
         Set True to resize the columns to contents.
-    verbose : bool
-        Set True to see debugging for signals.
 
     Notes
     -----
@@ -1247,8 +1232,6 @@ class FilePandasTable(BasePandasTable):
         Parent Widget (QWidget or inherited) or None if there is no parent
     title : str | None
         An optional title
-    verbose : bool
-        Set True to see debugging for signals
 
     Notes
     -----
@@ -1555,6 +1538,9 @@ class TimedMessageBox(QMessageBox):
         )
 
 
+# ToDo: Proper testing
+# Testing all signals properly emitted (also on row add/remove)
+# Testing when _data is empty and get-Data, what happens?
 class AllBaseWidgets(QWidget):
     def __init__(self):
         super().__init__()
@@ -1608,30 +1594,26 @@ class AllBaseWidgets(QWidget):
             "SimpleList": {
                 "extended_selection": True,
                 "title": "BaseList",
-                "verbose": True,
             },
             "EditList": {
                 "ui_button_pos": "bottom",
                 "extended_selection": True,
                 "title": "EditList",
-                "verbose": True,
             },
-            "CheckList": {"one_check": False, "title": "CheckList", "verbose": True},
+            "CheckList": {"one_check": False, "title": "CheckList"},
             "CheckDictList": {
                 "extended_selection": True,
                 "title": "CheckDictList",
-                "verbose": True,
             },
-            "CheckDictEditList": {"title": "CheckDictEditList", "verbose": True},
-            "SimpleDict": {"title": "BaseDict", "verbose": True},
-            "EditDict": {"ui_button_pos": "left", "title": "EditDict", "verbose": True},
-            "SimplePandasTable": {"title": "BasePandasTable", "verbose": True},
-            "EditPandasTable": {"title": "EditPandasTable", "verbose": True},
-            "DictTree": {"title": "BaseDictTree", "verbose": True},
+            "CheckDictEditList": {"title": "CheckDictEditList"},
+            "SimpleDict": {"title": "BaseDict"},
+            "EditDict": {"ui_button_pos": "left", "title": "EditDict"},
+            "SimplePandasTable": {"title": "BasePandasTable"},
+            "EditPandasTable": {"title": "EditPandasTable"},
+            "DictTree": {"title": "BaseDictTree"},
             "AssignWidget": {
                 "properties_editable": True,
                 "title": "AssignWidget",
-                "verbose": True,
             },
         }
 
