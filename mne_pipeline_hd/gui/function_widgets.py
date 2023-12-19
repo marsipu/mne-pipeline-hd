@@ -1040,7 +1040,7 @@ class CustomFunctionImport(QDialog):
         cf_path_string = compat.getopenfilename(
             self,
             "Choose the Python-File containing your function to import",
-            filter="Python-File (*.py)",
+            filters="Python-File (*.py)",
         )[0]
         if cf_path_string:
             self.file_path = Path(cf_path_string)
@@ -1057,7 +1057,7 @@ class CustomFunctionImport(QDialog):
         cf_path_string = compat.getopenfilename(
             self,
             "Choose the Python-File containing the functions to edit",
-            filter="Python-File (*.py)",
+            filters="Python-File (*.py)",
             directory=self.ct.custom_pkg_path,
         )[0]
         if cf_path_string:
