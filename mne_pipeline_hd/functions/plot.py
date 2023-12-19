@@ -375,7 +375,7 @@ def plot_compare_evokeds(meeg, show_plots):
 
     evokeds = {f"{evoked.comment}={evoked.nave}": evoked for evoked in evokeds}
 
-    fig = mne.viz.plot_compare_evokeds(evokeds, show=show_plots)
+    fig = mne.viz.plot_compare_evokeds(evokeds, title=meeg.name, show=show_plots)
 
     meeg.plot_save("evokeds", subfolder="compare", matplotlib_figure=fig)
 
