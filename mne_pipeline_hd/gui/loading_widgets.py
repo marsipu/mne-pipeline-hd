@@ -4,6 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+import logging
 import os
 import re
 import shutil
@@ -158,7 +159,11 @@ def index_parser(index, all_items, groups=None):
                 indices = [int(index)]
 
         indices = [i for i in indices if i not in rm]
-        files = np.asarray(all_items)[indices].tolist()
+        try:
+            files = np.asarray(all_items)[indices].tolist()
+        except IndexError:
+            logging.warning("Index out of range")
+            files = []
 
         return files
 
@@ -1571,7 +1576,7 @@ class EventIDGui(QDialog):
             self.checked_labels = list()
         self.update_check_list()
 
-    # ToDo: Make all combinations possible
+    # ToDo: Make all combinations possible and also int-keys (can't split)
     def update_check_list(self):
         self.labels = [k for k in self.queries.keys()]
         # Get selectable trials and update widget
