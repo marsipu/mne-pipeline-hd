@@ -1,7 +1,6 @@
 # ToDo: Check every requirement in the end if really necessary
 # Pipeline-related
 autoreject
-git+https://github.com/marsipu/NodeGraphQt_qtpy.git@main
 h5io
 h5netcdf  # only until new version of mne-connectivity is released
 
@@ -10,6 +9,7 @@ mne
 mne-connectivity
 mne-qt-browser
 nibabel
+NodeGraphQt @ git+https://github.com/marsipu/NodeGraphQt_qtpy@main
 pandas
 psutil
 pyobjc-framework-Cocoa; sys_platform == "darwin"
