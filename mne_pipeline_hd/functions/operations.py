@@ -898,8 +898,6 @@ def tfr(
     powers = list()
     itcs = list()
 
-    meeg.load_epochs()
-
     # Calculate Time-Frequency for each trial from epochs
     # using the selected method
     for trial, epoch in meeg.get_trial_epochs():
