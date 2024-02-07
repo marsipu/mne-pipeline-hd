@@ -385,11 +385,13 @@ class Project:
 
     def add_meeg(self, name, file_path=None, is_erm=False):
         if is_erm:
-            # Organize Empty-Room-FIles
-            self.all_erm.append(name)
+            # Organize Empty-Room-Files
+            if name not in self.all_erm:
+                self.all_erm.append(name)
         else:
             # Organize other files
-            self.all_meeg.append(name)
+            if name not in self.all_meeg:
+                self.all_meeg.append(name)
 
         # Copy sub_files to destination (with MEEG-Class
         # to also include raw into file_parameters)
