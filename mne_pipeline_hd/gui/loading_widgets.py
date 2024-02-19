@@ -1834,13 +1834,13 @@ class FileManagment(QDialog):
                         for parameter in result_dict:
                             if isinstance(result_dict[parameter], tuple):
                                 if result_dict[parameter][2]:
-                                    obj_pd.loc[
-                                        obj_name, path_type
-                                    ] = "critical_conflict"
+                                    obj_pd.loc[obj_name, path_type] = (
+                                        "critical_conflict"
+                                    )
                                 else:
-                                    obj_pd.loc[
-                                        obj_name, path_type
-                                    ] = "possible_conflict"
+                                    obj_pd.loc[obj_name, path_type] = (
+                                        "possible_conflict"
+                                    )
 
     def open_prog_dlg(self):
         # Create Progress-Dialog
