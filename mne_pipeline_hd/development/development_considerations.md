@@ -48,3 +48,11 @@ setting should be device/OS-dependent:
 2. QSettings(), which is stored by Qt on an OS-depending location and which may
    differ between devices/OS. Settings which dependent on the device/OS should
    go here (e.g. `n_jobs` or `use_cuda`)
+
+## Nodes
+Nodes should improve usability and the representation of the pipeline by the following:
+- The order of execution is now clearer and renders the function-dependency considerations obsolete.
+- The user can now see the input and output of each function.
+- Parameters will now go to each function directly, overview only optional
+- Using multiple File-Lists or Projets side-by-side will be more easy to handle.
+-
