@@ -447,9 +447,7 @@ def find_6ch_binary_events(meeg, min_duration, shortest_event, adjust_timeline_b
                 and q not in events[:, 0] + 1
                 and q not in events[:, 0] - 1
             ):
-                events = np.append(
-                    events, [[q, 0, int(2**a + 2**b + 2**c)]], axis=0
-                )
+                events = np.append(events, [[q, 0, int(2**a + 2**b + 2**c)]], axis=0)
 
     for a, b in combinations(range(6), 2):
         equals = np.intersect1d(evs_tol[a], evs_tol[b])
