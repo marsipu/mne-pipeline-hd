@@ -198,7 +198,7 @@ def test_label_gui(qtbot, controller):
     assert "postcentral-lh" in dlg._parc_picker._shown_labels
     # Add label by clicking on plot
     qtbot.mouseClick(parc_plot, Qt.LeftButton, pos=parc_plot.rect().center(), delay=100)
-    assert "superiorfrontal-rh" in dlg._selected_parc_labels
+    assert "supramarginal-rh" in dlg._selected_parc_labels
     # Remove label by clicking on plot
     qtbot.mouseClick(parc_plot, Qt.LeftButton, pos=parc_plot.rect().center(), delay=100)
     assert "superiorfrontal-rh" not in dlg._selected_parc_labels
@@ -220,20 +220,20 @@ def test_label_gui(qtbot, controller):
     assert "lh.BA1-lh" in dlg._extra_picker._shown_labels
 
     # Change parcellation
-    dlg.parcellation_cmbx.setCurrentText("aparc.a2009s")
+    dlg.parcellation_cmbx.setCurrentText("aparc_sub")
     dlg._parc_changed()  # Only triggered by mouse click with .activated
     # Add label by clicking on plot
     qtbot.mouseClick(parc_plot, Qt.LeftButton, pos=parc_plot.rect().center(), delay=100)
-    assert "G_front_sup-rh" in dlg._selected_parc_labels
+    assert "supramarginal_9-rh" in dlg._selected_parc_labels
     # Add label by selecting from list
     toggle_checked_list_model(dlg.parc_label_list.model, value=1, row=0)
-    assert "G_Ins_lg_and_S_cent_ins-lh" in dlg._selected_parc_labels
+    assert "bankssts_1-lh" in dlg._selected_parc_labels
 
     final_selection = [
         "insula-lh",
         "postcentral-lh",
-        "G_front_sup-rh",
-        "G_Ins_lg_and_S_cent_ins-lh",
+        "supramarginal_9-rh",
+        "bankssts_1-lh",
         "lh.BA1-lh",
     ]
     # Check display widget
