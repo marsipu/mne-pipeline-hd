@@ -915,9 +915,9 @@ class CustomFunctionImport(QDialog):
 
     def target_cmbx_changed(self, idx):
         if self.current_function:
-            self.add_pd_funcs.loc[
-                self.current_function, "target"
-            ] = self.target_cmbx.itemText(idx)
+            self.add_pd_funcs.loc[self.current_function, "target"] = (
+                self.target_cmbx.itemText(idx)
+            )
             self.target_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
@@ -926,9 +926,9 @@ class CustomFunctionImport(QDialog):
         self.populate_tab_cmbx()
         self.tab_cmbx.setCurrentIndex(idx)
         if self.current_function:
-            self.add_pd_funcs.loc[
-                self.current_function, "tab"
-            ] = self.tab_cmbx.itemText(idx)
+            self.add_pd_funcs.loc[self.current_function, "tab"] = (
+                self.tab_cmbx.itemText(idx)
+            )
             self.tab_chkl.setPixmap(self.yes_icon.pixmap(QSize(16, 16)))
             self.check_func_setup()
 
@@ -1339,9 +1339,9 @@ class ImportFuncs(QDialog):
                                     param_key, "functions"
                                 ] += func_key
                             else:
-                                self.cf.add_pd_params.loc[
-                                    param_key, "functions"
-                                ] = func_key
+                                self.cf.add_pd_params.loc[param_key, "functions"] = (
+                                    func_key
+                                )
                         else:
                             self.cf.add_pd_params.loc[param_key, "functions"] = func_key
                     else:
