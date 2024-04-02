@@ -1255,8 +1255,6 @@ class LabelPicker(mne.viz.Brain):
         # Title text
         self.add_text(0, 0.9, "", color="w", font_size=14, name="title")
 
-        self.show_view(roll=0, elevation=60, azimuth=70)
-
         self._set_annotations(parcellation)
         self._init_picking()
 
@@ -1504,7 +1502,6 @@ class LabelDialog(SimpleDialog):
         self._selected_parc_labels += [
             lb for lb in old_selected_parc if lb in all_labels_exept_other
         ]
-        self.parc_label_list.content_changed()
 
         # Update pickers if open
         if self._parc_picker is not None and not self._parc_picker.isclosed():
@@ -1527,6 +1524,8 @@ class LabelDialog(SimpleDialog):
             self._parc_labels += [
                 lb.name for lb in self._fsmri.labels[self._parcellation]
             ]
+
+        self.parc_label_list.content_changed()
 
         if self._parc_picker is not None and not self._parc_picker.isclosed():
             self._parc_picker._set_annotations(self._parcellation)
