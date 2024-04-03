@@ -7,11 +7,8 @@
 ## Installation
 
 1. Install MNE-python as instructed on
-   the [website](https://www.martinos.org/mne/stable/install_mne_python.html),
-   I would recommend to install in a separate conda environment with:
-   `conda env create -n mne_p -f environment.yml`
-2. `conda activate mne_p`
-3. `pip install https://github.com/marsipu/mne-pipeline-hd/zipball/main`
+   the [website](https://www.martinos.org/mne/stable/install_mne_python.html)
+2. Then run `pip install https://github.com/marsipu/mne-pipeline-hd/zipball/main` in the conda-enviroment you created in step 1 for MNE-Python.
 
 ## Update
 
@@ -21,7 +18,7 @@ or `pip install --upgrade mne-pipeline-hd` for the latest release.
 
 ## Start
 
-Run `mne_pipeline_hd` in your mne_pipeline-environment (`conda activate mne_p`)
+Run `mne_pipeline_hd` in your conda-environment where you installed mne-python and mne-pipeline-hd.
 
 **or**
 
@@ -64,7 +61,7 @@ installed.
 9. Push changes to your forked repository on GitHub: `git push`
 10. Make "New pull request" from your new feature branch
 
-You can always [write me](mailto:dev@mgschulz.de), if you have questions
+You can always [write me an e-mail](mailto:dev@mgschulz.de), if you have questions
 about the contribution-process
 or about the program-structure.
 
