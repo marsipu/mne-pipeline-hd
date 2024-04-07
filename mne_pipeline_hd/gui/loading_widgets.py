@@ -538,11 +538,9 @@ class GrandAvgFileAdd(QDialog):
 
 # Todo: Enable Drag&Drop
 class AddFilesWidget(QWidget):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
+    def __init__(self, ct):
+        super().__init__()
+        self.ct = ct
         self.layout = QVBoxLayout()
 
         self.erm_keywords = [
@@ -861,11 +859,9 @@ class AddFilesDialog(AddFilesWidget):
 
 
 class AddMRIWidget(QWidget):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
+    def __init__(self, ct):
+        super().__init__()
+        self.ct = ct
         self.layout = QVBoxLayout()
 
         self.folders = list()

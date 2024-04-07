@@ -78,7 +78,7 @@ from mne_pipeline_hd.gui.parameter_widgets import (
 )
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
-from mne_pipeline_hd.pipeline.controller import Controller
+from mne_pipeline_hd.pipeline.controller import Controller, NewController
 from mne_pipeline_hd.pipeline.function_utils import close_all
 from mne_pipeline_hd.pipeline.pipeline_utils import (
     restart_program,
@@ -560,7 +560,7 @@ class MainWindow(QMainWindow):
         set_app_theme()
 
         # Add experimental Node-Tab
-        self.node_graph = PipeNodeGraph(self.ct)
+        self.node_graph = PipeNodeGraph(NewController())
         self.tab_func_widget.addTab(self.node_graph.widget, "Node-Graph")
         self.tab_func_widget.setCurrentWidget(self.node_graph.widget)
 
