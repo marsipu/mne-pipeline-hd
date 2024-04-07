@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QDialog
+
 from NodeGraphQt import NodeBaseWidget, BaseNode, NodeGraph
 from NodeGraphQt.base.factory import NodeFactory
 
 from mne_pipeline_hd.gui.base_widgets import CheckList
+from mne_pipeline_hd.gui.loading_widgets import AddFilesWidget, AddMRIWidget
 
 
 class PipeNodeFactory(NodeFactory):
@@ -55,19 +58,53 @@ class PipeBaseNode(BaseNode):
         super().add_custom_widget(wrapper_widget, widget_type, tab=tab)
 
 
-class InputNode(PipeBaseNode):
+class BaseInputNode(PipeBaseNode):
+    """Node for input data like MEEG, FSMRI, etc."""
+
+    # ToDo: Add import functionality.
+    # Add Start button (Depending from where we start, we get different orders of execution)
+    # There can be secondary inputs
+    def __init__(self, ct):
+        self.NODE_NAME = "Input Data"
+        self.data_type = None
+        super().__init__(ct)
+
+    def init_widgets(self, data_type):
+        self.data_type = data_type
+        # Add the output port
+        self.add_output("Data", multi_output=True)
+        # Initialize the other widgets inside the node
+        node_widget = QWidget()
+        layout = QVBoxLayout(node_widget)
+        import_bt = QPushButton("Import")
+        import_bt.clicked.connect(self.add_files)
+        layout.addWidget(import_bt)
+        input_list = CheckList(
+            self.ct.inputs[data_type],
+            self.ct.selected_inputs[data_type],
+            ui_button_pos="bottom",
+            show_index=True,
+            title=f"Select {data_type}",
+        )
+        layout.addWidget(input_list)
+        self.add_widget(node_widget)
+
+    def add_files(self):
+        dlg = QDialog(self.graph.widget)
+        dlg.setWindowTitle("Import Files")
+        if self.data_type == "MEEG":
+            widget = AddFilesWidget(self.ct)
+        else:
+            widget = AddMRIWidget(self.ct)
+        dlg_layout = QVBoxLayout(dlg)
+        dlg_layout.addWidget(widget)
+        dlg.open()
+
+
+class MEEGInputNode(BaseInputNode):
     def __init__(self, ct):
         super().__init__(ct)
-        meeg_list = CheckList(
-            ct.pr.all_meeg,
-            ct.pr.sel_meeg,
-            ui_button_pos="top",
-            show_index=True,
-            title="Select MEG/EEG",
-        )
-        self.add_widget(meeg_list, tab="input")
-
-        self.add_output("Data", multi_output=True)
+        self.init_widgets("MEEG")
 
 
 class FunctionNode(PipeBaseNode):
@@ -80,14 +117,33 @@ class FunctionNode(PipeBaseNode):
         self.add_output("Data-Out", multi_output=True)
 
 
+class AssignmentNode(PipeBaseNode):
+    """This node assigns the input from 1 to an input upstream from 2,
+    which then leads to runningo the functions before for input 2 while caching input 1.
+    """
+
+    # ToDo:
+    # Checks for assignments and if there are pairs for each input.
+    # Checks also for inputs in multiple pairs.
+    # Status color and status message (like "24/28 assigned")
+    def __init__(self, ct):
+        super().__init__(ct)
+
+        self.add_input("Data-In 1")
+        self.add_input("Data-In 2")
+
+        self.add_output("Data-Out 1", multi_output=False)
+        self.add_output("Data-Out 2", multi_output=False)
+
+
 class PipeNodeGraph(NodeGraph):
     def __init__(self, ct):
         self.ct = ct
         node_factory = PipeNodeFactory(self.ct)
         super().__init__(node_factory=node_factory)
-        self.register_nodes([InputNode, FunctionNode])
+        self.register_nodes([MEEGInputNode, FunctionNode])
 
-        input_node = self.create_node("pipeline_nodes.InputNode")
+        input_node = self.create_node("pipeline_nodes.MEEGInputNode")
         func_node = self.create_node("pipeline_nodes.FunctionNode")
         func_node2 = self.create_node("pipeline_nodes.FunctionNode")
 

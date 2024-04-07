@@ -85,6 +85,7 @@ class TypedJSONEncoder(json.JSONEncoder):
             return int(obj)
         elif isinstance(obj, np.floating):
             return float(obj)
+        # Only onedimensional arrays are supported
         elif isinstance(obj, np.ndarray):
             return {"numpy_array": obj.tolist()}
         elif isinstance(obj, datetime):
@@ -100,6 +101,7 @@ def type_json_hook(obj):
         return obj["numpy_int"]
     elif "numpy_float" in obj.keys():
         return obj["numpy_float"]
+    # Only onedimensional arrays are supported
     elif "numpy_array" in obj.keys():
         return np.asarray(obj["numpy_array"])
     elif "datetime" in obj.keys():

@@ -12,6 +12,7 @@ import re
 import shutil
 import sys
 import traceback
+from datetime import datetime
 from importlib import reload, resources, import_module
 from os import listdir
 from os.path import isdir, join
@@ -23,7 +24,12 @@ import pandas as pd
 from mne_pipeline_hd import functions, extra
 from mne_pipeline_hd.gui.gui_utils import get_user_input_string
 from mne_pipeline_hd.pipeline.legacy import transfer_file_params_to_single_subject
-from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
+from mne_pipeline_hd.pipeline.pipeline_utils import (
+    QS,
+    logger,
+    type_json_hook,
+    TypedJSONEncoder,
+)
 from mne_pipeline_hd.pipeline.project import Project
 
 home_dirs = ["custom_packages", "freesurfer", "projects"]
@@ -423,3 +429,93 @@ class Controller:
                         # be caught by the UncaughtHook
                         spec.loader.exec_module(module)
                         sys.modules[module_name] = module
+
+
+class NewController:
+    """New controller, that combines the former old controller and project class.
+    The home-path structure should no longer be as rigid as before.
+    For each controller, there is a config-file stored, where paths to the raw-data,
+    the freesurfer-dir and the custom-packages are stored.
+    """
+
+    def __init__(self, config_file=None):
+        self.config_file = config_file
+        self.config = dict()
+        self.load_config()
+
+    def load_config(self):
+        if self.config_file is not None:
+            self.config = json.load(self.config_file, object_hook=type_json_hook)
+
+    def save_config(self):
+        if self.config_file is None:
+            logging.error("No config-file set!")
+        with open(self.config_file, "w") as file:
+            json.dump(self.config, file, indent=2, cls=TypedJSONEncoder)
+
+    @property
+    def name(self):
+        name_default = f"Project_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        return self.config.get("name", name_default)
+
+    # ToDo: Rename function (rename all files etc.)
+    def rename(self, new_name):
+        pass
+
+    @property
+    def meeg_root(self):
+        if "meeg_root" not in self.config:
+            raise ValueError("The path to the MEEG data is not set!")
+        return self.config["meeg_root"]
+
+    @meeg_root.setter
+    def meeg_root(self, value):
+        if not isdir(value):
+            raise ValueError(f"Path {value} does not exist!")
+        self.config["meeg_root"] = value
+
+    @property
+    def fsmri_root(self):
+        if "fsmri_root" not in self.config:
+            raise ValueError("The path to the FreeSurfer MRI data is not set!")
+        return self.config["fsmri_root"]
+
+    @fsmri_root.setter
+    def fsmri_root(self, value):
+        if not isdir(value):
+            raise ValueError(f"Path {value} does not exist!")
+        self.config["fsmri_root"] = value
+
+    @property
+    def plots_path(self):
+        if "plots_path" not in self.config:
+            raise ValueError("The path for plots is not set!")
+        return self.config["plots_path"]
+
+    @plots_path.setter
+    def plots_path(self, value):
+        if not isdir(value):
+            raise ValueError(f"Path {value} does not exist!")
+        self.config["plots_path"] = value
+
+    @property
+    def inputs(self):
+        """This holds all data inputs from MEEG, FSMRI, etc."""
+        if "inputs" not in self.config:
+            self.config["inputs"] = {
+                "MEEG": list(),
+                "FSMRI": list(),
+                "EmptyRoom": list(),
+            }
+        return self.config["inputs"]
+
+    @property
+    def selected_inputs(self):
+        """This holds all selected inputs."""
+        if "selected_inputs" not in self.config:
+            self.config["selected_inputs"] = {
+                "MEEG": list(),
+                "FSMRI": list(),
+                "EmptyRoom": list(),
+            }
+        return self.config["selected_inputs"]
