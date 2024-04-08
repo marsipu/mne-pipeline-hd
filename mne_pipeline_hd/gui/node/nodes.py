@@ -107,12 +107,18 @@ class MEEGInputNode(BaseInputNode):
         self.init_widgets("MEEG")
 
 
-class FunctionNode(PipeBaseNode):
+class MRIInputNode(BaseInputNode):
     def __init__(self, ct):
         super().__init__(ct)
+        self.init_widgets("FSMRI")
 
-        self.add_input("Data-In 1")
-        self.add_input("Data-In 2")
+
+class FunctionNode(PipeBaseNode):
+    def __init__(self, ct):
+        self.NODE_NAME = "Function Node"
+        super().__init__(ct)
+
+        self.add_input("Data-In")
 
         self.add_output("Data-Out", multi_output=True)
 
@@ -127,10 +133,11 @@ class AssignmentNode(PipeBaseNode):
     # Checks also for inputs in multiple pairs.
     # Status color and status message (like "24/28 assigned")
     def __init__(self, ct):
+        self.NODE_NAME = "Assignment Node"
         super().__init__(ct)
 
-        self.add_input("Data-In 1")
-        self.add_input("Data-In 2")
+        self.add_input("Data-In 1", multi_input=False)
+        self.add_input("Data-In 2", multi_input=False)
 
         self.add_output("Data-Out 1", multi_output=False)
         self.add_output("Data-Out 2", multi_output=False)
@@ -141,15 +148,4 @@ class PipeNodeGraph(NodeGraph):
         self.ct = ct
         node_factory = PipeNodeFactory(self.ct)
         super().__init__(node_factory=node_factory)
-        self.register_nodes([MEEGInputNode, FunctionNode])
-
-        input_node = self.create_node("pipeline_nodes.MEEGInputNode")
-        func_node = self.create_node("pipeline_nodes.FunctionNode")
-        func_node2 = self.create_node("pipeline_nodes.FunctionNode")
-
-        input_node.set_output(0, func_node.input(0))
-        func_node2.set_input(1, func_node.output(0))
-
-        self.auto_layout_nodes()
-        self.clear_selection()
-        self.fit_to_selection()
+        self.register_nodes([MEEGInputNode, MRIInputNode, AssignmentNode, FunctionNode])
