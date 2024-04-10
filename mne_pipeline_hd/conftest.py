@@ -7,7 +7,7 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 from os import mkdir
 
 import pytest
-from mne_pipeline_hd.gui.nodes import PipeNodeGraph
+from mne_pipeline_hd.gui.node.nodes import PipeNodeGraph
 
 from mne_pipeline_hd.gui.main_window import MainWindow
 from mne_pipeline_hd.pipeline.controller import Controller, NewController

@@ -88,7 +88,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     iswin,
     logger,
 )
-from mne_pipeline_hd.gui.nodes import PipeNodeGraph
+from mne_pipeline_hd.gui.node.nodes import PipeNodeGraph
 
 
 class MainWindow(QMainWindow):

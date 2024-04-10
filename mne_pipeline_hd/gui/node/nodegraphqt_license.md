@@ -1,13 +1,3 @@
-The code for nodes in mne-pipeline-hd is partly copied or inspired by code from the
-[NodeGraphQt](https://github.com/jchanvfx/NodeGraphQt) project.
-The reasons for not using the package directly are among others
-missing PySide6/PyQt6 support, simplifying the codebase
-(ditching Model-View in favor of readability, not needing properties, ...)
-and heavy customization.
-NodeGraphQt is licensed under the MIT License.
-The license for NodeGraphQt is included below.
-Thank you to the maintainers of NodeGraphQt especially Johnny Chan for their work.
-
 MIT License
 ===========
 
