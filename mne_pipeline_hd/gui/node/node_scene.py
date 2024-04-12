@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from mne_pipeline_hd.gui.node import node_defaults
-from qtpy.QtCore import Qt
-from qtpy.QtGui import QColor, QPen, QPainter, QLineF
+from mne_pipeline_hd.gui.node.node_defaults import defaults
+from qtpy.QtCore import Qt, QLineF
+from qtpy.QtGui import QColor, QPen, QPainter
 from qtpy.QtWidgets import QGraphicsScene
 
 
@@ -9,9 +9,9 @@ class NodeScene(QGraphicsScene):
     def __init__(self, parent=None):
         super(NodeScene, self).__init__(parent)
         self._grid_mode = "lines"
-        self._grid_size = node_defaults["viewer"]["grid_size"]
-        self._grid_color = node_defaults["viewer"]["grid_color"]
-        self._bg_color = node_defaults["viewer"]["background_color"]
+        self._grid_size = defaults["viewer"]["grid_size"]
+        self._grid_color = defaults["viewer"]["grid_color"]
+        self._bg_color = defaults["viewer"]["background_color"]
         self.setBackgroundBrush(QColor(*self._bg_color))
 
     @property
@@ -21,7 +21,7 @@ class NodeScene(QGraphicsScene):
     @grid_mode.setter
     def grid_mode(self, mode=None):
         if mode is None:
-            mode = node_defaults["viewer"]["grid_mode"]
+            mode = defaults["viewer"]["grid_mode"]
         self._grid_mode = mode
 
     @property
@@ -31,7 +31,7 @@ class NodeScene(QGraphicsScene):
     @grid_size.setter
     def grid_size(self, size=None):
         if size is None:
-            size = node_defaults["viewer"]["grid_size"]
+            size = defaults["viewer"]["grid_size"]
         self._grid_size = size
 
     @property
@@ -41,7 +41,7 @@ class NodeScene(QGraphicsScene):
     @grid_color.setter
     def grid_color(self, color=None):
         if color is None:
-            color = node_defaults["viewer"]["grid_color"]
+            color = defaults["viewer"]["grid_color"]
         self._grid_color = color
 
     @property
@@ -51,7 +51,7 @@ class NodeScene(QGraphicsScene):
     @bg_color.setter
     def bg_color(self, color=None):
         if color is None:
-            color = node_defaults["viewer"]["background_color"]
+            color = defaults["viewer"]["background_color"]
         self._bg_color = color
         self.setBackgroundBrush(QColor(*self._bg_color))
 

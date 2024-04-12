@@ -4,16 +4,15 @@ import math
 from collections import OrderedDict
 
 import qtpy
-from PyQt5.QtCore import QMimeData, QPointF, QPoint, QRectF, Qt, QRect, QSize
-from PyQt5.QtGui import QColor, QPainter, QPainterPath
-from PyQt5.QtWidgets import QGraphicsView, QRubberBand, QGraphicsTextItem
-from gui.node.pipes import LivePipeItem, SlicerPipeItem, Pipe
-from mne_pipeline_hd.gui.gui_utils import invert_rgb_color, format_color
-from mne_pipeline_hd.gui.node import node_defaults
-from mne_pipeline_hd.gui.node.base_nodes import BaseNode
+from mne_pipeline_hd.gui.gui_utils import invert_rgb_color
+from mne_pipeline_hd.gui.node.base_node import BaseNode
+from mne_pipeline_hd.gui.node.node_defaults import defaults
 from mne_pipeline_hd.gui.node.node_scene import NodeScene
+from mne_pipeline_hd.gui.node.pipes import LivePipeItem, SlicerPipeItem, Pipe
 from mne_pipeline_hd.gui.node.ports import Port
-from qtpy.QtCore import Signal
+from qtpy.QtCore import QMimeData, QPointF, QPoint, QRectF, Qt, QRect, QSize, Signal
+from qtpy.QtGui import QColor, QPainter, QPainterPath
+from qtpy.QtWidgets import QGraphicsView, QRubberBand, QGraphicsTextItem
 
 
 class NodeViewer(QGraphicsView):
@@ -43,8 +42,7 @@ class NodeViewer(QGraphicsView):
 
         # attributes
         self._nodes = OrderedDict()
-        self._ports = OrderedDict()
-        self._pipes = OrderedDict()
+        self._pipe_layout = defaults["viewer"]["pipe_layout"]
         self._last_size = self.size()
         self._detached_port = None
         self._start_port = None
@@ -82,9 +80,7 @@ class NodeViewer(QGraphicsView):
         self._rubber_band.isActive = False
 
         # initialize cursor text
-        text_color = QColor(
-            invert_rgb_color(node_defaults["viewer"]["background_color"])
-        )
+        text_color = QColor(*invert_rgb_color(defaults["viewer"]["background_color"]))
         text_color.setAlpha(50)
         self._cursor_text = QGraphicsTextItem()
         self._cursor_text.setFlag(
@@ -116,30 +112,25 @@ class NodeViewer(QGraphicsView):
     # ----------------------------------------------------------------------------------
     @property
     def nodes(self):
-        return self._nodes
+        """Return list of nodes in the node graph.
 
-    @property
-    def ports(self):
-        return self._ports
+        Returns:
+        --------
+        nodes: list
+            List of nodes in the node graph.
 
-    @property
-    def pipes(self):
-        return self._pipes
+        Notes:
+        ------
+            The nodes are stored in an OrderedDict in self._nodes with the node id as the key.
+        """
+        return list(self._nodes.values())
 
     # ----------------------------------------------------------------------------------
     # Logic methods
     # ----------------------------------------------------------------------------------
-    def add_node(
-        self,
-        node_type,
-        name=None,
-        selected=True,
-        color=None,
-        text_color=None,
-        pos=None,
-    ):
+    def add_node(self, node):
         """
-        Create a new node in the node graph.
+        Add a node to the node graph.
 
         See Also
         --------
@@ -147,39 +138,15 @@ class NodeViewer(QGraphicsView):
 
         Parameters
         ----------
-        node_type : class
-            Node instance class.
-        name : str, optional
-            Set name of the node.
-        selected : bool, optional
-            Set created node to be selected.
-        color : tuple or str, optional
-            Node color ``(255, 255, 255)`` or ``"#FFFFFF"``.
-        text_color : tuple or str, optional
-            Text color ``(255, 255, 255)`` or ``"#FFFFFF"``.
-        pos : list[int, int], optional
-            Initial x, y position for the node (default: ``(0, 0)``).
+        node : BaseNode
+            The node to add to the node graph.
 
-        Returns
-        -------
-        BaseNode
-            The created instance of the node.
         """
-        node = node_type(self.ct)
-        if name:
-            node.name = name
-        if color:
-            color = format_color(color)
-            node.color = color
-        if text_color:
-            node.text_color = text_color
-
         self.scene().addItem(node)
-        self.nodes[node.id] = node
+        self._nodes[node.id] = node
 
-        if pos:
-            node.xy_pos = pos
-        node.setSelected(selected)
+        # draw node (necessary to redraw after it is added to the scene)
+        node.draw_node()
 
         return node
 
@@ -201,6 +168,25 @@ class NodeViewer(QGraphicsView):
             del self.nodes[node.id]
 
         node.delete()
+
+    def create_node(self, node_class):
+        """
+        Create a node from the given class.
+
+        Parameters
+        ----------
+        node_class
+            The node class to create.
+
+        Returns
+        -------
+        node
+            The created node.
+        """
+        node = node_class(self.ct)
+        self.add_node(node)
+
+        return node
 
     def on_connection_changed(self, disconnected, connected):
         for start_port, end_port in disconnected:
@@ -231,6 +217,15 @@ class NodeViewer(QGraphicsView):
             end_port = self.nodes[conn_data["end_node"]].inputs[conn_data["end_port"]]
             self.establish_connection(start_port, end_port)
 
+    def get_pipe_layout(self):
+        """
+        Returns the pipe layout mode.
+
+        Returns:
+            int: pipe layout mode.
+        """
+        return self._pipe_layout
+
     # ----------------------------------------------------------------------------------
     # Qt methods
     # ----------------------------------------------------------------------------------
@@ -255,10 +250,10 @@ class NodeViewer(QGraphicsView):
 
         scale = (0.9 + sensitivity) if value < 0.0 else (1.1 - sensitivity)
         zoom = self.get_zoom()
-        if node_defaults["viewer"]["zoom_min"] >= zoom:
+        if defaults["viewer"]["zoom_min"] >= zoom:
             if scale == 0.9:
                 return
-        if node_defaults["viewer"]["zoom_max"] <= zoom:
+        if defaults["viewer"]["zoom_max"] <= zoom:
             if scale == 1.1:
                 return
         self.scale(scale, scale, pos)
@@ -530,12 +525,11 @@ class NodeViewer(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         if self.ALT_state and self.SHIFT_state:
-            if self.pipe_slicing:
-                if self.LMB_state and self._SLICER_PIPE.isVisible():
-                    p1 = self._SLICER_PIPE.path().pointAtPercent(0)
-                    p2 = self.mapToScene(self._previous_pos)
-                    self._SLICER_PIPE.draw_path(p1, p2)
-                    self._SLICER_PIPE.show()
+            if self.LMB_state and self._SLICER_PIPE.isVisible():
+                p1 = self._SLICER_PIPE.path().pointAtPercent(0)
+                p2 = self.mapToScene(self._previous_pos)
+                self._SLICER_PIPE.draw_path(p1, p2)
+                self._SLICER_PIPE.show()
             self._previous_pos = event.pos()
             super(NodeViewer, self).mouseMoveEvent(event)
             return
@@ -589,25 +583,24 @@ class NodeViewer(QGraphicsView):
                 node = nodes[0]
                 [p.setSelected(False) for p in pipes]
 
-                if self.pipe_collision:
-                    colliding_pipes = [
-                        i
-                        for i in node.collidingItems()
-                        if isinstance(i, Pipe) and i.isVisible()
-                    ]
-                    for pipe in colliding_pipes:
-                        if not pipe.input_port:
-                            continue
-                        port_node_check = all(
-                            [
-                                pipe.input_port.node is not node,
-                                pipe.output_port.node is not node,
-                            ]
-                        )
-                        if port_node_check:
-                            pipe.setSelected(True)
-                            self.COLLIDING_state = True
-                            break
+                colliding_pipes = [
+                    i
+                    for i in node.collidingItems()
+                    if isinstance(i, Pipe) and i.isVisible()
+                ]
+                for pipe in colliding_pipes:
+                    if not pipe.input_port:
+                        continue
+                    port_node_check = all(
+                        [
+                            pipe.input_port.node is not node,
+                            pipe.output_port.node is not node,
+                        ]
+                    )
+                    if port_node_check:
+                        pipe.setSelected(True)
+                        self.COLLIDING_state = True
+                        break
 
         self._previous_pos = event.pos()
         super(NodeViewer, self).mouseMoveEvent(event)
@@ -687,8 +680,7 @@ class NodeViewer(QGraphicsView):
             elif self.CTRL_state:
                 overlay_text = "\n    CTRL:\n    Deselect Nodes"
         elif self.ALT_state and self.SHIFT_state:
-            if self.pipe_slicing:
-                overlay_text = "\n    ALT + SHIFT:\n    Pipe Slicer Enabled"
+            overlay_text = "\n    ALT + SHIFT:\n    Pipe Slicer Enabled"
         if overlay_text:
             self._cursor_text.setPlainText(overlay_text)
             self._cursor_text.setPos(self.mapToScene(self._previous_pos))
@@ -744,20 +736,17 @@ class NodeViewer(QGraphicsView):
             pos.setY(pos.y() + y)
             if item == self._start_port:
                 break
-            pointer_color = node_defaults["pipe"]["highlight_color"]
-            accept = self._validate_accept_connection(self._start_port, item)
+            pointer_color = defaults["pipe"]["highlight_color"]
+            # ToDo: Accept implementation
+            accept = True
             if not accept:
-                pointer_color = [150, 60, 255]
-                break
-            reject = self._validate_reject_connection(self._start_port, item)
-            if reject:
                 pointer_color = [150, 60, 255]
                 break
 
             if item.node == self._start_port.node:
-                pointer_color = node_defaults["pipe"]["disabled_color"]
+                pointer_color = defaults["pipe"]["disabled_color"]
             elif item.port_type == self._start_port.port_type:
-                pointer_color = node_defaults["pipe"]["disabled_color"]
+                pointer_color = defaults["pipe"]["disabled_color"]
             break
 
         self._LIVE_PIPE.draw_path(self._start_port, cursor_pos=pos, color=pointer_color)
@@ -801,9 +790,6 @@ class NodeViewer(QGraphicsView):
                 break
 
         if port:
-            if port.locked:
-                return
-
             if not port.multi_connection and port.connected_ports:
                 self._detached_port = port.connected_ports[0]
             self.start_live_connection(port)
@@ -907,33 +893,20 @@ class NodeViewer(QGraphicsView):
             if self._start_port is end_port:
                 return
 
-        # if connection to itself
-        same_node_connection = end_port.node == self._start_port.node
-        if not self.acyclic:
-            # allow a node cycle connection.
-            same_node_connection = False
-
         # constrain check
-        accept_connection = self._validate_accept_connection(self._start_port, end_port)
-        reject_connection = self._validate_reject_connection(self._start_port, end_port)
+        compatible = self._start_port.compatible(end_port)
 
         # restore connection check.
         restore_connection = any(
             [
-                # if the end port is locked.
-                end_port.locked,
                 # if same port type.
                 end_port.port_type == self._start_port.port_type,
-                # if connection to itself.
-                same_node_connection,
                 # if end port is the start port.
                 end_port == self._start_port,
                 # if detached port is the end port.
                 self._detached_port == end_port,
                 # if a port has a accept port type constrain.
-                not accept_connection,
-                # if a port has a reject port type constrain.
-                reject_connection,
+                not compatible,
             ]
         )
         if restore_connection:
@@ -949,17 +922,6 @@ class NodeViewer(QGraphicsView):
             self._start_port.multi_connection
             and self._start_port in end_port.connected_ports
         ):
-            self._detached_port = None
-            self.end_live_connection()
-            return
-
-        # register as disconnected if not acyclic.
-        if self.acyclic and not self.acyclic_check(self._start_port, end_port):
-            if self._detached_port:
-                disconnected.append((self._start_port, self._detached_port))
-
-            self.ConnectionChanged.emit(disconnected, connected)
-
             self._detached_port = None
             self.end_live_connection()
             return
@@ -1012,7 +974,6 @@ class NodeViewer(QGraphicsView):
         (adds a new pipe item to draw between 2 ports)
         """
         pipe = Pipe(start_port, end_port)
-        self.pipes[pipe.id] = pipe
         self.scene().addItem(pipe)
         if start_port.node.selected or end_port.node.selected:
             pipe.highlight()
@@ -1139,6 +1100,13 @@ class NodeViewer(QGraphicsView):
         self._scene_range.translate(rect.center() - self._scene_range.center())
         self.setSceneRect(self._scene_range)
 
+    def clear_selection(self):
+        """
+        Clear the selected items in the scene.
+        """
+        for node in self.nodes:
+            node.setSelected(False)
+
     def reset_zoom(self, cent=None):
         """
         Reset the viewer zoom level.
@@ -1175,16 +1143,14 @@ class NodeViewer(QGraphicsView):
         zoom = self.get_zoom()
         if zoom < 0.0:
             if not (
-                node_defaults["viewer"]["zoom_min"]
-                <= zoom
-                <= node_defaults["viewer"]["zoom_max"]
+                defaults["viewer"]["zoom_min"] <= zoom <= defaults["viewer"]["zoom_max"]
             ):
                 return
         else:
             if not (
-                node_defaults["viewer"]["zoom_min"]
+                defaults["viewer"]["zoom_min"]
                 <= value
-                <= node_defaults["viewer"]["zoom_max"]
+                <= defaults["viewer"]["zoom_max"]
             ):
                 return
         value = value - zoom
@@ -1205,7 +1171,7 @@ class NodeViewer(QGraphicsView):
         nodes = self.selected_nodes() or self.all_nodes()
         if not nodes:
             return
-        self._viewer.zoom_to_nodes([n.view for n in nodes])
+        self.zoom_to_nodes([n.view for n in nodes])
 
     def force_update(self):
         """
@@ -1367,7 +1333,7 @@ class NodeViewer(QGraphicsView):
             return
 
         node_views = [n.view for n in nodes]
-        nodes_center_0 = self.viewer().nodes_rect_center(node_views)
+        nodes_center_0 = self.nodes_rect_center(node_views)
 
         nodes_rank = NodeViewer._compute_node_rank(start_nodes, down_stream)
 
@@ -1393,7 +1359,7 @@ class NodeViewer(QGraphicsView):
 
             current_x += max_width * 0.5 + 100
 
-        nodes_center_1 = self.viewer().nodes_rect_center(node_views)
+        nodes_center_1 = self.nodes_rect_center(node_views)
         dx = nodes_center_0[0] - nodes_center_1[0]
         dy = nodes_center_0[1] - nodes_center_1[1]
         [n.set_pos(n.x_pos() + dx, n.y_pos() + dy) for n in nodes]

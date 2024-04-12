@@ -36,6 +36,7 @@ defaults = {
         "grid_color": (45, 45, 45),
         "zoom_min": -0.95,
         "zoom_max": 2.0,
+        "pipe_layout": "curved",
     },
     "slicer": {"width": 1.5, "color": (255, 50, 75)},
 }

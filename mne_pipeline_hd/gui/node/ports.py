@@ -2,16 +2,25 @@
 import logging
 from collections import OrderedDict
 
-from PyQt5.QtCore import QRectF
-from PyQt5.QtGui import QColor, QPen
-from PyQt5.QtWidgets import QGraphicsItem
+from gui.gui_utils import format_color
+from qtpy.QtCore import QRectF, Qt
+from qtpy.QtGui import QColor, QPen
+from qtpy.QtWidgets import QGraphicsItem, QGraphicsTextItem
 
-from mne_pipeline_hd.gui.node import node_defaults
+from mne_pipeline_hd.gui.node.node_defaults import defaults
+
+
+class PortText(QGraphicsTextItem):
+    def __init__(self, text, parent=None):
+        super().__init__(text, parent)
+        self.font().setPointSize(8)
+        self.setFont(self.font())
+        self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
 
 class Port(QGraphicsItem):
-    def __init__(self, node):
-        super().__init__()
+    def __init__(self, node, name=None, port_type=None, multi_connection=False):
+        super().__init__(node)
 
         # init Qt graphics item
         self.setAcceptHoverEvents(True)
@@ -20,24 +29,28 @@ class Port(QGraphicsItem):
         self.setFlag(self.GraphicsItemFlag.ItemSendsScenePositionChanges, True)
         self.setZValue(2)
 
+        # init text item
+        self.text = PortText(name, self)
+
         # hidden attributes
-        self._id = id(self)
-        self._name = "port"
-        self._port_type = None
-        self._multi_connection = False
         self._node = node
+        self._id = id(self)
+        self._name = name
+        self._port_type = port_type
+        self._multi_connection = multi_connection
         self._connected_ports = OrderedDict()
         self._connected_pipes = OrderedDict()
         self._accepted_ports = []
 
-        self._width = node_defaults["ports"]["size"]
-        self._height = node_defaults["ports"]["size"]
-        self._color = node_defaults["ports"]["color"]
-        self._border_color = node_defaults["ports"]["border_color"]
-        self._active_color = node_defaults["ports"]["active_color"]
-        self._active_border_color = node_defaults["ports"]["active_border_color"]
-        self._hover_color = node_defaults["ports"]["hover_color"]
-        self._hover_border_color = node_defaults["ports"]["hover_border_color"]
+        self._width = defaults["ports"]["size"]
+        self._height = defaults["ports"]["size"]
+        self._color = defaults["ports"]["color"]
+        self._border_color = defaults["ports"]["border_color"]
+        self._active_color = defaults["ports"]["active_color"]
+        self._active_border_color = defaults["ports"]["active_border_color"]
+        self._hover_color = defaults["ports"]["hover_color"]
+        self._hover_border_color = defaults["ports"]["hover_border_color"]
+        self._text_color = defaults["nodes"]["text_color"]
         self._hovered = False
 
     # --------------------------------------------------------------------------------------
@@ -54,6 +67,7 @@ class Port(QGraphicsItem):
     @name.setter
     def name(self, value):
         self._name = value
+        self.text.setPlainText(value)
 
     @property
     def port_type(self):
@@ -99,7 +113,7 @@ class Port(QGraphicsItem):
 
     @width.setter
     def width(self, width):
-        width = max(width, node_defaults["ports"]["size"])
+        width = max(width, defaults["ports"]["size"])
         self._width = width
 
     @property
@@ -108,7 +122,7 @@ class Port(QGraphicsItem):
 
     @height.setter
     def height(self, height):
-        height = max(height, node_defaults["ports"]["size"])
+        height = max(height, defaults["ports"]["size"])
         self._height = height
 
     @property
@@ -116,16 +130,18 @@ class Port(QGraphicsItem):
         return self._color
 
     @color.setter
-    def color(self, value):
-        self._color = value
+    def color(self, color):
+        self._color = format_color(color)
+        self.update()
 
     @property
     def border_color(self):
         return self._border_color
 
     @border_color.setter
-    def border_color(self, value):
-        self._border_color = value
+    def border_color(self, color):
+        self._border_color = format_color(color)
+        self.update()
 
     @property
     def active_color(self):
@@ -133,7 +149,7 @@ class Port(QGraphicsItem):
 
     @active_color.setter
     def active_color(self, color):
-        self._active_color = color
+        self._active_color = format_color(color)
         self.update()
 
     @property
@@ -142,7 +158,7 @@ class Port(QGraphicsItem):
 
     @active_border_color.setter
     def active_border_color(self, color):
-        self._active_border_color = color
+        self._active_border_color = format_color(color)
         self.update()
 
     @property
@@ -151,7 +167,7 @@ class Port(QGraphicsItem):
 
     @hover_color.setter
     def hover_color(self, color):
-        self._hover_color = color
+        self._hover_color = format_color(color)
         self.update()
 
     @property
@@ -160,8 +176,17 @@ class Port(QGraphicsItem):
 
     @hover_border_color.setter
     def hover_border_color(self, color):
-        self._hover_border_color = color
+        self._hover_border_color = format_color(color)
         self.update()
+
+    @property
+    def text_color(self):
+        return self._text_color
+
+    @text_color.setter
+    def text_color(self, color):
+        self._text_color = format_color(color)
+        self.text.setDefaultTextColor(QColor(*self._text_color))
 
     @property
     def hovered(self):
@@ -179,9 +204,18 @@ class Port(QGraphicsItem):
         return QRectF(
             0.0,
             0.0,
-            self._width + node_defaults["ports"]["click_falloff"],
+            self._width + defaults["ports"]["click_falloff"],
             self._height,
         )
+
+    def setPos(self, x, y):
+        super().setPos(x, y)
+        falloff = defaults["ports"]["click_falloff"] - 2
+        if self.port_type == "in":
+            offset = self.boundingRect().width() - falloff
+        else:
+            offset = -self.text.boundingRect().width() + falloff
+        self.text.setPos(offset, -1.5)
 
     def paint(self, painter, option, widget=None):
         """
@@ -197,11 +231,15 @@ class Port(QGraphicsItem):
 
         #  display falloff collision for debugging
         # ----------------------------------------------------------------------
-        # pen = QtGui.QPen(QtGui.QColor(255, 255, 255, 80), 0.8)
-        # pen.setStyle(QtCore.Qt.DotLine)
-        # painter.setPen(pen)
-        # painter.drawRect(self.boundingRect())
+        pen = QPen(QColor(255, 255, 255, 80), 0.8)
+        pen.setStyle(Qt.DotLine)
+        painter.setPen(pen)
+        painter.drawRect(self.boundingRect())
         # ----------------------------------------------------------------------
+        pen.setStyle(Qt.SolidLine)
+        pen.setColor(QColor("red"))
+        pen.setBrush(QColor("red"))
+        painter.drawEllipse(0, 0, 5, 5)
 
         rect_w = self._width / 1.8
         rect_h = self._height / 1.8
@@ -282,6 +320,36 @@ class Port(QGraphicsItem):
     # --------------------------------------------------------------------------------------
     # Logic methods
     # --------------------------------------------------------------------------------------
+    def add_accepted_ports(self, ports):
+        if isinstance(ports, list):
+            self.accepted_ports.extend(ports)
+        elif isinstance(ports, str):
+            self._accepted_ports.append(ports)
+        else:
+            raise ValueError("Invalid port type")
+
+    def compatible(self, port):
+        """Check if the specified port is compatible with this port."""
+        # check if the ports are the same.
+        if self is port:
+            logging.debug("Can't connect the same port.")
+        # check if the ports are from the same node.
+        elif self.node is port.node:
+            logging.debug("Can't connect ports from the same node.")
+        # check if the ports are from the same type (can't connect input to input).
+        elif self.port_type == port.port_type:
+            logging.debug("Can't connect the same port type.")
+        # check if the ports are already connected.
+        elif self in port.connected_ports:
+            logging.debug("Ports are already connected.")
+        # check if the ports are compatible.
+        elif port.name not in self.accepted_ports:
+            logging.debug("Ports are not compatible.")
+        else:
+            logging.debug("Ports are compatible.")
+            return True
+        return False
+
     def connect_to(self, target_port=None):
         """
         Create connection to the specified port and emits the
@@ -295,39 +363,12 @@ class Port(QGraphicsItem):
         if target_port is None:
             for pipe in self.connected_pipes:
                 pipe.delete()
+            logging.debug("No target port specified.")
             return
 
-        if self in target_port.connected_ports():
-            return
-
-        # ToDo: Simplify this, when accepted types/names established
         # validate accept connection.
-        node_type = self.node().node_type
-        accepted_types = target_port.accepted_port_types().get(node_type)
-        if accepted_types:
-            accepted_pnames = accepted_types.get(self.port_type) or set([])
-            if self.name not in accepted_pnames:
-                return
-        node_type = target_port.node.node_type
-        accepted_types = self.accepted_port_types().get(node_type)
-        if accepted_types:
-            accepted_pnames = accepted_types.get(target_port.port_type) or set([])
-            if target_port.name not in accepted_pnames:
-                return
-
-        # validate reject connection.
-        node_type = self.node().node_type
-        rejected_types = target_port.rejected_port_types().get(node_type)
-        if rejected_types:
-            rejected_pnames = rejected_types.get(self.port_type) or set([])
-            if self.name in rejected_pnames:
-                return
-        node_type = target_port.node.node_type
-        rejected_types = self.rejected_port_types().get(node_type)
-        if rejected_types:
-            rejected_pnames = rejected_types.get(target_port.port_type) or set([])
-            if target_port.name in rejected_pnames:
-                return
+        if not self.compatible(target_port):
+            return
 
         # Remove existing connections from this port and the target port,
         # if not multi-connection.
@@ -406,33 +447,3 @@ class Port(QGraphicsItem):
         for node_id, ports in self.connected_ports.items():
             for port in ports:
                 self.disconnect_from(port)
-
-    def add_accepted_ports(self, ports):
-        if isinstance(ports, list):
-            self.accepted_ports.extend(ports)
-        elif isinstance(ports, str):
-            self._accepted_ports.append(ports)
-        else:
-            raise ValueError("Invalid port type")
-
-    def compatible(self, port):
-        """Check if the specified port is compatible with this port."""
-        # check if the ports are the same.
-        if self is port:
-            logging.debug("Can't connect the same port.")
-        # check if the ports are from the same node.
-        elif self.node is port.node:
-            logging.debug("Can't connect ports from the same node.")
-        # check if the ports are from the same type (can't connect input to input).
-        elif self.port_type == port.port_type:
-            logging.debug("Can't connect the same port type.")
-        # check if the ports are already connected.
-        elif self in port.connected_ports:
-            logging.debug("Ports are already connected.")
-        # check if the ports are compatible.
-        elif not self.compatible(port):
-            logging.debug("Ports are not compatible.")
-        elif port.name in self.accepted_ports:
-            logging.debug("Port is compatible.")
-            return True
-        return False
