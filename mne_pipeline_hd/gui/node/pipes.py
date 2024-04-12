@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import math
 
-from PyQt5.QtCore import QPointF, Qt, QLineF, QRectF
-from PyQt5.QtGui import QPolygonF, QColor, QPainterPath, QBrush, QTransform, QPen
-from PyQt5.QtWidgets import (
+from qtpy.QtCore import QPointF, Qt, QLineF, QRectF
+from qtpy.QtGui import QPolygonF, QColor, QPainterPath, QBrush, QTransform, QPen
+from qtpy.QtWidgets import (
     QGraphicsPathItem,
     QGraphicsItem,
     QGraphicsPolygonItem,
@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 )
 
 from gui.node.ports import Port
-from mne_pipeline_hd.gui.node import node_defaults
+from mne_pipeline_hd.gui.node.node_defaults import defaults
 
 
 class Pipe(QGraphicsPathItem):
@@ -27,8 +27,8 @@ class Pipe(QGraphicsPathItem):
         # Hidden attributes
         self._input_port = input_port
         self._output_port = output_port
-        self._color = node_defaults["pipes"]["color"]
-        self._style = node_defaults["pipes"]["style"]
+        self._color = defaults["pipes"]["color"]
+        self._style = defaults["pipes"]["style"]
         self._active = False
         self._highlight = False
 
@@ -126,7 +126,7 @@ class Pipe(QGraphicsPathItem):
         pen = self.pen()
         if self.disabled():
             if not self._active:
-                pen.setColor(QColor(node_defaults["pipes"]["disabled_color"]))
+                pen.setColor(QColor(defaults["pipes"]["disabled_color"]))
                 pen.setStyle(Qt.PenStyle.DotLine)
                 pen.setWidth(3)
 
@@ -154,7 +154,7 @@ class Pipe(QGraphicsPathItem):
 
         if self.disabled():
             if not (self._active or self._highlight):
-                color = QColor(node_defaults["pipes"]["disabled_color"])
+                color = QColor(defaults["pipes"]["disabled_color"])
                 pen = self._dir_pointer.pen()
                 pen.setColor(color)
                 self._dir_pointer.setPen(pen)
@@ -346,9 +346,9 @@ class Pipe(QGraphicsPathItem):
     def activate(self):
         self._active = True
         self.set_pipe_styling(
-            color=node_defaults["pipes"]["active_color"],
+            color=defaults["pipes"]["active_color"],
             width=3,
-            style=node_defaults["pipes"]["style"],
+            style=defaults["pipes"]["style"],
         )
 
     def active(self):
@@ -357,9 +357,9 @@ class Pipe(QGraphicsPathItem):
     def highlight(self):
         self._highlight = True
         self.set_pipe_styling(
-            color=node_defaults["pipes"]["highlight_color"],
+            color=defaults["pipes"]["highlight_color"],
             width=2,
-            style=node_defaults["pipes"]["style"],
+            style=defaults["pipes"]["style"],
         )
 
     def highlighted(self):
@@ -405,7 +405,7 @@ class LivePipeItem(Pipe):
         super(LivePipeItem, self).__init__()
         self.setZValue(4)
 
-        self.color = node_defaults["pipes"]["active_color"]
+        self.color = defaults["pipes"]["active_color"]
         self.style = Qt.PenStyle.DashLine
         self.set_pipe_styling(color=self.color, width=3, style=self.style)
 
@@ -476,7 +476,7 @@ class LivePipeItem(Pipe):
 
         self._idx_pointer.setPolygon(transform.map(self._poly))
 
-        pen_color = QColor(node_defaults["pipes"]["highlight_color"])
+        pen_color = QColor(*defaults["pipes"]["highlight_color"])
         if isinstance(color, (list, tuple)):
             pen_color = QColor(*color)
 
@@ -529,7 +529,7 @@ class SlicerPipeItem(QGraphicsPathItem):
                 used to describe the parameters needed to draw.
             widget (QtWidgets.QWidget): not used.
         """
-        color = QColor(node_defaults["slicer"]["color"])
+        color = QColor(defaults["slicer"]["color"])
         p1 = self.path().pointAtPercent(0)
         p2 = self.path().pointAtPercent(1)
         size = 6.0
@@ -546,19 +546,19 @@ class SlicerPipeItem(QGraphicsPathItem):
         text_x = painter.fontMetrics().width(text) / 2
         text_y = painter.fontMetrics().height() / 1.5
         text_pos = QPointF(p1.x() - text_x, p1.y() - text_y)
-        text_color = QColor(node_defaults["slicer"]["color"])
+        text_color = QColor(defaults["slicer"]["color"])
         text_color.setAlpha(80)
         painter.setPen(
-            QPen(text_color, node_defaults["slicer"]["width"], Qt.PenStyle.SolidLine)
+            QPen(text_color, defaults["slicer"]["width"], Qt.PenStyle.SolidLine)
         )
         painter.drawText(text_pos, text)
 
         painter.setPen(
-            QPen(color, node_defaults["slicer"]["color"], Qt.PenStyle.DashDotLine)
+            QPen(color, defaults["slicer"]["color"], Qt.PenStyle.DashDotLine)
         )
         painter.drawPath(self.path())
 
-        pen = QPen(color, node_defaults["slicer"]["color"], Qt.PenStyle.SolidLine)
+        pen = QPen(color, defaults["slicer"]["color"], Qt.PenStyle.SolidLine)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
         painter.setPen(pen)
