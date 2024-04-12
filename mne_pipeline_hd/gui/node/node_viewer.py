@@ -736,7 +736,7 @@ class NodeViewer(QGraphicsView):
             pos.setY(pos.y() + y)
             if item == self._start_port:
                 break
-            pointer_color = defaults["pipe"]["highlight_color"]
+            pointer_color = defaults["pipes"]["highlight_color"]
             # ToDo: Accept implementation
             accept = True
             if not accept:
@@ -744,9 +744,9 @@ class NodeViewer(QGraphicsView):
                 break
 
             if item.node == self._start_port.node:
-                pointer_color = defaults["pipe"]["disabled_color"]
+                pointer_color = defaults["pipes"]["disabled_color"]
             elif item.port_type == self._start_port.port_type:
-                pointer_color = defaults["pipe"]["disabled_color"]
+                pointer_color = defaults["pipes"]["disabled_color"]
             break
 
         self._LIVE_PIPE.draw_path(self._start_port, cursor_pos=pos, color=pointer_color)

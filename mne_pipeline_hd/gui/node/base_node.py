@@ -174,14 +174,14 @@ class BaseNode(QGraphicsItem):
         Args:
             pos (list[float]): x, y scene position.
         """
-        pos = pos or [0.0, 0.0]
-        self.setPos(pos[0], pos[1])
+        pos = pos or (0.0, 0.0)
+        self.setPos(*pos)
 
     # --------------------------------------------------------------------------------------
     # Qt methods
     # --------------------------------------------------------------------------------------
     def boundingRect(self):
-        return QRectF(self.x(), self.y(), self.width, self.height)
+        return QRectF(0, 0, self.width, self.height)
 
     def paint(self, painter, option, widget=None):
         painter.save()
@@ -288,8 +288,6 @@ class BaseNode(QGraphicsItem):
                 self.setZValue(1)
             else:
                 self.setZValue(2)
-        elif change == self.GraphicsItemChange.ItemPositionChange:
-            self.xy_pos = value
 
         return super().itemChange(change, value)
 
