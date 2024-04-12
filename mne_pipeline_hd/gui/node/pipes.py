@@ -124,13 +124,12 @@ class Pipe(QGraphicsPathItem):
         painter.save()
 
         pen = self.pen()
-        if self.disabled():
-            if not self._active:
-                pen.setColor(QColor(defaults["pipes"]["disabled_color"]))
-                pen.setStyle(Qt.PenStyle.DotLine)
-                pen.setWidth(3)
+        if not self._active:
+            pen.setColor(QColor(*defaults["pipes"]["disabled_color"]))
+            pen.setStyle(Qt.PenStyle.DotLine)
+            pen.setWidth(3)
 
-        painter.setPen(pen)
+        painter.setPen(self.pen())
         painter.setBrush(self.brush())
         painter.setRenderHint(painter.RenderHint.Antialiasing, True)
         painter.drawPath(self.path())
