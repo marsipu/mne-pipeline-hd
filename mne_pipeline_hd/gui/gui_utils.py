@@ -757,6 +757,18 @@ def get_user_input_string(prompt, title="Input required!", force=False):
     return user_input
 
 
+def invert_rgb_color(color_tuple):
+    return tuple(map(lambda i, j: i - j, (255, 255, 255), color_tuple))
+
+
+def format_color(clr):
+    """This converts a hex-color-string to a tuple of RGB-values."""
+    if isinstance(clr, str):
+        clr = clr.strip("#")
+        return tuple(int(clr[i : i + 2], 16) for i in (0, 2, 4))
+    return clr
+
+
 def get_palette(theme):
     color_roles = {
         "foreground": ["WindowText", "ToolTipText", "Text"],

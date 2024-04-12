@@ -28,6 +28,7 @@ class Port(QGraphicsItem):
         self._node = node
         self._connected_ports = OrderedDict()
         self._connected_pipes = OrderedDict()
+        self._accepted_ports = []
 
         self._width = node_defaults["ports"]["size"]
         self._height = node_defaults["ports"]["size"]
@@ -87,6 +88,10 @@ class Port(QGraphicsItem):
     @property
     def connected_pipes(self):
         return self._connected_pipes
+
+    @property
+    def accepted_ports(self):
+        return self._accepted_ports
 
     @property
     def width(self):
@@ -402,10 +407,32 @@ class Port(QGraphicsItem):
             for port in ports:
                 self.disconnect_from(port)
 
-    def add_accepted_ports(self):
-        # ToDo
-        pass
+    def add_accepted_ports(self, ports):
+        if isinstance(ports, list):
+            self.accepted_ports.extend(ports)
+        elif isinstance(ports, str):
+            self._accepted_ports.append(ports)
+        else:
+            raise ValueError("Invalid port type")
 
-    def add_rejected_ports(self):
-        # ToDo
-        pass
+    def compatible(self, port):
+        """Check if the specified port is compatible with this port."""
+        # check if the ports are the same.
+        if self is port:
+            logging.debug("Can't connect the same port.")
+        # check if the ports are from the same node.
+        elif self.node is port.node:
+            logging.debug("Can't connect ports from the same node.")
+        # check if the ports are from the same type (can't connect input to input).
+        elif self.port_type == port.port_type:
+            logging.debug("Can't connect the same port type.")
+        # check if the ports are already connected.
+        elif self in port.connected_ports:
+            logging.debug("Ports are already connected.")
+        # check if the ports are compatible.
+        elif not self.compatible(port):
+            logging.debug("Ports are not compatible.")
+        elif port.name in self.accepted_ports:
+            logging.debug("Port is compatible.")
+            return True
+        return False

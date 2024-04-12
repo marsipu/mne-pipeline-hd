@@ -29,4 +29,13 @@ defaults = {
         "highlight_color": (232, 184, 13, 255),
         "style": Qt.PenStyle.SolidLine,
     },
+    "viewer": {
+        "background_color": (35, 35, 35),
+        "grid_mode": "lines",
+        "grid_size": 50,
+        "grid_color": (45, 45, 45),
+        "zoom_min": -0.95,
+        "zoom_max": 2.0,
+    },
+    "slicer": {"width": 1.5, "color": (255, 50, 75)},
 }

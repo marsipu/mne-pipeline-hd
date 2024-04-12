@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from PyQt5.QtCore import QRectF, Qt
 from PyQt5.QtGui import QColor, QPen, QPainterPath
-from PyQt5.QtWidgets import QGraphicsItem, QGraphicsTextItem
+from PyQt5.QtWidgets import QGraphicsItem, QGraphicsTextItem, QGraphicsProxyWidget
 
 from gui.node.ports import Port
 from mne_pipeline_hd.gui.node import node_defaults
@@ -19,7 +19,8 @@ class NodeTextItem(QGraphicsTextItem):
 
 
 class BaseNode(QGraphicsItem):
-    def __init__(self):
+    def __init__(self, ct):
+        self.ct = ct
         # Initialize QGraphicsItem
         super().__init__()
         self.setFlags(
@@ -44,7 +45,7 @@ class BaseNode(QGraphicsItem):
         self._title_item = NodeTextItem(self._name, self)
         self._inputs = OrderedDict()
         self._outputs = OrderedDict()
-        self._widgets = OrderedDict()
+        self._widgets = list()
 
     @property
     def id(self):
@@ -138,9 +139,38 @@ class BaseNode(QGraphicsItem):
     def outputs(self):
         return self._outputs
 
+    @property
     def widgets(self):
         return self._widgets
 
+    @property
+    def xy_pos(self):
+        """
+        return the item scene postion.
+        ("node.pos" conflicted with "QGraphicsItem.pos()"
+        so it was refactored to "xy_pos".)
+
+        Returns:
+            list[float]: x, y scene position.
+        """
+        return [float(self.scenePos().x()), float(self.scenePos().y())]
+
+    @xy_pos.setter
+    def xy_pos(self, pos=None):
+        """
+        set the item scene postion.
+        ("node.pos" conflicted with "QGraphicsItem.pos()"
+        so it was refactored to "xy_pos".)
+
+        Args:
+            pos (list[float]): x, y scene position.
+        """
+        pos = pos or [0.0, 0.0]
+        self.setPos(pos[0], pos[1])
+
+    # --------------------------------------------------------------------------------------
+    # Qt methods
+    # --------------------------------------------------------------------------------------
     def boundingRect(self):
         return QRectF(self.x(), self.y(), self.width, self.height)
 
@@ -233,6 +263,10 @@ class BaseNode(QGraphicsItem):
             return
         super().mouseReleaseEvent(event)
 
+    def mouseDoubleClickEvent(self, event):
+        # ToDo: implement (e.g. open function code etc.)
+        pass
+
     def itemChange(self, change, value):
         """
         Re-implemented to update pipes on selection changed.
@@ -248,6 +282,8 @@ class BaseNode(QGraphicsItem):
             self.setZValue(1)
             if not self.selected:
                 self.setZValue(1 + 1)
+        elif change == self.GraphicsItemChange.ItemPositionChange:
+            self.xy_pos = value
 
         return super().itemChange(change, value)
 
@@ -337,11 +373,11 @@ class BaseNode(QGraphicsItem):
         # width, height from node embedded widgets.
         widget_width = 0.0
         widget_height = 0.0
-        for widget in self._widgets.values():
-            if not widget.isVisible():
+        for proxy_widget in self.widgets:
+            if not proxy_widget.isVisible():
                 continue
-            w_width = widget.boundingRect().width()
-            w_height = widget.boundingRect().height()
+            w_width = proxy_widget.boundingRect().width()
+            w_height = proxy_widget.boundingRect().height()
             if w_width > widget_width:
                 widget_width = w_width
             widget_height += w_height
@@ -372,13 +408,13 @@ class BaseNode(QGraphicsItem):
         self._text_item.setPos(x, rect.y())
 
     def align_widgets(self):
-        if not self._widgets:
+        if not self.widgets:
             return
         rect = self.boundingRect()
         y = rect.y()
         inputs = [p for p in self.inputs if p.isVisible()]
         outputs = [p for p in self.outputs if p.isVisible()]
-        for widget in self._widgets.values():
+        for widget in self.widgets:
             if not widget.isVisible():
                 continue
             widget_rect = widget.boundingRect()
@@ -573,5 +609,19 @@ class BaseNode(QGraphicsItem):
         """
         self._delete_port(port, self._output_items.pop(port))
 
+    def add_widget(self, widget):
+        """Add widget to the node."""
+        proxy_widget = QGraphicsProxyWidget(self)
+        proxy_widget.setWidget(widget)
+        self.widgets.apppend(proxy_widget)
 
-viewer_dict = {"node_id": {"node_item": 1}}
+    def delete(self):
+        """
+        Remove node from the scene.
+        """
+        for port, text in self._input_items.items():
+            self.delete_input(port)
+        for port, text in self._output_items.items():
+            self.delete_output(port)
+        self.scene().removeItem(self)
+        del self
