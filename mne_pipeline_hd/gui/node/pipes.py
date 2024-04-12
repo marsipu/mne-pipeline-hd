@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import math
 
-from PyQt5.QtCore import QPointF, Qt, QLineF
-from PyQt5.QtGui import QPolygonF, QColor, QPainterPath, QBrush, QTransform
+from PyQt5.QtCore import QPointF, Qt, QLineF, QRectF
+from PyQt5.QtGui import QPolygonF, QColor, QPainterPath, QBrush, QTransform, QPen
 from PyQt5.QtWidgets import (
     QGraphicsPathItem,
     QGraphicsItem,
@@ -43,6 +43,8 @@ class Pipe(QGraphicsPathItem):
         self._dir_pointer.setFlag(self.GraphicsItemFlag.ItemIsSelectable, False)
 
         self.reset()
+        if self.input_port and self.output_port:
+            self.draw_path(self.input_port, self.output_port)
 
     # --------------------------------------------------------------------------------------
     # Properties
@@ -506,3 +508,81 @@ class LivePipePolygonItem(QGraphicsPolygonItem):
         painter.setPen(self.pen())
         painter.drawPolygon(self.polygon())
         painter.restore()
+
+
+class SlicerPipeItem(QGraphicsPathItem):
+    """
+    Base item used for drawing the pipe connection slicer.
+    """
+
+    def __init__(self):
+        super(SlicerPipeItem, self).__init__()
+        self.setZValue(5)
+
+    def paint(self, painter, option, widget):
+        """
+        Draws the slicer pipe.
+
+        Args:
+            painter (QtGui.QPainter): painter used for drawing the item.
+            option (QtGui.QStyleOptionGraphicsItem):
+                used to describe the parameters needed to draw.
+            widget (QtWidgets.QWidget): not used.
+        """
+        color = QColor(node_defaults["slicer"]["color"])
+        p1 = self.path().pointAtPercent(0)
+        p2 = self.path().pointAtPercent(1)
+        size = 6.0
+        offset = size / 2
+        arrow_size = 4.0
+
+        painter.save()
+        painter.setRenderHint(painter.RenderHint.Antialiasing, True)
+
+        font = painter.font()
+        font.setPointSize(12)
+        painter.setFont(font)
+        text = "slice"
+        text_x = painter.fontMetrics().width(text) / 2
+        text_y = painter.fontMetrics().height() / 1.5
+        text_pos = QPointF(p1.x() - text_x, p1.y() - text_y)
+        text_color = QColor(node_defaults["slicer"]["color"])
+        text_color.setAlpha(80)
+        painter.setPen(
+            QPen(text_color, node_defaults["slicer"]["width"], Qt.PenStyle.SolidLine)
+        )
+        painter.drawText(text_pos, text)
+
+        painter.setPen(
+            QPen(color, node_defaults["slicer"]["color"], Qt.PenStyle.DashDotLine)
+        )
+        painter.drawPath(self.path())
+
+        pen = QPen(color, node_defaults["slicer"]["color"], Qt.PenStyle.SolidLine)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
+        painter.setPen(pen)
+        painter.setBrush(color)
+
+        rect = QRectF(p1.x() - offset, p1.y() - offset, size, size)
+        painter.drawEllipse(rect)
+
+        arrow = QPolygonF()
+        arrow.append(QPointF(-arrow_size, arrow_size))
+        arrow.append(QPointF(0.0, -arrow_size * 0.9))
+        arrow.append(QPointF(arrow_size, arrow_size))
+
+        transform = QTransform()
+        transform.translate(p2.x(), p2.y())
+        radians = math.atan2(p2.y() - p1.y(), p2.x() - p1.x())
+        degrees = math.degrees(radians) - 90
+        transform.rotate(degrees)
+
+        painter.drawPolygon(transform.map(arrow))
+        painter.restore()
+
+    def draw_path(self, p1, p2):
+        path = QPainterPath()
+        path.moveTo(p1)
+        path.lineTo(p2)
+        self.setPath(path)
