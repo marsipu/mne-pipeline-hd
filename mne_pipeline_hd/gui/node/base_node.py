@@ -344,37 +344,28 @@ class BaseNode(QGraphicsItem):
             for pipe in port.connected_pipes.values():
                 pipe.reset()
 
+    def _get_ports_size(self, ports):
+        width = 0.0
+        height = 0.0
+        for port in ports:
+            if not port.isVisible():
+                continue
+            port_width = port.boundingRect().width() / 2
+            text_width = port.text.boundingRect().width()
+            width = max([width, port_width + text_width])
+            height += port.boundingRect().height()
+        return width, height
+
     def calc_size(self, add_w=0.0, add_h=0.0):
         # width, height from node name text.
-        text_w = self._title_item.boundingRect().width()
-        text_h = self._title_item.boundingRect().height()
+        title_width = self._title_item.boundingRect().width()
+        title_height = self._title_item.boundingRect().height()
 
         # width, height from node ports.
-        port_width = 0.0
-        p_input_text_width = 0.0
-        p_input_height = 0.0
-        for port in self.inputs:
-            if not port.isVisible():
-                continue
-            if not port_width:
-                port_width = port.boundingRect().width()
-            t_width = port.text.boundingRect().width()
-            if port.text.isVisible() and t_width > p_input_text_width:
-                p_input_text_width = t_width
-            p_input_height += port.boundingRect().height()
-        p_output_text_width = 0.0
-        p_output_height = 0.0
-        for port in self.outputs:
-            if not port.isVisible():
-                continue
-            if not port_width:
-                port_width = port.boundingRect().width()
-            t_width = port.text.boundingRect().width()
-            if port.text.isVisible() and t_width > p_output_text_width:
-                p_output_text_width = t_width
-            p_output_height += port.boundingRect().height()
+        input_width, input_height = self._get_ports_size(self.inputs)
 
-        port_text_width = p_input_text_width + p_output_text_width
+        # width, height from outputs
+        output_width, output_height = self._get_ports_size(self.outputs)
 
         # width, height from node embedded widgets.
         widget_width = 0.0
@@ -384,29 +375,25 @@ class BaseNode(QGraphicsItem):
                 continue
             w_width = proxy_widget.boundingRect().width()
             w_height = proxy_widget.boundingRect().height()
-            if w_width > widget_width:
-                widget_width = w_width
+            widget_width = max([widget_width, w_width])
             widget_height += w_height
 
-        side_padding = 0.0
-        if all([widget_width, p_input_text_width, p_output_text_width]):
-            port_text_width = max([p_input_text_width, p_output_text_width])
-            port_text_width *= 2
-        elif widget_width:
-            side_padding = 10
-
-        width = port_width + max([text_w, port_text_width]) + side_padding
-        height = max([text_h, p_input_height, p_output_height, widget_height])
+        width = input_width + output_width
+        height = max([title_height, input_height, output_height, widget_height])
+        # add additional width for node widget.
         if widget_width:
-            # add additional width for node widget.
             width += widget_width
+        # add padding if no inputs or outputs.
+        if not self.inputs or not self.outputs:
+            width += 10
+        # add bottom margin for node widget.
         if widget_height:
-            # add bottom margin for node widget.
-            height += 4.0
-        height *= 1.05
+            height += 10
 
         width += add_w
         height += add_h
+
+        width = max([width, title_width])
 
         return width, height
 
@@ -429,13 +416,10 @@ class BaseNode(QGraphicsItem):
             widget_rect = widget.boundingRect()
             if not inputs:
                 x = rect.left() + 10
-                widget.widget().setTitleAlign("left")
             elif not outputs:
                 x = rect.right() - widget_rect.width() - 10
-                widget.widget().setTitleAlign("right")
             else:
                 x = rect.center().x() - (widget_rect.width() / 2)
-                widget.widget().setTitleAlign("center")
             widget.setPos(x, y)
             y += widget_rect.height()
 
@@ -466,7 +450,7 @@ class BaseNode(QGraphicsItem):
                 port_y += port_height + spacing
 
     def draw_node(self):
-        height = self._title_item.boundingRect().height() + 4.0
+        height = self._title_item.boundingRect().height() + 4
 
         # setup initial base size.
         self._set_base_size(add_h=height)

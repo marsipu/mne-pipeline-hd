@@ -38,7 +38,8 @@ class BaseInputNode(BaseNode):
         self.add_widget(self.widget)
 
     def add_files(self):
-        dlg = QDialog(self.widget)
+        # This decides, wether the dialog is rendered outside or inside the scene
+        dlg = QDialog(self.scene().viewer())
         dlg.setWindowTitle("Import Files")
         if self.data_type == "MEEG":
             widget = AddFilesWidget(self.ct)

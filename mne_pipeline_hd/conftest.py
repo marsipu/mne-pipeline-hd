@@ -7,8 +7,9 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 from os import mkdir
 
 import pytest
-from mne_pipeline_hd.gui.node.nodes import PipeNodeGraph
 
+from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
+from mne_pipeline_hd.gui.node.nodes import FunctionNode
 from mne_pipeline_hd.gui.main_window import MainWindow
 from mne_pipeline_hd.pipeline.controller import Controller, NewController
 from mne_pipeline_hd.pipeline.pipeline_utils import _set_test_run
@@ -36,30 +37,13 @@ def main_window(controller, qtbot):
 
 
 @pytest.fixture
-def nodegraph(qtbot):
-    node_graph = PipeNodeGraph(NewController())
-    qtbot.addWidget(node_graph.widget)
+def viewer(qtbot):
+    viewer = NodeViewer(NewController())
+    viewer.resize(1000, 1000)
+    qtbot.addWidget(viewer)
 
-    input_node1 = node_graph.create_node("pipeline_nodes.MEEGInputNode")
-    func_node1 = node_graph.create_node("pipeline_nodes.FunctionNode")
-    func_node2 = node_graph.create_node("pipeline_nodes.FunctionNode")
-    input_node1.set_output(0, func_node1.input(0))
+    func_node1 = viewer.create_node(FunctionNode)
+    func_node2 = viewer.create_node(FunctionNode)
     func_node1.set_output(0, func_node2.input(0))
 
-    input_node2 = node_graph.create_node("pipeline_nodes.MRIInputNode")
-    func_node3 = node_graph.create_node("pipeline_nodes.FunctionNode")
-    func_node4 = node_graph.create_node("pipeline_nodes.FunctionNode")
-    input_node2.set_output(0, func_node3.input(0))
-    func_node3.set_output(0, func_node4.input(0))
-
-    ass_node = node_graph.create_node("pipeline_nodes.AssignmentNode")
-    ass_node.set_input(0, func_node2.output(0))
-    ass_node.set_input(1, func_node4.output(0))
-    func_node5 = node_graph.create_node("pipeline_nodes.FunctionNode")
-    ass_node.set_output(0, func_node5.input(0))
-
-    node_graph.auto_layout_nodes()
-    node_graph.clear_selection()
-    node_graph.fit_to_selection()
-
-    return node_graph
+    func_node2.setPos(400, 100)

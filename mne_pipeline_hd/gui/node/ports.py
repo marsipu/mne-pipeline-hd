@@ -5,7 +5,7 @@ from collections import OrderedDict
 from mne_pipeline_hd.gui.gui_utils import format_color
 from mne_pipeline_hd.gui.node.node_defaults import defaults
 from mne_pipeline_hd.gui.node.pipes import Pipe
-from qtpy.QtCore import QRectF, Qt
+from qtpy.QtCore import QRectF
 from qtpy.QtGui import QColor, QPen
 from qtpy.QtWidgets import QGraphicsItem, QGraphicsTextItem
 
@@ -235,18 +235,6 @@ class Port(QGraphicsItem):
             widget (QtWidgets.QWidget): not used.
         """
         painter.save()
-
-        #  display falloff collision for debugging
-        # ----------------------------------------------------------------------
-        pen = QPen(QColor(255, 255, 255, 80), 0.8)
-        pen.setStyle(Qt.DotLine)
-        painter.setPen(pen)
-        painter.drawRect(self.boundingRect())
-        # ----------------------------------------------------------------------
-        pen.setStyle(Qt.SolidLine)
-        pen.setColor(QColor("red"))
-        pen.setBrush(QColor("red"))
-        painter.drawEllipse(0, 0, 5, 5)
 
         rect_w = self._width / 1.8
         rect_h = self._height / 1.8
