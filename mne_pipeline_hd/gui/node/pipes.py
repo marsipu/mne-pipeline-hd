@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import math
 
+from mne_pipeline_hd.gui.gui_utils import format_color
+from mne_pipeline_hd.gui.node.node_defaults import defaults
 from qtpy.QtCore import QPointF, Qt, QLineF, QRectF
 from qtpy.QtGui import QPolygonF, QColor, QPainterPath, QBrush, QTransform, QPen
 from qtpy.QtWidgets import (
@@ -10,12 +12,15 @@ from qtpy.QtWidgets import (
     QGraphicsTextItem,
 )
 
-from gui.node.ports import Port
-from mne_pipeline_hd.gui.node.node_defaults import defaults
-
 
 class Pipe(QGraphicsPathItem):
     def __init__(self, input_port=None, output_port=None):
+        """Initialize the pipe item.
+        Notes
+        -----
+        The method "draw_path" has to be called at least once
+        after the pipe is added to the scene.
+        """
         super().__init__()
 
         # init QGraphicsPathItem
@@ -42,9 +47,7 @@ class Pipe(QGraphicsPathItem):
         self._dir_pointer.setPolygon(self._poly)
         self._dir_pointer.setFlag(self.GraphicsItemFlag.ItemIsSelectable, False)
 
-        self.reset()
-        if self.input_port and self.output_port:
-            self.draw_path(self.input_port, self.output_port)
+        self.set_pipe_styling(color=self.color, width=2, style=self.style)
 
     # --------------------------------------------------------------------------------------
     # Properties
@@ -55,10 +58,7 @@ class Pipe(QGraphicsPathItem):
 
     @input_port.setter
     def input_port(self, port):
-        if isinstance(port, Port) or not port:
-            self._input_port = port
-        else:
-            self._input_port = None
+        self._input_port = port if hasattr(port, "connect_to") else None
 
     @property
     def output_port(self):
@@ -66,10 +66,7 @@ class Pipe(QGraphicsPathItem):
 
     @output_port.setter
     def output_port(self, port):
-        if isinstance(port, Port) or not port:
-            self._output_port = port
-        else:
-            self._output_port = None
+        self._output_port = port if hasattr(port, "connect_to") else None
 
     @property
     def color(self):
@@ -77,7 +74,7 @@ class Pipe(QGraphicsPathItem):
 
     @color.setter
     def color(self, color):
-        self._color = color
+        self._color = format_color(color)
 
     @property
     def style(self):
@@ -96,9 +93,7 @@ class Pipe(QGraphicsPathItem):
     def hoverLeaveEvent(self, event):
         self.reset()
         if self.input_port and self.output_port:
-            if self.input_port.node.selected:
-                self.highlight()
-            elif self.output_port.node.selected:
+            if self.input_port.node.isSelected() or self.output_port.node.isSelected():
                 self.highlight()
         if self.isSelected():
             self.highlight()
@@ -124,12 +119,12 @@ class Pipe(QGraphicsPathItem):
         painter.save()
 
         pen = self.pen()
-        if not self._active:
+        if not self.isEnabled() and not self._active:
             pen.setColor(QColor(*defaults["pipes"]["disabled_color"]))
             pen.setStyle(Qt.PenStyle.DotLine)
             pen.setWidth(3)
 
-        painter.setPen(self.pen())
+        painter.setPen(pen)
         painter.setBrush(self.brush())
         painter.setRenderHint(painter.RenderHint.Antialiasing, True)
         painter.drawPath(self.path())
@@ -151,13 +146,12 @@ class Pipe(QGraphicsPathItem):
             self._dir_pointer.setVisible(False)
             return
 
-        if self.disabled():
-            if not (self._active or self._highlight):
-                color = QColor(defaults["pipes"]["disabled_color"])
-                pen = self._dir_pointer.pen()
-                pen.setColor(color)
-                self._dir_pointer.setPen(pen)
-                self._dir_pointer.setBrush(color.darker(200))
+        if not self.isEnabled() and not (self._active or self._highlight):
+            color = QColor(*defaults["pipes"]["disabled_color"])
+            pen = self._dir_pointer.pen()
+            pen.setColor(color)
+            self._dir_pointer.setPen(pen)
+            self._dir_pointer.setBrush(color.darker(200))
 
         self._dir_pointer.setVisible(True)
         loc_pt = self.path().pointAtPercent(0.49)
@@ -225,43 +219,45 @@ class Pipe(QGraphicsPathItem):
 
         path.moveTo(line.x1(), line.y1())
 
-        if self.viewer_pipe_layout() == "straight":
-            path.lineTo(pos2)
-            self.setPath(path)
+        if self.scene():
+            layout = self.scene().viewer().pipe_layout
         else:
-            if self.viewer_pipe_layout() == "curved":
-                ctr_offset_x1, ctr_offset_x2 = pos1.x(), pos2.x()
-                tangent = abs(ctr_offset_x1 - ctr_offset_x2)
+            layout = "straight"
 
-                max_width = start_port.node.boundingRect().width()
-                tangent = min(tangent, max_width)
-                if start_port.port_type == "in":
-                    ctr_offset_x1 -= tangent
-                    ctr_offset_x2 += tangent
-                else:
-                    ctr_offset_x1 += tangent
-                    ctr_offset_x2 -= tangent
+        if layout == "straight":
+            path.lineTo(pos2)
+        elif layout == "curved":
+            ctr_offset_x1, ctr_offset_x2 = pos1.x(), pos2.x()
+            tangent = abs(ctr_offset_x1 - ctr_offset_x2)
 
-                ctr_point1 = QPointF(ctr_offset_x1, pos1.y())
-                ctr_point2 = QPointF(ctr_offset_x2, pos2.y())
-                path.cubicTo(ctr_point1, ctr_point2, pos2)
-                self.setPath(path)
-            elif self.viewer_pipe_layout() == "angle":
-                ctr_offset_x1, ctr_offset_x2 = pos1.x(), pos2.x()
-                distance = abs(ctr_offset_x1 - ctr_offset_x2) / 2
-                if start_port.port_type == "in":
-                    ctr_offset_x1 -= distance
-                    ctr_offset_x2 += distance
-                else:
-                    ctr_offset_x1 += distance
-                    ctr_offset_x2 -= distance
+            max_width = start_port.node.boundingRect().width()
+            tangent = min(tangent, max_width)
+            if start_port.port_type == "in":
+                ctr_offset_x1 -= tangent
+                ctr_offset_x2 += tangent
+            else:
+                ctr_offset_x1 += tangent
+                ctr_offset_x2 -= tangent
 
-                ctr_point1 = QPointF(ctr_offset_x1, pos1.y())
-                ctr_point2 = QPointF(ctr_offset_x2, pos2.y())
-                path.lineTo(ctr_point1)
-                path.lineTo(ctr_point2)
-                path.lineTo(pos2)
-                self.setPath(path)
+            ctr_point1 = QPointF(ctr_offset_x1, pos1.y())
+            ctr_point2 = QPointF(ctr_offset_x2, pos2.y())
+            path.cubicTo(ctr_point1, ctr_point2, pos2)
+        elif layout == "angle":
+            ctr_offset_x1, ctr_offset_x2 = pos1.x(), pos2.x()
+            distance = abs(ctr_offset_x1 - ctr_offset_x2) / 2
+            if start_port.port_type == "in":
+                ctr_offset_x1 -= distance
+                ctr_offset_x2 += distance
+            else:
+                ctr_offset_x1 += distance
+                ctr_offset_x2 -= distance
+
+            ctr_point1 = QPointF(ctr_offset_x1, pos1.y())
+            ctr_point2 = QPointF(ctr_offset_x2, pos2.y())
+            path.lineTo(ctr_point1)
+            path.lineTo(ctr_point2)
+            path.lineTo(pos2)
+        self.setPath(path)
 
         self._draw_direction_pointer()
 
@@ -291,32 +287,6 @@ class Pipe(QGraphicsPathItem):
         else:
             port = self.input_port if reverse else self.output_port
         return port
-
-    def viewer(self):
-        """
-        Returns:
-            NodeViewer: node graph viewer.
-        """
-        if self.scene():
-            return self.scene().viewer()
-
-    def viewer_pipe_layout(self):
-        """
-        Returns:
-            int: pipe layout mode.
-        """
-        viewer = self.viewer()
-        if viewer:
-            return viewer.get_pipe_layout()
-
-    def viewer_layout_direction(self):
-        """
-        Returns:
-            int: graph layout mode.
-        """
-        viewer = self.viewer()
-        if viewer:
-            return viewer.get_layout_direction()
 
     def set_pipe_styling(self, color, width=2, style=Qt.PenStyle.SolidLine):
         """
@@ -373,24 +343,12 @@ class Pipe(QGraphicsPathItem):
         self.set_pipe_styling(color=self.color, width=2, style=self.style)
         self._draw_direction_pointer()
 
-    def set_connections(self, port1, port2):
-        """
-        Args:
-            port1 (PortItem): port item object.
-            port2 (PortItem): port item object.
-        """
-        for port in [port1, port2]:
-            if port.port_type == "in":
-                self.input_port = port
-            else:
-                self.output_port = port
-            port.add_pipe(self)
-
     def delete(self):
-        if self.input_port and self.input_port.connected_pipes:
-            self.input_port.remove_pipe(self)
-        if self.output_port and self.output_port.connected_pipes:
-            self.output_port.remove_pipe(self)
+        # Remove pipe from connected_pipes in ports
+        if self.input_port:
+            self.input_port.connected_pipes.pop(self.output_port.id, None)
+        if self.output_port:
+            self.output_port.connected_pipes.pop(self.input_port.id, None)
         if self.scene():
             self.scene().removeItem(self)
 
@@ -528,7 +486,7 @@ class SlicerPipeItem(QGraphicsPathItem):
                 used to describe the parameters needed to draw.
             widget (QtWidgets.QWidget): not used.
         """
-        color = QColor(defaults["slicer"]["color"])
+        color = QColor(*defaults["slicer"]["color"])
         p1 = self.path().pointAtPercent(0)
         p2 = self.path().pointAtPercent(1)
         size = 6.0
@@ -545,7 +503,7 @@ class SlicerPipeItem(QGraphicsPathItem):
         text_x = painter.fontMetrics().width(text) / 2
         text_y = painter.fontMetrics().height() / 1.5
         text_pos = QPointF(p1.x() - text_x, p1.y() - text_y)
-        text_color = QColor(defaults["slicer"]["color"])
+        text_color = QColor(color)
         text_color.setAlpha(80)
         painter.setPen(
             QPen(text_color, defaults["slicer"]["width"], Qt.PenStyle.SolidLine)
@@ -553,11 +511,11 @@ class SlicerPipeItem(QGraphicsPathItem):
         painter.drawText(text_pos, text)
 
         painter.setPen(
-            QPen(color, defaults["slicer"]["color"], Qt.PenStyle.DashDotLine)
+            QPen(color, defaults["slicer"]["width"], Qt.PenStyle.DashDotLine)
         )
         painter.drawPath(self.path())
 
-        pen = QPen(color, defaults["slicer"]["color"], Qt.PenStyle.SolidLine)
+        pen = QPen(color, defaults["slicer"]["width"], Qt.PenStyle.SolidLine)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
         painter.setPen(pen)

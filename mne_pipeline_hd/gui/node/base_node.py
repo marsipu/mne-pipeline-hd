@@ -177,6 +177,11 @@ class BaseNode(QGraphicsItem):
         pos = pos or (0.0, 0.0)
         self.setPos(*pos)
 
+    @property
+    def viewer(self):
+        if self.scene():
+            return self.scene().viewer()
+
     # --------------------------------------------------------------------------------------
     # Qt methods
     # --------------------------------------------------------------------------------------
@@ -318,7 +323,7 @@ class BaseNode(QGraphicsItem):
         """
         ports = self.inputs + self.outputs
         for port in ports:
-            for pipe in port.connected_pipes:
+            for pipe in port.connected_pipes.values():
                 pipe.activate()
 
     def highlight_pipes(self):
@@ -327,7 +332,7 @@ class BaseNode(QGraphicsItem):
         """
         ports = self.inputs + self.outputs
         for port in ports:
-            for pipe in port.connected_pipes:
+            for pipe in port.connected_pipes.values():
                 pipe.highlight()
 
     def reset_pipes(self):
@@ -336,7 +341,7 @@ class BaseNode(QGraphicsItem):
         """
         ports = self.inputs + self.outputs
         for port in ports:
-            for pipe in port.connected_pipes:
+            for pipe in port.connected_pipes.values():
                 pipe.reset()
 
     def calc_size(self, add_w=0.0, add_h=0.0):
@@ -482,6 +487,7 @@ class BaseNode(QGraphicsItem):
         self,
         name="input",
         multi_connection=False,
+        accepted_ports=None,
     ):
         """
         Adds a port qgraphics item into the node with the "port_type" set as
@@ -491,13 +497,15 @@ class BaseNode(QGraphicsItem):
             name for the port.
         multi_connection : bool
             allow multiple connections.
+        accepted_ports : list[str]
+            list of accepted port names.
 
         Returns
         -------
         PortItem
             port qgraphics item.
         """
-        port = Port(self, name, "in", multi_connection)
+        port = Port(self, name, "in", multi_connection, accepted_ports)
         self._inputs[port.name] = port
         if self.scene():
             self.draw_node()
@@ -508,6 +516,7 @@ class BaseNode(QGraphicsItem):
         self,
         name="output",
         multi_connection=False,
+        accepted_ports=None,
     ):
         """
         Adds a port qgraphics item into the node with the "port_type" set as
@@ -517,6 +526,8 @@ class BaseNode(QGraphicsItem):
             name for the port.
         multi_connection : bool
             allow multiple connections.
+        accepted_ports : list[str]
+            list of accepted port names.
 
         Returns
         -------
@@ -524,7 +535,7 @@ class BaseNode(QGraphicsItem):
             port qgraphics item.
         """
 
-        port = Port(self, name, "out", multi_connection)
+        port = Port(self, name, "out", multi_connection, accepted_ports)
         self._outputs[port.name] = port
         if self.scene():
             self.draw_node()
