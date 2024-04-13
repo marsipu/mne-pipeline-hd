@@ -27,8 +27,10 @@ from qtpy.QtCore import (
     Signal,
     Slot,
     QTimer,
+    QEvent,
 )
-from qtpy.QtGui import QFont, QTextCursor, QPalette, QColor, QIcon
+from qtpy.QtTest import QTest
+from qtpy.QtGui import QFont, QTextCursor, QMouseEvent, QPalette, QColor, QIcon
 from qtpy.QtWidgets import (
     QApplication,
     QDialog,
@@ -767,6 +769,62 @@ def format_color(clr):
         clr = clr.strip("#")
         return tuple(int(clr[i : i + 2], 16) for i in (0, 2, 4))
     return clr
+
+
+def mouse_interaction(func):
+    def wrapper(**kwargs):
+        QTest.qWaitForWindowExposed(kwargs["widget"])
+        QTest.qWait(10)
+        func(**kwargs)
+        QTest.qWait(10)
+
+    return wrapper
+
+
+@mouse_interaction
+def mousePress(widget=None, pos=None, button=None, modifier=None):
+    if modifier is None:
+        modifier = Qt.KeyboardModifier.NoModifier
+    event = QMouseEvent(
+        QEvent.Type.MouseButtonPress, pos, button, Qt.MouseButton.NoButton, modifier
+    )
+    QApplication.sendEvent(widget, event)
+
+
+@mouse_interaction
+def mouseRelease(widget=None, pos=None, button=None, modifier=None):
+    if modifier is None:
+        modifier = Qt.KeyboardModifier.NoModifier
+    event = QMouseEvent(
+        QEvent.Type.MouseButtonRelease, pos, button, Qt.MouseButton.NoButton, modifier
+    )
+    QApplication.sendEvent(widget, event)
+
+
+@mouse_interaction
+def mouseMove(widget=None, pos=None, button=None, modifier=None):
+    if button is None:
+        button = Qt.MouseButton.NoButton
+    if modifier is None:
+        modifier = Qt.KeyboardModifier.NoModifier
+    event = QMouseEvent(
+        QEvent.Type.MouseMove, pos, Qt.MouseButton.NoButton, button, modifier
+    )
+    QApplication.sendEvent(widget, event)
+
+
+def mouseClick(widget, pos, button, modifier=None):
+    mouseMove(widget=widget, pos=pos)
+    mousePress(widget=widget, pos=pos, button=button, modifier=modifier)
+    mouseRelease(widget=widget, pos=pos, button=button, modifier=modifier)
+
+
+def mouseDrag(widget, positions, button, modifier=None):
+    mouseMove(widget=widget, pos=positions[0])
+    mousePress(widget=widget, pos=positions[0], button=button, modifier=modifier)
+    for pos in positions[1:]:
+        mouseMove(widget=widget, pos=pos, button=button, modifier=modifier)
+    mouseRelease(widget=widget, pos=positions[-1], button=button, modifier=modifier)
 
 
 def get_palette(theme):

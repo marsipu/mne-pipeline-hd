@@ -208,6 +208,8 @@ class Port(QGraphicsItem):
     # Qt methods
     # --------------------------------------------------------------------------------------
     def boundingRect(self):
+        # NodeViewer.port_position_scene() depends
+        # on the position of boundingRect to be (0, 0).
         return QRectF(
             0.0,
             0.0,

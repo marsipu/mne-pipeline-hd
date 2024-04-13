@@ -88,7 +88,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     iswin,
     logger,
 )
-from mne_pipeline_hd.gui.node.nodes import PipeNodeGraph
+from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
 
 
 class MainWindow(QMainWindow):
@@ -560,9 +560,9 @@ class MainWindow(QMainWindow):
         set_app_theme()
 
         # Add experimental Node-Tab
-        self.node_graph = PipeNodeGraph(NewController())
-        self.tab_func_widget.addTab(self.node_graph.widget, "Node-Graph")
-        self.tab_func_widget.setCurrentWidget(self.node_graph.widget)
+        self.node_viewer = NodeViewer(NewController())
+        self.tab_func_widget.addTab(self.node_viewer, "Node-Graph")
+        self.tab_func_widget.setCurrentWidget(self.node_viewer)
 
     def update_func_bts(self):
         # Remove tabs in tab_func_widget

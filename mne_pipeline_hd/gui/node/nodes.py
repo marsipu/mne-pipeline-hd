@@ -39,7 +39,7 @@ class BaseInputNode(BaseNode):
 
     def add_files(self):
         # This decides, wether the dialog is rendered outside or inside the scene
-        dlg = QDialog(self.scene().viewer())
+        dlg = QDialog(self.viewer())
         dlg.setWindowTitle("Import Files")
         if self.data_type == "MEEG":
             widget = AddFilesWidget(self.ct)
@@ -63,13 +63,8 @@ class MRIInputNode(BaseInputNode):
 
 
 class FunctionNode(BaseNode):
-    def __init__(self, ct):
-        super().__init__(ct, name="Function Node")
-
-        self.add_input("In 1", accepted_ports=["Out 1"])
-        self.add_input("In 2", accepted_ports=["Out 1", "Out 2"])
-        self.add_output("Out 1", multi_connection=True, accepted_ports=["In 1", "In 2"])
-        self.add_output("Out 2", multi_connection=True, accepted_ports=["In 2"])
+    def __init__(self, ct, **kwargs):
+        super().__init__(ct, **kwargs)
 
 
 class AssignmentNode(BaseNode):
