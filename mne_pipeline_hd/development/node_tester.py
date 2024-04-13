@@ -25,7 +25,7 @@ def run_graph_test():
     func_node2 = viewer.create_node(FunctionNode)
     func_node1.set_output(0, func_node2.input(0))
 
-    func_node2.setPos(100, 100)
+    func_node2.setPos(400, 100)
 
     viewer.show()
     viewer.auto_layout_nodes()

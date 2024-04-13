@@ -31,7 +31,6 @@ class NodeViewer(QGraphicsView):
     DataDropped = Signal(QMimeData, QPointF)
 
     MovedNodes = Signal(dict)
-    ConnectionSliced = Signal(list)
     ConnectionChanged = Signal(list, list)
     InsertNode = Signal(object, str, dict)
     NodeNameChanged = Signal(str, str)
@@ -103,10 +102,6 @@ class NodeViewer(QGraphicsView):
         self._SLICER_PIPE.setVisible(False)
         self.scene().addItem(self._SLICER_PIPE)
 
-        # connect signals
-        self.ConnectionSliced.connect(self.on_connection_sliced)
-        self.ConnectionChanged.connect(self.on_connection_changed)
-
     # ----------------------------------------------------------------------------------
     # Properties
     # ----------------------------------------------------------------------------------
@@ -124,6 +119,34 @@ class NodeViewer(QGraphicsView):
             The nodes are stored in an OrderedDict in self._nodes with the node id as the key.
         """
         return list(self._nodes.values())
+
+    @property
+    def pipe_layout(self):
+        """Return the pipe layout mode.
+
+        Returns
+        -------
+        layout: str
+            Pipe layout mode (either 'straight', 'curved', or 'angle').
+
+        """
+        return self._pipe_layout
+
+    @pipe_layout.setter
+    def pipe_layout(self, layout):
+        """Set the pipe layout mode.
+
+        Parameters
+        ----------
+        layout: str
+            Pipe layout mode (either 'straight', 'curved', or 'angle').
+        """
+        if layout not in ["straight", "curved", "angle"]:
+            logging.warning(
+                f"{layout} is not a valid pipe layout, " f"defaulting to 'curved'."
+            )
+            layout = "curved"
+        self._pipe_layout = layout
 
     # ----------------------------------------------------------------------------------
     # Logic methods
@@ -188,16 +211,6 @@ class NodeViewer(QGraphicsView):
 
         return node
 
-    def on_connection_changed(self, disconnected, connected):
-        for start_port, end_port in disconnected:
-            start_port.disconnect(end_port)
-        for start_port, end_port in connected:
-            start_port.connect(end_port)
-
-    def on_connection_sliced(self, ports):
-        for input_port, output_port in ports:
-            input_port.disconnect(output_port)
-
     def to_dict(self):
         # ToDo: Implement this
         graph_dict = {"nodes": dict(), "connections": dict()}
@@ -215,16 +228,7 @@ class NodeViewer(QGraphicsView):
                 conn_data["start_port"]
             ]
             end_port = self.nodes[conn_data["end_node"]].inputs[conn_data["end_port"]]
-            self.establish_connection(start_port, end_port)
-
-    def get_pipe_layout(self):
-        """
-        Returns the pipe layout mode.
-
-        Returns:
-            int: pipe layout mode.
-        """
-        return self._pipe_layout
+            start_port.connect_to(end_port)
 
     # ----------------------------------------------------------------------------------
     # Qt methods
@@ -310,7 +314,7 @@ class NodeViewer(QGraphicsView):
         height area.
 
         Args:
-            pos (QPoint): scene pos.
+            pos (QPointF): scene pos.
             item_type: filter item type. (optional)
             width (int): width area.
             height (int): height area.
@@ -328,21 +332,6 @@ class NodeViewer(QGraphicsView):
             if not item_type or isinstance(item, item_type):
                 items.append(item)
         return items
-
-    def _on_pipes_sliced(self, path):
-        """
-        Triggered when the slicer pipe is active
-
-        Args:
-            path (QPainterPath): slicer path.
-        """
-        ports = []
-        for i in self.scene().items(path):
-            if isinstance(i, Pipe) and i != self._LIVE_PIPE:
-                if any([i.input_port.locked, i.output_port.locked]):
-                    continue
-                ports.append([i.input_port, i.output_port])
-        self.ConnectionSliced.emit(ports)
 
     # Reimplement events
     def resizeEvent(self, event):
@@ -370,7 +359,7 @@ class NodeViewer(QGraphicsView):
 
         self._origin_pos = event.pos()
         self._previous_pos = event.pos()
-        (self._prev_selection_nodes, self._prev_selection_pipes) = self.selected_items()
+        self._prev_selection_nodes, self._prev_selection_pipes = self.selected_items()
 
         # cursor pos.
         map_pos = self.mapToScene(event.pos())
@@ -454,7 +443,7 @@ class NodeViewer(QGraphicsView):
             return
 
         if not self._LIVE_PIPE.isVisible():
-            super(NodeViewer, self).mousePressEvent(event)
+            super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -466,7 +455,9 @@ class NodeViewer(QGraphicsView):
 
         # hide pipe slicer.
         if self._SLICER_PIPE.isVisible():
-            self._on_pipes_sliced(self._SLICER_PIPE.path())
+            for i in self.scene().items(self._SLICER_PIPE.path()):
+                if isinstance(i, Pipe) and i != self._LIVE_PIPE:
+                    i.input_port.disconnect_from(i.output_port)
             p = QPointF(0.0, 0.0)
             self._SLICER_PIPE.draw_path(p, p)
             self._SLICER_PIPE.setVisible(False)
@@ -521,9 +512,10 @@ class NodeViewer(QGraphicsView):
         node_ids = [n.id for n in nodes if n not in self._prev_selection_nodes]
         self.NodeSelectionChanged.emit(node_ids, prev_ids)
 
-        super(NodeViewer, self).mouseReleaseEvent(event)
+        super().mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
+        # Draw slicer
         if self.ALT_state and self.SHIFT_state:
             if self.LMB_state and self._SLICER_PIPE.isVisible():
                 p1 = self._SLICER_PIPE.path().pointAtPercent(0)
@@ -534,11 +526,8 @@ class NodeViewer(QGraphicsView):
             super(NodeViewer, self).mouseMoveEvent(event)
             return
 
-        if self.MMB_state and self.ALT_state:
-            pos_x = event.x() - self._previous_pos.x()
-            zoom = 0.1 if pos_x > 0 else -0.1
-            self._set_viewer_zoom(zoom, 0.05, pos=event.pos())
-        elif self.MMB_state or (self.LMB_state and self.ALT_state):
+        # Pan view
+        if self.MMB_state or (self.LMB_state and self.ALT_state):
             previous_pos = self.mapToScene(self._previous_pos)
             current_pos = self.mapToScene(event.pos())
             delta = previous_pos - current_pos
@@ -790,11 +779,11 @@ class NodeViewer(QGraphicsView):
                 break
 
         if port:
-            if not port.multi_connection and port.connected_ports:
-                self._detached_port = port.connected_ports[0]
+            if not port.multi_connection and len(port.connected_ports) > 0:
+                self._detached_port = port.get_connected_ports(port_idx=0)
             self.start_live_connection(port)
             if not port.multi_connection:
-                [p.delete() for p in port.connected_pipes]
+                [p.delete() for p in port.connected_pipes.values()]
             return
 
         if node:
@@ -868,9 +857,6 @@ class NodeViewer(QGraphicsView):
                 end_port = item
                 break
 
-        connected = []
-        disconnected = []
-
         # if port disconnected from existing pipe.
         if end_port is None:
             if self._detached_port and not self._LIVE_PIPE.shift_selected:
@@ -879,11 +865,10 @@ class NodeViewer(QGraphicsView):
                     self._previous_pos.y() - self._origin_pos.y(),
                 )
                 if dist <= 2.0:  # cursor pos threshold.
-                    self.establish_connection(self._start_port, self._detached_port)
+                    self._start_port.connect_to(self._detached_port)
                     self._detached_port = None
                 else:
-                    disconnected.append((self._start_port, self._detached_port))
-                    self.ConnectionChanged.emit(disconnected, connected)
+                    self._start_port.disconnect_from(self._detached_port)
 
             self._detached_port = None
             self.end_live_connection()
@@ -894,49 +879,34 @@ class NodeViewer(QGraphicsView):
                 return
 
         # constrain check
-        compatible = self._start_port.compatible(end_port)
+        compatible = self._start_port.compatible(end_port, verbose=False)
 
-        # restore connection check.
-        restore_connection = any(
-            [
-                # if same port type.
-                end_port.port_type == self._start_port.port_type,
-                # if end port is the start port.
-                end_port == self._start_port,
-                # if detached port is the end port.
-                self._detached_port == end_port,
-                # if a port has a accept port type constrain.
-                not compatible,
-            ]
-        )
-        if restore_connection:
+        # restore connection if ports are not compatible
+        if not compatible:
             if self._detached_port:
                 to_port = self._detached_port or end_port
-                self.establish_connection(self._start_port, to_port)
+                self._start_port.connect_to(to_port)
                 self._detached_port = None
             self.end_live_connection()
             return
 
         # end connection if starting port is already connected.
-        if (
-            self._start_port.multi_connection
-            and self._start_port in end_port.connected_ports
-        ):
+        if self._start_port.multi_connection and self._start_port.connected(end_port):
             self._detached_port = None
             self.end_live_connection()
+            logging.debug("Target Port is already connected.")
             return
 
-        # make connection.
-        if not end_port.multi_connection and end_port.connected_ports:
-            dettached_end = end_port.connected_ports[0]
-            disconnected.append((end_port, dettached_end))
+        # disconnect target port from its connections if not multi connection.
+        if not end_port.multi_connection and len(end_port.connected_ports) > 0:
+            end_port.clear_connections()
 
+        # Connect from detached port if available.
         if self._detached_port:
-            disconnected.append((self._start_port, self._detached_port))
+            self._start_port.disconnect_from(self._detached_port)
 
-        connected.append((self._start_port, end_port))
-
-        self.ConnectionChanged.emit(disconnected, connected)
+        # Make connection
+        self._start_port.connect_to(end_port)
 
         self._detached_port = None
         self.end_live_connection()
@@ -967,18 +937,6 @@ class NodeViewer(QGraphicsView):
         self._LIVE_PIPE.setVisible(False)
         self._LIVE_PIPE.shift_selected = False
         self._start_port = None
-
-    def establish_connection(self, start_port, end_port):
-        """
-        establish a new pipe connection.
-        (adds a new pipe item to draw between 2 ports)
-        """
-        pipe = Pipe(start_port, end_port)
-        self.scene().addItem(pipe)
-        if start_port.node.selected or end_port.node.selected:
-            pipe.highlight()
-        if not start_port.node.isVisible() or not end_port.node.isVisible():
-            pipe.hide()
 
     def all_pipes(self):
         """
@@ -1070,12 +1028,12 @@ class NodeViewer(QGraphicsView):
             n_outputs = node.outputs if hasattr(node, "outputs") else []
 
             for port in n_inputs:
-                for pipe in port.connected_pipes:
+                for pipe in port.connected_pipes.values():
                     connected_node = pipe.output_port.node
                     if connected_node in nodes:
                         pipes.append(pipe)
             for port in n_outputs:
-                for pipe in port.connected_pipes:
+                for pipe in port.connected_pipes.values():
                     connected_node = pipe.input_port.node
                     if connected_node in nodes:
                         pipes.append(pipe)

@@ -65,10 +65,10 @@ class FunctionNode(BaseNode):
     def __init__(self, ct):
         super().__init__(ct, name="Function Node")
 
-        self.add_input("In 1")
-        self.add_input("Inaefwaef 2")
-        self.add_output("Outasdfaew 1", multi_connection=True)
-        self.add_output("Out 2", multi_connection=True)
+        self.add_input("In 1", accepted_ports=["Out 1"])
+        self.add_input("In 2", accepted_ports=["Out 1", "Out 2"])
+        self.add_output("Out 1", multi_connection=True, accepted_ports=["In 1", "In 2"])
+        self.add_output("Out 2", multi_connection=True, accepted_ports=["In 2"])
 
 
 class AssignmentNode(BaseNode):

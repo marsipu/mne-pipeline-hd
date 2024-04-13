@@ -2,12 +2,12 @@
 import logging
 from collections import OrderedDict
 
-from gui.gui_utils import format_color
+from mne_pipeline_hd.gui.gui_utils import format_color
+from mne_pipeline_hd.gui.node.node_defaults import defaults
+from mne_pipeline_hd.gui.node.pipes import Pipe
 from qtpy.QtCore import QRectF, Qt
 from qtpy.QtGui import QColor, QPen
 from qtpy.QtWidgets import QGraphicsItem, QGraphicsTextItem
-
-from mne_pipeline_hd.gui.node.node_defaults import defaults
 
 
 class PortText(QGraphicsTextItem):
@@ -19,7 +19,14 @@ class PortText(QGraphicsTextItem):
 
 
 class Port(QGraphicsItem):
-    def __init__(self, node, name=None, port_type=None, multi_connection=False):
+    def __init__(
+        self,
+        node,
+        name=None,
+        port_type=None,
+        multi_connection=False,
+        accepted_ports=None,
+    ):
         super().__init__(node)
 
         # init Qt graphics item
@@ -40,7 +47,7 @@ class Port(QGraphicsItem):
         self._multi_connection = multi_connection
         self._connected_ports = OrderedDict()
         self._connected_pipes = OrderedDict()
-        self._accepted_ports = []
+        self._accepted_ports = accepted_ports or list()
 
         self._width = defaults["ports"]["size"]
         self._height = defaults["ports"]["size"]
@@ -250,9 +257,9 @@ class Port(QGraphicsItem):
         if self._hovered:
             color = QColor(*self.hover_color)
             border_color = QColor(*self.hover_border_color)
-        elif self.connected_pipes:
+        elif len(self.connected_pipes) > 0:
             color = QColor(*self.active_color)
-            border_color = QColor(self.active_border_color)
+            border_color = QColor(*self.active_border_color)
         else:
             color = QColor(*self.color)
             border_color = QColor(*self.border_color)
@@ -292,6 +299,8 @@ class Port(QGraphicsItem):
         painter.restore()
 
     def redraw_connected_pipes(self):
+        if len(self.connected_pipes) == 0:
+            return
         for node_id, pipe in self.connected_pipes.items():
             if self.port_type == "in":
                 pipe.draw_path(self, pipe.output_port)
@@ -311,12 +320,6 @@ class Port(QGraphicsItem):
         self._hovered = False
         super().hoverLeaveEvent(event)
 
-    def add_pipe(self, pipe, connected_port):
-        self.connected_pipes[connected_port.node.id] = pipe
-
-    def remove_pipe(self, connected_port_id):
-        self.connected_pipes.pop(connected_port_id)
-
     # --------------------------------------------------------------------------------------
     # Logic methods
     # --------------------------------------------------------------------------------------
@@ -328,25 +331,62 @@ class Port(QGraphicsItem):
         else:
             raise ValueError("Invalid port type")
 
-    def compatible(self, port):
+    def get_connected_ports(self, port_idx=None, node_id=None):
+        """
+        Get the connected port by index, id or node id.
+        Parameters
+        ----------
+        port_idx: int
+            Get the connected port by index.
+        node_id: int
+            Get the connected ports by node id
+            (can be multiple if multi_connect is True).
+
+        Returns
+        -------
+        port: Port or list[Port]
+            Returns port (or list of ports for node_id)
+        """
+        if port_idx is not None:
+            port_list = list()
+            for node_id, ports in self.connected_ports.items():
+                port_list.extend(ports)
+            return port_list[port_idx]
+        elif node_id is not None:
+            return self.connected_ports.get(node_id, list())
+        return None
+
+    def connected(self, port):
+        for node_id, ports in self.connected_ports.items():
+            if port in ports:
+                return True
+        return False
+
+    def compatible(self, port, verbose=True):
         """Check if the specified port is compatible with this port."""
         # check if the ports are the same.
         if self is port:
-            logging.debug("Can't connect the same port.")
+            if verbose:
+                logging.debug("Can't connect the same port.")
         # check if the ports are from the same node.
         elif self.node is port.node:
-            logging.debug("Can't connect ports from the same node.")
+            if verbose:
+                logging.debug("Can't connect ports from the same node.")
         # check if the ports are from the same type (can't connect input to input).
         elif self.port_type == port.port_type:
-            logging.debug("Can't connect the same port type.")
+            if verbose:
+                logging.debug("Can't connect the same port type.")
         # check if the ports are already connected.
-        elif self in port.connected_ports:
-            logging.debug("Ports are already connected.")
+        elif self.connected(port):
+            if verbose:
+                logging.debug("Ports are already connected.")
         # check if the ports are compatible.
         elif port.name not in self.accepted_ports:
-            logging.debug("Ports are not compatible.")
+            if verbose:
+                logging.debug("Ports are not compatible.")
         else:
-            logging.debug("Ports are compatible.")
+            if verbose:
+                logging.debug("Ports are compatible.")
             return True
         return False
 
@@ -356,12 +396,10 @@ class Port(QGraphicsItem):
         :attr:`NodeGraph.port_connected` signal from the parent node graph.
 
         Args:
-            target_port (NodeGraphQt.Port): port object.
-            push_undo (bool): register the command to the undo stack. (default: True)
-            emit_signal (bool): emit the port connection signals. (default: True)
+            target_port (Port): port object.
         """
         if target_port is None:
-            for pipe in self.connected_pipes:
+            for pipe in self.connected_pipes.values():
                 pipe.delete()
             logging.debug("No target port specified.")
             return
@@ -382,18 +420,33 @@ class Port(QGraphicsItem):
         for port, trg_port in [(self, target_port), (target_port, self)]:
             if trg_port.node.id not in port.connected_ports:
                 port.connected_ports[trg_port.node.id] = list()
-            port.connected_ports[trg_port.node.id].append(trg_port.id)
+            port.connected_ports[trg_port.node.id].append(trg_port)
 
+        if self.port_type == "in":
+            input_port = self
+            output_port = target_port
+        else:
+            input_port = target_port
+            output_port = self
         # Draw pipe
         if self.scene():
-            viewer = self.scene().viewer()
-            viewer.establish_connection(self, target_port)
+            pipe = Pipe(input_port, output_port)
+            input_port._connected_pipes[output_port.id] = pipe
+            output_port._connected_pipes[input_port.id] = pipe
+            self.scene().addItem(pipe)
+            pipe.draw_path(input_port, output_port)
+            if self.node.isSelected() or target_port.node.isSelected():
+                pipe.highlight()
+            if not self.node.isVisible() or not target_port.node.isVisible():
+                pipe.hide()
+        else:
+            logging.warning(
+                f"Scene not found, could not draw pipe from "
+                f"{self.name} to {target_port.name}."
+            )
 
         # Emit Signal
-        if self.port_type == "in":
-            self.node.graph.port_connected.emit(self, target_port)
-        else:
-            self.node.graph.port_connected.emit(target_port, self)
+        self.node.viewer.PortConnected.emit(input_port, output_port)
 
         self.update()
         target_port.update()
@@ -415,22 +468,22 @@ class Port(QGraphicsItem):
 
         # Remove ids from connected ports of this port and the target port.
         for port, trg_port in [(self, target_port), (target_port, self)]:
-            rm_ports = port.connected_ports.get(trg_port.node.id, list())
+            rm_ports = port.get_connected_ports(node_id=trg_port.node.id)
             if len(rm_ports) == 0:
-                del self.connected_ports[trg_port.node.id]
-            elif trg_port.id in rm_ports:
-                rm_ports.remove(trg_port.id)
+                del port.connected_ports[trg_port.node.id]
+            elif trg_port in rm_ports:
+                rm_ports.remove(trg_port)
 
         # Remove the pipe connected to target_port
-        rm_pipe = self.connected_pipes.get(target_port.node.id, None)
+        rm_pipe = self.connected_pipes.pop(target_port.id, None)
         if rm_pipe is not None:
             rm_pipe.delete()
 
         # emit signal
         if self.port_type == "in":
-            self.node.graph.port_disconnected.emit(self, target_port)
+            self.node.viewer.PortDisconnected.emit(self, target_port)
         else:
-            self.node.graph.port_disconnected.emit(target_port, self)
+            self.node.viewer.PortDisconnected.emit(target_port, self)
 
         self.update()
         target_port.update()
