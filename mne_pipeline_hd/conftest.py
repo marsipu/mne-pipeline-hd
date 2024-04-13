@@ -37,13 +37,37 @@ def main_window(controller, qtbot):
 
 
 @pytest.fixture
-def viewer(qtbot):
+def nodeviewer(qtbot):
     viewer = NodeViewer(NewController())
     viewer.resize(1000, 1000)
     qtbot.addWidget(viewer)
+    viewer.show()
 
-    func_node1 = viewer.create_node(FunctionNode)
-    func_node2 = viewer.create_node(FunctionNode)
+    func_kwargs = {
+        "name": "Test Function",
+        "inputs": {
+            "In1": {
+                "accepted_ports": ["Out1"],
+            },
+            "In2": {
+                "accepted_ports": ["Out1, Out2"],
+            },
+        },
+        "outputs": {
+            "Out1": {
+                "accepted_ports": ["In1"],
+                "multi_connection": True,
+            },
+            "Out2": {
+                "accepted_ports": ["In1", "In2"],
+                "multi_connection": True,
+            },
+        },
+    }
+    func_node1 = viewer.create_node(FunctionNode, **func_kwargs)
+    func_node2 = viewer.create_node(FunctionNode, **func_kwargs)
     func_node1.set_output(0, func_node2.input(0))
 
     func_node2.setPos(400, 100)
+
+    return viewer

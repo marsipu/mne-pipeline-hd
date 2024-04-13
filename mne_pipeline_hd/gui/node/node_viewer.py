@@ -12,7 +12,12 @@ from mne_pipeline_hd.gui.node.pipes import LivePipeItem, SlicerPipeItem, Pipe
 from mne_pipeline_hd.gui.node.ports import Port
 from qtpy.QtCore import QMimeData, QPointF, QPoint, QRectF, Qt, QRect, QSize, Signal
 from qtpy.QtGui import QColor, QPainter, QPainterPath
-from qtpy.QtWidgets import QGraphicsView, QRubberBand, QGraphicsTextItem
+from qtpy.QtWidgets import (
+    QGraphicsView,
+    QRubberBand,
+    QGraphicsTextItem,
+    QGraphicsPathItem,
+)
 
 
 class NodeViewer(QGraphicsView):
@@ -102,6 +107,16 @@ class NodeViewer(QGraphicsView):
         self._SLICER_PIPE.setVisible(False)
         self.scene().addItem(self._SLICER_PIPE)
 
+        # initialize debug path
+        self._debug_path = QGraphicsPathItem()
+        self._debug_path.setZValue(1)
+        pen = self._debug_path.pen()
+        pen.setColor(QColor(255, 0, 0, 255))
+        pen.setWidth(2)
+        self._debug_path.setPen(pen)
+        self._debug_path.setPath(QPainterPath())
+        self.scene().addItem(self._debug_path)
+
     # ----------------------------------------------------------------------------------
     # Properties
     # ----------------------------------------------------------------------------------
@@ -111,14 +126,10 @@ class NodeViewer(QGraphicsView):
 
         Returns:
         --------
-        nodes: list
-            List of nodes in the node graph.
-
-        Notes:
-        ------
-            The nodes are stored in an OrderedDict in self._nodes with the node id as the key.
+        nodes: OrderedDict
+            The nodes are stored in an OrderedDict with the node id as the key.
         """
-        return list(self._nodes.values())
+        return self._nodes
 
     @property
     def pipe_layout(self):
@@ -187,12 +198,13 @@ class NodeViewer(QGraphicsView):
 
         if node in self.scene().items():
             self.scene().removeItem(node)
-        if node.id in self.nodes:
-            del self.nodes[node.id]
+        # Deliberately with room for KeyError to detect,
+        # if nodes are not correctly added in the first place
+        self.nodes.pop(node.id)
 
         node.delete()
 
-    def create_node(self, node_class):
+    def create_node(self, node_class, **kwargs):
         """
         Create a node from the given class.
 
@@ -200,16 +212,47 @@ class NodeViewer(QGraphicsView):
         ----------
         node_class
             The node class to create.
+        kwargs
+            Additional keyword arguments to pass into BaseNode.__init__()
 
         Returns
         -------
         node
             The created node.
         """
-        node = node_class(self.ct)
+        node = node_class(self.ct, **kwargs)
         self.add_node(node)
 
         return node
+
+    def node(self, node_idx=None, node_name=None, node_id=None):
+        """
+        Get a node from the node graph based on either its index, name, or id.
+
+        Parameters
+        ----------
+        node_idx : int, optional
+            Index of the node in the node graph.
+        node_name : str, optional
+            Name of the node in the node graph.
+        node_id : str, optional
+            Unique identifier of the node in the node graph.
+
+        Returns
+        -------
+        BaseNode
+            The node that matches the provided index, name, or id. If multiple
+            parameters are provided, the method will prioritize them in
+            the following order: node_idx, node_name, node_id.
+            If no parameters are provided or if no match is found,
+            the method will return None.
+        """
+        if node_idx is not None:
+            return list(self.nodes.values())[node_idx]
+        elif node_name is not None:
+            return [n for n in self.nodes.values() if n.name == node_name]
+        elif node_id is not None:
+            return self.nodes[node_id]
 
     def to_dict(self):
         # ToDo: Implement this
@@ -364,6 +407,12 @@ class NodeViewer(QGraphicsView):
         # cursor pos.
         map_pos = self.mapToScene(event.pos())
 
+        # debug path
+        if self.LMB_state:
+            path = self._debug_path.path()
+            path.moveTo(map_pos)
+            self._debug_path.setPath(path)
+
         # pipe slicer enabled.
         slicer_mode = all([self.ALT_state, self.SHIFT_state, self.LMB_state])
         if slicer_mode:
@@ -515,6 +564,14 @@ class NodeViewer(QGraphicsView):
         super().mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
+        # Debug mouse
+        if self.LMB_state:
+            to_pos = self.mapToScene(event.pos())
+            path = self._debug_path.path()
+            path.lineTo(to_pos)
+            self._debug_path.setPath(path)
+            logging.debug(f"\rMouse pos: {to_pos.x():.2f}, {to_pos.y():.2f}")
+
         # Draw slicer
         if self.ALT_state and self.SHIFT_state:
             if self.LMB_state and self._SLICER_PIPE.isVisible():
@@ -1062,7 +1119,7 @@ class NodeViewer(QGraphicsView):
         """
         Clear the selected items in the scene.
         """
-        for node in self.nodes:
+        for node in self.nodes.values():
             node.setSelected(False)
 
     def reset_zoom(self, cent=None):
@@ -1210,6 +1267,31 @@ class NodeViewer(QGraphicsView):
         else:
             from qtpy.QtOpenGLWidgets import QOpenGLWidget
         self.setViewport(QOpenGLWidget())
+
+    def node_position_scene(self, **node_kwargs):
+        node = self.node(**node_kwargs)
+        scene_pos = node.scenePos() + node.boundingRect().center()
+
+        return scene_pos
+
+    def node_position_view(self, **node_kwargs):
+        scene_pos = self.node_position_scene(**node_kwargs)
+        view_pos = self.mapFromScene(scene_pos)
+
+        return view_pos
+
+    def port_position_scene(self, port_type, port, **node_kwargs):
+        node = self.node(**node_kwargs)
+        port = node.port(port_type, port)
+        scene_pos = port.scenePos() + port.boundingRect().center()
+
+        return scene_pos
+
+    def port_position_view(self, port_type, port, **node_kwargs):
+        scene_pos = self.port_position_scene(port_type, port, **node_kwargs)
+        view_pos = self.mapFromScene(scene_pos)
+
+        return view_pos
 
     # --------------------------------------------------------------------------------------
     # AutoLayout
