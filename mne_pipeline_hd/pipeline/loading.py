@@ -33,6 +33,13 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     logger,
 )
 
+# BIDS-Considerations:
+# - BIDS might be a bit work at first (implement session, run etc.)
+# - Might pay off since data and derivative might be used then by mne-bids-pipeline
+# and hopefully other analysis tools complying to the bids-standard
+# - For freesurfer data use recon-all --bids-out
+# - bids-apps/freesurfer might be also interesting
+
 
 def _get_data_type_from_func(self, func, method):
     # Get matching data-type from IO-Dict

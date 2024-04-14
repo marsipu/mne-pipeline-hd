@@ -40,9 +40,10 @@ class NodeViewer(QGraphicsView):
     InsertNode = Signal(object, str, dict)
     NodeNameChanged = Signal(str, str)
 
-    def __init__(self, ct, parent=None):
+    def __init__(self, ct, parent=None, debug_mode=False):
         super().__init__(parent)
         self.ct = ct
+        self._debug_mode = debug_mode
 
         # attributes
         self._nodes = OrderedDict()
@@ -58,9 +59,6 @@ class NodeViewer(QGraphicsView):
         self.LMB_state = False
         self.RMB_state = False
         self.MMB_state = False
-        self.ALT_state = False
-        self.CTRL_state = False
-        self.SHIFT_state = False
         self.COLLIDING_state = False
 
         # init QGraphicsView
@@ -400,6 +398,9 @@ class NodeViewer(QGraphicsView):
         elif event.button() == Qt.MouseButton.MiddleButton:
             self.MMB_state = True
 
+        shift_modifier = event.modifiers() == Qt.KeyboardModifier.ShiftModifier
+        ctrl_modifier = event.modifiers() == Qt.KeyboardModifier.ControlModifier
+
         self._origin_pos = event.pos()
         self._previous_pos = event.pos()
         self._prev_selection_nodes, self._prev_selection_pipes = self.selected_items()
@@ -408,20 +409,22 @@ class NodeViewer(QGraphicsView):
         map_pos = self.mapToScene(event.pos())
 
         # debug path
-        if self.LMB_state:
-            path = self._debug_path.path()
-            path.moveTo(map_pos)
-            self._debug_path.setPath(path)
+        if self._debug_mode:
+            if self.LMB_state:
+                path = self._debug_path.path()
+                path.moveTo(map_pos)
+                self._debug_path.setPath(path)
 
         # pipe slicer enabled.
-        slicer_mode = all([self.ALT_state, self.SHIFT_state, self.LMB_state])
-        if slicer_mode:
+        if self.LMB_state and event.modifiers() == (
+            Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ShiftModifier
+        ):
             self._SLICER_PIPE.draw_path(map_pos, map_pos)
             self._SLICER_PIPE.setVisible(True)
             return
 
         # pan mode.
-        if self.ALT_state:
+        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
             return
 
         items = self._items_near(map_pos, None, 20, 20)
@@ -442,13 +445,13 @@ class NodeViewer(QGraphicsView):
 
         if self.LMB_state:
             # toggle extend node selection.
-            if self.SHIFT_state:
+            if shift_modifier:
                 for node in nodes:
                     node.selected = not node.selected
                     if node.selected:
                         selection.add(node)
             # unselected nodes with the "ctrl" key.
-            elif self.CTRL_state:
+            elif ctrl_modifier:
                 for node in nodes:
                     node.selected = False
             # if no modifier keys then add to selection set.
@@ -473,12 +476,12 @@ class NodeViewer(QGraphicsView):
 
         # stop here so we don't select a node.
         # (ctrl modifier can be used for something else in future.)
-        if self.CTRL_state:
+        if ctrl_modifier:
             return
 
         # allow new live pipe with the shift modifier on port that allow
         # for multi connection.
-        if self.SHIFT_state:
+        if shift_modifier:
             if pipes:
                 pipes[0].reset()
                 port = pipes[0].port_from_pos(map_pos, reverse=True)
@@ -564,34 +567,42 @@ class NodeViewer(QGraphicsView):
         super().mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
-        # Debug mouse
-        if self.LMB_state:
-            to_pos = self.mapToScene(event.pos())
-            path = self._debug_path.path()
-            path.lineTo(to_pos)
-            self._debug_path.setPath(path)
-            logging.debug(f"\rMouse pos: {to_pos.x():.2f}, {to_pos.y():.2f}")
+        shift_modifier = event.modifiers() == Qt.KeyboardModifier.ShiftModifier
+        ctrl_modifier = event.modifiers() == Qt.KeyboardModifier.ControlModifier
+        alt_modifier = event.modifiers() == Qt.KeyboardModifier.AltModifier
+        if self._debug_mode:
+            # Debug mouse
+            if self.LMB_state:
+                to_pos = self.mapToScene(event.pos())
+                path = self._debug_path.path()
+                path.lineTo(to_pos)
+                self._debug_path.setPath(path)
+                logging.debug(f"\rMouse pos: {to_pos.x():.2f}, {to_pos.y():.2f}")
 
         # Draw slicer
-        if self.ALT_state and self.SHIFT_state:
-            if self.LMB_state and self._SLICER_PIPE.isVisible():
+        if self.LMB_state and event.modifiers() == (
+            Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ShiftModifier
+        ):
+            if self._SLICER_PIPE.isVisible():
                 p1 = self._SLICER_PIPE.path().pointAtPercent(0)
                 p2 = self.mapToScene(self._previous_pos)
                 self._SLICER_PIPE.draw_path(p1, p2)
                 self._SLICER_PIPE.show()
             self._previous_pos = event.pos()
-            super(NodeViewer, self).mouseMoveEvent(event)
+            super().mouseMoveEvent(event)
             return
 
         # Pan view
-        if self.MMB_state or (self.LMB_state and self.ALT_state):
+        if self.MMB_state or (
+            self.LMB_state and alt_modifier and not self._LIVE_PIPE.isVisible()
+        ):
             previous_pos = self.mapToScene(self._previous_pos)
             current_pos = self.mapToScene(event.pos())
             delta = previous_pos - current_pos
             self._set_viewer_pan(delta.x(), delta.y())
 
-        if not self.ALT_state:
-            if self.SHIFT_state or self.CTRL_state:
+        if not alt_modifier:
+            if shift_modifier or ctrl_modifier:
                 if not self._LIVE_PIPE.isVisible():
                     self._cursor_text.setPos(self.mapToScene(event.pos()))
 
@@ -610,13 +621,13 @@ class NodeViewer(QGraphicsView):
                 )
                 self.scene().update(map_rect)
 
-                if self.SHIFT_state or self.CTRL_state:
+                if shift_modifier or ctrl_modifier:
                     nodes, pipes = self.selected_items()
 
                     for node in self._prev_selection_nodes:
                         node.selected = True
 
-                    if self.CTRL_state:
+                    if ctrl_modifier:
                         for pipe in pipes:
                             pipe.setSelected(False)
                         for node in nodes:
@@ -694,25 +705,6 @@ class NodeViewer(QGraphicsView):
         event.ignore()
 
     def keyPressEvent(self, event):
-        """
-        Key press event re-implemented to update the states for attributes:
-        - ALT_state
-        - CTRL_state
-        - SHIFT_state
-
-        Args:
-            event (QKeyEvent): key event.
-        """
-        self.ALT_state = event.modifiers() == Qt.KeyboardModifier.AltModifier
-        self.CTRL_state = event.modifiers() == Qt.KeyboardModifier.ControlModifier
-        self.SHIFT_state = event.modifiers() == Qt.KeyboardModifier.ShiftModifier
-
-        if event.modifiers() == (
-            Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ShiftModifier
-        ):
-            self.ALT_state = True
-            self.SHIFT_state = True
-
         if self._LIVE_PIPE.isVisible():
             super(NodeViewer, self).keyPressEvent(event)
             return
@@ -720,12 +712,15 @@ class NodeViewer(QGraphicsView):
         # show cursor text
         overlay_text = None
         self._cursor_text.setVisible(False)
-        if not self.ALT_state:
-            if self.SHIFT_state:
-                overlay_text = "\n    SHIFT:\n    Toggle/Extend Selection"
-            elif self.CTRL_state:
-                overlay_text = "\n    CTRL:\n    Deselect Nodes"
-        elif self.ALT_state and self.SHIFT_state:
+
+        if event.modifiers() == Qt.KeyboardModifier.ShiftModifier:
+            overlay_text = "\n    SHIFT:\n    Toggle/Extend Selection"
+        elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            overlay_text = "\n    CTRL:\n    Deselect Nodes"
+        elif (
+            event.modifiers()
+            == Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ShiftModifier
+        ):
             overlay_text = "\n    ALT + SHIFT:\n    Pipe Slicer Enabled"
         if overlay_text:
             self._cursor_text.setPlainText(overlay_text)
@@ -735,25 +730,15 @@ class NodeViewer(QGraphicsView):
         super(NodeViewer, self).keyPressEvent(event)
 
     def keyReleaseEvent(self, event):
-        """
-        Key release event re-implemented to update the states for attributes:
-        - ALT_state
-        - CTRL_state
-        - SHIFT_state
-
-        Args:
-            event (QKeyEvent): key event.
-        """
-        self.ALT_state = event.modifiers() == Qt.KeyboardModifier.AltModifier
-        self.CTRL_state = event.modifiers() == Qt.KeyboardModifier.ControlModifier
-        self.SHIFT_state = event.modifiers() == Qt.KeyboardModifier.ShiftModifier
-        super(NodeViewer, self).keyReleaseEvent(event)
-
         # hide and reset cursor text.
         self._cursor_text.setPlainText("")
         self._cursor_text.setVisible(False)
 
-    # --- scene events ---
+        super(NodeViewer, self).keyReleaseEvent(event)
+
+    # ----------------------------------------------------------------------------------
+    # Scene Events
+    # ----------------------------------------------------------------------------------
 
     def sceneMouseMoveEvent(self, event):
         """
@@ -808,11 +793,13 @@ class NodeViewer(QGraphicsView):
                 The event handler from the QtWidgets.QGraphicsScene
         """
         # pipe slicer enabled.
-        if self.ALT_state and self.SHIFT_state:
+        if event.modifiers() == (
+            Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ShiftModifier
+        ):
             return
 
         # viewer pan mode.
-        if self.ALT_state:
+        if event.modifiers() == Qt.KeyboardModifier.AltModifier:
             return
 
         if self._LIVE_PIPE.isVisible():
@@ -874,7 +861,7 @@ class NodeViewer(QGraphicsView):
             self.start_live_connection(from_port)
             self._LIVE_PIPE.draw_path(self._start_port, cursor_pos=pos)
 
-            if self.SHIFT_state:
+            if event.modifiers() == Qt.KeyboardModifier.ShiftModifier:
                 self._LIVE_PIPE.shift_selected = True
                 return
 
@@ -1249,14 +1236,6 @@ class NodeViewer(QGraphicsView):
         """
         cent = self._combined_rect(nodes).center()
         return [cent.x(), cent.y()]
-
-    def clear_key_state(self):
-        """
-        Resets the Ctrl, Shift, Alt modifiers key states.
-        """
-        self.CTRL_state = False
-        self.SHIFT_state = False
-        self.ALT_state = False
 
     def use_OpenGL(self):
         """
