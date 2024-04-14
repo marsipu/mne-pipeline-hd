@@ -30,7 +30,7 @@ class BaseNode(QGraphicsItem):
         Name of the node.
     inputs : dict
         Dictionary with input ports, where the key is the port name and
-        the value is a dict with kwargs for the :meth:`BaseNode.add_output()`.
+        the value is a dict with kwargs for the :meth:`BaseNode.add_input()`.
     outputs : dict
         Dictionary with output ports, where the key is the port name and
         the value is a dict with kwargs for :meth:`BaseNode.add_output()`.
@@ -203,7 +203,7 @@ class BaseNode(QGraphicsItem):
 
     def add_input(
         self,
-        name="input",
+        name,
         multi_connection=False,
         accepted_ports=None,
     ):
@@ -215,8 +215,8 @@ class BaseNode(QGraphicsItem):
             name for the port.
         multi_connection : bool
             allow multiple connections.
-        accepted_ports : list[str]
-            list of accepted port names.
+        accepted_ports : list, None
+            list of accepted port names, if None all ports are accepted.
 
         Returns
         -------
@@ -232,7 +232,7 @@ class BaseNode(QGraphicsItem):
 
     def add_output(
         self,
-        name="output",
+        name,
         multi_connection=False,
         accepted_ports=None,
     ):
@@ -244,8 +244,8 @@ class BaseNode(QGraphicsItem):
             name for the port.
         multi_connection : bool
             allow multiple connections.
-        accepted_ports : list[str]
-            list of accepted port names.
+        accepted_ports : list, None
+            list of accepted port names, if None all ports are accepted.
 
         Returns
         -------
@@ -473,10 +473,6 @@ class BaseNode(QGraphicsItem):
             event.ignore()
             return
         super().mouseReleaseEvent(event)
-
-    def mouseDoubleClickEvent(self, event):
-        # ToDo: implement (e.g. open function code etc.)
-        pass
 
     def itemChange(self, change, value):
         """

@@ -4,7 +4,12 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
-from mne_pipeline_hd.gui.node.nodes import FunctionNode
+from mne_pipeline_hd.gui.node.nodes import (
+    FunctionNode,
+    MEEGInputNode,
+    AssignmentNode,
+    MRIInputNode,
+)
 from pipeline.controller import NewController
 
 
@@ -15,35 +20,23 @@ def run_graph_test():
 
     ct = NewController()
     viewer = NodeViewer(ct)
-    viewer.resize(1000, 1000)
-    # viewer.create_node(MEEGInputNode)
-    # viewer.create_node(AssignmentNode)
+    viewer.resize(1600, 1000)
 
-    func_kwargs = {
-        "name": "Test Function",
-        "inputs": {
-            "In1": {
-                "accepted_ports": ["Out1"],
-            },
-            "In2": {
-                "accepted_ports": ["Out1, Out2"],
-            },
-        },
-        "outputs": {
-            "Out1": {
-                "accepted_ports": ["In1"],
-                "multi_connection": True,
-            },
-            "Out2": {
-                "accepted_ports": ["In1", "In2"],
-                "multi_connection": True,
-            },
-        },
-    }
+    meeg_node = viewer.create_node(MEEGInputNode)
+    mri_node = viewer.create_node(MRIInputNode)
+    ass_node = viewer.create_node(AssignmentNode)
+    func_node1 = viewer.create_node(FunctionNode)
+    func_node2 = viewer.create_node(FunctionNode)
+    func_node3 = viewer.create_node(FunctionNode)
+    func_node4 = viewer.create_node(FunctionNode)
 
-    func_node1 = viewer.create_node(FunctionNode, **func_kwargs)
-    func_node2 = viewer.create_node(FunctionNode, **func_kwargs)
+    # Wire up the nodes
+    meeg_node.set_output(0, func_node1.input(0))
     func_node1.set_output(0, func_node2.input(0))
+    mri_node.set_output(0, func_node3.input(1))
+    func_node3.set_output(0, func_node4.input(1))
+    ass_node.set_input(0, func_node2.output(0))
+    ass_node.set_input(1, func_node4.output(1))
 
     viewer.show()
     viewer.auto_layout_nodes()

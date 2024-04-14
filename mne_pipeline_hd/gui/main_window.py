@@ -70,6 +70,13 @@ from mne_pipeline_hd.gui.loading_widgets import (
     SubjectWizard,
     ExportDialog,
 )
+from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
+from mne_pipeline_hd.gui.node.nodes import (
+    MEEGInputNode,
+    MRIInputNode,
+    AssignmentNode,
+    FunctionNode,
+)
 from mne_pipeline_hd.gui.parameter_widgets import (
     BoolGui,
     IntGui,
@@ -78,7 +85,7 @@ from mne_pipeline_hd.gui.parameter_widgets import (
 )
 from mne_pipeline_hd.gui.plot_widgets import PlotViewSelection
 from mne_pipeline_hd.gui.tools import DataTerminal
-from mne_pipeline_hd.pipeline.controller import Controller, NewController
+from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.function_utils import close_all
 from mne_pipeline_hd.pipeline.pipeline_utils import (
     restart_program,
@@ -88,7 +95,6 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     iswin,
     logger,
 )
-from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
 
 
 class MainWindow(QMainWindow):
@@ -560,9 +566,145 @@ class MainWindow(QMainWindow):
         set_app_theme()
 
         # Add experimental Node-Tab
-        self.node_viewer = NodeViewer(NewController())
+        self.node_viewer = NodeViewer(self.ct, self)
         self.tab_func_widget.addTab(self.node_viewer, "Node-Graph")
         self.tab_func_widget.setCurrentWidget(self.node_viewer)
+
+        demo_dict = {
+            "Filter Raw": {
+                "parameters": {
+                    "low_cutoff": {
+                        "alias": "Low-Cutoff",
+                        "gui": "FloatGui",
+                        "default": 0.1,
+                    },
+                    "high_cutoff": {
+                        "alias": "High-Cutoff",
+                        "gui": "FloatGui",
+                        "default": 0.2,
+                    },
+                },
+                "inputs": {"Raw": {}},
+                "outputs": {"Raw": {"multi_connection": True}},
+            },
+            "Get Events": {
+                "parameters": {
+                    "event_id": {
+                        "alias": "Event-ID",
+                        "gui": "IntGui",
+                        "default": 1,
+                    },
+                },
+                "inputs": {"Raw": {}},
+                "outputs": {"Events": {"multi_connection": True}},
+            },
+            "Epoch Data": {
+                "parameters": {
+                    "epochs_tmin": {
+                        "alias": "tmin",
+                        "gui": "FloatGui",
+                        "default": -0.2,
+                    },
+                    "epochs_tmax": {
+                        "alias": "tmax",
+                        "gui": "FloatGui",
+                        "default": 0.5,
+                    },
+                    "apply_baseline": {
+                        "alias": "Baseline",
+                        "gui": "BoolGui",
+                        "default": True,
+                    },
+                },
+                "inputs": {"Raw": {}, "Events": {}},
+                "outputs": {"Epochs": {"multi_connection": True}},
+            },
+            "Average Epochs": {
+                "parameters": {
+                    "event_id": {
+                        "alias": "Event-ID",
+                        "gui": "IntGui",
+                        "default": 1,
+                    },
+                },
+                "inputs": {"Epochs": {}},
+                "outputs": {"Evokeds": {"multi_connection": True}},
+            },
+            "Make Forward Model": {
+                "parameters": {
+                    "fwd_subject": {
+                        "alias": "Forward Subject",
+                        "gui": "StringGui",
+                        "default": "fsaverage",
+                    },
+                },
+                "inputs": {
+                    "MRI": {},
+                },
+                "outputs": {"Fwd": {"multi_connection": True}},
+            },
+            "Make Inverse Operator": {
+                "parameters": {
+                    "inv_subject": {
+                        "alias": "Inverse Subject",
+                        "gui": "StringGui",
+                        "default": "fsaverage",
+                    },
+                },
+                "inputs": {"Evokeds": {}, "Fwd": {}},
+                "outputs": {"Inv": {"multi_connection": True}},
+            },
+            "Plot Source Estimates": {
+                "parameters": {
+                    "subject": {
+                        "alias": "Subject",
+                        "gui": "StringGui",
+                        "default": "fsaverage",
+                    },
+                },
+                "inputs": {
+                    "Inv": {},
+                },
+                "outputs": {"Plot": {"multi_connection": True}},
+            },
+        }
+
+        # Add some demo nodes
+        meeg_node = self.node_viewer.create_node(MEEGInputNode)
+        mri_node = self.node_viewer.create_node(MRIInputNode)
+        ass_node = self.node_viewer.create_node(
+            AssignmentNode,
+            inputs={"Evokeds": {}, "Fwd": {}},
+            outputs={"Evokeds": {}, "Fwd": {}},
+        )
+        fn = dict()
+        for func_name, func_kwargs in demo_dict.items():
+            fnode = self.node_viewer.create_node(
+                FunctionNode, function_name=func_name, **func_kwargs
+            )
+            fn[func_name] = fnode
+
+        # Wire up the nodes
+        meeg_node.set_output(0, fn["Filter Raw"].input(0))
+        meeg_node.set_output(0, fn["Get Events"].input(0))
+        fn["Epoch Data"].set_input("Raw", fn["Filter Raw"].output(0))
+        fn["Epoch Data"].set_input("Events", fn["Get Events"].output(0))
+        fn["Epoch Data"].set_output("Epochs", fn["Average Epochs"].input("Epochs"))
+
+        mri_node.set_output(0, fn["Make Forward Model"].input("MRI"))
+
+        ass_node.set_input(0, fn["Average Epochs"].output("Evokeds"))
+        ass_node.set_input(1, fn["Make Forward Model"].output("Fwd"))
+        ass_node.set_output(0, fn["Make Inverse Operator"].input("Evokeds"))
+        ass_node.set_output(1, fn["Make Inverse Operator"].input("Fwd"))
+
+        fn["Plot Source Estimates"].set_input(
+            "Inv", fn["Make Inverse Operator"].output("Inv")
+        )
+
+        self.node_viewer.auto_layout_nodes()
+        self.node_viewer.clear_selection()
+        self.node_viewer.fit_to_selection()
 
     def update_func_bts(self):
         # Remove tabs in tab_func_widget

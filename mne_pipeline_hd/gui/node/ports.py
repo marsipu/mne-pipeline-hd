@@ -19,11 +19,33 @@ class PortText(QGraphicsTextItem):
 
 
 class Port(QGraphicsItem):
+    """
+    A graphical representation of a port in a node-based interface.
+
+    This class represents a port which can be an input or output port of a node.
+    It supports hover events, multiple connections, and connection compatibility checks.
+    It also handles the drawing of the port and its connections.
+
+    Parameters
+    ----------
+    node : Node
+        The node this port is part of.
+    name : str
+        The name of the port.
+    port_type : str
+        The type of the port, can be either 'in' or 'out'.
+    multi_connection : bool
+        Whether the port supports multiple connections or not, defaults to False.
+    accepted_ports : list, None
+        List of port names that this port can connect to.
+        If None, it can connect to any port.
+    """
+
     def __init__(
         self,
         node,
-        name=None,
-        port_type=None,
+        name,
+        port_type,
         multi_connection=False,
         accepted_ports=None,
     ):
@@ -47,7 +69,7 @@ class Port(QGraphicsItem):
         self._multi_connection = multi_connection
         self._connected_ports = OrderedDict()
         self._connected_pipes = OrderedDict()
-        self._accepted_ports = accepted_ports or list()
+        self._accepted_ports = accepted_ports
 
         self._width = defaults["ports"]["size"]
         self._height = defaults["ports"]["size"]
@@ -371,9 +393,10 @@ class Port(QGraphicsItem):
             if verbose:
                 logging.debug("Ports are already connected.")
         # check if the ports are compatible.
-        elif port.name not in self.accepted_ports:
-            if verbose:
-                logging.debug("Ports are not compatible.")
+        elif self.accepted_ports is not None:
+            if self.name not in self.accepted_ports:
+                if verbose:
+                    logging.debug("Ports are not compatible.")
         else:
             if verbose:
                 logging.debug("Ports are compatible.")
