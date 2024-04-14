@@ -9,7 +9,6 @@ from mne_pipeline_hd.gui.loading_widgets import AddFilesWidget, AddMRIWidget
 class BaseInputNode(BaseNode):
     """Node for input data like MEEG, FSMRI, etc."""
 
-    # ToDo: Add import functionality.
     # Add Start button (Depending from where we start, we get different orders of execution)
     # There can be secondary inputs
     def __init__(self, ct):
