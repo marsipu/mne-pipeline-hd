@@ -459,10 +459,10 @@ class Port(QGraphicsItem):
         # Remove ids from connected ports of this port and the target port.
         for port, trg_port in [(self, target_port), (target_port, self)]:
             rm_ports = port.get_connected_ports(node_id=trg_port.node.id)
+            if trg_port in rm_ports:
+                rm_ports.remove(trg_port)
             if len(rm_ports) == 0:
                 del port.connected_ports[trg_port.node.id]
-            elif trg_port in rm_ports:
-                rm_ports.remove(trg_port)
 
         # Remove the pipe connected to target_port
         rm_pipe = self.connected_pipes.pop(target_port.id, None)

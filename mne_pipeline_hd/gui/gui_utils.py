@@ -824,6 +824,8 @@ def mouseDrag(widget, positions, button, modifier=None):
     mousePress(widget=widget, pos=positions[0], button=button, modifier=modifier)
     for pos in positions[1:]:
         mouseMove(widget=widget, pos=pos, button=button, modifier=modifier)
+    # For some reason moeve again to last position
+    mouseMove(widget=widget, pos=positions[-1], button=button, modifier=modifier)
     mouseRelease(widget=widget, pos=positions[-1], button=button, modifier=modifier)
 
 
