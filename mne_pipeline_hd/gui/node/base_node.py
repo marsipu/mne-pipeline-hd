@@ -347,7 +347,10 @@ class BaseNode(QGraphicsItem):
         """
         nodes = OrderedDict()
         for p in self.inputs:
-            nodes[p] = [cp.node() for cp in p.connected_ports()]
+            nodes[p] = [
+                self.viewer.node(node_id=node_id)
+                for node_id in p.connected_ports.keys()
+            ]
         return nodes
 
     def connected_output_nodes(self):
@@ -359,7 +362,10 @@ class BaseNode(QGraphicsItem):
         """
         nodes = OrderedDict()
         for p in self.outputs:
-            nodes[p] = [cp.node() for cp in p.connected_ports()]
+            nodes[p] = [
+                self.viewer.node(node_id=node_id)
+                for node_id in p.connected_ports.keys()
+            ]
         return nodes
 
     def add_widget(self, widget):

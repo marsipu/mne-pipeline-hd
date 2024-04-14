@@ -28,8 +28,6 @@ class NodeViewer(QGraphicsView):
     # ----------------------------------------------------------------------------------
     NodesCreated = Signal(list)
     NodesDeleted = Signal(list)
-    NodeSelected = Signal(BaseNode)
-    NodeSelectionChanged = Signal(list, list)
     NodeDoubleClicked = Signal(BaseNode)
     PortConnected = Signal(Port, Port)
     PortDisconnected = Signal(Port, Port)
@@ -191,9 +189,6 @@ class NodeViewer(QGraphicsView):
         node : BaseNode
             Node instance to remove.
         """
-        if not isinstance(node, BaseNode):
-            logging.error(f"NodeViewer.remove_node: {node} is not a BaseNode instance.")
-
         if node in self.scene().items():
             self.scene().removeItem(node)
         # Deliberately with room for KeyError to detect,
@@ -349,14 +344,13 @@ class NodeViewer(QGraphicsView):
         self.scene().destroyItemGroup(group)
         return rect
 
-    def _items_near(self, pos, item_type=None, width=20, height=20):
+    def _items_near(self, pos, width=20, height=20):
         """
         Filter node graph items from the specified position, width and
         height area.
 
         Args:
             pos (QPointF): scene pos.
-            item_type: filter item type. (optional)
             width (int): width area.
             height (int): height area.
 
@@ -370,8 +364,7 @@ class NodeViewer(QGraphicsView):
         for item in self.scene().items(rect):
             if item in excl:
                 continue
-            if not item_type or isinstance(item, item_type):
-                items.append(item)
+            items.append(item)
         return items
 
     # Reimplement events
@@ -397,9 +390,6 @@ class NodeViewer(QGraphicsView):
             self.RMB_state = True
         elif event.button() == Qt.MouseButton.MiddleButton:
             self.MMB_state = True
-
-        shift_modifier = event.modifiers() == Qt.KeyboardModifier.ShiftModifier
-        ctrl_modifier = event.modifiers() == Qt.KeyboardModifier.ControlModifier
 
         self._origin_pos = event.pos()
         self._previous_pos = event.pos()
@@ -427,42 +417,15 @@ class NodeViewer(QGraphicsView):
         if event.modifiers() == Qt.KeyboardModifier.AltModifier:
             return
 
-        items = self._items_near(map_pos, None, 20, 20)
-        pipes = []
-        nodes = []
-        for itm in items:
-            if isinstance(itm, Pipe):
-                pipes.append(itm)
-            elif isinstance(itm, BaseNode):
-                nodes.append(itm)
+        items = self._items_near(map_pos, 20, 20)
+        nodes = [i for i in items if self.isnode(i)]
 
         if len(nodes) > 0:
             self.MMB_state = False
 
-        # record the node selection as "self.selected_nodes()" is not updated
-        # here on the mouse press event.
-        selection = set([])
-
-        if self.LMB_state:
-            # toggle extend node selection.
-            if shift_modifier:
-                for node in nodes:
-                    node.selected = not node.selected
-                    if node.selected:
-                        selection.add(node)
-            # unselected nodes with the "ctrl" key.
-            elif ctrl_modifier:
-                for node in nodes:
-                    node.selected = False
-            # if no modifier keys then add to selection set.
-            else:
-                for node in nodes:
-                    if node.selected:
-                        selection.add(node)
-
-        selection.update(self.selected_nodes())
-
         # update the recorded node positions.
+        selection = set([])
+        selection.update(self.selected_nodes())
         self._node_positions.update({n: n.xy_pos for n in selection})
 
         # show selection marquee.
@@ -473,26 +436,6 @@ class NodeViewer(QGraphicsView):
             self.scene().update(map_rect)
             self._rubber_band.setGeometry(rect)
             self._rubber_band.isActive = True
-
-        # stop here so we don't select a node.
-        # (ctrl modifier can be used for something else in future.)
-        if ctrl_modifier:
-            return
-
-        # allow new live pipe with the shift modifier on port that allow
-        # for multi connection.
-        if shift_modifier:
-            if pipes:
-                pipes[0].reset()
-                port = pipes[0].port_from_pos(map_pos, reverse=True)
-                if not port.locked and port.multi_connection:
-                    self._cursor_text.setPlainText("")
-                    self._cursor_text.setVisible(False)
-                    self.start_live_connection(port)
-
-            # return here as the default behaviour unselects nodes with
-            # the shift modifier.
-            return
 
         if not self._LIVE_PIPE.isVisible():
             super().mousePressEvent(event)
@@ -508,7 +451,7 @@ class NodeViewer(QGraphicsView):
         # hide pipe slicer.
         if self._SLICER_PIPE.isVisible():
             for i in self.scene().items(self._SLICER_PIPE.path()):
-                if isinstance(i, Pipe) and i != self._LIVE_PIPE:
+                if self.ispipe(i) and i != self._LIVE_PIPE:
                     i.input_port.disconnect_from(i.output_port)
             p = QPointF(0.0, 0.0)
             self._SLICER_PIPE.draw_path(p, p)
@@ -521,22 +464,6 @@ class NodeViewer(QGraphicsView):
                 rect = self._rubber_band.rect()
                 map_rect = self.mapToScene(rect).boundingRect()
                 self._rubber_band.hide()
-
-                rect = QRect(self._origin_pos, event.pos()).normalized()
-                rect_items = self.scene().items(self.mapToScene(rect).boundingRect())
-                node_ids = []
-                for item in rect_items:
-                    if isinstance(item, BaseNode):
-                        node_ids.append(item.id)
-
-                # emit the node selection signals.
-                if node_ids:
-                    prev_ids = [
-                        n.id for n in self._prev_selection_nodes if not n.selected
-                    ]
-                    self.NodeSelected.emit(node_ids[0])
-                    self.NodeSelectionChanged.emit(node_ids, prev_ids)
-
                 self.scene().update(map_rect)
                 return
 
@@ -559,16 +486,9 @@ class NodeViewer(QGraphicsView):
         if self.COLLIDING_state and nodes and pipes:
             self.InsertNode.emit(pipes[0], nodes[0].id, moved_nodes)
 
-        # emit node selection changed signal.
-        prev_ids = [n.id for n in self._prev_selection_nodes if not n.selected]
-        node_ids = [n.id for n in nodes if n not in self._prev_selection_nodes]
-        self.NodeSelectionChanged.emit(node_ids, prev_ids)
-
         super().mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
-        shift_modifier = event.modifiers() == Qt.KeyboardModifier.ShiftModifier
-        ctrl_modifier = event.modifiers() == Qt.KeyboardModifier.ControlModifier
         alt_modifier = event.modifiers() == Qt.KeyboardModifier.AltModifier
         if self._debug_mode:
             # Debug mouse
@@ -601,11 +521,6 @@ class NodeViewer(QGraphicsView):
             delta = previous_pos - current_pos
             self._set_viewer_pan(delta.x(), delta.y())
 
-        if not alt_modifier:
-            if shift_modifier or ctrl_modifier:
-                if not self._LIVE_PIPE.isVisible():
-                    self._cursor_text.setPos(self.mapToScene(event.pos()))
-
         if self.LMB_state and self._rubber_band.isActive:
             rect = QRect(self._origin_pos, event.pos()).normalized()
             # if the rubber band is too small, do not show it.
@@ -621,18 +536,6 @@ class NodeViewer(QGraphicsView):
                 )
                 self.scene().update(map_rect)
 
-                if shift_modifier or ctrl_modifier:
-                    nodes, pipes = self.selected_items()
-
-                    for node in self._prev_selection_nodes:
-                        node.selected = True
-
-                    if ctrl_modifier:
-                        for pipe in pipes:
-                            pipe.setSelected(False)
-                        for node in nodes:
-                            node.selected = False
-
         elif self.LMB_state:
             self.COLLIDING_state = False
             nodes, pipes = self.selected_items()
@@ -641,9 +544,7 @@ class NodeViewer(QGraphicsView):
                 [p.setSelected(False) for p in pipes]
 
                 colliding_pipes = [
-                    i
-                    for i in node.collidingItems()
-                    if isinstance(i, Pipe) and i.isVisible()
+                    i for i in node.collidingItems() if self.ispipe(i) and i.isVisible()
                 ]
                 for pipe in colliding_pipes:
                     if not pipe.input_port:
@@ -713,11 +614,7 @@ class NodeViewer(QGraphicsView):
         overlay_text = None
         self._cursor_text.setVisible(False)
 
-        if event.modifiers() == Qt.KeyboardModifier.ShiftModifier:
-            overlay_text = "\n    SHIFT:\n    Toggle/Extend Selection"
-        elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-            overlay_text = "\n    CTRL:\n    Deselect Nodes"
-        elif (
+        if (
             event.modifiers()
             == Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ShiftModifier
         ):
@@ -757,7 +654,7 @@ class NodeViewer(QGraphicsView):
         pos = event.scenePos()
         pointer_color = None
         for item in self.scene().items(pos):
-            if not isinstance(item, Port):
+            if not self.isport(item):
                 continue
 
             x = item.boundingRect().width() / 2
@@ -786,7 +683,6 @@ class NodeViewer(QGraphicsView):
         """
         triggered mouse press event for the scene (takes priority over viewer event).
          - detect selected pipe and start connection.
-         - remap Shift and Ctrl modifier.
 
         Args:
             event (QtWidgets.QGraphicsScenePressEvent):
@@ -807,17 +703,17 @@ class NodeViewer(QGraphicsView):
             return
 
         pos = event.scenePos()
-        items = self._items_near(pos, None, 5, 5)
+        items = self._items_near(pos, 5, 5)
 
         # filter from the selection stack in the following order
         # "node, port, pipe" this is to avoid selecting items under items.
         node, port, pipe = None, None, None
         for item in items:
-            if isinstance(item, BaseNode):
+            if self.isnode(item):
                 node = item
-            elif isinstance(item, Port):
+            elif self.isport(item):
                 port = item
-            elif isinstance(item, Pipe):
+            elif self.ispipe(item):
                 pipe = item
             if any([node, port, pipe]):
                 break
@@ -831,16 +727,11 @@ class NodeViewer(QGraphicsView):
             return
 
         if node:
-            node_items = self._items_near(pos, BaseNode, 3, 3)
+            node_items = [i for i in self._items_near(pos, 3, 3) if self.isnode(i)]
 
             # record the node positions at selection time.
             for n in node_items:
                 self._node_positions[n] = n.xy_pos
-
-            # emit selected node id with LMB.
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.NodeSelected.emit(node.id)
-            return
 
         if pipe:
             if not self.LMB_state:
@@ -897,7 +788,7 @@ class NodeViewer(QGraphicsView):
         # find the end port.
         end_port = None
         for item in self.scene().items(event.scenePos()):
-            if isinstance(item, Port):
+            if self.isport(item):
                 end_port = item
                 break
 
@@ -982,6 +873,54 @@ class NodeViewer(QGraphicsView):
         self._LIVE_PIPE.shift_selected = False
         self._start_port = None
 
+    def isnode(self, item):
+        """
+        Check if the item is a node.
+
+        Parameters
+        ----------
+        item: QGraphicsItem
+
+        Returns
+        -------
+        result: bool
+            True if the item is a node.
+        """
+        # For some reason, issubclass(item.__class__, BaseNode) does not work
+        if item in self.nodes.values():
+            return True
+        return False
+
+    def isport(self, item):
+        """
+        Check if the item is a port.
+
+        Parameters
+        ----------
+        item: QGraphicsItem
+
+        Returns
+        -------
+        result: bool
+            True if the item is a port.
+        """
+        return isinstance(item, Port)
+
+    def ispipe(self, item):
+        """
+        Check if the item is a pipe.
+
+        Parameters
+        ----------
+        item: QGraphicsItem
+
+        Returns
+        -------
+        result: bool
+            True if the item is a pipe.
+        """
+        return isinstance(item, Pipe)
+
     def all_pipes(self):
         """
         Returns all pipe qgraphic items.
@@ -989,19 +928,7 @@ class NodeViewer(QGraphicsView):
         Returns:
             list[PipeItem]: instances of pipe items.
         """
-        excl = [self._LIVE_PIPE, self._SLICER_PIPE]
-        return [
-            i for i in self.scene().items() if isinstance(i, Pipe) and i not in excl
-        ]
-
-    def all_nodes(self):
-        """
-        Returns all node qgraphic items.
-
-        Returns:
-            list[AbstractNodeItem]: instances of node items.
-        """
-        return [i for i in self.scene().items() if isinstance(i, BaseNode)]
+        return [i for i in self.scene().items() if self.ispipe(i)]
 
     def selected_nodes(self):
         """
@@ -1010,7 +937,7 @@ class NodeViewer(QGraphicsView):
         Returns:
             list[AbstractNodeItem]: instances of node items.
         """
-        return [i for i in self.scene().selectedItems() if isinstance(i, BaseNode)]
+        return [i for i in self.scene().selectedItems() if self.isnode(i)]
 
     def selected_pipes(self):
         """
@@ -1019,8 +946,7 @@ class NodeViewer(QGraphicsView):
         Returns:
             list[Pipe]: pipe items.
         """
-        pipes = [i for i in self.scene().selectedItems() if isinstance(i, Pipe)]
-        return pipes
+        return [i for i in self.scene().selectedItems() if self.ispipe(i)]
 
     def selected_items(self):
         """
@@ -1030,13 +956,9 @@ class NodeViewer(QGraphicsView):
             tuple(list[AbstractNodeItem], list[Pipe]):
                 selected (node items, pipe items).
         """
-        nodes = []
-        pipes = []
-        for item in self.scene().selectedItems():
-            if isinstance(item, BaseNode):
-                nodes.append(item)
-            elif isinstance(item, Pipe):
-                pipes.append(item)
+        nodes = [i for i in self.scene().selectedItems() if self.isnode(i)]
+        pipes = [i for i in self.scene().selectedItems() if self.ispipe(i)]
+
         return nodes, pipes
 
     def move_nodes(self, nodes, pos=None, offset=None):
@@ -1090,13 +1012,9 @@ class NodeViewer(QGraphicsView):
         Args:
             nodes (list[AbstractNodeItem]): a list of node items.
         """
+        nodes = nodes or self.selected_nodes() or self.nodes.values()
         if not nodes:
-            if self.selected_nodes():
-                nodes = self.selected_nodes()
-            elif self.all_nodes():
-                nodes = self.all_nodes()
-            if not nodes:
-                return
+            return
 
         rect = self._combined_rect(nodes)
         self._scene_range.translate(rect.center() - self._scene_range.center())
@@ -1170,10 +1088,10 @@ class NodeViewer(QGraphicsView):
         Sets the zoom level to fit selected nodes.
         If no nodes are selected then all nodes in the graph will be framed.
         """
-        nodes = self.selected_nodes() or self.all_nodes()
+        nodes = self.selected_nodes() or self.nodes.values()
         if not nodes:
             return
-        self.zoom_to_nodes([n.view for n in nodes])
+        self.zoom_to_nodes(nodes)
 
     def force_update(self):
         """
@@ -1336,7 +1254,7 @@ class NodeViewer(QGraphicsView):
             start_nodes (list[NodeGraphQt.BaseNode]):
                 list of nodes to start the auto layout from (Optional).
         """
-        nodes = nodes or self.all_nodes()
+        nodes = nodes or self.nodes.values()
 
         start_nodes = start_nodes or []
         if down_stream:
@@ -1351,8 +1269,7 @@ class NodeViewer(QGraphicsView):
         if not start_nodes:
             return
 
-        node_views = [n.view for n in nodes]
-        nodes_center_0 = self.nodes_rect_center(node_views)
+        nodes_center_0 = self.nodes_rect_center(nodes)
 
         nodes_rank = NodeViewer._compute_node_rank(start_nodes, down_stream)
 
@@ -1367,18 +1284,18 @@ class NodeViewer(QGraphicsView):
         node_height = 120
         for rank in sorted(range(len(rank_map)), reverse=not down_stream):
             ranked_nodes = rank_map[rank]
-            max_width = max([node.view.width for node in ranked_nodes])
+            max_width = max([node.width for node in ranked_nodes])
             current_x += max_width
             current_y = 0
             for idx, node in enumerate(ranked_nodes):
-                dy = max(node_height, node.view.height)
+                dy = max(node_height, node.height)
                 current_y += 0 if idx == 0 else dy
-                node.set_pos(current_x, current_y)
+                node.setPos(current_x, current_y)
                 current_y += dy * 0.5 + 10
 
             current_x += max_width * 0.5 + 100
 
-        nodes_center_1 = self.nodes_rect_center(node_views)
+        nodes_center_1 = self.nodes_rect_center(nodes)
         dx = nodes_center_0[0] - nodes_center_1[0]
         dy = nodes_center_0[1] - nodes_center_1[1]
-        [n.set_pos(n.x_pos() + dx, n.y_pos() + dy) for n in nodes]
+        [n.setPos(n.x() + dx, n.y() + dy) for n in nodes]
