@@ -482,9 +482,10 @@ class NodeViewer(QGraphicsView):
 
         # emit signal if selected node collides with pipe.
         # Note: if collide state is true then only 1 node is selected.
-        nodes, pipes = self.selected_items()
-        if self.COLLIDING_state and nodes and pipes:
-            self.InsertNode.emit(pipes[0], nodes[0].id, moved_nodes)
+        # ToDo: Implement colliding if necessary
+        # nodes, pipes = self.selected_items()
+        # if self.COLLIDING_state and nodes and pipes:
+        #     self.InsertNode.emit(pipes[0], nodes[0].id, moved_nodes)
 
         super().mouseReleaseEvent(event)
 
@@ -738,10 +739,6 @@ class NodeViewer(QGraphicsView):
                 return
 
             from_port = pipe.port_from_pos(pos, True)
-
-            if from_port.locked:
-                return
-
             from_port.hovered = True
 
             attr = {
