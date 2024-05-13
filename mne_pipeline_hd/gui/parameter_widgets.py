@@ -1272,9 +1272,7 @@ class LabelPicker(mne.viz.Brain):
         labels = fsmri.get_labels(parcellation=parcellation)
         if parcellation == "Other":
             for label in labels:
-                self.add_label(
-                    label, borders=True, color="k", alpha=0.75, reset_camera=False
-                )
+                self.add_label(label, borders=True, color="k", alpha=0.75)
         else:
             self.add_annotation(
                 parcellation, borders=True, color="k", alpha=0.75, remove_existing=True
@@ -1360,7 +1358,7 @@ class LabelPicker(mne.viz.Brain):
                     label = lb
                     break
         if label is not None:
-            self.add_label(label, borders=False, reset_camera=False)
+            self.add_label(label, borders=False)
             self._shown_labels.append(label_name)
 
     def _remove_label_name(self, label_name, hemi):
