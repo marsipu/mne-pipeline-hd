@@ -26,6 +26,7 @@ dependencies = [
     "mne-connectivity",
     # MNE related
     "vtk",
+    "nibabel",
     "autoreject",
     "h5io",
     "h5netcdf",
