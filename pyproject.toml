@@ -30,6 +30,7 @@ dependencies = [
     "autoreject",
     "h5io",
     "h5netcdf",
+    "pyvistaqt",
     # PyQt
     "qtpy",
     "pyqtdarktheme",
