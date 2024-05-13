@@ -25,12 +25,12 @@ dependencies = [
     "mne-qt-browser",
     "mne-connectivity",
     # MNE related
-    "vtk",
-    "nibabel",
+    "vtk", # needed for CIs
+    "nibabel", # needed for CIs
+    "pyvistaqt", # needed for CIs
     "autoreject",
     "h5io",
     "h5netcdf",
-    "pyvistaqt",
     # PyQt
     "qtpy",
     "pyqtdarktheme",
