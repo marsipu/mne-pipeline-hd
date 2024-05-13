@@ -1,7 +1,13 @@
-.. mne-pipeline-hd documentation master file, created by
-sphinx-quickstart on Sat May 21 14:00:00 2022.
-You can adapt this file completely to your liking, but it should at least
-contain the root `toctree` directive.
+:html_theme.sidebar_secondary.remove:
+
+.. title:: MNE-Pipeline-HD
+
+.. The page title must be in rST for it to show in next/prev page buttons.
+   Therefore we add a special style rule to only this page that hides h1 tags
+
+.. raw:: html
+
+    <style type="text/css">h1 {display:none;}</style>
 
 Welcome to mne-pipeline-hd's documentation!
 ===========================================
@@ -9,6 +15,7 @@ Welcome to mne-pipeline-hd's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
 
 
 

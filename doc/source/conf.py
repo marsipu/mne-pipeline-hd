@@ -22,7 +22,7 @@ sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd")))
 
 # -- Project information -----------------------------------------------------
 project = "mne-pipeline-hd"
-author = "Martin Schulz"
+author = "Martin G. Schulz"
 
 td = datetime.now(tz=timezone.utc)
 copyright = (
