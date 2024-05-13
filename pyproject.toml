@@ -25,6 +25,7 @@ dependencies = [
     "mne-qt-browser",
     "mne-connectivity",
     # MNE related
+    "vtk",
     "autoreject",
     "h5io",
     "h5netcdf",
