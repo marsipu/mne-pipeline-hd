@@ -19,7 +19,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
 ]
-
 dependencies = [
     # MNE
     "mne",
@@ -36,7 +35,7 @@ dependencies = [
     # Other
     "psutil",
 ]
-
+dynamic = [ "version" ]
 [project.optional-dependencies]
 tests = [
     "pytest",
