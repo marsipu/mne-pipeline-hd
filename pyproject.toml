@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [project]
 name = "mne-pipeline-hd"
@@ -10,26 +10,44 @@ authors = [
 description = "A Pipeline-GUI for MNE-Python from MEG-Lab Heidelberg"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { "text" = "BSD-3-Clause" }
+license = { file = "LICENSE" }
 keywords = ["mne-python", "meg", "eeg", "pipeline", "gui", "heidelberg"]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python",
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
 ]
-dynamic = ["version", "dependencies"]
-
+dependencies = [
+    # MNE
+    "mne",
+    "mne-qt-browser",
+    "mne-connectivity",
+    # MNE related
+    "vtk", # needed for CIs
+    "nibabel", # needed for CIs
+    "pyvistaqt", # needed for CIs
+    "autoreject",
+    "h5io",
+    "h5netcdf",
+    # PyQt
+    "qtpy",
+    "pyqtdarktheme",
+    "pyobjc-framework-Cocoa; sys_platform == 'Darwin'",
+    # Other
+    "psutil",
+]
+dynamic = [ "version" ]
 [project.optional-dependencies]
 tests = [
-    "black",
-    "pre-commit",
-    "pydata-sphinx-theme",
     "pytest",
     "pytest-qt",
+    "pre-commit",
+    "black",
     "ruff",
-    "sphinx"
+    "sphinx",
+    "pydata-sphinx-theme",
 ]
 
 [project.urls]
@@ -39,9 +57,15 @@ Repository = "https://github.com/marsipu/mne-pipeline-hd.git"
 [project.scripts]
 mne_pipeline_hd = "mne_pipeline_hd.__main__:main"
 
-[tool.setuptools.dynamic]
-version = { attr = "mne_pipeline_hd.__version__" }
-dependencies = { file = "requirements.txt" }
+[tool.hatch.build]
+exclude = [
+    "/.*",
+    "/*.yml",
+]
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { version_scheme = "release-branch-semver" }
 
 [tool.black]
 line-lenght = 88
