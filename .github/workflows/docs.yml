@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  build:
+  build_docs:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -25,6 +25,7 @@ jobs:
           pip install -v ".[docs]"
     - name: Build docs
       run: |
+          cd ./docs
           make html
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
