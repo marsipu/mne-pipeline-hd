@@ -46,6 +46,8 @@ tests = [
     "pre-commit",
     "black",
     "ruff",
+]
+docs = [
     "sphinx",
     "pydata-sphinx-theme",
 ]

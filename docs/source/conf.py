@@ -26,7 +26,7 @@ author = "Martin G. Schulz"
 
 td = datetime.now(tz=timezone.utc)
 copyright = (
-    f"2018-{datetime.now().year}, {author}, "
+    f"2019-{datetime.now().year}, {author}, "
     f'Last updated {td.strftime("%Y-%m-%d %H:%M %Z")}'
 )
 
