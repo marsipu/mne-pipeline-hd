@@ -4,10 +4,10 @@
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-import importlib
 
 # -- Path setup --------------------------------------------------------------
 
+from importlib.metadata import version
 import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -31,7 +31,8 @@ copyright = (
 )
 
 # The full version, including alpha/beta/rc tags
-release = importlib.metadata.version("mne_pipeline_hd")
+
+release = version("mne_pipeline_hd")
 
 # -- General configuration ---------------------------------------------------
 
