@@ -28,7 +28,6 @@ jobs:
     - name: Build docs
       run: |
           cd ./docs
-          python -c "import mne_pipeline_hd;print(dir(mne_pipeline_hd.gui))"
           make html
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
