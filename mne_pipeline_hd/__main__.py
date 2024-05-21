@@ -6,11 +6,11 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import os
-import re
 import sys
 from importlib import resources
 from os.path import join
 
+import darkdetect
 import qtpy
 from qtpy.QtCore import QTimer, Qt
 from qtpy.QtGui import QIcon, QFont
@@ -24,15 +24,12 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     ismac,
     islin,
     QS,
-    iswin,
     init_logging,
     logger,
 )
 
 # Check for changes in required packages
 legacy_import_check()
-
-import qdarktheme  # noqa: E402
 
 
 def init_streams():
@@ -46,7 +43,16 @@ def main():
     organization_name = "marsipu"
     domain_name = "https://github.com/marsipu/mne-pipeline-hd"
 
-    qdarktheme.enable_hi_dpi()
+    # Enable High-DPI
+    if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps"):
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+    if hasattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling"):
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
+    if hasattr(Qt, "HighDpiScaleFactorRoundingPolicy"):
+        os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
+        QApplication.setHighDpiScaleFactorRoundingPolicy(
+            Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+        )
 
     app = QApplication.instance()
     if not app:
@@ -105,23 +111,33 @@ def main():
     if app_style not in ["dark", "light", "auto"]:
         app_style = "auto"
 
-    qdarktheme.setup_theme(app_style)
-    st = qdarktheme.load_stylesheet(app_style)
-    is_dark = "background:rgba(32, 33, 36, 1.000)" in st
-    if is_dark:
+    # Detect system theme
+    if app_style == "auto":
+        system_theme = darkdetect.theme().lower()
+        if system_theme is None:
+            logger().info("System theme detection failed. Using light theme.")
+            system_theme = "light"
+        app_style = system_theme
+    if app_style == "dark":
+        stylesheet_path = join(
+            str(resources.files(mne_pipeline_hd.extra)), "dark_stylesheet.txt"
+        )
+    else:
+        stylesheet_path = join(
+            str(resources.files(mne_pipeline_hd.extra)), "light_stylesheet.txt"
+        )
+
+    with open(stylesheet_path, "r") as f:
+        stylesheet = f.read()
+
+    app.setStyleSheet(stylesheet)
+
+    if app_style == "dark":
         icon_name = "mne_pipeline_icon_dark.png"
-        # Fix ToolTip-Problem on Windows
-        # https://github.com/5yutan5/PyQtDarkTheme/issues/239
-        if iswin:
-            match = re.search(r"QToolTip \{([^\{\}]+)\}", st)
-            if match is not None:
-                replace_str = "QToolTip {" + match.group(1) + ";border: 0px}"
-                st = st.replace(match.group(0), replace_str)
-                QApplication.instance().setStyleSheet(st)
     else:
         icon_name = "mne_pipeline_icon_light.png"
 
-    icon_path = join(resources.files(mne_pipeline_hd.extra), icon_name)
+    icon_path = join(str(resources.files(mne_pipeline_hd.extra)), icon_name)
     app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
 
