@@ -8,11 +8,11 @@ venv/
 .ipynb_checkpoints/
 
 # PyCharm Project-Settings
-.idea/*
+.idea/
 
 # VSCode
-.vscode/*
+.vscode/
 
 # Documentation
-docs/build/*
-docs/generated/*
+docs/build/
+docs/generated/
