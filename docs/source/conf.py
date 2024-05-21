@@ -19,7 +19,6 @@ from os.path import dirname, abspath, join
 
 curdir = dirname(__file__)
 sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd")))
-sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd", "gui")))
 
 # -- Project information -----------------------------------------------------
 project = "mne-pipeline-hd"
@@ -32,7 +31,6 @@ copyright = (
 )
 
 # The full version, including alpha/beta/rc tags
-
 release = version("mne_pipeline_hd")
 
 # -- General configuration ---------------------------------------------------
