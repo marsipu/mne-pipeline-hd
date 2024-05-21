@@ -33,7 +33,7 @@ dependencies = [
     "h5netcdf",
     # PyQt
     "qtpy",
-    "pyqtdarktheme",
+    "darkdetect",
     "pyobjc-framework-Cocoa; sys_platform == 'Darwin'",
     # Other
     "psutil",

@@ -75,7 +75,7 @@ of [MNE-Python](https://mne.tools/stable/index.html)
 > February 2014, Pages 446-460, ISSN 1053-8119,
 > [DOI](https://doi.org/10.1016/j.neuroimage.2013.10.027)
 
-It was inspired by a pipeline
+It was originally inspired by a pipeline
 from [Lau M. Andersen](https://doi.org/10.3389/fnins.2018.00006)
 > Andersen LM. Group Analysis in MNE-Python of Evoked Responses from a Tactile
 > Stimulation Paradigm: A Pipeline for
@@ -91,6 +91,8 @@ integrates [autoreject](https://doi.org/10.1016/j.neuroimage.2017.06.030)
 > Gramfort. 2017.
 > “Autoreject: Automated artifact rejection for MEG and EEG data”. NeuroImage,
 > 159, 417-429.
+
+The Stylesheets for light and dark theme are derived and inspired from [PyQtDarkTheme](https://github.com/5yutan5/PyQtDarkTheme).
 
 Many ideas and basics for GUI-Programming where taken
 from [LearnPyQt](https://www.learnpyqt.com/) and numerous
