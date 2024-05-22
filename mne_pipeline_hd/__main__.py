@@ -26,6 +26,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     QS,
     init_logging,
     logger,
+    get_palette,
 )
 
 # Check for changes in required packages
@@ -118,19 +119,7 @@ def main():
             logger().info("System theme detection failed. Using light theme.")
             system_theme = "light"
         app_style = system_theme
-    if app_style == "dark":
-        stylesheet_path = join(
-            str(resources.files(mne_pipeline_hd.extra)), "dark_stylesheet.txt"
-        )
-    else:
-        stylesheet_path = join(
-            str(resources.files(mne_pipeline_hd.extra)), "light_stylesheet.txt"
-        )
-
-    with open(stylesheet_path, "r") as f:
-        stylesheet = f.read()
-
-    app.setStyleSheet(stylesheet)
+    app.setPalette(get_palette(app_style))
 
     if app_style == "dark":
         icon_name = "mne_pipeline_icon_dark.png"

@@ -637,7 +637,7 @@ class ComboGui(Param):
 
     data_type = "multiple"
 
-    def __init__(self, options, **kwargs):
+    def __init__(self, options, raise_missing=True, **kwargs):
         """
         Parameters
         ----------
@@ -645,11 +645,15 @@ class ComboGui(Param):
             Supply a list or a dictionary with the options to choose from.
             If supplied a dictionary, dictionary-values are
             taken as aliases for the keys.
+        raise_missing : bool
+            Set to True, if an error should be raised when the value
+            is not in the options.
         **kwargs
             All the parameters fo :method:`~Param.__init__` go here.
         """
         super().__init__(**kwargs)
         self.options = options
+        self.raise_missing = raise_missing
         self.param_widget = ComboBox(scrollable=False)
         self.param_widget.activated.connect(self._get_param)
         for option in self.options:
@@ -671,10 +675,24 @@ class ComboGui(Param):
         self.init_ui(layout)
 
     def set_value(self, value):
+        # Check if value is str
+        if not isinstance(value, str):
+            value = str(value)
+        # Check if value is in options
+        options = (
+            self.options.values() if isinstance(self.options, dict) else self.options
+        )
+        if value not in options:
+            if self.raise_missing:
+                raise RuntimeError(f"{value} not in options for {self.name}.")
+            else:
+                logger().warning(
+                    f"{value} not in options for {self.name}, set to default={self.default}."
+                )
+                value = self.default
         if isinstance(self.options, dict):
-            self.param_widget.setCurrentText(str(self.options[value]))
-        else:
-            self.param_widget.setCurrentText(str(value))
+            value = self.options[value]
+        self.param_widget.setCurrentText(value)
 
     def get_value(self):
         if isinstance(self.options, dict):
