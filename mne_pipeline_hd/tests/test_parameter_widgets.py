@@ -126,9 +126,11 @@ def test_basic_param_guis(qtbot, gui_name):
 
     # Test ComboGui
     if gui_name == "ComboGui":
-        # Don't set values which are not in options
-        with pytest.raises(KeyError):
+        # Check error when missing
+        with pytest.raises(RuntimeError):
             gui.set_param("d")
+        gui.raise_missing = False
+        gui.set_param("d")
 
         # Test option-aliases
         gui.set_param("a")
