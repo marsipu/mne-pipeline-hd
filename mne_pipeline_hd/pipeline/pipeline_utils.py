@@ -372,36 +372,3 @@ def _test_run():
 
 def _run_from_script():
     return "__main__.py" in sys.argv[0]
-
-
-theme_colors = {
-    "light": {
-        "foreground": "#000000",
-        "background": "#FFFFFF",
-        "primary": "#007ACC",
-        "secondary": "#005F8C",
-        "border": "#D4D4D4",
-        "link": "#007ACC",
-    },
-    "dark": {
-        "foreground": "#FFFFFF",
-        "background": "#1E1E1E",
-        "primary": "#007ACC",
-        "secondary": "#005F8C",
-        "border": "#D4D4D4",
-        "link": "#007ACC",
-    },
-    "high_contrast": {
-        "foreground": "#000000",
-        "background": "#FFFFFF",
-        "primary": "#007ACC",
-        "secondary": "#005F8C",
-        "border": "#D4D4D4",
-        "link": "#007ACC",
-    },
-}
-
-
-def get_palette(theme):
-    if theme == "light":
-        pass

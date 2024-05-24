@@ -11,6 +11,7 @@ from functools import partial
 import mne
 import numpy as np
 import pandas as pd
+from PyQt5.QtWidgets import QStyleFactory
 from mne_qt_browser._pg_figure import _get_color
 from qtpy import compat
 from qtpy.QtCore import Qt, Signal
@@ -56,6 +57,9 @@ from mne_pipeline_hd.gui.gui_utils import (
     get_exception_tuple,
     get_user_input_string,
     center,
+    set_app_style,
+    set_app_theme,
+    set_app_font,
 )
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.loading import FSMRI
@@ -217,8 +221,8 @@ class Param(QWidget):
     def _get_param(self):
         """Get current parameter value from gui."""
         self.param_value = self.get_value()
-        self.paramChanged.emit(self.param_value)
         self.save_param()
+        self.paramChanged.emit(self.param_value)
 
     def _set_param(self):
         """Set current parameter value to gui."""
@@ -655,7 +659,7 @@ class ComboGui(Param):
         self.options = options
         self.raise_missing = raise_missing
         self.param_widget = ComboBox(scrollable=False)
-        self.param_widget.activated.connect(self._get_param)
+        self.param_widget.currentTextChanged.connect(self._get_param)
         for option in self.options:
             if isinstance(self.options, dict):
                 self.param_widget.addItem(str(self.options[option]))
@@ -680,16 +684,22 @@ class ComboGui(Param):
             value = str(value)
         # Check if value is in options
         options = (
-            self.options.values() if isinstance(self.options, dict) else self.options
+            list(self.options.keys())
+            if isinstance(self.options, dict)
+            else self.options
         )
         if value not in options:
             if self.raise_missing:
                 raise RuntimeError(f"{value} not in options for {self.name}.")
             else:
+                old_value = value
+                if self.default in options:
+                    value = self.default
+                else:
+                    value = options[0]
                 logger().warning(
-                    f"{value} not in options for {self.name}, set to default={self.default}."
+                    f"{old_value} not in options for {self.name}, set to {value}."
                 )
-                value = self.default
         if isinstance(self.options, dict):
             value = self.options[value]
         self.param_widget.setCurrentText(value)
@@ -2161,26 +2171,43 @@ class SettingsDlg(QDialog):
             "app_style": {
                 "gui_type": "ComboGui",
                 "data_type": "QSettings",
+                "slot": set_app_style,
                 "gui_kwargs": {
                     "alias": "Application Style",
                     "description": "Changes the application style "
                     "(Restart required).",
+                    "options": QStyleFactory.keys(),
+                    "raise_missing": False,
+                },
+            },
+            "app_theme": {
+                "gui_type": "ComboGui",
+                "data_type": "QSettings",
+                "slot": set_app_theme,
+                "gui_kwargs": {
+                    "alias": "Application Style",
+                    "description": "Changes the application theme "
+                    "(Restart required).",
                     "options": ["light", "dark", "auto"],
+                    "raise_missing": False,
                 },
             },
             "app_font": {
                 "gui_type": "ComboGui",
                 "data_type": "QSettings",
+                "slot": set_app_font,
                 "gui_kwargs": {
                     "alias": "Application Font",
                     "description": "Changes default application font "
                     "(Restart required).",
                     "options": QFontDatabase().families(QFontDatabase.Latin),
+                    "raise_missing": False,
                 },
             },
             "app_font_size": {
                 "gui_type": "IntGui",
                 "data_type": "QSettings",
+                "slot": set_app_font,
                 "gui_kwargs": {
                     "alias": "Font Size",
                     "description": "Changes default application font-size "
@@ -2268,10 +2295,10 @@ class SettingsDlg(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        for setting in self.settings_items:
-            gui_handle = globals()[self.settings_items[setting]["gui_type"]]
-            data_type = self.settings_items[setting]["data_type"]
-            gui_kwargs = self.settings_items[setting]["gui_kwargs"]
+        for setting, details in self.settings_items.items():
+            gui_handle = globals()[details["gui_type"]]
+            data_type = details["data_type"]
+            gui_kwargs = details["gui_kwargs"]
             if data_type == "QSettings":
                 gui_kwargs["data"] = QS()
                 gui_kwargs["default"] = self.ct.default_settings["qsettings"][setting]
@@ -2282,8 +2309,10 @@ class SettingsDlg(QDialog):
                 gui_kwargs["data"] = self.ct.settings
                 gui_kwargs["default"] = self.ct.default_settings["settings"][setting]
             gui_kwargs["name"] = setting
-            layout.addWidget(gui_handle(**gui_kwargs))
-
+            gui = gui_handle(**gui_kwargs)
+            if details.get("slot"):
+                gui.paramChanged.connect(details["slot"])
+            layout.addWidget(gui)
         close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)

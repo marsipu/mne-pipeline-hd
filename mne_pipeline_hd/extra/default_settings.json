@@ -27,8 +27,9 @@
     "education": 0,
     "fs_path": "",
     "mne_path": "",
-    "app_font": "AnyStyle",
+    "app_font": "Calibri",
     "app_font_size": 10,
-    "app_style": "auto"
+    "app_style": "fusion",
+    "app_theme": "auto"
   }
 }

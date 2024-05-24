@@ -11,8 +11,12 @@ import multiprocessing
 import sys
 import traceback
 from contextlib import contextmanager
+from importlib import resources
 from inspect import signature
+from os.path import join
 
+import darkdetect
+from PyQt5.QtGui import QColor, QIcon
 from qtpy.QtCore import (
     QObject,
     QProcess,
@@ -23,7 +27,7 @@ from qtpy.QtCore import (
     Slot,
     QTimer,
 )
-from qtpy.QtGui import QFont, QTextCursor
+from qtpy.QtGui import QFont, QTextCursor, QPalette
 from qtpy.QtWidgets import (
     QApplication,
     QDialog,
@@ -39,6 +43,7 @@ from qtpy.QtWidgets import (
     QPlainTextEdit,
 )
 
+from mne_pipeline_hd import extra
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
 
@@ -740,3 +745,149 @@ def get_user_input_string(prompt, title="Input required!", force=False):
             user_input = None
 
     return user_input
+
+
+# ToDo: Tweak Colors
+theme_colors = {
+    "light": {
+        "foreground": "#000000",
+        "foreground_disabled": "#A0A0A0",
+        "background": "#FFFFFF",
+        "alternate_background": "#F0F0F0",
+        "primary": "#007ACC",
+        "secondary": "#005F8C",
+        "border": "#D4D4D4",
+        "link": "#007ACC",
+    },
+    "dark": {
+        "foreground": "#FFFFFF",
+        "foreground_disabled": "#A0A0A0",
+        "background": "#1E1E1E",
+        "alternate_background": "#2E2E2E",
+        "primary": "#007ACC",
+        "secondary": "#005F8C",
+        "border": "#D4D4D4",
+        "link": "#007ACC",
+    },
+    "high_contrast": {
+        "foreground": "#000000",
+        "foreground_disabled": "#A0A0A0",
+        "background": "#FFFFFF",
+        "alternate_background": "#F0F0F0",
+        "primary": "#007ACC",
+        "secondary": "#005F8C",
+        "border": "#D4D4D4",
+        "link": "#007ACC",
+    },
+}
+
+
+def get_palette(theme):
+    colors = {k: QColor(v) for k, v in theme_colors[theme].items()}
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.WindowText, colors["foreground"])
+    palette.setColor(QPalette.ColorRole.Button, colors["background"])
+    palette.setColor(QPalette.ColorRole.ButtonText, colors["primary"])
+    palette.setColor(QPalette.ColorRole.Base, colors["background"])
+    palette.setColor(QPalette.ColorRole.Window, colors["background"])
+    palette.setColor(QPalette.ColorRole.Highlight, colors["primary"])
+    palette.setColor(QPalette.ColorRole.HighlightedText, colors["background"])
+    palette.setColor(QPalette.ColorRole.AlternateBase, colors["alternate_background"])
+    palette.setColor(QPalette.ColorRole.ToolTipBase, colors["background"])
+    palette.setColor(QPalette.ColorRole.ToolTipText, colors["foreground"])
+    if hasattr(QPalette.ColorRole, "Foreground"):
+        palette.setColor(QPalette.ColorRole.Foreground, colors["foreground"])
+    palette.setColor(QPalette.ColorRole.Light, colors["border"])
+    palette.setColor(QPalette.ColorRole.Midlight, colors["border"])
+    palette.setColor(QPalette.ColorRole.Dark, colors["border"])
+    palette.setColor(QPalette.ColorRole.Mid, colors["border"])
+    palette.setColor(QPalette.ColorRole.Shadow, colors["border"])
+    palette.setColor(QPalette.ColorRole.Link, colors["primary"])
+    palette.setColor(QPalette.ColorRole.LinkVisited, colors["link"])
+    # disabled
+    if hasattr(QPalette.ColorRole, "PlaceholderText"):
+        palette.setColor(
+            QPalette.ColorRole.PlaceholderText,
+            colors["foreground_disabled"],
+        )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.WindowText,
+        colors["foreground_disabled"],
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.ButtonText,
+        colors["foreground_disabled"],
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.Highlight,
+        colors["foreground_disabled"],
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.HighlightedText,
+        colors["foreground_disabled"],
+    )
+    # inactive
+    palette.setColor(
+        QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, colors["primary"]
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Inactive,
+        QPalette.ColorRole.HighlightedText,
+        colors["foreground"],
+    )
+    palette.setColor(QPalette.ColorRole.Text, colors["foreground"])
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.Text,
+        colors["foreground_disabled"],
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.Link,
+        colors["foreground_disabled"],
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.LinkVisited,
+        colors["foreground_disabled"],
+    )
+
+    return palette
+
+
+def set_app_theme():
+    app = QApplication.instance()
+    app_theme = QS().value("app_theme")
+    # Detect system theme
+    if app_theme == "auto":
+        system_theme = darkdetect.theme().lower()
+        if system_theme is None:
+            logger().info("System theme detection failed. Using light theme.")
+            system_theme = "light"
+        app_theme = system_theme
+    app.setPalette(get_palette(app_theme))
+    # Set Icon
+    if app_theme == "dark":
+        icon_name = "mne_pipeline_icon_dark.png"
+    else:
+        icon_name = "mne_pipeline_icon_light.png"
+    icon_path = join(str(resources.files(extra)), icon_name)
+    app_icon = QIcon(str(icon_path))
+    app.setWindowIcon(app_icon)
+
+
+def set_app_style():
+    app = QApplication.instance()
+    app_style = QS().value("app_style")
+    app.setStyle(app_style)
+
+
+def set_app_font():
+    app = QApplication.instance()
+    font_family = QS().value("app_font")
+    font_size = QS().value("app_font_size")
+    app.setFont(QFont(font_family, font_size))

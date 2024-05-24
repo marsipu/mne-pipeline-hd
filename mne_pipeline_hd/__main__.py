@@ -7,26 +7,25 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 
 import os
 import sys
-from importlib import resources
-from os.path import join
 
-import darkdetect
 import qtpy
 from qtpy.QtCore import QTimer, Qt
-from qtpy.QtGui import QIcon, QFont
 from qtpy.QtWidgets import QApplication
 
-import mne_pipeline_hd
-from mne_pipeline_hd.gui.gui_utils import StdoutStderrStream, UncaughtHook
+from mne_pipeline_hd.gui.gui_utils import (
+    StdoutStderrStream,
+    UncaughtHook,
+    set_app_style,
+    set_app_theme,
+    set_app_font,
+)
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
 from mne_pipeline_hd.pipeline.pipeline_utils import (
     ismac,
     islin,
-    QS,
     init_logging,
     logger,
-    get_palette,
 )
 
 # Check for changes in required packages
@@ -100,35 +99,10 @@ def main():
         # as hook with the Python interpreter
         sys.excepthook = qt_exception_hook.exception_hook
 
-    # Initialize Layout
-    font_family = QS().value("app_font")
-    font_size = QS().value("app_font_size")
-    app.setFont(QFont(font_family, font_size))
-
-    # Set Style and Window-Icon
-    app_style = QS().value("app_style")
-
-    # Legacy 20230717
-    if app_style not in ["dark", "light", "auto"]:
-        app_style = "auto"
-
-    # Detect system theme
-    if app_style == "auto":
-        system_theme = darkdetect.theme().lower()
-        if system_theme is None:
-            logger().info("System theme detection failed. Using light theme.")
-            system_theme = "light"
-        app_style = system_theme
-    app.setPalette(get_palette(app_style))
-
-    if app_style == "dark":
-        icon_name = "mne_pipeline_icon_dark.png"
-    else:
-        icon_name = "mne_pipeline_icon_light.png"
-
-    icon_path = join(str(resources.files(mne_pipeline_hd.extra)), icon_name)
-    app_icon = QIcon(str(icon_path))
-    app.setWindowIcon(app_icon)
+    # Set style, theme and font
+    set_app_style()
+    set_app_theme()
+    set_app_font()
 
     # Initiate WelcomeWindow
     WelcomeWindow()

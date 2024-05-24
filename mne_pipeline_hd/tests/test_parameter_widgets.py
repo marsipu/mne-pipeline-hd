@@ -129,8 +129,10 @@ def test_basic_param_guis(qtbot, gui_name):
         # Check error when missing
         with pytest.raises(RuntimeError):
             gui.set_param("d")
+        # Check no error and default when raise_missing=False
         gui.raise_missing = False
         gui.set_param("d")
+        assert gui.get_value() == "a"
 
         # Test option-aliases
         gui.set_param("a")
