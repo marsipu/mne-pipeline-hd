@@ -814,17 +814,19 @@ def get_palette(theme):
 
     return palette
 
+def _get_auto_theme():
+    system_theme = darkdetect.theme().lower()
+    if system_theme is None:
+        logger().info("System theme detection failed. Using light theme.")
+        system_theme = "light"
+    return system_theme
 
 def set_app_theme():
     app = QApplication.instance()
     app_theme = QS().value("app_theme")
     # Detect system theme
     if app_theme == "auto":
-        system_theme = darkdetect.theme().lower()
-        if system_theme is None:
-            logger().info("System theme detection failed. Using light theme.")
-            system_theme = "light"
-        app_theme = system_theme
+        app_theme = _get_auto_theme()
     app.setPalette(get_palette(app_theme))
     # Set Icon
     if app_theme == "light":
@@ -855,7 +857,10 @@ class ColorTester(QWidget):
     def __init__(self):
         super().__init__()
         _object_refs["color_tester"] = self
-        self.theme = QS().value("app_theme")
+        theme = QS().value("app_theme")
+        if theme == "auto":
+            theme = _get_auto_theme()
+        self.theme = theme
         self.color_display = dict()
         self.init_ui()
 
