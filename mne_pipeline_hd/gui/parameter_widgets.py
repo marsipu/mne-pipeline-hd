@@ -641,7 +641,7 @@ class ComboGui(Param):
 
     data_type = "multiple"
 
-    def __init__(self, options, raise_missing=True, **kwargs):
+    def __init__(self, options, raise_missing=False, **kwargs):
         """
         Parameters
         ----------
@@ -659,12 +659,12 @@ class ComboGui(Param):
         self.options = options
         self.raise_missing = raise_missing
         self.param_widget = ComboBox(scrollable=False)
-        self.param_widget.currentTextChanged.connect(self._get_param)
         for option in self.options:
             if isinstance(self.options, dict):
                 self.param_widget.addItem(str(self.options[option]))
             else:
                 self.param_widget.addItem(str(option))
+        self.param_widget.currentTextChanged.connect(self._get_param)
 
         self.read_param()
         self._init_layout()

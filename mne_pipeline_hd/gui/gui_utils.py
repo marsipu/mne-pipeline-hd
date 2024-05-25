@@ -6,17 +6,20 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import io
+import json
 import logging
 import multiprocessing
 import sys
 import traceback
 from contextlib import contextmanager
+from functools import partial
 from importlib import resources
 from inspect import signature
 from os.path import join
 
 import darkdetect
 from PyQt5.QtGui import QColor, QIcon
+from PyQt5.QtWidgets import QColorDialog, QFormLayout, QComboBox, QWidget
 from qtpy.QtCore import (
     QObject,
     QProcess,
@@ -891,3 +894,46 @@ def set_app_font():
     font_family = QS().value("app_font")
     font_size = QS().value("app_font_size")
     app.setFont(QFont(font_family, font_size))
+
+
+class ColorTester(QWidget):
+    def __init__(self):
+        super().__init__()
+        _object_refs["color_tester"] = self
+        self.theme = QS().value("app_theme")
+        self.init_ui()
+
+        self.show()
+
+    def init_ui(self):
+        layout = QFormLayout(self)
+        self.theme_cmbx = QComboBox()
+        self.theme_cmbx.addItems(["light", "dark", "high_contrast"])
+        self.theme_cmbx.setCurrentText(self.theme)
+        self.theme_cmbx.currentTextChanged.connect(self.change_theme)
+        layout.addRow("Theme", self.theme_cmbx)
+        for field_name in theme_colors[self.theme].keys():
+            button = QPushButton("Change Color")
+            button.clicked.connect(partial(self.open_color_dlg, field_name))
+            layout.addRow(field_name, button)
+
+    def open_color_dlg(self, field_name):
+        color_dlg = QColorDialog(self)
+        color = QColor(theme_colors[self.theme][field_name])
+        color_dlg.setCurrentColor(color)
+        color_dlg.colorSelected.connect(lambda c: self.change_color(field_name, c))
+        color_dlg.open()
+
+    def change_color(self, field_name, color):
+        theme_colors[self.theme][field_name] = color.name()
+        self.setPalette(get_palette(self.theme))
+        set_app_theme()
+
+    def change_theme(self, theme):
+        QS().setValue("app_theme", theme)
+        self.theme = theme
+        set_app_theme()
+
+    def closeEvent(self, event):
+        print(json.dumps(theme_colors, indent=4))
+        event.accept()

@@ -22,7 +22,7 @@ parameters = {
     "FuncGui": "np.arange(10) * np.pi",
     "BoolGui": True,
     "TupleGui": (45, 6),
-    "ComboGui": "a",
+    "ComboGui": "b",
     "ListGui": [1, 454.33, "postcentral-lh", 5],
     "CheckListGui": ["postcentral-lh"],
     "DictGui": {"A": "B", "C": 58.144, 3: [1, 2, 3, 4], "D": {"A": 1, "B": 2}},
@@ -39,7 +39,7 @@ alternative_parameters = {
     "FuncGui": "np.ones((2,3))",
     "BoolGui": False,
     "TupleGui": (2, 23),
-    "ComboGui": "b",
+    "ComboGui": "c",
     "ListGui": [33, 2234.33, "precentral-lh", 3],
     "CheckListGui": ["precentral-lh"],
     "DictGui": {"B": "V", "e": 11.333, 5: [65, 3, 11], "F": {"C": 1, "D": 2}},
@@ -126,13 +126,13 @@ def test_basic_param_guis(qtbot, gui_name):
 
     # Test ComboGui
     if gui_name == "ComboGui":
-        # Check error when missing
-        with pytest.raises(RuntimeError):
-            gui.set_param("d")
         # Check no error and default when raise_missing=False
-        gui.raise_missing = False
         gui.set_param("d")
         assert gui.get_value() == "a"
+        # Check error when missing
+        gui.raise_missing = True
+        with pytest.raises(RuntimeError):
+            gui.set_param("d")
 
         # Test option-aliases
         gui.set_param("a")

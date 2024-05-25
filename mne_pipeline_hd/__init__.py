@@ -13,4 +13,5 @@ _object_refs = {
     "plot_manager": None,
     "dialogs": dict(),
     "parameter_widgets": dict(),
+    "color_tester": None,
 }

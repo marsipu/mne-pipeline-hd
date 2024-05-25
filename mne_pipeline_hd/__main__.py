@@ -18,6 +18,7 @@ from mne_pipeline_hd.gui.gui_utils import (
     set_app_style,
     set_app_theme,
     set_app_font,
+    ColorTester,
 )
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
@@ -106,6 +107,7 @@ def main():
 
     # Initiate WelcomeWindow
     WelcomeWindow()
+    ColorTester()
 
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()
