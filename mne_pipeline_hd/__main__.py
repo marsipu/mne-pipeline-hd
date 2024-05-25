@@ -16,7 +16,6 @@ from mne_pipeline_hd.gui.gui_utils import (
     StdoutStderrStream,
     UncaughtHook,
     set_app_style,
-    set_app_theme,
     set_app_font,
     ColorTester,
 )
@@ -100,9 +99,8 @@ def main():
         # as hook with the Python interpreter
         sys.excepthook = qt_exception_hook.exception_hook
 
-    # Set style, theme and font
+    # Set style and font
     set_app_style()
-    set_app_theme()
     set_app_font()
 
     # Initiate WelcomeWindow

@@ -1,0 +1,38 @@
+{
+    "light": {
+        "foreground": "#000000",
+        "foreground_disabled": "#b8b8b8",
+        "background": "#dddddd",
+        "background_disabled": "#f0f0f0",
+        "alternate_background": "#dddddd",
+        "base": "#ffffff",
+        "primary": "#0070b6",
+        "border_light": "#888888",
+        "border_dark": "#4b4b4b",
+        "link": "#ff00ff"
+    },
+    "dark": {
+        "foreground": "#e5e5e5",
+        "foreground_disabled": "#888888",
+        "background": "#1E1E1E",
+        "background_disabled": "#3e3e3e",
+        "alternate_background": "#262626",
+        "base": "#1d1d1d",
+        "primary": "#0867cc",
+        "border_light": "#3f3f3f",
+        "border_dark": "#1e1e1e",
+        "link": "#ff00ff"
+    },
+    "high_contrast": {
+        "foreground": "#ffffff",
+        "foreground_disabled": "#A0A0A0",
+        "background": "#000000",
+        "background_disabled": "#4a4a4a",
+        "alternate_background": "#141414",
+        "base": "#000000",
+        "primary": "#007ACC",
+        "border_light": "#ffffff",
+        "border_dark": "#9f9f9f",
+        "link": "#ff00ff"
+    }
+}

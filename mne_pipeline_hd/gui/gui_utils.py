@@ -51,6 +51,12 @@ from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
 
 
+# Load theme colors
+theme_color_path = join(str(resources.files(extra)), "color_themes.json")
+with open(theme_color_path, "r") as file:
+    theme_colors = json.load(file)
+
+
 def center(widget):
     qr = widget.frameGeometry()
     cp = QApplication.primaryScreen().availableGeometry().center()
@@ -750,114 +756,61 @@ def get_user_input_string(prompt, title="Input required!", force=False):
     return user_input
 
 
-# ToDo: Tweak Colors
-theme_colors = {
-    "light": {
-        "foreground": "#000000",
-        "foreground_disabled": "#A0A0A0",
-        "background": "#FFFFFF",
-        "alternate_background": "#F0F0F0",
-        "primary": "#007ACC",
-        "secondary": "#005F8C",
-        "border": "#D4D4D4",
-        "link": "#007ACC",
-    },
-    "dark": {
-        "foreground": "#FFFFFF",
-        "foreground_disabled": "#A0A0A0",
-        "background": "#1E1E1E",
-        "alternate_background": "#2E2E2E",
-        "primary": "#007ACC",
-        "secondary": "#005F8C",
-        "border": "#D4D4D4",
-        "link": "#007ACC",
-    },
-    "high_contrast": {
-        "foreground": "#000000",
-        "foreground_disabled": "#A0A0A0",
-        "background": "#FFFFFF",
-        "alternate_background": "#F0F0F0",
-        "primary": "#007ACC",
-        "secondary": "#005F8C",
-        "border": "#D4D4D4",
-        "link": "#007ACC",
-    },
-}
-
-
 def get_palette(theme):
+    color_roles = {
+        "foreground": ["WindowText", "ToolTipText", "Text"],
+        "foreground_disabled": ["PlaceholderText"],
+        "background": ["Window", "HighlightedText"],
+        "base": ["Base"],
+        "alternate_background": ["Button", "AlternateBase", "ToolTipBase"],
+        "primary": ["ButtonText", "Highlight"],
+        "border_light": ["Light", "Midlight"],
+        "border_dark": ["Dark", "Mid", "Shadow"],
+        "link": ["Link", "LinkVisited"],
+    }
+    color_roles_disabled = {
+        "foreground_disabled": [
+            "WindowText",
+            "ButtonText",
+            "Highlight",
+            "Text",
+            "Link",
+            "LinkVisited",
+        ],
+        "background_disabled": ["Window", "HighlightedText", "AlternateBase", "Button"],
+    }
+    color_roles_inactive = {
+        "primary": [
+            "Highlight",
+        ],
+        "foreground": [
+            "HighlightedText",
+        ],
+    }
+
     colors = {k: QColor(v) for k, v in theme_colors[theme].items()}
     palette = QPalette()
-    palette.setColor(QPalette.ColorRole.WindowText, colors["foreground"])
-    palette.setColor(QPalette.ColorRole.Button, colors["background"])
-    palette.setColor(QPalette.ColorRole.ButtonText, colors["primary"])
-    palette.setColor(QPalette.ColorRole.Base, colors["background"])
-    palette.setColor(QPalette.ColorRole.Window, colors["background"])
-    palette.setColor(QPalette.ColorRole.Highlight, colors["primary"])
-    palette.setColor(QPalette.ColorRole.HighlightedText, colors["background"])
-    palette.setColor(QPalette.ColorRole.AlternateBase, colors["alternate_background"])
-    palette.setColor(QPalette.ColorRole.ToolTipBase, colors["background"])
-    palette.setColor(QPalette.ColorRole.ToolTipText, colors["foreground"])
-    if hasattr(QPalette.ColorRole, "Foreground"):
-        palette.setColor(QPalette.ColorRole.Foreground, colors["foreground"])
-    palette.setColor(QPalette.ColorRole.Light, colors["border"])
-    palette.setColor(QPalette.ColorRole.Midlight, colors["border"])
-    palette.setColor(QPalette.ColorRole.Dark, colors["border"])
-    palette.setColor(QPalette.ColorRole.Mid, colors["border"])
-    palette.setColor(QPalette.ColorRole.Shadow, colors["border"])
-    palette.setColor(QPalette.ColorRole.Link, colors["primary"])
-    palette.setColor(QPalette.ColorRole.LinkVisited, colors["link"])
-    # disabled
-    if hasattr(QPalette.ColorRole, "PlaceholderText"):
-        palette.setColor(
-            QPalette.ColorRole.PlaceholderText,
-            colors["foreground_disabled"],
-        )
-    palette.setColor(
-        QPalette.ColorGroup.Disabled,
-        QPalette.ColorRole.WindowText,
-        colors["foreground_disabled"],
-    )
-    palette.setColor(
-        QPalette.ColorGroup.Disabled,
-        QPalette.ColorRole.ButtonText,
-        colors["foreground_disabled"],
-    )
-    palette.setColor(
-        QPalette.ColorGroup.Disabled,
-        QPalette.ColorRole.Highlight,
-        colors["foreground_disabled"],
-    )
-    palette.setColor(
-        QPalette.ColorGroup.Disabled,
-        QPalette.ColorRole.HighlightedText,
-        colors["foreground_disabled"],
-    )
-    # inactive
-    palette.setColor(
-        QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, colors["primary"]
-    )
-    palette.setColor(
-        QPalette.ColorGroup.Inactive,
-        QPalette.ColorRole.HighlightedText,
-        colors["foreground"],
-    )
-    palette.setColor(QPalette.ColorRole.Text, colors["foreground"])
-    palette.setColor(
-        QPalette.ColorGroup.Disabled,
-        QPalette.ColorRole.Text,
-        colors["foreground_disabled"],
-    )
-    palette.setColor(
-        QPalette.ColorGroup.Disabled,
-        QPalette.ColorRole.Link,
-        colors["foreground_disabled"],
-    )
-    palette.setColor(
-        QPalette.ColorGroup.Disabled,
-        QPalette.ColorRole.LinkVisited,
-        colors["foreground_disabled"],
-    )
+
+    for color_name, roles in color_roles.items():
+        for role in roles:
+            if hasattr(QPalette.ColorRole, role):
+                palette.setColor(getattr(QPalette.ColorRole, role), colors[color_name])
+    for color_name, roles in color_roles_disabled.items():
+        for role in roles:
+            if hasattr(QPalette.ColorRole, role):
+                palette.setColor(
+                    QPalette.ColorGroup.Disabled,
+                    getattr(QPalette.ColorRole, role),
+                    colors[color_name],
+                )
+    for color_name, roles in color_roles_inactive.items():
+        for role in roles:
+            if hasattr(QPalette.ColorRole, role):
+                palette.setColor(
+                    QPalette.ColorGroup.Inactive,
+                    getattr(QPalette.ColorRole, role),
+                    colors[color_name],
+                )
 
     return palette
 
@@ -874,19 +827,13 @@ def set_app_theme():
         app_theme = system_theme
     app.setPalette(get_palette(app_theme))
     # Set Icon
-    if app_theme == "dark":
-        icon_name = "mne_pipeline_icon_dark.png"
-    else:
+    if app_theme == "light":
         icon_name = "mne_pipeline_icon_light.png"
+    else:
+        icon_name = "mne_pipeline_icon_dark.png"
     icon_path = join(str(resources.files(extra)), icon_name)
     app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
-
-
-def set_app_style():
-    app = QApplication.instance()
-    app_style = QS().value("app_style")
-    app.setStyle(app_style)
 
 
 def set_app_font():
@@ -896,11 +843,20 @@ def set_app_font():
     app.setFont(QFont(font_family, font_size))
 
 
+def set_app_style():
+    app = QApplication.instance()
+    app_style = QS().value("app_style")
+    app.setStyle(app_style)
+    # Set Theme to be independent from style
+    set_app_theme()
+
+
 class ColorTester(QWidget):
     def __init__(self):
         super().__init__()
         _object_refs["color_tester"] = self
         self.theme = QS().value("app_theme")
+        self.color_display = dict()
         self.init_ui()
 
         self.show()
@@ -913,9 +869,20 @@ class ColorTester(QWidget):
         self.theme_cmbx.currentTextChanged.connect(self.change_theme)
         layout.addRow("Theme", self.theme_cmbx)
         for field_name in theme_colors[self.theme].keys():
+            button_widget = QWidget()
+            button_layout = QHBoxLayout(button_widget)
+            button_display = QLabel()
+            self.color_display[field_name] = button_display
+            button_display.setFixedSize(20, 20)
+            button_display.setStyleSheet(
+                f"background-color: {theme_colors[self.theme][field_name]};"
+                f"border-color: black;border-style: solid;border-width: 2px",
+            )
+            button_layout.addWidget(button_display)
             button = QPushButton("Change Color")
             button.clicked.connect(partial(self.open_color_dlg, field_name))
-            layout.addRow(field_name, button)
+            button_layout.addWidget(button)
+            layout.addRow(field_name, button_widget)
 
     def open_color_dlg(self, field_name):
         color_dlg = QColorDialog(self)
@@ -925,15 +892,26 @@ class ColorTester(QWidget):
         color_dlg.open()
 
     def change_color(self, field_name, color):
+        global theme_colors
         theme_colors[self.theme][field_name] = color.name()
         self.setPalette(get_palette(self.theme))
+        self.color_display[field_name].setStyleSheet(
+            f"background-color: {color.name()};"
+            f"border-color: black;border-style: solid;border-width: 2px"
+        )
         set_app_theme()
 
     def change_theme(self, theme):
         QS().setValue("app_theme", theme)
         self.theme = theme
         set_app_theme()
+        for field_name, color in theme_colors[theme].items():
+            self.color_display[field_name].setStyleSheet(
+                f"background-color: {color};"
+                f"border-color: black;border-style: solid;border-width: 2px"
+            )
 
     def closeEvent(self, event):
-        print(json.dumps(theme_colors, indent=4))
+        with open(theme_color_path, "w") as file:
+            json.dump(theme_colors, file, indent=4)
         event.accept()
