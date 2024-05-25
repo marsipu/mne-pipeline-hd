@@ -68,12 +68,12 @@ source = "vcs"
 raw-options = { version_scheme = "release-branch-semver" }
 
 [tool.black]
-line-lenght = 88
-target-version = ["py39", "py310", "py311"]
+line-length = 88
+target-version = ["py39", "py310", "py311", "py312"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = ["py39", "py310", "py311", "py312"]
 
 # For type checking
 [tool.pyright.defineConstant]
