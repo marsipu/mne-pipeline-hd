@@ -814,12 +814,14 @@ def get_palette(theme):
 
     return palette
 
+
 def _get_auto_theme():
     system_theme = darkdetect.theme().lower()
     if system_theme is None:
         logger().info("System theme detection failed. Using light theme.")
         system_theme = "light"
     return system_theme
+
 
 def set_app_theme():
     app = QApplication.instance()
