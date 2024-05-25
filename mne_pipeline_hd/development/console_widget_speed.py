@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
+from qtpy.QtCore import QTimer
+from qtpy.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
 
 from mne_pipeline_hd.gui.gui_utils import ConsoleWidget
 

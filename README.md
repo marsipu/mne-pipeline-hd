@@ -92,7 +92,7 @@ integrates [autoreject](https://doi.org/10.1016/j.neuroimage.2017.06.030)
 > “Autoreject: Automated artifact rejection for MEG and EEG data”. NeuroImage,
 > 159, 417-429.
 
-The Stylesheets for light and dark theme are derived and inspired from [PyQtDarkTheme](https://github.com/5yutan5/PyQtDarkTheme).
+The colorpalettes for light and dark theme are inspired from [PyQtDarkTheme](https://github.com/5yutan5/PyQtDarkTheme).
 
 Many ideas and basics for GUI-Programming where taken
 from [LearnPyQt](https://www.learnpyqt.com/) and numerous

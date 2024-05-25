@@ -56,6 +56,8 @@ from mne_pipeline_hd.gui.gui_utils import (
     get_exception_tuple,
     get_user_input_string,
     center,
+    set_app_theme,
+    set_app_font,
 )
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.loading import FSMRI
@@ -217,8 +219,8 @@ class Param(QWidget):
     def _get_param(self):
         """Get current parameter value from gui."""
         self.param_value = self.get_value()
-        self.paramChanged.emit(self.param_value)
         self.save_param()
+        self.paramChanged.emit(self.param_value)
 
     def _set_param(self):
         """Set current parameter value to gui."""
@@ -637,7 +639,7 @@ class ComboGui(Param):
 
     data_type = "multiple"
 
-    def __init__(self, options, **kwargs):
+    def __init__(self, options, raise_missing=False, **kwargs):
         """
         Parameters
         ----------
@@ -645,18 +647,22 @@ class ComboGui(Param):
             Supply a list or a dictionary with the options to choose from.
             If supplied a dictionary, dictionary-values are
             taken as aliases for the keys.
+        raise_missing : bool
+            Set to True, if an error should be raised when the value
+            is not in the options.
         **kwargs
             All the parameters fo :method:`~Param.__init__` go here.
         """
         super().__init__(**kwargs)
         self.options = options
+        self.raise_missing = raise_missing
         self.param_widget = ComboBox(scrollable=False)
-        self.param_widget.activated.connect(self._get_param)
         for option in self.options:
             if isinstance(self.options, dict):
                 self.param_widget.addItem(str(self.options[option]))
             else:
                 self.param_widget.addItem(str(option))
+        self.param_widget.currentTextChanged.connect(self._get_param)
 
         self.read_param()
         self._init_layout()
@@ -671,10 +677,30 @@ class ComboGui(Param):
         self.init_ui(layout)
 
     def set_value(self, value):
+        # Check if value is str
+        if not isinstance(value, str):
+            value = str(value)
+        # Check if value is in options
+        options = (
+            list(self.options.keys())
+            if isinstance(self.options, dict)
+            else self.options
+        )
+        if value not in options:
+            if self.raise_missing:
+                raise RuntimeError(f"{value} not in options for {self.name}.")
+            else:
+                old_value = value
+                if self.default in options:
+                    value = self.default
+                else:
+                    value = options[0]
+                logger().warning(
+                    f"{old_value} not in options for {self.name}, set to {value}."
+                )
         if isinstance(self.options, dict):
-            self.param_widget.setCurrentText(str(self.options[value]))
-        else:
-            self.param_widget.setCurrentText(str(value))
+            value = self.options[value]
+        self.param_widget.setCurrentText(value)
 
     def get_value(self):
         if isinstance(self.options, dict):
@@ -2140,29 +2166,34 @@ class SettingsDlg(QDialog):
         self.ct = controller
 
         self.settings_items = {
-            "app_style": {
+            "app_theme": {
                 "gui_type": "ComboGui",
                 "data_type": "QSettings",
+                "slot": set_app_theme,
                 "gui_kwargs": {
-                    "alias": "Application Style",
-                    "description": "Changes the application style "
+                    "alias": "Application Theme",
+                    "description": "Changes the application theme "
                     "(Restart required).",
-                    "options": ["light", "dark", "auto"],
+                    "options": ["auto", "light", "dark", "high_contrast"],
+                    "raise_missing": False,
                 },
             },
             "app_font": {
                 "gui_type": "ComboGui",
                 "data_type": "QSettings",
+                "slot": set_app_font,
                 "gui_kwargs": {
                     "alias": "Application Font",
                     "description": "Changes default application font "
                     "(Restart required).",
                     "options": QFontDatabase().families(QFontDatabase.Latin),
+                    "raise_missing": False,
                 },
             },
             "app_font_size": {
                 "gui_type": "IntGui",
                 "data_type": "QSettings",
+                "slot": set_app_font,
                 "gui_kwargs": {
                     "alias": "Font Size",
                     "description": "Changes default application font-size "
@@ -2250,10 +2281,10 @@ class SettingsDlg(QDialog):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        for setting in self.settings_items:
-            gui_handle = globals()[self.settings_items[setting]["gui_type"]]
-            data_type = self.settings_items[setting]["data_type"]
-            gui_kwargs = self.settings_items[setting]["gui_kwargs"]
+        for setting, details in self.settings_items.items():
+            gui_handle = globals()[details["gui_type"]]
+            data_type = details["data_type"]
+            gui_kwargs = details["gui_kwargs"]
             if data_type == "QSettings":
                 gui_kwargs["data"] = QS()
                 gui_kwargs["default"] = self.ct.default_settings["qsettings"][setting]
@@ -2264,8 +2295,10 @@ class SettingsDlg(QDialog):
                 gui_kwargs["data"] = self.ct.settings
                 gui_kwargs["default"] = self.ct.default_settings["settings"][setting]
             gui_kwargs["name"] = setting
-            layout.addWidget(gui_handle(**gui_kwargs))
-
+            gui = gui_handle(**gui_kwargs)
+            if details.get("slot"):
+                gui.paramChanged.connect(details["slot"])
+            layout.addWidget(gui)
         close_bt = QPushButton("Close")
         close_bt.clicked.connect(self.close)
         layout.addWidget(close_bt)

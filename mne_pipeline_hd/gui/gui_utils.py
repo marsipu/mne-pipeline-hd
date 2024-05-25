@@ -6,13 +6,18 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 import io
+import json
 import logging
 import multiprocessing
 import sys
 import traceback
 from contextlib import contextmanager
+from functools import partial
+from importlib import resources
 from inspect import signature
+from os.path import join
 
+import darkdetect
 from qtpy.QtCore import (
     QObject,
     QProcess,
@@ -23,7 +28,7 @@ from qtpy.QtCore import (
     Slot,
     QTimer,
 )
-from qtpy.QtGui import QFont, QTextCursor
+from qtpy.QtGui import QFont, QTextCursor, QPalette, QColor, QIcon
 from qtpy.QtWidgets import (
     QApplication,
     QDialog,
@@ -37,10 +42,20 @@ from qtpy.QtWidgets import (
     QStyle,
     QInputDialog,
     QPlainTextEdit,
+    QColorDialog,
+    QFormLayout,
+    QComboBox,
+    QWidget,
 )
 
 from mne_pipeline_hd import _object_refs
+from mne_pipeline_hd import extra
 from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
+
+# Load theme colors
+theme_color_path = join(str(resources.files(extra)), "color_themes.json")
+with open(theme_color_path, "r") as file:
+    theme_colors = json.load(file)
 
 
 def center(widget):
@@ -740,3 +755,167 @@ def get_user_input_string(prompt, title="Input required!", force=False):
             user_input = None
 
     return user_input
+
+
+def get_palette(theme):
+    color_roles = {
+        "foreground": ["WindowText", "ToolTipText", "Text"],
+        "foreground_disabled": ["PlaceholderText"],
+        "background": ["Window", "HighlightedText"],
+        "base": ["Base"],
+        "alternate_background": ["Button", "AlternateBase", "ToolTipBase"],
+        "primary": ["ButtonText", "Highlight"],
+        "border_light": ["Light"],
+        "border_midlight": ["Midlight"],
+        "border_dark": ["Dark"],
+        "border_mid": ["Mid"],
+        "border_shadow": ["Shadow"],
+        "link": ["Link", "LinkVisited"],
+    }
+    color_roles_disabled = {
+        "foreground_disabled": [
+            "WindowText",
+            "ButtonText",
+            "Highlight",
+            "Text",
+            "Link",
+            "LinkVisited",
+        ],
+        "background_disabled": ["Window", "HighlightedText", "AlternateBase", "Button"],
+    }
+    color_roles_inactive = {
+        "primary": [
+            "Highlight",
+        ],
+        "foreground": [
+            "HighlightedText",
+        ],
+    }
+
+    colors = {k: QColor(v) for k, v in theme_colors[theme].items()}
+    palette = QPalette()
+
+    for color_name, roles in color_roles.items():
+        for role in roles:
+            if hasattr(QPalette.ColorRole, role):
+                palette.setColor(getattr(QPalette.ColorRole, role), colors[color_name])
+    for color_name, roles in color_roles_disabled.items():
+        for role in roles:
+            if hasattr(QPalette.ColorRole, role):
+                palette.setColor(
+                    QPalette.ColorGroup.Disabled,
+                    getattr(QPalette.ColorRole, role),
+                    colors[color_name],
+                )
+    for color_name, roles in color_roles_inactive.items():
+        for role in roles:
+            if hasattr(QPalette.ColorRole, role):
+                palette.setColor(
+                    QPalette.ColorGroup.Inactive,
+                    getattr(QPalette.ColorRole, role),
+                    colors[color_name],
+                )
+
+    return palette
+
+
+def _get_auto_theme():
+    system_theme = darkdetect.theme().lower()
+    if system_theme is None:
+        logger().info("System theme detection failed. Using light theme.")
+        system_theme = "light"
+    return system_theme
+
+
+def set_app_theme():
+    app = QApplication.instance()
+    app.setStyle("Fusion")
+    app_theme = QS().value("app_theme")
+    # Detect system theme
+    if app_theme == "auto":
+        app_theme = _get_auto_theme()
+    app.setPalette(get_palette(app_theme))
+    # Set Icon
+    if app_theme == "light":
+        icon_name = "mne_pipeline_icon_light.png"
+    else:
+        icon_name = "mne_pipeline_icon_dark.png"
+    icon_path = join(str(resources.files(extra)), icon_name)
+    app_icon = QIcon(str(icon_path))
+    app.setWindowIcon(app_icon)
+
+
+def set_app_font():
+    app = QApplication.instance()
+    font_family = QS().value("app_font")
+    font_size = QS().value("app_font_size")
+    app.setFont(QFont(font_family, font_size))
+
+
+class ColorTester(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        _object_refs["color_tester"] = self
+        theme = QS().value("app_theme")
+        if theme == "auto":
+            theme = _get_auto_theme()
+        self.theme = theme
+        self.color_display = dict()
+        self.init_ui()
+
+        self.show()
+
+    def init_ui(self):
+        layout = QFormLayout(self)
+        self.theme_cmbx = QComboBox()
+        self.theme_cmbx.addItems(["light", "dark", "high_contrast"])
+        self.theme_cmbx.setCurrentText(self.theme)
+        self.theme_cmbx.currentTextChanged.connect(self.change_theme)
+        layout.addRow("Theme", self.theme_cmbx)
+        for field_name in theme_colors[self.theme].keys():
+            button_widget = QWidget()
+            button_layout = QHBoxLayout(button_widget)
+            button_display = QLabel()
+            self.color_display[field_name] = button_display
+            button_display.setFixedSize(20, 20)
+            button_display.setStyleSheet(
+                f"background-color: {theme_colors[self.theme][field_name]};"
+                f"border-color: black;border-style: solid;border-width: 2px",
+            )
+            button_layout.addWidget(button_display)
+            button = QPushButton("Change Color")
+            button.clicked.connect(partial(self.open_color_dlg, field_name))
+            button_layout.addWidget(button)
+            layout.addRow(field_name, button_widget)
+
+    def open_color_dlg(self, field_name):
+        color_dlg = QColorDialog(self)
+        color = QColor(theme_colors[self.theme][field_name])
+        color_dlg.setCurrentColor(color)
+        color_dlg.colorSelected.connect(lambda c: self.change_color(field_name, c))
+        color_dlg.open()
+
+    def change_color(self, field_name, color):
+        global theme_colors
+        theme_colors[self.theme][field_name] = color.name()
+        self.setPalette(get_palette(self.theme))
+        self.color_display[field_name].setStyleSheet(
+            f"background-color: {color.name()};"
+            f"border-color: black;border-style: solid;border-width: 2px"
+        )
+        set_app_theme()
+
+    def change_theme(self, theme):
+        QS().setValue("app_theme", theme)
+        self.theme = theme
+        set_app_theme()
+        for field_name, color in theme_colors[theme].items():
+            self.color_display[field_name].setStyleSheet(
+                f"background-color: {color};"
+                f"border-color: black;border-style: solid;border-width: 2px"
+            )
+
+    def closeEvent(self, event):
+        with open(theme_color_path, "w") as file:
+            json.dump(theme_colors, file, indent=4)
+        event.accept()

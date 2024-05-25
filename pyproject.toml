@@ -68,11 +68,13 @@ source = "vcs"
 raw-options = { version_scheme = "release-branch-semver" }
 
 [tool.black]
-line-lenght = 88
-target-version = ["py39", "py310", "py311"]
+line-length = 88
+# All supported versions
+target-version = ["py39", "py310", "py311", "py312"]
 
 [tool.ruff]
 line-length = 88
+# Minimal supported version
 target-version = "py39"
 
 # For type checking
