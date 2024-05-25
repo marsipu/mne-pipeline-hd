@@ -8,7 +8,10 @@
         "base": "#ffffff",
         "primary": "#0070b6",
         "border_light": "#888888",
+        "border_midlight": "#aaaaaa",
         "border_dark": "#4b4b4b",
+        "border_mid": "#666666",
+        "border_shadow": "#333333",
         "link": "#ff00ff"
     },
     "dark": {
@@ -17,10 +20,13 @@
         "background": "#1E1E1E",
         "background_disabled": "#3e3e3e",
         "alternate_background": "#262626",
-        "base": "#1d1d1d",
+        "base": "#141414",
         "primary": "#0867cc",
-        "border_light": "#3f3f3f",
-        "border_dark": "#1e1e1e",
+        "border_light": "#888888",
+        "border_midlight": "#aaaaaa",
+        "border_dark": "#4b4b4b",
+        "border_mid": "#666666",
+        "border_shadow": "#333333",
         "link": "#ff00ff"
     },
     "high_contrast": {
@@ -28,11 +34,14 @@
         "foreground_disabled": "#A0A0A0",
         "background": "#000000",
         "background_disabled": "#4a4a4a",
-        "alternate_background": "#141414",
-        "base": "#000000",
+        "alternate_background": "#111111",
+        "base": "#343434",
         "primary": "#007ACC",
-        "border_light": "#ffffff",
-        "border_dark": "#9f9f9f",
+        "border_light": "#888888",
+        "border_midlight": "#aaaaaa",
+        "border_dark": "#4b4b4b",
+        "border_mid": "#666666",
+        "border_shadow": "#333333",
         "link": "#ff00ff"
     }
 }

@@ -11,7 +11,6 @@ from functools import partial
 import mne
 import numpy as np
 import pandas as pd
-from PyQt5.QtWidgets import QStyleFactory
 from mne_qt_browser._pg_figure import _get_color
 from qtpy import compat
 from qtpy.QtCore import Qt, Signal
@@ -57,7 +56,6 @@ from mne_pipeline_hd.gui.gui_utils import (
     get_exception_tuple,
     get_user_input_string,
     center,
-    set_app_style,
     set_app_theme,
     set_app_font,
 )
@@ -2168,27 +2166,15 @@ class SettingsDlg(QDialog):
         self.ct = controller
 
         self.settings_items = {
-            "app_style": {
-                "gui_type": "ComboGui",
-                "data_type": "QSettings",
-                "slot": set_app_style,
-                "gui_kwargs": {
-                    "alias": "Application Style",
-                    "description": "Changes the application style "
-                    "(Restart required).",
-                    "options": QStyleFactory.keys(),
-                    "raise_missing": False,
-                },
-            },
             "app_theme": {
                 "gui_type": "ComboGui",
                 "data_type": "QSettings",
                 "slot": set_app_theme,
                 "gui_kwargs": {
-                    "alias": "Application Style",
+                    "alias": "Application Theme",
                     "description": "Changes the application theme "
                     "(Restart required).",
-                    "options": ["light", "dark", "auto"],
+                    "options": ["auto", "light", "dark", "high_contrast"],
                     "raise_missing": False,
                 },
             },

@@ -18,8 +18,6 @@ from inspect import signature
 from os.path import join
 
 import darkdetect
-from PyQt5.QtGui import QColor, QIcon
-from PyQt5.QtWidgets import QColorDialog, QFormLayout, QComboBox, QWidget
 from qtpy.QtCore import (
     QObject,
     QProcess,
@@ -30,7 +28,7 @@ from qtpy.QtCore import (
     Slot,
     QTimer,
 )
-from qtpy.QtGui import QFont, QTextCursor, QPalette
+from qtpy.QtGui import QFont, QTextCursor, QPalette, QColor, QIcon
 from qtpy.QtWidgets import (
     QApplication,
     QDialog,
@@ -44,12 +42,15 @@ from qtpy.QtWidgets import (
     QStyle,
     QInputDialog,
     QPlainTextEdit,
+    QColorDialog,
+    QFormLayout,
+    QComboBox,
+    QWidget,
 )
 
-from mne_pipeline_hd import extra
 from mne_pipeline_hd import _object_refs
+from mne_pipeline_hd import extra
 from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
-
 
 # Load theme colors
 theme_color_path = join(str(resources.files(extra)), "color_themes.json")
@@ -764,8 +765,11 @@ def get_palette(theme):
         "base": ["Base"],
         "alternate_background": ["Button", "AlternateBase", "ToolTipBase"],
         "primary": ["ButtonText", "Highlight"],
-        "border_light": ["Light", "Midlight"],
-        "border_dark": ["Dark", "Mid", "Shadow"],
+        "border_light": ["Light"],
+        "border_midlight": ["Midlight"],
+        "border_dark": ["Dark"],
+        "border_mid": ["Mid"],
+        "border_shadow": ["Shadow"],
         "link": ["Link", "LinkVisited"],
     }
     color_roles_disabled = {
@@ -825,6 +829,7 @@ def _get_auto_theme():
 
 def set_app_theme():
     app = QApplication.instance()
+    app.setStyle("Fusion")
     app_theme = QS().value("app_theme")
     # Detect system theme
     if app_theme == "auto":
@@ -847,17 +852,9 @@ def set_app_font():
     app.setFont(QFont(font_family, font_size))
 
 
-def set_app_style():
-    app = QApplication.instance()
-    app_style = QS().value("app_style")
-    app.setStyle(app_style)
-    # Set Theme to be independent from style
-    set_app_theme()
-
-
-class ColorTester(QWidget):
-    def __init__(self):
-        super().__init__()
+class ColorTester(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
         _object_refs["color_tester"] = self
         theme = QS().value("app_theme")
         if theme == "auto":

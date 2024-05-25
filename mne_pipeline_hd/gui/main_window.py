@@ -53,6 +53,7 @@ from mne_pipeline_hd.gui.gui_utils import (
     set_ratio_geometry,
     get_std_icon,
     get_user_input_string,
+    ColorTester,
 )
 from mne_pipeline_hd.gui.loading_widgets import (
     AddFilesDialog,
@@ -347,6 +348,7 @@ class MainWindow(QMainWindow):
         settings_menu = self.menuBar().addMenu("&Settings")
 
         settings_menu.addAction("&Open Settings", partial(SettingsDlg, self, self.ct))
+        settings_menu.addAction("&Customize Theme", partial(ColorTester, self))
         settings_menu.addAction("&Change Home-Path", self.change_home_path)
         settings_menu.addSeparator()
         # ToDo: Needs to be thoroughly tested on all OS

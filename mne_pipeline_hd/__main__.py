@@ -15,9 +15,8 @@ from qtpy.QtWidgets import QApplication
 from mne_pipeline_hd.gui.gui_utils import (
     StdoutStderrStream,
     UncaughtHook,
-    set_app_style,
     set_app_font,
-    ColorTester,
+    set_app_theme,
 )
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
@@ -100,12 +99,11 @@ def main():
         sys.excepthook = qt_exception_hook.exception_hook
 
     # Set style and font
-    set_app_style()
+    set_app_theme()
     set_app_font()
 
     # Initiate WelcomeWindow
     WelcomeWindow()
-    ColorTester()
 
     # Command-Line interrupt with Ctrl+C possible
     timer = QTimer()
