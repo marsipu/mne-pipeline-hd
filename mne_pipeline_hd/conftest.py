@@ -38,13 +38,12 @@ def main_window(controller, qtbot):
 
 @pytest.fixture
 def nodeviewer(qtbot):
-    viewer = NodeViewer(NewController())
+    viewer = NodeViewer(NewController(), debug_mode=True)
     viewer.resize(1000, 1000)
     qtbot.addWidget(viewer)
     viewer.show()
 
     func_kwargs = {
-        "name": "Test Function",
         "inputs": {
             "In1": {
                 "accepted_ports": ["Out1"],
@@ -61,6 +60,19 @@ def nodeviewer(qtbot):
             "Out2": {
                 "accepted_ports": ["In1", "In2"],
                 "multi_connection": True,
+            },
+        },
+        "function_name": "test_func",
+        "parameters": {
+            "low_cutoff": {
+                "alias": "Low-Cutoff",
+                "gui": "FloatGui",
+                "default": 0.1,
+            },
+            "high_cutoff": {
+                "alias": "High-Cutoff",
+                "gui": "FloatGui",
+                "default": 0.2,
             },
         },
     }
