@@ -849,7 +849,7 @@ def set_app_theme():
                 func_button.setStyleSheet(
                     "QPushButton:checked { background-color: #a3a3a3; }"
                 )
-            if app_theme == "high_contrast":
+            elif app_theme == "high_contrast":
                 func_button.setStyleSheet(
                     "QPushButton:checked { background-color: #ffffff; }"
                 )
