@@ -54,6 +54,7 @@ from mne_pipeline_hd.gui.gui_utils import (
     get_std_icon,
     get_user_input_string,
     ColorTester,
+    set_app_theme,
 )
 from mne_pipeline_hd.gui.loading_widgets import (
     AddFilesDialog,
@@ -531,6 +532,7 @@ class MainWindow(QMainWindow):
                         else:
                             alias_name = function
                         pb = QPushButton(alias_name)
+                        pb.setAutoFillBackground(True)
                         pb.setCheckable(True)
                         self.bt_dict[function] = pb
                         if function in self.pr.sel_functions:
@@ -554,6 +556,7 @@ class MainWindow(QMainWindow):
                 child_w.setLayout(tab_v_layout)
                 tab.setWidget(child_w)
                 self.tab_func_widget.addTab(tab, tab_name)
+        set_app_theme()
 
     def update_func_bts(self):
         # Remove tabs in tab_func_widget
