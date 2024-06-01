@@ -7,15 +7,14 @@
 
 # -- Path setup --------------------------------------------------------------
 
-from importlib.metadata import version
-
-# import sys
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 from datetime import datetime, timezone
+from importlib.metadata import version
+
+# import sys
 
 # from os.path import dirname, abspath, join
 
@@ -23,10 +22,10 @@ from datetime import datetime, timezone
 # sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd")))
 
 # # Import module because of annoying import problem
-# module_list = list()
-# from mne_pipeline_hd.gui import parameter_widgets
-#
-# module_list.append(parameter_widgets)
+from mne_pipeline_hd.gui import parameter_widgets
+
+module_list = list()
+module_list.append(parameter_widgets)
 
 # -- Project information -----------------------------------------------------
 project = "mne-pipeline-hd"
