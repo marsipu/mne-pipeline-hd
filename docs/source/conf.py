@@ -21,7 +21,7 @@ from importlib.metadata import version
 # curdir = dirname(__file__)
 # sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd")))
 
-# # Import module because of annoying import problem
+# # Import module because of annoying import problem on CIs
 from mne_pipeline_hd.gui import parameter_widgets
 
 module_list = list()
