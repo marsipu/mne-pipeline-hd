@@ -763,7 +763,8 @@ def get_palette(theme):
         "foreground_disabled": ["PlaceholderText"],
         "background": ["Window", "HighlightedText"],
         "base": ["Base"],
-        "alternate_background": ["Button", "AlternateBase", "ToolTipBase"],
+        "button": ["Button"],
+        "alternate_background": ["AlternateBase", "ToolTipBase"],
         "primary": ["ButtonText", "Highlight"],
         "border_light": ["Light"],
         "border_midlight": ["Midlight"],
@@ -840,6 +841,22 @@ def set_app_theme():
         icon_name = "mne_pipeline_icon_light.png"
     else:
         icon_name = "mne_pipeline_icon_dark.png"
+    # Set func-button color
+    mw = _object_refs["main_window"]
+    if mw is not None:
+        for func_button in mw.bt_dict.values():
+            if app_theme == "light":
+                func_button.setStyleSheet(
+                    "QPushButton:checked { background-color: #a3a3a3; }"
+                )
+            elif app_theme == "high_contrast":
+                func_button.setStyleSheet(
+                    "QPushButton:checked { background-color: #ffffff; }"
+                )
+            else:
+                func_button.setStyleSheet(
+                    "QPushButton:checked { background-color: #000000; }"
+                )
     icon_path = join(str(resources.files(extra)), icon_name)
     app_icon = QIcon(str(icon_path))
     app.setWindowIcon(app_icon)
