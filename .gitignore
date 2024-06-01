@@ -16,3 +16,4 @@ venv/
 # Documentation
 docs/build/
 docs/generated/
+docs/source/generated

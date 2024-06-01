@@ -26,8 +26,10 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+.. toctree::
+   :hidden:
 
-API
-===
-.. automodule:: mne_pipeline_hd.gui.parameter_widgets
-   :members:
+   Install <install/index>
+   Documentation <documentation/index>
+   API Reference <api/index>
+   Development <development/index>

@@ -8,17 +8,25 @@
 # -- Path setup --------------------------------------------------------------
 
 from importlib.metadata import version
-import sys
+
+# import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 from datetime import datetime, timezone
-from os.path import dirname, abspath, join
 
-curdir = dirname(__file__)
-sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd")))
+# from os.path import dirname, abspath, join
+
+# curdir = dirname(__file__)
+# sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd")))
+
+# # Import module because of annoying import problem
+# module_list = list()
+# from mne_pipeline_hd.gui import parameter_widgets
+#
+# module_list.append(parameter_widgets)
 
 # -- Project information -----------------------------------------------------
 project = "mne-pipeline-hd"
@@ -32,6 +40,8 @@ copyright = (
 
 # The full version, including alpha/beta/rc tags
 release = version("mne_pipeline_hd")
+# The short X.Y version.
+version = ".".join(release.split(".")[:2])
 
 # -- General configuration ---------------------------------------------------
 
@@ -54,6 +64,31 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
+switcher_version_match = "dev" if ".dev" in version else version
+html_theme_options = {
+    "icon_links": [
+        dict(
+            name="GitHub",
+            url="https://github.com/marsipu/mne-pipeline-hd",
+            icon="fa-brands fa-square-github fa-fw",
+        ),
+    ],
+    "icon_links_label": "External Links",
+    "navbar_end": [
+        "theme-switcher",
+        "version-switcher",
+        "navbar-icon-links",
+    ],
+    "navbar_align": "left",
+    "navbar_persistent": ["search-button"],
+    "footer_start": ["copyright"],
+    "secondary_sidebar_items": ["page-toc", "edit-this-page"],
+    # Todo: Insert versions url from webpage
+    # "switcher": {
+    #     "json_url": "<version-url>/versions.json",
+    #     "version_match": switcher_version_match,
+    # },
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
