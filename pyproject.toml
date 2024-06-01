@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mne-pipeline-hd"
 authors = [
-    { name = "Martin Schulz", email = "dev@mgschulz.de" }
+    { name = "Martin G. Schulz", email = "dev@mgschulz.de" }
 ]
 description = "A Pipeline-GUI for MNE-Python from MEG-Lab Heidelberg"
 readme = "README.md"
@@ -46,6 +46,8 @@ tests = [
     "pre-commit",
     "black",
     "ruff",
+]
+docs = [
     "sphinx",
     "pydata-sphinx-theme",
 ]

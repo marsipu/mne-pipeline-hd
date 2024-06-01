@@ -75,6 +75,12 @@ class Param(QWidget):
     ----------
     paramChanged : Signal
         This signal is emmited when the parameter changes.
+    Methods
+    -------
+    init_ui(layout=None)
+        Base layout initialization, which adds the given layout to a
+        group-box with the parameters name if groupbox_layout is enabled.
+        Else the layout will be horizontal with a QLabel for the name.
     """
 
     paramChanged = Signal(object)
