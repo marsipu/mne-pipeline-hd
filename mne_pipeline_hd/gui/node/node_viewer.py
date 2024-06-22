@@ -498,7 +498,6 @@ class NodeViewer(QGraphicsView):
                 path = self._debug_path.path()
                 path.lineTo(to_pos)
                 self._debug_path.setPath(path)
-                logging.debug(f"\rMouse pos: {to_pos.x():.2f}, {to_pos.y():.2f}")
 
         # Draw slicer
         if self.LMB_state and event.modifiers() == (

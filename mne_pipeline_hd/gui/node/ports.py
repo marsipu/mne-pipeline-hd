@@ -393,10 +393,9 @@ class Port(QGraphicsItem):
             if verbose:
                 logging.debug("Ports are already connected.")
         # check if the ports are compatible.
-        elif self.accepted_ports is not None:
-            if self.name not in self.accepted_ports:
-                if verbose:
-                    logging.debug("Ports are not compatible.")
+        elif self.accepted_ports is not None and port.name not in self.accepted_ports:
+            if verbose:
+                logging.debug("Ports are not compatible.")
         else:
             if verbose:
                 logging.debug("Ports are compatible.")
