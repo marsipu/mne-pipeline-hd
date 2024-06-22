@@ -432,20 +432,21 @@ class Controller:
 
 
 class NewController:
-    """New controller, that combines the former old controller and project class.
-    The home-path structure should no longer be as rigid as before.
-    For each controller, there is a config-file stored, where paths to the raw-data,
+    """New controller, that combines the former old controller and project class and loads a controller for each "project".
+    The home-path structure should no longer be as rigid as before, just specifying the path to meeg- and fsmri-data.
+    For each controller, there is a config-file stored, where paths to the meeg-data,
     the freesurfer-dir and the custom-packages are stored.
     """
 
     def __init__(self, config_file=None):
         self.config_file = config_file
-        self.config = dict()
-        self.load_config()
+        self.config = self.load_config()
 
     def load_config(self):
         if self.config_file is not None:
-            self.config = json.load(self.config_file, object_hook=type_json_hook)
+            return json.load(self.config_file, object_hook=type_json_hook)
+        else:
+            return dict()
 
     def save_config(self):
         if self.config_file is None:
