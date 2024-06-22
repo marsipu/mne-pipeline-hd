@@ -248,23 +248,29 @@ class NodeViewer(QGraphicsView):
             return self.nodes[node_id]
 
     def to_dict(self):
-        # ToDo: Implement this
-        graph_dict = {"nodes": dict(), "connections": dict()}
+        viewer_dict = {node_id: node.to_dict() for node_id, node in self.nodes.items()}
 
-        return graph_dict
+        return viewer_dict
 
-    def from_dict(self, graph_dict):
+    def from_dict(self, viewer_dict):
         # ToDo: Implement this
-        for node_id, node_data in graph_dict["nodes"].items():
+        for node_id, node_data in viewer_dict["nodes"].items():
             node = self.add_node(node_data["type"])
             node.from_dict(node_data)
 
-        for conn_id, conn_data in graph_dict["connections"].items():
+        for conn_id, conn_data in viewer_dict["connections"].items():
             start_port = self.nodes[conn_data["start_node"]].outputs[
                 conn_data["start_port"]
             ]
             end_port = self.nodes[conn_data["end_node"]].inputs[conn_data["end_port"]]
             start_port.connect_to(end_port)
+
+    def clear(self):
+        """
+        Clear the node graph.
+        """
+        for node in self.nodes.values():
+            self.remove_node(node)
 
     # ----------------------------------------------------------------------------------
     # Qt methods

@@ -223,6 +223,10 @@ class BaseNode(QGraphicsItem):
         PortItem
             port qgraphics item.
         """
+        # port names must be unique
+        if name in self._inputs:
+            logging.warning(f"Input port {name} already exists.")
+            return
         port = Port(self, name, "in", multi_connection, accepted_ports)
         self._inputs[port.name] = port
         if self.scene():
@@ -252,7 +256,10 @@ class BaseNode(QGraphicsItem):
         PortItem
             port qgraphics item.
         """
-
+        # port names must be unique
+        if name in self._outputs:
+            logging.warning(f"Output port {name} already exists.")
+            return
         port = Port(self, name, "out", multi_connection, accepted_ports)
         self._outputs[port.name] = port
         if self.scene():
@@ -380,6 +387,33 @@ class BaseNode(QGraphicsItem):
         """
         self.scene().removeItem(self)
         del self
+
+    def to_dict(self):
+        node_dict = {
+            "name": self.name,
+            "class": self.__class__.__name__,
+            "pos": self.xy_pos,
+            "inputs": self.inputs,
+            "outputs": self.outputs,
+            "connections": {
+                "inputs": {
+                    p.name: {
+                        nid: [cp.name for cp in cpts]
+                        for nid, cpts in p.connected_ports.items()
+                    }
+                    for p in self.inputs
+                },
+                "outputs": {
+                    p.name: {
+                        nid: [cp.name for cp in cpts]
+                        for nid, cpts in p.connected_ports.items()
+                    }
+                    for p in self.outputs
+                },
+            },
+        }
+
+        return node_dict
 
     # ----------------------------------------------------------------------------------
     # Qt methods
