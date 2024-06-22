@@ -29,3 +29,12 @@ def test_nodes_basic_interaction(nodeviewer):
     )
     # Check if connection was sliced
     assert len(node1.output(1).connected_ports) == 0
+
+
+def test_node_serialization(qtbot, nodeviewer):
+    viewer_dict = nodeviewer.to_dict()
+    qtbot.wait(2000)
+    nodeviewer.clear()
+    qtbot.wait(1000)
+    nodeviewer.from_dict(viewer_dict)
+    qtbot.wait(10000)
