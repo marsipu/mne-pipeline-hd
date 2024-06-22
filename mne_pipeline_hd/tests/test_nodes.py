@@ -3,7 +3,7 @@ from mne_pipeline_hd.gui.gui_utils import mouseDrag
 from qtpy.QtCore import Qt, QPointF
 
 
-def test_nodes_basic_interaction(qtbot, nodeviewer):
+def test_nodes_basic_interaction(nodeviewer):
     node1 = nodeviewer.node(node_idx=0)
     node2 = nodeviewer.node(node_idx=1)
 
