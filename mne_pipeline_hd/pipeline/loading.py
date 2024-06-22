@@ -33,6 +33,13 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     logger,
 )
 
+# BIDS-Considerations:
+# - BIDS might be a bit work at first (implement session, run etc.)
+# - Might pay off since data and derivative might be used then by mne-bids-pipeline
+# and hopefully other analysis tools complying to the bids-standard
+# - For freesurfer data use recon-all --bids-out
+# - bids-apps/freesurfer might be also interesting
+
 
 def _get_data_type_from_func(self, func, method):
     # Get matching data-type from IO-Dict
@@ -1051,7 +1058,17 @@ class MEEG(BaseLoading):
     ###########################################################################
 
     def load_info(self):
-        return mne.io.read_info(self.raw_path)
+        if isfile(self.raw_path):
+            path = self.raw_path
+        elif isfile(self.epochs_path):
+            path = self.epochs_path
+        elif isfile(self.evokeds_path):
+            path = self.evokeds_path
+        else:
+            raise FileNotFoundError(
+                f"Could not find file to load info from for {self.name}"
+            )
+        return mne.io.read_info(path)
 
     @load_decorator
     def load_raw(self):
@@ -1760,6 +1777,7 @@ class Group(BaseLoading):
     ###########################################################################
     def load_items(self, obj_type="MEEG", data_type=None):
         """Returns a generator for group items."""
+        # ToDO: Also with obj_type=None and only data_type
         for obj_name in self.group_list:
             if obj_type == "MEEG":
                 obj = MEEG(obj_name, self.ct)
