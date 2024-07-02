@@ -14,9 +14,9 @@
 
 ## Update
 
-Run `pip install --upgrade --no-deps --force-reinstall https://github.com/marsipu/mne-pipeline-hd/zipball/main`
+Run `pip install --upgrade --no-deps --force-reinstall git+https://github.com/marsipu/mne_pipeline_hd.git@main`
 for an update to the development version
-or `pip install --upgrade mne-pipeline-hd` for the latest release.
+or `pip install --upgrade mne-pipeline-hd` for the latest stable release.
 
 ## Start
 
