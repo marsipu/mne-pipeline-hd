@@ -8,7 +8,9 @@
 
 1. Install MNE-python as instructed on
    the [website](https://www.martinos.org/mne/stable/install_mne_python.html)
-2. Then run `pip install https://github.com/marsipu/mne-pipeline-hd/zipball/main` in the conda-enviroment you created in step 1 for MNE-Python.
+2. To install `mne_pipeline_hd` in the conda-enviroment you created in step 1 you can either 
+    - Install the stable version with `pip install mne_pipeline_hd`
+    - Install the development version with `pip install git+https://github.com/marsipu/mne_pipeline_hd.git@main`
 
 ## Update
 
