@@ -4,6 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+import logging
 import os
 import re
 import shutil
@@ -158,7 +159,11 @@ def index_parser(index, all_items, groups=None):
                 indices = [int(index)]
 
         indices = [i for i in indices if i not in rm]
-        files = np.asarray(all_items)[indices].tolist()
+        try:
+            files = np.asarray(all_items)[indices].tolist()
+        except IndexError:
+            logging.warning("Index out of range")
+            files = []
 
         return files
 
@@ -533,11 +538,9 @@ class GrandAvgFileAdd(QDialog):
 
 # Todo: Enable Drag&Drop
 class AddFilesWidget(QWidget):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
+    def __init__(self, ct):
+        super().__init__()
+        self.ct = ct
         self.layout = QVBoxLayout()
 
         self.erm_keywords = [
@@ -856,11 +859,9 @@ class AddFilesDialog(AddFilesWidget):
 
 
 class AddMRIWidget(QWidget):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
+    def __init__(self, ct):
+        super().__init__()
+        self.ct = ct
         self.layout = QVBoxLayout()
 
         self.folders = list()
@@ -1571,7 +1572,7 @@ class EventIDGui(QDialog):
             self.checked_labels = list()
         self.update_check_list()
 
-    # ToDo: Make all combinations possible
+    # ToDo: Make all combinations possible and also int-keys (can't split)
     def update_check_list(self):
         self.labels = [k for k in self.queries.keys()]
         # Get selectable trials and update widget
