@@ -654,6 +654,7 @@ class AddFilesWidget(QWidget):
                 # Get already existing files and skip them
                 if (
                     file_path in list(self.pd_files["Path"])
+                    # ToDo: Fix all pr stuff
                     or file_name in self.pr.all_meeg
                     or file_name in self.pr.all_erm
                 ):
