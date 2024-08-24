@@ -512,7 +512,7 @@ class WorkerDialog(QDialog):
 
     def on_thread_finished(self, return_value):
         # Store return value to send it when user closes the dialog
-        if type(return_value) == ExceptionTuple and not self.return_exception:
+        if type(return_value) is ExceptionTuple and not self.return_exception:
             return_value = None
         self.return_value = return_value
         self.is_finished = True
