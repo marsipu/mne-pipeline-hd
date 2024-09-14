@@ -1,7 +1,7 @@
 changelog:
   exclude:
     authors:
-      - pre-commit-ci[bot]
+      - pre-commit-ci
   categories:
     - title: New Features 💫
       labels:
