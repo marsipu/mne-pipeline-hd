@@ -71,12 +71,6 @@ from mne_pipeline_hd.gui.loading_widgets import (
     ExportDialog,
 )
 from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
-from mne_pipeline_hd.gui.node.nodes import (
-    MEEGInputNode,
-    MRIInputNode,
-    AssignmentNode,
-    FunctionNode,
-)
 from mne_pipeline_hd.gui.parameter_widgets import (
     BoolGui,
     IntGui,
@@ -670,17 +664,17 @@ class MainWindow(QMainWindow):
         }
 
         # Add some demo nodes
-        meeg_node = self.node_viewer.create_node(MEEGInputNode)
-        mri_node = self.node_viewer.create_node(MRIInputNode)
+        meeg_node = self.node_viewer.create_node("MEEGInputNode")
+        mri_node = self.node_viewer.create_node("MRIInputNode")
         ass_node = self.node_viewer.create_node(
-            AssignmentNode,
+            "AssignmentNode",
             inputs={"Evokeds": {}, "Fwd": {}},
             outputs={"Evokeds": {}, "Fwd": {}},
         )
         fn = dict()
         for func_name, func_kwargs in demo_dict.items():
             fnode = self.node_viewer.create_node(
-                FunctionNode, function_name=func_name, **func_kwargs
+                "FunctionNode", function_name=func_name, **func_kwargs
             )
             fn[func_name] = fnode
 

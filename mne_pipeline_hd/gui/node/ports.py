@@ -67,7 +67,7 @@ class Port(QGraphicsItem):
         self._name = name
         self._port_type = port_type
         self._multi_connection = multi_connection
-        self._connected_ports = OrderedDict()
+        self._connected_ports = list()
         self._connected_pipes = OrderedDict()
         self._accepted_ports = accepted_ports
 
@@ -335,6 +335,15 @@ class Port(QGraphicsItem):
     # --------------------------------------------------------------------------------------
     # Logic methods
     # --------------------------------------------------------------------------------------
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "port_type": self.port_type,
+            "multi_connection": self.multi_connection,
+            "accepted_ports": self.accepted_ports,
+            "connected_ports": [port.id for port in self.connected_ports],
+        }
+
     def add_accepted_ports(self, ports):
         if isinstance(ports, list):
             self.accepted_ports.extend(ports)
@@ -343,35 +352,22 @@ class Port(QGraphicsItem):
         else:
             raise ValueError("Invalid port type")
 
-    def get_connected_ports(self, port_idx=None, node_id=None):
-        """
-        Get the connected port by index, id or node id.
-        Parameters
-        ----------
-        port_idx: int
-            Get the connected port by index.
-        node_id: int
-            Get the connected ports by node id
-            (can be multiple if multi_connect is True).
-
-        Returns
-        -------
-        port: Port or list[Port]
-            Returns port (or list of ports for node_id)
-        """
-        if port_idx is not None:
-            port_list = list()
-            for node_id, ports in self.connected_ports.items():
-                port_list.extend(ports)
-            return port_list[port_idx]
-        elif node_id is not None:
-            return self.connected_ports.get(node_id, list())
-        return None
-
-    def connected(self, port):
-        for node_id, ports in self.connected_ports.items():
-            if port in ports:
+    def connected(self, target_port):
+        """Check if the specified port (port object, port name or port id) is connected to this port."""
+        if isinstance(target_port, str):
+            if target_port in [port.name for port in self.connected_ports]:
                 return True
+        elif isinstance(target_port, int):
+            if target_port in [port.id for port in self.connected_ports]:
+                return True
+        elif isinstance(target_port, Port):
+            if target_port in self.connected_ports:
+                return True
+        else:
+            logging.warning(
+                "Invalid port type for connection check "
+                "(only port object, port name or port id accepted)."
+            )
         return False
 
     def compatible(self, port, verbose=True):
@@ -424,15 +420,13 @@ class Port(QGraphicsItem):
         # if not multi-connection.
         for port in [self, target_port]:
             if not port.multi_connection and len(port.connected_ports) > 0:
-                for node_id, ports in port.connected_ports.items():
-                    for p in ports:
-                        port.disconnect_from(p)
+                for d_port in list(port.connected_ports):
+                    port.disconnect_from(d_port)
 
         # Add to connected_ports
         for port, trg_port in [(self, target_port), (target_port, self)]:
-            if trg_port.node.id not in port.connected_ports:
-                port.connected_ports[trg_port.node.id] = list()
-            port.connected_ports[trg_port.node.id].append(trg_port)
+            if trg_port not in port.connected_ports:
+                port.connected_ports.append(trg_port)
 
         if self.port_type == "in":
             input_port = self
@@ -443,8 +437,8 @@ class Port(QGraphicsItem):
         # Draw pipe
         if self.scene():
             pipe = Pipe(input_port, output_port)
-            input_port._connected_pipes[output_port.id] = pipe
-            output_port._connected_pipes[input_port.id] = pipe
+            input_port.connected_pipes[output_port.id] = pipe
+            output_port.connected_pipes[input_port.id] = pipe
             self.scene().addItem(pipe)
             pipe.draw_path(input_port, output_port)
             if self.node.isSelected() or target_port.node.isSelected():
@@ -480,11 +474,7 @@ class Port(QGraphicsItem):
 
         # Remove ids from connected ports of this port and the target port.
         for port, trg_port in [(self, target_port), (target_port, self)]:
-            rm_ports = port.get_connected_ports(node_id=trg_port.node.id)
-            if trg_port in rm_ports:
-                rm_ports.remove(trg_port)
-            if len(rm_ports) == 0:
-                del port.connected_ports[trg_port.node.id]
+            port.connected_ports.remove(trg_port)
 
         # Remove the pipe connected to target_port
         rm_pipe = self.connected_pipes.pop(target_port.id, None)
@@ -509,6 +499,7 @@ class Port(QGraphicsItem):
         Disconnect from all port connections and emit the
         :attr:`NodeGraph.port_disconnected` signals from the node graph.
         """
-        for node_id, ports in self.connected_ports.items():
-            for port in ports:
-                self.disconnect_from(port)
+        # Copy to avoid iteration failure
+        remove_ports = list(self.connected_ports)
+        for port in remove_ports:
+            self.disconnect_from(port)

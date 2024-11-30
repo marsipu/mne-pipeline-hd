@@ -224,11 +224,11 @@ class BaseNode(QGraphicsItem):
             port qgraphics item.
         """
         # port names must be unique
-        if name in self._inputs:
+        if name in [p.name for p in self.inputs]:
             logging.warning(f"Input port {name} already exists.")
             return
         port = Port(self, name, "in", multi_connection, accepted_ports)
-        self._inputs[port.name] = port
+        self._inputs[port.id] = port
         if self.scene():
             self.draw_node()
 
@@ -257,11 +257,11 @@ class BaseNode(QGraphicsItem):
             port qgraphics item.
         """
         # port names must be unique
-        if name in self._outputs:
+        if name in [p.name for p in self.outputs]:
             logging.warning(f"Output port {name} already exists.")
             return
         port = Port(self, name, "out", multi_connection, accepted_ports)
-        self._outputs[port.name] = port
+        self._outputs[port.id] = port
         if self.scene():
             self.draw_node()
 
@@ -269,37 +269,49 @@ class BaseNode(QGraphicsItem):
 
     def input(self, port):
         """
-        Get input port by the name or index.
+        Get input port by the name, index or id.
 
         Args:
-            port (str or int): port name or index.
+            port (str or int): port name, index or id.
 
         Returns:
             NodeGraphQt.Port: node port.
         """
         if isinstance(port, int):
-            if port < len(self.inputs):
-                return self.inputs[port]
-        elif isinstance(port, str):
+            # Get input port by id
             if port in self._inputs:
                 return self._inputs[port]
+            # Get input port by index (self.inputs returns a list)
+            elif port < len(self.inputs):
+                return self.inputs[port]
+        elif isinstance(port, str):
+            port_names = [p.name for p in self.inputs]
+            if port in port_names:
+                name_index = port_names.index(port)
+                return self.inputs[name_index]
 
     def output(self, port):
         """
-        Get output port by the name or index.
+        Get output port by the name, index or id.
 
         Args:
-            port (str or int): port name or index.
+            port (str or int): port name, index or id.
 
         Returns:
             NodeGraphQt.Port: node port.
         """
         if isinstance(port, int):
-            if port < len(self.outputs):
-                return self.outputs[port]
-        elif isinstance(port, str):
+            # Get output port by id
             if port in self._outputs:
                 return self._outputs[port]
+            # Get output port by index (self.outputs returns a list)
+            elif port < len(self.outputs):
+                return self.outputs[port]
+        elif isinstance(port, str):
+            port_names = [p.name for p in self.outputs]
+            if port in port_names:
+                name_index = port_names.index(port)
+                return self.outputs[name_index]
 
     def port(self, port_type, port):
         """
@@ -385,7 +397,8 @@ class BaseNode(QGraphicsItem):
         """
         Remove node from the scene.
         """
-        self.scene().removeItem(self)
+        if self.scene() is not None:
+            self.scene().removeItem(self)
         del self
 
     def to_dict(self):
@@ -393,27 +406,17 @@ class BaseNode(QGraphicsItem):
             "name": self.name,
             "class": self.__class__.__name__,
             "pos": self.xy_pos,
-            "inputs": self.inputs,
-            "outputs": self.outputs,
-            "connections": {
-                "inputs": {
-                    p.name: {
-                        nid: [cp.name for cp in cpts]
-                        for nid, cpts in p.connected_ports.items()
-                    }
-                    for p in self.inputs
-                },
-                "outputs": {
-                    p.name: {
-                        nid: [cp.name for cp in cpts]
-                        for nid, cpts in p.connected_ports.items()
-                    }
-                    for p in self.outputs
-                },
-            },
+            "inputs": {p.id: p.to_dict() for p in self.inputs},
+            "outputs": {p.id: p.to_dict() for p in self.outputs},
         }
 
         return node_dict
+
+    @classmethod
+    def from_dict(cls, node_dict, ct):
+        node = cls(ct, name=node_dict["name"])
+        print(node)  ## only for ruff
+        # Todo: Continue here
 
     # ----------------------------------------------------------------------------------
     # Qt methods

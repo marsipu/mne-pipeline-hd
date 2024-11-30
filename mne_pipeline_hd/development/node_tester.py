@@ -4,12 +4,6 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
-from mne_pipeline_hd.gui.node.nodes import (
-    FunctionNode,
-    MEEGInputNode,
-    AssignmentNode,
-    MRIInputNode,
-)
 from pipeline.controller import NewController
 
 
@@ -22,13 +16,13 @@ def run_graph_test():
     viewer = NodeViewer(ct)
     viewer.resize(1600, 1000)
 
-    meeg_node = viewer.create_node(MEEGInputNode)
-    mri_node = viewer.create_node(MRIInputNode)
-    ass_node = viewer.create_node(AssignmentNode)
-    func_node1 = viewer.create_node(FunctionNode)
-    func_node2 = viewer.create_node(FunctionNode)
-    func_node3 = viewer.create_node(FunctionNode)
-    func_node4 = viewer.create_node(FunctionNode)
+    meeg_node = viewer.create_node("MEEGInputNode")
+    mri_node = viewer.create_node("MRIInputNode")
+    ass_node = viewer.create_node("AssignmentNode")
+    func_node1 = viewer.create_node("FunctionNode")
+    func_node2 = viewer.create_node("FunctionNode")
+    func_node3 = viewer.create_node("FunctionNode")
+    func_node4 = viewer.create_node("FunctionNode")
 
     # Wire up the nodes
     meeg_node.set_output(0, func_node1.input(0))
