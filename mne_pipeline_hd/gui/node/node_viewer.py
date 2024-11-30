@@ -4,6 +4,8 @@ import math
 from collections import OrderedDict
 
 import qtpy
+
+from gui.node import nodes
 from mne_pipeline_hd.gui.gui_utils import invert_rgb_color
 from mne_pipeline_hd.gui.node.base_node import BaseNode
 from mne_pipeline_hd.gui.node.node_defaults import defaults
@@ -197,23 +199,35 @@ class NodeViewer(QGraphicsView):
 
         node.delete()
 
-    def create_node(self, node_class, **kwargs):
+    def create_node(self, node_info, **kwargs):
         """
         Create a node from the given class.
 
         Parameters
         ----------
-        node_class
-            The node class to create.
-        kwargs
+        node_info: str or dict
+            Can be a string to speficy the node class or a dictionary
+            from node.to_dict().
+        kwargs: dict
             Additional keyword arguments to pass into BaseNode.__init__()
+            (replacing the values from the dictionary if provided).
 
         Returns
         -------
         node
             The created node.
         """
-        node = node_class(self.ct, **kwargs)
+        if isinstance(node_info, dict):
+            node_class = getattr(nodes, node_info["class"])
+            for key in node_info:
+                if key in kwargs:
+                    node_info[key] = kwargs[key]
+            node = node_class.from_dict(node_info, self.ct)
+        elif isinstance(node_info, str):
+            node_class = getattr(nodes, node_info)
+            node = node_class(self.ct, **kwargs)
+        else:
+            raise ValueError("node_info must be a string or a dictionary.")
         self.add_node(node)
 
         return node
@@ -253,23 +267,17 @@ class NodeViewer(QGraphicsView):
         return viewer_dict
 
     def from_dict(self, viewer_dict):
-        # ToDo: Implement this
-        for node_id, node_data in viewer_dict["nodes"].items():
-            node = self.add_node(node_data["type"])
-            node.from_dict(node_data)
-
-        for conn_id, conn_data in viewer_dict["connections"].items():
-            start_port = self.nodes[conn_data["start_node"]].outputs[
-                conn_data["start_port"]
-            ]
-            end_port = self.nodes[conn_data["end_node"]].inputs[conn_data["end_port"]]
-            start_port.connect_to(end_port)
+        self.clear()
+        # Create nodes
+        for node_dict in viewer_dict.values():
+            self.create_node(node_class=node_dict)
+        # Initialize connections
 
     def clear(self):
         """
         Clear the node graph.
         """
-        for node in self.nodes.values():
+        for node in list(self.nodes.values()):
             self.remove_node(node)
 
     # ----------------------------------------------------------------------------------
@@ -726,7 +734,8 @@ class NodeViewer(QGraphicsView):
 
         if port:
             if not port.multi_connection and len(port.connected_ports) > 0:
-                self._detached_port = port.get_connected_ports(port_idx=0)
+                # ToDo: Might cause problems with multi-connections
+                self._detached_port = port.connected_ports[0]
             self.start_live_connection(port)
             if not port.multi_connection:
                 [p.delete() for p in port.connected_pipes.values()]
@@ -1212,8 +1221,8 @@ class NodeViewer(QGraphicsView):
             node_values = node.connected_input_nodes().values()
 
         connected_nodes = set()
-        for nodes in node_values:
-            connected_nodes.update(nodes)
+        for nds in node_values:
+            connected_nodes.update(nds)
 
         rank = nodes_rank[node] + 1
         for n in connected_nodes:

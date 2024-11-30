@@ -9,7 +9,6 @@ from os import mkdir
 import pytest
 
 from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
-from mne_pipeline_hd.gui.node.nodes import FunctionNode
 from mne_pipeline_hd.gui.main_window import MainWindow
 from mne_pipeline_hd.pipeline.controller import Controller, NewController
 from mne_pipeline_hd.pipeline.pipeline_utils import _set_test_run
@@ -76,8 +75,8 @@ def nodeviewer(qtbot):
             },
         },
     }
-    func_node1 = viewer.create_node(FunctionNode, **func_kwargs)
-    func_node2 = viewer.create_node(FunctionNode, **func_kwargs)
+    func_node1 = viewer.create_node("FunctionNode", **func_kwargs)
+    func_node2 = viewer.create_node("FunctionNode", **func_kwargs)
     func_node1.set_output(0, func_node2.input(0))
 
     func_node2.setPos(400, 100)
