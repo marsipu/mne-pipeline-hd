@@ -366,10 +366,7 @@ class BaseNode(QGraphicsItem):
         """
         nodes = OrderedDict()
         for p in self.inputs:
-            nodes[p] = [
-                cp.node
-                for cp in p.connected_ports
-            ]
+            nodes[p] = [cp.node for cp in p.connected_ports]
         return nodes
 
     def connected_output_nodes(self):
@@ -381,10 +378,7 @@ class BaseNode(QGraphicsItem):
         """
         nodes = OrderedDict()
         for p in self.outputs:
-            nodes[p] = [
-                cp.node
-                for cp in p.connected_ports
-            ]
+            nodes[p] = [cp.node for cp in p.connected_ports]
         return nodes
 
     def add_widget(self, widget):
