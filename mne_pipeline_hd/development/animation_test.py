@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import sys
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QApplication,
     QGraphicsPathItem,
     QGraphicsView,
     QGraphicsScene,
 )
-from PyQt5.QtGui import QPen, QColor, QPainterPath
-from PyQt5.QtCore import Qt, QVariantAnimation
+from qtpy.QtGui import QPen, QColor, QPainterPath
+from qtpy.QtCore import Qt, QVariantAnimation
 
 
 class Edge(QGraphicsPathItem):
