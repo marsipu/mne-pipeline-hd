@@ -415,8 +415,11 @@ class BaseNode(QGraphicsItem):
     @classmethod
     def from_dict(cls, node_dict, ct):
         node = cls(ct, name=node_dict["name"])
-        print(node)  ## only for ruff
-        # Todo: Continue here
+        node.xy_pos = node_dict["pos"]
+        port_dict = dict()
+        for port_id, port_dict in node_dict["inputs"].items():
+            port = node.add_input()
+            port_dict[port_id] = port
 
     # ----------------------------------------------------------------------------------
     # Qt methods
