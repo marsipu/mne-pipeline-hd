@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from qtpy.QtCore import Qt
+
 defaults = {
     "nodes": {
         "width": 160,
@@ -25,7 +27,7 @@ defaults = {
         "disabled_color": (200, 60, 60, 255),
         "active_color": (70, 255, 220, 255),
         "highlight_color": (232, 184, 13, 255),
-        "style": 1,
+        "style": Qt.SolidLine,
     },
     "viewer": {
         "background_color": (35, 35, 35),

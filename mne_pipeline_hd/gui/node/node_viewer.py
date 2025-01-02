@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 import qtpy
 
-from gui.node import nodes
+from mne_pipeline_hd.gui.node import nodes
 from mne_pipeline_hd.gui.gui_utils import invert_rgb_color
 from mne_pipeline_hd.gui.node.base_node import BaseNode
 from mne_pipeline_hd.gui.node.node_defaults import defaults

@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from PyQt5.QtWidgets import QScrollArea, QGroupBox
-
 from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
 from mne_pipeline_hd.gui.node.base_node import BaseNode
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QDialog
+from qtpy.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QPushButton,
+    QDialog,
+    QScrollArea,
+    QGroupBox,
+)
 
 from mne_pipeline_hd.gui.base_widgets import CheckList
 from mne_pipeline_hd.gui.loading_widgets import AddFilesWidget, AddMRIWidget
