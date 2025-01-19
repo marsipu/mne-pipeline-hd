@@ -69,6 +69,7 @@
       ~BoolGui.dynamicPropertyNames
       ~BoolGui.effectiveWinId
       ~BoolGui.emit
+      ~BoolGui.encodeMetricF
       ~BoolGui.ensurePolished
       ~BoolGui.enterEvent
       ~BoolGui.event

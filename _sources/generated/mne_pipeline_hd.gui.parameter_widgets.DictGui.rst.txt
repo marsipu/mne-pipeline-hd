@@ -69,6 +69,7 @@
       ~DictGui.dynamicPropertyNames
       ~DictGui.effectiveWinId
       ~DictGui.emit
+      ~DictGui.encodeMetricF
       ~DictGui.ensurePolished
       ~DictGui.enterEvent
       ~DictGui.event

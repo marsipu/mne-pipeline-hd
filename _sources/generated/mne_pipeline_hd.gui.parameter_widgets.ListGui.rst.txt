@@ -69,6 +69,7 @@
       ~ListGui.dynamicPropertyNames
       ~ListGui.effectiveWinId
       ~ListGui.emit
+      ~ListGui.encodeMetricF
       ~ListGui.ensurePolished
       ~ListGui.enterEvent
       ~ListGui.event

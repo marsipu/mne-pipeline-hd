@@ -69,6 +69,7 @@
       ~CheckListGui.dynamicPropertyNames
       ~CheckListGui.effectiveWinId
       ~CheckListGui.emit
+      ~CheckListGui.encodeMetricF
       ~CheckListGui.ensurePolished
       ~CheckListGui.enterEvent
       ~CheckListGui.event

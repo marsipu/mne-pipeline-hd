@@ -69,6 +69,7 @@
       ~TupleGui.dynamicPropertyNames
       ~TupleGui.effectiveWinId
       ~TupleGui.emit
+      ~TupleGui.encodeMetricF
       ~TupleGui.ensurePolished
       ~TupleGui.enterEvent
       ~TupleGui.event

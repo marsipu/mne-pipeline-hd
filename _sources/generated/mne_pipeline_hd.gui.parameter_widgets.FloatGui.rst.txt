@@ -69,6 +69,7 @@
       ~FloatGui.dynamicPropertyNames
       ~FloatGui.effectiveWinId
       ~FloatGui.emit
+      ~FloatGui.encodeMetricF
       ~FloatGui.ensurePolished
       ~FloatGui.enterEvent
       ~FloatGui.event

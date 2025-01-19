@@ -71,6 +71,7 @@
       ~MultiTypeGui.dynamicPropertyNames
       ~MultiTypeGui.effectiveWinId
       ~MultiTypeGui.emit
+      ~MultiTypeGui.encodeMetricF
       ~MultiTypeGui.ensurePolished
       ~MultiTypeGui.enterEvent
       ~MultiTypeGui.event

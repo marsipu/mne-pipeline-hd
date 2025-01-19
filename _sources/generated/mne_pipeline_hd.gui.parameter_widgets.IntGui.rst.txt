@@ -69,6 +69,7 @@
       ~IntGui.dynamicPropertyNames
       ~IntGui.effectiveWinId
       ~IntGui.emit
+      ~IntGui.encodeMetricF
       ~IntGui.ensurePolished
       ~IntGui.enterEvent
       ~IntGui.event

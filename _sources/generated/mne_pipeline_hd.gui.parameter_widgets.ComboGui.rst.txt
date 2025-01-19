@@ -69,6 +69,7 @@
       ~ComboGui.dynamicPropertyNames
       ~ComboGui.effectiveWinId
       ~ComboGui.emit
+      ~ComboGui.encodeMetricF
       ~ComboGui.ensurePolished
       ~ComboGui.enterEvent
       ~ComboGui.event

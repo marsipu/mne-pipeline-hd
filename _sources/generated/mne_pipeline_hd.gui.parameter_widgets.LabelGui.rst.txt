@@ -69,6 +69,7 @@
       ~LabelGui.dynamicPropertyNames
       ~LabelGui.effectiveWinId
       ~LabelGui.emit
+      ~LabelGui.encodeMetricF
       ~LabelGui.ensurePolished
       ~LabelGui.enterEvent
       ~LabelGui.event

@@ -69,6 +69,7 @@
       ~Param.dynamicPropertyNames
       ~Param.effectiveWinId
       ~Param.emit
+      ~Param.encodeMetricF
       ~Param.ensurePolished
       ~Param.enterEvent
       ~Param.event

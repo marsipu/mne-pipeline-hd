@@ -70,6 +70,7 @@
       ~SliderGui.dynamicPropertyNames
       ~SliderGui.effectiveWinId
       ~SliderGui.emit
+      ~SliderGui.encodeMetricF
       ~SliderGui.ensurePolished
       ~SliderGui.enterEvent
       ~SliderGui.event
