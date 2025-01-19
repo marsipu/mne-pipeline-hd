@@ -86,13 +86,12 @@ class GroupNode(BaseNode):
 
 
 class FunctionNode(BaseNode):
-    """This node"""
+    """This node is a prototype for a function node, which also displays parameters."""
 
     def __init__(
-        self, ct, function_name, parameters, **kwargs
+        self, ct, name, parameters, **kwargs
     ):  # **kwargs just for demo, later not needed
-        super().__init__(ct, name=function_name, **kwargs)
-        self.function_name = function_name
+        super().__init__(ct, name, **kwargs)
         self.parameters = parameters
 
         self.init_parameters()
@@ -140,6 +139,13 @@ class FunctionNode(BaseNode):
             else:
                 layout.addWidget(parameter_gui)
         self.add_widget(group_box)
+
+    def to_dict(self):
+        """Override dictionary representation because of additional attributes"""
+        node_dict = super().to_dict()
+        node_dict["parameters"] = self.parameters
+
+        return node_dict
 
     def mouseDoubleClickEvent(self, event):
         # Open a dialog to show the code of the function (maybe even small editor)

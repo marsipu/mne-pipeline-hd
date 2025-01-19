@@ -407,13 +407,10 @@ class BaseNode(QGraphicsItem):
         return node_dict
 
     @classmethod
-    def from_dict(cls, node_dict, ct):
-        node = cls(ct, name=node_dict["name"])
+    def from_dict(cls, ct, node_dict):
+        node_kwargs = {k: v for k, v in node_dict.items() if k not in ["class", "pos"]}
+        node = cls(ct, **node_kwargs)
         node.xy_pos = node_dict["pos"]
-        port_dict = dict()
-        for port_id, port_dict in node_dict["inputs"].items():
-            port = node.add_input()
-            port_dict[port_id] = port
 
     # ----------------------------------------------------------------------------------
     # Qt methods

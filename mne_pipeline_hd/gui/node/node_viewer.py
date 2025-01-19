@@ -222,7 +222,7 @@ class NodeViewer(QGraphicsView):
             for key in node_info:
                 if key in kwargs:
                     node_info[key] = kwargs[key]
-            node = node_class.from_dict(node_info, self.ct)
+            node = node_class.from_dict(self.ct, node_info)
         elif isinstance(node_info, str):
             node_class = getattr(nodes, node_info)
             node = node_class(self.ct, **kwargs)
@@ -269,9 +269,9 @@ class NodeViewer(QGraphicsView):
     def from_dict(self, viewer_dict):
         self.clear()
         # Create nodes
-        for node_dict in viewer_dict.values():
-            self.create_node(node_class=node_dict)
-        # Initialize connections
+        for node_info in viewer_dict.values():
+            self.create_node(node_info)
+        # Continue: Initialize connections
 
     def clear(self):
         """
