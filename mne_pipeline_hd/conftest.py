@@ -61,7 +61,7 @@ def nodeviewer(qtbot):
                 "multi_connection": True,
             },
         },
-        "function_name": "test_func",
+        "name": "test_func",
         "parameters": {
             "low_cutoff": {
                 "alias": "Low-Cutoff",

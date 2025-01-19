@@ -673,9 +673,7 @@ class MainWindow(QMainWindow):
         )
         fn = dict()
         for func_name, func_kwargs in demo_dict.items():
-            fnode = self.node_viewer.create_node(
-                "FunctionNode", function_name=func_name, **func_kwargs
-            )
+            fnode = self.node_viewer.create_node("FunctionNode", **func_kwargs)
             fn[func_name] = fnode
 
         # Wire up the nodes
