@@ -38,6 +38,8 @@ class Port(QGraphicsItem):
     accepted_ports : list, None
         List of port names that this port can connect to.
         If None, it can connect to any port.
+    old_id : int, None, optional
+        old id for reestablishing connections.
     """
 
     def __init__(
@@ -47,6 +49,7 @@ class Port(QGraphicsItem):
         port_type,
         multi_connection=False,
         accepted_ports=None,
+        old_id=None,
     ):
         super().__init__(node)
 
@@ -63,6 +66,7 @@ class Port(QGraphicsItem):
         # (hidden) attributes
         self.node = node
         self.id = id(self)
+        self.old_id = old_id
         self._name = name
         self._port_type = port_type
         self.multi_connection = multi_connection
