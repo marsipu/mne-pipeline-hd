@@ -191,6 +191,11 @@ class NodeViewer(QGraphicsView):
         node : BaseNode
             Node instance to remove.
         """
+        # Remove connected pipes
+        for port in node.ports:
+            for connected_port in port.connected_ports:
+                port.disconnect_from(connected_port)
+        # Remove node
         if node in self.scene().items():
             self.scene().removeItem(node)
         # Deliberately with room for KeyError to detect,
@@ -228,6 +233,7 @@ class NodeViewer(QGraphicsView):
             node = node_class(self.ct, **kwargs)
         else:
             raise ValueError("node_info must be a string or a dictionary.")
+
         self.add_node(node)
 
         return node
@@ -262,14 +268,25 @@ class NodeViewer(QGraphicsView):
             return self.nodes[node_id]
 
     def to_dict(self):
-        viewer_dict = {node_id: node.to_dict() for node_id, node in self.nodes.items()}
+        viewer_dict = dict()
+        viewer_dict["nodes"] = {
+            node_id: node.to_dict() for node_id, node in self.nodes.items()
+        }
+
+        # Save connections
+        viewer_dict["connections"] = dict()
+        for node in self.nodes.values():
+            for port in node.ports:
+                viewer_dict["connections"][port.id] = [
+                    p.id for p in port.connected_ports
+                ]
 
         return viewer_dict
 
     def from_dict(self, viewer_dict):
         self.clear()
         # Create nodes
-        for node_info in viewer_dict.values():
+        for node_info in viewer_dict["nodes"].values():
             self.create_node(node_info)
         # Continue: Initialize connections
 
@@ -1211,7 +1228,7 @@ class NodeViewer(QGraphicsView):
         Recursive function for updating the node ranking.
 
         Args:
-            node (NodeGraphQt.BaseNode): node to start from.
+            node (BaseNode): node to start from.
             nodes_rank (dict): node ranking object to be updated.
             down_stream (bool): true to rank down stram.
         """
@@ -1238,11 +1255,11 @@ class NodeViewer(QGraphicsView):
         Compute the ranking of nodes.
 
         Args:
-            nodes (list[NodeGraphQt.BaseNode]): nodes to start ranking from.
+            nodes (list[BaseNode]): nodes to start ranking from.
             down_stream (bool): true to compute down stream.
 
         Returns:
-            dict: {NodeGraphQt.BaseNode: node_rank, ...}
+            dict: {BaseNode: node_rank, ...}
         """
         nodes_rank = {}
         for node in nodes:
@@ -1259,10 +1276,10 @@ class NodeViewer(QGraphicsView):
             to be specified.
 
         Args:
-            nodes (list[NodeGraphQt.BaseNode]): list of nodes to auto layout
+            nodes (list[BaseNode]): list of nodes to auto layout
                 if nodes is None then all nodes is layed out.
             down_stream (bool): false to layout up stream.
-            start_nodes (list[NodeGraphQt.BaseNode]):
+            start_nodes (list[BaseNode]):
                 list of nodes to start the auto layout from (Optional).
         """
         nodes = nodes or self.nodes.values()

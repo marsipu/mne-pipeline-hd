@@ -65,6 +65,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import QS, iswin, logger
 
 
 # ToDo: Unify None-select and more
+# ToDo: potentially use docstring-inheritance to avoid repetition
 class Param(QWidget):
     """
     Base-Class Parameter-GUIs, not to be called directly
