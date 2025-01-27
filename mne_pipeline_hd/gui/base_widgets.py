@@ -139,11 +139,11 @@ class Base(QWidget):
         logger().debug(f"{data} changed at {index}")
 
     def content_changed(self):
-        """Informs ModelView about external change made in data"""
+        """Informs ModelView about external change made in data."""
         self.model.layoutChanged.emit()
 
     def replace_data(self, new_data):
-        """Replaces model._data with new_data"""
+        """Replaces model._data with new_data."""
         self.model._data = new_data
         self.content_changed()
 
@@ -431,12 +431,12 @@ class CheckList(BaseList):
         logger().debug(f"Changed values: {self.model._checked}")
 
     def replace_checked(self, new_checked):
-        """Replaces model._checked with new checked list"""
+        """Replaces model._checked with new checked list."""
         self.model._checked = new_checked
         self.content_changed()
 
     def select_all(self):
-        """Select all Items while leaving reference to model._checked intact"""
+        """Select all Items while leaving reference to model._checked intact."""
         for item in [i for i in self.model._data if i not in self.model._checked]:
             self.model._checked.append(item)
         # Inform Model about changes
@@ -444,8 +444,7 @@ class CheckList(BaseList):
         self._checked_changed()
 
     def clear_all(self):
-        """Deselect all Items while leaving reference
-        to model._checked intact"""
+        """Deselect all Items while leaving reference to model._checked intact."""
         self.model._checked.clear()
         # Inform Model about changes
         self.content_changed()
@@ -453,8 +452,8 @@ class CheckList(BaseList):
 
 
 class CheckDictList(BaseList):
-    """A List-Widget to display the items of a list and mark them depending on
-    their appearance in check_dict.
+    """A List-Widget to display the items of a list and mark them depending on their
+    appearance in check_dict.
 
     Parameters
     ----------
@@ -512,15 +511,15 @@ class CheckDictList(BaseList):
         )
 
     def replace_check_dict(self, new_check_dict=None):
-        """Replaces model.check_dict with new check_dict"""
+        """Replaces model.check_dict with new check_dict."""
         if new_check_dict:
             self.model._check_dict = new_check_dict
         self.content_changed()
 
 
 class CheckDictEditList(EditList):
-    """A List-Widget to display the items of a list and mark them
-    depending of their appearance in check_dict.
+    """A List-Widget to display the items of a list and mark them depending of their
+    appearance in check_dict.
 
     Parameters
     ----------
@@ -589,7 +588,7 @@ class CheckDictEditList(EditList):
         )
 
     def replace_check_dict(self, new_check_dict=None):
-        """Replaces model.check_dict with new check_dict"""
+        """Replaces model.check_dict with new check_dict."""
         if new_check_dict:
             self.model._check_dict = new_check_dict
         self.content_changed()
@@ -616,10 +615,9 @@ class BaseDict(Base):
             model.layoutChanged.emit()
 
     def get_keyvalue_by_index(self, index):
-        """For the given index, make an entry in item_dict with the data
-         at index as key and a dict as value defining.
-        if data is key or value and refering to the corresponding key/value
-         of data depending on its type.
+        """For the given index, make an entry in item_dict with the data at index as key
+        and a dict as value defining. if data is key or value and refering to the
+        corresponding key/value of data depending on its type.
 
         Parameters
         ----------
@@ -683,7 +681,7 @@ class BaseDict(Base):
 
 
 class SimpleDict(BaseDict):
-    """A Widget to display a Dictionary
+    """A Widget to display a Dictionary.
 
     Parameters
     ----------
@@ -699,7 +697,6 @@ class SimpleDict(BaseDict):
         Set True to resize the rows to contents.
     resize_columns : bool
         Set True to resize the columns to contents.
-
     """
 
     def __init__(
@@ -725,7 +722,7 @@ class SimpleDict(BaseDict):
 # ToDo: DataChanged somehow not emitted when row is removed
 # ToDo: Bug when removing multiple rows (fix and add tests)
 class EditDict(BaseDict):
-    """A Widget to display and edit a Dictionary
+    """A Widget to display and edit a Dictionary.
 
     Parameters
     ----------
@@ -746,7 +743,6 @@ class EditDict(BaseDict):
         Set True to resize the rows to contents.
     resize_columns : bool
         Set True to resize the columns to contents.
-
     """
 
     def __init__(
@@ -832,8 +828,7 @@ class EditDict(BaseDict):
 
 
 class BasePandasTable(Base):
-    """
-    The Base-Class for a table from a pandas DataFrame
+    """The Base-Class for a table from a pandas DataFrame.
 
     Parameters
     ----------
@@ -871,7 +866,7 @@ class BasePandasTable(Base):
             model.layoutChanged.emit()
 
     def get_rowcol_by_index(self, index, data_list):
-        """Get the data at index and the row and column of this data
+        """Get the data at index and the row and column of this data.
 
         Parameters
         ----------
@@ -884,7 +879,6 @@ class BasePandasTable(Base):
         -----
         Because this function is supposed to be called consecutively,
         the information is stored in an existing list (data_list)
-
         """
         data = self.model.getData(index)
         row = self.model.headerData(
@@ -929,9 +923,7 @@ class BasePandasTable(Base):
         logger().debug(f"Selection changed to {selection_list}")
 
     def select(self, values=None, rows=None, columns=None, clear_selection=True):
-        """
-        Select items in Pandas DataFrame by value
-        or select complete rows/columns.
+        """Select items in Pandas DataFrame by value or select complete rows/columns.
 
         Parameters
         ----------
@@ -943,7 +935,6 @@ class BasePandasTable(Base):
             Names of columns.
         clear_selection: bool | None
             Set True if you want to clear the selection before selecting.
-
         """
         indexes = list()
         # Get indexes for matching items in pd_data
@@ -981,7 +972,7 @@ class BasePandasTable(Base):
 
 
 class SimplePandasTable(BasePandasTable):
-    """A Widget to display a pandas DataFrame
+    """A Widget to display a pandas DataFrame.
 
     Parameters
     ----------
@@ -1025,7 +1016,7 @@ class SimplePandasTable(BasePandasTable):
 
 
 class EditPandasTable(BasePandasTable):
-    """A Widget to display and edit a pandas DataFrame
+    """A Widget to display and edit a pandas DataFrame.
 
     Parameters
     ----------
@@ -1149,8 +1140,8 @@ class EditPandasTable(BasePandasTable):
             self.setLayout(layout)
 
     def update_data(self):
-        """Has to be called, when model._data is rereferenced
-         by for example add_row to keep external data updated.
+        """Has to be called, when model._data is rereferenced by for example add_row to
+        keep external data updated.
 
         Returns
         -------
@@ -1320,7 +1311,7 @@ class SimpleDialog(QDialog):
 
 
 class AssignWidget(QWidget):
-    """ """
+    """"""
 
     def __init__(
         self,

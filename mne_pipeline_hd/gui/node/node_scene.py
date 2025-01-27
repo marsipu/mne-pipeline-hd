@@ -56,8 +56,7 @@ class NodeScene(QGraphicsScene):
         self.setBackgroundBrush(QColor(*self._bg_color))
 
     def _draw_grid(self, painter, rect, pen, grid_size):
-        """
-        draws the grid lines in the scene.
+        """Draws the grid lines in the scene.
 
         Args:
             painter (QPainter): painter object.
@@ -85,8 +84,7 @@ class NodeScene(QGraphicsScene):
         painter.drawLines(lines)
 
     def _draw_dots(self, painter, rect, pen, grid_size):
-        """
-        draws the grid dots in the scene.
+        """Draws the grid dots in the scene.
 
         Args:
             painter (QPainter): painter object.

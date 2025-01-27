@@ -16,6 +16,7 @@ from qtpy.QtWidgets import (
 class Pipe(QGraphicsPathItem):
     def __init__(self, input_port=None, output_port=None):
         """Initialize the pipe item.
+
         Notes
         -----
         The method "draw_path" has to be called at least once
@@ -107,8 +108,7 @@ class Pipe(QGraphicsPathItem):
         return super().itemChange(change, value)
 
     def paint(self, painter, option, widget):
-        """
-        Draws the connection line between nodes.
+        """Draws the connection line between nodes.
 
         Args:
             painter (QtGui.QPainter): painter used for drawing the item.
@@ -139,9 +139,7 @@ class Pipe(QGraphicsPathItem):
         return math.sqrt(x + y)
 
     def _draw_direction_pointer(self):
-        """
-        updates the pipe direction pointer arrow.
-        """
+        """Updates the pipe direction pointer arrow."""
         if not (self.input_port and self.output_port):
             self._dir_pointer.setVisible(False)
             return
@@ -173,8 +171,7 @@ class Pipe(QGraphicsPathItem):
             self._dir_pointer.setScale(dist)
 
     def draw_path(self, start_port, end_port=None, cursor_pos=None):
-        """
-        Draws the path between ports.
+        """Draws the path between ports.
 
         Args:
             start_port (PortItem): port used to draw the starting point.
@@ -262,9 +259,7 @@ class Pipe(QGraphicsPathItem):
         self._draw_direction_pointer()
 
     def reset_path(self):
-        """
-        reset the pipe initial path position.
-        """
+        """Reset the pipe initial path position."""
         path = QPainterPath(QPointF(0.0, 0.0))
         self.setPath(path)
         self._draw_direction_pointer()
@@ -335,9 +330,7 @@ class Pipe(QGraphicsPathItem):
         return self._highlight
 
     def reset(self):
-        """
-        reset the pipe state and styling.
-        """
+        """Reset the pipe state and styling."""
         self._active = False
         self._highlight = False
         self.set_pipe_styling(color=self.color, width=2, style=self.style)
@@ -354,9 +347,7 @@ class Pipe(QGraphicsPathItem):
 
 
 class LivePipeItem(Pipe):
-    """
-    Live Pipe item used for drawing the live connection with the cursor.
-    """
+    """Live Pipe item used for drawing the live connection with the cursor."""
 
     def __init__(self):
         super(LivePipeItem, self).__init__()
@@ -386,15 +377,12 @@ class LivePipeItem(Pipe):
         self._idx_text.setFont(font)
 
     def hoverEnterEvent(self, event):
-        """
-        re-implemented back to the base default behaviour or the pipe will
-        lose it styling when another pipe is selected.
-        """
+        """Re-implemented back to the base default behaviour or the pipe will lose it
+        styling when another pipe is selected."""
         QGraphicsPathItem.hoverEnterEvent(self, event)
 
     def draw_path(self, start_port, end_port=None, cursor_pos=None, color=None):
-        """
-        re-implemented to also update the index pointer arrow position.
+        """Re-implemented to also update the index pointer arrow position.
 
         Args:
             start_port (PortItem): port used to draw the starting point.
@@ -407,9 +395,8 @@ class LivePipeItem(Pipe):
         self.draw_index_pointer(start_port, cursor_pos, color)
 
     def draw_index_pointer(self, start_port, cursor_pos, color=None):
-        """
-        Update the index pointer arrow position and direction when the
-        live pipe path is redrawn.
+        """Update the index pointer arrow position and direction when the live pipe path
+        is redrawn.
 
         Args:
             start_port (PortItem): start port item.
@@ -444,9 +431,7 @@ class LivePipeItem(Pipe):
 
 
 class LivePipePolygonItem(QGraphicsPolygonItem):
-    """
-    Custom live pipe polygon shape.
-    """
+    """Custom live pipe polygon shape."""
 
     def __init__(self, parent):
         super(LivePipePolygonItem, self).__init__(parent)
@@ -468,17 +453,14 @@ class LivePipePolygonItem(QGraphicsPolygonItem):
 
 
 class SlicerPipeItem(QGraphicsPathItem):
-    """
-    Base item used for drawing the pipe connection slicer.
-    """
+    """Base item used for drawing the pipe connection slicer."""
 
     def __init__(self):
         super(SlicerPipeItem, self).__init__()
         self.setZValue(5)
 
     def paint(self, painter, option, widget):
-        """
-        Draws the slicer pipe.
+        """Draws the slicer pipe.
 
         Args:
             painter (QtGui.QPainter): painter used for drawing the item.

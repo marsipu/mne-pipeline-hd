@@ -29,10 +29,8 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
 
 
 class Project:
-    """
-    A class with attributes for all the paths, file-lists/dicts
-    and parameters of the selected project
-    """
+    """A class with attributes for all the paths, file-lists/dicts and parameters of the
+    selected project."""
 
     def __init__(self, controller, name):
         self.ct = controller

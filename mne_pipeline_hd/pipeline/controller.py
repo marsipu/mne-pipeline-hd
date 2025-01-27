@@ -315,9 +315,7 @@ class Controller:
             ]
 
     def import_custom_modules(self):
-        """
-        Load all modules in functions and custom_functions
-        """
+        """Load all modules in functions and custom_functions."""
 
         # Load basic-modules
         # Add functions to sys.path
@@ -432,10 +430,12 @@ class Controller:
 
 
 class NewController:
-    """New controller, that combines the former old controller and project class and loads a controller for each "project".
-    The home-path structure should no longer be as rigid as before, just specifying the path to meeg- and fsmri-data.
-    For each controller, there is a config-file stored, where paths to the meeg-data,
-    the freesurfer-dir and the custom-packages are stored.
+    """New controller, that combines the former old controller and project class and
+    loads a controller for each "project".
+
+    The home-path structure should no longer be as rigid as before, just specifying the
+    path to meeg- and fsmri-data. For each controller, there is a config-file stored,
+    where paths to the meeg-data, the freesurfer-dir and the custom-packages are stored.
     """
 
     def __init__(self, config_file=None):

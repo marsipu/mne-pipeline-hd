@@ -1736,8 +1736,7 @@ class AddKwargs(QDialog):
         self.setLayout(layout)
 
     def _check_empty(self):
-        """Check if the dict for current_func in add_kwargs is empty,
-        then remove it"""
+        """Check if the dict for current_func in add_kwargs is empty, then remove it."""
         if self.current_func:
             if self.current_func in self.ct.pr.add_kwargs:
                 if len(self.ct.pr.add_kwargs[self.current_func]) == 0:
