@@ -22,3 +22,11 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+
+  # docformatter
+  - repo: https://github.com/PyCQA/docformatter
+    rev: eb1df347edd128b30cd3368dddc3aa65edcfac38
+    hooks:
+      - id: docformatter
+        additional_dependencies: [ tomli ]
+        args: [ --in-place --config ./pyproject.toml ]
