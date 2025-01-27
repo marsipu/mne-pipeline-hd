@@ -161,9 +161,9 @@ class ErrorDialog(QDialog):
 
 
 def show_error_dialog(exc_str):
-    """Checks if a QApplication instance is available
-    and shows the Error-Dialog.
-     If unavailable (non-console application), log an additional notice.
+    """Checks if a QApplication instance is available and shows the Error-Dialog.
+
+    If unavailable (non-console application), log an additional notice.
     """
     if QApplication.instance() is not None:
         ErrorDialog(exc_str, title="A unexpected error occurred")
@@ -207,6 +207,7 @@ class UncaughtHook(QObject):
 
     def exception_hook(self, exc_type, exc_value, exc_traceback):
         """Function handling uncaught exceptions.
+
         It is triggered each time an uncaught exception occurs.
         """
         if issubclass(exc_type, KeyboardInterrupt):
@@ -238,7 +239,7 @@ class CodeEditor(QTextEdit):
 
 
 class ConsoleWidget(QPlainTextEdit):
-    """A Widget displaying formatted stdout/stderr-output"""
+    """A Widget displaying formatted stdout/stderr-output."""
 
     def __init__(self):
         super().__init__()
@@ -319,8 +320,8 @@ class ConsoleWidget(QPlainTextEdit):
 
 
 class MainConsoleWidget(ConsoleWidget):
-    """A subclass of ConsoleWidget which is linked to stdout/stderr
-    of the main process"""
+    """A subclass of ConsoleWidget which is linked to stdout/stderr of the main
+    process."""
 
     def __init__(self):
         super().__init__()
@@ -359,7 +360,7 @@ class StdoutStderrStream(io.TextIOBase):
 
 
 class WorkerSignals(QObject):
-    """Class for standard Worker-Signals"""
+    """Class for standard Worker-Signals."""
 
     # Emitted when the function finished and returns the return-value
     finished = Signal(object)
@@ -381,7 +382,7 @@ class WorkerSignals(QObject):
 
 
 class Worker(QRunnable):
-    """A class to execute a function in a seperate Thread
+    """A class to execute a function in a seperate Thread.
 
     Parameters
     ----------
@@ -393,7 +394,6 @@ class Worker(QRunnable):
         Any Arguments passed to the executed function
     kwargs
         Any Keyword-Arguments passed to the executed function
-
     """
 
     def __init__(self, function, *args, **kwargs):
@@ -407,9 +407,7 @@ class Worker(QRunnable):
 
     @Slot()
     def run(self):
-        """
-        Initialise the runner function with passed args, kwargs.
-        """
+        """Initialise the runner function with passed args, kwargs."""
         # Add signals to kwargs if in parameters of function
         if "worker_signals" in signature(self.function).parameters:
             self.kwargs["worker_signals"] = self.signals
@@ -432,7 +430,7 @@ class Worker(QRunnable):
 
 # ToDo: Make PyQt-independent with tqdm
 class WorkerDialog(QDialog):
-    """A Dialog for a Worker doing a function"""
+    """A Dialog for a Worker doing a function."""
 
     thread_finished = Signal(object)
 

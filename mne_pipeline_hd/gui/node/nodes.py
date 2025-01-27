@@ -141,7 +141,7 @@ class FunctionNode(BaseNode):
         self.add_widget(group_box)
 
     def to_dict(self):
-        """Override dictionary representation because of additional attributes"""
+        """Override dictionary representation because of additional attributes."""
         node_dict = super().to_dict()
         node_dict["parameters"] = self.parameters
 
@@ -153,9 +153,8 @@ class FunctionNode(BaseNode):
 
 
 class AssignmentNode(BaseNode):
-    """This node assigns the input from 1 to an input upstream from 2,
-    which then leads to runningo the functions before for input 2 while caching input 1.
-    """
+    """This node assigns the input from 1 to an input upstream from 2, which then leads
+    to runningo the functions before for input 2 while caching input 1."""
 
     # ToDo:
     # Checks for assignments and if there are pairs for each input.

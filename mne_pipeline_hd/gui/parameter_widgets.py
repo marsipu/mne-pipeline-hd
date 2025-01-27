@@ -67,10 +67,8 @@ from mne_pipeline_hd.pipeline.pipeline_utils import QS, iswin, logger
 # ToDo: Unify None-select and more
 # ToDo: potentially use docstring-inheritance to avoid repetition
 class Param(QWidget):
-    """
-    Base-Class Parameter-GUIs, not to be called directly
-    Inherited Clases should have "Gui" in their name to get
-    identified correctly.
+    """Base-Class Parameter-GUIs, not to be called directly Inherited Clases should have
+    "Gui" in their name to get identified correctly.
 
     Attributes
     ----------
@@ -161,9 +159,11 @@ class Param(QWidget):
         _object_refs["parameter_widgets"][self.name] = self
 
     def init_ui(self, layout=None):
-        """Base layout initialization, which adds the given layout to a
-        group-box with the parameters name if groupbox_layout is enabled.
-        Else the layout will be horizontal with a QLabel for the name"""
+        """Base layout initialization, which adds the given layout to a group-box with
+        the parameters name if groupbox_layout is enabled.
+
+        Else the layout will be horizontal with a QLabel for the name
+        """
 
         main_layout = QHBoxLayout()
 
@@ -216,11 +216,11 @@ class Param(QWidget):
                 self.save_param()
 
     def get_value(self):
-        """This should be implemented for each widget"""
+        """This should be implemented for each widget."""
         pass
 
     def set_value(self, value):
-        """This should be implemented for each widget"""
+        """This should be implemented for each widget."""
         pass
 
     def _get_param(self):
@@ -289,7 +289,7 @@ class Param(QWidget):
 
 
 class IntGui(Param):
-    """A GUI for Integer-Parameters"""
+    """A GUI for Integer-Parameters."""
 
     data_type = int
 
@@ -337,7 +337,7 @@ class IntGui(Param):
 
 
 class FloatGui(Param):
-    """A GUI for Float-Parameters"""
+    """A GUI for Float-Parameters."""
 
     data_type = float
 
@@ -386,9 +386,7 @@ class FloatGui(Param):
 
 
 class StringGui(Param):
-    """
-    A GUI for String-Parameters
-    """
+    """A GUI for String-Parameters."""
 
     data_type = str
 
@@ -432,7 +430,7 @@ def _eval_param(param_exp):
 
 
 class FuncGui(Param):
-    """A GUI for Parameters defined by small functions, e.g from numpy"""
+    """A GUI for Parameters defined by small functions, e.g from numpy."""
 
     data_type = "multiple"
 
@@ -521,7 +519,7 @@ class FuncGui(Param):
 
 
 class BoolGui(Param):
-    """A GUI for Boolean-Parameters"""
+    """A GUI for Boolean-Parameters."""
 
     data_type = bool
 
@@ -562,7 +560,7 @@ class BoolGui(Param):
 
 
 class TupleGui(Param):
-    """A GUI for Tuple-Parameters"""
+    """A GUI for Tuple-Parameters."""
 
     data_type = tuple
 
@@ -642,7 +640,7 @@ class TupleGui(Param):
 
 # ToDo: make options replacable
 class ComboGui(Param):
-    """A GUI for a Parameter with limited options"""
+    """A GUI for a Parameter with limited options."""
 
     data_type = "multiple"
 
@@ -749,7 +747,7 @@ class ListDialog(QDialog):
 
 
 class ListGui(Param):
-    """A GUI for as list"""
+    """A GUI for as list."""
 
     data_type = list
 
@@ -848,7 +846,7 @@ class CheckListDialog(QDialog):
 
 # ToDo: make options replacable
 class CheckListGui(Param):
-    """A GUI to select items from a list of options"""
+    """A GUI to select items from a list of options."""
 
     data_type = list
 
@@ -948,7 +946,7 @@ class DictDialog(QDialog):
 
 
 class DictGui(Param):
-    """A GUI for a dictionary"""
+    """A GUI for a dictionary."""
 
     data_type = dict
 
@@ -1025,7 +1023,7 @@ class DictGui(Param):
 
 
 class SliderGui(Param):
-    """A GUI to show a slider for Int/Float-Parameters"""
+    """A GUI to show a slider for Int/Float-Parameters."""
 
     data_type = "multiple"
 
@@ -1119,7 +1117,7 @@ class SliderGui(Param):
 
 
 class MultiTypeGui(Param):
-    """A GUI which accepts multiple types of values in a single LineEdit"""
+    """A GUI which accepts multiple types of values in a single LineEdit."""
 
     data_type = "multiple"
 

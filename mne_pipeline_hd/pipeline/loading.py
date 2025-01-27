@@ -156,8 +156,8 @@ def save_decorator(save_func):
 # ToDo: Unify all objects to one loading-class
 # For example Group and MEEG can have the same load-method for Source-Estimates then
 class BaseLoading:
-    """Base-Class for Sub (The current File/MRI-File/Grand-Average-Group,
-    which is executed)"""
+    """Base-Class for Sub (The current File/MRI-File/Grand-Average-Group, which is
+    executed)"""
 
     def __init__(self, name, controller):
         # Basic Attributes (partly taking parameters or main-win-attributes
@@ -191,7 +191,7 @@ class BaseLoading:
         self.plot_files = self.pr.plot_files[self.name][self.p_preset]
 
     def get_parameter(self, parameter_name):
-        """Get parameter from parameter-dictionary"""
+        """Get parameter from parameter-dictionary."""
 
         if parameter_name in self.pa:
             return self.pa[parameter_name]
@@ -199,13 +199,13 @@ class BaseLoading:
             raise KeyError(f"Parameter {parameter_name} not found in parameters")
 
     def init_attributes(self):
-        """Initialization of additional attributes, should be overridden
-        in inherited classes"""
+        """Initialization of additional attributes, should be overridden in inherited
+        classes."""
         pass
 
     def init_paths(self):
-        """Initialization of all paths and the io_dict, should be overridden
-        in inherited classes"""
+        """Initialization of all paths and the io_dict, should be overridden in
+        inherited classes."""
         self.save_dir = ""
         self.io_dict = dict()
         self.deprecated_paths = dict()
@@ -347,10 +347,8 @@ class BaseLoading:
         dpi=None,
         img_format=None,
     ):
-        """
-        Save a plot with this method either by letting the figure be detected
-         by the backend (pyplot, mayavi) or by
-        supplying the figure directly.
+        """Save a plot with this method either by letting the figure be detected by the
+        backend (pyplot, mayavi) or by supplying the figure directly.
 
         Parameters
         ----------
@@ -523,8 +521,7 @@ class BaseLoading:
             logger().warning(f"{file_path} was removed")
 
     def get_existing_paths(self):
-        """Get existing paths and add the mapped File-Type
-        to existing_paths (set)"""
+        """Get existing paths and add the mapped File-Type to existing_paths (set)"""
         self.existing_paths.clear()
         for data_type in self.io_dict:
             paths = self._return_path_list(data_type)
@@ -597,7 +594,7 @@ sample_paths = {
 #  In the future there should be only one,
 #  favor io_dict (better than attribute since easier to set from config-files)
 class MEEG(BaseLoading):
-    """Class for File-Data in File-Loop"""
+    """Class for File-Data in File-Loop."""
 
     def __init__(self, name, controller, fsmri=None, suppress_warnings=True):
         self.fsmri = fsmri
@@ -608,7 +605,7 @@ class MEEG(BaseLoading):
             self.init_sample()
 
     def init_attributes(self):
-        """Initialize additional attributes for MEEG"""
+        """Initialize additional attributes for MEEG."""
         # The assigned Empty-Room-Measurement if existing
         if self.name not in self.pr.meeg_to_erm:
             self.erm = None
@@ -686,8 +683,7 @@ class MEEG(BaseLoading):
             self.ica_exclude = self.pr.meeg_ica_exclude[self.name]
 
     def init_paths(self):
-        """Load Paths as attributes
-        (depending on which Parameter-Preset is selected)"""
+        """Load Paths as attributes (depending on which Parameter-Preset is selected)"""
 
         # Main save directory
         self.save_dir = join(self.pr.data_path, self.name)
@@ -1127,7 +1123,7 @@ class MEEG(BaseLoading):
         epochs.save(self.epochs_path, overwrite=True)
 
     def get_trial_epochs(self):
-        """Return epochs for each trial in self.sel_trials"""
+        """Return epochs for each trial in self.sel_trials."""
         epochs = self.load_epochs()
         for trial, meta_query in self.sel_trials.items():
             epoch_trial = meta_query or trial
@@ -1457,7 +1453,7 @@ class FSMRI(BaseLoading):
             self.init_fsaverage()
 
     def init_attributes(self):
-        """Initialize additional attributes for FSMRI"""
+        """Initialize additional attributes for FSMRI."""
         self.fs_path = QS().value("fs_path")
         self.mne_path = QS().value("mne_path")
 
@@ -1660,7 +1656,7 @@ class Group(BaseLoading):
         super().__init__(name, controller)
 
     def init_attributes(self):
-        """Initialize additional attributes for Group"""
+        """Initialize additional attributes for Group."""
         if self.name not in self.pr.all_groups:
             self.group_list = []
             if not self.suppress_warnings:

@@ -68,10 +68,8 @@ def uninstall_package(package_name):
 
 
 def legacy_import_check(test_package=None):
-    """
-    This function checks for recent package changes
-    and offers installation or manual installation instructions.
-    """
+    """This function checks for recent package changes and offers installation or manual
+    installation instructions."""
     # For testing purposes
     if test_package is not None:
         new_packages[test_package] = test_package

@@ -59,7 +59,7 @@ def logger():
 
 
 def get_n_jobs(n_jobs):
-    """Get the number of jobs to use for parallel processing"""
+    """Get the number of jobs to use for parallel processing."""
     if n_jobs == -1 or n_jobs in ["auto", "max"]:
         n_cores = multiprocessing.cpu_count()
     else:
@@ -69,8 +69,8 @@ def get_n_jobs(n_jobs):
 
 
 def encode_tuples(input_dict):
-    """Encode tuples in a dictionary, because JSON does not recognize them
-    (CAVE: input_dict is changed in place)"""
+    """Encode tuples in a dictionary, because JSON does not recognize them (CAVE:
+    input_dict is changed in place)"""
     for key, value in input_dict.items():
         if isinstance(value, dict):
             encode_tuples(value)
@@ -115,8 +115,8 @@ def type_json_hook(obj):
 
 
 def compare_filep(obj, path, target_parameters=None, verbose=True):
-    """Compare the parameters of the previous run to the current
-    parameters for the given path
+    """Compare the parameters of the previous run to the current parameters for the
+    given path.
 
     Parameters
     ----------
@@ -212,7 +212,7 @@ def check_kwargs(kwargs, function):
 
 
 def count_dict_keys(d, max_level=None):
-    """Count the number of keys of a nested dictionary"""
+    """Count the number of keys of a nested dictionary."""
     keys = 0
     for value in d.values():
         if isinstance(value, dict):
@@ -238,8 +238,7 @@ def shutdown():
 
 
 def restart_program():
-    """Restarts the current program, with file objects and descriptors
-    cleanup."""
+    """Restarts the current program, with file objects and descriptors cleanup."""
     logger().info("Restarting")
     try:
         p = psutil.Process(os.getpid())

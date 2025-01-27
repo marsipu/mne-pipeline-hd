@@ -25,7 +25,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import logger
 
 
 class BaseListModel(QAbstractListModel):
-    """A basic List-Model
+    """A basic List-Model.
 
     Parameters
     ----------
@@ -99,7 +99,7 @@ class BaseListModel(QAbstractListModel):
 
 
 class EditListModel(BaseListModel):
-    """An editable List-Model
+    """An editable List-Model.
 
     Parameters
     ----------
@@ -133,8 +133,7 @@ class EditListModel(BaseListModel):
 
 
 class CheckListModel(BaseListModel):
-    """
-    A Model for a Check-List
+    """A Model for a Check-List.
 
     Parameters
     ----------
@@ -146,7 +145,6 @@ class CheckListModel(BaseListModel):
         Set True if you want to display the list-index in front of each value
     drag_drop: bool
         Set True to enable Drag&Drop.
-
     """
 
     def __init__(
@@ -203,8 +201,7 @@ class CheckListModel(BaseListModel):
 
 
 class CheckDictModel(BaseListModel):
-    """
-    A Model for a list, which marks items which are present in a dictionary
+    """A Model for a list, which marks items which are present in a dictionary.
 
     Parameters
     ----------
@@ -262,7 +259,7 @@ class CheckDictModel(BaseListModel):
 
 
 class CheckDictEditModel(CheckDictModel, EditListModel):
-    """An editable List-Model
+    """An editable List-Model.
 
     Parameters
     ----------
@@ -304,7 +301,7 @@ class CheckDictEditModel(CheckDictModel, EditListModel):
 
 
 class BaseDictModel(QAbstractTableModel):
-    """Basic Model for Dictonaries
+    """Basic Model for Dictonaries.
 
     Parameters
     ----------
@@ -359,7 +356,7 @@ class BaseDictModel(QAbstractTableModel):
 
 # ToDo: Somehow inputs are automatically sorted (annoyig, disable-toggle)
 class EditDictModel(BaseDictModel):
-    """An editable model for Dictionaries
+    """An editable model for Dictionaries.
 
     Parameters
     ----------
@@ -430,7 +427,7 @@ class EditDictModel(BaseDictModel):
 
 
 class BasePandasModel(QAbstractTableModel):
-    """Basic Model for pandas DataFrame
+    """Basic Model for pandas DataFrame.
 
     Parameters
     ----------
@@ -468,7 +465,8 @@ class BasePandasModel(QAbstractTableModel):
 
 
 class EditPandasModel(BasePandasModel):
-    """Editable TableModel for Pandas DataFrames
+    """Editable TableModel for Pandas DataFrames.
+
     Parameters
     ----------
     data : pandas.DataFrame | None
@@ -809,8 +807,8 @@ class AddFilesModel(BasePandasModel):
 
 
 class FileManagementModel(BasePandasModel):
-    """A model for the Pandas-DataFrames containing information
-    about the existing files"""
+    """A model for the Pandas-DataFrames containing information about the existing
+    files."""
 
     def __init__(self, data, **kwargs):
         super().__init__(data, **kwargs)
@@ -856,9 +854,8 @@ class FileManagementModel(BasePandasModel):
 
 
 class CustomFunctionModel(QAbstractListModel):
-    """A Model for the Pandas-DataFrames containing information about
-     new custom functions/their paramers to display only their name
-     and if they are ready.
+    """A Model for the Pandas-DataFrames containing information about new custom
+    functions/their paramers to display only their name and if they are ready.
 
     Parameters
     ----------
@@ -892,7 +889,7 @@ class CustomFunctionModel(QAbstractListModel):
 
 
 class RunModel(QAbstractListModel):
-    """A model for the items/functions of a Pipeline-Run"""
+    """A model for the items/functions of a Pipeline-Run."""
 
     def __init__(self, data, mode, **kwargs):
         super().__init__(**kwargs)

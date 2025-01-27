@@ -83,8 +83,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS, logger
 
 
 def index_parser(index, all_items, groups=None):
-    """
-    Parses indices from a index-string in all_items
+    """Parses indices from a index-string in all_items.
 
     Parameters
     ----------
@@ -94,7 +93,6 @@ def index_parser(index, all_items, groups=None):
         All items
     Returns
     -------
-
     """
     indices = list()
     rm = list()
@@ -1153,7 +1151,7 @@ class CopyBadsDialog(QDialog):
 
 
 class SubBadsWidget(QWidget):
-    """A Dialog to select Bad-Channels for the files"""
+    """A Dialog to select Bad-Channels for the files."""
 
     def __init__(self, main_win):
         """
@@ -1504,7 +1502,7 @@ class EventIDGui(QDialog):
         self.setLayout(self.layout)
 
     def get_event_id(self):
-        """Get unique event-ids from events"""
+        """Get unique event-ids from events."""
         if self.name in self.pr.meeg_event_id:
             self.event_id = self.pr.meeg_event_id[self.name]
         else:
@@ -1549,7 +1547,7 @@ class EventIDGui(QDialog):
                 self.pr.sel_event_id[self.name] = sel_event_id
 
     def file_selected(self, current, _):
-        """Called when File from file_widget is selected"""
+        """Called when File from file_widget is selected."""
         # Save event_id for previous file
         self.save_event_id()
 
@@ -1741,7 +1739,7 @@ class CopyTrans(QDialog):
 
 
 class FileManagment(QDialog):
-    """A Dialog for File-Management
+    """A Dialog for File-Management.
 
     Parameters
     ----------
@@ -2000,7 +1998,7 @@ class FileManagment(QDialog):
         return obj_name, path_type
 
     def show_parameters(self, kind):
-        """Show the parameters, which are different for the selected cell
+        """Show the parameters, which are different for the selected cell.
 
         Parameters
         ----------
@@ -2087,13 +2085,12 @@ class FileManagment(QDialog):
         obj_table.content_changed()
 
     def remove_file(self, kind):
-        """Remove the file at the path of the current cell
+        """Remove the file at the path of the current cell.
 
         Parameters
         ----------
         kind : str
             If it is MEEG, FSMRI or Group
-
         """
 
         msgbx = QMessageBox.question(

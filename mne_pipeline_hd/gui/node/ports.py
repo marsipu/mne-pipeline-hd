@@ -19,8 +19,7 @@ class PortText(QGraphicsTextItem):
 
 
 class Port(QGraphicsItem):
-    """
-    A graphical representation of a port in a node-based interface.
+    """A graphical representation of a port in a node-based interface.
 
     This class represents a port which can be an input or output port of a node.
     It supports hover events, multiple connections, and connection compatibility checks.
@@ -217,8 +216,7 @@ class Port(QGraphicsItem):
         self.text.setPos(offset, -1.5)
 
     def paint(self, painter, option, widget=None):
-        """
-        Draws the circular port.
+        """Draws the circular port.
 
         Args:
             painter (QtGui.QPainter): painter used for drawing the item.
@@ -320,7 +318,8 @@ class Port(QGraphicsItem):
             raise ValueError("Invalid port type")
 
     def connected(self, target_port):
-        """Check if the specified port (port object, port name or port id) is connected to this port."""
+        """Check if the specified port (port object, port name or port id) is connected
+        to this port."""
         if isinstance(target_port, str):
             if target_port in [port.name for port in self.connected_ports]:
                 return True
@@ -366,8 +365,7 @@ class Port(QGraphicsItem):
         return False
 
     def connect_to(self, target_port=None):
-        """
-        Create connection to the specified port and emits the
+        """Create connection to the specified port and emits the
         :attr:`NodeGraph.port_connected` signal from the parent node graph.
 
         Args:
@@ -429,8 +427,7 @@ class Port(QGraphicsItem):
         )
 
     def disconnect_from(self, target_port=None):
-        """
-        Disconnect from the specified port and emits the
+        """Disconnect from the specified port and emits the
         :attr:`NodeGraph.port_disconnected` signal from the parent node graph.
 
         Args:
@@ -462,10 +459,8 @@ class Port(QGraphicsItem):
         )
 
     def clear_connections(self):
-        """
-        Disconnect from all port connections and emit the
-        :attr:`NodeGraph.port_disconnected` signals from the node graph.
-        """
+        """Disconnect from all port connections and emit the
+        :attr:`NodeGraph.port_disconnected` signals from the node graph."""
         # Copy to avoid iteration failure
         remove_ports = list(self.connected_ports)
         for port in remove_ports:
