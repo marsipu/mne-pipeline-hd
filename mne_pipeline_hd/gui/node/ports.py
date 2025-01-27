@@ -61,15 +61,15 @@ class Port(QGraphicsItem):
         # init text item
         self.text = PortText(name, self)
 
-        # hidden attributes
-        self._node = node
-        self._id = id(self)
+        # (hidden) attributes
+        self.node = node
+        self.id = id(self)
         self._name = name
         self._port_type = port_type
-        self._multi_connection = multi_connection
-        self._connected_ports = list()
-        self._connected_pipes = OrderedDict()
-        self._accepted_ports = accepted_ports
+        self.multi_connection = multi_connection
+        self.connected_ports = list()
+        self.connected_pipes = OrderedDict()
+        self.accepted_ports = accepted_ports
 
         self._width = defaults["ports"]["size"]
         self._height = defaults["ports"]["size"]
@@ -85,10 +85,6 @@ class Port(QGraphicsItem):
     # --------------------------------------------------------------------------------------
     # Properties
     # --------------------------------------------------------------------------------------
-    @property
-    def id(self):
-        return self._id
-
     @property
     def name(self):
         return self._name
@@ -107,34 +103,6 @@ class Port(QGraphicsItem):
         if value not in ["in", "out"]:
             raise ValueError(f"Invalid port type: {value}")
         self._port_type = value
-
-    @property
-    def multi_connection(self):
-        return self._multi_connection
-
-    @multi_connection.setter
-    def multi_connection(self, value):
-        self._multi_connection = value
-
-    @property
-    def node(self):
-        return self._node
-
-    @node.setter
-    def node(self, value):
-        self._node = value
-
-    @property
-    def connected_ports(self):
-        return self._connected_ports
-
-    @property
-    def connected_pipes(self):
-        return self._connected_pipes
-
-    @property
-    def accepted_ports(self):
-        return self._accepted_ports
 
     @property
     def width(self):
@@ -341,7 +309,6 @@ class Port(QGraphicsItem):
             "port_type": self.port_type,
             "multi_connection": self.multi_connection,
             "accepted_ports": self.accepted_ports,
-            "connected_ports": [port.id for port in self.connected_ports],
         }
 
     def add_accepted_ports(self, ports):

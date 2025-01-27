@@ -28,15 +28,11 @@ class BaseNode(QGraphicsItem):
         A Controller-instance, where all session information is stored and managed.
     name : str
         Name of the node.
-    inputs : dict
-        Dictionary with input ports, where the key is the port name and
-        the value is a dict with kwargs for the :meth:`BaseNode.add_input()`.
-    outputs : dict
-        Dictionary with output ports, where the key is the port name and
-        the value is a dict with kwargs for :meth:`BaseNode.add_output()`.
+    ports : list
+        List of dictionaries, which contain kwargs for the :meth:`BaseNode.add_port()`.
     """
 
-    def __init__(self, ct, name=None, inputs=None, outputs=None):
+    def __init__(self, ct, name=None, ports=None):
         self.ct = ct
         # Initialize QGraphicsItem
         super().__init__()
@@ -63,13 +59,10 @@ class BaseNode(QGraphicsItem):
         self._outputs = OrderedDict()
         self._widgets = list()
 
-        # Initialize inputs and outputs
-        inputs = inputs or dict()
-        for input_name, input_kwargs in inputs.items():
-            self.add_input(input_name, **input_kwargs)
-        outputs = outputs or dict()
-        for output_name, output_kwargs in outputs.items():
-            self.add_output(output_name, **output_kwargs)
+        # Initialize iports
+        ports = ports or list()
+        for port_kwargs in ports:
+            self.add_port(**port_kwargs)
 
     @property
     def id(self):
@@ -150,7 +143,7 @@ class BaseNode(QGraphicsItem):
     @property
     def inputs(self):
         """
-        This returns the input ports in a list
+        Returns the input ports in a list
         (self._inputs is an OrderedDict and can be accessed internally when necessary)
         """
         return list(self._inputs.values())
@@ -158,10 +151,15 @@ class BaseNode(QGraphicsItem):
     @property
     def outputs(self):
         """
-        This returns the output ports in a list
+        Returns the output ports in a list
         (self._outputs is an OrderedDict and can be accessed internally when necessary)
         """
         return list(self._outputs.values())
+
+    @property
+    def ports(self):
+        """Returns all ports in a list"""
+        return list(self._inputs.values()) + list(self._outputs.values())
 
     @property
     def widgets(self):
@@ -200,6 +198,50 @@ class BaseNode(QGraphicsItem):
     # ----------------------------------------------------------------------------------
     # Logic methods
     # ----------------------------------------------------------------------------------
+    def add_port(
+        self,
+        name,
+        port_type,
+        multi_connection=False,
+        accepted_ports=None,
+    ):
+        """
+        Adds a Port QGraphicsItem into the node.
+
+        Parameters
+        ----------
+        name : str
+            name for the port.
+        port_type : str
+            "in" or "out".
+        multi_connection : bool
+            allow multiple connections.
+        accepted_ports : list, None
+            list of accepted port names, if None all ports are accepted.
+
+        Returns
+        -------
+        PortItem
+            Port QGraphicsItem.
+        """
+        # Check port type
+        if port_type not in ["in", "out"]:
+            raise ValueError(f"Invalid port type: {port_type}")
+        # port names must be unique for inputs/outputs
+        existing = self.inputs if port_type == "in" else self.outputs
+        if name in [p.name for p in existing]:
+            logging.warning(f"Input port {name} already exists.")
+            return
+        # Create port
+        port = Port(self, name, port_type, multi_connection, accepted_ports)
+        # Add port to port-container
+        ports = self._inputs if port_type == "in" else self._outputs
+        ports[port.id] = port
+        # Update scene
+        if self.scene():
+            self.draw_node()
+
+        return port
 
     def add_input(
         self,
@@ -208,7 +250,8 @@ class BaseNode(QGraphicsItem):
         accepted_ports=None,
     ):
         """
-        Adds a port qgraphics item into the node with the "port_type" set as
+        Adds a Port QGraphicsItem into the node as input.
+
         Parameters
         ----------
         name : str
@@ -221,16 +264,9 @@ class BaseNode(QGraphicsItem):
         Returns
         -------
         PortItem
-            port qgraphics item.
+            Port QGraphicsItem.
         """
-        # port names must be unique
-        if name in [p.name for p in self.inputs]:
-            logging.warning(f"Input port {name} already exists.")
-            return
-        port = Port(self, name, "in", multi_connection, accepted_ports)
-        self._inputs[port.id] = port
-        if self.scene():
-            self.draw_node()
+        port = self.add_port(name, "in", multi_connection, accepted_ports)
 
         return port
 
@@ -241,7 +277,8 @@ class BaseNode(QGraphicsItem):
         accepted_ports=None,
     ):
         """
-        Adds a port qgraphics item into the node with the "port_type" set as
+        Adds a Port QGraphicsItem into the node as output.
+
         Parameters
         ----------
         name : str
@@ -254,18 +291,50 @@ class BaseNode(QGraphicsItem):
         Returns
         -------
         PortItem
-            port qgraphics item.
+            Port QGraphicsItem.
         """
-        # port names must be unique
-        if name in [p.name for p in self.outputs]:
-            logging.warning(f"Output port {name} already exists.")
-            return
-        port = Port(self, name, "out", multi_connection, accepted_ports)
-        self._outputs[port.id] = port
-        if self.scene():
-            self.draw_node()
+        port = self.add_port(name, "out", multi_connection, accepted_ports)
 
         return port
+
+    def port(self, port_type, port):
+        """
+        Get port by the name or index.
+
+        Parameters
+        ----------
+        port_type : str
+            "in" or "out".
+        port : str or int
+            port name, index or id.
+
+        Returns
+        -------
+        Port
+
+        """
+        ports = self._inputs if port_type == "in" else self._outputs
+        port_list = list(ports.values())
+
+        if isinstance(port, int):
+            # Get input port by id
+            if port in ports:
+                return ports[port]
+            # Get input port by index
+            elif port < len(port_list):
+                return port_list[port]
+            else:
+                logging.warning(f"{port_type} port {port} not found.")
+        elif isinstance(port, str):
+            # Get input port by name
+            port_names = [p.name for p in port_list]
+            if port in port_names:
+                name_index = port_names.index(port)
+                return port_list[name_index]
+            else:
+                logging.warning(f"{port_type} port {port} not found.")
+        else:
+            logging.warning(f"Invalid port value: {port}")
 
     def input(self, port):
         """
@@ -275,20 +344,9 @@ class BaseNode(QGraphicsItem):
             port (str or int): port name, index or id.
 
         Returns:
-            NodeGraphQt.Port: node port.
+            Port
         """
-        if isinstance(port, int):
-            # Get input port by id
-            if port in self._inputs:
-                return self._inputs[port]
-            # Get input port by index (self.inputs returns a list)
-            elif port < len(self.inputs):
-                return self.inputs[port]
-        elif isinstance(port, str):
-            port_names = [p.name for p in self.inputs]
-            if port in port_names:
-                name_index = port_names.index(port)
-                return self.inputs[name_index]
+        return self.port("in", port)
 
     def output(self, port):
         """
@@ -298,64 +356,57 @@ class BaseNode(QGraphicsItem):
             port (str or int): port name, index or id.
 
         Returns:
-            NodeGraphQt.Port: node port.
+            Port
         """
-        if isinstance(port, int):
-            # Get output port by id
-            if port in self._outputs:
-                return self._outputs[port]
-            # Get output port by index (self.outputs returns a list)
-            elif port < len(self.outputs):
-                return self.outputs[port]
-        elif isinstance(port, str):
-            port_names = [p.name for p in self.outputs]
-            if port in port_names:
-                name_index = port_names.index(port)
-                return self.outputs[name_index]
+        return self.port("out", port)
 
-    def port(self, port_type, port):
+    def set_port(self, port_type, source_port, target_port):
         """
-        Get port by the name or index.
+        Creates a connection between source_port and target_port.
 
-        Args:
-            port_type (str): "in" or "out".
-            port (str or int): port name or index.
+        Parameters
+        ----------
+        port_type : str
+            Specify type of source_port, "in" or "out".
+        source_port : str or int
+            source port name, index, id or Port from this node.
+        target_port : Port
+            target port object.
 
-        Returns:
-            NodeGraphQt.Port: node port.
         """
-        if port_type == "in":
-            return self.input(port)
-        elif port_type == "out":
-            return self.output(port)
-
-    def set_input(self, index, port):
-        """
-        Creates a connection pipe to the targeted output :class:`Port`.
-
-        Args:
-            index (int): index of the port.
-            port (NodeGraphQt.Port): port object.
-        """
-        src_port = self.input(index)
-        if src_port is None:
-            logging.warning(f"Input port {index} not found.")
+        if isinstance(source_port, Port):
+            src_port = source_port
         else:
-            src_port.connect_to(port)
+            src_port = self.port(port_type, source_port)
+        src_port.connect_to(target_port)
 
-    def set_output(self, index, port):
+    def set_input(self, source_port, target_port):
         """
-        Creates a connection pipe to the targeted input :class:`Port`.
+        Creates a connection between source_port and target_port.
 
-        Args:
-            index (int): index of the port.
-            port (NodeGraphQt.Port): port object.
+        Parameters
+        ----------
+        source_port : str or int
+            source port name, index, id or Port from this node.
+        target_port : Port
+            target port object.
+
         """
-        src_port = self.output(index)
-        if src_port is None:
-            logging.warning(f"Output port {index} not found.")
-        else:
-            src_port.connect_to(port)
+        self.set_port("in", source_port, target_port)
+
+    def set_output(self, source_port, target_port):
+        """
+        Creates a connection between source_port and target_port.
+
+        Parameters
+        ----------
+        source_port : str or int
+            source port name, index, id or Port from this node.
+        target_port : Port
+            target port object.
+
+        """
+        self.set_port("out", source_port, target_port)
 
     def connected_input_nodes(self):
         """
@@ -400,8 +451,7 @@ class BaseNode(QGraphicsItem):
             "name": self.name,
             "class": self.__class__.__name__,
             "pos": self.xy_pos,
-            "inputs": {p.id: p.to_dict() for p in self.inputs},
-            "outputs": {p.id: p.to_dict() for p in self.outputs},
+            "ports": [p.to_dict() for p in self.ports],
         }
 
         return node_dict
@@ -411,6 +461,8 @@ class BaseNode(QGraphicsItem):
         node_kwargs = {k: v for k, v in node_dict.items() if k not in ["class", "pos"]}
         node = cls(ct, **node_kwargs)
         node.xy_pos = node_dict["pos"]
+
+        return node
 
     # ----------------------------------------------------------------------------------
     # Qt methods
@@ -679,19 +731,22 @@ class BaseNode(QGraphicsItem):
                 port_y += port_height + spacing
 
     def draw_node(self):
-        height = self._title_item.boundingRect().height() + 4
+        if self.scene():
+            height = self._title_item.boundingRect().height() + 4
 
-        # setup initial base size.
-        self._set_base_size(add_h=height)
-        # set text color when node is initialized.
-        self._set_text_color(self.text_color)
+            # setup initial base size.
+            self._set_base_size(add_h=height)
+            # set text color when node is initialized.
+            self._set_text_color(self.text_color)
 
-        # --- set the initial node layout ---
-        # align title text
-        self.align_title()
-        # arrange input and output ports.
-        self.align_ports(v_offset=height)
-        # arrange node widgets
-        self.align_widgets(v_offset=height)
+            # --- set the initial node layout ---
+            # align title text
+            self.align_title()
+            # arrange input and output ports.
+            self.align_ports(v_offset=height)
+            # arrange node widgets
+            self.align_widgets(v_offset=height)
 
-        self.update()
+            self.update()
+        else:
+            logging.warning("Node not in scene.")

@@ -43,24 +43,30 @@ def nodeviewer(qtbot):
     viewer.show()
 
     func_kwargs = {
-        "inputs": {
-            "In1": {
+        "ports": [
+            {
+                "name": "In1",
+                "port_type": "in",
                 "accepted_ports": ["Out1"],
             },
-            "In2": {
+            {
+                "name": "In2",
+                "port_type": "in",
                 "accepted_ports": ["Out1, Out2"],
             },
-        },
-        "outputs": {
-            "Out1": {
+            {
+                "name": "Out1",
+                "port_type": "out",
                 "accepted_ports": ["In1"],
                 "multi_connection": True,
             },
-            "Out2": {
+            {
+                "name": "Out2",
+                "port_type": "out",
                 "accepted_ports": ["In1", "In2"],
                 "multi_connection": True,
             },
-        },
+        ],
         "name": "test_func",
         "parameters": {
             "low_cutoff": {
