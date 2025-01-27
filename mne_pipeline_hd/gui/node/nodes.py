@@ -89,7 +89,7 @@ class FunctionNode(BaseNode):
     """This node is a prototype for a function node, which also displays parameters."""
 
     def __init__(
-        self, ct, name, parameters, **kwargs
+        self, ct, name=None, parameters=None, **kwargs
     ):  # **kwargs just for demo, later not needed
         super().__init__(ct, name, **kwargs)
         self.parameters = parameters

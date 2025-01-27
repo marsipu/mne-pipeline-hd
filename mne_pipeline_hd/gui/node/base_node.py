@@ -25,7 +25,7 @@ class BaseNode(QGraphicsItem):
         A Controller-instance, where all session information is stored and managed.
     name : str
         Name of the node.
-    ports : dict
+    ports : dict, list
         Dictionary with keys as (old) port id and values as dictionaries which contain kwargs for the :meth:`BaseNode.add_port()`.
     """
 

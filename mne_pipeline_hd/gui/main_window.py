@@ -578,8 +578,17 @@ class MainWindow(QMainWindow):
                         "default": 0.2,
                     },
                 },
-                "inputs": {"Raw": {}},
-                "outputs": {"Raw": {"multi_connection": True}},
+                "ports": [
+                    {
+                        "name": "Raw",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Raw",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
             },
             "Get Events": {
                 "parameters": {
@@ -589,8 +598,17 @@ class MainWindow(QMainWindow):
                         "default": 1,
                     },
                 },
-                "inputs": {"Raw": {}},
-                "outputs": {"Events": {"multi_connection": True}},
+                "ports": [
+                    {
+                        "name": "Raw",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Events",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
             },
             "Epoch Data": {
                 "parameters": {
@@ -610,8 +628,21 @@ class MainWindow(QMainWindow):
                         "default": True,
                     },
                 },
-                "inputs": {"Raw": {}, "Events": {}},
-                "outputs": {"Epochs": {"multi_connection": True}},
+                "ports": [
+                    {
+                        "name": "Raw",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Events",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Epochs",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
             },
             "Average Epochs": {
                 "parameters": {
@@ -621,8 +652,17 @@ class MainWindow(QMainWindow):
                         "default": 1,
                     },
                 },
-                "inputs": {"Epochs": {}},
-                "outputs": {"Evokeds": {"multi_connection": True}},
+                "ports": [
+                    {
+                        "name": "Epochs",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Evokeds",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
             },
             "Make Forward Model": {
                 "parameters": {
@@ -632,10 +672,17 @@ class MainWindow(QMainWindow):
                         "default": "fsaverage",
                     },
                 },
-                "inputs": {
-                    "MRI": {},
-                },
-                "outputs": {"Fwd": {"multi_connection": True}},
+                "ports": [
+                    {
+                        "name": "MRI",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Fwd",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
             },
             "Make Inverse Operator": {
                 "parameters": {
@@ -645,8 +692,21 @@ class MainWindow(QMainWindow):
                         "default": "fsaverage",
                     },
                 },
-                "inputs": {"Evokeds": {}, "Fwd": {}},
-                "outputs": {"Inv": {"multi_connection": True}},
+                "ports": [
+                    {
+                        "name": "Evokeds",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Fwd",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Inv",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
             },
             "Plot Source Estimates": {
                 "parameters": {
@@ -656,10 +716,17 @@ class MainWindow(QMainWindow):
                         "default": "fsaverage",
                     },
                 },
-                "inputs": {
-                    "Inv": {},
-                },
-                "outputs": {"Plot": {"multi_connection": True}},
+                "ports": [
+                    {
+                        "name": "Inv",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Plot",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
             },
         }
 
@@ -668,8 +735,25 @@ class MainWindow(QMainWindow):
         mri_node = self.node_viewer.create_node("MRIInputNode")
         ass_node = self.node_viewer.create_node(
             "AssignmentNode",
-            inputs={"Evokeds": {}, "Fwd": {}},
-            outputs={"Evokeds": {}, "Fwd": {}},
+            name="Assignment",
+            ports=[
+                {
+                    "name": "Evokeds",
+                    "port_type": "in",
+                },
+                {
+                    "name": "Fwd",
+                    "port_type": "in",
+                },
+                {
+                    "name": "Evokeds",
+                    "port_type": "out",
+                },
+                {
+                    "name": "Fwd",
+                    "port_type": "out",
+                },
+            ],
         )
         fn = dict()
         for func_name, func_kwargs in demo_dict.items():
@@ -677,21 +761,25 @@ class MainWindow(QMainWindow):
             fn[func_name] = fnode
 
         # Wire up the nodes
-        meeg_node.set_output(0, fn["Filter Raw"].input(0))
-        meeg_node.set_output(0, fn["Get Events"].input(0))
-        fn["Epoch Data"].set_input("Raw", fn["Filter Raw"].output(0))
-        fn["Epoch Data"].set_input("Events", fn["Get Events"].output(0))
-        fn["Epoch Data"].set_output("Epochs", fn["Average Epochs"].input("Epochs"))
+        meeg_node.output(0).connect_to(fn["Filter Raw"].input(0))
+        meeg_node.output(0).connect_to(fn["Get Events"].input(0))
+        fn["Epoch Data"].input(port_name="Raw").connect_to(fn["Filter Raw"].output(0))
+        fn["Epoch Data"].input(port_name="Events").connect_to(
+            fn["Get Events"].output(0)
+        )
+        fn["Epoch Data"].output(port_name="Epochs").connect_to(
+            fn["Average Epochs"].input("Epochs")
+        )
 
-        mri_node.set_output(0, fn["Make Forward Model"].input("MRI"))
+        mri_node.output(0).connect_to(fn["Make Forward Model"].input("MRI"))
 
-        ass_node.set_input(0, fn["Average Epochs"].output("Evokeds"))
-        ass_node.set_input(1, fn["Make Forward Model"].output("Fwd"))
-        ass_node.set_output(0, fn["Make Inverse Operator"].input("Evokeds"))
-        ass_node.set_output(1, fn["Make Inverse Operator"].input("Fwd"))
+        ass_node.input(0).connect_to(fn["Average Epochs"].output("Evokeds"))
+        ass_node.input(1).connect_to(fn["Make Forward Model"].output("Fwd"))
+        ass_node.output(0).connect_to(fn["Make Inverse Operator"].input("Evokeds"))
+        ass_node.output(1).connect_to(fn["Make Inverse Operator"].input("Fwd"))
 
-        fn["Plot Source Estimates"].set_input(
-            "Inv", fn["Make Inverse Operator"].output("Inv")
+        fn["Plot Source Estimates"].input(port_name="Inv").connect_to(
+            fn["Make Inverse Operator"].output("Inv")
         )
 
         self.node_viewer.auto_layout_nodes()
