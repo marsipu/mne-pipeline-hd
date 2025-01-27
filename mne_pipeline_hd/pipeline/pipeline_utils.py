@@ -70,7 +70,9 @@ def get_n_jobs(n_jobs):
 
 def encode_tuples(input_dict):
     """Encode tuples in a dictionary, because JSON does not recognize them (CAVE:
-    input_dict is changed in place)"""
+
+    input_dict is changed in place)
+    """
     for key, value in input_dict.items():
         if isinstance(value, dict):
             encode_tuples(value)
