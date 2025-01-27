@@ -233,7 +233,7 @@ class NodeViewer(QGraphicsView):
 
         return node
 
-    def node(self, node_idx=None, node_name=None, node_id=None):
+    def node(self, node_idx=None, node_name=None, node_id=None, old_id=None):
         """Get a node from the node graph based on either its index, name, or id.
 
         Parameters
@@ -244,13 +244,15 @@ class NodeViewer(QGraphicsView):
             Name of the node in the node graph.
         node_id : str, optional
             Unique identifier of the node in the node graph.
+        old_id: int, optional
+            Old id of the node for reestablishing connections.
 
         Returns
         -------
         BaseNode
             The node that matches the provided index, name, or id. If multiple
             parameters are provided, the method will prioritize them in
-            the following order: node_idx, node_name, node_id.
+            the following order: node_idx, node_name, node_id, old_id.
             If no parameters are provided or if no match is found,
             the method will return None.
         """
@@ -260,6 +262,11 @@ class NodeViewer(QGraphicsView):
             return [n for n in self.nodes.values() if n.name == node_name]
         elif node_id is not None:
             return self.nodes[node_id]
+        elif old_id is not None:
+            for node in self.nodes:
+                if node.old_id == old_id:
+                    return node
+        logging.warning("No node found with the provided parameters.")
 
     def to_dict(self):
         viewer_dict = dict()
@@ -286,6 +293,7 @@ class NodeViewer(QGraphicsView):
 
     def clear(self):
         """Clear the node graph."""
+        # list conversion necessary because self.nodes is mutated
         for node in list(self.nodes.values()):
             self.remove_node(node)
 
@@ -1166,15 +1174,14 @@ class NodeViewer(QGraphicsView):
 
         return view_pos
 
-    def port_position_scene(self, port_type, port, **node_kwargs):
-        node = self.node(**node_kwargs)
-        port = node.port(port_type, port)
+    def port_position_scene(self, node, **port_kwargs):
+        port = node.port(**port_kwargs)
         scene_pos = port.scenePos() + port.boundingRect().center()
 
         return scene_pos
 
-    def port_position_view(self, port_type, port, **node_kwargs):
-        scene_pos = self.port_position_scene(port_type, port, **node_kwargs)
+    def port_position_view(self, node, **port_kwargs):
+        scene_pos = self.port_position_scene(node, **port_kwargs)
         view_pos = self.mapFromScene(scene_pos)
 
         return view_pos

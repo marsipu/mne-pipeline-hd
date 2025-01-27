@@ -25,8 +25,8 @@ class BaseNode(QGraphicsItem):
         A Controller-instance, where all session information is stored and managed.
     name : str
         Name of the node.
-    ports : list
-        List of dictionaries, which contain kwargs for the :meth:`BaseNode.add_port()`.
+    ports : dict
+        Dictionary with keys as (old) port id and values as dictionaries which contain kwargs for the :meth:`BaseNode.add_port()`.
     """
 
     def __init__(self, ct, name=None, ports=None):
@@ -40,7 +40,7 @@ class BaseNode(QGraphicsItem):
         self.setZValue(1)
 
         # Initialize hidden attributes for properties (with node_defaults)
-        self._id = id(self)
+        self.id = id(self)
         self._name = name
 
         self._width = defaults["nodes"]["width"]
@@ -58,12 +58,13 @@ class BaseNode(QGraphicsItem):
 
         # Initialize iports
         ports = ports or list()
-        for port_kwargs in ports:
-            self.add_port(**port_kwargs)
-
-    @property
-    def id(self):
-        return self._id
+        # If old id is added for reestablishing connections
+        if isinstance(ports, dict):
+            for port_id, port_kwargs in ports.values():
+                self.add_port(old_id=port_id, **port_kwargs)
+        else:
+            for port_kwargs in ports:
+                self.add_port(**port_kwargs)
 
     @property
     def name(self):
@@ -193,6 +194,7 @@ class BaseNode(QGraphicsItem):
         port_type,
         multi_connection=False,
         accepted_ports=None,
+        old_id=None,
     ):
         """Adds a Port QGraphicsItem into the node.
 
@@ -206,6 +208,8 @@ class BaseNode(QGraphicsItem):
             allow multiple connections.
         accepted_ports : list, None
             list of accepted port names, if None all ports are accepted.
+        old_id : int, None, optional
+            old port id for reestablishing connections.
 
         Returns
         -------
@@ -221,7 +225,9 @@ class BaseNode(QGraphicsItem):
             logging.warning(f"Input port {name} already exists.")
             return
         # Create port
-        port = Port(self, name, port_type, multi_connection, accepted_ports)
+        port = Port(
+            self, name, port_type, multi_connection, accepted_ports, old_id=old_id
+        )
         # Add port to port-container
         ports = self._inputs if port_type == "in" else self._outputs
         ports[port.id] = port
@@ -283,106 +289,74 @@ class BaseNode(QGraphicsItem):
 
         return port
 
-    def port(self, port_type, port):
+    def port(self, port_type, port_idx=None, port_name=None, port_id=None, old_id=None):
         """Get port by the name or index.
 
         Parameters
         ----------
         port_type : str
             "in" or "out".
-        port : str or int
-            port name, index or id.
+        port_idx : int
+            Index of the port.
+        port_name : str, optional
+            Name of the port.
+        port_id : int, optional
+            Id of the port.
+        old_id : int, optional
+            Old id of the port for reestablishing connections.
 
         Returns
         -------
         Port
+            The port that matches the provided index, name, or id. If multiple
+            parameters are provided, the method will prioritize them in
+            the following order: port_idx, port_name, port_id, old_id.
+            If no parameters are provided or if no match is found.
+            the method will return None.
         """
         ports = self._inputs if port_type == "in" else self._outputs
         port_list = list(ports.values())
 
-        if isinstance(port, int):
-            # Get input port by id
-            if port in ports:
-                return ports[port]
-            # Get input port by index
-            elif port < len(port_list):
-                return port_list[port]
+        if port_idx is not None:
+            if port_idx < len(port_list):
+                return port_list[port_idx]
             else:
-                logging.warning(f"{port_type} port {port} not found.")
-        elif isinstance(port, str):
-            # Get input port by name
-            port_names = [p.name for p in port_list]
-            if port in port_names:
-                name_index = port_names.index(port)
-                return port_list[name_index]
+                logging.warning(f"{port_type} port {port_idx} not found.")
+        elif port_name is not None:
+            port_names = [p for p in port_list if p.name == port_name]
+            if len(port_names) > 1:
+                logging.warning(
+                    "More than one port with the same name. This should not be allowed."
+                )
+            elif len(port_names) == 0:
+                logging.warning(f"{port_type} port {port_name} not found.")
             else:
-                logging.warning(f"{port_type} port {port} not found.")
+                return port_names[0]
+        elif port_id is not None:
+            if port_id in ports:
+                return ports[port_id]
+            else:
+                logging.warning(f"{port_type} port {port_id} not found.")
+        elif old_id is not None:
+            old_id_ports = [p for p in port_list if p.old_id == old_id]
+            if len(old_id_ports) > 1:
+                logging.warning(
+                    "More than one port with the same old id. This should not be allowed."
+                )
+            elif len(old_id_ports) == 0:
+                logging.warning(f"{port_type} port with old id {old_id} not found.")
+            else:
+                return old_id_ports[0]
         else:
-            logging.warning(f"Invalid port value: {port}")
+            logging.warning("No port identifier provided.")
 
-    def input(self, port):
-        """Get input port by the name, index or id.
+    def input(self, **port_kwargs):
+        """Get input port by the name, index, id or old id as in port()."""
+        return self.port("in", **port_kwargs)
 
-        Args:
-            port (str or int): port name, index or id.
-
-        Returns:
-            Port
-        """
-        return self.port("in", port)
-
-    def output(self, port):
-        """Get output port by the name, index or id.
-
-        Args:
-            port (str or int): port name, index or id.
-
-        Returns:
-            Port
-        """
-        return self.port("out", port)
-
-    def set_port(self, port_type, source_port, target_port):
-        """Creates a connection between source_port and target_port.
-
-        Parameters
-        ----------
-        port_type : str
-            Specify type of source_port, "in" or "out".
-        source_port : str or int
-            source port name, index, id or Port from this node.
-        target_port : Port
-            target port object.
-        """
-        if isinstance(source_port, Port):
-            src_port = source_port
-        else:
-            src_port = self.port(port_type, source_port)
-        src_port.connect_to(target_port)
-
-    def set_input(self, source_port, target_port):
-        """Creates a connection between source_port and target_port.
-
-        Parameters
-        ----------
-        source_port : str or int
-            source port name, index, id or Port from this node.
-        target_port : Port
-            target port object.
-        """
-        self.set_port("in", source_port, target_port)
-
-    def set_output(self, source_port, target_port):
-        """Creates a connection between source_port and target_port.
-
-        Parameters
-        ----------
-        source_port : str or int
-            source port name, index, id or Port from this node.
-        target_port : Port
-            target port object.
-        """
-        self.set_port("out", source_port, target_port)
+    def output(self, port_kwargs):
+        """Get output port by the name, index, id or old id as in port()."""
+        return self.port("out", **port_kwargs)
 
     def connected_input_nodes(self):
         """Returns all nodes connected from the input ports.
@@ -423,7 +397,7 @@ class BaseNode(QGraphicsItem):
             "name": self.name,
             "class": self.__class__.__name__,
             "pos": self.xy_pos,
-            "ports": [p.to_dict() for p in self.ports],
+            "ports": {p.id: p.to_dict() for p in self.ports},
         }
 
         return node_dict
