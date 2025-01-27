@@ -10,9 +10,6 @@ from qtpy.QtGui import QColor, QPen, QPainterPath
 from qtpy.QtWidgets import QGraphicsItem, QGraphicsTextItem, QGraphicsProxyWidget
 
 
-# Create a dict with node_defaults from _width to _text_color
-
-
 class NodeTextItem(QGraphicsTextItem):
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
@@ -20,8 +17,8 @@ class NodeTextItem(QGraphicsTextItem):
 
 
 class BaseNode(QGraphicsItem):
-    """
-    Base class for all nodes in the NodeGraph.
+    """Base class for all nodes in the NodeGraph.
+
     Parameters
     ----------
     ct : Controller
@@ -142,23 +139,19 @@ class BaseNode(QGraphicsItem):
 
     @property
     def inputs(self):
-        """
-        Returns the input ports in a list
-        (self._inputs is an OrderedDict and can be accessed internally when necessary)
-        """
+        """Returns the input ports in a list (self._inputs is an OrderedDict and can be
+        accessed internally when necessary)"""
         return list(self._inputs.values())
 
     @property
     def outputs(self):
-        """
-        Returns the output ports in a list
-        (self._outputs is an OrderedDict and can be accessed internally when necessary)
-        """
+        """Returns the output ports in a list (self._outputs is an OrderedDict and can
+        be accessed internally when necessary)"""
         return list(self._outputs.values())
 
     @property
     def ports(self):
-        """Returns all ports in a list"""
+        """Returns all ports in a list."""
         return list(self._inputs.values()) + list(self._outputs.values())
 
     @property
@@ -167,10 +160,8 @@ class BaseNode(QGraphicsItem):
 
     @property
     def xy_pos(self):
-        """
-        return the item scene postion.
-        ("node.pos" conflicted with "QGraphicsItem.pos()"
-        so it was refactored to "xy_pos".)
+        """Return the item scene postion. ("node.pos" conflicted with
+        "QGraphicsItem.pos()" so it was refactored to "xy_pos".)
 
         Returns:
             list[float]: x, y scene position.
@@ -179,9 +170,7 @@ class BaseNode(QGraphicsItem):
 
     @xy_pos.setter
     def xy_pos(self, pos=None):
-        """
-        set the item scene postion.
-        ("node.pos" conflicted with "QGraphicsItem.pos()"
+        """Set the item scene postion. ("node.pos" conflicted with "QGraphicsItem.pos()"
         so it was refactored to "xy_pos".)
 
         Args:
@@ -205,8 +194,7 @@ class BaseNode(QGraphicsItem):
         multi_connection=False,
         accepted_ports=None,
     ):
-        """
-        Adds a Port QGraphicsItem into the node.
+        """Adds a Port QGraphicsItem into the node.
 
         Parameters
         ----------
@@ -249,8 +237,7 @@ class BaseNode(QGraphicsItem):
         multi_connection=False,
         accepted_ports=None,
     ):
-        """
-        Adds a Port QGraphicsItem into the node as input.
+        """Adds a Port QGraphicsItem into the node as input.
 
         Parameters
         ----------
@@ -276,8 +263,7 @@ class BaseNode(QGraphicsItem):
         multi_connection=False,
         accepted_ports=None,
     ):
-        """
-        Adds a Port QGraphicsItem into the node as output.
+        """Adds a Port QGraphicsItem into the node as output.
 
         Parameters
         ----------
@@ -298,8 +284,7 @@ class BaseNode(QGraphicsItem):
         return port
 
     def port(self, port_type, port):
-        """
-        Get port by the name or index.
+        """Get port by the name or index.
 
         Parameters
         ----------
@@ -311,7 +296,6 @@ class BaseNode(QGraphicsItem):
         Returns
         -------
         Port
-
         """
         ports = self._inputs if port_type == "in" else self._outputs
         port_list = list(ports.values())
@@ -337,8 +321,7 @@ class BaseNode(QGraphicsItem):
             logging.warning(f"Invalid port value: {port}")
 
     def input(self, port):
-        """
-        Get input port by the name, index or id.
+        """Get input port by the name, index or id.
 
         Args:
             port (str or int): port name, index or id.
@@ -349,8 +332,7 @@ class BaseNode(QGraphicsItem):
         return self.port("in", port)
 
     def output(self, port):
-        """
-        Get output port by the name, index or id.
+        """Get output port by the name, index or id.
 
         Args:
             port (str or int): port name, index or id.
@@ -361,8 +343,7 @@ class BaseNode(QGraphicsItem):
         return self.port("out", port)
 
     def set_port(self, port_type, source_port, target_port):
-        """
-        Creates a connection between source_port and target_port.
+        """Creates a connection between source_port and target_port.
 
         Parameters
         ----------
@@ -372,7 +353,6 @@ class BaseNode(QGraphicsItem):
             source port name, index, id or Port from this node.
         target_port : Port
             target port object.
-
         """
         if isinstance(source_port, Port):
             src_port = source_port
@@ -381,8 +361,7 @@ class BaseNode(QGraphicsItem):
         src_port.connect_to(target_port)
 
     def set_input(self, source_port, target_port):
-        """
-        Creates a connection between source_port and target_port.
+        """Creates a connection between source_port and target_port.
 
         Parameters
         ----------
@@ -390,13 +369,11 @@ class BaseNode(QGraphicsItem):
             source port name, index, id or Port from this node.
         target_port : Port
             target port object.
-
         """
         self.set_port("in", source_port, target_port)
 
     def set_output(self, source_port, target_port):
-        """
-        Creates a connection between source_port and target_port.
+        """Creates a connection between source_port and target_port.
 
         Parameters
         ----------
@@ -404,13 +381,11 @@ class BaseNode(QGraphicsItem):
             source port name, index, id or Port from this node.
         target_port : Port
             target port object.
-
         """
         self.set_port("out", source_port, target_port)
 
     def connected_input_nodes(self):
-        """
-        Returns all nodes connected from the input ports.
+        """Returns all nodes connected from the input ports.
 
         Returns:
             dict: {<input_port>: <node_list>}
@@ -421,8 +396,7 @@ class BaseNode(QGraphicsItem):
         return nodes
 
     def connected_output_nodes(self):
-        """
-        Returns all nodes connected from the output ports.
+        """Returns all nodes connected from the output ports.
 
         Returns:
             dict: {<output_port>: <node_list>}
@@ -439,9 +413,7 @@ class BaseNode(QGraphicsItem):
         self.widgets.append(proxy_widget)
 
     def delete(self):
-        """
-        Remove node from the scene.
-        """
+        """Remove node from the scene."""
         if self.scene() is not None:
             self.scene().removeItem(self)
         del self
@@ -532,8 +504,7 @@ class BaseNode(QGraphicsItem):
         painter.restore()
 
     def mousePressEvent(self, event):
-        """
-        Re-implemented to ignore event if LMB is over port collision area.
+        """Re-implemented to ignore event if LMB is over port collision area.
 
         Args:
             event (QtWidgets.QGraphicsSceneMouseEvent): mouse event.
@@ -546,8 +517,7 @@ class BaseNode(QGraphicsItem):
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
-        """
-        Re-implemented to ignore event if Alt modifier is pressed.
+        """Re-implemented to ignore event if Alt modifier is pressed.
 
         Args:
             event (QtWidgets.QGraphicsSceneMouseEvent): mouse event.
@@ -558,8 +528,7 @@ class BaseNode(QGraphicsItem):
         super().mouseReleaseEvent(event)
 
     def itemChange(self, change, value):
-        """
-        Re-implemented to update pipes on selection changed.
+        """Re-implemented to update pipes on selection changed.
 
         Args:
             change:
@@ -577,8 +546,7 @@ class BaseNode(QGraphicsItem):
         return super().itemChange(change, value)
 
     def _set_base_size(self, add_w=0.0, add_h=0.0):
-        """
-        Sets the initial base size for the node.
+        """Sets the initial base size for the node.
 
         Args:
             add_w (float): add additional width.
@@ -587,8 +555,7 @@ class BaseNode(QGraphicsItem):
         self.width, self.height = self.calc_size(add_w, add_h)
 
     def _set_text_color(self, color):
-        """
-        set text color.
+        """Set text color.
 
         Args:
             color (tuple): color value in (r, g, b, a).
@@ -598,27 +565,21 @@ class BaseNode(QGraphicsItem):
         self._title_item.setDefaultTextColor(QColor(*color))
 
     def activate_pipes(self):
-        """
-        active pipe color.
-        """
+        """Active pipe color."""
         ports = self.inputs + self.outputs
         for port in ports:
             for pipe in port.connected_pipes.values():
                 pipe.activate()
 
     def highlight_pipes(self):
-        """
-        Highlight pipe color.
-        """
+        """Highlight pipe color."""
         ports = self.inputs + self.outputs
         for port in ports:
             for pipe in port.connected_pipes.values():
                 pipe.highlight()
 
     def reset_pipes(self):
-        """
-        Reset all the pipe colors.
-        """
+        """Reset all the pipe colors."""
         ports = self.inputs + self.outputs
         for port in ports:
             for pipe in port.connected_pipes.values():

@@ -88,4 +88,5 @@ PYSIDE6 = false
 
 [tool.docformatter]
 black = true
+in-place = true
 recursive = true
