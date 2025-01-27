@@ -18,7 +18,15 @@ repos:
 
   # Ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.2
+    rev: v0.9.3
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+
+  # docformatter
+  - repo: https://github.com/PyCQA/docformatter
+    rev: eb1df347edd128b30cd3368dddc3aa65edcfac38
+    hooks:
+      - id: docformatter
+        additional_dependencies: [ tomli ]
+        args: [ --in-place --config ./pyproject.toml ]
