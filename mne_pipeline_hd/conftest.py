@@ -83,7 +83,7 @@ def nodeviewer(qtbot):
     }
     func_node1 = viewer.create_node("FunctionNode", **func_kwargs)
     func_node2 = viewer.create_node("FunctionNode", **func_kwargs)
-    func_node1.output(0).connect_to(func_node2.input(0))
+    func_node1.output(port_idx=0).connect_to(func_node2.input(port_idx=0))
 
     func_node2.setPos(400, 100)
 

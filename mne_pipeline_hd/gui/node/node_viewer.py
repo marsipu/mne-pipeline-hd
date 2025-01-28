@@ -200,34 +200,26 @@ class NodeViewer(QGraphicsView):
 
         node.delete()
 
-    def create_node(self, node_info, **kwargs):
+    def create_node(self, node_class="BaseNode", **kwargs):
         """Create a node from the given class.
 
         Parameters
         ----------
-        node_info: str or dict
-            Can be a string to speficy the node class or a dictionary
-            from node.to_dict().
+        node_class: str
+            A string to speficy the node class.
         kwargs: dict
-            Additional keyword arguments to pass into BaseNode.__init__()
-            (replacing the values from the dictionary if provided).
+            Additional keyword arguments to pass into BaseNode.__init__().
 
         Returns
         -------
         node
             The created node.
         """
-        if isinstance(node_info, dict):
-            node_class = getattr(nodes, node_info["class"])
-            for key in node_info:
-                if key in kwargs:
-                    node_info[key] = kwargs[key]
-            node = node_class.from_dict(self.ct, node_info)
-        elif isinstance(node_info, str):
-            node_class = getattr(nodes, node_info)
+        if isinstance(node_class, str):
+            node_class = getattr(nodes, node_class)
             node = node_class(self.ct, **kwargs)
         else:
-            raise ValueError("node_info must be a string or a dictionary.")
+            raise ValueError("node_info must be a string.")
 
         self.add_node(node)
 
@@ -288,7 +280,9 @@ class NodeViewer(QGraphicsView):
         self.clear()
         # Create nodes
         for node_info in viewer_dict["nodes"].values():
-            self.create_node(node_info)
+            node_class = getattr(nodes, node_info["class"])
+            node = node_class.from_dict(node_info)
+            self.add_node(node)
         # Continue: Initialize connections
 
     def clear(self):
