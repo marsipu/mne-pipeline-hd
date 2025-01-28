@@ -311,6 +311,7 @@ class Port(QGraphicsItem):
             "port_type": self.port_type,
             "multi_connection": self.multi_connection,
             "accepted_ports": self.accepted_ports,
+            "old_id": self.id,
         }
 
     def add_accepted_ports(self, ports):

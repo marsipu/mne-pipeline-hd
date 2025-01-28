@@ -255,7 +255,7 @@ class NodeViewer(QGraphicsView):
         elif node_id is not None:
             return self.nodes[node_id]
         elif old_id is not None:
-            for node in self.nodes:
+            for node in self.nodes.values():
                 if node.old_id == old_id:
                     return node
         logging.warning("No node found with the provided parameters.")
@@ -268,11 +268,14 @@ class NodeViewer(QGraphicsView):
 
         # Save connections
         viewer_dict["connections"] = dict()
-        for node in self.nodes.values():
+        for node_id, node in self.nodes.items():
+            viewer_dict["connections"][node.id] = dict()
             for port in node.ports:
-                viewer_dict["connections"][port.id] = [
-                    p.id for p in port.connected_ports
-                ]
+                viewer_dict["connections"][node.id][port.id] = dict()
+                for connected_port in port.connected_ports:
+                    viewer_dict["connections"][node.id][port.id][
+                        connected_port.node.id
+                    ] = connected_port.id
 
         return viewer_dict
 
@@ -281,9 +284,17 @@ class NodeViewer(QGraphicsView):
         # Create nodes
         for node_info in viewer_dict["nodes"].values():
             node_class = getattr(nodes, node_info["class"])
-            node = node_class.from_dict(node_info)
+            node = node_class.from_dict(self.ct, node_info)
             self.add_node(node)
-        # Continue: Initialize connections
+        # Initialize connections
+        for node_id, port_dict in viewer_dict["connections"].items():
+            node = self.node(old_id=node_id)
+            for port_id, connected_dict in port_dict.items():
+                port = node.port(old_id=port_id)
+                for con_node_id, con_port_id in connected_dict.items():
+                    connected_node = self.node(old_id=con_node_id)
+                    connected_port = connected_node.port(old_id=con_port_id)
+                    port.connect_to(connected_port)
 
     def clear(self):
         """Clear the node graph."""

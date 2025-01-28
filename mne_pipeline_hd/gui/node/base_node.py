@@ -27,9 +27,12 @@ class BaseNode(QGraphicsItem):
         Name of the node.
     ports : dict, list
         Dictionary with keys as (old) port id and values as dictionaries which contain kwargs for the :meth:`BaseNode.add_port()`.
+        Can also be just a list with kwargs for the :meth:`BaseNode.add_port()`.
+    old_id : int, None, optional
+        Old id for reestablishing connections.
     """
 
-    def __init__(self, ct, name=None, ports=None):
+    def __init__(self, ct, name=None, ports=None, old_id=None):
         self.ct = ct
         # Initialize QGraphicsItem
         super().__init__()
@@ -41,6 +44,7 @@ class BaseNode(QGraphicsItem):
 
         # Initialize hidden attributes for properties (with node_defaults)
         self.id = id(self)
+        self.old_id = old_id
         self._name = name
 
         self._width = defaults["nodes"]["width"]
@@ -60,8 +64,8 @@ class BaseNode(QGraphicsItem):
         ports = ports or list()
         # If old id is added for reestablishing connections
         if isinstance(ports, dict):
-            for port_id, port_kwargs in ports.values():
-                self.add_port(old_id=port_id, **port_kwargs)
+            for port_kwargs in ports.values():
+                self.add_port(**port_kwargs)
         else:
             for port_kwargs in ports:
                 self.add_port(**port_kwargs)
@@ -289,13 +293,15 @@ class BaseNode(QGraphicsItem):
 
         return port
 
-    def port(self, port_type, port_idx=None, port_name=None, port_id=None, old_id=None):
+    def port(
+        self, port_type=None, port_idx=None, port_name=None, port_id=None, old_id=None
+    ):
         """Get port by the name or index.
 
         Parameters
         ----------
-        port_type : str
-            "in" or "out".
+        port_type : str, None
+            "in" or "out". If None, inputs and outputs will be searched.
         port_idx : int
             Index of the port.
         port_name : str, optional
@@ -314,9 +320,12 @@ class BaseNode(QGraphicsItem):
             If no parameters are provided or if no match is found.
             the method will return None.
         """
-        if port_type not in ["in", "out"]:
+        if port_type is None:
+            ports = self._inputs | self._outputs
+        elif port_type not in ["in", "out"]:
             raise ValueError(f"Invalid port type: {port_type}")
-        ports = self._inputs if port_type == "in" else self._outputs
+        else:
+            ports = self._inputs if port_type == "in" else self._outputs
         port_list = list(ports.values())
 
         if port_idx is not None:
@@ -362,11 +371,11 @@ class BaseNode(QGraphicsItem):
 
     def input(self, **port_kwargs):
         """Get input port by the name, index, id or old id as in port()."""
-        return self.port("in", **port_kwargs)
+        return self.port(port_type="in", **port_kwargs)
 
     def output(self, **port_kwargs):
         """Get output port by the name, index, id or old id as in port()."""
-        return self.port("out", **port_kwargs)
+        return self.port(port_type="out", **port_kwargs)
 
     def connected_input_nodes(self):
         """Returns all nodes connected from the input ports.
@@ -408,6 +417,7 @@ class BaseNode(QGraphicsItem):
             "class": self.__class__.__name__,
             "pos": self.xy_pos,
             "ports": {p.id: p.to_dict() for p in self.ports},
+            "old_id": self.id,
         }
 
         return node_dict

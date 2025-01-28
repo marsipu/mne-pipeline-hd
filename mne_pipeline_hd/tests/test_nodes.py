@@ -33,6 +33,10 @@ def test_nodes_basic_interaction(nodeviewer):
 
 def test_node_serialization(qtbot, nodeviewer):
     viewer_dict = nodeviewer.to_dict()
+    qtbot.wait(1000)
+    nodeviewer.clear()
+    qtbot.wait(1000)
     nodeviewer.from_dict(viewer_dict)
     second_viewer_dict = nodeviewer.to_dict()
+    qtbot.wait(10000)
     assert viewer_dict == second_viewer_dict
