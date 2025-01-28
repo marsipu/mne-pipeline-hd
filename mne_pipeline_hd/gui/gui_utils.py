@@ -214,8 +214,7 @@ class UncaughtHook(QObject):
             # ignore keyboard interrupt to support console applications
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
         else:
-            # Print Error to Console
-            traceback.print_exception(exc_type, exc_value, exc_traceback)
+            # Error logging
             exc_info = (exc_type, exc_value, exc_traceback)
             exc_str = (
                 exc_type.__name__,
@@ -223,9 +222,7 @@ class UncaughtHook(QObject):
                 "".join(traceback.format_tb(exc_traceback)),
             )
             logger().critical(
-                f"Uncaught exception:\n"
-                f"{exc_str[0]}: {exc_str[1]}\n"
-                f"{exc_str[2]}",
+                "Uncaught exception:",
                 exc_info=exc_info,
             )
 
