@@ -15,7 +15,7 @@ def test_nodes_basic_interaction(nodeviewer):
         button=Qt.MouseButton.LeftButton,
     )
     # Check if new connection was created
-    assert node1.output(1) in node2.input(1).connected_ports
+    assert node1.output(port_idx=1) in node2.input(port_idx=1).connected_ports
 
     # Slice both connections
     start_slice_pos = nodeviewer.mapFromScene(QPointF(200, 180))

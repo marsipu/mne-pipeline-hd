@@ -314,15 +314,21 @@ class BaseNode(QGraphicsItem):
             If no parameters are provided or if no match is found.
             the method will return None.
         """
+        if port_type not in ["in", "out"]:
+            raise ValueError(f"Invalid port type: {port_type}")
         ports = self._inputs if port_type == "in" else self._outputs
         port_list = list(ports.values())
 
         if port_idx is not None:
+            if not isinstance(port_idx, int):
+                raise ValueError(f"Invalid port index: {port_idx}")
             if port_idx < len(port_list):
                 return port_list[port_idx]
             else:
                 logging.warning(f"{port_type} port {port_idx} not found.")
         elif port_name is not None:
+            if not isinstance(port_name, str):
+                raise ValueError(f"Invalid port name: {port_name}")
             port_names = [p for p in port_list if p.name == port_name]
             if len(port_names) > 1:
                 logging.warning(
@@ -333,11 +339,15 @@ class BaseNode(QGraphicsItem):
             else:
                 return port_names[0]
         elif port_id is not None:
+            if not isinstance(port_id, int):
+                raise ValueError(f"Invalid port id: {port_id}")
             if port_id in ports:
                 return ports[port_id]
             else:
                 logging.warning(f"{port_type} port {port_id} not found.")
         elif old_id is not None:
+            if not isinstance(old_id, int):
+                raise ValueError(f"Invalid old port id: {old_id}")
             old_id_ports = [p for p in port_list if p.old_id == old_id]
             if len(old_id_ports) > 1:
                 logging.warning(
@@ -354,7 +364,7 @@ class BaseNode(QGraphicsItem):
         """Get input port by the name, index, id or old id as in port()."""
         return self.port("in", **port_kwargs)
 
-    def output(self, port_kwargs):
+    def output(self, **port_kwargs):
         """Get output port by the name, index, id or old id as in port()."""
         return self.port("out", **port_kwargs)
 

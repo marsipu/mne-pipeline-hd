@@ -734,7 +734,7 @@ class MainWindow(QMainWindow):
         meeg_node = self.node_viewer.create_node("MEEGInputNode")
         mri_node = self.node_viewer.create_node("MRIInputNode")
         ass_node = self.node_viewer.create_node(
-            "AssignmentNode",
+            node_class="AssignmentNode",
             name="Assignment",
             ports=[
                 {
@@ -761,25 +761,37 @@ class MainWindow(QMainWindow):
             fn[func_name] = fnode
 
         # Wire up the nodes
-        meeg_node.output(0).connect_to(fn["Filter Raw"].input(0))
-        meeg_node.output(0).connect_to(fn["Get Events"].input(0))
-        fn["Epoch Data"].input(port_name="Raw").connect_to(fn["Filter Raw"].output(0))
+        meeg_node.output(port_idx=0).connect_to(fn["Filter Raw"].input(port_idx=0))
+        meeg_node.output(port_idx=0).connect_to(fn["Get Events"].input(port_idx=0))
+        fn["Epoch Data"].input(port_name="Raw").connect_to(
+            fn["Filter Raw"].output(port_idx=0)
+        )
         fn["Epoch Data"].input(port_name="Events").connect_to(
-            fn["Get Events"].output(0)
+            fn["Get Events"].output(port_idx=0)
         )
         fn["Epoch Data"].output(port_name="Epochs").connect_to(
-            fn["Average Epochs"].input("Epochs")
+            fn["Average Epochs"].input(port_name="Epochs")
         )
 
-        mri_node.output(0).connect_to(fn["Make Forward Model"].input("MRI"))
+        mri_node.output(port_idx=0).connect_to(
+            fn["Make Forward Model"].input(port_name="MRI")
+        )
 
-        ass_node.input(0).connect_to(fn["Average Epochs"].output("Evokeds"))
-        ass_node.input(1).connect_to(fn["Make Forward Model"].output("Fwd"))
-        ass_node.output(0).connect_to(fn["Make Inverse Operator"].input("Evokeds"))
-        ass_node.output(1).connect_to(fn["Make Inverse Operator"].input("Fwd"))
+        ass_node.input(port_idx=0).connect_to(
+            fn["Average Epochs"].output(port_name="Evokeds")
+        )
+        ass_node.input(port_idx=1).connect_to(
+            fn["Make Forward Model"].output(port_name="Fwd")
+        )
+        ass_node.output(port_idx=0).connect_to(
+            fn["Make Inverse Operator"].input(port_name="Evokeds")
+        )
+        ass_node.output(port_idx=1).connect_to(
+            fn["Make Inverse Operator"].input(port_name="Fwd")
+        )
 
         fn["Plot Source Estimates"].input(port_name="Inv").connect_to(
-            fn["Make Inverse Operator"].output("Inv")
+            fn["Make Inverse Operator"].output(port_name="Inv")
         )
 
         self.node_viewer.auto_layout_nodes()
