@@ -474,6 +474,7 @@ class NewController:
         if not isdir(value):
             raise ValueError(f"Path {value} does not exist!")
         self.config["meeg_root"] = value
+        self.save_config()
 
     @property
     def fsmri_root(self):
@@ -486,6 +487,7 @@ class NewController:
         if not isdir(value):
             raise ValueError(f"Path {value} does not exist!")
         self.config["fsmri_root"] = value
+        self.save_config()
 
     @property
     def plots_path(self):
@@ -498,6 +500,7 @@ class NewController:
         if not isdir(value):
             raise ValueError(f"Path {value} does not exist!")
         self.config["plots_path"] = value
+        self.save_config()
 
     @property
     def inputs(self):
