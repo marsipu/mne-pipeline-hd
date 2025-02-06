@@ -141,6 +141,7 @@ def run_func(func, keywargs, pipe=None):
         return get_exception_tuple(is_mp=pipe is not None)
 
 
+# Continue: Implement Run-Controller for Nodes-GUI
 class RunController:
     def __init__(self, controller):
         self.ct = controller
