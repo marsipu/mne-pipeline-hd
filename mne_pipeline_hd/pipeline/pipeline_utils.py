@@ -82,20 +82,20 @@ def encode_tuples(input_dict):
 
 
 class TypedJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
+    def default(self, o):
+        if isinstance(o, np.integer):
+            return int(o)
+        elif isinstance(o, np.floating):
+            return float(o)
         # Only onedimensional arrays are supported
-        elif isinstance(obj, np.ndarray):
-            return {"numpy_array": obj.tolist()}
-        elif isinstance(obj, datetime):
-            return {"datetime": obj.strftime(datetime_format)}
-        elif isinstance(obj, set):
-            return {"set_type": list(obj)}
+        elif isinstance(o, np.ndarray):
+            return {"numpy_array": o.tolist()}
+        elif isinstance(o, datetime):
+            return {"datetime": o.strftime(datetime_format)}
+        elif isinstance(o, set):
+            return {"set_type": list(o)}
         else:
-            return json.JSONEncoder.default(self, obj)
+            return json.JSONEncoder.default(self, o)
 
 
 def type_json_hook(obj):
