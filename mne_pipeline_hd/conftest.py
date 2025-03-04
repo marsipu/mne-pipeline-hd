@@ -8,11 +8,11 @@ from os import mkdir
 
 import pytest
 
-from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
 from mne_pipeline_hd.gui.main_window import MainWindow
+from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
+from mne_pipeline_hd.gui.node.nodes import FunctionNode
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.pipeline_utils import _set_test_run
-from mne_pipeline_hd.pipeline.node_controller import NodeController
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def main_window(controller, qtbot):
 
 @pytest.fixture
 def nodeviewer(qtbot, controller):
-    viewer = NodeViewer(NodeController(controller), debug_mode=True)
+    viewer = NodeViewer(controller, debug_mode=True)
     viewer.resize(1000, 1000)
     qtbot.addWidget(viewer)
     viewer.show()
@@ -82,8 +82,10 @@ def nodeviewer(qtbot, controller):
             },
         },
     }
-    func_node1 = viewer.create_node("FunctionNode", **func_kwargs)
-    func_node2 = viewer.create_node("FunctionNode", **func_kwargs)
+    func_node1 = FunctionNode(controller, **func_kwargs)
+    viewer.add_node(func_node1)
+    func_node2 = FunctionNode(controller, **func_kwargs)
+    viewer.add_node(func_node2)
     func_node1.output(port_idx=0).connect_to(func_node2.input(port_idx=0))
 
     func_node2.setPos(400, 100)

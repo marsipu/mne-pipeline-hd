@@ -4,14 +4,6 @@ import math
 from collections import OrderedDict
 
 import qtpy
-
-from mne_pipeline_hd.gui.node import nodes
-from mne_pipeline_hd.gui.gui_utils import invert_rgb_color
-from mne_pipeline_hd.gui.node.base_node import BaseNode
-from mne_pipeline_hd.gui.node.node_defaults import defaults
-from mne_pipeline_hd.gui.node.node_scene import NodeScene
-from mne_pipeline_hd.gui.node.pipes import LivePipeItem, SlicerPipeItem, Pipe
-from mne_pipeline_hd.gui.node.ports import Port
 from qtpy.QtCore import QMimeData, QPointF, QPoint, QRectF, Qt, QRect, QSize, Signal
 from qtpy.QtGui import QColor, QPainter, QPainterPath
 from qtpy.QtWidgets import (
@@ -20,6 +12,15 @@ from qtpy.QtWidgets import (
     QGraphicsTextItem,
     QGraphicsPathItem,
 )
+
+from mne_pipeline_hd.gui.gui_utils import invert_rgb_color
+from mne_pipeline_hd.gui.node import nodes
+from mne_pipeline_hd.gui.node.base_node import BaseNode
+from mne_pipeline_hd.gui.node.node_defaults import defaults
+from mne_pipeline_hd.gui.node.node_scene import NodeScene
+from mne_pipeline_hd.gui.node.nodes import FunctionNode
+from mne_pipeline_hd.gui.node.pipes import LivePipeItem, SlicerPipeItem, Pipe
+from mne_pipeline_hd.gui.node.ports import Port
 
 
 class NodeViewer(QGraphicsView):
@@ -157,7 +158,7 @@ class NodeViewer(QGraphicsView):
         self._pipe_layout = layout
 
     # ----------------------------------------------------------------------------------
-    # Logic methods
+    # Backend
     # ----------------------------------------------------------------------------------
     def add_node(self, node):
         """Add a node to the node graph.
@@ -199,31 +200,6 @@ class NodeViewer(QGraphicsView):
         self.nodes.pop(node.id)
 
         node.delete()
-
-    def create_node(self, node_class="BaseNode", **kwargs):
-        """Create a node from the given class.
-
-        Parameters
-        ----------
-        node_class: str
-            A string to speficy the node class.
-        kwargs: dict
-            Additional keyword arguments to pass into BaseNode.__init__().
-
-        Returns
-        -------
-        node
-            The created node.
-        """
-        if isinstance(node_class, str):
-            node_class = getattr(nodes, node_class)
-            node = node_class(self.ct, **kwargs)
-        else:
-            raise ValueError("node_info must be a string.")
-
-        self.add_node(node)
-
-        return node
 
     def node(self, node_idx=None, node_name=None, node_id=None, old_id=None):
         """Get a node from the node graph based on either its index, name, or id.
@@ -296,6 +272,14 @@ class NodeViewer(QGraphicsView):
                     connected_port = connected_node.port(old_id=con_port_id)
                     port.connect_to(connected_port)
 
+    def from_project(self):
+        """Legacy method to load nodes from the project."""
+        for function in self.ct.pr.sel_functions:
+            node = FunctionNode(self.ct, function=function)
+            self.add_node(node)
+
+        # Try making non-cyclic connections
+
     def clear(self):
         """Clear the node graph."""
         # list conversion necessary because self.nodes is mutated
@@ -303,7 +287,7 @@ class NodeViewer(QGraphicsView):
             self.remove_node(node)
 
     # ----------------------------------------------------------------------------------
-    # Qt methods
+    # Frontend
     # ----------------------------------------------------------------------------------
     def _set_viewer_zoom(self, value, sensitivity=None, pos=None):
         """Sets the zoom level.
