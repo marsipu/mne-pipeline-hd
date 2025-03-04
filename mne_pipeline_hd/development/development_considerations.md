@@ -56,3 +56,7 @@ Nodes should improve usability and the representation of the pipeline by the fol
 - Parameters will now go to each function directly, overview only optional
 - Using multiple File-Lists or Projets side-by-side will be more easy to handle.
 -
+
+## Custom Functions Overhaul
+- Instead of using meeg/fsmri in functions the data-type (which then should be reserved namespaces like "raw" or "epochs") can be used. Maybe that makes meeg/fsmri obsolete in the end but for group analysis group is still handy.
+- data-types need to be declared and visible somewhere
