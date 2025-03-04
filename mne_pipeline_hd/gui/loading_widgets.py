@@ -4,6 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+import logging
 import os
 import re
 import shutil
@@ -47,8 +48,8 @@ from qtpy.QtWidgets import (
     QWizardPage,
 )
 
-from mne_pipeline_hd.functions.operations import find_bads
-from mne_pipeline_hd.functions.plot import (
+from mne_pipeline_hd.basic_functions.basic_operations import find_bads
+from mne_pipeline_hd.basic_functions.basic_plot import (
     plot_ica_components,
     plot_ica_sources,
     plot_ica_overlay,
@@ -82,8 +83,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS, logger
 
 
 def index_parser(index, all_items, groups=None):
-    """
-    Parses indices from a index-string in all_items
+    """Parses indices from a index-string in all_items.
 
     Parameters
     ----------
@@ -93,7 +93,6 @@ def index_parser(index, all_items, groups=None):
         All items
     Returns
     -------
-
     """
     indices = list()
     rm = list()
@@ -158,7 +157,11 @@ def index_parser(index, all_items, groups=None):
                 indices = [int(index)]
 
         indices = [i for i in indices if i not in rm]
-        files = np.asarray(all_items)[indices].tolist()
+        try:
+            files = np.asarray(all_items)[indices].tolist()
+        except IndexError:
+            logging.warning("Index out of range")
+            files = []
 
         return files
 
@@ -533,11 +536,9 @@ class GrandAvgFileAdd(QDialog):
 
 # Todo: Enable Drag&Drop
 class AddFilesWidget(QWidget):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
+    def __init__(self, ct):
+        super().__init__()
+        self.ct = ct
         self.layout = QVBoxLayout()
 
         self.erm_keywords = [
@@ -651,6 +652,7 @@ class AddFilesWidget(QWidget):
                 # Get already existing files and skip them
                 if (
                     file_path in list(self.pd_files["Path"])
+                    # ToDo: Fix all pr stuff
                     or file_name in self.pr.all_meeg
                     or file_name in self.pr.all_erm
                 ):
@@ -856,11 +858,9 @@ class AddFilesDialog(AddFilesWidget):
 
 
 class AddMRIWidget(QWidget):
-    def __init__(self, main_win):
-        super().__init__(main_win)
-        self.mw = main_win
-        self.ct = main_win.ct
-        self.pr = main_win.ct.pr
+    def __init__(self, ct):
+        super().__init__()
+        self.ct = ct
         self.layout = QVBoxLayout()
 
         self.folders = list()
@@ -1151,7 +1151,7 @@ class CopyBadsDialog(QDialog):
 
 
 class SubBadsWidget(QWidget):
-    """A Dialog to select Bad-Channels for the files"""
+    """A Dialog to select Bad-Channels for the files."""
 
     def __init__(self, main_win):
         """
@@ -1502,7 +1502,7 @@ class EventIDGui(QDialog):
         self.setLayout(self.layout)
 
     def get_event_id(self):
-        """Get unique event-ids from events"""
+        """Get unique event-ids from events."""
         if self.name in self.pr.meeg_event_id:
             self.event_id = self.pr.meeg_event_id[self.name]
         else:
@@ -1547,7 +1547,7 @@ class EventIDGui(QDialog):
                 self.pr.sel_event_id[self.name] = sel_event_id
 
     def file_selected(self, current, _):
-        """Called when File from file_widget is selected"""
+        """Called when File from file_widget is selected."""
         # Save event_id for previous file
         self.save_event_id()
 
@@ -1571,7 +1571,7 @@ class EventIDGui(QDialog):
             self.checked_labels = list()
         self.update_check_list()
 
-    # ToDo: Make all combinations possible
+    # ToDo: Make all combinations possible and also int-keys (can't split)
     def update_check_list(self):
         self.labels = [k for k in self.queries.keys()]
         # Get selectable trials and update widget
@@ -1739,7 +1739,7 @@ class CopyTrans(QDialog):
 
 
 class FileManagment(QDialog):
-    """A Dialog for File-Management
+    """A Dialog for File-Management.
 
     Parameters
     ----------
@@ -1998,7 +1998,7 @@ class FileManagment(QDialog):
         return obj_name, path_type
 
     def show_parameters(self, kind):
-        """Show the parameters, which are different for the selected cell
+        """Show the parameters, which are different for the selected cell.
 
         Parameters
         ----------
@@ -2085,13 +2085,12 @@ class FileManagment(QDialog):
         obj_table.content_changed()
 
     def remove_file(self, kind):
-        """Remove the file at the path of the current cell
+        """Remove the file at the path of the current cell.
 
         Parameters
         ----------
         kind : str
             If it is MEEG, FSMRI or Group
-
         """
 
         msgbx = QMessageBox.question(

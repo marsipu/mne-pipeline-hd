@@ -80,6 +80,7 @@ def filter_data(
     erm_t_limit,
     bad_interpolation,
 ):
+    # ToDo: Make Parameter comparison a default feature for all functions
     # Compare Parameters from last run
     filtered_path = meeg.io_dict[filter_target]["path"]
     results = compare_filep(
@@ -892,8 +893,6 @@ def tfr(
 ):
     powers = list()
     itcs = list()
-
-    meeg.load_epochs()
 
     # Calculate Time-Frequency for each trial from epochs
     # using the selected method

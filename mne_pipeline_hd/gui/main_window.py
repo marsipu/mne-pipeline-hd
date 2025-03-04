@@ -70,6 +70,7 @@ from mne_pipeline_hd.gui.loading_widgets import (
     SubjectWizard,
     ExportDialog,
 )
+from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
 from mne_pipeline_hd.gui.parameter_widgets import (
     BoolGui,
     IntGui,
@@ -125,10 +126,14 @@ class MainWindow(QMainWindow):
         self.init_menu()
         self.init_toolbar()
         self.init_docks()
-        self.init_main_widget()
+        self.init_node_viewer()
         self.init_edu()
 
         center(self)
+        self.show()
+
+        # ToDo: Use statusbar more
+        self.statusBar().showMessage("Initialization complete")
 
         self.first_init = False
 
@@ -495,8 +500,11 @@ class MainWindow(QMainWindow):
         self.general_layout.addWidget(start_bt, 1, 1)
         self.general_layout.addWidget(stop_bt, 1, 2)
 
-    # Todo: Make Buttons more appealing, mark when check
-    #   make button-dependencies
+    def init_node_viewer(self):
+        # Initialize Node-Viewer
+        self.node_viewer = NodeViewer(self.ct, self)
+        self.setCentralWidget(self.node_viewer)
+
     def add_func_bts(self):
         # Drop custom-modules, which aren't selected
         cleaned_pd_funcs = self.ct.pd_funcs.loc[
@@ -557,6 +565,245 @@ class MainWindow(QMainWindow):
                 tab.setWidget(child_w)
                 self.tab_func_widget.addTab(tab, tab_name)
         set_app_theme()
+
+        # Add experimental Node-Tab
+        self.node_viewer = NodeViewer(self.ct, self)
+        self.tab_func_widget.addTab(self.node_viewer, "Node-Graph")
+        self.tab_func_widget.setCurrentWidget(self.node_viewer)
+
+        demo_dict = {
+            "Filter Raw": {
+                "parameters": {
+                    "low_cutoff": {
+                        "alias": "Low-Cutoff",
+                        "gui": "FloatGui",
+                        "default": 0.1,
+                    },
+                    "high_cutoff": {
+                        "alias": "High-Cutoff",
+                        "gui": "FloatGui",
+                        "default": 0.2,
+                    },
+                },
+                "ports": [
+                    {
+                        "name": "Raw",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Raw",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
+            },
+            "Get Events": {
+                "parameters": {
+                    "event_id": {
+                        "alias": "Event-ID",
+                        "gui": "IntGui",
+                        "default": 1,
+                    },
+                },
+                "ports": [
+                    {
+                        "name": "Raw",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Events",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
+            },
+            "Epoch Data": {
+                "parameters": {
+                    "epochs_tmin": {
+                        "alias": "tmin",
+                        "gui": "FloatGui",
+                        "default": -0.2,
+                    },
+                    "epochs_tmax": {
+                        "alias": "tmax",
+                        "gui": "FloatGui",
+                        "default": 0.5,
+                    },
+                    "apply_baseline": {
+                        "alias": "Baseline",
+                        "gui": "BoolGui",
+                        "default": True,
+                    },
+                },
+                "ports": [
+                    {
+                        "name": "Raw",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Events",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Epochs",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
+            },
+            "Average Epochs": {
+                "parameters": {
+                    "event_id": {
+                        "alias": "Event-ID",
+                        "gui": "IntGui",
+                        "default": 1,
+                    },
+                },
+                "ports": [
+                    {
+                        "name": "Epochs",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Evokeds",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
+            },
+            "Make Forward Model": {
+                "parameters": {
+                    "fwd_subject": {
+                        "alias": "Forward Subject",
+                        "gui": "StringGui",
+                        "default": "fsaverage",
+                    },
+                },
+                "ports": [
+                    {
+                        "name": "MRI",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Fwd",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
+            },
+            "Make Inverse Operator": {
+                "parameters": {
+                    "inv_subject": {
+                        "alias": "Inverse Subject",
+                        "gui": "StringGui",
+                        "default": "fsaverage",
+                    },
+                },
+                "ports": [
+                    {
+                        "name": "Evokeds",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Fwd",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Inv",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
+            },
+            "Plot Source Estimates": {
+                "parameters": {
+                    "subject": {
+                        "alias": "Subject",
+                        "gui": "StringGui",
+                        "default": "fsaverage",
+                    },
+                },
+                "ports": [
+                    {
+                        "name": "Inv",
+                        "port_type": "in",
+                    },
+                    {
+                        "name": "Plot",
+                        "port_type": "out",
+                        "multi_connection": True,
+                    },
+                ],
+            },
+        }
+
+        # Add some demo nodes
+        meeg_node = self.node_viewer.create_node("MEEGInputNode")
+        mri_node = self.node_viewer.create_node("MRIInputNode")
+        ass_node = self.node_viewer.create_node(
+            node_class="AssignmentNode",
+            name="Assignment",
+            ports=[
+                {
+                    "name": "Evokeds",
+                    "port_type": "in",
+                },
+                {
+                    "name": "Fwd",
+                    "port_type": "in",
+                },
+                {
+                    "name": "Evokeds",
+                    "port_type": "out",
+                },
+                {
+                    "name": "Fwd",
+                    "port_type": "out",
+                },
+            ],
+        )
+        fn = dict()
+        for func_name, func_kwargs in demo_dict.items():
+            fnode = self.node_viewer.create_node("FunctionNode", **func_kwargs)
+            fn[func_name] = fnode
+
+        # Wire up the nodes
+        meeg_node.output(port_idx=0).connect_to(fn["Filter Raw"].input(port_idx=0))
+        meeg_node.output(port_idx=0).connect_to(fn["Get Events"].input(port_idx=0))
+        fn["Epoch Data"].input(port_name="Raw").connect_to(
+            fn["Filter Raw"].output(port_idx=0)
+        )
+        fn["Epoch Data"].input(port_name="Events").connect_to(
+            fn["Get Events"].output(port_idx=0)
+        )
+        fn["Epoch Data"].output(port_name="Epochs").connect_to(
+            fn["Average Epochs"].input(port_name="Epochs")
+        )
+
+        mri_node.output(port_idx=0).connect_to(
+            fn["Make Forward Model"].input(port_name="MRI")
+        )
+
+        ass_node.input(port_idx=0).connect_to(
+            fn["Average Epochs"].output(port_name="Evokeds")
+        )
+        ass_node.input(port_idx=1).connect_to(
+            fn["Make Forward Model"].output(port_name="Fwd")
+        )
+        ass_node.output(port_idx=0).connect_to(
+            fn["Make Inverse Operator"].input(port_name="Evokeds")
+        )
+        ass_node.output(port_idx=1).connect_to(
+            fn["Make Inverse Operator"].input(port_name="Fwd")
+        )
+
+        fn["Plot Source Estimates"].input(port_name="Inv").connect_to(
+            fn["Make Inverse Operator"].output(port_name="Inv")
+        )
+
+        self.node_viewer.auto_layout_nodes()
+        self.node_viewer.clear_selection()
+        self.node_viewer.fit_to_selection()
 
     def update_func_bts(self):
         # Remove tabs in tab_func_widget

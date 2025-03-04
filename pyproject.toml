@@ -85,3 +85,8 @@ PYQT5 = false
 PYSIDE2 = false
 PYQT6 = true
 PYSIDE6 = false
+
+[tool.docformatter]
+black = true
+in-place = true
+recursive = true

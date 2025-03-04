@@ -1,0 +1,10 @@
+[functions]
+
+[functions.filter_data]
+alias = "Find Bad Channels"
+
+
+
+[parameters]
+
+[parameters.filter_target]
