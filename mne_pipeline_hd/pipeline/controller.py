@@ -21,7 +21,7 @@ from pathlib import Path
 import mne
 import pandas as pd
 
-from mne_pipeline_hd import functions, extra
+from mne_pipeline_hd import basic_functions, extra
 from mne_pipeline_hd.gui.gui_utils import get_user_input_string
 from mne_pipeline_hd.pipeline.legacy import transfer_file_params_to_single_subject
 from mne_pipeline_hd.pipeline.pipeline_utils import (
@@ -319,8 +319,8 @@ class Controller:
 
         # Load basic-modules
         # Add functions to sys.path
-        sys.path.insert(0, str(Path(functions.__file__).parent))
-        basic_functions_list = [x for x in dir(functions) if "__" not in x]
+        sys.path.insert(0, str(Path(basic_functions.__file__).parent))
+        basic_functions_list = [x for x in dir(basic_functions) if "__" not in x]
         self.all_modules["basic"] = list()
         for module_name in basic_functions_list:
             self.all_modules["basic"].append(module_name)
