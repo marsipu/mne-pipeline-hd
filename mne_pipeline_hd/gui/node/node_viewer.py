@@ -542,8 +542,10 @@ class NodeViewer(QGraphicsView):
             return
 
         # Pan view
-        if self.MMB_state or (
-            self.LMB_state and alt_modifier and not self._LIVE_PIPE.isVisible()
+        if (
+            self.MMB_state
+            or (self.LMB_state and alt_modifier and not self._LIVE_PIPE.isVisible())
+            or self.RMB_state
         ):
             previous_pos = self.mapToScene(self._previous_pos)
             current_pos = self.mapToScene(event.pos())
