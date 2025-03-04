@@ -48,8 +48,8 @@ from qtpy.QtWidgets import (
     QWizardPage,
 )
 
-from mne_pipeline_hd.functions.operations import find_bads
-from mne_pipeline_hd.functions.plot import (
+from mne_pipeline_hd.basic_functions.basic_operations import find_bads
+from mne_pipeline_hd.basic_functions.basic_plot import (
     plot_ica_components,
     plot_ica_sources,
     plot_ica_overlay,
