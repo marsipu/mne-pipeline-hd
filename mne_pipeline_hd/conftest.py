@@ -10,8 +10,9 @@ import pytest
 
 from mne_pipeline_hd.gui.node.node_viewer import NodeViewer
 from mne_pipeline_hd.gui.main_window import MainWindow
-from mne_pipeline_hd.pipeline.controller import Controller, NewController
+from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.pipeline_utils import _set_test_run
+from mne_pipeline_hd.pipeline.node_controller import NodeController
 
 
 @pytest.fixture
@@ -36,8 +37,8 @@ def main_window(controller, qtbot):
 
 
 @pytest.fixture
-def nodeviewer(qtbot):
-    viewer = NodeViewer(NewController(), debug_mode=True)
+def nodeviewer(qtbot, controller):
+    viewer = NodeViewer(NodeController(controller), debug_mode=True)
     viewer.resize(1000, 1000)
     qtbot.addWidget(viewer)
     viewer.show()

@@ -802,6 +802,10 @@ def mouseMove(widget=None, pos=None, button=None, modifier=None):
         button = Qt.MouseButton.NoButton
     if modifier is None:
         modifier = Qt.KeyboardModifier.NoModifier
+    from qtpy.QtCore import QPoint
+
+    if isinstance(pos, QPoint):
+        pass
     event = QMouseEvent(
         QEvent.Type.MouseMove, pos, Qt.MouseButton.NoButton, button, modifier
     )

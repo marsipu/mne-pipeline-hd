@@ -1181,15 +1181,29 @@ class NodeViewer(QGraphicsView):
 
         return view_pos
 
-    def port_position_scene(self, node, **port_kwargs):
-        port = node.port(**port_kwargs)
+    def port_position_scene(
+        self,
+        port_type=None,
+        port_idx=None,
+        port_name=None,
+        port_id=None,
+        node_idx=None,
+        node_name=None,
+        node_id=None,
+    ):
+        node = self.node(node_idx, node_name, node_id)
+        port = node.port(port_type, port_idx, port_name, port_id)
         scene_pos = port.scenePos() + port.boundingRect().center()
+        # Convert to float point
+        scene_pos = QPointF(scene_pos)
 
         return scene_pos
 
-    def port_position_view(self, node, **port_kwargs):
-        scene_pos = self.port_position_scene(node, **port_kwargs)
+    def port_position_view(self, **port_node_kwargs):
+        scene_pos = self.port_position_scene(**port_node_kwargs)
         view_pos = self.mapFromScene(scene_pos)
+        # Convert to float point
+        view_pos = QPointF(view_pos)
 
         return view_pos
 
