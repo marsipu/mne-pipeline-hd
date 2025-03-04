@@ -126,10 +126,14 @@ class MainWindow(QMainWindow):
         self.init_menu()
         self.init_toolbar()
         self.init_docks()
-        self.init_main_widget()
+        self.init_node_viewer()
         self.init_edu()
 
         center(self)
+        self.show()
+
+        # ToDo: Use statusbar more
+        self.statusBar().showMessage("Initialization complete")
 
         self.first_init = False
 
@@ -496,8 +500,11 @@ class MainWindow(QMainWindow):
         self.general_layout.addWidget(start_bt, 1, 1)
         self.general_layout.addWidget(stop_bt, 1, 2)
 
-    # Todo: Make Buttons more appealing, mark when check
-    #   make button-dependencies
+    def init_node_viewer(self):
+        # Initialize Node-Viewer
+        self.node_viewer = NodeViewer(self.ct, self)
+        self.setCentralWidget(self.node_viewer)
+
     def add_func_bts(self):
         # Drop custom-modules, which aren't selected
         cleaned_pd_funcs = self.ct.pd_funcs.loc[
