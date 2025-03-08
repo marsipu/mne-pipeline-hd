@@ -50,13 +50,36 @@ setting should be device/OS-dependent:
    go here (e.g. `n_jobs` or `use_cuda`)
 
 ## Nodes
+
 Nodes should improve usability and the representation of the pipeline by the following:
-- The order of execution is now clearer and renders the function-dependency considerations obsolete.
+
+- The order of execution is now clearer and renders the function-dependency
+  considerations obsolete.
 - The user can now see the input and output of each function.
 - Parameters will now go to each function directly, overview only optional
 - Using multiple File-Lists or Projets side-by-side will be more easy to handle.
--
 
 ## Custom Functions Overhaul
-- Instead of using meeg/fsmri in functions the data-type (which then should be reserved namespaces like "raw" or "epochs") can be used. Maybe that makes meeg/fsmri obsolete in the end but for group analysis group is still handy.
-- data-types need to be declared and visible somewhere
+
+- Instead of using meeg/fsmri in functions the data-type (which then should be reserved
+  namespaces like "raw" or "epochs") can be used. Maybe that makes meeg/fsmri obsolete
+  in the end but for group analysis group is still handy.
+- data-types need to be stored in Controller and visible somewhere
+
+## Controller and Project
+
+- The Controller stores settings, custom functions and manages projects
+- The Project stores the data-paths and the pipeline
+- initially there was the idea to merge Controller and Project, but this would make the
+  Controller very complex and e.g. project changes where custom functions/configurations
+  want to stay the same would have to be reloaded every time.
+
+## Using MNE-BIDS
+
+- For derivatives, "processing" and "description" in BIDSPath will help to implement
+  parameter-presets and custom processing steps
+
+## Plot Overview
+
+- Rather use MNE Report than refine the custom plot overview (slow and interactive
+  features not as refined as MNE Report)

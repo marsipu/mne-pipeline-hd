@@ -589,6 +589,11 @@ class NodeViewer(QGraphicsView):
         self._set_viewer_zoom(delta, pos=event.pos())
 
     def dropEvent(self, event):
+        # ToDo: More drops possible:
+        # 1. Drop an meeg-file/fsmri-folder to add data
+        # 2. Drag and drop some selected text to add a custom function
+        # 3. Drag a pipeline-config-file to load a pipeline
+
         pos = self.mapToScene(event.pos())
         event.setDropAction(Qt.DropAction.CopyAction)
         self.DataDropped.emit(event.mimeData(), QPointF(pos.x(), pos.y()))

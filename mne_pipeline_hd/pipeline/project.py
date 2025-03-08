@@ -115,6 +115,7 @@ class Project:
         self.special_loads = ["parameters", "p_preset"]
 
     def init_pipeline_scripts(self):
+        # ToDo: Transition scripts to toml (only keep parameters as json for types)
         # Initiate Project-Lists and Dicts
         self.all_meeg_path = join(self.pscripts_path, f"all_meeg_{self.name}.json")
         self.sel_meeg_path = join(self.pscripts_path, f"selected_meeg_{self.name}.json")
