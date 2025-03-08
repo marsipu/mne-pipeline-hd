@@ -97,6 +97,9 @@ class Controller:
         # settings=<everything, that's OS-independent>
         self.load_settings()
 
+        # Initialize data types (like "raw", "epochs", etc.)
+        self._data_types = list()
+
         self.all_modules = dict()
         self.all_pd_funcs = None
 
@@ -134,6 +137,10 @@ class Controller:
         # Initialize Project
         if selected_project is not None:
             self.change_project(selected_project)
+
+    @property
+    def data_types(self):
+        return self._data_types
 
     def load_settings(self):
         try:
@@ -452,7 +459,7 @@ class NewController:
         if self.config_file is None:
             logging.error("No config-file set!")
         with open(self.config_file, "w") as file:
-            json.dump(self.config, file, indent=2, cls=TypedJSONEncoder)
+            json.dump(self.config, file, indent=4, cls=TypedJSONEncoder)
 
     @property
     def name(self):
