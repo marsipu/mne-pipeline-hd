@@ -36,6 +36,9 @@ for func_name, row in func_pd.iterrows():
     module = row_dict.pop("module")
     params = row_dict.pop("func_args").split(",")
 
+    row_dict["inputs"] = list()
+    row_dict["outputs"] = list()
+
     for key, value in row_dict.items():
         if isinstance(value, float) and math.isnan(value):
             row_dict[key] = None
