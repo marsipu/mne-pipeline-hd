@@ -33,9 +33,8 @@ from mne_pipeline_hd.pipeline.project import Project
 
 class CheckListDlg(QDialog):
     def __init__(self, parent, data, checked):
-        """
-        BaseClass for A Dialog with a Check-List,
-         open() has to be called in SubClass or directly.
+        """BaseClass for A Dialog with a Check-List, open() has to be called in SubClass
+        or directly.
 
         Parameters
         ----------

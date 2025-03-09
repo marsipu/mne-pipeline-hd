@@ -59,7 +59,7 @@ def logger():
 
 
 def get_n_jobs(n_jobs):
-    """Get the number of jobs to use for parallel processing"""
+    """Get the number of jobs to use for parallel processing."""
     if n_jobs == -1 or n_jobs in ["auto", "max"]:
         n_cores = multiprocessing.cpu_count()
     else:
@@ -69,8 +69,10 @@ def get_n_jobs(n_jobs):
 
 
 def encode_tuples(input_dict):
-    """Encode tuples in a dictionary, because JSON does not recognize them
-    (CAVE: input_dict is changed in place)"""
+    """Encode tuples in a dictionary, because JSON does not recognize them (CAVE:
+
+    input_dict is changed in place)
+    """
     for key, value in input_dict.items():
         if isinstance(value, dict):
             encode_tuples(value)
@@ -80,19 +82,20 @@ def encode_tuples(input_dict):
 
 
 class TypedJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return {"numpy_array": obj.tolist()}
-        elif isinstance(obj, datetime):
-            return {"datetime": obj.strftime(datetime_format)}
-        elif isinstance(obj, set):
-            return {"set_type": list(obj)}
+    def default(self, o):
+        if isinstance(o, np.integer):
+            return int(o)
+        elif isinstance(o, np.floating):
+            return float(o)
+        # Only onedimensional arrays are supported
+        elif isinstance(o, np.ndarray):
+            return {"numpy_array": o.tolist()}
+        elif isinstance(o, datetime):
+            return {"datetime": o.strftime(datetime_format)}
+        elif isinstance(o, set):
+            return {"set_type": list(o)}
         else:
-            return json.JSONEncoder.default(self, obj)
+            return json.JSONEncoder.default(self, o)
 
 
 def type_json_hook(obj):
@@ -100,6 +103,7 @@ def type_json_hook(obj):
         return obj["numpy_int"]
     elif "numpy_float" in obj.keys():
         return obj["numpy_float"]
+    # Only onedimensional arrays are supported
     elif "numpy_array" in obj.keys():
         return np.asarray(obj["numpy_array"])
     elif "datetime" in obj.keys():
@@ -113,8 +117,8 @@ def type_json_hook(obj):
 
 
 def compare_filep(obj, path, target_parameters=None, verbose=True):
-    """Compare the parameters of the previous run to the current
-    parameters for the given path
+    """Compare the parameters of the previous run to the current parameters for the
+    given path.
 
     Parameters
     ----------
@@ -210,7 +214,7 @@ def check_kwargs(kwargs, function):
 
 
 def count_dict_keys(d, max_level=None):
-    """Count the number of keys of a nested dictionary"""
+    """Count the number of keys of a nested dictionary."""
     keys = 0
     for value in d.values():
         if isinstance(value, dict):
@@ -236,8 +240,7 @@ def shutdown():
 
 
 def restart_program():
-    """Restarts the current program, with file objects and descriptors
-    cleanup."""
+    """Restarts the current program, with file objects and descriptors cleanup."""
     logger().info("Restarting")
     try:
         p = psutil.Process(os.getpid())

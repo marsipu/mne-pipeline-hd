@@ -1,0 +1,625 @@
+{
+    "module_name": "basic_operations",
+    "functions": {
+        "plot_src": {
+            "alias": null,
+            "group": "MRI-Preprocessing",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_bem": {
+            "alias": null,
+            "group": "MRI-Preprocessing",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_noise_covariance": {
+            "alias": null,
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_transformation": {
+            "alias": null,
+            "group": "Forward",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_sensitivity_maps": {
+            "alias": null,
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_sensors": {
+            "alias": null,
+            "group": "Forward",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_raw": {
+            "alias": null,
+            "group": "Raw",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_filtered": {
+            "alias": null,
+            "group": "Raw",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_events": {
+            "alias": null,
+            "group": "events",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_power_spectra": {
+            "alias": null,
+            "group": "Time-Frequency",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_power_spectra_topomap": {
+            "alias": null,
+            "group": "Time-Frequency",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_power_spectra_epochs": {
+            "alias": null,
+            "group": "Time-Frequency",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_power_spectra_epochs_topomap": {
+            "alias": null,
+            "group": "Time-Frequency",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_tfr": {
+            "alias": null,
+            "group": "Time-Frequency",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_epochs": {
+            "alias": null,
+            "group": "Epochs",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_epochs_image": {
+            "alias": null,
+            "group": "Epochs",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_epochs_topo": {
+            "alias": null,
+            "group": "Epochs",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_epochs_drop_log": {
+            "alias": null,
+            "group": "Epochs",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_autoreject_log": {
+            "alias": null,
+            "group": "Epochs",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_evoked_topo": {
+            "alias": null,
+            "group": "Evoked",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_evoked_topomap": {
+            "alias": null,
+            "group": "Evoked",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_evoked_butterfly": {
+            "alias": null,
+            "group": "Evoked",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_evoked_joint": {
+            "alias": null,
+            "group": "Evoked",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_evoked_white": {
+            "alias": null,
+            "group": "Evoked",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_evoked_image": {
+            "alias": null,
+            "group": "Evoked",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_compare_evokeds": {
+            "alias": null,
+            "group": "Evoked",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_gfp": {
+            "alias": null,
+            "group": "Evoked",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_stc": {
+            "alias": "Plot Source-Estimate",
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_stc_interactive": {
+            "alias": null,
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_labels": {
+            "alias": null,
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_animated_stc": {
+            "alias": "Plot Source-Estimate Video",
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_snr": {
+            "alias": null,
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_label_time_course": {
+            "alias": null,
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_ecd": {
+            "alias": null,
+            "group": "Inverse",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_src_connectivity": {
+            "alias": null,
+            "group": "Time-Frequency",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_grand_avg_evokeds": {
+            "alias": null,
+            "group": "Grand-Average",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_grand_avg_tfr": {
+            "alias": null,
+            "group": "Grand-Average",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_grand_avg_stc": {
+            "alias": null,
+            "group": "Grand-Average",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_grand_avg_stc_anim": {
+            "alias": null,
+            "group": "Grand-Average",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_grand_average_stc_interactive": {
+            "alias": null,
+            "group": "Grand-Average",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_grand_avg_ltc": {
+            "alias": null,
+            "group": "Grand-Average",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_grand_avg_connect": {
+            "alias": null,
+            "group": "Grand-Average",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_ica_components": {
+            "alias": "Plot ICA-Components",
+            "group": "ICA",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_ica_sources": {
+            "alias": "Plot ICA-Sources",
+            "group": "ICA",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_ica_overlay": {
+            "alias": "Plot ICA-Overlay",
+            "group": "ICA",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_ica_properties": {
+            "alias": "Plot ICA-Properties",
+            "group": "ICA",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        },
+        "plot_ica_scores": {
+            "alias": "Plot ICA-Scores",
+            "group": "ICA",
+            "thread-safe": false,
+            "inputs": {},
+            "outputs": {}
+        }
+    },
+    "parameters": {
+        "ch_types": {
+            "alias": "Channel-Types",
+            "group": "Preprocessing",
+            "default": [
+                "mag",
+                "grad",
+                "eeg",
+                "stim",
+                "eog",
+                "ecg"
+            ],
+            "unit": null,
+            "description": "Specify Channel-Types used in data",
+            "gui_type": "CheckListGui",
+            "gui_args": {
+                "options": [
+                    "mag",
+                    "grad",
+                    "eeg",
+                    "stim",
+                    "eog",
+                    "ecg",
+                    "emg",
+                    "ref_meg",
+                    "misc",
+                    "resp",
+                    "chpi",
+                    "exci",
+                    "ias",
+                    "syst",
+                    "seeg",
+                    "dipole",
+                    "gof",
+                    "bio",
+                    "ecog",
+                    "fnirs",
+                    "csd"
+                ]
+            }
+        },
+        "apply_proj": {
+            "alias": "Apply Projections",
+            "group": "epochs",
+            "default": true,
+            "unit": null,
+            "description": "If to apply the projections (if present)",
+            "gui_type": "BoolGui",
+            "gui_args": null
+        },
+        "ica_fitto": {
+            "alias": "Fit ICA to:",
+            "group": "ICA",
+            "default": "raw_filtered",
+            "unit": null,
+            "description": "The data to fit the ICA to",
+            "gui_type": "ComboGui",
+            "gui_args": {
+                "options": {
+                    "raw": "Raw (unfiltered)",
+                    "raw_filtered": "Raw (filtered)",
+                    "epochs": "Epochs"
+                }
+            }
+        },
+        "stc_surface": {
+            "alias": null,
+            "group": "Inverse",
+            "default": "inflated",
+            "unit": null,
+            "description": "Select the surface type for Source Estimate Plots",
+            "gui_type": "ComboGui",
+            "gui_args": {
+                "options": [
+                    "inflated",
+                    "white",
+                    "pial"
+                ]
+            }
+        },
+        "stc_hemi": {
+            "alias": null,
+            "group": "Inverse",
+            "default": "split",
+            "unit": null,
+            "description": "Select the hemispheres for Source Estimate Plots",
+            "gui_type": "ComboGui",
+            "gui_args": {
+                "options": [
+                    "lh",
+                    "rh",
+                    "both",
+                    "split"
+                ]
+            }
+        },
+        "stc_views": {
+            "alias": null,
+            "group": "Inverse",
+            "default": [
+                "med",
+                "lat"
+            ],
+            "unit": null,
+            "description": "Select the views for Source Estimate Plots",
+            "gui_type": "MultiTypeGui",
+            "gui_args": {
+                "type_selection": true,
+                "types": [
+                    "str",
+                    "list"
+                ]
+            }
+        },
+        "stc_time": {
+            "alias": null,
+            "group": "Inverse",
+            "default": 0,
+            "unit": null,
+            "description": "Initial time for Source Estimate Plots",
+            "gui_type": "FloatGui",
+            "gui_args": null
+        },
+        "stc_clim": {
+            "alias": null,
+            "group": "Inverse",
+            "default": "auto",
+            "unit": null,
+            "description": "Colorbar Limits for Source Estimate Plots",
+            "gui_type": "MultiTypeGui",
+            "gui_args": {
+                "type_selection": true,
+                "types": [
+                    "str",
+                    "dict"
+                ]
+            }
+        },
+        "stc_roll": {
+            "alias": null,
+            "group": "Inverse",
+            "default": 0,
+            "unit": null,
+            "description": "Roll for view in for Source Estimate Plots",
+            "gui_type": "IntGui",
+            "gui_args": {
+                "max_val": 360
+            }
+        },
+        "stc_azimuth": {
+            "alias": null,
+            "group": "Inverse",
+            "default": 70,
+            "unit": null,
+            "description": "Azimuth for view for Source Estimate Plots",
+            "gui_type": "IntGui",
+            "gui_args": {
+                "max_val": 360
+            }
+        },
+        "stc_elevation": {
+            "alias": null,
+            "group": "Inverse",
+            "default": 60,
+            "unit": null,
+            "description": "Elevation for view for Source Estimate Plots",
+            "gui_type": "IntGui",
+            "gui_args": {
+                "max_val": 360
+            }
+        },
+        "stc_animation_span": {
+            "alias": null,
+            "group": "Inverse",
+            "default": [
+                0,
+                0.5
+            ],
+            "unit": "s",
+            "description": "time-span for stc-animation[s]",
+            "gui_type": "TupleGui",
+            "gui_args": null
+        },
+        "stc_animation_dilat": {
+            "alias": null,
+            "group": "Inverse",
+            "default": 20,
+            "unit": null,
+            "description": "time-dilation for stc-animation",
+            "gui_type": "IntGui",
+            "gui_args": null
+        },
+        "target_labels": {
+            "alias": "Target Labels",
+            "group": "Inverse",
+            "default": [],
+            "unit": null,
+            "description": null,
+            "gui_type": "LabelGui",
+            "gui_args": null
+        },
+        "label_colors": {
+            "alias": null,
+            "group": "Inverse",
+            "default": {},
+            "unit": null,
+            "description": "Set custom colors for labels.",
+            "gui_type": "ColorGui",
+            "gui_args": {
+                "keys": "target_labels",
+                "none_select": true
+            }
+        },
+        "ica_source_data": {
+            "alias": null,
+            "group": "ICA",
+            "default": "raw_filtered",
+            "unit": null,
+            "description": "Which data to plot in sources-plot from ICA",
+            "gui_type": "ComboGui",
+            "gui_args": {
+                "options": {
+                    "raw": "Raw (unfiltered)",
+                    "raw_filtered": "Raw (filtered)",
+                    "epochs": "Epochs",
+                    "epochs_eog": "Epochs (EOG)",
+                    "epochs_ecg": "Epochs (ECG)",
+                    "evoked": "Evoked",
+                    "evoked_eog": "Evoked (EOG)",
+                    "evoked_ecg": "Evoked (ECG)"
+                }
+            }
+        },
+        "ica_overlay_data": {
+            "alias": null,
+            "group": "ICA",
+            "default": "evoked",
+            "unit": null,
+            "description": "Which data to plot in overlay-plot from ICA",
+            "gui_type": "ComboGui",
+            "gui_args": {
+                "options": {
+                    "raw": "Raw (unfiltered)",
+                    "raw_filtered": "Raw (filtered)",
+                    "evoked": "Evoked",
+                    "evoked_eog": "Evoked (EOG)",
+                    "evoked_ecg": "Evoked (ECG)"
+                }
+            }
+        },
+        "plot_sensors_kind": {
+            "alias": null,
+            "group": "Plot",
+            "default": "topomap",
+            "unit": null,
+            "description": "The kind of plot for plot_sensors",
+            "gui_type": "ComboGui",
+            "gui_args": {
+                "options": [
+                    "topomap",
+                    "3d",
+                    "select"
+                ]
+            }
+        },
+        "psd_topomap_bands": {
+            "alias": null,
+            "group": "Time-Frequency",
+            "default": null,
+            "unit": null,
+            "description": "The frequency bands for the topomap-plot",
+            "gui_type": "DictGui",
+            "gui_args": {
+                "none_select": true
+            }
+        },
+        "backend_3d": {
+            "alias": "3D-Backend",
+            "group": "Plot",
+            "default": "pyvistaqt",
+            "unit": null,
+            "description": "Choose the 3D-Backend for Brain-plots.",
+            "gui_type": "ComboGui",
+            "gui_args": {
+                "options": [
+                    "pyvistaqt",
+                    "notebook"
+                ]
+            }
+        }
+    }
+}

@@ -29,10 +29,8 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
 
 
 class Project:
-    """
-    A class with attributes for all the paths, file-lists/dicts
-    and parameters of the selected project
-    """
+    """A class with attributes for all the paths, file-lists/dicts and parameters of the
+    selected project."""
 
     def __init__(self, controller, name):
         self.ct = controller
@@ -117,6 +115,7 @@ class Project:
         self.special_loads = ["parameters", "p_preset"]
 
     def init_pipeline_scripts(self):
+        # ToDo: Transition scripts to toml (only keep parameters as json for types)
         # Initiate Project-Lists and Dicts
         self.all_meeg_path = join(self.pscripts_path, f"all_meeg_{self.name}.json")
         self.sel_meeg_path = join(self.pscripts_path, f"selected_meeg_{self.name}.json")
@@ -385,11 +384,13 @@ class Project:
 
     def add_meeg(self, name, file_path=None, is_erm=False):
         if is_erm:
-            # Organize Empty-Room-FIles
-            self.all_erm.append(name)
+            # Organize Empty-Room-Files
+            if name not in self.all_erm:
+                self.all_erm.append(name)
         else:
             # Organize other files
-            self.all_meeg.append(name)
+            if name not in self.all_meeg:
+                self.all_meeg.append(name)
 
         # Copy sub_files to destination (with MEEG-Class
         # to also include raw into file_parameters)
