@@ -1,8 +1,8 @@
 ## Using code from NodeGraphQt
-The code for nodes in mne-pipeline-hd is partially copied or heavily inspired by code from
+The code for nodes in mne-pipeline-hd is partially copied and heavily inspired by code from
 [NodeGraphQt](https://github.com/jchanvfx/NodeGraphQt).
-There are various reasons, why this package is not directly used.
-Among others this usecase requires some heavy customization for node creation and
+For the following reasons this package is not directly used.
+This usecase requires some heavy customization for node creation and
 implementing new logic seemed to require subclassing a lot of the base objects from NodeGraphQt.
 While the original package with its MVC-architecture is very flexible, it is also quite complex.
 It supports features, which are not needed here e.g. properties, multiple layouts and widgets.
