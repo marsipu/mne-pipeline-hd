@@ -186,8 +186,7 @@ class CheckListModel(BaseListModel):
 
     def setData(self, index, value, role=None):
         if role == Qt.CheckStateRole:
-            # ToDo: This does not work under PySide6
-            #  since Qt.Checked returns no integer (only Qt.Checked.value)
+            # In PyQt5 value is an integer, in PySide6 it is a Qt.CheckState
             if value in [Qt.Checked, 2]:
                 if self.one_check:
                     self._checked.clear()
