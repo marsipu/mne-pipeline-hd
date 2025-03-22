@@ -2192,7 +2192,7 @@ class SettingsDlg(QDialog):
                     "alias": "Application Font",
                     "description": "Changes default application font "
                     "(Restart required).",
-                    "options": QFontDatabase().families(QFontDatabase.Latin),
+                    "options": QFontDatabase.families(QFontDatabase.Latin),
                     "raise_missing": False,
                 },
             },
