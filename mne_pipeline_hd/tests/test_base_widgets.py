@@ -26,8 +26,6 @@ def test_checklist(qtbot):
     cl.clear_all()
     assert checked == []
 
-    # ToDo: Simulate actually clicking the checkboxes
-
     # Test check by changing the model
     toggle_checked_list_model(cl.model, value=1, row=0)
     assert checked == ["a"]
