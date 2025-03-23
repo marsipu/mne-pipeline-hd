@@ -22,6 +22,7 @@ shortest_event;Shortest Event;events;2;sample;Shortest possible Event;IntGui;{'m
 adjust_timeline_by_msec;Adjust Time;events;0;ms;custom delay to stimulus in ms;IntGui;{'min_val':-10000, 'max_val': 10000}
 t_epoch;Epoch-Timeframe;epochs;(-0.5,1.5);s;start and end of epoch;TupleGui;
 baseline;Baseline-Timeframe;epochs;(-0.5,0);s;start and end of baseline;TupleGui;{'max_val': 0, 'none_select': True}
+detrend_order;;epochs;None;;The order for detrending, 0 for DC and 1 for linear. Set to None if no detrending should be performed.;ComboGui;{'none_select': True, 'options': ['DC', 'Linear']}
 apply_proj;Apply Projections;epochs;True;;If to apply the projections (if present);BoolGui;
 bad_interpolation;Bad-Channel-Interpolation;Preprocessing;None;;Choose where to apply bad-channels-interpolation;ComboGui;{'none_select': True, 'options': ['raw_filtered', 'epochs', 'evoked']}
 reject_by_annotation;;epochs;True;;If to reject by Annotations;BoolGui;
@@ -61,7 +62,7 @@ src_spacing;;Forward;ico5;;See the MNE-Documentation for further details;StringG
 vol_src_spacing;;Forward;5.0;;Spacing between sources in 3D-Grid;FloatGui;
 surface;;Forward;white;;Surface for computing the Source-Space;ComboGui;{'options': ['white', 'pial']}
 noise_cov_mode;Noise-Covariance Mode;Preprocessing;'Empty-Room';;Select the origin of the Noise-Covariance;ComboGui;{'options': ['Empty-Room', 'epochs']}
-noise_cov_method;Noise-Covariance Method;Preprocessing;empirical;;Select the method for computing the Noise-Covariance;ComboGui;{'options': ['auto', 'empirical', 'diagonal_fixed', 'shrunk', 'oas', 'ledoit_wolf', 'factor_analysis', 'shrinkage', 'pca']}
+noise_cov_method;Noise-Covariance Method;Preprocessing;auto;;Select the method for computing the Noise-Covariance;MultiTypeGui;{'type_selection': True, 'types': ['str', 'list', 'combo'], 'type_kwargs':{'ComboGui': {'options': ['auto', 'empirical', 'diagonal_fixed', 'shrunk', 'oas', 'ledoit_wolf', 'factor_analysis', 'shrinkage', 'pca']}}}
 inverse_method;Inverse-Method;Inverse;MNE;;Choose the Inverse-Method for Source-Estimate;ComboGui;{'options': ['MNE', 'dSPM', 'sLORETA', 'eLORETA']}
 pick_ori;Dipole-Orientation;Inverse;None;;Choose the Dipole-Orientation for Source-Estimate;ComboGui;{'options': [None, 'normal', 'vector']}
 lambda2;;Inverse;1.0 / 3.0 ** 2;;lambda2 for Source-Estimate;FuncGui;
@@ -100,4 +101,4 @@ psd_method;;Time-Frequency;welch;;The method for spectral estimation;ComboGui;{'
 psd_topomap_bands;;Time-Frequency;None;;The frequency bands for the topomap-plot;DictGui;{'none_select': True}
 backend_3d;3D-Backend;Plot;pyvistaqt;;Choose the 3D-Backend for Brain-plots.;ComboGui;{'options': ['pyvistaqt', 'notebook']}
 con_group_boundaries;;Connectivity;None;;Set group-boundaries for circular plot.;FuncGui;{'none_select': True}
-notch_frequencies;;Preprocessing;50;;Set frequencies for Notch filtering;FuncGui;""
+notch_frequencies;;Preprocessing;50;;Set frequencies for Notch filtering;FuncGui;

@@ -798,13 +798,18 @@ def apply_ica(meeg, ica_apply_target, n_pca_components):
                 meeg.save_erm_processed(erm_data)
 
 
-def get_evokeds(meeg):
+def get_evokeds(meeg, detrend_order):
     meeg.load_epochs()
     evokeds = list()
     for trial, epoch in meeg.get_trial_epochs():
         evoked = epoch.average()
         # Todo: optional if you want weights in your evoked.comment?!
         evoked.comment = trial
+
+        if detrend_order is not None:
+            order = 0 if detrend_order == "DC" else 1
+            evoked.detrend(order=order)
+
         evokeds.append(evoked)
 
     meeg.save_evokeds(evokeds)

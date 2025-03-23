@@ -111,7 +111,12 @@ def plot_sensors(meeg, plot_sensors_kind, ch_types, show_plots):
 def plot_events(meeg, show_plots):
     events = meeg.load_events()
 
-    fig = mne.viz.plot_events(events, event_id=meeg.event_id, show=show_plots)
+    if meeg.event_id is None or len(meeg.event_id) == 0:
+        event_id = None
+    else:
+        event_id = meeg.event_id
+
+    fig = mne.viz.plot_events(events, event_id=event_id, show=show_plots)
     fig.suptitle(meeg.name)
 
     meeg.plot_save("events", matplotlib_figure=fig)

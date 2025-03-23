@@ -1141,7 +1141,16 @@ class MultiTypeGui(Param):
         """
         super().__init__(**kwargs)
         self.type_selection = type_selection
-        self.types = types or ["int", "float", "bool", "str", "list", "dict", "tuple"]
+        self.types = types or [
+            "int",
+            "float",
+            "bool",
+            "str",
+            "list",
+            "dict",
+            "tuple",
+            "combo",
+        ]
         self.type_kwargs = type_kwargs or dict()
 
         # A dictionary to map possible types with their GUI
@@ -1153,6 +1162,7 @@ class MultiTypeGui(Param):
             "list": "ListGui",
             "dict": "DictGui",
             "tuple": "TupleGui",
+            "combo": "ComboGui",
         }
 
         if self.type_selection:
