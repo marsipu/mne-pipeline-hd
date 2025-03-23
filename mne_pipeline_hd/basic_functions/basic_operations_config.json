@@ -550,7 +550,7 @@
         },
         "t_epoch": {
             "alias": "Epoch-Timeframe",
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": [
                 -0.5,
                 1.5
@@ -562,7 +562,7 @@
         },
         "baseline": {
             "alias": "Baseline-Timeframe",
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": [
                 -0.5,
                 0
@@ -575,9 +575,24 @@
                 "none_select": true
             }
         },
+        "detrend_order": {
+            "alias": "Detrend-Order",
+            "group": "Epochs/Evokeds",
+            "default": null,
+            "unit": null,
+            "description": "Order of detrending, either DC (0) or Linear (1). Defaults to no detrending (None)",
+            "gui_type": "ComboGui",
+            "gui_args": {
+                "none_select": true,
+                "options": [
+                    "DC",
+                    "Linear"
+                ]
+            }
+        },
         "apply_proj": {
             "alias": "Apply Projections",
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": true,
             "unit": null,
             "description": "If to apply the projections (if present)",
@@ -602,7 +617,7 @@
         },
         "reject_by_annotation": {
             "alias": null,
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": true,
             "unit": null,
             "description": "If to reject by Annotations",
@@ -611,7 +626,7 @@
         },
         "use_autoreject": {
             "alias": "Autoreject",
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": null,
             "unit": null,
             "description": "If to use autoreject and if to use it for getting the reject-threshold or for interpolating the epochs",
@@ -626,7 +641,7 @@
         },
         "n_interpolates": {
             "alias": null,
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": "np.array([1, 4, 32])",
             "unit": null,
             "description": "p-values for autoreject",
@@ -635,7 +650,7 @@
         },
         "consensus_percs": {
             "alias": null,
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": "np.linspace(0, 1.0, 11)",
             "unit": null,
             "description": "k-values for autoreject",
@@ -644,7 +659,7 @@
         },
         "overwrite_ar": {
             "alias": "Overwrite Autoreject(Threshold)",
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": false,
             "unit": null,
             "description": "if to calculate new threshold or use the previously calculated",
@@ -653,7 +668,7 @@
         },
         "reject": {
             "alias": null,
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": {
                 "mag": 3e-12,
                 "grad": 3e-10,
@@ -669,7 +684,7 @@
         },
         "flat": {
             "alias": null,
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": {
                 "mag": 1e-15,
                 "grad": 1e-13,
@@ -684,7 +699,7 @@
         },
         "decim": {
             "alias": null,
-            "group": "epochs",
+            "group": "Epochs/Evokeds",
             "default": 1,
             "unit": null,
             "description": "Downsampling-Factor for epochs",
