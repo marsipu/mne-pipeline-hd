@@ -56,7 +56,7 @@ installed.
    terminal: `git clone <url you get from the green clone-button from your forked repository on GitHub>`
 4. Add upstream to git for
    updates: `git remote add upstream git://github.com/marsipu/mne-pipeline-hd.git`
-5. Install development version with pip: `pip install -e .[tests]`
+5. Install development version with pip: `pip install -e .[dev]`
 6. Install the pre-commit hooks with: `pre-commit install`
 7. Create a branch for changes: `git checkout -b <branch-name>`
 8. Commit changes: `git commit -am "<your commit message>"`
