@@ -1152,7 +1152,6 @@ class MultiTypeGui(Param):
             "tuple",
             "combo",
             "checklist",
-            "func",
             "slider",
         ]
         self.type_kwargs = type_kwargs or dict()
@@ -1168,7 +1167,6 @@ class MultiTypeGui(Param):
             "tuple": "TupleGui",
             "combo": "ComboGui",
             "checklist": "CheckListGui",
-            "func": "FuncGui",
             "slider": "SliderGui",
         }
 
