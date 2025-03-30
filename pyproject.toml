@@ -40,7 +40,7 @@ dependencies = [
 ]
 dynamic = [ "version" ]
 [project.optional-dependencies]
-tests = [
+dev = [
     "pytest",
     "pytest-qt",
     "pre-commit",

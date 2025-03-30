@@ -145,7 +145,6 @@ def test_basic_param_guis(qtbot, gui_name):
         for gui_type, type_gui_name in gui.gui_types.items():
             gui.set_param(parameters[type_gui_name])
             assert gui.get_value() == parameters[type_gui_name]
-            assert type(gui.get_value()).__name__ == gui_type
         kwargs["type_selection"] = True
         kwargs["type_kwargs"] = dict()
         for type_gui_name in gui.gui_types.values():
@@ -162,7 +161,6 @@ def test_basic_param_guis(qtbot, gui_name):
             gui.change_type(type_idx)
             gui.set_param(parameters[type_gui_name])
             assert gui.get_value() == parameters[type_gui_name]
-            assert type(gui.get_value()).__name__ == gui_type
 
 
 def test_label_gui(qtbot, controller):

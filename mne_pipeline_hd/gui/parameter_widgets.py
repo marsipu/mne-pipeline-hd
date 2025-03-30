@@ -1128,7 +1128,8 @@ class MultiTypeGui(Param):
         ----------
         type_selection : bool
             If True, the use can choose in a QComboBox which type they want
-            to enter and then use the appropriate GUI.
+            to enter and then use the appropriate GUI. Else, the user can
+            enter any type in a QLineEdit and the type will be inferred.
         types : list of str | None
             If type_selection is True, the type-selection will be limited
             to the given types (type-name as string).
@@ -1141,7 +1142,18 @@ class MultiTypeGui(Param):
         """
         super().__init__(**kwargs)
         self.type_selection = type_selection
-        self.types = types or ["int", "float", "bool", "str", "list", "dict", "tuple"]
+        self.types = types or [
+            "int",
+            "float",
+            "bool",
+            "str",
+            "list",
+            "dict",
+            "tuple",
+            "combo",
+            "checklist",
+            "slider",
+        ]
         self.type_kwargs = type_kwargs or dict()
 
         # A dictionary to map possible types with their GUI
@@ -1153,6 +1165,9 @@ class MultiTypeGui(Param):
             "list": "ListGui",
             "dict": "DictGui",
             "tuple": "TupleGui",
+            "combo": "ComboGui",
+            "checklist": "CheckListGui",
+            "slider": "SliderGui",
         }
 
         if self.type_selection:
@@ -2192,7 +2207,7 @@ class SettingsDlg(QDialog):
                     "alias": "Application Font",
                     "description": "Changes default application font "
                     "(Restart required).",
-                    "options": QFontDatabase().families(QFontDatabase.Latin),
+                    "options": QFontDatabase.families(QFontDatabase.Latin),
                     "raise_missing": False,
                 },
             },

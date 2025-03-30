@@ -4,6 +4,7 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 from mne_pipeline_hd.tests._test_utils import toggle_checked_list_model
 
 
@@ -24,9 +25,13 @@ def test_checklist(qtbot):
     cl.clear_all()
     assert checked == []
 
-    # Test check by clicking
+    # Test check by changing the model
     toggle_checked_list_model(cl.model, value=1, row=0)
     assert checked == ["a"]
+    toggle_checked_list_model(cl.model, value=0, row=0)
+    assert checked == []
+    toggle_checked_list_model(cl.model, value=1, row=1)
+    assert checked == ["b"]
 
 
 def test_timed_messagebox(qtbot):
