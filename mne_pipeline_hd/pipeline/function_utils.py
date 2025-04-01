@@ -24,57 +24,6 @@ from mne_pipeline_hd.pipeline.loading import BaseLoading, FSMRI, Group, MEEG
 from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, ismac, QS, logger
 
 
-def get_func(func_name, obj):
-    # Get module- and package-name, has to specified in pd_funcs
-    # (which imports from functions.csv or the <custom_package>.csv)
-    module_name = obj.ct.pd_funcs.loc[func_name, "module"]
-    module = import_module(module_name)
-    func = getattr(module, func_name)
-
-    return func
-
-
-def get_arguments(func, obj):
-    # Get arguments from function signature
-    arguments = {
-        arg_name: arg.default
-        for arg_name, arg in inspect.signature(func).parameters.items()
-    }
-
-    # Remove args/kwargs
-    for pop_item in ["args", "kwargs"]:
-        arguments.pop(pop_item, None)
-
-    # Set data-objects
-    for obj_name, obj in [
-        ("ct", obj.ct),
-        ("controller", obj.ct),
-        ("pr", obj.pr),
-        ("project", obj.pr),
-        ("meeg", obj),
-        ("fsmri", obj),
-        ("group", obj),
-    ]:
-        if obj_name in arguments:
-            arguments[obj_name] = obj
-
-    # Get the values for parameter-names
-    for arg_name in arguments:
-        if arg_name in obj.pa:
-            arguments[arg_name] = obj.pa[arg_name]
-        elif arg_name in obj.ct.settings:
-            arguments[arg_name] = obj.ct.settings[arg_name]
-        elif arg_name in QS().childKeys():
-            arguments[arg_name] = QS().value(arg_name)
-
-    # Add additional keyword-arguments if added for function by user
-    if func.__name__ in obj.pr.add_kwargs:
-        for kwarg in obj.pr.add_kwargs[func.__name__]:
-            arguments[kwarg] = obj.pr.add_kwargs[func.__name__][kwarg]
-
-    return arguments
-
-
 class StreamManager:
     def __init__(self, pipe):
         self.pipe_busy = False
@@ -130,6 +79,59 @@ class StreamReceiver(QRunnable):
                     self.signals.stdout_received.emit(text)
 
 
+def get_func(func_name, obj):
+    # Get module- and package-name, has to specified in pd_funcs
+    # (which imports from functions.csv or the <custom_package>.csv)
+    module_name = obj.ct.fc["module_name"]
+    module = import_module(module_name)
+    func = getattr(module, func_name)
+
+    return func
+
+
+def get_arguments(func, obj):
+    # Get arguments from function signature
+    arguments = {
+        arg_name: arg.default
+        for arg_name, arg in inspect.signature(func).parameters.items()
+    }
+
+    # Remove args/kwargs
+    for pop_item in ["args", "kwargs"]:
+        arguments.pop(pop_item, None)
+
+    # ToDo: Get data-types from function signature (raw, epochs etc.)
+
+    # Set data-objects
+    for obj_name, value in [
+        ("ct", obj.ct),
+        ("controller", obj.ct),
+        ("pr", obj.pr),
+        ("project", obj.pr),
+        ("meeg", obj),
+        ("fsmri", obj),
+        ("group", obj),
+    ]:
+        if obj_name in arguments:
+            arguments[obj_name] = value
+
+    # Get the values for parameter-names
+    for arg_name in arguments:
+        if arg_name in obj.pa:
+            arguments[arg_name] = obj.pa[arg_name]
+        elif arg_name in obj.ct.settings:
+            arguments[arg_name] = obj.ct.settings[arg_name]
+        elif arg_name in QS().childKeys():
+            arguments[arg_name] = QS().value(arg_name)
+
+    # Add additional keyword-arguments if added for function by user
+    if func.__name__ in obj.pr.add_kwargs:
+        for kwarg in obj.pr.add_kwargs[func.__name__]:
+            arguments[kwarg] = obj.pr.add_kwargs[func.__name__][kwarg]
+
+    return arguments
+
+
 def run_func(func, keywargs, pipe=None):
     if pipe is not None:
         stream_manager = StreamManager(pipe)
@@ -141,6 +143,7 @@ def run_func(func, keywargs, pipe=None):
         return get_exception_tuple(is_mp=pipe is not None)
 
 
+# ToDo: Implement Run-Controller for Nodes-GUI
 class RunController:
     def __init__(self, controller):
         self.ct = controller
@@ -301,6 +304,7 @@ class RunController:
 
     def start(self):
         """No-Gui start method."""
+
         for name, func in self.all_steps:
             self.current_obj_name = name
             self.current_func = func

@@ -164,7 +164,7 @@ def test_basic_param_guis(qtbot, gui_name):
 
 
 def test_label_gui(qtbot, controller):
-    """Test opening label-gui without error"""
+    """Test opening label-gui without error."""
     # Add fsaverage
     controller.pr.add_fsmri("fsaverage")
 

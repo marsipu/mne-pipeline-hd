@@ -27,8 +27,10 @@ from qtpy.QtCore import (
     Signal,
     Slot,
     QTimer,
+    QEvent,
 )
-from qtpy.QtGui import QFont, QTextCursor, QPalette, QColor, QIcon
+from qtpy.QtTest import QTest
+from qtpy.QtGui import QFont, QTextCursor, QMouseEvent, QPalette, QColor, QIcon
 from qtpy.QtWidgets import (
     QApplication,
     QDialog,
@@ -159,9 +161,9 @@ class ErrorDialog(QDialog):
 
 
 def show_error_dialog(exc_str):
-    """Checks if a QApplication instance is available
-    and shows the Error-Dialog.
-     If unavailable (non-console application), log an additional notice.
+    """Checks if a QApplication instance is available and shows the Error-Dialog.
+
+    If unavailable (non-console application), log an additional notice.
     """
     if QApplication.instance() is not None:
         ErrorDialog(exc_str, title="A unexpected error occurred")
@@ -205,14 +207,14 @@ class UncaughtHook(QObject):
 
     def exception_hook(self, exc_type, exc_value, exc_traceback):
         """Function handling uncaught exceptions.
+
         It is triggered each time an uncaught exception occurs.
         """
         if issubclass(exc_type, KeyboardInterrupt):
             # ignore keyboard interrupt to support console applications
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
         else:
-            # Print Error to Console
-            traceback.print_exception(exc_type, exc_value, exc_traceback)
+            # Error logging
             exc_info = (exc_type, exc_value, exc_traceback)
             exc_str = (
                 exc_type.__name__,
@@ -220,9 +222,7 @@ class UncaughtHook(QObject):
                 "".join(traceback.format_tb(exc_traceback)),
             )
             logger().critical(
-                f"Uncaught exception:\n"
-                f"{exc_str[0]}: {exc_str[1]}\n"
-                f"{exc_str[2]}",
+                "Uncaught exception:",
                 exc_info=exc_info,
             )
 
@@ -236,7 +236,7 @@ class CodeEditor(QTextEdit):
 
 
 class ConsoleWidget(QPlainTextEdit):
-    """A Widget displaying formatted stdout/stderr-output"""
+    """A Widget displaying formatted stdout/stderr-output."""
 
     def __init__(self):
         super().__init__()
@@ -317,8 +317,8 @@ class ConsoleWidget(QPlainTextEdit):
 
 
 class MainConsoleWidget(ConsoleWidget):
-    """A subclass of ConsoleWidget which is linked to stdout/stderr
-    of the main process"""
+    """A subclass of ConsoleWidget which is linked to stdout/stderr of the main
+    process."""
 
     def __init__(self):
         super().__init__()
@@ -357,7 +357,7 @@ class StdoutStderrStream(io.TextIOBase):
 
 
 class WorkerSignals(QObject):
-    """Class for standard Worker-Signals"""
+    """Class for standard Worker-Signals."""
 
     # Emitted when the function finished and returns the return-value
     finished = Signal(object)
@@ -379,7 +379,7 @@ class WorkerSignals(QObject):
 
 
 class Worker(QRunnable):
-    """A class to execute a function in a seperate Thread
+    """A class to execute a function in a seperate Thread.
 
     Parameters
     ----------
@@ -391,7 +391,6 @@ class Worker(QRunnable):
         Any Arguments passed to the executed function
     kwargs
         Any Keyword-Arguments passed to the executed function
-
     """
 
     def __init__(self, function, *args, **kwargs):
@@ -405,9 +404,7 @@ class Worker(QRunnable):
 
     @Slot()
     def run(self):
-        """
-        Initialise the runner function with passed args, kwargs.
-        """
+        """Initialise the runner function with passed args, kwargs."""
         # Add signals to kwargs if in parameters of function
         if "worker_signals" in signature(self.function).parameters:
             self.kwargs["worker_signals"] = self.signals
@@ -430,7 +427,7 @@ class Worker(QRunnable):
 
 # ToDo: Make PyQt-independent with tqdm
 class WorkerDialog(QDialog):
-    """A Dialog for a Worker doing a function"""
+    """A Dialog for a Worker doing a function."""
 
     thread_finished = Signal(object)
 
@@ -755,6 +752,80 @@ def get_user_input_string(prompt, title="Input required!", force=False):
             user_input = None
 
     return user_input
+
+
+def invert_rgb_color(color_tuple):
+    return tuple(map(lambda i, j: i - j, (255, 255, 255), color_tuple))
+
+
+def format_color(clr):
+    """This converts a hex-color-string to a tuple of RGB-values."""
+    if isinstance(clr, str):
+        clr = clr.strip("#")
+        return tuple(int(clr[i : i + 2], 16) for i in (0, 2, 4))
+    return clr
+
+
+def mouse_interaction(func):
+    def wrapper(**kwargs):
+        QTest.qWaitForWindowExposed(kwargs["widget"])
+        QTest.qWait(10)
+        func(**kwargs)
+        QTest.qWait(10)
+
+    return wrapper
+
+
+@mouse_interaction
+def mousePress(widget=None, pos=None, button=None, modifier=None):
+    if modifier is None:
+        modifier = Qt.KeyboardModifier.NoModifier
+    event = QMouseEvent(
+        QEvent.Type.MouseButtonPress, pos, button, Qt.MouseButton.NoButton, modifier
+    )
+    QApplication.sendEvent(widget, event)
+
+
+@mouse_interaction
+def mouseRelease(widget=None, pos=None, button=None, modifier=None):
+    if modifier is None:
+        modifier = Qt.KeyboardModifier.NoModifier
+    event = QMouseEvent(
+        QEvent.Type.MouseButtonRelease, pos, button, Qt.MouseButton.NoButton, modifier
+    )
+    QApplication.sendEvent(widget, event)
+
+
+@mouse_interaction
+def mouseMove(widget=None, pos=None, button=None, modifier=None):
+    if button is None:
+        button = Qt.MouseButton.NoButton
+    if modifier is None:
+        modifier = Qt.KeyboardModifier.NoModifier
+    from qtpy.QtCore import QPoint
+
+    if isinstance(pos, QPoint):
+        pass
+    event = QMouseEvent(
+        QEvent.Type.MouseMove, pos, Qt.MouseButton.NoButton, button, modifier
+    )
+    QApplication.sendEvent(widget, event)
+
+
+def mouseClick(widget, pos, button, modifier=None):
+    mouseMove(widget=widget, pos=pos)
+    mousePress(widget=widget, pos=pos, button=button, modifier=modifier)
+    mouseRelease(widget=widget, pos=pos, button=button, modifier=modifier)
+
+
+def mouseDrag(widget, positions, button, modifier=None):
+    mouseMove(widget=widget, pos=positions[0])
+    mousePress(widget=widget, pos=positions[0], button=button, modifier=modifier)
+    for pos in positions[1:]:
+        mouseMove(widget=widget, pos=pos, button=button, modifier=modifier)
+    # For some reason moeve again to last position
+    mouseMove(widget=widget, pos=positions[-1], button=button, modifier=modifier)
+    mouseRelease(widget=widget, pos=positions[-1], button=button, modifier=modifier)
 
 
 def get_palette(theme):

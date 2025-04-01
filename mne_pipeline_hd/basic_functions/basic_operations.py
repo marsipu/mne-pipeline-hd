@@ -80,6 +80,7 @@ def filter_data(
     erm_t_limit,
     bad_interpolation,
 ):
+    # ToDo: Make Parameter comparison a default feature for all functions
     # Compare Parameters from last run
     filtered_path = meeg.io_dict[filter_target]["path"]
     results = compare_filep(
@@ -898,8 +899,6 @@ def tfr(
     powers = list()
     itcs = list()
 
-    meeg.load_epochs()
-
     # Calculate Time-Frequency for each trial from epochs
     # using the selected method
     for trial, epoch in meeg.get_trial_epochs():
@@ -1333,6 +1332,11 @@ def label_time_course(meeg, target_labels, extract_mode):
     stcs = meeg.load_source_estimates()
     src = meeg.fsmri.load_source_space()
     labels = meeg.fsmri.get_labels(target_labels)
+
+    if len(labels) == 0:
+        raise RuntimeError(
+            f"No labels found for {meeg.name}. " "Please check the labels you selected."
+        )
 
     ltc_dict = dict()
 
