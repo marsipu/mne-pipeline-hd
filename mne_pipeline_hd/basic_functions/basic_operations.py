@@ -1333,6 +1333,11 @@ def label_time_course(meeg, target_labels, extract_mode):
     src = meeg.fsmri.load_source_space()
     labels = meeg.fsmri.get_labels(target_labels)
 
+    if len(labels) == 0:
+        raise RuntimeError(
+            f"No labels found for {meeg.name}. " "Please check the labels you selected."
+        )
+
     ltc_dict = dict()
 
     for trial in stcs:

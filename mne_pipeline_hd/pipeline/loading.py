@@ -33,6 +33,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     logger,
 )
 
+
 # BIDS-Considerations:
 # - BIDS might be a bit work at first (implement session, run etc.)
 # - Might pay off since data and derivative might be used then by mne-bids-pipeline
@@ -1605,6 +1606,15 @@ class FSMRI(BaseLoading):
 
             if target_labels is not None:
                 labels += [lb for lb in search_labels if lb.name in target_labels]
+                if len(labels) != len(target_labels):
+                    found_names = [lb.name for lb in labels]
+                    not_found = "\n".join(
+                        [lb for lb in target_labels if lb not in found_names]
+                    )
+                    logger().warning(
+                        f"The following labels were not found in {self.name}:\n"
+                        f"{not_found}!"
+                    )
             else:
                 labels = search_labels
 
