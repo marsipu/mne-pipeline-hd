@@ -2385,6 +2385,7 @@ class ExportDialog(QDialog):
 
         self._get_common_types()
         self._init_ui()
+        self.open()
 
     def _get_common_types(self):
         for meeg_name in self.ct.pr.sel_meeg:
@@ -2398,7 +2399,7 @@ class ExportDialog(QDialog):
             self.export_paths[meeg_name] = meeg.existing_paths
 
     def _get_destination(self):
-        dest = compat.getexistingdirectory(self, "Select Destination-Folder")[0]
+        dest = compat.getexistingdirectory(self, "Select Destination-Folder")
         if dest:
             self.dest_path = dest
 
@@ -2435,11 +2436,13 @@ class ExportDialog(QDialog):
                 os.mkdir(join(self.dest_path, meeg_name))
                 for path_type in [pt for pt in path_types if pt in self.selected_types]:
                     paths = path_types[path_type]
+                    logger().info(f"\r{meeg_name}: Copying {path_type}...")
                     for src_path in paths:
                         dest_name = Path(src_path).name
                         shutil.copy2(
                             src_path, join(self.dest_path, meeg_name, dest_name)
                         )
-                    logger().info(f"\r{meeg_name}: Copying {path_type}...")
+                    logger().info(f"\r{meeg_name}: Copied {path_type}!")
+
         else:
             QMessageBox.warning(self, "Ups!", "Destination-Path not set!")
