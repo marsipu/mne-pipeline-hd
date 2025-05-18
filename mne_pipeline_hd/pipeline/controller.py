@@ -530,3 +530,10 @@ class NewController:
                 "EmptyRoom": list(),
             }
         return self.config["selected_inputs"]
+
+    ####################################################################################
+    # Node Management
+    ####################################################################################
+    def add_project_inputs(self):
+        """Add input nodes from the Project."""
+        # ToDo Next: Start and add input nodes for project configuration

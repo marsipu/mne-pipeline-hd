@@ -87,7 +87,6 @@ from mne_pipeline_hd.pipeline.pipeline_utils import (
     QS,
     _run_from_script,
     iswin,
-    logger,
 )
 
 
@@ -805,21 +804,7 @@ class MainWindow(QMainWindow):
         self.node_viewer.clear_selection()
         self.node_viewer.fit_to_selection()
 
-    def update_func_bts(self):
-        # Remove tabs in tab_func_widget
-        while self.tab_func_widget.count():
-            tab = self.tab_func_widget.removeTab(0)
-            if tab:
-                try:
-                    tab.deleteLater()
-                except RuntimeError:
-                    logger().debug("Tab already deleted")
-        self.bt_dict = dict()
-
-        self.add_func_bts()
-
     def redraw_func_and_param(self):
-        self.update_func_bts()
         self.parameters_dock.redraw_param_widgets()
 
     def _update_selected_functions(self, function, checked):
@@ -1000,11 +985,6 @@ class MainWindow(QMainWindow):
         sys_info_msg = SysInfoMsg(self)
         sys.stdout.signal.text_written.connect(sys_info_msg.add_text)
         mne.sys_info()
-
-    def resizeEvent(self, event):
-        if not self.first_init:
-            self.update_func_bts()
-        event.accept()
 
     def closeEvent(self, event):
         welcome_window = _object_refs["welcome_window"]
