@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
-from mne_pipeline_hd.gui.node.base_node import BaseNode
 from qtpy.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -12,12 +10,16 @@ from qtpy.QtWidgets import (
     QGroupBox,
 )
 
-from mne_pipeline_hd.gui.base_widgets import CheckList
-from mne_pipeline_hd.gui.loading_widgets import AddFilesWidget, AddMRIWidget
 from mne_pipeline_hd.gui import parameter_widgets
+from mne_pipeline_hd.gui.base_widgets import CheckList
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple
+from mne_pipeline_hd.gui.loading_widgets import AddFilesWidget, AddMRIWidget
+from mne_pipeline_hd.gui.node.base_node import BaseNode
 
 
-class BaseInputNode(BaseNode):
+# ToDo:
+# - Checkbox to activate "Group" or general input
+class InputNode(BaseNode):
     """Node for input data like MEEG, FSMRI, etc."""
 
     # Add Start button (Depending from where we start, we get different orders of execution)
@@ -60,29 +62,6 @@ class BaseInputNode(BaseNode):
         dlg_layout = QVBoxLayout(dlg)
         dlg_layout.addWidget(widget)
         dlg.open()
-
-
-class MEEGInputNode(BaseInputNode):
-    def __init__(self, ct):
-        super().__init__(ct)
-        self.init_widgets("MEEG")
-
-
-class MRIInputNode(BaseInputNode):
-    def __init__(self, ct):
-        super().__init__(ct)
-        self.init_widgets("FSMRI")
-
-
-class GroupNode(BaseNode):
-    def __init__(self, ct):
-        super().__init__(ct, name="Group Node")
-        # This node should be adaptive, when a new input data-type is connected,
-        # it should change the names of input-ports and output-ports accordingly
-        self.add_input("Data-In", multi_connection=True, accepted_ports=None)
-        self.add_output("Data-Out", multi_connection=True, accepted_ports=None)
-
-        # ToDo: This will have a widget for selecting and organizing groups
 
 
 class FunctionNode(BaseNode):

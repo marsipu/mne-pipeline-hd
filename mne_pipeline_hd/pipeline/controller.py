@@ -36,7 +36,7 @@ home_dirs = ["custom_packages", "freesurfer", "projects"]
 project_dirs = ["_pipeline_scripts", "data", "figures"]
 
 
-class Controller:
+class OldController:
     def __init__(self, home_path=None, selected_project=None, edu_program_name=None):
         # Check Home-Path
         self.pr = None
@@ -436,30 +436,38 @@ class Controller:
                         sys.modules[module_name] = module
 
 
-class NewController:
+class Controller:
     """New controller, that combines the former old controller and project class and
     loads a controller for each "project".
 
     The home-path structure should no longer be as rigid as before, just specifying the
     path to meeg- and fsmri-data. For each controller, there is a config-file stored,
     where paths to the meeg-data, the freesurfer-dir and the custom-packages are stored.
+
+    Parameters
+    ----------
+    config_path : str or Path, optional
+        Path to the config-file, by default None. If None, no config-file is loaded.
+        If a path is given, the config-file is loaded and saved in the
+        `config` attribute.
+    meeg_root : str or Path, optional
+        Path to the MEEG data root directory, by default None.
+    fsmri_root : str or Path, optional
+        Path to the FreeSurfer MRI data root directory, by default None.
+
+    Attributes
+    ----------
+    config_path : str or Path
+        Path to the config-file.
+    config : dict
+        Dictionary containing the configuration data loaded from the config-file.
     """
 
-    def __init__(self, config_file=None):
-        self.config_file = config_file
+    def __init__(self, config_path=None, meeg_root=None, fsmri_root=None):
+        self.config_path = config_path
         self.config = self.load_config()
-
-    def load_config(self):
-        if self.config_file is not None:
-            return json.load(self.config_file, object_hook=type_json_hook)
-        else:
-            return dict()
-
-    def save_config(self):
-        if self.config_file is None:
-            logging.error("No config-file set!")
-        with open(self.config_file, "w") as file:
-            json.dump(self.config, file, indent=4, cls=TypedJSONEncoder)
+        self.meeg_root = meeg_root or self.meeg_root
+        self.fsmri_root = fsmri_root or self.fsmri_root
 
     @property
     def name(self):
@@ -497,13 +505,13 @@ class NewController:
         self.save_config()
 
     @property
-    def plots_path(self):
+    def plot_path(self):
         if "plots_path" not in self.config:
             raise ValueError("The path for plots is not set!")
         return self.config["plots_path"]
 
-    @plots_path.setter
-    def plots_path(self, value):
+    @plot_path.setter
+    def plot_path(self, value):
         if not isdir(value):
             raise ValueError(f"Path {value} does not exist!")
         self.config["plots_path"] = value
@@ -511,12 +519,15 @@ class NewController:
 
     @property
     def inputs(self):
-        """This holds all data inputs from MEEG, FSMRI, etc."""
+        """This holds all data inputs from MEEG and FSMRI data.
+
+        There can be multiple input-groups for each data type, represented by multiple
+        nodes.
+        """
         if "inputs" not in self.config:
             self.config["inputs"] = {
-                "MEEG": list(),
-                "FSMRI": list(),
-                "EmptyRoom": list(),
+                "MEEG": [list()],
+                "FSMRI": [list()],
             }
         return self.config["inputs"]
 
@@ -524,16 +535,120 @@ class NewController:
     def selected_inputs(self):
         """This holds all selected inputs."""
         if "selected_inputs" not in self.config:
-            self.config["selected_inputs"] = {
-                "MEEG": list(),
-                "FSMRI": list(),
-                "EmptyRoom": list(),
-            }
+            self.config["selected_inputs"] = list()
         return self.config["selected_inputs"]
+
+    @property
+    def input_mapping(self):
+        """This holds the mapping of input nodes to data types (like MRI or Empty-
+        Room)."""
+        if "input_mapping" not in self.config:
+            self.config["input_mapping"] = dict()
+        return self.config["input_mapping"]
+
+    @property
+    def bad_channels(self):
+        """This holds all bad channels for MEEG data.
+
+        Maybe this is obsolete with mne-bids.
+        """
+        if "bad_channels" not in self.config:
+            self.config["bad_channels"] = dict()
+        return self.config["bad_channels"]
+
+    @property
+    def event_ids(self):
+        """This holds all event ids for MEEG data.
+
+        Maybe this is obsolete with mne-bids.
+        """
+        if "event_ids" not in self.config:
+            self.config["event_ids"] = dict()
+        return self.config["event_ids"]
+
+    @property
+    def selected_event_ids(self):
+        """This holds all selected event ids for MEEG data.
+
+        Maybe this is obsolete with mne-bids.
+        """
+        if "selected_event_ids" not in self.config:
+            self.config["selected_event_ids"] = dict()
+        return self.config["selected_event_ids"]
+
+    @property
+    def ica_exclude(self):
+        """This holds the ICA-excluded components for MEEG data."""
+        if "ica_exclude" not in self.config:
+            self.config["ica_exclude"] = dict()
+        return self.config["ica_exclude"]
+
+    @property
+    def parameters(self):
+        """This holds the parameters for the project."""
+        if "parameters" not in self.config:
+            self.config["parameters"] = dict()
+        return self.config["parameters"]
+
+    @property
+    def p_preset(self):
+        """This holds the current parameter preset for the project."""
+        if "p_preset" not in self.config:
+            self.config["p_preset"] = None
+        return self.config["p_preset"]
+
+    ####################################################################################
+    # Load/Save
+    ####################################################################################
+    def load_config(self):
+        if self.config_path is not None:
+            return json.load(self.config_path, object_hook=type_json_hook)
+        return dict()
+
+    def save_config(self):
+        if self.config_path is None:
+            logging.error("No config-file set!")
+        with open(self.config_path, "w") as file:
+            json.dump(self.config, file, indent=4, cls=TypedJSONEncoder)
 
     ####################################################################################
     # Node Management
     ####################################################################################
-    def add_project_inputs(self):
+    def add_input_nodes(self):
         """Add input nodes from the Project."""
         # ToDo Next: Start and add input nodes for project configuration
+
+    ####################################################################################
+    # Legacy
+    ####################################################################################
+    def load_project(self, project_name, old_controller):
+        """Load an (old) project and get config data.
+
+        Changes:
+        - Groups are represented by lists of inputs
+        (thus each group should have a separate input node)
+        """
+        if isinstance(old_controller, str):
+            ct = OldController(
+                home_path=old_controller,
+                selected_project=project_name,
+                edu_program_name=None,
+            )
+        else:
+            ct = old_controller
+        pr = Project(self, ct, project_name)
+        self.meeg_root = pr.data_path
+        self.fsmri_root = ct.subjects_dir
+        self.plot_path = pr.figures_path
+        # Add inputs
+        self.inputs["MEEG"][0].extend(pr.all_meeg)
+        self.selected_inputs.extend(pr.sel_meeg)
+        self.inputs["FSMRI"][0].extend(pr.all_fsmri)
+        self.selected_inputs.extend(pr.sel_fsmri)
+
+        self.config["bad_channels"] = pr.meeg_bad_channels
+        self.config["event_ids"] = pr.meeg_event_id
+        self.config["selected_event_ids"] = pr.sel_event_id
+        self.config["ica_exclude"] = pr.meeg_ica_exclude
+        self.event_ids = pr.meeg_event_id
+        self.selected_event_ids = pr.sel_event_id

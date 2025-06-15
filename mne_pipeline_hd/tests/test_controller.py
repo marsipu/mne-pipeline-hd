@@ -55,3 +55,24 @@ def test_project_management(tmpdir, monkeypatch):
     _check_project(ct, "test3")
 
     assert len(ct.projects) == 2
+
+
+def test_parameter_serialization(tmpdir):
+    from mne_pipeline_hd.pipeline.parameter import Parameter
+
+    ct = Controller(tmpdir, "test_project")
+    pr = ct.pr
+
+    # Create a parameter and serialize it
+    param = Parameter(name="test_param", value=42, description="A test parameter")
+    pr.add_parameter(param)
+
+    # Serialize the project
+    serialized_data = pr.serialize()
+
+    # Deserialize the project
+    pr.deserialize(serialized_data)
+
+    # Check if the parameter is correctly deserialized
+    assert pr.get_parameter("test_param").value == 42
+    assert pr.get_parameter("test_param").description == "A test parameter"

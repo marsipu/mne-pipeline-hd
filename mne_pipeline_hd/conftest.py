@@ -19,11 +19,14 @@ from mne_pipeline_hd.pipeline.pipeline_utils import _set_test_run
 def controller(tmpdir):
     # Initialize testing-environment
     _set_test_run()
-    # Create home-path
-    home_path = tmpdir.join("TestHome")
-    mkdir(home_path)
+    # Create meeg_root and fsmri_root
+    meeg_root = tmpdir.join("MEEG")
+    mkdir(meeg_root)
+    fsmri_root = tmpdir.join("FSMRI")
+    mkdir(fsmri_root)
     # Create Controller
-    ct = Controller(home_path, "test")
+    ct = Controller
+    # TodoNext: Update pytest fixture for Controller tests (and test Parameter serialization)
 
     return ct
 

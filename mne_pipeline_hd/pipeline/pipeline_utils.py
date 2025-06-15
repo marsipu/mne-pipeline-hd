@@ -95,7 +95,12 @@ class TypedJSONEncoder(json.JSONEncoder):
         elif isinstance(o, set):
             return {"set_type": list(o)}
         else:
-            return json.JSONEncoder.default(self, o)
+            return super().default(self, o)
+
+    def encode(self, o):
+        # Also encode tuples (not captured by default())
+        o = {k: {"tuple_type": v} if isinstance(v, tuple) else v for k, v in o.items()}
+        return super().encode(o)
 
 
 def type_json_hook(obj):
