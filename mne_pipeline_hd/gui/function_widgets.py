@@ -320,6 +320,13 @@ class ChooseOptions(QDialog):
 #   parameters can not be edited (they land in exising_params)
 #   Bug3: When hitting Enter, the focus still lies on the
 #   AddFunc/EditFunc-Buttons which can disrupt setup
+# ToDo:
+#   Feature1: Code Display in middle with color highlighting
+#   and color coding the parameters etc.
+#   Feature2: Restrict parameter names to make sure they aren't similar
+#   to data-types or something like ct/controller/pr
+
+
 class CustomFunctionImport(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -1736,8 +1743,7 @@ class AddKwargs(QDialog):
         self.setLayout(layout)
 
     def _check_empty(self):
-        """Check if the dict for current_func in add_kwargs is empty,
-        then remove it"""
+        """Check if the dict for current_func in add_kwargs is empty, then remove it."""
         if self.current_func:
             if self.current_func in self.ct.pr.add_kwargs:
                 if len(self.ct.pr.add_kwargs[self.current_func]) == 0:

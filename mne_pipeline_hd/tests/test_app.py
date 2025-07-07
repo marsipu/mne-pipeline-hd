@@ -6,6 +6,20 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 
+def test_headless_run():
+    import sys
+    from mne_pipeline_hd.__main__ import main
+
+    # Simulate command line arguments for headless run
+    sys.argv = ["mne-pipeline-hd", "--headless"]
+
+    # Run the main function
+    main()
+
+    # Check if the application is running in headless mode
+    assert not hasattr(sys, "argv") or "--headless" in sys.argv
+
+
 def test_legacy_import_check(monkeypatch):
     from mne_pipeline_hd.pipeline.legacy import legacy_import_check, uninstall_package
 

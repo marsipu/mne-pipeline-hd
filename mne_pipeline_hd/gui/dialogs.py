@@ -4,7 +4,6 @@ Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-
 from collections import Counter
 from importlib import resources
 from pathlib import Path
@@ -33,9 +32,8 @@ from mne_pipeline_hd.pipeline.project import Project
 
 class CheckListDlg(QDialog):
     def __init__(self, parent, data, checked):
-        """
-        BaseClass for A Dialog with a Check-List,
-         open() has to be called in SubClass or directly.
+        """BaseClass for A Dialog with a Check-List, open() has to be called in SubClass
+        or directly.
 
         Parameters
         ----------

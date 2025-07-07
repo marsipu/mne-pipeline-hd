@@ -138,9 +138,8 @@ def show_plot_manager():
 
 
 class PlotViewSelection(QDialog):
-    """The user selects the plot-function and the objects
-    to show for this plot_function
-    """
+    """The user selects the plot-function and the objects to show for this
+    plot_function."""
 
     def __init__(self, main_win):
         super().__init__(main_win)
@@ -239,8 +238,7 @@ class PlotViewSelection(QDialog):
         self.obj_select.replace_data(self.objects)
 
     def func_selected(self, func):
-        """Get selected function and adjust contents
-        of Object-Selection to target"""
+        """Get selected function and adjust contents of Object-Selection to target."""
         self.selected_func = func
         self.target = self.ct.pd_funcs.loc[func, "target"]
         self.update_objects()

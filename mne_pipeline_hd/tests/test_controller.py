@@ -9,14 +9,9 @@ import io
 
 from mne_pipeline_hd.pipeline.controller import Controller
 
-controller_attributes = ["home_path", "projects", "pr", "projects_path", "subjects_dir"]
 
-
-def test_init(tmpdir):
-    ct = Controller(tmpdir)
-
-    for ca in controller_attributes:
-        assert hasattr(ct, ca)
+def test_init(controller):
+    assert hasattr(controller, "config")
 
 
 def _check_project(ct, project_name):

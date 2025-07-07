@@ -99,6 +99,7 @@ The colorpalettes for light and dark theme are inspired from [PyQtDarkTheme](htt
 Many ideas and basics for GUI-Programming where taken
 from [LearnPyQt](https://www.learnpyqt.com/) and numerous
 stackoverflow-questions/solutions.
+For the nodes, code and major influences from [NodeGraphQt](https://github.com/jchanvfx/NodeGraphQt) are used.
 
 The development is financially supported
 by [Heidelberg University](https://www.uni-heidelberg.de/de/forschung/forschungsprofil/fields-of-focus/field-of-focus-i).
