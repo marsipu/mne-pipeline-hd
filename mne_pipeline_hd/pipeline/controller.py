@@ -469,6 +469,9 @@ class Controller:
         self.meeg_root = meeg_root or self.meeg_root
         self.fsmri_root = fsmri_root or self.fsmri_root
 
+    ####################################################################################
+    # Attributes
+    ####################################################################################
     @property
     def name(self):
         name_default = f"Project_{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -600,6 +603,7 @@ class Controller:
     ####################################################################################
     # Load/Save
     ####################################################################################
+    # ToDo: Merge old settings into config
     def load_config(self):
         if self.config_path is not None:
             return json.load(self.config_path, object_hook=type_json_hook)

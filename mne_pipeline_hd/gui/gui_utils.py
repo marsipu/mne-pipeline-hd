@@ -52,7 +52,7 @@ from qtpy.QtWidgets import (
 
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd import extra
-from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger, gui_mode
 
 # Load theme colors
 theme_color_path = join(str(resources.files(extra)), "color_themes.json")
@@ -723,15 +723,18 @@ class QProcessDialog(QDialog):
 
 def get_user_input_string(prompt, title="Input required!", force=False):
     # Determine GUI or non-GUI-mode
-    if QS().value("gui") and any([obj is not None for obj in _object_refs.values()]):
+    if gui_mode and any([obj is not None for obj in _object_refs.values()]):
         parent = _object_refs["main_window"] or _object_refs["welcome_window"]
-    else:
-        parent = None
-    if parent is not None:
         user_input, ok = QInputDialog.getText(parent, title, prompt)
-    else:
+    elif sys.stdin.isatty():
+        # Check for interactive terminal
         user_input = input(f"{title}: {prompt}")
         ok = True
+    else:
+        raise RuntimeError(
+            "Input is not available in this environment. "
+            "Please run the script in a terminal or command prompt or start the GUI."
+        )
 
     # Check user input
     if not user_input or not ok:

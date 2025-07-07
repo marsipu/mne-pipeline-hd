@@ -5,6 +5,7 @@ License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
+# This script should not import any scripts from mne-nodes to avoid circular imports.
 import inspect
 import json
 import logging
@@ -14,22 +15,55 @@ import sys
 from ast import literal_eval
 from copy import deepcopy
 from datetime import datetime
-from importlib import resources
 from os.path import join, isfile
 from pathlib import Path
 
 import numpy as np
 import psutil
 
-from mne_pipeline_hd import extra
-
-datetime_format = "%d.%m.%Y %H:%M:%S"
-
+# Global variables to check the platform
 ismac = sys.platform.startswith("darwin")
 iswin = sys.platform.startswith("win32")
 islin = not ismac and not iswin
 
+# Global variable to store gui/headless mode
+gui_mode = True
+
+# Global logger variable
 _logger = None
+
+# Default Settings/QSettings
+default_settings = {
+    "selected_project": None,
+    "selected_modules": ["operations", "plot"],
+    "parameter_preset": "Default",
+    "checked_funcs": [],
+    "show_plots": True,
+    "save_plots": True,
+    "shutdown": False,
+    "img_format": ".png",
+    "dpi": 150,
+    "overwrite": False,
+    "use_plot_manager": False,
+}
+
+default_qsettings = {
+    "gui": 1,
+    "home_path": "",
+    "n_jobs": -1,
+    "n_parallel": 1,
+    "use_qthread": 1,
+    "save_ram": 1,
+    "enable_cuda": 0,
+    "log_level": 20,
+    "education": 0,
+    "fs_path": "",
+    "mne_path": "",
+    "app_font": "Calibri",
+    "app_font_size": 10,
+    "app_style": "fusion",
+    "app_theme": "auto",
+}
 
 
 def init_logging(debug_mode=False):
@@ -79,6 +113,9 @@ def encode_tuples(input_dict):
         else:
             if isinstance(value, tuple):
                 input_dict[key] = {"tuple_type": value}
+
+
+datetime_format = "%d.%m.%Y %H:%M:%S"
 
 
 class TypedJSONEncoder(json.JSONEncoder):
@@ -269,10 +306,7 @@ def _get_func_param_kwargs(func, params):
 
 class BaseSettings:
     def __init__(self):
-        # Load default settings
-        default_settings_path = join(resources.files(extra), "default_settings.json")
-        with open(default_settings_path, "r") as file:
-            self.default_qsettings = json.load(file)["qsettings"]
+        self.default_qsettings = default_qsettings.copy()
 
     def get_default(self, name):
         if name in self.default_qsettings:

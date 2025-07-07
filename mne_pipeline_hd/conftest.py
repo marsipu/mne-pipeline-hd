@@ -25,7 +25,7 @@ def controller(tmpdir):
     fsmri_root = tmpdir.join("FSMRI")
     mkdir(fsmri_root)
     # Create Controller
-    ct = Controller
+    ct = Controller(None, meeg_root, fsmri_root)
     # TodoNext: Update pytest fixture for Controller tests (and test Parameter serialization)
 
     return ct
