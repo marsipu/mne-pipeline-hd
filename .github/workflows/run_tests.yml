@@ -11,17 +11,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu, windows, macos ]
-        python: [ '3.11' ]
-        # Test PyQt5 for backwards compatibility, PySide2 is left out to save runners
-        qt : [ 'PySide6' , 'PyQt6', 'PyQt5']
-        include:
-          - os: ubuntu
-            python: '3.9'
-            qt : 'PySide6'
-          - os: ubuntu
-            python: '3.10'
-            qt : 'PySide6'
-    name: Run tests on ${{ matrix.os }} - ${{matrix.python}} - ${{ matrix.qt }}
+        python: [ '3.13' ]
+        qt : [ 'PyQt5' ]
+    name: Run tests on ${{ matrix.os }} - ${{matrix.python}}
     runs-on: ${{ matrix.os }}-latest
     defaults:
       run:
