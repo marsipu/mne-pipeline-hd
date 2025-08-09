@@ -25,7 +25,6 @@
       ~BoolGui.adjustSize
       ~BoolGui.autoFillBackground
       ~BoolGui.backgroundRole
-      ~BoolGui.backingStore
       ~BoolGui.baseSize
       ~BoolGui.blockSignals
       ~BoolGui.changeEvent
@@ -40,14 +39,12 @@
       ~BoolGui.close
       ~BoolGui.closeEvent
       ~BoolGui.colorCount
-      ~BoolGui.connect
       ~BoolGui.connectNotify
       ~BoolGui.contentsMargins
       ~BoolGui.contentsRect
       ~BoolGui.contextMenuEvent
       ~BoolGui.contextMenuPolicy
       ~BoolGui.create
-      ~BoolGui.createWinId
       ~BoolGui.createWindowContainer
       ~BoolGui.cursor
       ~BoolGui.customEvent
@@ -68,8 +65,6 @@
       ~BoolGui.dumpObjectTree
       ~BoolGui.dynamicPropertyNames
       ~BoolGui.effectiveWinId
-      ~BoolGui.emit
-      ~BoolGui.encodeMetricF
       ~BoolGui.ensurePolished
       ~BoolGui.enterEvent
       ~BoolGui.event
@@ -92,6 +87,7 @@
       ~BoolGui.frameGeometry
       ~BoolGui.frameSize
       ~BoolGui.geometry
+      ~BoolGui.getContentsMargins
       ~BoolGui.get_value
       ~BoolGui.grab
       ~BoolGui.grabGesture
@@ -119,7 +115,6 @@
       ~BoolGui.insertAction
       ~BoolGui.insertActions
       ~BoolGui.installEventFilter
-      ~BoolGui.internalWinId
       ~BoolGui.isActiveWindow
       ~BoolGui.isAncestorOf
       ~BoolGui.isEnabled
@@ -130,10 +125,8 @@
       ~BoolGui.isMaximized
       ~BoolGui.isMinimized
       ~BoolGui.isModal
-      ~BoolGui.isQuickItemType
       ~BoolGui.isRightToLeft
       ~BoolGui.isSignalConnected
-      ~BoolGui.isTopLevel
       ~BoolGui.isVisible
       ~BoolGui.isVisibleTo
       ~BoolGui.isWidgetType
@@ -193,11 +186,11 @@
       ~BoolGui.pos
       ~BoolGui.previousInFocusChain
       ~BoolGui.property
+      ~BoolGui.pyqtConfigure
       ~BoolGui.raise_
       ~BoolGui.read_param
       ~BoolGui.receivers
       ~BoolGui.rect
-      ~BoolGui.redirected
       ~BoolGui.releaseKeyboard
       ~BoolGui.releaseMouse
       ~BoolGui.releaseShortcut
@@ -253,7 +246,6 @@
       ~BoolGui.setPalette
       ~BoolGui.setParent
       ~BoolGui.setProperty
-      ~BoolGui.setScreen
       ~BoolGui.setShortcutAutoRepeat
       ~BoolGui.setShortcutEnabled
       ~BoolGui.setSizeIncrement
@@ -304,7 +296,6 @@
       ~BoolGui.timerEvent
       ~BoolGui.toolTip
       ~BoolGui.toolTipDuration
-      ~BoolGui.topLevelWidget
       ~BoolGui.tr
       ~BoolGui.underMouse
       ~BoolGui.ungrabGesture
@@ -344,10 +335,24 @@
 
    .. autosummary::
    
+      ~BoolGui.DrawChildren
+      ~BoolGui.DrawWindowBackground
+      ~BoolGui.IgnoreMask
+      ~BoolGui.PdmDepth
+      ~BoolGui.PdmDevicePixelRatio
+      ~BoolGui.PdmDevicePixelRatioScaled
+      ~BoolGui.PdmDpiX
+      ~BoolGui.PdmDpiY
+      ~BoolGui.PdmHeight
+      ~BoolGui.PdmHeightMM
+      ~BoolGui.PdmNumColors
+      ~BoolGui.PdmPhysicalDpiX
+      ~BoolGui.PdmPhysicalDpiY
+      ~BoolGui.PdmWidth
+      ~BoolGui.PdmWidthMM
       ~BoolGui.customContextMenuRequested
       ~BoolGui.destroyed
       ~BoolGui.objectNameChanged
-      ~BoolGui.painters
       ~BoolGui.paramChanged
       ~BoolGui.staticMetaObject
       ~BoolGui.windowIconChanged

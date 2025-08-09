@@ -25,7 +25,6 @@
       ~TupleGui.adjustSize
       ~TupleGui.autoFillBackground
       ~TupleGui.backgroundRole
-      ~TupleGui.backingStore
       ~TupleGui.baseSize
       ~TupleGui.blockSignals
       ~TupleGui.changeEvent
@@ -40,14 +39,12 @@
       ~TupleGui.close
       ~TupleGui.closeEvent
       ~TupleGui.colorCount
-      ~TupleGui.connect
       ~TupleGui.connectNotify
       ~TupleGui.contentsMargins
       ~TupleGui.contentsRect
       ~TupleGui.contextMenuEvent
       ~TupleGui.contextMenuPolicy
       ~TupleGui.create
-      ~TupleGui.createWinId
       ~TupleGui.createWindowContainer
       ~TupleGui.cursor
       ~TupleGui.customEvent
@@ -68,8 +65,6 @@
       ~TupleGui.dumpObjectTree
       ~TupleGui.dynamicPropertyNames
       ~TupleGui.effectiveWinId
-      ~TupleGui.emit
-      ~TupleGui.encodeMetricF
       ~TupleGui.ensurePolished
       ~TupleGui.enterEvent
       ~TupleGui.event
@@ -92,6 +87,7 @@
       ~TupleGui.frameGeometry
       ~TupleGui.frameSize
       ~TupleGui.geometry
+      ~TupleGui.getContentsMargins
       ~TupleGui.get_value
       ~TupleGui.grab
       ~TupleGui.grabGesture
@@ -120,7 +116,6 @@
       ~TupleGui.insertAction
       ~TupleGui.insertActions
       ~TupleGui.installEventFilter
-      ~TupleGui.internalWinId
       ~TupleGui.isActiveWindow
       ~TupleGui.isAncestorOf
       ~TupleGui.isEnabled
@@ -131,10 +126,8 @@
       ~TupleGui.isMaximized
       ~TupleGui.isMinimized
       ~TupleGui.isModal
-      ~TupleGui.isQuickItemType
       ~TupleGui.isRightToLeft
       ~TupleGui.isSignalConnected
-      ~TupleGui.isTopLevel
       ~TupleGui.isVisible
       ~TupleGui.isVisibleTo
       ~TupleGui.isWidgetType
@@ -194,11 +187,11 @@
       ~TupleGui.pos
       ~TupleGui.previousInFocusChain
       ~TupleGui.property
+      ~TupleGui.pyqtConfigure
       ~TupleGui.raise_
       ~TupleGui.read_param
       ~TupleGui.receivers
       ~TupleGui.rect
-      ~TupleGui.redirected
       ~TupleGui.releaseKeyboard
       ~TupleGui.releaseMouse
       ~TupleGui.releaseShortcut
@@ -254,7 +247,6 @@
       ~TupleGui.setPalette
       ~TupleGui.setParent
       ~TupleGui.setProperty
-      ~TupleGui.setScreen
       ~TupleGui.setShortcutAutoRepeat
       ~TupleGui.setShortcutEnabled
       ~TupleGui.setSizeIncrement
@@ -305,7 +297,6 @@
       ~TupleGui.timerEvent
       ~TupleGui.toolTip
       ~TupleGui.toolTipDuration
-      ~TupleGui.topLevelWidget
       ~TupleGui.tr
       ~TupleGui.underMouse
       ~TupleGui.ungrabGesture
@@ -345,10 +336,24 @@
 
    .. autosummary::
    
+      ~TupleGui.DrawChildren
+      ~TupleGui.DrawWindowBackground
+      ~TupleGui.IgnoreMask
+      ~TupleGui.PdmDepth
+      ~TupleGui.PdmDevicePixelRatio
+      ~TupleGui.PdmDevicePixelRatioScaled
+      ~TupleGui.PdmDpiX
+      ~TupleGui.PdmDpiY
+      ~TupleGui.PdmHeight
+      ~TupleGui.PdmHeightMM
+      ~TupleGui.PdmNumColors
+      ~TupleGui.PdmPhysicalDpiX
+      ~TupleGui.PdmPhysicalDpiY
+      ~TupleGui.PdmWidth
+      ~TupleGui.PdmWidthMM
       ~TupleGui.customContextMenuRequested
       ~TupleGui.destroyed
       ~TupleGui.objectNameChanged
-      ~TupleGui.painters
       ~TupleGui.paramChanged
       ~TupleGui.staticMetaObject
       ~TupleGui.windowIconChanged

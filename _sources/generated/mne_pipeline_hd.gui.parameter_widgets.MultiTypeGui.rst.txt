@@ -26,7 +26,6 @@
       ~MultiTypeGui.adjustSize
       ~MultiTypeGui.autoFillBackground
       ~MultiTypeGui.backgroundRole
-      ~MultiTypeGui.backingStore
       ~MultiTypeGui.baseSize
       ~MultiTypeGui.blockSignals
       ~MultiTypeGui.changeEvent
@@ -42,14 +41,12 @@
       ~MultiTypeGui.close
       ~MultiTypeGui.closeEvent
       ~MultiTypeGui.colorCount
-      ~MultiTypeGui.connect
       ~MultiTypeGui.connectNotify
       ~MultiTypeGui.contentsMargins
       ~MultiTypeGui.contentsRect
       ~MultiTypeGui.contextMenuEvent
       ~MultiTypeGui.contextMenuPolicy
       ~MultiTypeGui.create
-      ~MultiTypeGui.createWinId
       ~MultiTypeGui.createWindowContainer
       ~MultiTypeGui.cursor
       ~MultiTypeGui.customEvent
@@ -70,8 +67,6 @@
       ~MultiTypeGui.dumpObjectTree
       ~MultiTypeGui.dynamicPropertyNames
       ~MultiTypeGui.effectiveWinId
-      ~MultiTypeGui.emit
-      ~MultiTypeGui.encodeMetricF
       ~MultiTypeGui.ensurePolished
       ~MultiTypeGui.enterEvent
       ~MultiTypeGui.event
@@ -94,6 +89,7 @@
       ~MultiTypeGui.frameGeometry
       ~MultiTypeGui.frameSize
       ~MultiTypeGui.geometry
+      ~MultiTypeGui.getContentsMargins
       ~MultiTypeGui.get_value
       ~MultiTypeGui.grab
       ~MultiTypeGui.grabGesture
@@ -121,7 +117,6 @@
       ~MultiTypeGui.insertAction
       ~MultiTypeGui.insertActions
       ~MultiTypeGui.installEventFilter
-      ~MultiTypeGui.internalWinId
       ~MultiTypeGui.isActiveWindow
       ~MultiTypeGui.isAncestorOf
       ~MultiTypeGui.isEnabled
@@ -132,10 +127,8 @@
       ~MultiTypeGui.isMaximized
       ~MultiTypeGui.isMinimized
       ~MultiTypeGui.isModal
-      ~MultiTypeGui.isQuickItemType
       ~MultiTypeGui.isRightToLeft
       ~MultiTypeGui.isSignalConnected
-      ~MultiTypeGui.isTopLevel
       ~MultiTypeGui.isVisible
       ~MultiTypeGui.isVisibleTo
       ~MultiTypeGui.isWidgetType
@@ -195,11 +188,11 @@
       ~MultiTypeGui.pos
       ~MultiTypeGui.previousInFocusChain
       ~MultiTypeGui.property
+      ~MultiTypeGui.pyqtConfigure
       ~MultiTypeGui.raise_
       ~MultiTypeGui.read_param
       ~MultiTypeGui.receivers
       ~MultiTypeGui.rect
-      ~MultiTypeGui.redirected
       ~MultiTypeGui.releaseKeyboard
       ~MultiTypeGui.releaseMouse
       ~MultiTypeGui.releaseShortcut
@@ -255,7 +248,6 @@
       ~MultiTypeGui.setPalette
       ~MultiTypeGui.setParent
       ~MultiTypeGui.setProperty
-      ~MultiTypeGui.setScreen
       ~MultiTypeGui.setShortcutAutoRepeat
       ~MultiTypeGui.setShortcutEnabled
       ~MultiTypeGui.setSizeIncrement
@@ -306,7 +298,6 @@
       ~MultiTypeGui.timerEvent
       ~MultiTypeGui.toolTip
       ~MultiTypeGui.toolTipDuration
-      ~MultiTypeGui.topLevelWidget
       ~MultiTypeGui.tr
       ~MultiTypeGui.underMouse
       ~MultiTypeGui.ungrabGesture
@@ -346,11 +337,25 @@
 
    .. autosummary::
    
+      ~MultiTypeGui.DrawChildren
+      ~MultiTypeGui.DrawWindowBackground
+      ~MultiTypeGui.IgnoreMask
+      ~MultiTypeGui.PdmDepth
+      ~MultiTypeGui.PdmDevicePixelRatio
+      ~MultiTypeGui.PdmDevicePixelRatioScaled
+      ~MultiTypeGui.PdmDpiX
+      ~MultiTypeGui.PdmDpiY
+      ~MultiTypeGui.PdmHeight
+      ~MultiTypeGui.PdmHeightMM
+      ~MultiTypeGui.PdmNumColors
+      ~MultiTypeGui.PdmPhysicalDpiX
+      ~MultiTypeGui.PdmPhysicalDpiY
+      ~MultiTypeGui.PdmWidth
+      ~MultiTypeGui.PdmWidthMM
       ~MultiTypeGui.customContextMenuRequested
       ~MultiTypeGui.data_type
       ~MultiTypeGui.destroyed
       ~MultiTypeGui.objectNameChanged
-      ~MultiTypeGui.painters
       ~MultiTypeGui.paramChanged
       ~MultiTypeGui.staticMetaObject
       ~MultiTypeGui.windowIconChanged

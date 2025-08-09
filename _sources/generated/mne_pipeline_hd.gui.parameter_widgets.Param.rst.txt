@@ -25,7 +25,6 @@
       ~Param.adjustSize
       ~Param.autoFillBackground
       ~Param.backgroundRole
-      ~Param.backingStore
       ~Param.baseSize
       ~Param.blockSignals
       ~Param.changeEvent
@@ -40,14 +39,12 @@
       ~Param.close
       ~Param.closeEvent
       ~Param.colorCount
-      ~Param.connect
       ~Param.connectNotify
       ~Param.contentsMargins
       ~Param.contentsRect
       ~Param.contextMenuEvent
       ~Param.contextMenuPolicy
       ~Param.create
-      ~Param.createWinId
       ~Param.createWindowContainer
       ~Param.cursor
       ~Param.customEvent
@@ -68,8 +65,6 @@
       ~Param.dumpObjectTree
       ~Param.dynamicPropertyNames
       ~Param.effectiveWinId
-      ~Param.emit
-      ~Param.encodeMetricF
       ~Param.ensurePolished
       ~Param.enterEvent
       ~Param.event
@@ -92,6 +87,7 @@
       ~Param.frameGeometry
       ~Param.frameSize
       ~Param.geometry
+      ~Param.getContentsMargins
       ~Param.get_value
       ~Param.grab
       ~Param.grabGesture
@@ -119,7 +115,6 @@
       ~Param.insertAction
       ~Param.insertActions
       ~Param.installEventFilter
-      ~Param.internalWinId
       ~Param.isActiveWindow
       ~Param.isAncestorOf
       ~Param.isEnabled
@@ -130,10 +125,8 @@
       ~Param.isMaximized
       ~Param.isMinimized
       ~Param.isModal
-      ~Param.isQuickItemType
       ~Param.isRightToLeft
       ~Param.isSignalConnected
-      ~Param.isTopLevel
       ~Param.isVisible
       ~Param.isVisibleTo
       ~Param.isWidgetType
@@ -193,11 +186,11 @@
       ~Param.pos
       ~Param.previousInFocusChain
       ~Param.property
+      ~Param.pyqtConfigure
       ~Param.raise_
       ~Param.read_param
       ~Param.receivers
       ~Param.rect
-      ~Param.redirected
       ~Param.releaseKeyboard
       ~Param.releaseMouse
       ~Param.releaseShortcut
@@ -253,7 +246,6 @@
       ~Param.setPalette
       ~Param.setParent
       ~Param.setProperty
-      ~Param.setScreen
       ~Param.setShortcutAutoRepeat
       ~Param.setShortcutEnabled
       ~Param.setSizeIncrement
@@ -304,7 +296,6 @@
       ~Param.timerEvent
       ~Param.toolTip
       ~Param.toolTipDuration
-      ~Param.topLevelWidget
       ~Param.tr
       ~Param.underMouse
       ~Param.ungrabGesture
@@ -344,10 +335,24 @@
 
    .. autosummary::
    
+      ~Param.DrawChildren
+      ~Param.DrawWindowBackground
+      ~Param.IgnoreMask
+      ~Param.PdmDepth
+      ~Param.PdmDevicePixelRatio
+      ~Param.PdmDevicePixelRatioScaled
+      ~Param.PdmDpiX
+      ~Param.PdmDpiY
+      ~Param.PdmHeight
+      ~Param.PdmHeightMM
+      ~Param.PdmNumColors
+      ~Param.PdmPhysicalDpiX
+      ~Param.PdmPhysicalDpiY
+      ~Param.PdmWidth
+      ~Param.PdmWidthMM
       ~Param.customContextMenuRequested
       ~Param.destroyed
       ~Param.objectNameChanged
-      ~Param.painters
       ~Param.paramChanged
       ~Param.staticMetaObject
       ~Param.windowIconChanged

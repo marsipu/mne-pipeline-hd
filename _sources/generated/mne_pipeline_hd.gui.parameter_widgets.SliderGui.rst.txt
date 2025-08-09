@@ -25,7 +25,6 @@
       ~SliderGui.adjustSize
       ~SliderGui.autoFillBackground
       ~SliderGui.backgroundRole
-      ~SliderGui.backingStore
       ~SliderGui.baseSize
       ~SliderGui.blockSignals
       ~SliderGui.changeEvent
@@ -40,14 +39,12 @@
       ~SliderGui.close
       ~SliderGui.closeEvent
       ~SliderGui.colorCount
-      ~SliderGui.connect
       ~SliderGui.connectNotify
       ~SliderGui.contentsMargins
       ~SliderGui.contentsRect
       ~SliderGui.contextMenuEvent
       ~SliderGui.contextMenuPolicy
       ~SliderGui.create
-      ~SliderGui.createWinId
       ~SliderGui.createWindowContainer
       ~SliderGui.cursor
       ~SliderGui.customEvent
@@ -69,8 +66,6 @@
       ~SliderGui.dumpObjectTree
       ~SliderGui.dynamicPropertyNames
       ~SliderGui.effectiveWinId
-      ~SliderGui.emit
-      ~SliderGui.encodeMetricF
       ~SliderGui.ensurePolished
       ~SliderGui.enterEvent
       ~SliderGui.event
@@ -93,6 +88,7 @@
       ~SliderGui.frameGeometry
       ~SliderGui.frameSize
       ~SliderGui.geometry
+      ~SliderGui.getContentsMargins
       ~SliderGui.get_value
       ~SliderGui.grab
       ~SliderGui.grabGesture
@@ -121,7 +117,6 @@
       ~SliderGui.insertAction
       ~SliderGui.insertActions
       ~SliderGui.installEventFilter
-      ~SliderGui.internalWinId
       ~SliderGui.isActiveWindow
       ~SliderGui.isAncestorOf
       ~SliderGui.isEnabled
@@ -132,10 +127,8 @@
       ~SliderGui.isMaximized
       ~SliderGui.isMinimized
       ~SliderGui.isModal
-      ~SliderGui.isQuickItemType
       ~SliderGui.isRightToLeft
       ~SliderGui.isSignalConnected
-      ~SliderGui.isTopLevel
       ~SliderGui.isVisible
       ~SliderGui.isVisibleTo
       ~SliderGui.isWidgetType
@@ -195,11 +188,11 @@
       ~SliderGui.pos
       ~SliderGui.previousInFocusChain
       ~SliderGui.property
+      ~SliderGui.pyqtConfigure
       ~SliderGui.raise_
       ~SliderGui.read_param
       ~SliderGui.receivers
       ~SliderGui.rect
-      ~SliderGui.redirected
       ~SliderGui.releaseKeyboard
       ~SliderGui.releaseMouse
       ~SliderGui.releaseShortcut
@@ -255,7 +248,6 @@
       ~SliderGui.setPalette
       ~SliderGui.setParent
       ~SliderGui.setProperty
-      ~SliderGui.setScreen
       ~SliderGui.setShortcutAutoRepeat
       ~SliderGui.setShortcutEnabled
       ~SliderGui.setSizeIncrement
@@ -306,7 +298,6 @@
       ~SliderGui.timerEvent
       ~SliderGui.toolTip
       ~SliderGui.toolTipDuration
-      ~SliderGui.topLevelWidget
       ~SliderGui.tr
       ~SliderGui.underMouse
       ~SliderGui.ungrabGesture
@@ -346,11 +337,25 @@
 
    .. autosummary::
    
+      ~SliderGui.DrawChildren
+      ~SliderGui.DrawWindowBackground
+      ~SliderGui.IgnoreMask
+      ~SliderGui.PdmDepth
+      ~SliderGui.PdmDevicePixelRatio
+      ~SliderGui.PdmDevicePixelRatioScaled
+      ~SliderGui.PdmDpiX
+      ~SliderGui.PdmDpiY
+      ~SliderGui.PdmHeight
+      ~SliderGui.PdmHeightMM
+      ~SliderGui.PdmNumColors
+      ~SliderGui.PdmPhysicalDpiX
+      ~SliderGui.PdmPhysicalDpiY
+      ~SliderGui.PdmWidth
+      ~SliderGui.PdmWidthMM
       ~SliderGui.customContextMenuRequested
       ~SliderGui.data_type
       ~SliderGui.destroyed
       ~SliderGui.objectNameChanged
-      ~SliderGui.painters
       ~SliderGui.paramChanged
       ~SliderGui.staticMetaObject
       ~SliderGui.windowIconChanged

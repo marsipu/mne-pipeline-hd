@@ -25,7 +25,6 @@
       ~ComboGui.adjustSize
       ~ComboGui.autoFillBackground
       ~ComboGui.backgroundRole
-      ~ComboGui.backingStore
       ~ComboGui.baseSize
       ~ComboGui.blockSignals
       ~ComboGui.changeEvent
@@ -40,14 +39,12 @@
       ~ComboGui.close
       ~ComboGui.closeEvent
       ~ComboGui.colorCount
-      ~ComboGui.connect
       ~ComboGui.connectNotify
       ~ComboGui.contentsMargins
       ~ComboGui.contentsRect
       ~ComboGui.contextMenuEvent
       ~ComboGui.contextMenuPolicy
       ~ComboGui.create
-      ~ComboGui.createWinId
       ~ComboGui.createWindowContainer
       ~ComboGui.cursor
       ~ComboGui.customEvent
@@ -68,8 +65,6 @@
       ~ComboGui.dumpObjectTree
       ~ComboGui.dynamicPropertyNames
       ~ComboGui.effectiveWinId
-      ~ComboGui.emit
-      ~ComboGui.encodeMetricF
       ~ComboGui.ensurePolished
       ~ComboGui.enterEvent
       ~ComboGui.event
@@ -92,6 +87,7 @@
       ~ComboGui.frameGeometry
       ~ComboGui.frameSize
       ~ComboGui.geometry
+      ~ComboGui.getContentsMargins
       ~ComboGui.get_value
       ~ComboGui.grab
       ~ComboGui.grabGesture
@@ -119,7 +115,6 @@
       ~ComboGui.insertAction
       ~ComboGui.insertActions
       ~ComboGui.installEventFilter
-      ~ComboGui.internalWinId
       ~ComboGui.isActiveWindow
       ~ComboGui.isAncestorOf
       ~ComboGui.isEnabled
@@ -130,10 +125,8 @@
       ~ComboGui.isMaximized
       ~ComboGui.isMinimized
       ~ComboGui.isModal
-      ~ComboGui.isQuickItemType
       ~ComboGui.isRightToLeft
       ~ComboGui.isSignalConnected
-      ~ComboGui.isTopLevel
       ~ComboGui.isVisible
       ~ComboGui.isVisibleTo
       ~ComboGui.isWidgetType
@@ -193,11 +186,11 @@
       ~ComboGui.pos
       ~ComboGui.previousInFocusChain
       ~ComboGui.property
+      ~ComboGui.pyqtConfigure
       ~ComboGui.raise_
       ~ComboGui.read_param
       ~ComboGui.receivers
       ~ComboGui.rect
-      ~ComboGui.redirected
       ~ComboGui.releaseKeyboard
       ~ComboGui.releaseMouse
       ~ComboGui.releaseShortcut
@@ -253,7 +246,6 @@
       ~ComboGui.setPalette
       ~ComboGui.setParent
       ~ComboGui.setProperty
-      ~ComboGui.setScreen
       ~ComboGui.setShortcutAutoRepeat
       ~ComboGui.setShortcutEnabled
       ~ComboGui.setSizeIncrement
@@ -304,7 +296,6 @@
       ~ComboGui.timerEvent
       ~ComboGui.toolTip
       ~ComboGui.toolTipDuration
-      ~ComboGui.topLevelWidget
       ~ComboGui.tr
       ~ComboGui.underMouse
       ~ComboGui.ungrabGesture
@@ -344,11 +335,25 @@
 
    .. autosummary::
    
+      ~ComboGui.DrawChildren
+      ~ComboGui.DrawWindowBackground
+      ~ComboGui.IgnoreMask
+      ~ComboGui.PdmDepth
+      ~ComboGui.PdmDevicePixelRatio
+      ~ComboGui.PdmDevicePixelRatioScaled
+      ~ComboGui.PdmDpiX
+      ~ComboGui.PdmDpiY
+      ~ComboGui.PdmHeight
+      ~ComboGui.PdmHeightMM
+      ~ComboGui.PdmNumColors
+      ~ComboGui.PdmPhysicalDpiX
+      ~ComboGui.PdmPhysicalDpiY
+      ~ComboGui.PdmWidth
+      ~ComboGui.PdmWidthMM
       ~ComboGui.customContextMenuRequested
       ~ComboGui.data_type
       ~ComboGui.destroyed
       ~ComboGui.objectNameChanged
-      ~ComboGui.painters
       ~ComboGui.paramChanged
       ~ComboGui.staticMetaObject
       ~ComboGui.windowIconChanged

@@ -25,7 +25,6 @@
       ~LabelGui.adjustSize
       ~LabelGui.autoFillBackground
       ~LabelGui.backgroundRole
-      ~LabelGui.backingStore
       ~LabelGui.baseSize
       ~LabelGui.blockSignals
       ~LabelGui.changeEvent
@@ -40,14 +39,12 @@
       ~LabelGui.close
       ~LabelGui.closeEvent
       ~LabelGui.colorCount
-      ~LabelGui.connect
       ~LabelGui.connectNotify
       ~LabelGui.contentsMargins
       ~LabelGui.contentsRect
       ~LabelGui.contextMenuEvent
       ~LabelGui.contextMenuPolicy
       ~LabelGui.create
-      ~LabelGui.createWinId
       ~LabelGui.createWindowContainer
       ~LabelGui.cursor
       ~LabelGui.customEvent
@@ -68,8 +65,6 @@
       ~LabelGui.dumpObjectTree
       ~LabelGui.dynamicPropertyNames
       ~LabelGui.effectiveWinId
-      ~LabelGui.emit
-      ~LabelGui.encodeMetricF
       ~LabelGui.ensurePolished
       ~LabelGui.enterEvent
       ~LabelGui.event
@@ -92,6 +87,7 @@
       ~LabelGui.frameGeometry
       ~LabelGui.frameSize
       ~LabelGui.geometry
+      ~LabelGui.getContentsMargins
       ~LabelGui.get_value
       ~LabelGui.grab
       ~LabelGui.grabGesture
@@ -119,7 +115,6 @@
       ~LabelGui.insertAction
       ~LabelGui.insertActions
       ~LabelGui.installEventFilter
-      ~LabelGui.internalWinId
       ~LabelGui.isActiveWindow
       ~LabelGui.isAncestorOf
       ~LabelGui.isEnabled
@@ -130,10 +125,8 @@
       ~LabelGui.isMaximized
       ~LabelGui.isMinimized
       ~LabelGui.isModal
-      ~LabelGui.isQuickItemType
       ~LabelGui.isRightToLeft
       ~LabelGui.isSignalConnected
-      ~LabelGui.isTopLevel
       ~LabelGui.isVisible
       ~LabelGui.isVisibleTo
       ~LabelGui.isWidgetType
@@ -193,11 +186,11 @@
       ~LabelGui.pos
       ~LabelGui.previousInFocusChain
       ~LabelGui.property
+      ~LabelGui.pyqtConfigure
       ~LabelGui.raise_
       ~LabelGui.read_param
       ~LabelGui.receivers
       ~LabelGui.rect
-      ~LabelGui.redirected
       ~LabelGui.releaseKeyboard
       ~LabelGui.releaseMouse
       ~LabelGui.releaseShortcut
@@ -253,7 +246,6 @@
       ~LabelGui.setPalette
       ~LabelGui.setParent
       ~LabelGui.setProperty
-      ~LabelGui.setScreen
       ~LabelGui.setShortcutAutoRepeat
       ~LabelGui.setShortcutEnabled
       ~LabelGui.setSizeIncrement
@@ -305,7 +297,6 @@
       ~LabelGui.timerEvent
       ~LabelGui.toolTip
       ~LabelGui.toolTipDuration
-      ~LabelGui.topLevelWidget
       ~LabelGui.tr
       ~LabelGui.underMouse
       ~LabelGui.ungrabGesture
@@ -345,10 +336,24 @@
 
    .. autosummary::
    
+      ~LabelGui.DrawChildren
+      ~LabelGui.DrawWindowBackground
+      ~LabelGui.IgnoreMask
+      ~LabelGui.PdmDepth
+      ~LabelGui.PdmDevicePixelRatio
+      ~LabelGui.PdmDevicePixelRatioScaled
+      ~LabelGui.PdmDpiX
+      ~LabelGui.PdmDpiY
+      ~LabelGui.PdmHeight
+      ~LabelGui.PdmHeightMM
+      ~LabelGui.PdmNumColors
+      ~LabelGui.PdmPhysicalDpiX
+      ~LabelGui.PdmPhysicalDpiY
+      ~LabelGui.PdmWidth
+      ~LabelGui.PdmWidthMM
       ~LabelGui.customContextMenuRequested
       ~LabelGui.destroyed
       ~LabelGui.objectNameChanged
-      ~LabelGui.painters
       ~LabelGui.paramChanged
       ~LabelGui.staticMetaObject
       ~LabelGui.windowIconChanged

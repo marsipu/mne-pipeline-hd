@@ -25,7 +25,6 @@
       ~DictGui.adjustSize
       ~DictGui.autoFillBackground
       ~DictGui.backgroundRole
-      ~DictGui.backingStore
       ~DictGui.baseSize
       ~DictGui.blockSignals
       ~DictGui.changeEvent
@@ -40,14 +39,12 @@
       ~DictGui.close
       ~DictGui.closeEvent
       ~DictGui.colorCount
-      ~DictGui.connect
       ~DictGui.connectNotify
       ~DictGui.contentsMargins
       ~DictGui.contentsRect
       ~DictGui.contextMenuEvent
       ~DictGui.contextMenuPolicy
       ~DictGui.create
-      ~DictGui.createWinId
       ~DictGui.createWindowContainer
       ~DictGui.cursor
       ~DictGui.customEvent
@@ -68,8 +65,6 @@
       ~DictGui.dumpObjectTree
       ~DictGui.dynamicPropertyNames
       ~DictGui.effectiveWinId
-      ~DictGui.emit
-      ~DictGui.encodeMetricF
       ~DictGui.ensurePolished
       ~DictGui.enterEvent
       ~DictGui.event
@@ -92,6 +87,7 @@
       ~DictGui.frameGeometry
       ~DictGui.frameSize
       ~DictGui.geometry
+      ~DictGui.getContentsMargins
       ~DictGui.get_value
       ~DictGui.grab
       ~DictGui.grabGesture
@@ -119,7 +115,6 @@
       ~DictGui.insertAction
       ~DictGui.insertActions
       ~DictGui.installEventFilter
-      ~DictGui.internalWinId
       ~DictGui.isActiveWindow
       ~DictGui.isAncestorOf
       ~DictGui.isEnabled
@@ -130,10 +125,8 @@
       ~DictGui.isMaximized
       ~DictGui.isMinimized
       ~DictGui.isModal
-      ~DictGui.isQuickItemType
       ~DictGui.isRightToLeft
       ~DictGui.isSignalConnected
-      ~DictGui.isTopLevel
       ~DictGui.isVisible
       ~DictGui.isVisibleTo
       ~DictGui.isWidgetType
@@ -193,11 +186,11 @@
       ~DictGui.pos
       ~DictGui.previousInFocusChain
       ~DictGui.property
+      ~DictGui.pyqtConfigure
       ~DictGui.raise_
       ~DictGui.read_param
       ~DictGui.receivers
       ~DictGui.rect
-      ~DictGui.redirected
       ~DictGui.releaseKeyboard
       ~DictGui.releaseMouse
       ~DictGui.releaseShortcut
@@ -253,7 +246,6 @@
       ~DictGui.setPalette
       ~DictGui.setParent
       ~DictGui.setProperty
-      ~DictGui.setScreen
       ~DictGui.setShortcutAutoRepeat
       ~DictGui.setShortcutEnabled
       ~DictGui.setSizeIncrement
@@ -304,7 +296,6 @@
       ~DictGui.timerEvent
       ~DictGui.toolTip
       ~DictGui.toolTipDuration
-      ~DictGui.topLevelWidget
       ~DictGui.tr
       ~DictGui.underMouse
       ~DictGui.ungrabGesture
@@ -344,10 +335,24 @@
 
    .. autosummary::
    
+      ~DictGui.DrawChildren
+      ~DictGui.DrawWindowBackground
+      ~DictGui.IgnoreMask
+      ~DictGui.PdmDepth
+      ~DictGui.PdmDevicePixelRatio
+      ~DictGui.PdmDevicePixelRatioScaled
+      ~DictGui.PdmDpiX
+      ~DictGui.PdmDpiY
+      ~DictGui.PdmHeight
+      ~DictGui.PdmHeightMM
+      ~DictGui.PdmNumColors
+      ~DictGui.PdmPhysicalDpiX
+      ~DictGui.PdmPhysicalDpiY
+      ~DictGui.PdmWidth
+      ~DictGui.PdmWidthMM
       ~DictGui.customContextMenuRequested
       ~DictGui.destroyed
       ~DictGui.objectNameChanged
-      ~DictGui.painters
       ~DictGui.paramChanged
       ~DictGui.staticMetaObject
       ~DictGui.windowIconChanged

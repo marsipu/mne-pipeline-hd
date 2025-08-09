@@ -25,7 +25,6 @@
       ~CheckListGui.adjustSize
       ~CheckListGui.autoFillBackground
       ~CheckListGui.backgroundRole
-      ~CheckListGui.backingStore
       ~CheckListGui.baseSize
       ~CheckListGui.blockSignals
       ~CheckListGui.changeEvent
@@ -40,14 +39,12 @@
       ~CheckListGui.close
       ~CheckListGui.closeEvent
       ~CheckListGui.colorCount
-      ~CheckListGui.connect
       ~CheckListGui.connectNotify
       ~CheckListGui.contentsMargins
       ~CheckListGui.contentsRect
       ~CheckListGui.contextMenuEvent
       ~CheckListGui.contextMenuPolicy
       ~CheckListGui.create
-      ~CheckListGui.createWinId
       ~CheckListGui.createWindowContainer
       ~CheckListGui.cursor
       ~CheckListGui.customEvent
@@ -68,8 +65,6 @@
       ~CheckListGui.dumpObjectTree
       ~CheckListGui.dynamicPropertyNames
       ~CheckListGui.effectiveWinId
-      ~CheckListGui.emit
-      ~CheckListGui.encodeMetricF
       ~CheckListGui.ensurePolished
       ~CheckListGui.enterEvent
       ~CheckListGui.event
@@ -92,6 +87,7 @@
       ~CheckListGui.frameGeometry
       ~CheckListGui.frameSize
       ~CheckListGui.geometry
+      ~CheckListGui.getContentsMargins
       ~CheckListGui.get_value
       ~CheckListGui.grab
       ~CheckListGui.grabGesture
@@ -119,7 +115,6 @@
       ~CheckListGui.insertAction
       ~CheckListGui.insertActions
       ~CheckListGui.installEventFilter
-      ~CheckListGui.internalWinId
       ~CheckListGui.isActiveWindow
       ~CheckListGui.isAncestorOf
       ~CheckListGui.isEnabled
@@ -130,10 +125,8 @@
       ~CheckListGui.isMaximized
       ~CheckListGui.isMinimized
       ~CheckListGui.isModal
-      ~CheckListGui.isQuickItemType
       ~CheckListGui.isRightToLeft
       ~CheckListGui.isSignalConnected
-      ~CheckListGui.isTopLevel
       ~CheckListGui.isVisible
       ~CheckListGui.isVisibleTo
       ~CheckListGui.isWidgetType
@@ -193,11 +186,11 @@
       ~CheckListGui.pos
       ~CheckListGui.previousInFocusChain
       ~CheckListGui.property
+      ~CheckListGui.pyqtConfigure
       ~CheckListGui.raise_
       ~CheckListGui.read_param
       ~CheckListGui.receivers
       ~CheckListGui.rect
-      ~CheckListGui.redirected
       ~CheckListGui.releaseKeyboard
       ~CheckListGui.releaseMouse
       ~CheckListGui.releaseShortcut
@@ -253,7 +246,6 @@
       ~CheckListGui.setPalette
       ~CheckListGui.setParent
       ~CheckListGui.setProperty
-      ~CheckListGui.setScreen
       ~CheckListGui.setShortcutAutoRepeat
       ~CheckListGui.setShortcutEnabled
       ~CheckListGui.setSizeIncrement
@@ -304,7 +296,6 @@
       ~CheckListGui.timerEvent
       ~CheckListGui.toolTip
       ~CheckListGui.toolTipDuration
-      ~CheckListGui.topLevelWidget
       ~CheckListGui.tr
       ~CheckListGui.underMouse
       ~CheckListGui.ungrabGesture
@@ -344,10 +335,24 @@
 
    .. autosummary::
    
+      ~CheckListGui.DrawChildren
+      ~CheckListGui.DrawWindowBackground
+      ~CheckListGui.IgnoreMask
+      ~CheckListGui.PdmDepth
+      ~CheckListGui.PdmDevicePixelRatio
+      ~CheckListGui.PdmDevicePixelRatioScaled
+      ~CheckListGui.PdmDpiX
+      ~CheckListGui.PdmDpiY
+      ~CheckListGui.PdmHeight
+      ~CheckListGui.PdmHeightMM
+      ~CheckListGui.PdmNumColors
+      ~CheckListGui.PdmPhysicalDpiX
+      ~CheckListGui.PdmPhysicalDpiY
+      ~CheckListGui.PdmWidth
+      ~CheckListGui.PdmWidthMM
       ~CheckListGui.customContextMenuRequested
       ~CheckListGui.destroyed
       ~CheckListGui.objectNameChanged
-      ~CheckListGui.painters
       ~CheckListGui.paramChanged
       ~CheckListGui.staticMetaObject
       ~CheckListGui.windowIconChanged

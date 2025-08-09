@@ -25,7 +25,6 @@
       ~ListGui.adjustSize
       ~ListGui.autoFillBackground
       ~ListGui.backgroundRole
-      ~ListGui.backingStore
       ~ListGui.baseSize
       ~ListGui.blockSignals
       ~ListGui.changeEvent
@@ -40,14 +39,12 @@
       ~ListGui.close
       ~ListGui.closeEvent
       ~ListGui.colorCount
-      ~ListGui.connect
       ~ListGui.connectNotify
       ~ListGui.contentsMargins
       ~ListGui.contentsRect
       ~ListGui.contextMenuEvent
       ~ListGui.contextMenuPolicy
       ~ListGui.create
-      ~ListGui.createWinId
       ~ListGui.createWindowContainer
       ~ListGui.cursor
       ~ListGui.customEvent
@@ -68,8 +65,6 @@
       ~ListGui.dumpObjectTree
       ~ListGui.dynamicPropertyNames
       ~ListGui.effectiveWinId
-      ~ListGui.emit
-      ~ListGui.encodeMetricF
       ~ListGui.ensurePolished
       ~ListGui.enterEvent
       ~ListGui.event
@@ -92,6 +87,7 @@
       ~ListGui.frameGeometry
       ~ListGui.frameSize
       ~ListGui.geometry
+      ~ListGui.getContentsMargins
       ~ListGui.get_value
       ~ListGui.grab
       ~ListGui.grabGesture
@@ -119,7 +115,6 @@
       ~ListGui.insertAction
       ~ListGui.insertActions
       ~ListGui.installEventFilter
-      ~ListGui.internalWinId
       ~ListGui.isActiveWindow
       ~ListGui.isAncestorOf
       ~ListGui.isEnabled
@@ -130,10 +125,8 @@
       ~ListGui.isMaximized
       ~ListGui.isMinimized
       ~ListGui.isModal
-      ~ListGui.isQuickItemType
       ~ListGui.isRightToLeft
       ~ListGui.isSignalConnected
-      ~ListGui.isTopLevel
       ~ListGui.isVisible
       ~ListGui.isVisibleTo
       ~ListGui.isWidgetType
@@ -193,11 +186,11 @@
       ~ListGui.pos
       ~ListGui.previousInFocusChain
       ~ListGui.property
+      ~ListGui.pyqtConfigure
       ~ListGui.raise_
       ~ListGui.read_param
       ~ListGui.receivers
       ~ListGui.rect
-      ~ListGui.redirected
       ~ListGui.releaseKeyboard
       ~ListGui.releaseMouse
       ~ListGui.releaseShortcut
@@ -253,7 +246,6 @@
       ~ListGui.setPalette
       ~ListGui.setParent
       ~ListGui.setProperty
-      ~ListGui.setScreen
       ~ListGui.setShortcutAutoRepeat
       ~ListGui.setShortcutEnabled
       ~ListGui.setSizeIncrement
@@ -304,7 +296,6 @@
       ~ListGui.timerEvent
       ~ListGui.toolTip
       ~ListGui.toolTipDuration
-      ~ListGui.topLevelWidget
       ~ListGui.tr
       ~ListGui.underMouse
       ~ListGui.ungrabGesture
@@ -344,10 +335,24 @@
 
    .. autosummary::
    
+      ~ListGui.DrawChildren
+      ~ListGui.DrawWindowBackground
+      ~ListGui.IgnoreMask
+      ~ListGui.PdmDepth
+      ~ListGui.PdmDevicePixelRatio
+      ~ListGui.PdmDevicePixelRatioScaled
+      ~ListGui.PdmDpiX
+      ~ListGui.PdmDpiY
+      ~ListGui.PdmHeight
+      ~ListGui.PdmHeightMM
+      ~ListGui.PdmNumColors
+      ~ListGui.PdmPhysicalDpiX
+      ~ListGui.PdmPhysicalDpiY
+      ~ListGui.PdmWidth
+      ~ListGui.PdmWidthMM
       ~ListGui.customContextMenuRequested
       ~ListGui.destroyed
       ~ListGui.objectNameChanged
-      ~ListGui.painters
       ~ListGui.paramChanged
       ~ListGui.staticMetaObject
       ~ListGui.windowIconChanged

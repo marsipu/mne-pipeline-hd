@@ -25,7 +25,6 @@
       ~StringGui.adjustSize
       ~StringGui.autoFillBackground
       ~StringGui.backgroundRole
-      ~StringGui.backingStore
       ~StringGui.baseSize
       ~StringGui.blockSignals
       ~StringGui.changeEvent
@@ -40,14 +39,12 @@
       ~StringGui.close
       ~StringGui.closeEvent
       ~StringGui.colorCount
-      ~StringGui.connect
       ~StringGui.connectNotify
       ~StringGui.contentsMargins
       ~StringGui.contentsRect
       ~StringGui.contextMenuEvent
       ~StringGui.contextMenuPolicy
       ~StringGui.create
-      ~StringGui.createWinId
       ~StringGui.createWindowContainer
       ~StringGui.cursor
       ~StringGui.customEvent
@@ -68,8 +65,6 @@
       ~StringGui.dumpObjectTree
       ~StringGui.dynamicPropertyNames
       ~StringGui.effectiveWinId
-      ~StringGui.emit
-      ~StringGui.encodeMetricF
       ~StringGui.ensurePolished
       ~StringGui.enterEvent
       ~StringGui.event
@@ -92,6 +87,7 @@
       ~StringGui.frameGeometry
       ~StringGui.frameSize
       ~StringGui.geometry
+      ~StringGui.getContentsMargins
       ~StringGui.get_value
       ~StringGui.grab
       ~StringGui.grabGesture
@@ -119,7 +115,6 @@
       ~StringGui.insertAction
       ~StringGui.insertActions
       ~StringGui.installEventFilter
-      ~StringGui.internalWinId
       ~StringGui.isActiveWindow
       ~StringGui.isAncestorOf
       ~StringGui.isEnabled
@@ -130,10 +125,8 @@
       ~StringGui.isMaximized
       ~StringGui.isMinimized
       ~StringGui.isModal
-      ~StringGui.isQuickItemType
       ~StringGui.isRightToLeft
       ~StringGui.isSignalConnected
-      ~StringGui.isTopLevel
       ~StringGui.isVisible
       ~StringGui.isVisibleTo
       ~StringGui.isWidgetType
@@ -193,11 +186,11 @@
       ~StringGui.pos
       ~StringGui.previousInFocusChain
       ~StringGui.property
+      ~StringGui.pyqtConfigure
       ~StringGui.raise_
       ~StringGui.read_param
       ~StringGui.receivers
       ~StringGui.rect
-      ~StringGui.redirected
       ~StringGui.releaseKeyboard
       ~StringGui.releaseMouse
       ~StringGui.releaseShortcut
@@ -253,7 +246,6 @@
       ~StringGui.setPalette
       ~StringGui.setParent
       ~StringGui.setProperty
-      ~StringGui.setScreen
       ~StringGui.setShortcutAutoRepeat
       ~StringGui.setShortcutEnabled
       ~StringGui.setSizeIncrement
@@ -304,7 +296,6 @@
       ~StringGui.timerEvent
       ~StringGui.toolTip
       ~StringGui.toolTipDuration
-      ~StringGui.topLevelWidget
       ~StringGui.tr
       ~StringGui.underMouse
       ~StringGui.ungrabGesture
@@ -344,10 +335,24 @@
 
    .. autosummary::
    
+      ~StringGui.DrawChildren
+      ~StringGui.DrawWindowBackground
+      ~StringGui.IgnoreMask
+      ~StringGui.PdmDepth
+      ~StringGui.PdmDevicePixelRatio
+      ~StringGui.PdmDevicePixelRatioScaled
+      ~StringGui.PdmDpiX
+      ~StringGui.PdmDpiY
+      ~StringGui.PdmHeight
+      ~StringGui.PdmHeightMM
+      ~StringGui.PdmNumColors
+      ~StringGui.PdmPhysicalDpiX
+      ~StringGui.PdmPhysicalDpiY
+      ~StringGui.PdmWidth
+      ~StringGui.PdmWidthMM
       ~StringGui.customContextMenuRequested
       ~StringGui.destroyed
       ~StringGui.objectNameChanged
-      ~StringGui.painters
       ~StringGui.paramChanged
       ~StringGui.staticMetaObject
       ~StringGui.windowIconChanged

@@ -25,7 +25,6 @@
       ~FuncGui.adjustSize
       ~FuncGui.autoFillBackground
       ~FuncGui.backgroundRole
-      ~FuncGui.backingStore
       ~FuncGui.baseSize
       ~FuncGui.blockSignals
       ~FuncGui.changeEvent
@@ -40,14 +39,12 @@
       ~FuncGui.close
       ~FuncGui.closeEvent
       ~FuncGui.colorCount
-      ~FuncGui.connect
       ~FuncGui.connectNotify
       ~FuncGui.contentsMargins
       ~FuncGui.contentsRect
       ~FuncGui.contextMenuEvent
       ~FuncGui.contextMenuPolicy
       ~FuncGui.create
-      ~FuncGui.createWinId
       ~FuncGui.createWindowContainer
       ~FuncGui.cursor
       ~FuncGui.customEvent
@@ -68,8 +65,6 @@
       ~FuncGui.dumpObjectTree
       ~FuncGui.dynamicPropertyNames
       ~FuncGui.effectiveWinId
-      ~FuncGui.emit
-      ~FuncGui.encodeMetricF
       ~FuncGui.ensurePolished
       ~FuncGui.enterEvent
       ~FuncGui.event
@@ -92,6 +87,7 @@
       ~FuncGui.frameGeometry
       ~FuncGui.frameSize
       ~FuncGui.geometry
+      ~FuncGui.getContentsMargins
       ~FuncGui.get_value
       ~FuncGui.grab
       ~FuncGui.grabGesture
@@ -120,7 +116,6 @@
       ~FuncGui.insertAction
       ~FuncGui.insertActions
       ~FuncGui.installEventFilter
-      ~FuncGui.internalWinId
       ~FuncGui.isActiveWindow
       ~FuncGui.isAncestorOf
       ~FuncGui.isEnabled
@@ -131,10 +126,8 @@
       ~FuncGui.isMaximized
       ~FuncGui.isMinimized
       ~FuncGui.isModal
-      ~FuncGui.isQuickItemType
       ~FuncGui.isRightToLeft
       ~FuncGui.isSignalConnected
-      ~FuncGui.isTopLevel
       ~FuncGui.isVisible
       ~FuncGui.isVisibleTo
       ~FuncGui.isWidgetType
@@ -194,11 +187,11 @@
       ~FuncGui.pos
       ~FuncGui.previousInFocusChain
       ~FuncGui.property
+      ~FuncGui.pyqtConfigure
       ~FuncGui.raise_
       ~FuncGui.read_param
       ~FuncGui.receivers
       ~FuncGui.rect
-      ~FuncGui.redirected
       ~FuncGui.releaseKeyboard
       ~FuncGui.releaseMouse
       ~FuncGui.releaseShortcut
@@ -254,7 +247,6 @@
       ~FuncGui.setPalette
       ~FuncGui.setParent
       ~FuncGui.setProperty
-      ~FuncGui.setScreen
       ~FuncGui.setShortcutAutoRepeat
       ~FuncGui.setShortcutEnabled
       ~FuncGui.setSizeIncrement
@@ -305,7 +297,6 @@
       ~FuncGui.timerEvent
       ~FuncGui.toolTip
       ~FuncGui.toolTipDuration
-      ~FuncGui.topLevelWidget
       ~FuncGui.tr
       ~FuncGui.underMouse
       ~FuncGui.ungrabGesture
@@ -345,11 +336,25 @@
 
    .. autosummary::
    
+      ~FuncGui.DrawChildren
+      ~FuncGui.DrawWindowBackground
+      ~FuncGui.IgnoreMask
+      ~FuncGui.PdmDepth
+      ~FuncGui.PdmDevicePixelRatio
+      ~FuncGui.PdmDevicePixelRatioScaled
+      ~FuncGui.PdmDpiX
+      ~FuncGui.PdmDpiY
+      ~FuncGui.PdmHeight
+      ~FuncGui.PdmHeightMM
+      ~FuncGui.PdmNumColors
+      ~FuncGui.PdmPhysicalDpiX
+      ~FuncGui.PdmPhysicalDpiY
+      ~FuncGui.PdmWidth
+      ~FuncGui.PdmWidthMM
       ~FuncGui.customContextMenuRequested
       ~FuncGui.data_type
       ~FuncGui.destroyed
       ~FuncGui.objectNameChanged
-      ~FuncGui.painters
       ~FuncGui.paramChanged
       ~FuncGui.staticMetaObject
       ~FuncGui.windowIconChanged

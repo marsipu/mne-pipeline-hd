@@ -25,7 +25,6 @@
       ~IntGui.adjustSize
       ~IntGui.autoFillBackground
       ~IntGui.backgroundRole
-      ~IntGui.backingStore
       ~IntGui.baseSize
       ~IntGui.blockSignals
       ~IntGui.changeEvent
@@ -40,14 +39,12 @@
       ~IntGui.close
       ~IntGui.closeEvent
       ~IntGui.colorCount
-      ~IntGui.connect
       ~IntGui.connectNotify
       ~IntGui.contentsMargins
       ~IntGui.contentsRect
       ~IntGui.contextMenuEvent
       ~IntGui.contextMenuPolicy
       ~IntGui.create
-      ~IntGui.createWinId
       ~IntGui.createWindowContainer
       ~IntGui.cursor
       ~IntGui.customEvent
@@ -68,8 +65,6 @@
       ~IntGui.dumpObjectTree
       ~IntGui.dynamicPropertyNames
       ~IntGui.effectiveWinId
-      ~IntGui.emit
-      ~IntGui.encodeMetricF
       ~IntGui.ensurePolished
       ~IntGui.enterEvent
       ~IntGui.event
@@ -92,6 +87,7 @@
       ~IntGui.frameGeometry
       ~IntGui.frameSize
       ~IntGui.geometry
+      ~IntGui.getContentsMargins
       ~IntGui.get_value
       ~IntGui.grab
       ~IntGui.grabGesture
@@ -119,7 +115,6 @@
       ~IntGui.insertAction
       ~IntGui.insertActions
       ~IntGui.installEventFilter
-      ~IntGui.internalWinId
       ~IntGui.isActiveWindow
       ~IntGui.isAncestorOf
       ~IntGui.isEnabled
@@ -130,10 +125,8 @@
       ~IntGui.isMaximized
       ~IntGui.isMinimized
       ~IntGui.isModal
-      ~IntGui.isQuickItemType
       ~IntGui.isRightToLeft
       ~IntGui.isSignalConnected
-      ~IntGui.isTopLevel
       ~IntGui.isVisible
       ~IntGui.isVisibleTo
       ~IntGui.isWidgetType
@@ -193,11 +186,11 @@
       ~IntGui.pos
       ~IntGui.previousInFocusChain
       ~IntGui.property
+      ~IntGui.pyqtConfigure
       ~IntGui.raise_
       ~IntGui.read_param
       ~IntGui.receivers
       ~IntGui.rect
-      ~IntGui.redirected
       ~IntGui.releaseKeyboard
       ~IntGui.releaseMouse
       ~IntGui.releaseShortcut
@@ -253,7 +246,6 @@
       ~IntGui.setPalette
       ~IntGui.setParent
       ~IntGui.setProperty
-      ~IntGui.setScreen
       ~IntGui.setShortcutAutoRepeat
       ~IntGui.setShortcutEnabled
       ~IntGui.setSizeIncrement
@@ -304,7 +296,6 @@
       ~IntGui.timerEvent
       ~IntGui.toolTip
       ~IntGui.toolTipDuration
-      ~IntGui.topLevelWidget
       ~IntGui.tr
       ~IntGui.underMouse
       ~IntGui.ungrabGesture
@@ -344,10 +335,24 @@
 
    .. autosummary::
    
+      ~IntGui.DrawChildren
+      ~IntGui.DrawWindowBackground
+      ~IntGui.IgnoreMask
+      ~IntGui.PdmDepth
+      ~IntGui.PdmDevicePixelRatio
+      ~IntGui.PdmDevicePixelRatioScaled
+      ~IntGui.PdmDpiX
+      ~IntGui.PdmDpiY
+      ~IntGui.PdmHeight
+      ~IntGui.PdmHeightMM
+      ~IntGui.PdmNumColors
+      ~IntGui.PdmPhysicalDpiX
+      ~IntGui.PdmPhysicalDpiY
+      ~IntGui.PdmWidth
+      ~IntGui.PdmWidthMM
       ~IntGui.customContextMenuRequested
       ~IntGui.destroyed
       ~IntGui.objectNameChanged
-      ~IntGui.painters
       ~IntGui.paramChanged
       ~IntGui.staticMetaObject
       ~IntGui.windowIconChanged
