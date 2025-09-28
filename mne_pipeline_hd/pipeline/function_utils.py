@@ -12,16 +12,15 @@ import io
 import sys
 from collections import OrderedDict
 from importlib import import_module
-from multiprocessing import Pipe
 
 from matplotlib import pyplot as plt
-from qtpy.QtCore import QThreadPool, QRunnable, Slot, QObject, Signal
+from qtpy.QtCore import QRunnable, Slot, QObject, Signal
 from qtpy.QtWidgets import QAbstractItemView
 
 from mne_pipeline_hd.gui.base_widgets import TimedMessageBox
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
+from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple
 from mne_pipeline_hd.pipeline.loading import BaseLoading, FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, ismac, QS, logger
+from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, QS, logger
 
 
 def get_func(func_name, obj):
@@ -435,42 +434,42 @@ class QRunController(RunController):
             # Plot functions with interactive plots currently can't
             # run in a separate thread, so they
             #  excuted in the main thread
-            ismayavi = self.ct.pd_funcs.loc[self.current_func, "mayavi"]
-            ismpl = self.ct.pd_funcs.loc[self.current_func, "matplotlib"]
-            show_plots = self.ct.get_setting("show_plots")
-            use_qthread = QS().value("use_qthread")
-            if (
-                ismayavi
-                or (ismpl and show_plots and use_qthread)
-                or (ismpl and not show_plots and use_qthread and ismac)
-            ):
-                logger().info("Starting in Main-Thread.")
-                result = run_func(**kwds)
-                self.process_finished(result)
-
-            elif QS().value("use_qthread"):
-                logger().info("Starting in separate Thread.")
-                worker = Worker(function=run_func, **kwds)
-                worker.signals.error.connect(self.process_finished)
-                worker.signals.finished.connect(self.process_finished)
-                QThreadPool.globalInstance().start(worker)
-
-            else:
-                logger().info("Starting in process from multiprocessing.")
-                recv_pipe, send_pipe = Pipe(False)
-                kwds["pipe"] = send_pipe
-                stream_rcv = StreamReceiver(recv_pipe)
-                stream_rcv.signals.stdout_received.connect(
-                    self.rd.console_widget.write_stdout
-                )
-                stream_rcv.signals.stderr_received.connect(
-                    self.rd.console_widget.write_stderr
-                )
-                QThreadPool.globalInstance().start(stream_rcv)
-                # ToDO: MP
-                self.pool.apply_async(
-                    func=run_func, kwds=kwds, callback=self.process_finished
-                )
+            # ismayavi = self.ct.pd_funcs.loc[self.current_func, "mayavi"]
+            # ismpl = self.ct.pd_funcs.loc[self.current_func, "matplotlib"]
+            # show_plots = self.ct.get_setting("show_plots")
+            # use_qthread = QS().value("use_qthread")
+            # if (
+            #     ismayavi
+            #     or (ismpl and show_plots and use_qthread)
+            #     or (ismpl and not show_plots and use_qthread and ismac)
+            # ):
+            logger().info("Starting in Main-Thread.")
+            result = run_func(**kwds)
+            self.process_finished(result)
+            #
+            # elif QS().value("use_qthread"):
+            #     logger().info("Starting in separate Thread.")
+            #     worker = Worker(function=run_func, **kwds)
+            #     worker.signals.error.connect(self.process_finished)
+            #     worker.signals.finished.connect(self.process_finished)
+            #     QThreadPool.globalInstance().start(worker)
+            #
+            # else:
+            #     logger().info("Starting in process from multiprocessing.")
+            #     recv_pipe, send_pipe = Pipe(False)
+            #     kwds["pipe"] = send_pipe
+            #     stream_rcv = StreamReceiver(recv_pipe)
+            #     stream_rcv.signals.stdout_received.connect(
+            #         self.rd.console_widget.write_stdout
+            #     )
+            #     stream_rcv.signals.stderr_received.connect(
+            #         self.rd.console_widget.write_stderr
+            #     )
+            #     QThreadPool.globalInstance().start(stream_rcv)
+            #     # ToDO: MP
+            #     self.pool.apply_async(
+            #         func=run_func, kwds=kwds, callback=self.process_finished
+            #     )
 
 
 def close_all():
