@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -9,7 +8,7 @@ import os
 import sys
 
 import qtpy
-from qtpy.QtCore import QTimer, Qt
+from qtpy.QtCore import Qt, QTimer
 from qtpy.QtWidgets import QApplication
 
 from mne_pipeline_hd.gui.gui_utils import (
@@ -21,9 +20,9 @@ from mne_pipeline_hd.gui.gui_utils import (
 from mne_pipeline_hd.gui.welcome_window import WelcomeWindow
 from mne_pipeline_hd.pipeline.legacy import legacy_import_check
 from mne_pipeline_hd.pipeline.pipeline_utils import (
-    ismac,
-    islin,
     init_logging,
+    islin,
+    ismac,
     logger,
 )
 
