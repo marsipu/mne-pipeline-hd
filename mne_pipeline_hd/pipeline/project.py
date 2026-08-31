@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -11,20 +10,20 @@ import shutil
 from ast import literal_eval
 from copy import deepcopy
 from os import listdir, makedirs
-from os.path import exists, getsize, isfile, join, isdir
+from os.path import exists, getsize, isdir, isfile, join
 from pathlib import Path
 
 import mne
 import numpy as np
 
 from mne_pipeline_hd.pipeline.legacy import renamed_parameters
-from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
+from mne_pipeline_hd.pipeline.loading import FSMRI, MEEG, Group
 from mne_pipeline_hd.pipeline.pipeline_utils import (
     TypedJSONEncoder,
     count_dict_keys,
     encode_tuples,
-    type_json_hook,
     logger,
+    type_json_hook,
 )
 
 

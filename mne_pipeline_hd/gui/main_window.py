@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 import sys
 from functools import partial
 
@@ -32,12 +32,12 @@ from qtpy.QtWidgets import (
 
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.dialogs import (
+    AboutDialog,
+    CopyParamsDialog,
     QuickGuide,
     RawInfo,
     RemoveProjectsDlg,
     SysInfoMsg,
-    AboutDialog,
-    CopyParamsDialog,
 )
 from mne_pipeline_hd.gui.education_widgets import EducationEditor, EducationTour
 from mne_pipeline_hd.gui.function_widgets import (
@@ -47,20 +47,21 @@ from mne_pipeline_hd.gui.function_widgets import (
     RunDialog,
 )
 from mne_pipeline_hd.gui.gui_utils import (
+    ColorTester,
     QProcessDialog,
     WorkerDialog,
     center,
-    set_ratio_geometry,
     get_std_icon,
     get_user_input_string,
-    ColorTester,
     set_app_theme,
+    set_ratio_geometry,
 )
 from mne_pipeline_hd.gui.loading_widgets import (
     AddFilesDialog,
     AddMRIDialog,
     CopyTrans,
     EventIDGui,
+    ExportDialog,
     FileDictDialog,
     FileDock,
     FileManagment,
@@ -68,7 +69,6 @@ from mne_pipeline_hd.gui.loading_widgets import (
     ReloadRaw,
     SubBadsDialog,
     SubjectWizard,
-    ExportDialog,
 )
 from mne_pipeline_hd.gui.parameter_widgets import (
     BoolGui,
@@ -81,12 +81,12 @@ from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.function_utils import close_all
 from mne_pipeline_hd.pipeline.pipeline_utils import (
-    restart_program,
-    ismac,
     QS,
     _run_from_script,
+    ismac,
     iswin,
     logger,
+    restart_program,
 )
 
 
