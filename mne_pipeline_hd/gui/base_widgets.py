@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -11,26 +10,26 @@ import sys
 
 import numpy as np
 import pandas
-from qtpy.QtCore import QItemSelectionModel, QTimer, Qt, Signal
+from qtpy.QtCore import QItemSelectionModel, Qt, QTimer, Signal
 from qtpy.QtGui import QFont
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QApplication,
+    QComboBox,
     QDialog,
     QHBoxLayout,
     QLabel,
     QListView,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
     QSpinBox,
-    QTabWidget,
     QTableView,
+    QTabWidget,
     QTreeView,
     QVBoxLayout,
     QWidget,
-    QComboBox,
-    QMessageBox,
 )
 
 from mne_pipeline_hd import _object_refs

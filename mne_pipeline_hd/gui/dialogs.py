@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -10,21 +9,21 @@ from importlib import resources
 from pathlib import Path
 
 from qtpy.QtWidgets import (
+    QComboBox,
     QDialog,
     QGridLayout,
     QLabel,
     QListView,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QTextEdit,
     QVBoxLayout,
     QWidget,
-    QComboBox,
-    QMessageBox,
 )
 
 from mne_pipeline_hd import extra
-from mne_pipeline_hd.gui.base_widgets import SimpleList, SimpleDialog
+from mne_pipeline_hd.gui.base_widgets import SimpleDialog, SimpleList
 from mne_pipeline_hd.gui.gui_utils import set_ratio_geometry
 from mne_pipeline_hd.gui.models import CheckListModel
 from mne_pipeline_hd.pipeline.loading import MEEG

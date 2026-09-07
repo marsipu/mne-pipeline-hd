@@ -1,16 +1,16 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 import os
 
 import pytest
 
 from mne_pipeline_hd.__main__ import init_streams
 from mne_pipeline_hd.gui.gui_utils import MainConsoleWidget
-from mne_pipeline_hd.pipeline.pipeline_utils import logger, init_logging
+from mne_pipeline_hd.pipeline.pipeline_utils import init_logging, logger
 
 
 def test_logging(qtbot):
