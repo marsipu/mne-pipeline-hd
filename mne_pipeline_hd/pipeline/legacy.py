@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 import json
 import os
 import subprocess
 import sys
-from os.path import isdir, join, isfile
+from os.path import isdir, isfile, join
 
-from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
-from mne_pipeline_hd.pipeline.pipeline_utils import type_json_hook, logger
+from mne_pipeline_hd.pipeline.loading import FSMRI, MEEG, Group
+from mne_pipeline_hd.pipeline.pipeline_utils import logger, type_json_hook
 
 renamed_parameters = {
     "filter_target": {"Raw": "raw", "Epochs": "epochs", "Evoked": "evoked"},

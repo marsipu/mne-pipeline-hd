@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -12,7 +11,7 @@ import re
 import shutil
 import sys
 import traceback
-from importlib import reload, resources, import_module
+from importlib import import_module, reload, resources
 from os import listdir
 from os.path import isdir, join
 from pathlib import Path
@@ -20,7 +19,7 @@ from pathlib import Path
 import mne
 import pandas as pd
 
-from mne_pipeline_hd import functions, extra
+from mne_pipeline_hd import extra, functions
 from mne_pipeline_hd.gui.gui_utils import get_user_input_string
 from mne_pipeline_hd.pipeline.legacy import transfer_file_params_to_single_subject
 from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger

@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 from ast import literal_eval
 from datetime import datetime
 
@@ -19,7 +19,6 @@ from qtpy.QtGui import QBrush, QFont
 
 from mne_pipeline_hd.gui.gui_utils import get_std_icon
 from mne_pipeline_hd.pipeline.pipeline_utils import logger
-
 
 # ToDo: Merge models and base widgets
 
@@ -399,11 +398,7 @@ class EditDictModel(BaseDictModel):
         return False
 
     def flags(self, index):
-        if not self.only_edit:
-            return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-        elif index.column() == 0 and self.only_edit == "keys":
-            return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-        elif index.column() == 1 and self.only_edit == "values":
+        if not self.only_edit or index.column() == 0 and self.only_edit == "keys" or index.column() == 1 and self.only_edit == "values":
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
         else:
             return QAbstractItemModel.flags(self, index)
