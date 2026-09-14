@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 import inspect
 
 import pytest
-from qtpy.QtCore import Qt
 from numpy.testing import assert_allclose
+from qtpy.QtCore import Qt
 
 from mne_pipeline_hd.gui import parameter_widgets
-from mne_pipeline_hd.gui.parameter_widgets import Param, _eval_param, LabelGui
+from mne_pipeline_hd.gui.parameter_widgets import LabelGui, Param, _eval_param
 from mne_pipeline_hd.tests._test_utils import toggle_checked_list_model
 
 parameters = {

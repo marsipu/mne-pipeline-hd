@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -15,7 +14,7 @@ from ast import literal_eval
 from copy import deepcopy
 from datetime import datetime
 from importlib import resources
-from os.path import join, isfile
+from os.path import isfile, join
 from pathlib import Path
 
 import numpy as np
