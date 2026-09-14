@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -11,15 +10,15 @@ import traceback
 from ast import literal_eval
 
 from qtpy.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QGridLayout,
+    QApplication,
     QComboBox,
+    QDialog,
+    QGridLayout,
     QHBoxLayout,
     QLineEdit,
     QPushButton,
-    QDialog,
-    QApplication,
+    QVBoxLayout,
+    QWidget,
 )
 
 from mne_pipeline_hd.gui import parameter_widgets
