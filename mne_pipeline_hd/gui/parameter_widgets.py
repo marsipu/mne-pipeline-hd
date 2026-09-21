@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 from ast import literal_eval
 from copy import copy
 from functools import partial
@@ -14,28 +14,28 @@ import pandas as pd
 from mne_qt_browser._pg_figure import _get_color
 from qtpy import compat
 from qtpy.QtCore import Qt, Signal
-from qtpy.QtGui import QFontDatabase, QFont, QPixmap
+from qtpy.QtGui import QFont, QFontDatabase, QPixmap
 from qtpy.QtWidgets import (
     QCheckBox,
+    QColorDialog,
     QComboBox,
     QDialog,
+    QDockWidget,
     QDoubleSpinBox,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QSlider,
     QSpinBox,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
-    QDockWidget,
-    QTabWidget,
-    QScrollArea,
-    QMessageBox,
-    QColorDialog,
 )
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCellPicker
@@ -43,21 +43,21 @@ from vtkmodules.vtkRenderingCore import vtkCellPicker
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.base_widgets import (
     CheckList,
+    ComboBox,
     EditDict,
     EditList,
-    SimpleList,
     SimpleDialog,
-    ComboBox,
+    SimpleList,
 )
 from mne_pipeline_hd.gui.dialogs import CheckListDlg
 from mne_pipeline_hd.gui.gui_utils import (
-    get_std_icon,
     WorkerDialog,
-    get_exception_tuple,
-    get_user_input_string,
     center,
-    set_app_theme,
+    get_exception_tuple,
+    get_std_icon,
+    get_user_input_string,
     set_app_font,
+    set_app_theme,
 )
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.loading import FSMRI
@@ -216,11 +216,9 @@ class Param(QWidget):
 
     def get_value(self):
         """This should be implemented for each widget"""
-        pass
 
     def set_value(self, value):
         """This should be implemented for each widget"""
-        pass
 
     def _get_param(self):
         """Get current parameter value from gui."""
