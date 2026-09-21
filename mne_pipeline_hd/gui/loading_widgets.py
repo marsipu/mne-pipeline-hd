@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 import os
 import re
 import shutil
@@ -37,8 +37,8 @@ from qtpy.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
-    QTabWidget,
     QTableView,
+    QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -50,9 +50,9 @@ from qtpy.QtWidgets import (
 from mne_pipeline_hd.functions.operations import find_bads
 from mne_pipeline_hd.functions.plot import (
     plot_ica_components,
-    plot_ica_sources,
     plot_ica_overlay,
     plot_ica_properties,
+    plot_ica_sources,
     plot_raw,
 )
 from mne_pipeline_hd.gui.base_widgets import (
@@ -71,14 +71,14 @@ from mne_pipeline_hd.gui.gui_utils import (
     Worker,
     WorkerDialog,
     center,
-    set_ratio_geometry,
     get_user_input_string,
     gui_error,
+    set_ratio_geometry,
 )
 from mne_pipeline_hd.gui.models import AddFilesModel
 from mne_pipeline_hd.gui.parameter_widgets import ComboGui
-from mne_pipeline_hd.pipeline.loading import FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS, logger
+from mne_pipeline_hd.pipeline.loading import FSMRI, MEEG, Group
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, compare_filep, logger
 
 
 def index_parser(index, all_items, groups=None):

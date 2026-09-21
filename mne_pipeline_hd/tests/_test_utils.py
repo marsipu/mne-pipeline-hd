@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 import pytest
 import pytestqt
-
 from qtpy.QtCore import Qt
 
 
