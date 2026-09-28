@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -43,6 +42,7 @@ def test_fsmri(controller):
 
 def test_kwargs_geopenfilenames():
     import inspect
+
     from qtpy import compat
 
     signature = inspect.signature(compat.getopenfilenames)
