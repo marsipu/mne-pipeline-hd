@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -22,34 +21,33 @@ from qtpy.QtCore import (
     QObject,
     QProcess,
     QRunnable,
-    QThreadPool,
     Qt,
+    QThreadPool,
+    QTimer,
     Signal,
     Slot,
-    QTimer,
 )
-from qtpy.QtGui import QFont, QTextCursor, QPalette, QColor, QIcon
+from qtpy.QtGui import QColor, QFont, QIcon, QPalette, QTextCursor
 from qtpy.QtWidgets import (
     QApplication,
+    QColorDialog,
+    QComboBox,
     QDialog,
+    QFormLayout,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMessageBox,
+    QPlainTextEdit,
     QProgressBar,
     QPushButton,
+    QStyle,
     QTextEdit,
     QVBoxLayout,
-    QStyle,
-    QInputDialog,
-    QPlainTextEdit,
-    QColorDialog,
-    QFormLayout,
-    QComboBox,
     QWidget,
 )
 
-from mne_pipeline_hd import _object_refs
-from mne_pipeline_hd import extra
+from mne_pipeline_hd import _object_refs, extra
 from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
 
 # Load theme colors
@@ -82,7 +80,7 @@ def get_std_icon(icon_name):
     return QApplication.instance().style().standardIcon(getattr(QStyle, icon_name))
 
 
-class ExceptionTuple(object):
+class ExceptionTuple:
     def __init__(self, *args):
         self._data = [*args]
 
@@ -197,7 +195,7 @@ class UncaughtHook(QObject):
     _exception_caught = Signal(object)
 
     def __init__(self, *args, **kwargs):
-        super(UncaughtHook, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # connect signal to execute the message box function
         # always on main thread

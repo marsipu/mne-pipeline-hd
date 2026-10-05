@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -15,12 +14,9 @@ from datetime import datetime, timezone
 from importlib.metadata import version
 
 # import sys
-
 # from os.path import dirname, abspath, join
-
 # curdir = dirname(__file__)
 # sys.path.append(abspath(join(curdir, "..", "..", "mne_pipeline_hd")))
-
 # # Import module because of annoying import problem on CIs
 from mne_pipeline_hd.gui import parameter_widgets
 
