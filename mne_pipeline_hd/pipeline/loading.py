@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
-from __future__ import print_function
 
 import functools
 import inspect
@@ -26,11 +24,11 @@ import numpy as np
 from tqdm import tqdm
 
 from mne_pipeline_hd.pipeline.pipeline_utils import (
-    TypedJSONEncoder,
-    type_json_hook,
     QS,
+    TypedJSONEncoder,
     _test_run,
     logger,
+    type_json_hook,
 )
 
 
@@ -194,7 +192,6 @@ class BaseLoading:
     def init_attributes(self):
         """Initialization of additional attributes, should be overridden
         in inherited classes"""
-        pass
 
     def init_paths(self):
         """Initialization of all paths and the io_dict, should be overridden
