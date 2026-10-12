@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -6,7 +5,6 @@ Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
 from mne_pipeline_hd.tests._test_utils import toggle_checked_list_model
-
 
 # ToDo: Test all base widgets
 

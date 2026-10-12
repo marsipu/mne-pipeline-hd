@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
-from __future__ import print_function
 
 import gc
 import os
@@ -25,13 +23,13 @@ import numpy as np
 from mne.preprocessing import ICA, find_bad_channels_maxwell
 from mne_connectivity import SpectralConnectivity
 
-from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI
+from mne_pipeline_hd.pipeline.loading import FSMRI, MEEG
 from mne_pipeline_hd.pipeline.pipeline_utils import (
     check_kwargs,
     compare_filep,
+    get_n_jobs,
     ismac,
     iswin,
-    get_n_jobs,
     logger,
 )
 
