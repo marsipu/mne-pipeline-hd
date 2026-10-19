@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -24,7 +23,7 @@ from qtpy.QtWidgets import (
 
 from mne_pipeline_hd import _object_refs, extra
 from mne_pipeline_hd.gui.base_widgets import SimpleList
-from mne_pipeline_hd.gui.gui_utils import center, WorkerDialog, get_user_input_string
+from mne_pipeline_hd.gui.gui_utils import WorkerDialog, center, get_user_input_string
 from mne_pipeline_hd.gui.main_window import MainWindow
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.pipeline_utils import QS
