@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -22,9 +21,11 @@ from qtpy.QtCore import QSize, Qt
 from qtpy.QtGui import QFont, QTextDocument
 from qtpy.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QComboBox,
     QDialog,
     QFormLayout,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -33,13 +34,11 @@ from qtpy.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QSizePolicy,
     QTabWidget,
     QVBoxLayout,
-    QGridLayout,
-    QProgressBar,
-    QCheckBox,
 )
 
 from mne_pipeline_hd.gui import parameter_widgets
@@ -54,11 +53,11 @@ from mne_pipeline_hd.gui.base_widgets import (
 from mne_pipeline_hd.gui.gui_utils import (
     CodeEditor,
     ErrorDialog,
+    MainConsoleWidget,
     center,
     get_exception_tuple,
-    set_ratio_geometry,
     get_std_icon,
-    MainConsoleWidget,
+    set_ratio_geometry,
 )
 from mne_pipeline_hd.gui.models import CustomFunctionModel, RunModel
 from mne_pipeline_hd.pipeline.function_utils import QRunController
