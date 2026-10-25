@@ -198,6 +198,33 @@ class Project:
             logger().info(f"Renamed project-script {old_path} to {new_path}")
         logger().info(f'Finished renaming project "{old_name}" to "{new_name}"')
 
+    def export_bids(
+        self,
+        destination,
+        recordings=None,
+        mri_subjects=None,
+        *,
+        anonymize=False,
+        worker_signals=None,
+        dataset_description=None,
+        selected_only=False,
+        shared_mris=(),
+    ):
+        """Export original data, FreeSurfer reconstructions and transforms to BIDS."""
+        from mne_pipeline_hd.pipeline.bids import export_project_bids
+
+        return export_project_bids(
+            self,
+            destination,
+            recordings,
+            mri_subjects,
+            anonymize=anonymize,
+            worker_signals=worker_signals,
+            dataset_description=dataset_description,
+            selected_only=selected_only,
+            shared_mris=shared_mris,
+        )
+
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
         self.old_all_meeg_path = join(self.pscripts_path, "file_list.json")

@@ -32,6 +32,17 @@ islin = not ismac and not iswin
 _logger = None
 
 
+def digitizations_match(first, second):
+    """Compare ordered digitization points within one micrometre, not empty sets."""
+    if not first or not second or len(first) != len(second):
+        return False
+    return all(
+        all(left[key] == right[key] for key in ("kind", "ident", "coord_frame"))
+        and np.allclose(left["r"], right["r"], rtol=0, atol=1e-6)
+        for left, right in zip(first, second)
+    )
+
+
 def init_logging(debug_mode=False):
     global _logger
     # Initialize Logger

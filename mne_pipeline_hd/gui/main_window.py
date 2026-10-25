@@ -31,6 +31,7 @@ from qtpy.QtWidgets import (
 )
 
 from mne_pipeline_hd import _object_refs
+from mne_pipeline_hd.gui.bids_export import BIDSExportDialog
 from mne_pipeline_hd.gui.dialogs import (
     QuickGuide,
     RawInfo,
@@ -278,6 +279,7 @@ class MainWindow(QMainWindow):
 
         export_menu = self.menuBar().addMenu("&Export")
         export_menu.addAction("Export MEEG", partial(ExportDialog, self))
+        export_menu.addAction("Export project to BIDS", partial(BIDSExportDialog, self))
 
         prep_menu = self.menuBar().addMenu("&Preparation")
         prep_menu.addAction("Subject-Wizard", partial(SubjectWizard, self))

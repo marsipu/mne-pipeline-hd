@@ -78,7 +78,12 @@ from mne_pipeline_hd.gui.gui_utils import (
 from mne_pipeline_hd.gui.models import AddFilesModel
 from mne_pipeline_hd.gui.parameter_widgets import ComboGui
 from mne_pipeline_hd.pipeline.loading import FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import compare_filep, QS, logger
+from mne_pipeline_hd.pipeline.pipeline_utils import (
+    compare_filep,
+    digitizations_match,
+    QS,
+    logger,
+)
 
 
 def index_parser(index, all_items, groups=None):
@@ -1707,12 +1712,14 @@ class CopyTrans(QDialog):
         # Get Digitization points
         current_dig = self.current_meeg.load_info()["dig"]
 
-        # Add all meeg, which have the exact same digitization points
+        # Add recordings with matching digitization points.
         # (assuming, that they can use the same trans-file)
         worker_signals.pgbar_max.emit(len(self.to_meegs))
         for n, to_meeg in enumerate(self.to_meegs):
             worker_signals.pgbar_text.emit(f"Comparing: {to_meeg}")
-            if MEEG(to_meeg, self.ct).load_info()["dig"] == current_dig:
+            if digitizations_match(
+                MEEG(to_meeg, self.ct).load_info()["dig"], current_dig
+            ):
                 self.copy_tos.append(to_meeg)
             worker_signals.pgbar_n.emit(n + 1)
 
