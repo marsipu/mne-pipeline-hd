@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 from functools import partial
 from importlib import import_module
-from os.path import join, isfile
+from os.path import isfile, join
 
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
@@ -14,24 +14,24 @@ from matplotlib.figure import Figure
 from mne.viz import Brain
 from mne_qt_browser._pg_figure import MNEQtBrowser
 from qtpy.QtCore import Qt, QThreadPool
-from qtpy.QtGui import QPixmap, QFont
+from qtpy.QtGui import QFont, QPixmap
 from qtpy.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QGridLayout,
-    QComboBox,
-    QTabWidget,
-    QVBoxLayout,
-    QDialog,
-    QHBoxLayout,
     QCheckBox,
-    QPushButton,
+    QComboBox,
+    QDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
     QMessageBox,
     QProgressDialog,
-    QLabel,
+    QPushButton,
     QScrollArea,
-    QToolBar,
     QSpinBox,
+    QTabWidget,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
 )
 
 from mne_pipeline_hd.pipeline.pipeline_utils import logger
@@ -41,10 +41,10 @@ try:
 except ImportError:
     Figure3D = None
 from mne_pipeline_hd import _object_refs
-from mne_pipeline_hd.gui.base_widgets import SimpleList, CheckList
+from mne_pipeline_hd.gui.base_widgets import CheckList, SimpleList
 from mne_pipeline_hd.gui.gui_utils import Worker, set_ratio_geometry
 from mne_pipeline_hd.pipeline.function_utils import get_arguments
-from mne_pipeline_hd.pipeline.loading import MEEG, FSMRI, Group
+from mne_pipeline_hd.pipeline.loading import FSMRI, MEEG, Group
 
 
 class PlotManager(QMainWindow):
@@ -104,11 +104,7 @@ class PlotManager(QMainWindow):
                     Qt.FocusPolicy(Qt.StrongFocus | Qt.WheelFocus)
                 )
                 plot_widget.setFocus()
-            elif isinstance(subplot, MNEQtBrowser):
-                plot_widget = subplot
-            elif isinstance(subplot, Brain):
-                plot_widget = subplot
-            elif isinstance(subplot, Figure3D):
+            elif isinstance(subplot, MNEQtBrowser) or isinstance(subplot, Brain) or isinstance(subplot, Figure3D):
                 plot_widget = subplot
             else:
                 logger().error(
@@ -568,8 +564,7 @@ class PlotViewer(QMainWindow):
             self.column_count -= 1
 
         # Make sure, that at least one column is shown
-        if self.column_count < 1:
-            self.column_count = 1
+        self.column_count = max(self.column_count, 1)
 
         self.column_label.setText(f"{self.column_count} Columns")
         self.update_layout()
@@ -586,8 +581,7 @@ class PlotViewer(QMainWindow):
             self.zoom_factor -= 50
 
         # Make sure, that zoom is not smaller than 10%
-        if self.zoom_factor < 10:
-            self.zoom_factor = 10
+        self.zoom_factor = max(self.zoom_factor, 10)
 
         self.zoom_label.setText(f"{self.zoom_factor} %")
         self.update_layout()
