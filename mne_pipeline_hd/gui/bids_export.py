@@ -258,8 +258,10 @@ class BIDSExportDialog(QDialog):
         for row in range(self.recordings.rowCount()):
             if selected and self.recordings.item(row, 0).checkState() != Qt.Checked:
                 continue
-            name, subject, session, task, run = (
-                self.recordings.item(row, column).text().strip() for column in range(5)
+            name = self.recordings.item(row, 0).text()
+            subject, session, task, run = (
+                self.recordings.item(row, column).text().strip()
+                for column in range(1, 5)
             )
             recordings.append(BIDSRecording(name, subject, task, session, run))
         mri_subjects = {
