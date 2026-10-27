@@ -698,9 +698,21 @@ def export_project_bids(
                     )
                 t1 = source / "mri" / "T1.mgz"
                 if t1.is_file() and mri not in shared_mris:
+                    session = next(
+                        (
+                            recording.session
+                            for recording in recordings
+                            if recording.subject == subject
+                            and project.meeg_to_fsmri.get(recording.name) == mri
+                            and recording.session
+                        ),
+                        None,
+                    )
                     write_anat(
                         t1,
-                        BIDSPath(root=root, subject=subject, suffix="T1w"),
+                        BIDSPath(
+                            root=root, subject=subject, session=session, suffix="T1w"
+                        ),
                     )
                 progress(f"Exported FreeSurfer reconstruction: {mri}", advance=True)
             if mri_subjects:
