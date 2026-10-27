@@ -193,7 +193,17 @@ def bids_mapping_from_pattern(
     if session_infos is not None:
         derived = infer_bids_sessions(derived, session_infos)
     if "run" in regex.groupindex:
-        _convert_run_labels(derived)
+        matched_names = {recording.name for recording in derived}
+        _convert_run_labels(
+            derived
+            + [
+                replace(recording)
+                for recording in recordings
+                if recording.name not in matched_names
+                and isinstance(recording.run, str)
+                and re.fullmatch(r"[0-9]+", recording.run)
+            ]
+        )
     mri_subjects = dict(mri_subjects)
     if "subject" in regex.groupindex:
         assigned_subjects = {}
