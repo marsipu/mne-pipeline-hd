@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
-from __future__ import print_function
+
 
 import gc
 import inspect
@@ -15,13 +14,13 @@ from importlib import import_module
 from multiprocessing import Pipe
 
 from matplotlib import pyplot as plt
-from qtpy.QtCore import QThreadPool, QRunnable, Slot, QObject, Signal
+from qtpy.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
 from qtpy.QtWidgets import QAbstractItemView
 
 from mne_pipeline_hd.gui.base_widgets import TimedMessageBox
-from mne_pipeline_hd.gui.gui_utils import get_exception_tuple, ExceptionTuple, Worker
-from mne_pipeline_hd.pipeline.loading import BaseLoading, FSMRI, Group, MEEG
-from mne_pipeline_hd.pipeline.pipeline_utils import shutdown, ismac, QS, logger
+from mne_pipeline_hd.gui.gui_utils import ExceptionTuple, Worker, get_exception_tuple
+from mne_pipeline_hd.pipeline.loading import FSMRI, MEEG, BaseLoading, Group
+from mne_pipeline_hd.pipeline.pipeline_utils import QS, ismac, logger, shutdown
 
 
 def get_func(func_name, obj):
