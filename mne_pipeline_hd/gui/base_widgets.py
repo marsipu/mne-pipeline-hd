@@ -649,7 +649,7 @@ class BaseDict(Base):
 
     def _selected_keyvalue(self, indexes):
         try:
-            return set([self.get_keyvalue_by_index(idx) for idx in indexes])
+            return {self.get_keyvalue_by_index(idx) for idx in indexes}
         except TypeError:
             return [self.get_keyvalue_by_index(idx) for idx in indexes]
 
@@ -819,9 +819,7 @@ class EditDict(BaseDict):
         self.model.insertRow(row)
 
     def remove_row(self):
-        row_idxs = set(
-            [idx.row() for idx in self.view.selectionModel().selectedIndexes()]
-        )
+        row_idxs = {idx.row() for idx in self.view.selectionModel().selectedIndexes()}
         for row_idx in row_idxs:
             self.model.removeRow(row_idx)
 
@@ -1182,7 +1180,7 @@ class EditPandasTable(BasePandasTable):
 
     def remove_row(self):
         rows = sorted(
-            set([ix.row() for ix in self.view.selectionModel().selectedIndexes()]),
+            {ix.row() for ix in self.view.selectionModel().selectedIndexes()},
             reverse=True,
         )
         for row in rows:
@@ -1191,7 +1189,7 @@ class EditPandasTable(BasePandasTable):
 
     def remove_column(self):
         columns = sorted(
-            set([ix.column() for ix in self.view.selectionModel().selectedIndexes()]),
+            {ix.column() for ix in self.view.selectionModel().selectedIndexes()},
             reverse=True,
         )
         for column in columns:
@@ -1400,9 +1398,7 @@ class AssignWidget(QWidget):
 
     def items_selected(self, selected):
         # Get all unique values of selected items
-        values = set(
-            [self.assignments[key] for key in selected if key in self.assignments]
-        )
+        values = {self.assignments[key] for key in selected if key in self.assignments}
         self.props_w.select(values)
 
     def assign(self):

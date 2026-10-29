@@ -4,7 +4,6 @@ License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
-
 import functools
 import inspect
 import itertools
@@ -227,7 +226,7 @@ class BaseLoading:
             self.save_dir, f"_{self.name}_file_parameters.json"
         )
         try:
-            with open(self.file_parameters_path, "r") as file:
+            with open(self.file_parameters_path) as file:
                 self.file_parameters = json.load(file, object_hook=type_json_hook)
         except (json.JSONDecodeError, FileNotFoundError):
             self.file_parameters = dict()
@@ -477,7 +476,7 @@ class BaseLoading:
     def load_json(self, file_name, default=None):
         file_path = join(self.save_dir, f"{self.name}_{self.p_preset}_{file_name}.json")
         try:
-            with open(file_path, "r") as file:
+            with open(file_path) as file:
                 data = json.load(file, object_hook=type_json_hook)
         except json.JSONDecodeError:
             logger().warning(f"{file_path} could not be loaded")
@@ -1522,7 +1521,7 @@ class FSMRI(BaseLoading):
         annot_dir = join(self.subjects_dir, self.name, "label")
         try:
             files = os.listdir(annot_dir)
-            annotations = set([file[3:-6] for file in files if file[-6:] == ".annot"])
+            annotations = {file[3:-6] for file in files if file[-6:] == ".annot"}
         except FileNotFoundError:
             annotations = set()
 

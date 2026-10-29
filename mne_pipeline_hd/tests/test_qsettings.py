@@ -15,7 +15,7 @@ from mne_pipeline_hd import extra
 def test_qsettings_types(qtbot):
     """Test if QSettings keep types on all operating systems."""
     settings_path = resources.files(extra) / "default_settings.json"
-    with open(settings_path, "r") as file:
+    with open(settings_path) as file:
         default_qsettings = json.load(file)["qsettings"]
 
     for v in default_qsettings:
