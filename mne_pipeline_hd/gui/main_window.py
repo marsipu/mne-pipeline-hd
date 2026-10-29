@@ -31,6 +31,7 @@ from qtpy.QtWidgets import (
 )
 
 from mne_pipeline_hd import _object_refs
+from mne_pipeline_hd.gui.bids_export import BIDSExportDialog
 from mne_pipeline_hd.gui.dialogs import (
     AboutDialog,
     CopyParamsDialog,
@@ -108,7 +109,7 @@ class MainWindow(QMainWindow):
         self.ct = controller
         self.pr = controller.pr
         self.edu_tour = None
-        self.bt_dict = dict()
+        self.bt_dict = {}
         # For functions, which should or should not
         # be called durin initialization
         self.first_init = True
@@ -278,6 +279,7 @@ class MainWindow(QMainWindow):
 
         export_menu = self.menuBar().addMenu("&Export")
         export_menu.addAction("Export MEEG", partial(ExportDialog, self))
+        export_menu.addAction("Export project to BIDS", partial(BIDSExportDialog, self))
 
         prep_menu = self.menuBar().addMenu("&Preparation")
         prep_menu.addAction("Subject-Wizard", partial(SubjectWizard, self))
@@ -567,7 +569,7 @@ class MainWindow(QMainWindow):
                     tab.deleteLater()
                 except RuntimeError:
                     logger().debug("Tab already deleted")
-        self.bt_dict = dict()
+        self.bt_dict = {}
 
         self.add_func_bts()
 
@@ -603,7 +605,7 @@ class MainWindow(QMainWindow):
         if self.ct.edu_program:
             dock_kwargs = self.ct.edu_program["dock_kwargs"]
         else:
-            dock_kwargs = dict()
+            dock_kwargs = {}
         self.file_dock = FileDock(self, **dock_kwargs)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.file_dock)
         self.view_menu.addAction(self.file_dock.toggleViewAction())

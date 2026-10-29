@@ -104,7 +104,11 @@ class PlotManager(QMainWindow):
                     Qt.FocusPolicy(Qt.StrongFocus | Qt.WheelFocus)
                 )
                 plot_widget.setFocus()
-            elif isinstance(subplot, MNEQtBrowser) or isinstance(subplot, Brain) or isinstance(subplot, Figure3D):
+            elif (
+                isinstance(subplot, MNEQtBrowser)
+                or isinstance(subplot, Brain)
+                or isinstance(subplot, Figure3D)
+            ):
                 plot_widget = subplot
             else:
                 logger().error(

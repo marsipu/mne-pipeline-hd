@@ -83,7 +83,7 @@ class Controller:
 
         # Load default settings
         default_path = join(resources.files(extra), "default_settings.json")
-        with open(default_path, "r") as file:
+        with open(default_path) as file:
             self.default_settings = json.load(file)
 
         # Load settings (which are stored as .json-file in home_path)
@@ -130,9 +130,7 @@ class Controller:
 
     def load_settings(self):
         try:
-            with open(
-                join(self.home_path, "mne_pipeline_hd-settings.json"), "r"
-            ) as file:
+            with open(join(self.home_path, "mne_pipeline_hd-settings.json")) as file:
                 self.settings = json.load(file)
             # Account for settings, which were not saved
             # but exist in default_settings
@@ -277,7 +275,7 @@ class Controller:
     def load_edu(self):
         if self.edu_program_name is not None:
             edu_path = join(self.home_path, "edu_programs", self.edu_program_name)
-            with open(edu_path, "r") as file:
+            with open(edu_path) as file:
                 self.edu_program = json.load(file)
 
             self.all_pd_funcs = self.pd_funcs.copy()

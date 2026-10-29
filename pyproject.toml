@@ -24,6 +24,8 @@ dependencies = [
     "mne",
     "mne-qt-browser",
     "mne-connectivity",
+    "mne-bids>=0.14",
+    "pybv>=0.7.5",
     # MNE related
     "vtk", # needed for CIs
     "nibabel", # needed for CIs

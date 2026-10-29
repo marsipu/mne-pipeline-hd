@@ -398,7 +398,13 @@ class EditDictModel(BaseDictModel):
         return False
 
     def flags(self, index):
-        if not self.only_edit or index.column() == 0 and self.only_edit == "keys" or index.column() == 1 and self.only_edit == "values":
+        if (
+            not self.only_edit
+            or index.column() == 0
+            and self.only_edit == "keys"
+            or index.column() == 1
+            and self.only_edit == "values"
+        ):
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
         else:
             return QAbstractItemModel.flags(self, index)

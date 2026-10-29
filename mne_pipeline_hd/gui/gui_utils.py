@@ -52,7 +52,7 @@ from mne_pipeline_hd.pipeline.pipeline_utils import QS, logger
 
 # Load theme colors
 theme_color_path = join(str(resources.files(extra)), "color_themes.json")
-with open(theme_color_path, "r") as file:
+with open(theme_color_path) as file:
     theme_colors = json.load(file)
 
 

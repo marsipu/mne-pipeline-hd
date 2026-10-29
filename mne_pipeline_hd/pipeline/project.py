@@ -75,40 +75,40 @@ class Project:
 
     def init_attributes(self):
         # Stores the names of all MEG/EEG-Files
-        self.all_meeg = list()
+        self.all_meeg = []
         # Stores selected MEG/EEG-Files
-        self.sel_meeg = list()
+        self.sel_meeg = []
         # Stores Bad-Channels for each MEG/EEG-File
-        self.meeg_bad_channels = dict()
+        self.meeg_bad_channels = {}
         # Stores Event-ID for each MEG/EEG-File
-        self.meeg_event_id = dict()
+        self.meeg_event_id = {}
         # Stores selected event-id-labels
-        self.sel_event_id = dict()
+        self.sel_event_id = {}
         # Stores the names of all Empty-Room-Files (MEG/EEG)
-        self.all_erm = list()
+        self.all_erm = []
         # Maps each MEG/EEG-File to a Empty-Room-File or None
-        self.meeg_to_erm = dict()
+        self.meeg_to_erm = {}
         # Stores the names of all Freesurfer-Segmentation-Folders
         # in Subjects-Dir
-        self.all_fsmri = list()
+        self.all_fsmri = []
         # Stores selected Freesurfer-Segmentations
-        self.sel_fsmri = list()
+        self.sel_fsmri = []
         # Maps each MEG/EEG-File to a Freesurfer-Segmentation or None
-        self.meeg_to_fsmri = dict()
+        self.meeg_to_fsmri = {}
         # Stores the ICA-Components to be excluded
-        self.meeg_ica_exclude = dict()
+        self.meeg_ica_exclude = {}
         # Groups MEG/EEG-Files e.g. for Grand-Average
-        self.all_groups = dict()
+        self.all_groups = {}
         # Stores selected Grand-Average-Groups
-        self.sel_groups = list()
+        self.sel_groups = []
         # Stores paths of saved plots
-        self.plot_files = dict()
+        self.plot_files = {}
         # Stores functions and if they are selected
-        self.sel_functions = list()
+        self.sel_functions = []
         # Stores additional keyword-arguments for functions by function-name
-        self.add_kwargs = dict()
+        self.add_kwargs = {}
         # Stores parameters for each Parameter-Preset
-        self.parameters = dict()
+        self.parameters = {}
         # Parameter-Preset
         self.p_preset = "Default"
 
@@ -197,6 +197,33 @@ class Project:
             logger().info(f"Renamed project-script {old_path} to {new_path}")
         logger().info(f'Finished renaming project "{old_name}" to "{new_name}"')
 
+    def export_bids(
+        self,
+        destination,
+        recordings=None,
+        mri_subjects=None,
+        *,
+        anonymize=False,
+        worker_signals=None,
+        dataset_description=None,
+        selected_only=False,
+        shared_mris=(),
+    ):
+        """Export original data, FreeSurfer reconstructions and transforms to BIDS."""
+        from mne_pipeline_hd.pipeline.bids import export_project_bids
+
+        return export_project_bids(
+            self,
+            destination,
+            recordings,
+            mri_subjects,
+            anonymize=anonymize,
+            worker_signals=worker_signals,
+            dataset_description=dataset_description,
+            selected_only=selected_only,
+            shared_mris=shared_mris,
+        )
+
     def load_lists(self):
         # Old Paths to allow transition (22.11.2020)
         self.old_all_meeg_path = join(self.pscripts_path, "file_list.json")
@@ -243,7 +270,7 @@ class Project:
         ]:
             attribute_name = self.path_to_attribute[path]
             try:
-                with open(path, "r") as file:
+                with open(path) as file:
                     loaded_attribute = json.load(file, object_hook=type_json_hook)
                     # Make sure, that loaded object has same type
                     # as default from __init__
@@ -255,7 +282,7 @@ class Project:
             except (json.JSONDecodeError, FileNotFoundError):
                 # Old Paths to allow transition (22.11.2020)
                 try:
-                    with open(self.old_paths[path], "r") as file:
+                    with open(self.old_paths[path]) as file:
                         setattr(
                             self,
                             attribute_name,
@@ -267,7 +294,7 @@ class Project:
     def load_parameters(self):
         try:
             with open(
-                join(self.pscripts_path, f"parameters_{self.name}.json"), "r"
+                join(self.pscripts_path, f"parameters_{self.name}.json")
             ) as read_file:
                 loaded_parameters = json.load(read_file, object_hook=type_json_hook)
 
@@ -312,11 +339,13 @@ class Project:
                         loaded_parameters[p_preset].update({param: eval_param})
                     # Change renamed legacy parameters
                     for param, value in loaded_parameters[p_preset].items():
-                        if param in renamed_parameters:
-                            if value in renamed_parameters[param]:
-                                loaded_parameters[p_preset][param] = renamed_parameters[
-                                    param
-                                ][value]
+                        if (
+                            param in renamed_parameters
+                            and value in renamed_parameters[param]
+                        ):
+                            loaded_parameters[p_preset][param] = renamed_parameters[
+                                param
+                            ][value]
 
                 self.parameters = loaded_parameters
         except (FileNotFoundError, json.decoder.JSONDecodeError):
@@ -339,20 +368,20 @@ class Project:
 
     def load_default_parameters(self):
         # Empty the dict for current Parameter-Preset
-        self.parameters[self.p_preset] = dict()
+        self.parameters[self.p_preset] = {}
         for param_name in self.ct.pd_params.index:
             self.load_default_param(param_name)
 
     def load_last_p_preset(self):
         try:
-            with open(self.sel_p_preset_path, "r") as read_file:
+            with open(self.sel_p_preset_path) as read_file:
                 self.p_preset = json.load(read_file)
                 # If parameter-preset not in Parameters,
                 # load first Parameter-Key(=Parameter-Preset)
                 if self.p_preset not in self.parameters:
-                    self.p_preset = list(self.parameters.keys())[0]
+                    self.p_preset = next(iter(self.parameters.keys()))
         except (FileNotFoundError, json.decoder.JSONDecodeError):
-            self.p_preset = list(self.parameters.keys())[0]
+            self.p_preset = next(iter(self.parameters.keys()))
 
     def load(self):
         self.load_lists()
@@ -530,9 +559,9 @@ class Project:
                     return
 
     def clean_plot_files(self, worker_signals=None):
-        all_image_paths = list()
+        all_image_paths = []
         # Remove object-keys which no longer exist
-        remove_obj = list()
+        remove_obj = []
         n_remove_ppreset = 0
         n_remove_funcs = 0
 
@@ -551,13 +580,13 @@ class Project:
                 remove_obj.append(obj_key)
             else:
                 # Remove Parameter-Presets which no longer exist
-                remove_p_preset = list()
+                remove_p_preset = []
                 for p_preset in self.plot_files[obj_key]:
                     key_count += 1
                     if worker_signals is not None:
                         worker_signals.pgbar_n.emit(key_count)
 
-                    if p_preset not in self.parameters.keys():
+                    if p_preset not in self.parameters:
                         key_count += len(self.plot_files[obj_key][p_preset])
                         if worker_signals is not None:
                             worker_signals.pgbar_n.emit(key_count)
@@ -566,7 +595,7 @@ class Project:
                     else:
                         # Remove funcs which no longer exist
                         # or got no paths left
-                        remove_funcs = list()
+                        remove_funcs = []
                         for func in self.plot_files[obj_key][p_preset]:
                             key_count += 1
                             if worker_signals is not None:
