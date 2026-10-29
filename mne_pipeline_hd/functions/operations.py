@@ -4,7 +4,6 @@ License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
 
-
 import gc
 import os
 import shutil

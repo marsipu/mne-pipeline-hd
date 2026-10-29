@@ -347,7 +347,7 @@ class AboutDialog(QDialog):
     def __init__(self, main_win):
         super().__init__(main_win)
         self.mw = main_win
-        with open(resources.files(extra) / "license.txt", "r") as file:
+        with open(resources.files(extra) / "license.txt") as file:
             license_text = file.read()
         license_text = license_text.replace("\n", "<br>")
         text = (

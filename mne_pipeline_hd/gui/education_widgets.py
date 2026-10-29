@@ -239,7 +239,7 @@ class EducationEditor(QMainWindow):
     def load_edu_file(self):
         file_path = compat.getopenfilename(self, directory=self.edu_folder)[0]
         if file_path != "":
-            with open(file_path, "r") as file:
+            with open(file_path) as file:
                 self.edu = json.load(file)
 
         self.update_ui()
