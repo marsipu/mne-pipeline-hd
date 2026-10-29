@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """BIDS exports using small on-disk recordings, without downloaded test data."""
 
 import json
@@ -214,15 +213,9 @@ def test_complete_export(bids_project, tmp_path, anonymize):
             == "identifying-id"
         )
     assert (
-        destination
-        / "sub-001"
-        / "ses-01"
-        / "anat"
-        / "sub-001_ses-01_T1w.nii.gz"
+        destination / "sub-001" / "ses-01" / "anat" / "sub-001_ses-01_T1w.nii.gz"
     ).is_file()
-    assert (
-        destination / "sub-002" / "anat" / "sub-002_T1w.nii.gz"
-    ).is_file()
+    assert (destination / "sub-002" / "anat" / "sub-002_T1w.nii.gz").is_file()
     for subject in ("001", "002"):
         fs = destination / "derivatives" / "freesurfer" / f"sub-{subject}"
         assert (fs / "mri" / "T1.mgz").is_file()

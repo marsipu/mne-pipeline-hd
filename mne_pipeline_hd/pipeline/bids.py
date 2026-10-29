@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Export original project data and selected native derivatives to BIDS."""
 
 import json

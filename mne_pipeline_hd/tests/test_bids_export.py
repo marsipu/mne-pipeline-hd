@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Exercise BIDS dialog wiring without downloading sample data."""
 
 import sys

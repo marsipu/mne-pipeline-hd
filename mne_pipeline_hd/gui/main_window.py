@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
 Github: https://github.com/marsipu/mne-pipeline-hd
 """
+
 import sys
 from functools import partial
 
@@ -33,12 +33,12 @@ from qtpy.QtWidgets import (
 from mne_pipeline_hd import _object_refs
 from mne_pipeline_hd.gui.bids_export import BIDSExportDialog
 from mne_pipeline_hd.gui.dialogs import (
+    AboutDialog,
+    CopyParamsDialog,
     QuickGuide,
     RawInfo,
     RemoveProjectsDlg,
     SysInfoMsg,
-    AboutDialog,
-    CopyParamsDialog,
 )
 from mne_pipeline_hd.gui.education_widgets import EducationEditor, EducationTour
 from mne_pipeline_hd.gui.function_widgets import (
@@ -48,20 +48,21 @@ from mne_pipeline_hd.gui.function_widgets import (
     RunDialog,
 )
 from mne_pipeline_hd.gui.gui_utils import (
+    ColorTester,
     QProcessDialog,
     WorkerDialog,
     center,
-    set_ratio_geometry,
     get_std_icon,
     get_user_input_string,
-    ColorTester,
     set_app_theme,
+    set_ratio_geometry,
 )
 from mne_pipeline_hd.gui.loading_widgets import (
     AddFilesDialog,
     AddMRIDialog,
     CopyTrans,
     EventIDGui,
+    ExportDialog,
     FileDictDialog,
     FileDock,
     FileManagment,
@@ -69,7 +70,6 @@ from mne_pipeline_hd.gui.loading_widgets import (
     ReloadRaw,
     SubBadsDialog,
     SubjectWizard,
-    ExportDialog,
 )
 from mne_pipeline_hd.gui.parameter_widgets import (
     BoolGui,
@@ -82,12 +82,12 @@ from mne_pipeline_hd.gui.tools import DataTerminal
 from mne_pipeline_hd.pipeline.controller import Controller
 from mne_pipeline_hd.pipeline.function_utils import close_all
 from mne_pipeline_hd.pipeline.pipeline_utils import (
-    restart_program,
-    ismac,
     QS,
     _run_from_script,
+    ismac,
     iswin,
     logger,
+    restart_program,
 )
 
 
@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
         self.ct = controller
         self.pr = controller.pr
         self.edu_tour = None
-        self.bt_dict = dict()
+        self.bt_dict = {}
         # For functions, which should or should not
         # be called durin initialization
         self.first_init = True
@@ -569,7 +569,7 @@ class MainWindow(QMainWindow):
                     tab.deleteLater()
                 except RuntimeError:
                     logger().debug("Tab already deleted")
-        self.bt_dict = dict()
+        self.bt_dict = {}
 
         self.add_func_bts()
 
@@ -605,7 +605,7 @@ class MainWindow(QMainWindow):
         if self.ct.edu_program:
             dock_kwargs = self.ct.edu_program["dock_kwargs"]
         else:
-            dock_kwargs = dict()
+            dock_kwargs = {}
         self.file_dock = FileDock(self, **dock_kwargs)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.file_dock)
         self.view_menu.addAction(self.file_dock.toggleViewAction())

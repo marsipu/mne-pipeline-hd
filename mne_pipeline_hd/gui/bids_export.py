@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Project-wide BIDS export dialog."""
 
 from pathlib import Path

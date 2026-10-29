@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Authors: Martin Schulz <dev@mgschulz.de>
 License: BSD 3-Clause
@@ -15,7 +14,7 @@ from ast import literal_eval
 from copy import deepcopy
 from datetime import datetime
 from importlib import resources
-from os.path import join, isfile
+from os.path import isfile, join
 from pathlib import Path
 
 import numpy as np
@@ -107,17 +106,17 @@ class TypedJSONEncoder(json.JSONEncoder):
 
 
 def type_json_hook(obj):
-    if "numpy_int" in obj.keys():
+    if "numpy_int" in obj:
         return obj["numpy_int"]
-    elif "numpy_float" in obj.keys():
+    elif "numpy_float" in obj:
         return obj["numpy_float"]
-    elif "numpy_array" in obj.keys():
+    elif "numpy_array" in obj:
         return np.asarray(obj["numpy_array"])
-    elif "datetime" in obj.keys():
+    elif "datetime" in obj:
         return datetime.strptime(obj["datetime"], datetime_format)
-    elif "tuple_type" in obj.keys():
+    elif "tuple_type" in obj:
         return tuple(obj["tuple_type"])
-    elif "set_type" in obj.keys():
+    elif "set_type" in obj:
         return set(obj["set_type"])
     else:
         return obj
@@ -148,7 +147,7 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
             'missing', if path hasn't been saved yet
     """
 
-    result_dict = dict()
+    result_dict = {}
     file_name = Path(path).name
     # Try to get the parameters relevant for the last function,
     # which altered the data at path
@@ -163,7 +162,7 @@ def compare_filep(obj, path, target_parameters=None, verbose=True):
         else:
             critical_params = [critical_params_str]
     except KeyError:
-        critical_params = list()
+        critical_params = []
         function = None
 
     if not target_parameters:
@@ -254,7 +253,7 @@ def restart_program():
         p = psutil.Process(os.getpid())
         for handler in p.open_files() + p.connections():
             os.close(handler.fd)
-    except Exception as e:
+    except (OSError, psutil.Error) as e:
         logger().error(e)
 
     python = sys.executable
@@ -263,8 +262,7 @@ def restart_program():
 
 def _get_func_param_kwargs(func, params):
     kwargs = {
-        kwarg: params[kwarg] if kwarg in params else None
-        for kwarg in inspect.signature(func).parameters
+        kwarg: params.get(kwarg, None) for kwarg in inspect.signature(func).parameters
     }
 
     return kwargs
@@ -274,7 +272,7 @@ class BaseSettings:
     def __init__(self):
         # Load default settings
         default_settings_path = join(resources.files(extra), "default_settings.json")
-        with open(default_settings_path, "r") as file:
+        with open(default_settings_path) as file:
             self.default_qsettings = json.load(file)["qsettings"]
 
     def get_default(self, name):
@@ -334,7 +332,7 @@ except ImportError:
 
         def _load_settings(self):
             if isfile(self.settings_path):
-                with open(self.settings_path, "r") as file:
+                with open(self.settings_path) as file:
                     self.settings = json.load(file)
             else:
                 self.settings = deepcopy(self.default_qsettings)
