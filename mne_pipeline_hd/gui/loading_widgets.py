@@ -119,7 +119,7 @@ def index_parser(index, all_items, groups=None):
                     elif "all" in sp:
                         indices.extend(range(len(all_items)))
             else:
-                indices = [x for x in range(len(all_items))]
+                indices = [*range(len(all_items))]
 
         elif "," in index and "-" in index:
             z = index.split(",")
@@ -138,7 +138,7 @@ def index_parser(index, all_items, groups=None):
 
         elif "-" in index and "," not in index:
             x, y = index.split("-")
-            indices = [x for x in range(int(x), int(y) + 1)]
+            indices = [*range(int(x), int(y) + 1)]
 
         elif "," in index and "-" not in index:
             splits = index.split(",")
@@ -1572,7 +1572,7 @@ class EventIDGui(QDialog):
 
     # ToDo: Make all combinations possible
     def update_check_list(self):
-        self.labels = [k for k in self.queries]
+        self.labels = [*self.queries]
         # Get selectable trials and update widget
         prelabels = [i.split("/") for i in self.event_id if i != ""]
         if len(prelabels) > 0:
