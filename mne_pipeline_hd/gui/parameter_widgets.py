@@ -1929,7 +1929,7 @@ class CopyPDialog(QDialog):
     def from_selected(self, current):
         self.selected_from = current
         self.copy_to.replace_data([pp for pp in self.p.keys() if pp != current])
-        self.copy_ps.replace_data([p for p in self.p[current]])
+        self.copy_ps.replace_data([*self.p[current]])
 
     def copy_parameters(self):
         if len(self.selected_to) > 0:
