@@ -528,9 +528,7 @@ class EditPandasModel(BasePandasModel):
 
     def insertRows(self, row, count, parent=None, *args, **kwargs):
         self.beginInsertRows(parent, row, row + count - 1)
-        add_data = pd.DataFrame(
-            columns=self._data.columns, index=[r for r in range(count)]
-        )
+        add_data = pd.DataFrame(columns=self._data.columns, index=[*range(count)])
         if row == 0:
             self._data = pd.concat([add_data, self._data])
         elif row == len(self._data.index):
@@ -545,9 +543,7 @@ class EditPandasModel(BasePandasModel):
 
     def insertColumns(self, column, count, parent=None, *args, **kwargs):
         self.beginInsertColumns(parent, column, column + count - 1)
-        add_data = pd.DataFrame(
-            index=self._data.index, columns=[c for c in range(count)]
-        )
+        add_data = pd.DataFrame(index=self._data.index, columns=[*range(count)])
         if column == 0:
             self._data = pd.concat([add_data, self._data], axis=1)
         elif column == len(self._data.columns):
