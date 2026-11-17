@@ -211,3 +211,45 @@ Python API
 anonymize=False)`` exports the same data without opening the dialog. Use
 ``default_bids_mapping(project)`` from ``mne_pipeline_hd.pipeline.bids`` to obtain
 editable ``BIDSRecording`` objects and the FreeSurfer-name-to-BIDS-subject mapping.
+
+Exporting custom functions to MNE-Nodes
+---------------------------------------
+
+An experimental command exports some custom functions to a path-loaded
+MNE-Nodes plugin. The output directory must already exist and must not contain
+the output files. For example, from a command prompt::
+
+    python -m mne_pipeline_hd.pipeline.mne_nodes_export diss_funcs.py diss_funcs_functions.csv output --parameters diss_funcs_parameters.csv
+
+The command reads the standard Pipeline-HD parameters first; repeat
+``--parameters`` to add custom parameter CSV files, with later files taking
+precedence. It creates ``diss_funcs.py`` and ``diss_funcs_config.json`` in the
+output directory without changing the source. Load the JSON using **Plugins >
+Load Plugin from Path** in MNE-Nodes. Review and test generated code and
+install its imported dependencies before using it. Parameter defaults not
+present in the supplied CSVs are taken from Pipeline-HD's default settings,
+not the current project's parameter preset.
+
+Direct supported ``meeg.load_*`` calls become inputs, and a matching
+``meeg.save_*`` becomes an output. A simple raw/filtered selection becomes
+one raw input: connect the desired recording rather than selecting it inside
+the node. Recording names and bad-channel lists become explicit inputs;
+modified bad-channel lists are returned. Simple CSV sidecars become DataFrame
+inputs or outputs, rather than files written inside the function. Output
+DataFrames represent the data at the original save point. Eligible local helper
+functions are included in the exported source. Simple MRI label selection and
+combination can also be exported with a list of labels as input and the
+combined labels as output. Simple group plotting functions accept one list of
+loaded data per recording plus a matching list of recording names, and return
+the figure instead of saving it internally. Both lists must have equal lengths.
+
+Other project state, complex or conditional I/O, most group functions, and
+unsupported parameter widgets require manual migration. Each skipped function
+is reported; the command exits with a nonzero status if any were skipped. For
+the supplied ``diss_funcs`` example, most functions still need manual migration;
+the exporter does not convert the entire package.
+
+The Python API ``export_custom_functions(source, functions_csv, parameter_csvs,
+destination)`` in ``mne_pipeline_hd.pipeline.mne_nodes_export`` returns the
+exported names and a mapping of skipped names to reasons. Supply the standard
+parameter CSV explicitly when calling the API.
